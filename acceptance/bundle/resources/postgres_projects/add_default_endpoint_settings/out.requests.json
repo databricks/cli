@@ -7,6 +7,10 @@
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
 }
 {
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
   "method": "PATCH",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
   "q": {

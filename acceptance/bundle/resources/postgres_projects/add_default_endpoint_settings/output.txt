@@ -7,6 +7,10 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add the block with a single field, leaving its siblings unset
+>>> update_file.py databricks.yml       #default_endpoint_settings:       default_endpoint_settings:
+
+>>> update_file.py databricks.yml       #  autoscaling_limit_min_cu: 0.5         autoscaling_limit_min_cu: 0.5
+
 >>> [CLI] bundle plan
 update postgres_projects.my_project
 

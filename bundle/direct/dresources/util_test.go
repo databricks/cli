@@ -106,11 +106,19 @@ func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 			want:        []string{"spec.default_endpoint_settings.suspension"},
 		},
 		{
-			name: "keeps a map inside an expanded message whole",
+			name: "keeps the message when the body leaves nothing under it unset",
 			changes: Changes{"settings": updTo(&postgres.EndpointSettings{
 				PgSettings: map[string]string{"work_mem": "4MB"},
 			})},
-			want: []string{"spec.settings.pg_settings"},
+			want: []string{"spec.settings"},
+		},
+		{
+			name: "keeps a map inside an expanded message whole",
+			changes: Changes{"group": updTo(&postgres.EndpointGroupSpec{
+				Min: 1,
+				Max: 1,
+			})},
+			want: []string{"spec.group.max", "spec.group.min"},
 		},
 		{
 			name:    "does not expand a repeated field",

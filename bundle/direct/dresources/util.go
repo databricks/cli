@@ -106,9 +106,39 @@ func expandMaskedMessage(path string, value any) []string {
 	if !ok {
 		return nil
 	}
+	if bodyPopulatesAll(derefType(typ), body) {
+		// Nothing under the message is left unset, so no requirement the API places
+		// on a masked field can go unmet, and replacing the message wholesale is
+		// what the configuration declares. Keep the message.
+		return nil
+	}
 	var paths []string
 	appendPopulatedLeaves(&paths, path, derefType(typ), body)
 	return paths
+}
+
+// bodyPopulatesAll reports whether body carries a value for every field of typ, at
+// any depth.
+func bodyPopulatesAll(typ reflect.Type, body map[string]any) bool {
+	for field := range typ.Fields() {
+		if !field.IsExported() || field.Name == "ForceSendFields" {
+			continue
+		}
+		name := structtag.JSONTag(field.Tag.Get("json")).Name()
+		if name == "" || name == "-" {
+			continue
+		}
+		value, present := body[name]
+		if !present {
+			return false
+		}
+		nested, isMessage := value.(map[string]any)
+		fieldType := derefType(field.Type)
+		if isMessage && fieldType.Kind() == reflect.Struct && !bodyPopulatesAll(fieldType, nested) {
+			return false
+		}
+	}
+	return true
 }
 
 // messageBody returns value marshalled as a JSON object, reporting false when value is not

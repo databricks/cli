@@ -1,2 +1,5 @@
 # The direct engine is the one that builds update_mask from the plan's change list.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = ["tmp.plan.json"]

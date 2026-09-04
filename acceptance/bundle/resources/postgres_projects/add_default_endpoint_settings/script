@@ -15,14 +15,14 @@ rm -f out.requests.txt
 
 title "Add the block with a single field, leaving its siblings unset"
 # The change lands on the message itself, so the mask must name the one field the
-# body carries. Masking the message asks the API to replace it wholesale and it
+# body carries: masking the message asks the API to replace it wholesale and it
 # then demands every field under it.
-cat >> databricks.yml <<'YML'
-      default_endpoint_settings:
-        autoscaling_limit_min_cu: 0.5
-YML
+trace update_file.py databricks.yml "      #default_endpoint_settings:" "      default_endpoint_settings:"
+trace update_file.py databricks.yml "      #  autoscaling_limit_min_cu: 0.5" "        autoscaling_limit_min_cu: 0.5"
+
 trace $CLI bundle plan
-trace $CLI bundle deploy
+$CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy $(readplanarg tmp.plan.json)
 
 trace print_requests.py --del-body project_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
 rm -f out.requests.txt
