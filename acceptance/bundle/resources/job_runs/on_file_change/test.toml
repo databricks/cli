@@ -2,7 +2,7 @@
 # computed during planning survive plan serialization.
 EnvMatrix.READPLAN = ["", "1"]
 
-Ignore = ["tmp.plan.json", "tmp.seed.txt"]
+Ignore = ["tmp.*.*"]
 
 # Content hashes are stable but unreadable, and the parent's `\d{8,}` rule
 # mangles any digit run inside them. Order=1 runs before it; Distinct keeps
