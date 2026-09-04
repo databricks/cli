@@ -1,9 +1,6 @@
 
 === install --output json reports a top-level error category and exits non-zero
->>> [CLI] experimental aitools install --skills-only --scope=global --agents=claude-code --skills=nonexistent --output json
-Command "install" is deprecated, use "databricks aitools install" instead.
-Using skills version test-ref
-Fetching skills manifest...
+>>> [CLI] aitools install --skills-only --scope=global --agents=claude-code --skills=nonexistent --output json
 {
   "scope": "global",
   "agents": [],
