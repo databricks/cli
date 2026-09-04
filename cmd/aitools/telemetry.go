@@ -53,9 +53,10 @@ func logInstallEvent(ctx context.Context, plan []agentPlanItem, opts installOpts
 func agentResultsField(outcomes []agentOutcome) []protos.AitoolsAgentResult {
 	var out []protos.AitoolsAgentResult
 	for _, o := range outcomes {
-		// A successful agent leaves errorCategory at its zero value ("", not the
-		// TYPE_UNSPECIFIED sentinel), so key on emptiness to drop it here.
-		if o.agent == nil || o.errorCategory == "" {
+		// Successful agents produce no entry; only failed/skipped outcomes carry a
+		// category. Keying on status (rather than errorCategory == "") avoids a trap
+		// where a future Unspecified category on a success would emit a bogus entry.
+		if o.status == outcomeInstalled {
 			continue
 		}
 		out = append(out, protos.AitoolsAgentResult{

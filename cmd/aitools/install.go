@@ -609,14 +609,14 @@ type installOutput struct {
 	// is the local-only message; ErrorCategory is the classification telemetry
 	// also records.
 	Error         string `json:"error,omitempty"`
-	ErrorCategory string `json:"errorCategory,omitempty"`
+	ErrorCategory string `json:"error_category,omitempty"`
 }
 
 type agentResultJSON struct {
 	Name          string `json:"name"`
 	Delivery      string `json:"delivery"`
 	Status        string `json:"status"`
-	ErrorCategory string `json:"errorCategory,omitempty"`
+	ErrorCategory string `json:"error_category,omitempty"`
 	Message       string `json:"message,omitempty"`
 }
 
