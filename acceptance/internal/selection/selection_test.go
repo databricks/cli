@@ -176,6 +176,17 @@ func TestFromDiffConfigAndItsInitScript(t *testing.T) {
 	}, result.Tests())
 }
 
+func TestFromDiffHyphenatedConfigName(t *testing.T) {
+	// The companion script names the config it belongs to, whose own name may contain a
+	// hyphen: only the exact suffix is stripped.
+	diff := diffLines("M\tacceptance/bundle/invariant/configs/my-config.yml.tmpl-init.sh")
+	result := fromDiff(t, diff, 10)
+	assert.Equal(t, map[string][]string{
+		"bundle/invariant/jobs": {"INPUT_CONFIG=my-config.yml.tmpl"},
+		"bundle/invariant/apps": {"INPUT_CONFIG=my-config.yml.tmpl"},
+	}, result.Tests())
+}
+
 func TestFromDiffMovedDirWithNewConfig(t *testing.T) {
 	// The move is a change to the dir itself, so it runs every variant, including the one
 	// the new config adds, and scores the move.

@@ -356,10 +356,9 @@ func invariantConfigName(path string) string {
 		return ""
 	}
 	name := strings.TrimPrefix(path, invariantConfigsPrefix)
-	// Strip -init.sh / -cleanup.sh suffixes to get the base config name.
-	if i := strings.Index(name, "-"); i > 0 && strings.HasSuffix(name, ".sh") {
-		name = name[:i]
-	}
+	// A config's setup and teardown scripts belong to the config they are named after.
+	name = strings.TrimSuffix(name, "-init.sh")
+	name = strings.TrimSuffix(name, "-cleanup.sh")
 	if !strings.HasSuffix(name, ".yml.tmpl") {
 		return ""
 	}
