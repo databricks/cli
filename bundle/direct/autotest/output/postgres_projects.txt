@@ -8,6 +8,7 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
+(base)                                       budget_policy_id            BASE_SHIFTED  kept the value the API would not undo
 budget_policy_id                             absent     x          UPDATE_MASK_OMITTED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
 budget_policy_id                             absent     y          UPDATE_MASK_OMITTED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
 budget_policy_id                             x          absent     UPDATE_MASK_OMITTED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
@@ -46,5 +47,6 @@ OK                 25
 OK_RECREATE        8
 OK_ID_FIELD_REQUIRED 4
 UPDATE_MASK_OMITTED 32
+BASE_SHIFTED       1
 SUPPRESSED         3
 SKIPPED            3
