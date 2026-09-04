@@ -81,5 +81,6 @@ def get_code(generated: GeneratedEnum) -> str:
 
 def _camel_to_upper_snake(value):
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", value)
-
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).upper()
+    s1 = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1)
+    # Non-identifier chars (e.g. "-" in "amazon-bedrock") become "_".
+    return re.sub(r"[^0-9a-zA-Z]+", "_", s1).upper()
