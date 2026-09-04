@@ -109,18 +109,6 @@ func normalizeLaunchStage(launchStage string) (clijson.LaunchStage, error) {
 	return stage, nil
 }
 
-// parseFieldLaunchStage validates a field's contract launch stage, keeping every
-// explicit stage (GA included) so the generated schema records each field's
-// stability, not just previews. An empty stage means the contract assigns none;
-// it stays empty (unmarked) instead of defaulting to GA, so only fields the
-// contract actually stamps carry a stage.
-func parseFieldLaunchStage(launchStage string) (clijson.LaunchStage, error) {
-	if launchStage == "" {
-		return "", nil
-	}
-	return clijson.ParseLaunchStage(launchStage)
-}
-
 // notableEnumLaunchStages keeps only the enum values whose launch stage is
 // worth surfacing (i.e. not GA), so the annotation file isn't polluted with a
 // stage for every value of a GA enum. Returns nil when nothing remains.
@@ -192,21 +180,17 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 			}
 
 			basePath := getPath(typ)
-			// The contract carries no schema-level launch stage, so a type's stage
-			// comes only from the override map (launchStageOverrides), which stamps
-			// whole resources — e.g. Postgres* at Public Beta. Passing "" (GA, the
-			// least restrictive stage) returns the override when one is set for the
-			// type, else "". Enum schemas do carry per-value launch stages below.
-			typeStage := annotation.OverrideLaunchStage(basePath, "")
+			// A type carries no launch stage by default, so we set to GA, unless overridden.
+			typeLaunchStage := annotation.OverrideLaunchStage(basePath, "")
 			enumLaunchStages, enumErr := notableEnumLaunchStages(ref.EnumLaunchStages)
 			if enumErr != nil {
 				stageErr = errors.Join(stageErr, fmt.Errorf("%s: %w", basePath, enumErr))
 			}
 			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
-			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil || typeStage != "" {
+			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil || typeLaunchStage != "" {
 				annotations.SetSelf(basePath, annotation.Descriptor{
 					Description:      ref.Description,
-					LaunchStage:      typeStage,
+					LaunchStage:      typeLaunchStage,
 					Enum:             enumValues(ref.Enum),
 					EnumLaunchStages: enumLaunchStages,
 					EnumDescriptions: enumDescriptions,
@@ -215,9 +199,15 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
-					launchStage, fieldErr := parseFieldLaunchStage(refProp.LaunchStage)
-					if fieldErr != nil {
-						stageErr = errors.Join(stageErr, fmt.Errorf("%s.%s: %w", basePath, k, fieldErr))
+					// An empty stage means the contract assigns none; keep it
+					// unmarked rather than letting ParseLaunchStage default it to GA.
+					var launchStage clijson.LaunchStage
+					if refProp.LaunchStage != "" {
+						stage, fieldErr := clijson.ParseLaunchStage(refProp.LaunchStage)
+						if fieldErr != nil {
+							stageErr = errors.Join(stageErr, fmt.Errorf("%s.%s: %w", basePath, k, fieldErr))
+						}
+						launchStage = stage
 					}
 					// Apply custom launch stage override (e.g. keep resource in Beta despite API being GA)
 					launchStage = annotation.OverrideLaunchStage(basePath, launchStage)

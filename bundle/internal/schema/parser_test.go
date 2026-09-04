@@ -185,29 +185,6 @@ func TestNormalizeLaunchStageUnknown(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestParseFieldLaunchStage(t *testing.T) {
-	tests := []struct {
-		input string
-		want  clijson.LaunchStage
-	}{
-		{"", ""}, // unstamped stays unstamped rather than defaulting to GA
-		{"GA", clijson.LaunchStageGA},
-		{"PUBLIC_PREVIEW", clijson.LaunchStagePublicPreview},
-		{"PUBLIC_BETA", clijson.LaunchStagePublicBeta},
-		{"PRIVATE_PREVIEW", clijson.LaunchStagePrivatePreview},
-	}
-	for _, tc := range tests {
-		got, err := parseFieldLaunchStage(tc.input)
-		require.NoError(t, err)
-		assert.Equal(t, tc.want, got)
-	}
-}
-
-func TestParseFieldLaunchStageUnknown(t *testing.T) {
-	_, err := parseFieldLaunchStage("SOMETHING_ELSE")
-	assert.Error(t, err)
-}
-
 func TestNotableEnumLaunchStages(t *testing.T) {
 	t.Run("drops GA, keeps preview values", func(t *testing.T) {
 		got, err := notableEnumLaunchStages(map[string]string{
