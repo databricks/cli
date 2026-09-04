@@ -60,6 +60,11 @@ func addComputeFlags(cmd *cobra.Command) {
 	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. 5)")
 	cmd.Flags().String("job-task", "", "job task to use as the compute target, as <job-id>.<task-key> (the task key is required)")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
+	// The negative flags (--no-constraints, --no-dbconnect) are orthogonal and
+	// compose. --no-dbconnect and the older --constraints-only are equivalent (both
+	// skip the databricks-connect dependency).
+	cmd.Flags().Bool("no-constraints", false, "skip writing the remote Python version and dependency constraints")
+	cmd.Flags().Bool("no-dbconnect", false, "skip adding the databricks-connect dependency")
 	cmd.Flags().Bool("dry-run", false, "compute the plan without writing files or provisioning")
 	// The mutual exclusivity of the target flags is enforced in the pipeline's
 	// preflight (as E_USAGE) rather than via cmd.MarkFlagsMutuallyExclusive, so
@@ -122,6 +127,8 @@ func runPipeline(cmd *cobra.Command) error {
 	serverless, _ := cmd.Flags().GetString("serverless-version")
 	jobTask, _ := cmd.Flags().GetString("job-task")
 	constraintsOnly, _ := cmd.Flags().GetBool("constraints-only")
+	noConstraints, _ := cmd.Flags().GetBool("no-constraints")
+	noDBConnect, _ := cmd.Flags().GetBool("no-dbconnect")
 	check, _ := cmd.Flags().GetBool("dry-run")
 
 	computeFlags := libslocalenv.ComputeFlags{
@@ -134,8 +141,10 @@ func runPipeline(cmd *cobra.Command) error {
 	// preflight, so a conflict is reported as E_USAGE through the phase/JSON
 	// contract rather than as a bare error here.
 
+	// --no-dbconnect is the orthogonal spelling of --constraints-only; either skips
+	// the databricks-connect dependency, which the pipeline models as the mode.
 	mode := libslocalenv.ModeDefault
-	if constraintsOnly {
+	if constraintsOnly || noDBConnect {
 		mode = libslocalenv.ModeConstraintsOnly
 	}
 
@@ -177,6 +186,7 @@ func runPipeline(cmd *cobra.Command) error {
 	p := &libslocalenv.Pipeline{
 		Mode:              mode,
 		Check:             check,
+		SkipConstraints:   noConstraints,
 		ProjectDir:        projectDir,
 		ConstraintBaseURL: constraintBaseURL,
 		CacheDir:          cacheDir,

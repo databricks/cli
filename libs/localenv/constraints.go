@@ -284,8 +284,11 @@ func parseConstraints(data []byte) (requiresPython, dbconnect string, deps []str
 		}
 	}
 
-	deps = p.Tool.UV.ConstraintDependencies
-	return requiresPython, dbconnect, deps, nil
+	// A missing [tool.uv].constraint-dependencies yields a nil slice, which the
+	// merge treats identically to an empty one (an empty managed block). Whether
+	// the constraint region is managed at all is decided by the --no-constraints
+	// flag, threaded explicitly, not by the shape of this value.
+	return requiresPython, dbconnect, p.Tool.UV.ConstraintDependencies, nil
 }
 
 // depNameSepRe matches the first PEP 508 delimiter that ends a requirement's
