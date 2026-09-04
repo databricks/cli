@@ -27,6 +27,8 @@ class PipelinesEnvironment:
 
     environment_version: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] The environment version of the serverless Python environment used to execute
     customer Python code. Each environment version includes a specific Python
     version and a curated set of pre-installed libraries with defined versions,
@@ -59,6 +61,8 @@ class PipelinesEnvironmentDict(TypedDict, total=False):
 
     environment_version: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] The environment version of the serverless Python environment used to execute
     customer Python code. Each environment version includes a specific Python
     version and a curated set of pre-installed libraries with defined versions,

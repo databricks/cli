@@ -132,6 +132,8 @@ class Task:
 
     compute: VariableOrOptional[Compute] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Task level compute configuration.
     """
 
@@ -369,6 +371,8 @@ class TaskDict(TypedDict, total=False):
 
     compute: VariableOrOptional[ComputeParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Task level compute configuration.
     """
 

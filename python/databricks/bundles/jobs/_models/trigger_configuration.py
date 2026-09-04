@@ -51,11 +51,15 @@ class TriggerConfiguration:
 
     continuous: VariableOrOptional[ContinuousTriggerConfiguration] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Continuous trigger configuration.
     """
 
     file_arrival: VariableOrOptional[FileArrivalTriggerConfiguration] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] File arrival trigger configuration.
     """
 
@@ -68,17 +72,23 @@ class TriggerConfiguration:
 
     pause_status: VariableOrOptional[PauseStatus] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Whether this trigger is paused. Defaults to UNPAUSED when unset; the server always returns an explicit value on read.
     """
 
     periodic: VariableOrOptional[PeriodicTriggerConfiguration] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Trigger type: exactly one must be set; mutual exclusivity is enforced in the API handler
     Periodic trigger configuration.
     """
 
     schedule: VariableOrOptional[CronTriggerConfiguration] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Cron schedule trigger configuration.
     """
 
@@ -91,6 +101,8 @@ class TriggerConfiguration:
 
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Table update trigger configuration.
     """
 
@@ -107,11 +119,15 @@ class TriggerConfigurationDict(TypedDict, total=False):
 
     continuous: VariableOrOptional[ContinuousTriggerConfigurationParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Continuous trigger configuration.
     """
 
     file_arrival: VariableOrOptional[FileArrivalTriggerConfigurationParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] File arrival trigger configuration.
     """
 
@@ -124,17 +140,23 @@ class TriggerConfigurationDict(TypedDict, total=False):
 
     pause_status: VariableOrOptional[PauseStatusParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Whether this trigger is paused. Defaults to UNPAUSED when unset; the server always returns an explicit value on read.
     """
 
     periodic: VariableOrOptional[PeriodicTriggerConfigurationParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Trigger type: exactly one must be set; mutual exclusivity is enforced in the API handler
     Periodic trigger configuration.
     """
 
     schedule: VariableOrOptional[CronTriggerConfigurationParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Cron schedule trigger configuration.
     """
 
@@ -147,6 +169,8 @@ class TriggerConfigurationDict(TypedDict, total=False):
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Table update trigger configuration.
     """
 
