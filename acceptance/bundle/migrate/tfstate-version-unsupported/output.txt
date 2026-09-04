@@ -20,7 +20,7 @@ Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 Executing 'postdeploy' script
 Warn: post-deploy dry-run migration to direct: failed to parse terraform state: unsupported deployment state version: 5. Try re-deploying the bundle
-Warn: Direct engine was selected but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
+Warn: Direct engine was selected but the migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
 
 >>> print_migration_telemetry
 direct_migrate_error true

@@ -24,7 +24,7 @@ Warn: post-deploy dry-run migration to direct: resource jobs.dst field name: met
 Warn: The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
 Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
 Please forward these warnings to dabs-feedback@databricks.com
-Warn: Direct engine was selected but the dry-run migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
+Warn: Direct engine was selected but the migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.
 
 >>> print_migration_telemetry
 direct_migrate_warnings true
