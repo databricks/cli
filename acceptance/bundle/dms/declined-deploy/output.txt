@@ -76,6 +76,16 @@ Files: 4 uploaded, 0 deleted
 === Nothing was recorded for the declined deploy - no version, so none to abort
 >>> print_requests.py --dms //api/2.0/bundle
 
+=== The recorded resources are unchanged by the decline: the schema is still at version 1
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "schemas.foo"
+  }
+]
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.foo

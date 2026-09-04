@@ -18,5 +18,9 @@ title "Nothing was recorded for the declined deploy - no version, so none to abo
 # history has no entry that reads like a deploy which failed or did nothing.
 trace print_requests.py --dms //api/2.0/bundle
 
+title "The recorded resources are unchanged by the decline: the schema is still at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-declined-deploy-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
 trace $CLI bundle destroy --auto-approve
 rm -f out.requests.txt
