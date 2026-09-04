@@ -100,6 +100,13 @@ func checkStateFeatures(features map[string]struct{}) error {
 // The caller should delete the stale WAL and proceed normally.
 var errStaleWAL = errors.New("stale WAL")
 
+// ErrUnsettingRecording is returned by Open when a recorded state is opened without recording - the
+// config turned the feature off, or an operation that never records (unbind) reached it. Callers
+// present an operation-appropriate message via errors.Is.
+var ErrUnsettingRecording = errors.New(`unsetting experimental.record_deployment_history is not supported
+
+This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`)
+
 type DeploymentState struct {
 	Path    string
 	Data    Database
@@ -130,6 +137,12 @@ type DeploymentState struct {
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
 	versionCompleted bool
+
+	// DeploymentID and LatestVersionID are the recorded deployment's id and its most recent version
+	// at Open time, from the service. CalculatePlan reads them (rather than the bundle config tree)
+	// to stamp the plan's lineage. Both empty for a first deploy, whose id the deploy phase creates.
+	DeploymentID    string
+	LatestVersionID string
 }
 
 type Header struct {
@@ -204,13 +217,21 @@ func (db *DeploymentState) RecordingError() error {
 // survive Finalize's reset and asserts nothing, so it is safe to call after the state is closed.
 func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (bool, error) {
 	db.mu.Lock()
-	if db.operationBuffer == nil || db.versionCompleted {
+	buf := db.operationBuffer
+	if buf == nil || db.versionCompleted {
 		db.mu.Unlock()
 		return false, nil
 	}
 	db.versionCompleted = true
 	deploymentID, versionID, client := db.deploymentID, db.versionID, db.dmsClient
 	db.mu.Unlock()
+
+	// A recording failure fails the version even when the caller counted the deploy a success: the
+	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
+	// this reads the drained buffer's error so a destroy whose uploads failed keeps its record.
+	if buf.Err() != nil {
+		success = false
+	}
 
 	reason := bundledeployments.VersionCompleteVersionCompleteSuccess
 	if !success {
@@ -552,9 +573,7 @@ To record this bundle's history, start it over as a new deployment:
   2. run "databricks bundle destroy" to delete the existing resources
   3. add experimental.record_deployment_history back and deploy again`)
 	case !recording && recorded:
-		return errors.New(`unsetting experimental.record_deployment_history is not supported
-
-This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`)
+		return ErrUnsettingRecording
 	}
 
 	db.storageBackend = StorageBackendWorkspaceFilesystem

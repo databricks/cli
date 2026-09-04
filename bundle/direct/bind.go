@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -219,6 +220,9 @@ func (result *BindResult) Cancel() {
 func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey string) error {
 	err := b.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true), dstate.WithDeploymentHistory(false), "")
 	if err != nil {
+		if errors.Is(err, dstate.ErrUnsettingRecording) {
+			return errors.New("unbind is not supported for a bundle that records deployment history")
+		}
 		return err
 	}
 

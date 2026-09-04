@@ -168,24 +168,23 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	// Record the DMS deployment and version this plan targets. A saved plan carries them so
-	// deploy --plan can reject a plan the deployment has moved on from, and pass last_version_id
-	// as previous_version_id. History is set only while recording, so other plans leave these empty.
-	// configRoot is nil for destroy, which records its version separately.
 	// The plan records where its state lives so deploy --plan can reject a plan whose target has
-	// since switched backends. Set from StateDB (the source of truth) so a first deploy - which has
-	// no History yet - still carries it.
+	// since switched backends. StateDB is the source of truth, so a first deploy - which has no
+	// recorded deployment yet - still carries the backend.
 	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		plan.StorageBackend = string(dstate.StorageBackendDeploymentMetadataService)
 	}
-	if configRoot != nil && configRoot.Bundle.Deployment.History != nil {
-		h := configRoot.Bundle.Deployment.History
-		next, err := dms.NextVersion(h.LatestVersionID)
+	// Record the DMS deployment and version this plan targets, from StateDB (not the config tree).
+	// A saved plan carries them so deploy --plan can reject a plan the deployment has moved on from,
+	// and passes last_version_id as previous_version_id. Empty for a first deploy, which has no
+	// recorded deployment yet - the deploy phase stamps the created id.
+	if b.StateDB.DeploymentID != "" {
+		next, err := dms.NextVersion(b.StateDB.LatestVersionID)
 		if err != nil {
 			return nil, fmt.Errorf("computing next deployment version: %w", err)
 		}
-		plan.DeploymentId = h.DeploymentID
-		plan.LastVersionId = h.LatestVersionID
+		plan.DeploymentId = b.StateDB.DeploymentID
+		plan.LastVersionId = b.StateDB.LatestVersionID
 		plan.NextVersionId = strconv.FormatInt(next, 10)
 	}
 

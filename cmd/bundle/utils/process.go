@@ -293,6 +293,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
+				// StateDB owns the plan's lineage: CalculatePlan reads these, not the config tree.
+				b.DeploymentBundle.StateDB.DeploymentID = dmsDeploymentID
+				b.DeploymentBundle.StateDB.LatestVersionID = lastVersionID
 			} else {
 				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), ""); err != nil {
 					logdiag.LogError(ctx, err)
