@@ -1,5 +1,0 @@
-envsubst < databricks.yml.tmpl > databricks.yml
-
-title "What a user sees when an operation cannot be recorded"
-trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1 INTERNAL_ERROR
-trace errcode $CLI bundle deploy

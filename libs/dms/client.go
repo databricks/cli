@@ -158,7 +158,14 @@ type operationResponse struct {
 	SequenceId string `json:"sequence_id,omitempty"`
 }
 
-// rawClient sends the requests the generated client cannot express.
+// rawClient sends the three DMS requests the generated SDK client cannot express yet, while the
+// endpoints are at DEVELOPMENT stage. TODO(DMS): drop each once the SDK catches up.
+//   - UpdateDeployment: the SDK exposes no method for it.
+//   - CreateVersion: the SDK's Version type has no operations field, so a version cannot stage
+//     its operations through it.
+//   - UpdateOperation: the SDK types sequence_id as int64, but the service sends and expects it
+//     as a JSON string.
+// CreateDeployment, DeleteDeployment, CompleteVersion and ListResources go through the SDK (see Client).
 type rawClient struct {
 	client *client.DatabricksClient
 }
