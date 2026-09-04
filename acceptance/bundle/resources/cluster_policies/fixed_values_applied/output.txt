@@ -20,6 +20,26 @@ The bundle declares neither, and does not set apply_policy_default_values.
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
+=== spark_version is not covered by any backend_defaults rule, so show its verdict
+
+>>> [CLI] bundle plan -o json
+[
+  {
+    "job_clusters[job_cluster_key='small'].new_cluster.custom_tags": {
+      "action": "skip",
+      "reason": "policy_managed",
+      "remote": {
+        "CostCenter": "policy-supplied"
+      }
+    },
+    "job_clusters[job_cluster_key='small'].new_cluster.spark_version": {
+      "action": "skip",
+      "reason": "policy_managed",
+      "remote": "13.3.x-snapshot-scala2.12"
+    }
+  }
+]
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.cluster_policies.pol

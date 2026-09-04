@@ -18,3 +18,9 @@ $CLI jobs get "$job_id" | jq '.settings.job_clusters[0].new_cluster | {spark_ver
 
 title "Is the policy-supplied value reported as drift?\n"
 trace $CLI bundle plan
+
+title "spark_version is not covered by any backend_defaults rule, so show its verdict\n"
+trace $CLI bundle plan -o json | jq -S '
+  [.plan | to_entries[] | (.value.changes // {})
+   | with_entries(select(.key | endswith("spark_version") or endswith("custom_tags")))]
+  | map(select(length > 0))'
