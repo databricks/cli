@@ -558,16 +558,28 @@ func TestConnectOutcomeCategory(t *testing.T) {
 			// it" -- one of only two reachable under --auto-approve.
 			name: "interruption wins over the category set at the failure site",
 			outcome: connectOutcome{
-				interrupted:   true,
+				ctxErr:        context.Canceled,
 				errorCategory: protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed,
 				err:           errors.New("signal: killed"),
 			},
 			want: protos.SshTunnelErrorCategoryUserAborted,
 		},
 		{
+			// Only a cancellation is the user giving up. No ancestor of the connect context
+			// carries a deadline today, so this is unreachable; matching the cause rather than
+			// testing ctxErr for non-nil keeps it that way if one is ever added.
+			name: "an expired deadline is not a user abort",
+			outcome: connectOutcome{
+				ctxErr:        context.DeadlineExceeded,
+				errorCategory: protos.SshTunnelErrorCategoryServerStartTimeout,
+				err:           errFailed,
+			},
+			want: protos.SshTunnelErrorCategoryServerStartTimeout,
+		},
+		{
 			// Interrupting an established tunnel is not a connection failure.
 			name:    "interruption after a successful connection reports no category",
-			outcome: connectOutcome{isSuccess: true, interrupted: true, err: errFailed},
+			outcome: connectOutcome{isSuccess: true, ctxErr: context.Canceled, err: errFailed},
 			want:    protos.SshTunnelErrorCategoryUnspecified,
 		},
 	}

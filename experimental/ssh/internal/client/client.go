@@ -285,7 +285,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		// that shells out cannot recognise the interruption itself. This defer is registered
 		// after `defer cancel()` and so runs before it (LIFO), which means ctx is cancelled
 		// here only by the signal handler or the caller, never by Run's own cleanup.
-		outcome.interrupted = ctx.Err() != nil
+		outcome.ctxErr = ctx.Err()
 		logSshTunnelEvent(ctx, opts, outcome)
 	}()
 
@@ -1251,10 +1251,11 @@ type connectOutcome struct {
 	// errorCategory is set at the failure site. Empty means the failure was not attributed.
 	errorCategory protos.SshTunnelErrorCategory
 	err           error
-	// interrupted reports whether the connect context was cancelled, i.e. the user gave up on
-	// the attempt. Tracked apart from err because a step that shells out reports a killed child
-	// as *exec.ExitError, which carries no trace of the cancellation.
-	interrupted bool
+	// ctxErr is the connect context's error when the outcome is logged. Tracked apart from err
+	// because a step that shells out reports a killed child as *exec.ExitError, which carries no
+	// trace of the cancellation. Only a cancellation counts as the user giving up: a deadline
+	// would be a timeout, so category() matches the cause rather than testing for non-nil.
+	ctxErr error
 }
 
 // sshExtensionErrorCategory attributes a Remote SSH extension check failure to the outcome that
@@ -1284,7 +1285,7 @@ func (o connectOutcome) category() protos.SshTunnelErrorCategory {
 	if o.isSuccess || o.err == nil {
 		return protos.SshTunnelErrorCategoryUnspecified
 	}
-	if o.interrupted || errors.Is(o.err, context.Canceled) {
+	if errors.Is(o.ctxErr, context.Canceled) || errors.Is(o.err, context.Canceled) {
 		return protos.SshTunnelErrorCategoryUserAborted
 	}
 	if o.errorCategory == "" {
