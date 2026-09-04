@@ -189,21 +189,17 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 			}
 
 			basePath := getPath(typ)
-			// The contract carries no schema-level launch stage, so a type's stage
-			// comes only from the override map (launchStageOverrides), which stamps
-			// whole resources — e.g. Postgres* at Public Beta. Passing "" (GA, the
-			// least restrictive stage) returns the override when one is set for the
-			// type, else "". Enum schemas do carry per-value launch stages below.
-			typeStage := annotation.OverrideLaunchStage(basePath, "")
+			// A type carries no launch stage by default, so we set to GA, unless overridden.
+			typeLaunchStage := annotation.OverrideLaunchStage(basePath, "")
 			enumLaunchStages, enumErr := notableEnumLaunchStages(ref.EnumLaunchStages)
 			if enumErr != nil {
 				stageErr = errors.Join(stageErr, fmt.Errorf("%s: %w", basePath, enumErr))
 			}
 			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
-			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil || typeStage != "" {
+			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil || typeLaunchStage != "" {
 				annotations.SetSelf(basePath, annotation.Descriptor{
 					Description:      ref.Description,
-					LaunchStage:      typeStage,
+					LaunchStage:      typeLaunchStage,
 					Enum:             enumValues(ref.Enum),
 					EnumLaunchStages: enumLaunchStages,
 					EnumDescriptions: enumDescriptions,
