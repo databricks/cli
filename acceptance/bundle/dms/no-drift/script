@@ -5,6 +5,7 @@ trace $CLI bundle deploy
 
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-no-drift-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+trace $CLI bundle summary -o json | jq .bundle.deployment.history
 
 # Only deploy stamps deployment.deployment_id. Plan sees it in state but not in config,
 # so it must ignore it rather than report spurious changes.
@@ -17,6 +18,7 @@ trace update_file.py databricks.yml 'serverless: true' 'serverless: true
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.2/jobs //api/2.0/pipelines --sort
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+trace $CLI bundle summary -o json | jq .bundle.deployment.history
 
 title "Plan again: no residual drift, and the version stamps are ignored"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"

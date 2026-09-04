@@ -23,4 +23,6 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 trace $CLI bundle destroy --auto-approve
+title "After the destroy the deployment is gone, so the summary reports no history rather than a dangling id"
+trace $CLI bundle summary -o json | jq '.bundle.deployment | has("history")'
 rm -f out.requests.txt

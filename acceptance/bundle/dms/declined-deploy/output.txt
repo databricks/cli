@@ -96,3 +96,7 @@ This action will result in the deletion of the following UC schemas. Any underly
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+=== After the destroy the deployment is gone, so the summary reports no history rather than a dangling id
+>>> [CLI] bundle summary -o json
+false

@@ -21,6 +21,12 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 ]
 
+>>> [CLI] bundle summary -o json
+{
+  "deployment_id": "[NUMID]",
+  "latest_version_id": "1"
+}
+
 === Plan without touching anything: the deployment stamp must not show as drift
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -120,6 +126,12 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
     "resource_key": "pipelines.bar"
   }
 ]
+
+>>> [CLI] bundle summary -o json
+{
+  "deployment_id": "[NUMID]",
+  "latest_version_id": "2"
+}
 
 === Plan again: no residual drift, and the version stamps are ignored
 >>> [CLI] bundle plan
