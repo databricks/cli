@@ -1,0 +1,50 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created cluster_policies.pol
+Created jobs.j
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Did the fixed policy SUPPLY spark_version and custom_tags, or only validate them?
+The bundle declares neither, and does not set apply_policy_default_values.
+{
+  "spark_version": "13.3.x-snapshot-scala2.12",
+  "custom_tags": {
+    "CostCenter": "policy-supplied"
+  }
+}
+
+=== Is the policy-supplied value reported as drift?
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== spark_version is not covered by any backend_defaults rule, so show its verdict
+
+>>> [CLI] bundle plan -o json
+[
+  {
+    "job_clusters[job_cluster_key='small'].new_cluster.custom_tags": {
+      "action": "skip",
+      "reason": "policy_managed",
+      "remote": {
+        "CostCenter": "policy-supplied"
+      }
+    },
+    "job_clusters[job_cluster_key='small'].new_cluster.spark_version": {
+      "action": "skip",
+      "reason": "policy_managed",
+      "remote": "13.3.x-snapshot-scala2.12"
+    }
+  }
+]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.pol
+  delete resources.jobs.j
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 2 deleted

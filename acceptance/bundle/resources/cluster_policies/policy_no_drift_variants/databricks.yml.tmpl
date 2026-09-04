@@ -1,0 +1,74 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    pol:
+      name: test-policy-$UNIQUE_NAME
+      definition: |-
+        {
+          "custom_tags.CostCenter": {
+            "type": "fixed",
+            "value": "from-policy"
+          }
+        }
+
+  # Every place a cluster spec can appear must be covered by a rule; a gap here is how
+  # https://github.com/databricks/cli/issues/5179 stayed open after a partial fix.
+  clusters:
+    standalone:
+      cluster_name: test-cluster-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      # Use the shared instance pool: a cold cluster boot made this the slowest test in the
+      # cloud suite (6-8 minutes per env), and the policy tag under test is unaffected.
+      instance_pool_id: $TEST_INSTANCE_POOL_ID
+      num_workers: 1
+      policy_id: ${resources.cluster_policies.pol.id}
+
+  jobs:
+    task_cluster:
+      name: test-task-cluster-$UNIQUE_NAME
+      tasks:
+        - task_key: t
+          new_cluster:
+            policy_id: ${resources.cluster_policies.pol.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+          spark_python_task:
+            python_file: ./hello_world.py
+
+    for_each_cluster:
+      name: test-for-each-cluster-$UNIQUE_NAME
+      tasks:
+        - task_key: outer
+          for_each_task:
+            inputs: "[1,2]"
+            task:
+              task_key: inner
+              new_cluster:
+                policy_id: ${resources.cluster_policies.pol.id}
+                spark_version: $DEFAULT_SPARK_VERSION
+                node_type_id: $NODE_TYPE_ID
+                num_workers: 1
+              spark_python_task:
+                python_file: ./hello_world.py
+
+  # A pipeline cluster carries policy_id too, but the Pipelines API does not expand the
+  # policy into the stored spec: it reads back exactly as authored, so there is no addition
+  # to suppress and no ignore_remote_additions rule for pipelines. Kept here to record that.
+  pipelines:
+    pipe:
+      name: test-pipeline-$UNIQUE_NAME
+      clusters:
+        - label: default
+          policy_id: ${resources.cluster_policies.pol.id}
+          node_type_id: $NODE_TYPE_ID
+          num_workers: 1
+      libraries:
+        - file:
+            path: ./hello_world.py

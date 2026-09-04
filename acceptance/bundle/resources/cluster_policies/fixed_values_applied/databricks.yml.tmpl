@@ -1,0 +1,38 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    pol:
+      name: test-policy-$UNIQUE_NAME
+      definition: |-
+        {
+          "spark_version": {
+            "type": "fixed",
+            "value": "$DEFAULT_SPARK_VERSION"
+          },
+          "custom_tags.CostCenter": {
+            "type": "fixed",
+            "value": "policy-supplied"
+          }
+        }
+
+  jobs:
+    # new_cluster deliberately omits spark_version and custom_tags: the policy is
+    # expected to supply both. apply_policy_default_values is NOT set.
+    j:
+      name: test-job-$UNIQUE_NAME
+      job_clusters:
+        - job_cluster_key: small
+          new_cluster:
+            policy_id: ${resources.cluster_policies.pol.id}
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: t
+          job_cluster_key: small
+          spark_python_task:
+            python_file: ./hello_world.py

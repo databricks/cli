@@ -1,0 +1,64 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created cluster_policies.pol
+Created jobs.no_policy
+Created jobs.owned_tag
+Created jobs.with_policy
+Files: 6 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A tag the cluster policy added is not drift
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+
+=== Without a policy_id the same remote-only tag IS drift
+
+>>> [CLI] bundle plan
+update jobs.no_policy
+
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
+
+=== A policy does not mask a change to a tag the config owns
+
+>>> [CLI] bundle plan
+update jobs.no_policy
+update jobs.owned_tag
+
+Plan: 0 to add, 2 to change, 0 to delete, 2 unchanged
+
+=== Removing a tag from config is a change the user asked for, not an addition
+
+>>> update_file.py databricks.yml Mine: mine Other: other
+
+>>> [CLI] bundle plan -o json
+[
+  {
+    "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']": {
+      "action": "skip",
+      "reason": "policy_managed",
+      "remote": "from-policy"
+    },
+    "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine']": {
+      "action": "update",
+      "old": "mine",
+      "remote": "changed-out-of-band"
+    },
+    "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Other']": {
+      "action": "update",
+      "new": "other"
+    }
+  }
+]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.pol
+  delete resources.jobs.no_policy
+  delete resources.jobs.owned_tag
+  delete resources.jobs.with_policy
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 4 deleted

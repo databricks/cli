@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Every cluster-spec location converges: the policy tag is not drift anywhere\n"
+trace $CLI bundle plan
+
+title "Confirm the tag really is present remotely and was classified, not just absent\n"
+trace $CLI bundle plan -o json | jq -S '
+  [.plan | to_entries[]
+   | {node: .key, tags: ((.value.changes // {}) | with_entries(select(.key | contains("custom_tags"))))}
+   | select(.tags | length > 0)]'

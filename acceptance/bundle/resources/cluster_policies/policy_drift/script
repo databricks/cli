@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+read_id.py pol > /dev/null
+no_policy_id="$(read_id.py no_policy)"
+owned_tag_id="$(read_id.py owned_tag)"
+
+title "A tag the cluster policy added is not drift\n"
+trace $CLI bundle plan | contains.py "0 to change"
+
+title "Without a policy_id the same remote-only tag IS drift\n"
+edit_resource.py jobs "$no_policy_id" <<'EOF'
+for jc in r["job_clusters"]:
+    jc["new_cluster"]["custom_tags"] = {"CostCenter": "added-out-of-band"}
+EOF
+trace $CLI bundle plan | contains.py "1 to change"
+
+title "A policy does not mask a change to a tag the config owns\n"
+edit_resource.py jobs "$owned_tag_id" <<'EOF'
+for jc in r["job_clusters"]:
+    jc["new_cluster"]["custom_tags"]["Mine"] = "changed-out-of-band"
+EOF
+trace $CLI bundle plan | contains.py "2 to change"
+
+title "Removing a tag from config is a change the user asked for, not an addition\n"
+trace update_file.py databricks.yml "Mine: mine" "Other: other"
+trace $CLI bundle plan -o json | jq -S '
+  [.plan | to_entries[]
+   | select(.key | endswith("owned_tag"))
+   | .value.changes | with_entries(select(.key | contains("custom_tags")))]'

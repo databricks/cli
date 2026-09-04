@@ -1,0 +1,76 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    # A "fixed" element. Docs say it "limits the attribute to the specified value",
+    # which is validation language; whether it also SUPPLIES the value to a request
+    # that omits the attribute is what this test pins down.
+    fixed:
+      name: test-policy-fixed-$UNIQUE_NAME
+      definition: |-
+        {
+          "custom_tags.FixedTag": {
+            "type": "fixed",
+            "value": "from-fixed"
+          }
+        }
+
+    # A "defaultValue" element. Documented to apply only when the request sets
+    # apply_policy_default_values=true.
+    defaulted:
+      name: test-policy-default-$UNIQUE_NAME
+      definition: |-
+        {
+          "custom_tags.DefaultTag": {
+            "type": "unlimited",
+            "defaultValue": "from-default",
+            "isOptional": true
+          }
+        }
+
+  jobs:
+    j:
+      name: test-job-$UNIQUE_NAME
+      job_clusters:
+        # A: fixed element, apply_policy_default_values NOT set
+        - job_cluster_key: a_fixed_noflag
+          new_cluster:
+            policy_id: ${resources.cluster_policies.fixed.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+        # B: defaultValue element, apply_policy_default_values NOT set
+        - job_cluster_key: b_default_noflag
+          new_cluster:
+            policy_id: ${resources.cluster_policies.defaulted.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+        # C: defaultValue element, apply_policy_default_values = true
+        - job_cluster_key: c_default_flag
+          new_cluster:
+            policy_id: ${resources.cluster_policies.defaulted.id}
+            apply_policy_default_values: true
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+        # D: fixed element, apply_policy_default_values = true
+        - job_cluster_key: d_fixed_flag
+          new_cluster:
+            policy_id: ${resources.cluster_policies.fixed.id}
+            apply_policy_default_values: true
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: t
+          job_cluster_key: a_fixed_noflag
+          spark_python_task:
+            python_file: ./hello_world.py

@@ -1,0 +1,10 @@
+# Creating a real cluster made this the slowest test in the cloud suite (~8 min per env), and
+# the per-location classification it checks is fully covered locally. The cheap job-based
+# tests in this directory keep the core behaviour in every cloud run.
+CloudSlow = true
+
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+]
