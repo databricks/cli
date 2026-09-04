@@ -16,8 +16,8 @@ properties['team']                           x          absent     UPDATE_IGNORE
 properties['team']                           y          absent     UPDATE_IGNORED
 
 === summary
-OK                 22
-SUPPRESSED         1
-NOT_OBSERVABLE     1
-UPDATE_IGNORED     6
-SKIPPED            8
+OK                         22
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+UPDATE_IGNORED             6
+SKIPPED                    8

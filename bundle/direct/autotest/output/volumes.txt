@@ -10,6 +10,6 @@
 
 
 === summary
-OK                 12
-OK_RECREATE        6
-SKIPPED            2
+OK                         12
+OK_RECREATE                6
+SKIPPED                    2

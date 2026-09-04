@@ -18,11 +18,11 @@ name                                         x          absent     POST_DEPLOY_D
 name                                         y          absent     POST_DEPLOY_DRIFT  create
 
 === summary
-OK                 2
-OK_RECREATE        68
-SUPPRESSED         4
-NOT_OBSERVABLE     2
-POST_DEPLOY_DRIFT  2
-DEPLOY_ERROR       2
-SKIPPED            35
-BASE_ERROR         4
+OK                         2
+OK_RECREATE                68
+SUPPRESSED                 4
+NOT_OBSERVABLE             2
+POST_DEPLOY_DRIFT          2
+DEPLOY_ERROR               2
+SKIPPED                    35
+BASE_ERROR                 4

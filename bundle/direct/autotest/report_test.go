@@ -377,7 +377,7 @@ func (r *report) render(problemsOnly bool) string {
 		verdictStartNotReached,
 	} {
 		if counts[v] > 0 {
-			fmt.Fprintf(&sb, "%-18s %d\n", v, counts[v])
+			fmt.Fprintf(&sb, "%-26s %d\n", v, counts[v])
 		}
 	}
 

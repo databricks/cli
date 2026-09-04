@@ -22,10 +22,10 @@ name                                         x-UNIQUE   absent     CANNOT_DELETE
 name                                         y-UNIQUE   absent     CANNOT_DELETE_NOT_REQUIRED  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
 
 === summary
-OK                 22
+OK                         22
 CANNOT_DELETE_NOT_REQUIRED 8
-SUPPRESSED         1
-NOT_OBSERVABLE     1
-BACKEND_ERROR      2
-SKIPPED            10
-BASE_ERROR         2
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+BACKEND_ERROR              2
+SKIPPED                    10
+BASE_ERROR                 2

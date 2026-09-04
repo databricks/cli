@@ -14,7 +14,7 @@ title                                        x-UNIQUE   absent     UPDATE_IGNORE
 title                                        y-UNIQUE   absent     UPDATE_IGNORED
 
 === summary
-OK                 8
-NOT_OBSERVABLE     6
-UPDATE_IGNORED     4
-SKIPPED            4
+OK                         8
+NOT_OBSERVABLE             6
+UPDATE_IGNORED             4
+SKIPPED                    4
