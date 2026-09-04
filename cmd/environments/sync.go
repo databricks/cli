@@ -60,6 +60,11 @@ func addComputeFlags(cmd *cobra.Command) {
 	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. 5)")
 	cmd.Flags().String("job-task", "", "job task to use as the compute target, as <job-id>.<task-key> (the task key is required)")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
+	// --constraints-only is superseded by the orthogonal --no-dbconnect (identical
+	// behaviour). Keep it defined so existing scripts and CI keep working, but hide
+	// it from --help and emit a one-line deprecation notice on stderr when it is
+	// used. MarkDeprecated does both; removal is a separate, later step.
+	cmd.Flags().MarkDeprecated("constraints-only", "use --no-dbconnect instead")
 	// The negative flags (--no-constraints, --no-dbconnect) are orthogonal and
 	// compose. --no-dbconnect and the older --constraints-only are equivalent (both
 	// skip the databricks-connect dependency).

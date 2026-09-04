@@ -1,5 +1,6 @@
 
 >>> [CLI] environments setup-local --serverless-version 4 --constraints-only --dry-run --output json
+Flag --constraints-only has been deprecated, use --no-dbconnect instead
 {
   "schemaVersion": 1,
   "command": "environments setup-local",

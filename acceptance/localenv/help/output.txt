@@ -18,7 +18,6 @@ Examples:
 Flags:
       --cluster-id string           cluster ID to use as the compute target
       --cluster-name string         cluster name to use as the compute target (resolved to an ID via the Clusters API)
-      --constraints-only            apply the Python version and constraints without adding the databricks-connect dependency
       --dry-run                     compute the plan without writing files or provisioning
   -h, --help                        help for setup-local
       --job-task string             job task to use as the compute target, as <job-id>.<task-key> (the task key is required)
