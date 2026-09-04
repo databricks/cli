@@ -30,6 +30,8 @@ jobs: jobs.JobSettings
 
 mcp_services: catalog.CreateMcpServiceRequest
 
+model_provider_services: catalog.CreateModelProviderServiceRequest
+
 model_services: catalog.CreateModelServiceRequest
 
 model_serving_endpoints: serving.CreateServingEndpoint

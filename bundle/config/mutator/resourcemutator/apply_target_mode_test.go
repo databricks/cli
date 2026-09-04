@@ -114,6 +114,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				McpServices: map[string]*resources.McpService{
 					"mcpservice1": {McpServiceConfig: resources.McpServiceConfig{Parent: "schemas/main.default", McpServiceId: "mcpservice1"}},
 				},
+				ModelProviderServices: map[string]*resources.ModelProviderService{
+					"modelproviderservice1": {ModelProviderServiceConfig: resources.ModelProviderServiceConfig{Parent: "schemas/main.default", ModelProviderServiceId: "modelproviderservice1"}},
+				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},

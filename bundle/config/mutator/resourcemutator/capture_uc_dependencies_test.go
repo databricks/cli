@@ -147,6 +147,11 @@ func TestCaptureUCDependencies(t *testing.T) {
 						Parent: "schemas/mycatalog.myschema", McpServiceId: "mymcp",
 					}},
 				},
+				ModelProviderServices: map[string]*resources.ModelProviderService{
+					"my_mps": {ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+						Parent: "schemas/mycatalog.myschema", ModelProviderServiceId: "mymps",
+					}},
+				},
 			},
 		},
 	}
@@ -188,6 +193,9 @@ func TestCaptureUCDependencies(t *testing.T) {
 
 	// MCP service (same compound parent field).
 	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.McpServices["my_mcp_service"].Parent)
+
+	// Model provider service (same compound parent field).
+	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.ModelProviderServices["my_mps"].Parent)
 }
 
 // Pipeline schema and target are mutually exclusive; only the populated field

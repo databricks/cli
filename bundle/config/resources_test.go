@@ -253,6 +253,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				McpServiceConfig: resources.McpServiceConfig{},
 			},
 		},
+		ModelProviderServices: map[string]*resources.ModelProviderService{
+			"my_model_provider_service": {
+				ModelProviderServiceConfig: resources.ModelProviderServiceConfig{},
+			},
+		},
 		SecretScopes: map[string]*resources.SecretScope{
 			"my_secret_scope": {
 				Name: "0",
@@ -402,6 +407,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAiGatewayAPI().EXPECT().GetModelService(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockAiGatewayAPI().EXPECT().GetMcpService(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAiGatewayAPI().EXPECT().GetModelProviderService(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
 		{Name: "0"},
 	}, nil)

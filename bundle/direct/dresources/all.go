@@ -38,6 +38,7 @@ var SupportedResources = map[string]any{
 	"model_serving_endpoints":     (*ResourceModelServingEndpoint)(nil),
 	"model_services":              (*ResourceModelService)(nil),
 	"mcp_services":                (*ResourceMcpService)(nil),
+	"model_provider_services":     (*ResourceModelProviderService)(nil),
 	"quality_monitors":            (*ResourceQualityMonitor)(nil),
 	"vector_search_endpoints":     (*ResourceVectorSearchEndpoint)(nil),
 	"vector_search_indexes":       (*ResourceVectorSearchIndex)(nil),

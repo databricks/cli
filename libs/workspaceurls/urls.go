@@ -24,6 +24,7 @@ var resourceURLPatterns = map[string]string{
 	"models":                  "ml/models/%s",
 	"model_serving_endpoints": "ml/endpoints/%s",
 	"model_services":          "explore/data/model-services/%s",
+	"model_provider_services": "explore/data/model-provider-services/%s",
 	"notebooks":               "#notebook/%s",
 	"pipelines":               "pipelines/%s",
 	"postgres_catalogs":       "explore/data/%s",
@@ -54,16 +55,17 @@ var resourceAliases = map[string]string{
 // provided as a dot-separated name (e.g. "catalog.schema.model") but the URL
 // requires slash-separated segments.
 var dotSeparatedResources = map[string]bool{
-	"catalogs":               true,
-	"mcp_services":           true,
-	"model_services":         true,
-	"postgres_synced_tables": true,
-	"quality_monitors":       true,
-	"registered_models":      true,
-	"schemas":                true,
-	"secrets":                true,
-	"vector_search_indexes":  true,
-	"volumes":                true,
+	"catalogs":                true,
+	"mcp_services":            true,
+	"model_services":          true,
+	"model_provider_services": true,
+	"postgres_synced_tables":  true,
+	"quality_monitors":        true,
+	"registered_models":       true,
+	"schemas":                 true,
+	"secrets":                 true,
+	"vector_search_indexes":   true,
+	"volumes":                 true,
 }
 
 // ResourceTypes returns a sorted list of all supported resource type names.
