@@ -85,6 +85,21 @@ resources:
       - field: triggers[*].table_update.condition
         reason: input_only
 
+    ignore_remote_additions:
+      # A cluster policy supplies cluster settings server-side: "fixed" elements always,
+      # "defaultValue" elements when the request sets apply_policy_default_values. The bundle
+      # is not the source for those, so the remote spec is legitimately a superset of what the
+      # config declares and an added field is not drift. Measured backend behavior is pinned by
+      # acceptance/bundle/resources/cluster_policies/policy_value_semantics.
+      # https://github.com/databricks/cli/issues/5179
+      # https://github.com/databricks/cli/issues/6512
+      - field: tasks[*].new_cluster
+        when_set: policy_id
+      - field: tasks[*].for_each_task.task.new_cluster
+        when_set: policy_id
+      - field: job_clusters[*].new_cluster
+        when_set: policy_id
+
     backend_defaults:
       # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
@@ -199,6 +214,12 @@ resources:
       - reason: immutable
 
   pipelines:
+    # Same as clusters/jobs: a cluster policy supplies settings server-side, so a pipeline
+    # cluster the config never declared coming back set is not drift.
+    ignore_remote_additions:
+      - field: clusters[*]
+        when_set: policy_id
+
     recreate_on_changes:
       - field: storage
         reason: immutable
@@ -593,6 +614,16 @@ resources:
       - field: effective_value
 
   clusters:
+    # A cluster policy supplies cluster settings server-side: "fixed" elements always,
+    # "defaultValue" elements when the request sets apply_policy_default_values. The bundle
+    # is not the source for those, so the remote spec is legitimately a superset of what the
+    # config declares and an added field is not drift. Measured backend behavior is pinned by
+    # acceptance/bundle/resources/cluster_policies/policy_value_semantics.
+    # https://github.com/databricks/cli/issues/5179
+    # https://github.com/databricks/cli/issues/6512
+    ignore_remote_additions:
+      - when_set: policy_id
+
     ignore_remote_changes:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L361-L363
       # s.SchemaPath("aws_attributes").SetSuppressDiff()

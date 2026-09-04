@@ -45,6 +45,17 @@ func (b *BackendDefaultRule) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// RemoteAdditionRule marks a sub-object whose contents the backend co-owns whenever the
+// object's WhenSet field is set. Inside such an object, a field the config never declared
+// coming back set from the remote is an addition by the backend, not drift.
+//
+// Field is a prefix pattern selecting the object (omitted = the resource root); WhenSet is
+// the name of a field within that object which gates the rule.
+type RemoteAdditionRule struct {
+	Field   *structpath.PatternNode `yaml:"field"`
+	WhenSet string                  `yaml:"when_set"`
+}
+
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.
 type ResourceLifecycleConfig struct {
 	// IgnoreRemoteChanges: field patterns where remote changes are ignored (output-only, policy-set).
@@ -76,6 +87,11 @@ type ResourceLifecycleConfig struct {
 	// A change is skipped when local and remote differ only by trailing slashes.
 	NormalizeSlash []FieldRule `yaml:"normalize_slash,omitempty"`
 
+	// IgnoreRemoteAdditions: objects whose fields the backend may add to when a gate field
+	// is set. A field that is absent from both old and new state but present in the remote
+	// is skipped; a disagreement between config and remote is still an update.
+	IgnoreRemoteAdditions []RemoteAdditionRule `yaml:"ignore_remote_additions,omitempty"`
+
 	// BackendDefaults: fields where the backend may set defaults.
 	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
 	BackendDefaults []BackendDefaultRule `yaml:"backend_defaults,omitempty"`
@@ -96,14 +112,15 @@ var resourcesYAML []byte
 var resourcesGeneratedYAML []byte
 
 var empty = ResourceLifecycleConfig{
-	IgnoreRemoteChanges: nil,
-	IgnoreLocalChanges:  nil,
-	RecreateOnChanges:   nil,
-	ProvidedIDFields:    nil,
-	UpdatableIDFields:   nil,
-	NormalizeSlash:      nil,
-	BackendDefaults:     nil,
-	SensitiveFields:     nil,
+	IgnoreRemoteChanges:   nil,
+	IgnoreLocalChanges:    nil,
+	RecreateOnChanges:     nil,
+	ProvidedIDFields:      nil,
+	UpdatableIDFields:     nil,
+	NormalizeSlash:        nil,
+	IgnoreRemoteAdditions: nil,
+	BackendDefaults:       nil,
+	SensitiveFields:       nil,
 }
 
 func mustParseConfig(data []byte) func() *Config {

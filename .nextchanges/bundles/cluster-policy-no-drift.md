@@ -1,0 +1,1 @@
+* `bundle plan` no longer reports a permanent update on cluster fields supplied by a cluster policy; a field the config never declares is no longer drift when the cluster spec has a `policy_id`.

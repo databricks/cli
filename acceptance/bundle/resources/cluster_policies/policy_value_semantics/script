@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+read_id.py fixed > /dev/null
+read_id.py defaulted > /dev/null
+job_id=$(read_id.py j)
+
+title "Which policy elements did the backend SUPPLY into each job_cluster?\n"
+$CLI jobs get "$job_id" | jq -S '[.settings.job_clusters[]
+  | {job_cluster_key,
+     apply_policy_default_values: .new_cluster.apply_policy_default_values,
+     custom_tags: .new_cluster.custom_tags}]'
+
+title "Are the supplied values reported as drift?\n"
+trace $CLI bundle plan

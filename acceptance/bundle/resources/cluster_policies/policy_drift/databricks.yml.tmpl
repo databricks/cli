@@ -1,0 +1,68 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    pol:
+      name: test-policy-$UNIQUE_NAME
+      definition: |-
+        {
+          "custom_tags.CostCenter": {
+            "type": "fixed",
+            "value": "from-policy"
+          }
+        }
+
+  jobs:
+    # policy attached: the tag the policy adds must not be drift.
+    with_policy:
+      name: test-with-policy-$UNIQUE_NAME
+      job_clusters:
+        - job_cluster_key: small
+          new_cluster:
+            policy_id: ${resources.cluster_policies.pol.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: t
+          job_cluster_key: small
+          spark_python_task:
+            python_file: ./hello_world.py
+
+    # policy attached, and the config owns a tag of its own. An out-of-band change to that
+    # tag must still be reported: a policy suppresses additions, never disagreements.
+    owned_tag:
+      name: test-owned-tag-$UNIQUE_NAME
+      job_clusters:
+        - job_cluster_key: small
+          new_cluster:
+            policy_id: ${resources.cluster_policies.pol.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            custom_tags:
+              Mine: mine
+      tasks:
+        - task_key: t
+          job_cluster_key: small
+          spark_python_task:
+            python_file: ./hello_world.py
+
+    # no policy attached: a remote-only tag is still drift. edit_resource.py injects it below.
+    no_policy:
+      name: test-no-policy-$UNIQUE_NAME
+      job_clusters:
+        - job_cluster_key: small
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: t
+          job_cluster_key: small
+          spark_python_task:
+            python_file: ./hello_world.py

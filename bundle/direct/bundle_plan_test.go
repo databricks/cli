@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
@@ -256,7 +257,7 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 			adapter, ok := adapters[tt.resource]
 			require.True(t, ok)
 			changes := deployplan.Changes{tt.field: tt.ch}
-			err := addPerFieldActions(t.Context(), adapter, changes, nil)
+			err := addPerFieldActions(t.Context(), adapter, changes, nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
@@ -323,7 +324,7 @@ func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.Cha
 		Remote: state.ResultState,
 	}}
 
-	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, remote))
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil, remote))
 	return changes["result_state"]
 }
 
@@ -400,4 +401,109 @@ func bundleWithSkippedJobRun(t *testing.T, remote *dresources.JobRunRemote) *Dep
 	b.StateCache.Store(jobRunKey, structvar.NewStructVar(state, nil))
 	b.RemoteStateCache.Store(jobRunKey, remote)
 	return b
+}
+
+func TestShouldSkipRemoteAddition(t *testing.T) {
+	// Rules mirror clusters/jobs ignore_remote_additions in resources.yml, but the test is
+	// deliberately self-contained so edits to resources.yml don't break it. The real wiring
+	// is covered by acceptance/bundle/resources/cluster_policies/*.
+	jobCluster, err := structpath.ParsePattern("job_clusters[*].new_cluster")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		IgnoreRemoteAdditions: []dresources.RemoteAdditionRule{
+			{Field: jobCluster, WhenSet: "policy_id"},
+		},
+	}
+
+	withPolicy := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
+		JobClusterKey: "small",
+		NewCluster:    &compute.ClusterSpec{PolicyId: "p1"},
+	}}}
+	withoutPolicy := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
+		JobClusterKey: "small",
+		NewCluster:    &compute.ClusterSpec{},
+	}}}
+
+	const tagPath = "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']"
+
+	tests := []struct {
+		name     string
+		path     string
+		state    *jobs.JobSettings
+		change   deployplan.ChangeDesc
+		expected bool
+	}{
+		{
+			name:     "policy attached, backend added a tag",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: true,
+		},
+		{
+			name:     "policy attached, whole map added by backend",
+			path:     "job_clusters[job_cluster_key='small'].new_cluster.custom_tags",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: map[string]string{"CostCenter": "dev-1234"}},
+			expected: true,
+		},
+		{
+			name:     "no policy attached: an addition is still drift",
+			path:     tagPath,
+			state:    withoutPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "config disagrees with remote: still an update",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{New: "mine", Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "user removed the field from config: still an update",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Old: "mine", Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "remote has nothing: not an addition",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{},
+			expected: false,
+		},
+		{
+			name:     "outside the gated object: not covered",
+			path:     "tags['CostCenter']",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			// The remote grew a whole cluster the config does not declare: there is no
+			// policy_id to gate on, so this is real drift rather than a policy addition.
+			name:     "gated object absent from config: still drift",
+			path:     "job_clusters[job_cluster_key='other'].new_cluster.custom_tags['CostCenter']",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := structpath.ParsePath(tt.path)
+			require.NoError(t, err)
+
+			change := tt.change
+			reason, ok := shouldSkipRemoteAddition(cfg, path, &change, tt.state)
+			assert.Equal(t, tt.expected, ok)
+			if tt.expected {
+				assert.Equal(t, deployplan.ReasonPolicyManaged, reason)
+			}
+		})
+	}
 }

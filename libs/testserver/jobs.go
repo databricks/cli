@@ -101,6 +101,7 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 
+	s.applyJobClusterPolicies(&jobSettings)
 	jobFixUps(&jobSettings)
 
 	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
@@ -130,6 +131,7 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 
 	defer s.LockUnlock()()
 
+	s.applyJobClusterPolicies(&request.NewSettings)
 	jobFixUps(&request.NewSettings)
 
 	jobId := request.JobId
@@ -223,21 +225,32 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 
 			// The real Jobs API consumes apply_policy_default_values but does not
 			// return it in GET responses; clear it so testserver matches cloud.
-			task.NewCluster.ApplyPolicyDefaultValues = false
+			clearApplyPolicyDefaultValues(task.NewCluster)
 		}
 
 		// Handle for_each_task inner cluster.
 		if task.ForEachTask != nil && task.ForEachTask.Task.NewCluster != nil {
 			// Same as above: not returned in GET responses.
-			task.ForEachTask.Task.NewCluster.ApplyPolicyDefaultValues = false
+			clearApplyPolicyDefaultValues(task.ForEachTask.Task.NewCluster)
 		}
 	}
 
 	// Handle job cluster new_clusters.
 	for i := range jobSettings.JobClusters {
 		// Same as above: not returned in GET responses.
-		jobSettings.JobClusters[i].NewCluster.ApplyPolicyDefaultValues = false
+		clearApplyPolicyDefaultValues(jobSettings.JobClusters[i].NewCluster)
 	}
+}
+
+// clearApplyPolicyDefaultValues drops apply_policy_default_values from a job's cluster spec.
+// Zeroing the value alone is not enough: decoding the request populates ForceSendFields from
+// the keys it carried, so a request that set the flag would still serialize it as an explicit
+// false instead of omitting it the way the Jobs API does.
+func clearApplyPolicyDefaultValues(spec *compute.ClusterSpec) {
+	spec.ApplyPolicyDefaultValues = false
+	spec.ForceSendFields = slices.DeleteFunc(spec.ForceSendFields, func(field string) bool {
+		return field == "ApplyPolicyDefaultValues"
+	})
 }
 
 // jobsGetTasksPageSize matches the real Databricks API limit of 100 tasks per jobs.get response.

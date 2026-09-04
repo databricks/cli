@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# Mask the server-assigned policy id (real backend returns a hex id the built-in
+# UUID replacement misses).
+read_id.py pol > /dev/null
+job_id=$(read_id.py j)
+
+title "Did the fixed policy SUPPLY spark_version and custom_tags, or only validate them?\n"
+echo "The bundle declares neither, and does not set apply_policy_default_values."
+$CLI jobs get "$job_id" | jq '.settings.job_clusters[0].new_cluster | {spark_version, custom_tags}'
+
+title "Is the policy-supplied value reported as drift?\n"
+trace $CLI bundle plan

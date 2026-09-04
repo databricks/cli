@@ -1,0 +1,53 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created cluster_policies.defaulted
+Created cluster_policies.fixed
+Created jobs.j
+Files: 6 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Which policy elements did the backend SUPPLY into each job_cluster?
+[
+  {
+    "apply_policy_default_values": null,
+    "custom_tags": {
+      "FixedTag": "from-fixed"
+    },
+    "job_cluster_key": "a_fixed_noflag"
+  },
+  {
+    "apply_policy_default_values": null,
+    "custom_tags": null,
+    "job_cluster_key": "b_default_noflag"
+  },
+  {
+    "apply_policy_default_values": null,
+    "custom_tags": {
+      "DefaultTag": "from-default"
+    },
+    "job_cluster_key": "c_default_flag"
+  },
+  {
+    "apply_policy_default_values": null,
+    "custom_tags": {
+      "FixedTag": "from-fixed"
+    },
+    "job_cluster_key": "d_fixed_flag"
+  }
+]
+
+=== Are the supplied values reported as drift?
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.defaulted
+  delete resources.cluster_policies.fixed
+  delete resources.jobs.j
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 3 deleted

@@ -78,6 +78,7 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	r.State = "IDLE"
 	r.EffectivePublishingMode = pipelines.PublishingModeDefaultPublishingMode
 
+	s.applyPipelineClusterPolicies(&spec)
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = r
 
@@ -137,6 +138,7 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 	if edit.RunAs != nil {
 		item.RunAs = edit.RunAs
 	}
+	s.applyPipelineClusterPolicies(&spec)
 	setSpecDefaults(&spec, pipelineId)
 	s.Pipelines[pipelineId] = item
 
