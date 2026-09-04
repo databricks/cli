@@ -313,13 +313,13 @@ tasks:
     cmds:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
-  check-cursor-rules:
-    desc: Fail if a .agents/rules/*.md lacks its .cursor/rules/*.mdc symlink (--fix adds it)
+  check-agents-setup:
+    desc: Sync each agent's symlinks with the canonical .agents/ setup; fails if any were out of sync
     cmds:
-      - "./tools/validate_cursor_rules.py"
+      - "./tools/validate_agents_setup.py"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles, cursor rules)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles, agent setup)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with the whitespace scanner.
     cmds:
@@ -328,7 +328,7 @@ tasks:
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles
-      - task: check-cursor-rules
+      - task: check-agents-setup
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
