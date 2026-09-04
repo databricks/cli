@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -223,6 +224,24 @@ func TestErrorf(t *testing.T) {
 			args:            []any{Safe(safeStringerKey("resources.jobs.my_job"))},
 			wantMessage:     "resources.jobs.my_job",
 			wantSafeMessage: "jobs.*",
+		},
+		{
+			// Marking a stand-in error Safe must not cost it its error-ness, or
+			// %w would have a string to render and report %!w(string=...).
+			name:            "Safe keeps a stand-in error usable by w verb",
+			format:          "pushing state: %w",
+			args:            []any{Safe(standInOnlyErr{})},
+			wantMessage:     "pushing state: " + standInOnlyErr{}.Error(),
+			wantSafeMessage: "pushing state: access denied",
+		},
+		{
+			// An empty safe message is still a safe message, so the verb it stands
+			// under is rendered rather than escaped.
+			name:            "wrapped empty safe message",
+			format:          "outer: %w",
+			args:            []any{New("")},
+			wantMessage:     "outer: ",
+			wantSafeMessage: "outer: ",
 		},
 		{
 			// An error with a safe message of its own prefers that to a stand-in.
@@ -568,6 +587,29 @@ func TestSafeErrorDeepChainTerminates(t *testing.T) {
 	}
 	assert.NotPanics(t, func() { SafeError(err) })
 	assert.Equal(t, "root", SafeError(err))
+}
+
+func TestSafeErrorCapKeepsValidUTF8(t *testing.T) {
+	// The cap counts bytes, so it can land inside a multi-byte rune. Telemetry
+	// carries the result as a string, so it has to stay valid UTF-8.
+	err := New(strings.Repeat("a", maxSafeErrorSize-1) + "é")
+
+	safe := SafeError(err)
+	assert.True(t, utf8.ValidString(safe), "safe message must be valid UTF-8")
+	assert.Len(t, safe, maxSafeErrorSize-1, "the split rune is dropped, not half-kept")
+}
+
+func TestSafeErrorCyclicChainInArgumentTerminates(t *testing.T) {
+	// The cycle is already closed when Errorf is called, so walking the argument's
+	// chain while building the safe message would not terminate. fmt.Errorf copes
+	// with such an error, and Errorf has to as well.
+	c := &cyclicErr{}
+	c.inner = c
+
+	err := Errorf("outer: %w", c)
+
+	assert.Equal(t, "outer: cyclic", err.Error())
+	assert.Equal(t, "outer: cyclic", SafeError(err))
 }
 
 func TestSafeErrorIsCapped(t *testing.T) {

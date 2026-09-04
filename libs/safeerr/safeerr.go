@@ -180,6 +180,16 @@ type safeErrProxy struct{ msg string }
 
 func (p safeErrProxy) Error() string { return p.msg }
 
+// standIn returns ss's stand-in in a form the verb can still consume: a value
+// that is itself an error keeps its error-ness, so %w stays valid rather than
+// rendering as %!w(string=...).
+func standIn(v any, ss SafeStringer) any {
+	if _, ok := v.(error); ok {
+		return safeErrProxy{msg: ss.SafeString()}
+	}
+	return ss.SafeString()
+}
+
 // safeValueFor returns what to render for the argument at argIndex, and whether
 // rendering it is safe at all.
 func safeValueFor(safe []any, argIndex int) (any, bool) {
@@ -195,8 +205,13 @@ func safeValueFor(safe []any, argIndex int) (any, bool) {
 		// A nested safe error contributes its own safe message. Failing that, a
 		// typed error can still describe itself, which is how libs/filer reports
 		// a classification without the path it carries.
-		if msg := SafeError(v); msg != "" {
-			return safeErrProxy{msg: msg}, true
+		//
+		// Only the error itself is consulted, not its chain: a foreign wrapper's
+		// own text is unknown, so reporting an inner safe message would state it
+		// as the whole. Asserting rather than calling SafeError also means an
+		// error whose Unwrap loops back cannot spin here.
+		if se, ok := v.(*safeErr); ok {
+			return safeErrProxy{msg: se.safeErr}, true
 		}
 		if ss, ok := v.(SafeStringer); ok {
 			return safeErrProxy{msg: ss.SafeString()}, true
@@ -208,9 +223,13 @@ func safeValueFor(safe []any, argIndex int) (any, bool) {
 
 // truncateSafe caps a safe message so a deep chain cannot produce an unbounded
 // telemetry field.
+//
+// The cap is a byte count, so it can fall inside a multi-byte rune. ToValidUTF8
+// drops the partial one rather than shipping a telemetry field that is not valid
+// UTF-8.
 func truncateSafe(s string) string {
 	if len(s) > maxSafeErrorSize {
-		return s[:maxSafeErrorSize]
+		return strings.ToValidUTF8(s[:maxSafeErrorSize], "")
 	}
 	return s
 }
@@ -227,7 +246,7 @@ func safeArgs(args []any) []any {
 			// knows which part of itself is user data, so it outranks a
 			// call-site assertion that the whole value is safe.
 			if ss, ok := v.v.(SafeStringer); ok {
-				out[i] = safeValue{v: ss.SafeString()}
+				out[i] = safeValue{v: standIn(v.v, ss)}
 			} else {
 				out[i] = v
 			}
