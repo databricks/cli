@@ -23,5 +23,18 @@
       "Bash(gh pr list:*)",
       "WebSearch"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/gate-pr-checklist.sh"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -1,0 +1,13 @@
+diff --git a/.agent/skills/pr-checklist/SKILL.md b/.agent/skills/pr-checklist/SKILL.md
+index fc3d78e93..7073588a7 100644
+--- a/.agent/skills/pr-checklist/SKILL.md
++++ b/.agent/skills/pr-checklist/SKILL.md
+@@ -55,6 +55,8 @@ If an agent (you) authored or substantially helped author the PR, disclose it on
+ 
+ ## Changelog entry
+ 
++To add a NEXT_CHANGELOG entry you need the PR number. Consider opening the PR in draft first (to avoid kicking off a bunch of workflows).
++
+ Add a `NEXT_CHANGELOG.md` entry when your change is user-visible. CI generates the real `CHANGELOG.md` from `NEXT_CHANGELOG.md` at release time, so never hand-edit `CHANGELOG.md` directly.
+ 
+ **When to add an entry:**
