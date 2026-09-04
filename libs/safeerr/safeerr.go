@@ -180,11 +180,11 @@ type safeErrProxy struct{ msg string }
 
 func (p safeErrProxy) Error() string { return p.msg }
 
-// standIn returns ss's stand-in in a form the verb can still consume: a value
-// that is itself an error keeps its error-ness, so %w stays valid rather than
-// rendering as %!w(string=...).
-func standIn(v any, ss SafeStringer) any {
-	if _, ok := v.(error); ok {
+// standIn returns ss's stand-in in a form the verb can consume: one that is
+// itself an error stays an error, so %w renders the stand-in rather than
+// %!w(string=...).
+func standIn(ss SafeStringer) any {
+	if _, ok := ss.(error); ok {
 		return safeErrProxy{msg: ss.SafeString()}
 	}
 	return ss.SafeString()
@@ -206,10 +206,9 @@ func safeValueFor(safe []any, argIndex int) (any, bool) {
 		// typed error can still describe itself, which is how libs/filer reports
 		// a classification without the path it carries.
 		//
-		// Only the error itself is consulted, not its chain: a foreign wrapper's
-		// own text is unknown, so reporting an inner safe message would state it
-		// as the whole. Asserting rather than calling SafeError also means an
-		// error whose Unwrap loops back cannot spin here.
+		// Only the error itself is consulted, not its chain: an inner safe message
+		// is not the wrapper's own text, and walking the chain would not terminate
+		// when Unwrap loops back.
 		if se, ok := v.(*safeErr); ok {
 			return safeErrProxy{msg: se.safeErr}, true
 		}
@@ -224,9 +223,8 @@ func safeValueFor(safe []any, argIndex int) (any, bool) {
 // truncateSafe caps a safe message so a deep chain cannot produce an unbounded
 // telemetry field.
 //
-// The cap is a byte count, so it can fall inside a multi-byte rune. ToValidUTF8
-// drops the partial one rather than shipping a telemetry field that is not valid
-// UTF-8.
+// The cap counts bytes, so it can land inside a rune; ToValidUTF8 drops the
+// partial one rather than shipping invalid UTF-8.
 func truncateSafe(s string) string {
 	if len(s) > maxSafeErrorSize {
 		return strings.ToValidUTF8(s[:maxSafeErrorSize], "")
@@ -246,7 +244,7 @@ func safeArgs(args []any) []any {
 			// knows which part of itself is user data, so it outranks a
 			// call-site assertion that the whole value is safe.
 			if ss, ok := v.v.(SafeStringer); ok {
-				out[i] = safeValue{v: standIn(v.v, ss)}
+				out[i] = safeValue{v: standIn(ss)}
 			} else {
 				out[i] = v
 			}

@@ -318,16 +318,14 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// expects. This adds MANAGE ACL for the current user to all secret scopes,
 	// ensuring the migrated state and config agree on .permissions entries.
 	//
-	// Run through ApplyFuncErr rather than as a mutator so the failure arrives as
-	// an error: a diagnostic's summary would reach telemetry as a generic "failed
-	// to apply secret scope fixups", losing which fixup failed. The wrapper is
-	// still needed for the typed-to-dynamic config sync, because the fixups mutate
-	// typed config and reverseInterpolate below reads b.Config.Value().
-	err := bundle.ApplyFuncErr(ctx, b, func(_ context.Context, b *bundle.Bundle) error {
+	// ApplyFuncErr rather than a mutator, so the failure stays an error: a
+	// diagnostic's summary reaches telemetry as a generic "failed to apply secret
+	// scope fixups". The mutator machinery is still needed, because the fixups
+	// mutate typed config and reverseInterpolate below reads the dynamic tree.
+	if err := bundle.ApplyFuncErr(ctx, b, func(_ context.Context, b *bundle.Bundle) error {
 		_, err := resourcemutator.ApplySecretScopeFixups(b, engine.EngineDirect)
 		return err
-	})
-	if err != nil {
+	}); err != nil {
 		return tempStatePath, resourceCount, false, nil, err
 	}
 

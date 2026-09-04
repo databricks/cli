@@ -1,12 +1,10 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# SecretScopeFixups adds a MANAGE ACL for the current user, because the backend
-# creates that implicitly and the direct engine would otherwise see it as a
-# persistent diff. The fixups mutate typed config, while the state is built from
-# the dynamic config, so the migration has to sync one into the other. Without
-# that sync the ACL is missing from the state below. The plan stays a no-op
-# either way, because the acls resource re-reads the live ACLs, so the state
-# dump rather than the plan is what pins this down.
+# SecretScopeFixups adds a MANAGE ACL for the current user, which the backend
+# creates implicitly. The fixups mutate typed config while the state is built
+# from the dynamic tree, so the migration has to sync one into the other;
+# without that the ACL is missing from the state below. The plan is a no-op
+# either way, because the acls resource re-reads the live ACLs.
 
 title "Initial deploy uses the terraform engine"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy

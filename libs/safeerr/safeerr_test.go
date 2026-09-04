@@ -226,8 +226,8 @@ func TestErrorf(t *testing.T) {
 			wantSafeMessage: "jobs.*",
 		},
 		{
-			// Marking a stand-in error Safe must not cost it its error-ness, or
-			// %w would have a string to render and report %!w(string=...).
+			// Safe must not cost a stand-in error its error-ness, or %w would have
+			// a string to render and report %!w(string=...).
 			name:            "Safe keeps a stand-in error usable by w verb",
 			format:          "pushing state: %w",
 			args:            []any{Safe(standInOnlyErr{})},
@@ -235,8 +235,8 @@ func TestErrorf(t *testing.T) {
 			wantSafeMessage: "pushing state: access denied",
 		},
 		{
-			// An empty safe message is still a safe message, so the verb it stands
-			// under is rendered rather than escaped.
+			// An empty safe message is still one, so its verb is rendered, not
+			// escaped.
 			name:            "wrapped empty safe message",
 			format:          "outer: %w",
 			args:            []any{New("")},
@@ -590,8 +590,8 @@ func TestSafeErrorDeepChainTerminates(t *testing.T) {
 }
 
 func TestSafeErrorCapKeepsValidUTF8(t *testing.T) {
-	// The cap counts bytes, so it can land inside a multi-byte rune. Telemetry
-	// carries the result as a string, so it has to stay valid UTF-8.
+	// The cap counts bytes, so it can land inside a rune. The field still has to
+	// be valid UTF-8.
 	err := New(strings.Repeat("a", maxSafeErrorSize-1) + "é")
 
 	safe := SafeError(err)
@@ -600,9 +600,8 @@ func TestSafeErrorCapKeepsValidUTF8(t *testing.T) {
 }
 
 func TestSafeErrorCyclicChainInArgumentTerminates(t *testing.T) {
-	// The cycle is already closed when Errorf is called, so walking the argument's
-	// chain while building the safe message would not terminate. fmt.Errorf copes
-	// with such an error, and Errorf has to as well.
+	// The cycle is closed before Errorf is called, so walking the argument's chain
+	// would not terminate. fmt.Errorf copes with such an error; so must Errorf.
 	c := &cyclicErr{}
 	c.inner = c
 
