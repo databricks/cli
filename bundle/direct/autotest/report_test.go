@@ -99,6 +99,10 @@ const (
 	// two is wrong: either the schema is missing a required annotation, or the API is stricter than it
 	// means to be. Worth a look, which is why it is a separate word from the one above.
 	verdictCannotDeleteNotRequired verdict = "CANNOT_DELETE_NOT_REQUIRED"
+	// The engine named the field in update_mask and then left it out of the body, so the backend
+	// refused a request the engine built wrong. Nothing to do with whether the field is required, and
+	// the only verdict here that is a defect of ours rather than a fact about the API.
+	verdictUpdateMaskOmitted verdict = "UPDATE_MASK_OMITTED"
 
 	verdictUnsettable verdict = "UNSETTABLE"
 	// Left out on purpose by the resource's value library, with a reason.
@@ -122,7 +126,7 @@ func (v verdict) leavesResourceUsable() bool {
 	switch v {
 	case verdictOK, verdictRecreate, verdictSuppressed, verdictNotObservable, verdictUnsettable,
 		verdictSkipped, verdictInertConfirmed, verdictInertViolated,
-		verdictCannotDeleteRequired, verdictCannotDeleteNotRequired:
+		verdictCannotDeleteRequired, verdictCannotDeleteNotRequired, verdictUpdateMaskOmitted:
 		return true
 	case verdictDrift, verdictCollateral, verdictDriftChild, verdictUpdateIgnored,
 		verdictStaleRead, verdictBaselineDrift, verdictStartNotReached:
@@ -360,7 +364,7 @@ func (r *report) render(problemsOnly bool) string {
 	sb.WriteString("\n=== summary\n")
 	for _, v := range []verdict{
 		verdictOK, verdictRecreate, verdictIDFieldRequired, verdictCannotDeleteRequired,
-		verdictCannotDeleteNotRequired, verdictInertConfirmed, verdictSuppressed,
+		verdictCannotDeleteNotRequired, verdictUpdateMaskOmitted, verdictInertConfirmed, verdictSuppressed,
 		verdictNotObservable, verdictNoPlan, verdictInertViolated,
 		verdictBaselineDrift, verdictStaleRead, verdictUpdateIgnored, verdictDrift,
 		verdictCollateral, verdictDriftChild,
