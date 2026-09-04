@@ -2,6 +2,7 @@ package vscode
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -118,15 +119,47 @@ func isExtensionVersionAtLeast(version, minVersion string) bool {
 	return semver.IsValid(v) && semver.Compare(v, "v"+minVersion) >= 0
 }
 
+// The ways CheckIDESSHExtension can fail. Callers match these with errors.Is to attribute a
+// failure without matching on message text. They are separate because they call for different
+// fixes: a list failure means the check never ran, an install failure points at the marketplace
+// or a policy blocking it, and the two consent outcomes cannot happen under --auto-approve.
+var (
+	ErrSSHExtensionListFailed         = errors.New("could not list installed extensions")
+	ErrSSHExtensionInstallFailed      = errors.New("could not install the Remote SSH extension")
+	ErrSSHExtensionInstallDeclined    = errors.New("install of the Remote SSH extension declined")
+	ErrSSHExtensionInstallUnavailable = errors.New("cannot prompt to install the Remote SSH extension")
+)
+
+// consentError renders only the message written for the user while still matching its sentinel
+// via errors.Is. The two exec failures wrap theirs with %w instead: their message ends in the
+// underlying error, so the sentinel reads as a natural prefix. A consent message is a full
+// sentence that already states the problem, and prefixing it would lead with an internal tag
+// and then restate what follows.
+type consentError struct {
+	msg      string
+	sentinel error
+}
+
+func (e *consentError) Error() string { return e.msg }
+
+func (e *consentError) Unwrap() error { return e.sentinel }
+
+// consentErrorf formats a user-facing message and tags it with sentinel.
+func consentErrorf(sentinel error, format string, args ...any) error {
+	return &consentError{msg: fmt.Sprintf(format, args...), sentinel: sentinel}
+}
+
 // CheckIDESSHExtension verifies that the required Remote SSH extension is installed
 // with a compatible version, and offers to install/update it if not.
 // When autoApprove is true, the extension is installed without asking.
+//
+// Every returned error wraps one of the Err* sentinels above.
 func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) error {
 	ide := getIDE(option)
 
 	out, err := exec.CommandContext(ctx, ide.Command, "--list-extensions", "--show-versions").Output()
 	if err != nil {
-		return fmt.Errorf("failed to list %s extensions: %w", ide.Name, err)
+		return fmt.Errorf("%w in %s: %w", ErrSSHExtensionListFailed, ide.Name, err)
 	}
 
 	version, found := parseExtensionVersion(string(out), ide.SSHExtensionID)
@@ -144,16 +177,18 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 
 	if !autoApprove {
 		if !cmdio.IsPromptSupported(ctx) {
-			return fmt.Errorf("%s Install it with: %s --install-extension %s, or pass --auto-approve",
+			return consentErrorf(ErrSSHExtensionInstallUnavailable,
+				"%s Install it with: %s --install-extension %s, or pass --auto-approve",
 				msg, ide.Command, ide.SSHExtensionID)
 		}
 
 		shouldInstall, err := cmdio.AskYesOrNo(ctx, msg+" Would you like to install it?")
 		if err != nil {
-			return fmt.Errorf("failed to prompt user: %w", err)
+			return fmt.Errorf("%w: %w", ErrSSHExtensionInstallUnavailable, err)
 		}
 		if !shouldInstall {
-			return fmt.Errorf("%s Install it with: %s --install-extension %s",
+			return consentErrorf(ErrSSHExtensionInstallDeclined,
+				"%s Install it with: %s --install-extension %s",
 				msg, ide.Command, ide.SSHExtensionID)
 		}
 	} else {
@@ -165,7 +200,7 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 	installCmd.Stdout = os.Stdout
 	installCmd.Stderr = os.Stderr
 	if err := installCmd.Run(); err != nil {
-		return fmt.Errorf("failed to install extension %q: %w", ide.SSHExtensionName, err)
+		return fmt.Errorf("%w in %s: %w", ErrSSHExtensionInstallFailed, ide.Name, err)
 	}
 	return nil
 }

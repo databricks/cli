@@ -280,6 +280,12 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	outcome := connectOutcome{isReconnect: opts.ServerMetadata != ""}
 	defer func() {
 		outcome.err = retErr
+		// A cancelled context is the only trace a Ctrl-C leaves: exec.CommandContext kills the
+		// child and reports *exec.ExitError, which does not wrap context.Canceled, so a step
+		// that shells out cannot recognise the interruption itself. This defer is registered
+		// after `defer cancel()` and so runs before it (LIFO), which means ctx is cancelled
+		// here only by the signal handler or the caller, never by Run's own cleanup.
+		outcome.ctxErr = ctx.Err()
 		logSshTunnelEvent(ctx, opts, outcome)
 	}()
 
@@ -298,7 +304,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 			return err
 		}
 		if err := vscode.CheckIDESSHExtension(ctx, opts.IDE, opts.AutoApprove); err != nil {
-			outcome.errorCategory = protos.SshTunnelErrorCategoryIDESSHExtensionMissing
+			outcome.errorCategory = sshExtensionErrorCategory(err)
 			return err
 		}
 	}
@@ -1245,17 +1251,41 @@ type connectOutcome struct {
 	// errorCategory is set at the failure site. Empty means the failure was not attributed.
 	errorCategory protos.SshTunnelErrorCategory
 	err           error
+	// ctxErr is the connect context's error when the outcome is logged. Tracked apart from err
+	// because a step that shells out reports a killed child as *exec.ExitError, which carries no
+	// trace of the cancellation. Only a cancellation counts as the user giving up: a deadline
+	// would be a timeout, so category() matches the cause rather than testing for non-nil.
+	ctxErr error
 }
 
-// category returns the error category to report. A cancelled context means the user
-// interrupted the attempt, whichever call happened to observe it first, so it wins over the
-// category recorded at the failure site. An unattributed failure is reported as UNKNOWN so
-// that it stays countable.
+// sshExtensionErrorCategory attributes a Remote SSH extension check failure to the outcome that
+// caused it. The four are kept apart because they imply different fixes, and because only the
+// first two can occur under --auto-approve, which the IDE button always passes -- so a shift
+// between them and the consent outcomes distinguishes button traffic from direct CLI use.
+func sshExtensionErrorCategory(err error) protos.SshTunnelErrorCategory {
+	switch {
+	case errors.Is(err, vscode.ErrSSHExtensionListFailed):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionListFailed
+	case errors.Is(err, vscode.ErrSSHExtensionInstallFailed):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed
+	case errors.Is(err, vscode.ErrSSHExtensionInstallDeclined):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallDeclined
+	case errors.Is(err, vscode.ErrSSHExtensionInstallUnavailable):
+		return protos.SshTunnelErrorCategoryIDESSHExtensionInstallUnavailable
+	}
+	// CheckIDESSHExtension wraps a sentinel on every failure path, so this is only reachable if
+	// a new one is added without a category. UNKNOWN keeps it countable; see category() below.
+	return protos.SshTunnelErrorCategoryUnknown
+}
+
+// category returns the error category to report. An interrupted attempt means the user gave
+// up, whichever call happened to observe it first, so it wins over the category recorded at
+// the failure site. An unattributed failure is reported as UNKNOWN so that it stays countable.
 func (o connectOutcome) category() protos.SshTunnelErrorCategory {
 	if o.isSuccess || o.err == nil {
 		return protos.SshTunnelErrorCategoryUnspecified
 	}
-	if errors.Is(o.err, context.Canceled) {
+	if errors.Is(o.ctxErr, context.Canceled) || errors.Is(o.err, context.Canceled) {
 		return protos.SshTunnelErrorCategoryUserAborted
 	}
 	if o.errorCategory == "" {
