@@ -1,0 +1,22 @@
+# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
+display_name                                 absent     x-UNIQUE   START_NOT_REACHED  cannot create the resource with this starting value: [Request Validation] display name cannot be empty (400 INVALID_PARAMETER_VALUE)
+display_name                                 absent     y-UNIQUE   START_NOT_REACHED  cannot create the resource with this starting value: [Request Validation] display name cannot be empty (400 INVALID_PARAMETER_VALUE)
+display_name                                 x-UNIQUE   absent     UPDATE_IGNORED
+display_name                                 y-UNIQUE   absent     UPDATE_IGNORED
+
+=== summary
+OK                         6
+SUPPRESSED                 2
+NOT_OBSERVABLE             6
+UPDATE_IGNORED             2
+SKIPPED                    11
+START_NOT_REACHED          2

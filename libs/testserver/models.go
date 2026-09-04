@@ -68,6 +68,18 @@ func (s *FakeWorkspace) ModelRegistryUpdateModel(req Request) any {
 		}
 	}
 
+	// MLflow refuses to clear a description: the update carries the field unconditionally,
+	// so a config that drops it sends "" and the real API rejects the request.
+	if request.Description == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Description cannot be empty.",
+			},
+		}
+	}
+
 	// Update the model
 	existingModel.Description = request.Description
 	s.ModelRegistryModels[request.Name] = existingModel

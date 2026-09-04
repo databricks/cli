@@ -1,0 +1,46 @@
+# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
+capacity                                     absent     x          UPDATE_IGNORED
+capacity                                     absent     y          UPDATE_IGNORED
+capacity                                     x          y          UPDATE_IGNORED
+capacity                                     y          x          UPDATE_IGNORED
+custom_tags                                  absent     len1       COLLATERAL_DRIFT  capacity
+custom_tags                                  len0       len1       COLLATERAL_DRIFT  capacity
+custom_tags                                  len1       absent     COLLATERAL_DRIFT  capacity
+custom_tags                                  len1       len0       COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           absent     x          COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           absent     y          COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           x          absent     COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           x          y          COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           y          absent     COLLATERAL_DRIFT  capacity
+custom_tags[0].key                           y          x          COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         absent     x          COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         absent     y          COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         x          absent     COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         x          y          COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         y          absent     COLLATERAL_DRIFT  capacity
+custom_tags[0].value                         y          x          COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  absent     true       COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  false      true       COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  true       absent     COLLATERAL_DRIFT  capacity
+enable_readable_secondaries                  true       false      COLLATERAL_DRIFT  capacity
+name                                         x-UNIQUE   absent     POST_DEPLOY_DRIFT  create
+name                                         y-UNIQUE   absent     POST_DEPLOY_DRIFT  create
+
+=== summary
+OK                         28
+OK_RECREATE                32
+SUPPRESSED                 9
+NOT_OBSERVABLE             1
+UPDATE_IGNORED             4
+POST_DEPLOY_DRIFT          2
+COLLATERAL_DRIFT           20
+SKIPPED                    24

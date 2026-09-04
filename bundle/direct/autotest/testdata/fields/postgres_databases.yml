@@ -1,0 +1,22 @@
+# Value library for postgres databases. See ../../README.md.
+
+local_only: a recreate cannot reuse the project name until the soft delete is purged
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+  postgres_branches:
+    parent: ${resources.postgres_projects.postgres_projects.name}
+    branch_id: test-branch-$UNIQUE_NAME
+    no_expiry: true
+  postgres_roles:
+    parent: ${resources.postgres_branches.postgres_branches.name}
+    role_id: test-role-$UNIQUE_NAME
+    postgres_role: app_role
+
+base:
+  parent: ${resources.postgres_branches.postgres_branches.name}
+  database_id: test-database-$UNIQUE_NAME
+  postgres_database: app_db
+  role: ${resources.postgres_roles.postgres_roles.name}

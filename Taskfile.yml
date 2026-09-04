@@ -8,6 +8,9 @@ vars:
   # .github/workflows/check.yml and python/Taskfile.yml.
   RUFF: uvx ruff@0.15.17
   TEST_PACKAGES: ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
+  # Field-support catalog. Covered by TEST_PACKAGES for local/CI runs via ./bundle/...,
+  # but named separately because the cloud tasks below list their packages explicitly.
+  FIELDS_PACKAGE: ./bundle/direct/autotest
   ACCEPTANCE_TEST_FILTER: ""
   # Single brace-expansion glob covering every //go:embed target in the repo,
   # computed by grepping `//go:embed` directives. Evaluated lazily by Task so
@@ -589,6 +592,30 @@ tasks:
     cmds:
       - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
+  test-update-fields:
+    desc: Update the resource field-support catalog (local)
+    cmds:
+      - "go test {{.FIELDS_PACKAGE}} -run '^TestFields$' -update -timeout=${LOCAL_TIMEOUT:-60m}"
+
+  # The catalog runs against the fake server as part of `./task test`, and needs no entry of its
+  # own for that. These two are the real-workspace runs: they need CLOUD_ENV and credentials, and
+  # hold the same committed reports as the local run, so a divergence is the fake server or the
+  # engine differing from the backend.
+  autotest-cloud:
+    desc: Run the resource field-support catalog against a real workspace (every field; nightly)
+    cmds:
+      # -sample 0 says every field: without it a cloud run samples unless the commit title carries
+      # AUTOTEST_ALL, which is what keeps a PR's integration run affordable.
+      - "go test {{.FIELDS_PACKAGE}} -run '^TestFields$' -count=1 -sample 0 -timeout=${CLOUD_TIMEOUT:-300m}"
+
+  autotest-cloud-pr:
+    desc: Run a two-field sample of the field-support catalog against a real workspace (PRs)
+    cmds:
+      # Which fields are sampled comes from HEAD, so each commit covers different ground. This
+      # checks that every resource type still deploys and that the sampled fields' findings read
+      # as recorded; a change between two passing verdicts only shows in the full run above.
+      - "go test {{.FIELDS_PACKAGE}} -run '^TestFields$' -count=1 -sample 2 -timeout=${CLOUD_TIMEOUT:-90m}"
+
   test-update-templates:
     desc: Update acceptance test template output
     sources: *ACC_SOURCES_UPDATE
@@ -600,6 +627,7 @@ tasks:
     desc: Update all acceptance test outputs
     cmds:
       - task: test-update
+      - task: test-update-fields
 
   # Follows upstream HEAD, so its result changes over time: keep it out of
   # `generate-check`, which requires byte-for-byte reproducible output.
@@ -754,7 +782,7 @@ tasks:
           --format github-actions \
           --rerun-fails \
           --jsonfile output.json \
-          --packages "./acceptance ./integration/..." \
+          --packages "./acceptance ./integration/... {{.FIELDS_PACKAGE}}" \
           -- -parallel 4 -timeout=12h
 
   integration-short:
@@ -768,7 +796,7 @@ tasks:
           --format github-actions \
           --rerun-fails \
           --jsonfile output.json \
-          --packages "./acceptance ./integration/..." \
+          --packages "./acceptance ./integration/... {{.FIELDS_PACKAGE}}" \
           -- -parallel 4 -timeout=12h -short
 
   cloud-select:
@@ -786,7 +814,7 @@ tasks:
           --format github-actions \
           --rerun-fails \
           --jsonfile output.json \
-          --packages "./acceptance ./integration/..." \
+          --packages "./acceptance ./integration/... {{.FIELDS_PACKAGE}}" \
           -- -parallel 4 -timeout=2h -short
 
   dbr-integration:

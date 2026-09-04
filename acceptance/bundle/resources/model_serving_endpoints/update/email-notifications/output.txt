@@ -6,11 +6,7 @@ Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] serving-endpoints get [ENDPOINT_ID]
-{
-  "on_update_success": [
-    "user1@example.com"
-  ]
-}
+null
 
 >>> update_file.py databricks.yml user1@example.com user2@example.com
 

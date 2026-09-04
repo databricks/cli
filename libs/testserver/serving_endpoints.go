@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -204,6 +205,12 @@ func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serv
 	}
 }
 
+// servingEndpointNamePattern and servingEndpointNameMessage are the backend's own constraint and
+// wording for an endpoint name. An empty name fails the pattern, which is how clearing one is refused.
+var servingEndpointNamePattern = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9_-]{0,61}[a-zA-Z0-9])?$`)
+
+const servingEndpointNameMessage = "Endpoint name must be maximum 63 characters, and alphanumeric with hyphens and underscores allowed in between."
+
 func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -216,11 +223,45 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		}
 	}
 
+	// The name is validated before the collision check, so an empty one is refused on its own terms
+	// rather than colliding with a previous empty-named endpoint.
+	if !servingEndpointNamePattern.MatchString(createReq.Name) {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    servingEndpointNameMessage,
+			},
+		}
+	}
+
 	// Check if endpoint with this name already exists
 	if _, exists := s.ServingEndpoints[createReq.Name]; exists {
 		return Response{
 			StatusCode: 409,
 			Body:       map[string]string{"error_code": "RESOURCE_ALREADY_EXISTS", "message": fmt.Sprintf("Serving endpoint with name %s already exists", createReq.Name)},
+		}
+	}
+
+	// An endpoint created without a config block has nothing for these to apply to, so the API
+	// rejects them outright rather than storing them.
+	if createReq.Config == nil {
+		for _, rejected := range []struct {
+			field string
+			set   bool
+		}{
+			{"ai_gateway", createReq.AiGateway != nil},
+			{"rate_limits", len(createReq.RateLimits) > 0},
+		} {
+			if rejected.set {
+				return Response{
+					StatusCode: 400,
+					Body: map[string]string{
+						"error_code": "INVALID_PARAMETER_VALUE",
+						"message":    "Cannot specify " + rejected.field + " when creating endpoints without a config.",
+					},
+				}
+			}
 		}
 	}
 
@@ -251,13 +292,17 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 
 	now := nowMilli()
 	endpoint := serving.ServingEndpointDetailed{
-		AiGateway:            createReq.AiGateway,
-		BudgetPolicyId:       createReq.BudgetPolicyId,
-		Config:               config,
-		CreationTimestamp:    now,
-		Creator:              s.CurrentUser().UserName,
-		Description:          createReq.Description,
-		EmailNotifications:   createReq.EmailNotifications,
+		AiGateway:         createReq.AiGateway,
+		BudgetPolicyId:    createReq.BudgetPolicyId,
+		Config:            config,
+		CreationTimestamp: now,
+		Creator:           s.CurrentUser().UserName,
+		Description:       createReq.Description,
+		// Not carried over from the create: a real workspace does not echo the notifications a
+		// create asked for (aws, 2026-09 -- the field is absent from a GET straight afterwards),
+		// so the endpoint drifts from the moment it exists. An update does apply them, which is
+		// why they are set in the update handler below and not here.
+		EmailNotifications:   nil,
 		Id:                   nextUUID(),
 		LastUpdatedTimestamp: now,
 		Name:                 createReq.Name,
@@ -299,13 +344,19 @@ func (s *FakeWorkspace) ServingEndpointGet(name string) Response {
 	}
 
 	if endpointUpdating(endpoint) {
-		// This response stays IN_PROGRESS; settle the stored copy for the next read.
 		settled := endpoint
 		settled.State = &serving.EndpointState{
 			ConfigUpdate: serving.EndpointStateConfigUpdateNotUpdating,
 			Ready:        endpoint.State.Ready,
 		}
 		s.ServingEndpoints[name] = settled
+
+		// By default this response stays IN_PROGRESS and only the stored copy settles, so
+		// the caller has to poll at least once. SettleAsyncImmediately reports the settled
+		// state right away instead.
+		if s.SettleAsyncImmediately {
+			endpoint = settled
+		}
 	}
 
 	return Response{Body: endpoint}

@@ -2,6 +2,7 @@ package structaccess_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -793,13 +794,153 @@ func TestSet_MixedForceSendFields(t *testing.T) {
 	})
 }
 
+// encoding/json resolves a name declared at two embedding depths in favour of the shallower
+// one. Get and Set have to agree with it, so the embedded search goes level by level: a
+// depth-first search would find Deep.Value first, since its embed is declared first.
+type deepValue struct {
+	Value string `json:"value"`
+}
+
+type deepEmbed struct {
+	deepValue
+}
+
+type shallowEmbed struct {
+	Value string `json:"value"`
+}
+
+type deeperEmbed struct {
+	deepEmbed
+}
+
+type embedDepths struct {
+	deepEmbed
+	shallowEmbed
+}
+
+// The same name three levels down in the first member, against two levels down in a later
+// one. json picks the shallower, so the search has to be breadth-first across the whole tree
+// rather than depth-first per member.
+type embedDepthsAcrossMembers struct {
+	deeperEmbed
+	deepEmbed
+}
+
+func TestSet_ShallowerEmbedWinsAcrossMembers(t *testing.T) {
+	target := &embedDepthsAcrossMembers{}
+
+	require.NoError(t, structaccess.SetByString(target, "value", "set"))
+	assert.Equal(t, "set", target.Value)
+	assert.Empty(t, target.deeperEmbed.Value)
+
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"set"}`, string(blob))
+}
+
+func TestSet_ShallowerEmbedWins(t *testing.T) {
+	target := &embedDepths{}
+
+	require.NoError(t, structaccess.SetByString(target, "value", "set"))
+	assert.Equal(t, "set", target.Value)
+	assert.Empty(t, target.deepEmbed.Value)
+
+	got, err := structaccess.GetByString(target, "value")
+	require.NoError(t, err)
+	assert.Equal(t, "set", got)
+
+	// The same field json.Marshal picks, which is the contract being matched.
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"set"}`, string(blob))
+}
+
+// Two embedded structs declaring one name at the same depth: encoding/json calls that
+// ambiguous and omits the field, so there is nothing to read or write either.
+type ambiguousA struct {
+	Value string `json:"value"`
+}
+
+type ambiguousB struct {
+	Value string `json:"value"`
+}
+
+type ambiguousEmbeds struct {
+	ambiguousA
+	ambiguousB //nolint:govet // the repeated json tag is the point: both embeds declare "value"
+}
+
+func TestSet_AmbiguousEmbedIsNotFound(t *testing.T) {
+	target := &ambiguousEmbeds{}
+
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	// Which is what json does with it: the name resolves to no field at all.
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
+}
+
 // A value that cannot be converted must leave the struct untouched, ForceSendFields included.
 func TestSet_FailedConversionLeavesForceSendFields(t *testing.T) {
 	job := &jobs.JobSettings{Name: "n"} //exhaustruct:ignore
 
-	require.Error(t, structaccess.SetByString(job, "max_concurrent_runs", ""))
+	require.Error(t, structaccess.SetByString(job, "max_concurrent_runs", "not-a-number"))
 	assert.Empty(t, job.ForceSendFields)
 	assert.Equal(t, "n", job.Name)
+}
+
+// A struct embedding a pointer to itself: the search must not walk the same type twice, or a
+// key it never finds sends it round forever.
+type cyclicEmbed struct {
+	*cyclicEmbed
+	Name string `json:"name"`
+}
+
+func TestGet_CyclicEmbedTerminates(t *testing.T) {
+	target := &cyclicEmbed{Name: "n"} //exhaustruct:ignore
+	target.cyclicEmbed = target
+
+	got, err := structaccess.GetByString(target, "name")
+	require.NoError(t, err)
+	assert.Equal(t, "n", got)
+
+	_, err = structaccess.GetByString(target, "nope")
+	require.Error(t, err)
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "nope"))
+}
+
+// A diamond: two embeds reaching one type, so the name sits at the same depth twice.
+// encoding/json omits it, and the search has to see both paths to notice.
+type diamondLeaf struct {
+	Value string `json:"value"`
+}
+
+type diamondLeft struct {
+	diamondLeaf
+}
+
+type diamondRight struct {
+	diamondLeaf
+}
+
+type diamondEmbeds struct {
+	diamondLeft
+	diamondRight
+}
+
+func TestSet_DiamondEmbedIsAmbiguous(t *testing.T) {
+	target := &diamondEmbeds{}
+
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
 }
 
 // ForceSendFields is decided from the value actually stored, not the one the caller passed:
@@ -815,4 +956,29 @@ func TestSet_StringZeroIntoOmitemptyNumberIsForced(t *testing.T) {
 	blob, err := json.Marshal(job)
 	require.NoError(t, err)
 	assert.Contains(t, string(blob), `"max_concurrent_runs":0`)
+}
+
+// Whether a name is ambiguous is a property of the type: two embedded pointers declaring it at
+// the same depth make it one encoding/json omits, and that must not change with whether one of
+// them happens to be nil right now.
+type ambiguousPtrEmbeds struct {
+	*ambiguousA
+	*ambiguousB //nolint:govet // the repeated json tag is the point: both embeds declare "value"
+}
+
+func TestSet_AmbiguousPointerEmbedsIgnoreNilness(t *testing.T) {
+	// One embed present, the other nil: the name is still ambiguous.
+	target := &ambiguousPtrEmbeds{ambiguousA: &ambiguousA{}} //exhaustruct:ignore
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	_, err := structaccess.GetByString(target, "value")
+	require.Error(t, err)
+
+	// And with both present, unchanged.
+	target = &ambiguousPtrEmbeds{ambiguousA: &ambiguousA{}, ambiguousB: &ambiguousB{}}
+	require.Error(t, structaccess.SetByString(target, "value", "set"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{}`, string(blob))
 }

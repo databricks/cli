@@ -60,11 +60,6 @@
           "creation_timestamp": [UNIX_TIME_MILLIS][0],
           "creator": "[USERNAME]",
           "description": "",
-          "email_notifications": {
-            "on_update_success": [
-              "user1@example.com"
-            ]
-          },
           "id": "[UUID]",
           "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
           "name": "[ENDPOINT_ID]",
@@ -100,11 +95,6 @@
             ]
           }
         },
-        "email_notifications": {
-          "on_update_success": [
-            "user1@example.com"
-          ]
-        },
         "name": "[ENDPOINT_ID]"
       },
       "changes": {
@@ -126,11 +116,23 @@
           "reason": "empty",
           "remote": ""
         },
+        "email_notifications": {
+          "action": "update",
+          "old": {
+            "on_update_success": [
+              "user1@example.com"
+            ]
+          },
+          "new": {
+            "on_update_success": [
+              "user2@example.com"
+            ]
+          }
+        },
         "email_notifications.on_update_success[0]": {
           "action": "update",
           "old": "user1@example.com",
-          "new": "user2@example.com",
-          "remote": "user1@example.com"
+          "new": "user2@example.com"
         },
         "route_optimized": {
           "action": "skip",

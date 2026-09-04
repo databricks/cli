@@ -1,0 +1,24 @@
+# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
+name                                         absent     x-UNIQUE   BASE_ERROR  AI Search endpoint name must contain less than 50 characters, contain only lowercase alphanumeric characters, '_', '-' or '.', and start and end with ...umeric character. (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-UNIQUE   BASE_ERROR  AI Search endpoint name must contain less than 50 characters, contain only lowercase alphanumeric characters, '_', '-' or '.', and start and end with ...umeric character. (400 INVALID_PARAMETER_VALUE)
+name                                         x-UNIQUE   absent     BACKEND_ERROR  AI Search endpoint name must contain less than 50 characters, contain only lowercase alphanumeric characters, '_', '-' or '.', and start and end with ...umeric character. (400 INVALID_PARAMETER_VALUE)
+name                                         y-UNIQUE   absent     BACKEND_ERROR  AI Search endpoint name must contain less than 50 characters, contain only lowercase alphanumeric characters, '_', '-' or '.', and start and end with ...umeric character. (400 INVALID_PARAMETER_VALUE)
+target_qps                                   1          absent     UPDATE_IGNORED
+target_qps                                   2          absent     UPDATE_IGNORED
+
+=== summary
+OK                         10
+OK_RECREATE                8
+UPDATE_IGNORED             2
+BACKEND_ERROR              2
+SKIPPED                    2
+BASE_ERROR                 2

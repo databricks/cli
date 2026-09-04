@@ -20,6 +20,10 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 
 	defer s.LockUnlock()()
 
+	if response, ok := rejectAutotermination(request.AutoterminationMinutes); !ok {
+		return response
+	}
+
 	clusterId := nextUUID()
 	request.ClusterId = clusterId
 	// Clusters start in PENDING state when created; ClustersGet transitions them to RUNNING.
@@ -65,6 +69,26 @@ func specSnapshot(body []byte) *compute.ClusterSpec {
 	}
 }
 
+// minAutoterminationMinutes is the shortest autotermination the API accepts. Zero is also accepted
+// and means never.
+const minAutoterminationMinutes = 10
+
+// rejectAutotermination applies the API's own range check (aws, 2026-09), which the fake server did
+// not: a value of 1 was stored happily here and refused there, so the catalog's rows for the field
+// were measuring nothing.
+func rejectAutotermination(minutes int) (Response, bool) {
+	if minutes == 0 || minutes >= minAutoterminationMinutes {
+		return Response{}, true
+	}
+	return Response{
+		StatusCode: 400,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "The cluster autotermination time cannot be less than 10 minutes.",
+		},
+	}, false
+}
+
 func (s *FakeWorkspace) ClustersResize(req Request) any {
 	var request compute.ResizeCluster
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -108,6 +132,10 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	existing, ok := s.Clusters[request.ClusterId]
 	if !ok {
 		return Response{StatusCode: 404}
+	}
+
+	if response, ok := rejectAutotermination(request.AutoterminationMinutes); !ok {
+		return response
 	}
 
 	// Preserve runtime-only fields that the Edit API request doesn't include.

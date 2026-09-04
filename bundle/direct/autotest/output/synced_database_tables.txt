@@ -1,0 +1,28 @@
+# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
+database_instance_name                       absent     x          DEPLOY_ERROR  database instance with name 'x' not found (404 UNKNOWN)
+database_instance_name                       absent     y          DEPLOY_ERROR  database instance with name 'y' not found (404 UNKNOWN)
+database_instance_name                       x          absent     BASE_ERROR  database instance with name 'x' not found (404 UNKNOWN)
+database_instance_name                       x          y          BASE_ERROR  database instance with name 'x' not found (404 UNKNOWN)
+database_instance_name                       y          absent     BASE_ERROR  database instance with name 'y' not found (404 UNKNOWN)
+database_instance_name                       y          x          BASE_ERROR  database instance with name 'y' not found (404 UNKNOWN)
+name                                         x          absent     POST_DEPLOY_DRIFT  create
+name                                         y          absent     POST_DEPLOY_DRIFT  create
+
+=== summary
+OK                         2
+OK_RECREATE                68
+SUPPRESSED                 4
+NOT_OBSERVABLE             2
+POST_DEPLOY_DRIFT          2
+DEPLOY_ERROR               2
+SKIPPED                    35
+BASE_ERROR                 4

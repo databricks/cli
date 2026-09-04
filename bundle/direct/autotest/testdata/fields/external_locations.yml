@@ -1,0 +1,13 @@
+# Value library for external locations. See ../../README.md.
+
+# An external location points at cloud storage through a storage credential, which needs
+# cloud IAM set up for the workspace. base names a credential the mock server
+# invents, so the whole type is local-only -- the same reason the invariant suite excludes
+# this config from its cloud run.
+base:
+  name: test_location_$UNIQUE_NAME
+  url: s3://test-bucket/path
+  credential_name: test_storage_credential
+  comment: "Test external location from DABs"
+
+local_only: needs a storage credential with cloud IAM behind it

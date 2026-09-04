@@ -15,8 +15,11 @@ trace $CLI bundle deploy
 register_model_id
 trace print_requests.py //permissions/registered-models
 
-title "Remove manager permission and description, deploy from plan"
+title "Remove manager permission, change description, deploy from plan"
 grep -v TO_REMOVE databricks.yml > updated.yml && mv updated.yml databricks.yml
+# Changed rather than removed: MLflow rejects an empty description, so clearing the field
+# fails the update. See libs/testserver/models.go.
+update_file.py databricks.yml "description: initial" "description: changed"
 $CLI bundle plan -o json > tmp.plan.json
 $CLI bundle deploy $(readplanarg tmp.plan.json)
 register_model_id

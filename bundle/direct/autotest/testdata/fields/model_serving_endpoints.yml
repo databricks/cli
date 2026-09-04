@@ -1,0 +1,58 @@
+# Value library for model serving endpoints. See ../../README.md.
+#
+# tags is declared by no config, so it is seeded here.
+#
+# ai_gateway and the top-level rate_limits are deliberately not seeded: the API rejects both on
+# an endpoint created without a config block ("Cannot specify ai_gateway when creating endpoints
+# without a config"), and base declares no config block. Covering them needs a
+# config that declares a served entity, which needs a model in the workspace -- so the report
+# lists their fields as uncovered.
+base:
+  name: test-endpoint-$UNIQUE_NAME
+  tags:
+    - key: team
+      value: eng
+
+skip:
+  # Not seeded in base on purpose: the create does not apply email_notifications (the plan right
+  # after it already wants to update them), so declaring one would leave the endpoint drifting for
+  # its whole life and every other field measured against that. The leaves are reachable anyway --
+  # the suite grows the container itself -- so seeding bought a BASELINE_DRIFT row and nothing else.
+  # The behaviour is recorded where it belongs, in
+  # acceptance/bundle/resources/model_serving_endpoints/update/email-notifications.
+
+  # An AI gateway only applies to an endpoint serving an external model, provisioned
+  # throughput, or a custom or agent model -- "AI Gateway is currently only supported for
+  # External Models, Provisioned Throughput and Custom or Agent Model". base serves none of
+  # those, and the API also refuses the whole block on an endpoint created without a config.
+  # Covering it needs a fixture that declares such a served entity, which needs a model in the
+  # workspace.
+  ai_gateway: needs an endpoint serving an external, provisioned-throughput or custom model
+  # Same shape: "Config needs to be set" -- there is no config block on this endpoint to
+  # attach an auto-capture destination to.
+  config: needs a served entity, which needs a model in the workspace
+
+  # Seeding a coherent telemetry block is rejected on every later update ("failed to update
+  # telemetry config"), and without one the fields inside it are unreachable. So this block is
+  # not covered here; acceptance/bundle/resources/model_serving_endpoints covers it end to end.
+  telemetry_config: rejected on update once seeded, and unreachable unless seeded
+
+fields:
+  # A recipient is validated by format, so the generic "x" is rejected. Reserved
+  # non-resolving addresses, per RFC 2606.
+  # Both the list and the address inside it need real values: the API validates every entry
+  # ("Invalid email format: x"), and the generic one- and two-element lists a slice gets by default
+  # hold plain strings. Declared for the container as well as the element, so growing the list is
+  # tested with addresses the backend accepts.
+  #
+  # In alphabetical order, because the backend returns the list sorted: declared the other way round,
+  # a two-address list read back reordered and the endpoint drifted on the ordering alone, for good.
+  # That is a property worth knowing, and it makes the field untestable if the fixture fights it.
+  email_notifications.on_update_failure:
+    - [alerts@databricks.invalid]
+    - [alerts@databricks.invalid, notify@databricks.invalid]
+  email_notifications.on_update_success:
+    - [alerts@databricks.invalid]
+    - [alerts@databricks.invalid, notify@databricks.invalid]
+  email_notifications.on_update_failure[*]: [notify@databricks.invalid, alerts@databricks.invalid]
+  email_notifications.on_update_success[*]: [notify@databricks.invalid, alerts@databricks.invalid]

@@ -1,0 +1,41 @@
+# Value library for vector search indexes. See ../../README.md.
+
+# Every field of an index is immutable, so a transition recreates it -- and a real workspace deletes an
+# index asynchronously, so the create half waits on "still exists, waiting for deletion to complete"
+# until the transition times out. No field of this type can converge there, whichever one is picked, so
+# the catalog for it is the local one. That also spares the cloud run 70 recreates behind an endpoint
+# that takes five minutes to provision, which is what made this type a three-hour outlier.
+local_only: a recreate cannot converge, because a real workspace deletes an index asynchronously
+
+deps:
+  vector_search_endpoints:
+    name: test-vse-$UNIQUE_NAME
+    endpoint_type: STANDARD
+
+base:
+  name: main.default.test_index_$UNIQUE_NAME
+  endpoint_name: ${resources.vector_search_endpoints.vector_search_endpoints.name}
+  primary_key: id
+  index_type: DIRECT_ACCESS
+  direct_access_index_spec:
+    schema_json: '{"id":"integer","vector":"array<float>"}'
+    embedding_vector_columns:
+      - name: vector
+        embedding_dimension: 768
+
+skip:
+  # Every field of an index is immutable, so each transition deletes and recreates it, and the whole
+  # type took three hours on a real workspace before hitting the test timeout -- 102 rows, each
+  # waiting for an index to come online behind an endpoint that has to be provisioned first. That
+  # cost buys little: the fields are the index spec, and what the catalog checks about them is the
+  # same recreate path every time.
+  #
+  # So one field is driven and the rest are skipped. primary_key is the cheapest that still means
+  # something: it is required, so it has two transitions rather than six, and both go through
+  # create, recreate and converge -- which is what could break for this type.
+  delta_sync_index_spec: one field of this type is driven; see primary_key
+  direct_access_index_spec: one field of this type is driven; see primary_key
+  endpoint_name: one field of this type is driven; see primary_key
+  index_type: one field of this type is driven; see primary_key
+  index_subtype: one field of this type is driven; see primary_key
+  name: one field of this type is driven; see primary_key

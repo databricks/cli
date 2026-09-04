@@ -138,19 +138,13 @@ func Get(v any, path *structpath.PathNode) (any, error) {
 func accessKey(v reflect.Value, key string, path *structpath.PathNode) (reflect.Value, error) {
 	switch v.Kind() {
 	case reflect.Struct:
-		// Precalculate ForceSendFields mappings for this struct hierarchy
-		forceSendFieldsMap := getForceSendFieldsForFromTyped(v)
-
-		fv, sf, embeddedIndex, ok := findStructFieldByKey(v, key)
+		fv, sf, owner, ok := findStructFieldByKey(v, key)
 		if !ok {
 			return reflect.Value{}, fmt.Errorf("%s: field %q not found in %s", path.String(), key, v.Type())
 		}
 
-		// Check ForceSendFields using precalculated map
-		var force bool
-		if fields, exists := forceSendFieldsMap[embeddedIndex]; exists {
-			force = containsString(fields, sf.Name)
-		}
+		// ForceSendFields is only managed by the struct that declares the field.
+		force := forceSendFieldsContains(owner, sf.Name)
 
 		// Honor omitempty: if present and value is empty and not forced, treat as omitted (nil).
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
@@ -270,28 +264,92 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 
 // findStructFieldByKey searches exported fields of struct v for a field matching key.
 // It matches json tag name (when present and not "-") only.
-// It also searches embedded anonymous structs (flattening semantics).
-// Returns: fieldValue, structField, embeddedIndex, found
-// embeddedIndex is -1 for direct fields, or the index of the embedded struct containing the field.
-func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, int, bool) {
+// It also searches embedded anonymous structs recursively (flattening semantics), which
+// FindStructFieldByKeyType does too: a bundle resource embeds a config struct that embeds
+// the SDK request struct, so its fields sit two levels down.
+// Returns: fieldValue, structField, owner (the struct value declaring the field), found
+func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, reflect.Value, bool) {
 	t := v.Type()
 
 	// First pass: direct fields
 	if fv, sf, found := findFieldInStruct(v, key); found {
-		return fv, sf, -1, true
+		return fv, sf, v, true
 	}
 
-	// Second pass: search embedded anonymous structs (flattening semantics)
+	// Ambiguity is a property of the type, not of the value: a name declared at the same
+	// embedding depth by two members is one encoding/json omits, whether or not one of those
+	// members happens to be a nil pointer right now. Asking the type walk first keeps Get, Set
+	// and ValidatePattern agreeing on which names exist.
+	if _, _, ok := FindStructFieldByKeyType(t, key); !ok {
+		return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
+	}
+
+	// Second pass: search embedded anonymous structs (flattening semantics) breadth-first, one
+	// level of embedding at a time. Not depth-first: encoding/json resolves a name declared at
+	// two embedding depths in favour of the shallower one, so descending fully into the first
+	// embed could pick a field three levels down over the same name two levels down in a
+	// later one -- and then reading or writing the field would not be the field serialized
+	// under that name.
+	// Guards against a cyclic embedding (a struct embedding a pointer to itself), which would
+	// otherwise enqueue the same type forever when the key is not found at all. Only types from
+	// *earlier* levels are excluded: a type reachable twice within one level is a diamond, and
+	// the two matches it produces are exactly the ambiguity json resolves by omitting the field.
+	seen := map[reflect.Type]bool{v.Type(): true}
+	level := embeddedStructs(v)
+	for len(level) > 0 {
+		var next []reflect.Value
+		var found []struct {
+			value reflect.Value
+			field reflect.StructField
+			owner reflect.Value
+		}
+		for _, fv := range level {
+			if out, sf, ok := findFieldInStruct(fv, key); ok {
+				found = append(found, struct {
+					value reflect.Value
+					field reflect.StructField
+					owner reflect.Value
+				}{out, sf, fv})
+				continue
+			}
+			for _, deeper := range embeddedStructs(fv) {
+				if seen[deeper.Type()] {
+					continue
+				}
+				next = append(next, deeper)
+			}
+		}
+		for _, fv := range next {
+			seen[fv.Type()] = true
+		}
+		if len(found) == 1 {
+			return found[0].value, found[0].field, found[0].owner, true
+		}
+		if len(found) > 1 {
+			// Two embedded structs declare the same name at the same depth. encoding/json calls
+			// that ambiguous and omits the field entirely, so there is no field to read or
+			// write: picking one would target data that is never serialized.
+			return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
+		}
+		level = next
+	}
+
+	return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
+}
+
+// embeddedStructs returns the anonymous struct fields of v, dereferenced, skipping any that
+// cannot be descended into.
+func embeddedStructs(v reflect.Value) []reflect.Value {
+	var out []reflect.Value
+	t := v.Type()
 	for i := range t.NumField() {
-		sf := t.Field(i)
-		if !sf.Anonymous {
+		if !t.Field(i).Anonymous {
 			continue
 		}
 		fv := v.Field(i)
-		// Dereference pointer anonymous structs
 		for fv.Kind() == reflect.Pointer {
 			if fv.IsNil() {
-				// Not initialized; can't descend
+				// Not initialized; can't descend.
 				break
 			}
 			fv = fv.Elem()
@@ -299,59 +357,35 @@ func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.S
 		if fv.Kind() != reflect.Struct {
 			continue
 		}
-		if out, osf, found := findFieldInStruct(fv, key); found {
-			return out, osf, i, true
-		}
+		out = append(out, fv)
 	}
-
-	return reflect.Value{}, reflect.StructField{}, -1, false
+	return out
 }
 
-// getForceSendFieldsForFromTyped collects ForceSendFields values for FromTyped operations
-// Returns map[structKey][]fieldName where structKey is -1 for direct fields, embedded index for embedded fields
-func getForceSendFieldsForFromTyped(v reflect.Value) map[int][]string {
-	if !v.IsValid() || v.Type().Kind() != reflect.Struct {
-		return make(map[int][]string)
+// forceSendFields returns the ForceSendFields slice a struct declares itself. A struct that
+// embeds another shadows it deliberately -- see resources.PostgresProjectConfig -- so only
+// the declaring struct tracks a field of its own.
+func forceSendFields(owner reflect.Value) reflect.Value {
+	if !owner.IsValid() || owner.Kind() != reflect.Struct {
+		return reflect.Value{}
 	}
-
-	result := make(map[int][]string)
-
-	for i := range v.Type().NumField() {
-		field := v.Type().Field(i)
-		fieldValue := v.Field(i)
-
+	for i := range owner.Type().NumField() {
+		field := owner.Type().Field(i)
 		if field.Name == "ForceSendFields" && !field.Anonymous {
-			// Direct ForceSendFields (structKey = -1)
-			if fields, ok := reflect.TypeAssert[[]string](fieldValue); ok {
-				result[-1] = fields
-			}
-		} else if field.Anonymous {
-			// Embedded struct - check for ForceSendFields inside it
-			if embeddedStruct := getEmbeddedStructForReading(fieldValue); embeddedStruct.IsValid() {
-				if forceSendField := embeddedStruct.FieldByName("ForceSendFields"); forceSendField.IsValid() {
-					if fields, ok := reflect.TypeAssert[[]string](forceSendField); ok {
-						result[i] = fields
-					}
-				}
-			}
+			return owner.Field(i)
 		}
-	}
-
-	return result
-}
-
-// Helper function for reading - doesn't create nil pointers
-func getEmbeddedStructForReading(fieldValue reflect.Value) reflect.Value {
-	if fieldValue.Kind() == reflect.Pointer {
-		if fieldValue.IsNil() {
-			return reflect.Value{} // Don't create, just return invalid
-		}
-		fieldValue = fieldValue.Elem()
-	}
-	if fieldValue.Kind() == reflect.Struct {
-		return fieldValue
 	}
 	return reflect.Value{}
+}
+
+// forceSendFieldsContains reports whether a struct forces the named field to be sent.
+func forceSendFieldsContains(owner reflect.Value, name string) bool {
+	fsf := forceSendFields(owner)
+	if !fsf.IsValid() {
+		return false
+	}
+	fields, ok := reflect.TypeAssert[[]string](fsf)
+	return ok && containsString(fields, name)
 }
 
 // containsString checks if a slice contains a specific string

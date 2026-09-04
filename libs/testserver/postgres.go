@@ -1611,6 +1611,18 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 		}
 	}
 
+	// pg_type is an enum, and the API rejects anything outside it as a missing required field
+	// rather than a bad value (aws, 2026-08): a Postgres type name like "bigint" is not one of
+	// PG_SPECIFIC_TYPE_HALFVEC / _VARCHAR / _VECTOR. Checked against the enum, not against the
+	// zero value: the SDK stores an unrecognised string verbatim rather than dropping it.
+	if table.Spec != nil {
+		for _, override := range table.Spec.TypeOverrides {
+			if !slices.Contains(override.PgType.Values(), override.PgType) {
+				return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'synced_table.spec.type_overrides.pg_type' is required, expected non-default value (not "")!`)
+			}
+		}
+	}
+
 	name := "synced_tables/" + syncedTableID
 
 	if _, exists := s.PostgresSyncedTables[name]; exists {

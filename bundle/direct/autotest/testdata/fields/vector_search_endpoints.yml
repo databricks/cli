@@ -1,0 +1,11 @@
+# Value library for vector search endpoints. See ../../README.md.
+
+base:
+  # Endpoint names must be under 50 characters.
+  name: test-vse-$UNIQUE_NAME
+  endpoint_type: STANDARD
+
+skip:
+  # An account-level policy, as with apps: "Failed to validate budget policy x." A test workspace has
+  # none to reference, and creating one is an account-level operation.
+  budget_policy_id: needs an account-level budget policy to exist

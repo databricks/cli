@@ -1,0 +1,30 @@
+# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
+is_protected                                 absent     false      UPDATE_MASK_OMITTED  Field 'spec.is_protected' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+is_protected                                 true       absent     UPDATE_MASK_OMITTED  Field 'spec.is_protected' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    absent     false      UPDATE_MASK_OMITTED  Field 'spec.expiration' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    true       absent     UPDATE_MASK_OMITTED  Field 'spec.expiration' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+parent                                       absent     x          BASE_ERROR  No stub found for pattern: POST /api/2.0/postgres/branches (501 <nil>)
+parent                                       absent     y          BASE_ERROR  No stub found for pattern: POST /api/2.0/postgres/branches (501 <nil>)
+parent                                       x          absent     BASE_ERROR  No stub found for pattern: POST /api/2.0/postgres/x/branches (501 <nil>)
+parent                                       x          y          BASE_ERROR  No stub found for pattern: POST /api/2.0/postgres/x/branches (501 <nil>)
+parent                                       y          absent     BASE_ERROR  No stub found for pattern: POST /api/2.0/postgres/y/branches (501 <nil>)
+parent                                       y          x          BASE_ERROR  No stub found for pattern: POST /api/2.0/postgres/y/branches (501 <nil>)
+
+=== summary
+OK                         10
+OK_RECREATE                14
+OK_ID_FIELD_REQUIRED       4
+UPDATE_MASK_OMITTED        4
+OK_INERT                   6
+SUPPRESSED                 4
+SKIPPED                    1
+BASE_ERROR                 6

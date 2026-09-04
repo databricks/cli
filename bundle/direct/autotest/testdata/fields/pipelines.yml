@@ -1,0 +1,155 @@
+# Value library for pipelines. See ../../README.md.
+
+# base has to declare a clusters block, or its whole spec -- 346
+# fields, including the init_scripts union and the tag maps -- would go untested. Values
+# that differ per cloud come from the same variables an acceptance config would get.
+base:
+  name: test-pipeline-$UNIQUE_NAME
+  clusters:
+    - label: default
+      node_type_id: $NODE_TYPE_ID
+      num_workers: 1
+      custom_tags:
+        team: eng
+      spark_conf:
+        spark.speculation: "true"
+      spark_env_vars:
+        MY_VAR: value
+      ssh_public_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQtest
+  configuration:
+    my.key: value
+  environment:
+    dependencies:
+      - requests
+  filters:
+    include:
+      - included
+    exclude:
+      - excluded
+  libraries:
+    - notebook:
+        path: /Shared/notebook
+  notifications:
+    - alerts:
+        - on-update-failure
+      email_recipients:
+        - notify@example.com
+  restart_window:
+    start_hour: 1
+    time_zone_id: UTC
+  tags:
+    team: eng
+
+skip:
+
+  # The schema field is refused on a storage-backed pipeline, which base declares: the API points at
+  # its migrate-to-dpm documentation. Clearing it is the half that fails, so the field is not testable
+  # on this fixture.
+  schema: refused on a storage-backed pipeline, which base declares
+
+  # Both autoscale bounds are reported against num_workers, which base sets and no transition moves
+  # with them -- the same reason autoscale.mode is skipped just above.
+  clusters[*].autoscale.max_workers: drift is attributed to num_workers, which cannot move with it
+  clusters[*].autoscale.min_workers: drift is attributed to num_workers, which cannot move with it
+
+  # An alert name and a recipient are both validated -- Invalid ... notifications: x -- so neither the
+  # list nor the entry inside it can hold a generic value. A recipient has to be an address and an
+  # alert has to be one the API knows.
+  notifications[*].alerts: needs alert names the API knows, and generic values are refused
+  notifications[*].email_recipients: needs real addresses, and generic values are refused
+
+  # You cannot provide clusters on a serverless pipeline, and base declares one.
+  serverless: cannot be set on a pipeline that declares clusters, which base does
+
+  # name must be set, so clearing it is refused, and this fixture has one name to give.
+  name: cannot be cleared, and the suite has one name for it
+
+  # A pipeline parameter is accepted and not applied.
+  # Not seeded in base either: the create does not apply it, so the pipeline drifts from the moment it
+  # exists and every other field is then measured against a resource already pending.
+  parameters: the API accepts the write and does not apply it
+
+  # Changing the autoscale mode is reported against num_workers, which base sets and the suite does not
+  # move at the same time -- the same reason the other autoscale fields are already skipped.
+  clusters[*].autoscale.mode: drift is attributed to num_workers, which cannot move with it
+
+  # --- Fields a real workspace rejects, with the API's own reason. The mock server accepts them all.
+
+  # Cannot add catalog to an existing pipeline with a storage location, and this fixture's pipeline has
+  # one -- the backend assigns it when neither storage nor catalog is given. That the engine sends the
+  # update anyway rather than recreating is a finding in its own right; see the branch notes.
+  catalog: cannot be added to a pipeline that already has a storage location
+
+  # A cluster label has to be default or maintenance.
+  clusters[*].label: only default or maintenance are accepted
+
+  # The environment version applies to Unity Catalog pipelines, and this one is storage-backed.
+  environment.environment_version: only for Unity Catalog pipelines, and base is storage-backed
+
+  # An event log can only be configured on a UC pipeline, so the whole block is unreachable here.
+  event_log: only for Unity Catalog pipelines, and base is storage-backed
+
+  # libraries must contain at least one element, so the list cannot be emptied.
+  libraries: cannot be emptied, and the API refuses a pipeline with no library
+
+  # Only an absolute file path is accepted.
+  libraries[*].file.path: needs an absolute path, which no generic value is
+
+  # Storage has to be an absolute path.
+  storage: needs an absolute path, which no generic value is
+
+  # --- Fields the API accepts and then does not apply. The mock server applies them, so a local row
+  # would say OK where a workspace says the write had no effect. Modelling each in libs/testserver is
+  # the real fix; until then the reason is the finding.
+  dry_run: the API accepts the write and does not apply it
+  libraries[*].jar: the API accepts the write and does not apply it
+  libraries[*].maven: the API accepts the write and does not apply it
+  clusters[*].azure_attributes.capacity_reservation_group: the API accepts the write and does not apply it
+  clusters[*].gcp_attributes.confidential_compute_type: the API accepts the write and does not apply it
+  clusters[*].gcp_attributes.first_on_demand: the API accepts the write and does not apply it
+  ingestion_definition.ingest_from_uc_foreign_catalog: the API accepts the write and does not apply it
+  # An init script has to name a file that exists: a real workspace fails the cluster with "Init
+  # scripts failed ... Tree node with path ... does not exist". This suite deliberately uploads no
+  # bundle files -- a sync per permutation would dominate the run -- so no destination it could name
+  # is there, and the mock server's acceptance of any path is what made the field look testable.
+  clusters[*].init_scripts: an init script has to name a file that exists, and this suite uploads none
+  # Each names a workspace or account object this suite does not provision: an account-level
+  # budget policy, an instance pool, a cluster policy, a KMS key, a UC connection, an ingestion
+  # gateway pipeline.
+  budget_policy_id: needs an account-level budget policy to exist
+  clusters[*].instance_pool_id: needs a second instance pool to exist
+  clusters[*].driver_instance_pool_id: needs a second instance pool to exist
+  clusters[*].policy_id: needs a cluster policy to exist
+  gateway_definition: needs a UC connection to a source database
+  ingestion_definition.connection_name: needs a UC connection to a source database
+  ingestion_definition.ingestion_gateway_id: needs an ingestion gateway pipeline to exist
+  # run_as must name a principal allowed to run the pipeline, which depends on the identity the
+  # suite runs as -- a service principal on cloud.
+  run_as: depends on the identity the suite runs as
+  # A cron trigger is validated as a pair: "Invalid cron expression '' or timezone ...", so the
+  # timezone cannot move without an expression beside it. The config declares no trigger, so
+  # there is none to move it with.
+  trigger.cron: validated as a pair with the cron expression, which the config does not declare
+
+  # An init script entry carries exactly one of workspace, volumes, s3, abfss, gcs, dbfs or file,
+  # and base seeds the workspace member. Setting a leaf inside another arm leaves that arm without
+  # its own destination, which the backend accepts and then ignores -- every such row was recording
+  # the fake server storing a value the API drops. Covering an arm needs a fixture that seeds it,
+  # not a value for a leaf inside one that is not there.
+  clusters[*].init_scripts[*].abfss: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].dbfs: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].file: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].gcs: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].s3: an init script member the seeded workspace member excludes
+  clusters[*].init_scripts[*].volumes: an init script member the seeded workspace member excludes
+
+fields:
+  # Constrained by the backend but typed as a plain string in the SDK, so nothing derives their
+  # values: the generic "x" is rejected on a real workspace.
+  channel: [CURRENT, PREVIEW]
+
+  # A root path is a workspace path, and a time zone is a TZ database id, not free text.
+  root_path: [/Shared/pipeline-a, /Shared/pipeline-b]
+  restart_window.time_zone_id: [UTC, America/New_York]
+  edition: [CORE, PRO]

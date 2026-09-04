@@ -4,9 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
+
+// vectorSearchEndpointNamePattern is the backend's constraint on an endpoint name. An empty name fails
+// it, which is how clearing one is refused.
+var vectorSearchEndpointNamePattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9_.-]{0,47}[a-z0-9])?$`)
 
 func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
@@ -16,6 +21,20 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		return Response{
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
 			StatusCode: http.StatusBadRequest,
+		}
+	}
+
+	// The name is validated before the collision check, so an empty one is refused on its own terms
+	// rather than reported as colliding with a previous empty-named endpoint. Note the doubled space
+	// after "name" -- that is the backend's own message.
+	if !vectorSearchEndpointNamePattern.MatchString(createReq.Name) {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message": "AI Search endpoint name  must contain less than 50 characters, contain only lowercase " +
+					"alphanumeric characters, '_', '-' or '.', and start and end with an alphanumeric character.",
+			},
 		}
 	}
 
@@ -106,7 +125,12 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 	if endpoint.ScalingInfo == nil {
 		endpoint.ScalingInfo = &vectorsearch.EndpointScalingInfo{}
 	}
-	endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
+	// target_qps is omitempty, so a config that clears it drops it from the body and the backend
+	// keeps the value it had (aws, 2026-09: the clear is accepted and has no effect). Assigning the
+	// zero value here instead made the field look freely clearable.
+	if patchReq.TargetQps != 0 {
+		endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
+	}
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
