@@ -89,7 +89,7 @@ var knownMissingInStateType = map[string][]string{
 	"job_runs": {
 		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
 		"lifecycle.prevent_destroy",
-		"lifecycle.triggers[*]",
+		"lifecycle.triggers",
 	},
 	"dashboards": {
 		"file_path",

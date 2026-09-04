@@ -42,6 +42,19 @@ func (r *JobRun) HasOnBundleDeploy() bool {
 	return false
 }
 
+// HasOnFileChange reports whether any trigger re-fires when matched files change.
+func (r *JobRun) HasOnFileChange() bool {
+	if r.Lifecycle == nil {
+		return false
+	}
+	for _, t := range r.Lifecycle.Triggers {
+		if t.OnFileChange != nil {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *JobRun) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, r)
 }

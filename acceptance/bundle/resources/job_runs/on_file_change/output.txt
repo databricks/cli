@@ -1,0 +1,264 @@
+
+=== first deploy triggers a run
+>>> [CLI] bundle plan -o json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
+Created job_runs.my_run
+Created jobs.my_job
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> read_id.py my_job
+[MY_JOB_ID]
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+=== redeploy with unchanged file plans nothing
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+=== touch without content change plans nothing
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+=== editing the file re-fires
+>>> jq .plan["resources.job_runs.my_run"] tmp.plan1.json
+{
+  "depends_on": [
+    {
+      "node": "resources.jobs.my_job",
+      "label": "${resources.jobs.my_job.id}"
+    }
+  ],
+  "action": "recreate",
+  "new_state": {
+    "value": {
+      "job_id": [MY_JOB_ID],
+      "lifecycle": {
+        "triggers_state": {
+          "on_file_change": {
+            "seed.txt": "[FILE_HASH][0]"
+          }
+        }
+      },
+      "result_state": "SUCCESS"
+    }
+  },
+  "remote_state": {
+    "job_id": [MY_JOB_ID],
+    "result_state": "SUCCESS",
+    "run_id": [MY_RUN_ID],
+    "run_name": "my-job",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
+    "run_type": "JOB_RUN",
+    "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS"
+    }
+  },
+  "changes": {
+    "lifecycle.triggers_state.on_file_change['seed.txt']": {
+      "action": "recreate",
+      "reason": "immutable",
+      "old": "[FILE_HASH][1]",
+      "new": "[FILE_HASH][0]"
+    },
+    "result_state": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "new": "SUCCESS",
+      "remote": "SUCCESS"
+    }
+  }
+}
+
+=== bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
+Recreated job_runs.my_run
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py --keep //jobs/runs/delete
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID]
+  }
+}
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== deleting the file warns and re-fires
+>>> [CLI] bundle plan -o json
+Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
+  in databricks.yml:18:29
+
+
+>>> jq .plan["resources.job_runs.my_run"] tmp.plan2.json
+{
+  "depends_on": [
+    {
+      "node": "resources.jobs.my_job",
+      "label": "${resources.jobs.my_job.id}"
+    }
+  ],
+  "action": "recreate",
+  "new_state": {
+    "value": {
+      "job_id": [MY_JOB_ID],
+      "lifecycle": {
+        "triggers_state": {
+          "on_file_change": {
+            "seed.txt": "[FILE_HASH][2]"
+          }
+        }
+      },
+      "result_state": "SUCCESS"
+    }
+  },
+  "remote_state": {
+    "job_id": [MY_JOB_ID],
+    "result_state": "SUCCESS",
+    "run_id": [MY_RUN_ID_2],
+    "run_name": "my-job",
+    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]",
+    "run_type": "JOB_RUN",
+    "state": {
+      "life_cycle_state": "TERMINATED",
+      "result_state": "SUCCESS"
+    }
+  },
+  "changes": {
+    "lifecycle.triggers_state.on_file_change['seed.txt']": {
+      "action": "recreate",
+      "reason": "immutable",
+      "old": "[FILE_HASH][0]",
+      "new": "[FILE_HASH][2]"
+    },
+    "result_state": {
+      "action": "skip",
+      "reason": "remote_already_set",
+      "new": "SUCCESS",
+      "remote": "SUCCESS"
+    }
+  }
+}
+Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
+  in databricks.yml:18:29
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_3]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_3]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_3]: SUCCESS
+Recreated job_runs.my_run
+Files: 4 uploaded, 1 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+>>> [CLI] bundle plan
+Warning: lifecycle.triggers.on_file_change: no synced files match "seed.txt"
+  in databricks.yml:18:29
+
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== restoring the file re-fires again
+>>> [CLI] bundle plan -o json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID_4]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_4]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID_4]: SUCCESS
+Recreated job_runs.my_run
+Files: 4 uploaded, 1 deleted
+Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [MY_JOB_ID]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== removing on_file_change is unchanged and does not run
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //jobs/run-now
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== re-adding on_file_change does not re-fire an unchanged file
+>>> print_state.py
+{
+  "triggers_state": {
+    "on_file_change": {
+      "seed.txt": "[FILE_HASH][0]"
+    }
+  }
+}
+
+>>> [CLI] bundle plan -o json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default/files...
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change/default
+
+Destroy: 2 deleted

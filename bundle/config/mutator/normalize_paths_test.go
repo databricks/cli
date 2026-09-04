@@ -53,6 +53,45 @@ func TestNormalizePaths(t *testing.T) {
 	require.Equal(t, "src/notebook.py", newValue.MustString())
 }
 
+func TestNormalizePaths_jobRunOnFileChange(t *testing.T) {
+	tmpDir := t.TempDir()
+	pattern := "../data/*.txt"
+	m := NormalizePaths()
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				JobRuns: map[string]*resources.JobRun{
+					"run1": {
+						Lifecycle: &resources.JobRunLifecycle{
+							Triggers: []resources.JobRunTrigger{
+								{OnFileChange: &pattern},
+							},
+							TriggersState: nil,
+						},
+					},
+				},
+			},
+		},
+		BundleRootPath: tmpDir,
+	}
+
+	location := dyn.Location{File: filepath.Join(tmpDir, "resources", "run.yml")}
+	path := dyn.MustPathFromString("resources.job_runs.run1.lifecycle.triggers[0].on_file_change")
+	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.MapByPath(v, path, func(path dyn.Path, value dyn.Value) (dyn.Value, error) {
+			return dyn.NewValue(value.MustString(), []dyn.Location{location}), nil
+		})
+	})
+	require.NoError(t, err)
+
+	diags := bundle.Apply(t.Context(), b, m)
+	require.NoError(t, diags.Error())
+
+	newValue, err := dyn.GetByPath(b.Config.Value(), path)
+	require.NoError(t, err)
+	require.Equal(t, "data/*.txt", newValue.MustString())
+}
+
 func TestNormalizePath_absolutePath(t *testing.T) {
 	value, err := normalizePath("/notebook.py", dyn.Location{}, "/tmp")
 	assert.NoError(t, err)

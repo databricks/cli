@@ -26,15 +26,16 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-// JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
-type JobRunTriggersState struct {
-	// Fresh UUID each plan while armed so Old!=New forces recreate.
-	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
-}
+var (
+	jobRunLifecyclePath      = structpath.MustParsePath("lifecycle")
+	jobRunOnBundleDeployPath = structpath.MustParsePath("lifecycle.triggers_state.on_bundle_deploy")
+	jobRunOnFileChangePath   = structpath.MustParsePath("lifecycle.triggers_state.on_file_change")
+	jobRunResultStatePath    = structpath.MustParsePath("result_state")
+)
 
-// JobRunLifecycleState holds local-only lifecycle fields persisted in state.
+// JobRunLifecycleState is the local-only trigger fingerprint.
 type JobRunLifecycleState struct {
-	Triggers *JobRunTriggersState `json:"triggers,omitempty"`
+	TriggersState *resources.JobRunTriggersState `json:"triggers_state,omitempty"`
 }
 
 // JobRunState is the RunNow request plus the outcome required for planning.
@@ -44,8 +45,8 @@ type JobRunState struct {
 	// Always SUCCESS during planning and cleared before persistence.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 
-	// Local-only; listed in knownMissingInRemoteType. Nested under lifecycle to
-	// mirror config and avoid colliding with a future Jobs API field.
+	// Local-only fingerprint. Nested under lifecycle to avoid colliding with a
+	// future Jobs API field; nil when no trigger is armed so the key is omitted.
 	Lifecycle *JobRunLifecycleState `json:"lifecycle,omitempty"`
 }
 
@@ -57,8 +58,8 @@ func (s JobRunState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-// JobRunRemote embeds RunNow so every StateType path is a valid RemoteType path
-// (see TestRemoteSuperset), plus the run's output-only fields for a faithful view.
+// JobRunRemote is the RunNow request plus the run's output-only fields. It has no
+// lifecycle: GetRun never returns the fingerprints (see knownMissingInRemoteType).
 type JobRunRemote struct {
 	jobs.RunNow
 
@@ -99,10 +100,15 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 		ResultState: jobs.RunResultStateSuccess,
 		Lifecycle:   nil,
 	}
+	var ts resources.JobRunTriggersState
+	if input.Lifecycle != nil && input.Lifecycle.TriggersState != nil {
+		ts = *input.Lifecycle.TriggersState
+	}
 	if input.HasOnBundleDeploy() {
-		state.Lifecycle = &JobRunLifecycleState{
-			Triggers: &JobRunTriggersState{OnBundleDeploy: uuid.NewString()},
-		}
+		ts.OnBundleDeploy = uuid.NewString()
+	}
+	if !ts.IsEmpty() {
+		state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
 	}
 	return state
 }
@@ -178,13 +184,12 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 }
 
 // RemapState extracts the fields used for diffing: the RunNow request and the
-// outcome the run reached.
+// outcome the run reached. Lifecycle has no remote counterpart.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{
 		RunNow:      remote.RunNow,
 		ResultState: remote.ResultState,
-		// Local-only lifecycle fingerprints stay unset on the remapped remote.
-		Lifecycle: nil,
+		Lifecycle:   nil,
 	}
 }
 
@@ -369,28 +374,41 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
-// Clearing a trigger skips its local-only fingerprint without re-firing the run.
+// Removing a trigger drops the change and leaves the last fingerprint in state,
+// so re-adding the trigger only re-fires when the watched files changed
+// meanwhile. All other trigger changes recreate the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	switch path.String() {
-	case "lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy":
-		// A cleared trigger sets New empty; structdiff may report it at lifecycle,
-		// lifecycle.triggers, or the leaf.
-		if change.New == nil || change.New == "" {
-			change.Action = deployplan.Skip
-			change.Reason = "trigger removed"
+	switch {
+	case path.Len() == jobRunLifecyclePath.Len() && path.HasPrefix(jobRunLifecyclePath):
+		// Dropped when the trigger is removed (New nil) and when both sides are
+		// present, where the trigger fields below classify the change instead.
+		// Arming from no lifecycle at all keeps its recreate.
+		if change.New == nil || change.Old != nil {
+			change.Reason = deployplan.ReasonDrop
 		}
-		return nil
-	case "result_state":
+	case path.Len() == jobRunOnBundleDeployPath.Len() && path.HasPrefix(jobRunOnBundleDeployPath):
+		if change.New == nil || change.New == "" {
+			change.Reason = deployplan.ReasonDrop
+		}
+	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
+		// As above: an emptied map is a removal, and pattern entries classify a map
+		// that still has both sides.
+		if isEmptyFileTriggerMap(change.New) || change.Old != nil {
+			change.Reason = deployplan.ReasonDrop
+		}
+	case path.Len() == jobRunOnFileChangePath.Len()+1 && path.HasPrefix(jobRunOnFileChangePath):
+		if change.New == nil {
+			change.Reason = deployplan.ReasonDrop
+		}
+	case path.Len() == jobRunResultStatePath.Len() && path.HasPrefix(jobRunResultStatePath):
 		// The planner passes no remote state when the run could not be read.
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
 			return nil
 		}
 		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
-		return nil
-	default:
-		return nil
 	}
+	return nil
 }
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the
@@ -426,6 +444,14 @@ func (r *ResourceJobRun) cancelRun(ctx context.Context, runID int64) error {
 		return fmt.Errorf("waiting for run %d to be cancelled: %w", runID, err)
 	}
 	return nil
+}
+
+func isEmptyFileTriggerMap(v any) bool {
+	if v == nil {
+		return true
+	}
+	m, ok := v.(map[string]string)
+	return ok && len(m) == 0
 }
 
 func parseRunID(id string) (int64, error) {

@@ -14,6 +14,10 @@ func TestValidateJobRunTriggers(t *testing.T) {
 	trueVal := true
 	falseVal := false
 
+	fileChange := "seed.txt"
+	emptyFile := ""
+	whitespaceFile := "  \t"
+
 	tests := []struct {
 		name           string
 		triggers       []resources.JobRunTrigger
@@ -27,11 +31,31 @@ func TestValidateJobRunTriggers(t *testing.T) {
 			},
 		},
 		{
+			name: "on_file_change set",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+			},
+		},
+		{
+			name: "both triggers as separate entries",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+				{OnBundleDeploy: &trueVal},
+			},
+		},
+		{
 			name: "empty entry",
 			triggers: []resources.JobRunTrigger{
 				{},
 			},
-			summary: "lifecycle.triggers entry must set on_bundle_deploy: true",
+			summary: "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
+		},
+		{
+			name: "both keys on one entry",
+			triggers: []resources.JobRunTrigger{
+				{OnBundleDeploy: &trueVal, OnFileChange: &fileChange},
+			},
+			summary: "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
 		},
 		{
 			name: "on_bundle_deploy false",
@@ -39,6 +63,20 @@ func TestValidateJobRunTriggers(t *testing.T) {
 				{OnBundleDeploy: &falseVal},
 			},
 			summary: "lifecycle.triggers.on_bundle_deploy must be true when set",
+		},
+		{
+			name: "on_file_change empty",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &emptyFile},
+			},
+			summary: "lifecycle.triggers.on_file_change must be non-empty when set",
+		},
+		{
+			name: "on_file_change whitespace",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &whitespaceFile},
+			},
+			summary: "lifecycle.triggers.on_file_change must be non-empty when set",
 		},
 		{
 			name: "on_bundle_deploy with prevent_destroy",
@@ -49,6 +87,23 @@ func TestValidateJobRunTriggers(t *testing.T) {
 			summary:        "lifecycle.triggers.on_bundle_deploy is incompatible with lifecycle.prevent_destroy",
 		},
 		{
+			name: "on_file_change with prevent_destroy",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+			},
+			preventDestroy: true,
+			summary:        "lifecycle.triggers.on_file_change is incompatible with lifecycle.prevent_destroy",
+		},
+		{
+			name: "both triggers with prevent_destroy",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+				{OnBundleDeploy: &trueVal},
+			},
+			preventDestroy: true,
+			summary:        "lifecycle.triggers.on_bundle_deploy and on_file_change are incompatible with lifecycle.prevent_destroy",
+		},
+		{
 			name:           "prevent_destroy alone",
 			preventDestroy: true,
 		},
@@ -56,14 +111,18 @@ func TestValidateJobRunTriggers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
 			b := &bundle.Bundle{
+				BundleRootPath: root,
+				SyncRootPath:   root,
 				Config: config.Root{
 					Resources: config.Resources{
 						JobRuns: map[string]*resources.JobRun{
 							"my_run": {
 								Lifecycle: &resources.JobRunLifecycle{
-									Lifecycle: resources.Lifecycle{PreventDestroy: tt.preventDestroy},
-									Triggers:  tt.triggers,
+									Lifecycle:     resources.Lifecycle{PreventDestroy: tt.preventDestroy},
+									Triggers:      tt.triggers,
+									TriggersState: nil,
 								},
 							},
 						},

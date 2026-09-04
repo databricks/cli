@@ -183,12 +183,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
-	// mutators need informed consent if they are potentially destructive.
-	bundle.ApplySeqContext(ctx, b,
-		scripts.Execute(config.ScriptPreDeploy),
-		lock.Acquire(lock.GoalDeploy),
-	)
-
+	// mutators need informed consent if they are potentially destructive. The
+	// predeploy script ran in ProcessBundleRet, ahead of this phase.
+	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalDeploy))
 	if logdiag.HasError(ctx) {
 		// lock is not acquired here
 		return

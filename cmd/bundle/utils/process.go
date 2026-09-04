@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -16,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
@@ -359,6 +361,28 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
+	// The predeploy script can generate or rewrite files that on_file_change
+	// watches, so it has to run before those files are fingerprinted below. It
+	// stays ahead of the deployment lock, as it was when phases.Deploy ran it.
+	if opts.Deploy {
+		bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPreDeploy))
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
+	// Fingerprint on_file_change triggers once, after every step that can produce
+	// a watched file: build, generated overlays and the predeploy script. Reads
+	// the sync root that phases.Initialize resolves, so it is skipped along with
+	// it; `bundle deploy --plan` recomputes fingerprints that the loaded plan then
+	// overrides with the ones it recorded.
+	if !opts.SkipInitialize {
+		bundle.ApplyContext(ctx, b, mutator.ResolveJobRunFileTriggers())
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
