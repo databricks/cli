@@ -10,10 +10,10 @@ trace $CLI bundle deploy
 
 title "Change config while running: drift is detected (active deployment present)"
 trace update_file.py databricks.yml original_value changed_value
-trace $CLI bundle plan -o json | jq '.plan[].changes | with_entries(select(.key | startswith("config")))'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan[].changes | with_entries(select(.key | startswith("config")))'
 
 title "Stop the app: the backend clears the active deployment"
 trace $CLI apps stop $UNIQUE_NAME | jq '.compute_status.state'
 
 title "Same config change is now skipped: no active deployment to compare against"
-trace $CLI bundle plan -o json | jq '.plan[].changes | with_entries(select(.key | startswith("config")))'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan[].changes | with_entries(select(.key | startswith("config")))'

@@ -1,0 +1,33 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy so there is a recorded resource to recreate"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "The plan records DEPLOYMENT_METADATA_SERVICE backend and the schema"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service lists the schema at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-upload-fails-once-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state after deploy"
+trace print_state.py
+
+title "A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one"
+trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1
+# Unity Catalog has no catalog called "other", so make one to move the schema into.
+other_catalog="dms_other_${UNIQUE_NAME}"
+$CLI catalogs create "$other_catalog" &> LOG.catalog
+trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1' EXIT
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
+trace musterr $CLI bundle deploy --auto-approve
+
+title "The service lists the schema with the failure"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-upload-fails-once-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state after the failure"
+trace print_state.py
+
+trace print_requests.py --dms //api/2.0/bundle

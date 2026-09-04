@@ -15,7 +15,7 @@ print_requests() {
 title "Initial deployment"
 trace $CLI bundle validate
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databases.my_database" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_databases.my_database" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -29,7 +29,7 @@ trace $CLI postgres get-database "${database_name}" | database_fields
 
 title "Verify no changes"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databases.my_database" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_databases.my_database" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -40,7 +40,7 @@ trace update_file.py databricks.yml "postgres_database: initial_db_name" "postgr
 trace cat databricks.yml
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databases.my_database" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_databases.my_database" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -52,7 +52,7 @@ trace $CLI postgres get-database "${database_name}" | database_fields
 title "Restore postgres_database to original value"
 trace update_file.py databricks.yml "postgres_database: renamed_db_name" "postgres_database: initial_db_name"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databases.my_database" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_databases.my_database" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 

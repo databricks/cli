@@ -31,7 +31,7 @@ rm -f out.requests.txt
 title "Modify the config — plan shows the pending update"
 trace update_file.py databricks.yml "Test Auto-Migrate Job" "Test Auto-Migrate Job (renamed)"
 trace $CLI bundle plan
-$CLI bundle plan -o json > out.plan_update.direct.json
+$CLI bundle plan -o json | nostamp.py > out.plan_update.direct.json
 
 title "Deploy picks up the update (with and without --plan)\n"
 $CLI bundle deploy $(readplanarg out.plan_update.direct.json)

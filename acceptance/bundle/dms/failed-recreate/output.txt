@@ -1,0 +1,221 @@
+
+=== Deploy the schema, so there is a resource to recreate
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate-[UNIQUE_NAME]/default/files...
+Created schemas.foo
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "body": {
+    "display_name": "dms-failed-recreate-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate-[UNIQUE_NAME]/default/state",
+    "target_name": "default",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate-[UNIQUE_NAME]/default"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "main.dms_failed_recreate_schema_[UNIQUE_NAME]",
+    "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"comment\":\"v1\",\"name\":\"dms_failed_recreate_schema_[UNIQUE_NAME]\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "plan": {
+    "resources.schemas.foo": {
+      "action": "skip",
+      "remote_state": {
+        "browse_only": false,
+        "catalog_name": "main",
+        "catalog_type": "MANAGED_CATALOG",
+        "comment": "v1",
+        "created_at": [UNIX_TIME_MILLIS][0],
+        "created_by": "[USERNAME]",
+        "effective_predictive_optimization_flag": {
+          "inherited_from_name": "[METASTORE_NAME]",
+          "inherited_from_type": "METASTORE",
+          "value": "ENABLE"
+        },
+        "enable_predictive_optimization": "INHERIT",
+        "full_name": "main.dms_failed_recreate_schema_[UNIQUE_NAME]",
+        "metastore_id": "[UUID]",
+        "name": "dms_failed_recreate_schema_[UNIQUE_NAME]",
+        "owner": "[USERNAME]",
+        "schema_id": "[UUID]",
+        "updated_at": [UNIX_TIME_MILLIS][0],
+        "updated_by": "[USERNAME]"
+      }
+    }
+  }
+}
+
+=== After deploy, the service lists the resource at version 1
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "schemas.foo"
+  }
+]
+
+=== The raw state after successful deploy
+>>> print_state.py
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 1,
+ "features": {
+  "record_deployment_history": {}
+ },
+ "state": {
+  "resources.schemas.foo": {
+   "__id__": "main.dms_failed_recreate_schema_[UNIQUE_NAME]",
+   "state": {
+    "catalog_name": "main",
+    "comment": "v1",
+    "name": "dms_failed_recreate_schema_[UNIQUE_NAME]"
+   }
+  }
+ }
+}
+
+=== A recreate deletes and then fails to create. The delete went through, so the resource really is gone: the failed operation clears its state (self-contained, not assuming the delete's own write reached the service), rather than describing the resource as it was before the deploy
+>>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
+
+>>> fault.py POST /api/2.1/unity-catalog/schemas 400 0 1 INVALID_PARAMETER_VALUE
+
+>>> musterr [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.foo
+Error: cannot recreate resources.schemas.foo: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.1/unity-catalog/schemas
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
+Files: 4 uploaded, 0 deleted
+
+>>> print_requests.py --dms //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "previous_version_id": "1",
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_RECREATE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,status"
+  },
+  "body": {
+    "error_message": "",
+    "sequence_id": "0",
+    "status": "OPERATION_STATUS_PENDING"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,status"
+  },
+  "body": {
+    "error_message": "Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
+    "sequence_id": "1",
+    "status": "OPERATION_STATUS_FAILED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_FAILURE"
+  }
+}
+
+=== The resource is not listed: state is what projects a resource, and the failed recreate left none
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[]
+
+=== The raw state after failed recreate shows no resource
+>>> print_state.py
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 2,
+ "features": {
+  "record_deployment_history": {}
+ },
+ "state": {}
+}
+
+=== Planning from DMS state alone creates the schema, which is what has to happen: it no longer exists
+>>> [CLI] bundle plan
+create schemas.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

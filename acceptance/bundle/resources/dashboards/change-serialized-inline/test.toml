@@ -8,3 +8,7 @@ Ignore = [
 ]
 
 EnvMatrix.READPLAN = ["", "1"]
+
+# This test dumps a plan and replays it via deploy --plan/readplanarg; a nostamp.py'd dump can't
+# carry the DMS fields the replay needs, so opt out of recording (covered by bundle/dms).
+EnvMatrix.DMS = [""]

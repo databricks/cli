@@ -24,4 +24,4 @@ echo "$DASHBOARD" | jq '{lifecycle_state, parent_path, path, serialized_dashboar
 
 # Verify that there is no drift right after deploy. We use |= to update the serialized_dashboard field in place to account
 # for formatting that the cloud server applies to the serialized_dashboard field.
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json

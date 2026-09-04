@@ -1,0 +1,22 @@
+bundle:
+  name: dms-metadata-before-$UNIQUE_NAME
+experimental:
+  record_deployment_history: true
+
+workspace:
+  # Pinned, so renaming the bundle or switching target below keeps the same deployment: the
+  # deployment is the workspace node under state_path, and a different path would be a
+  # different deployment.
+  state_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/dms-metadata-pinned-$UNIQUE_NAME/state
+
+resources:
+  schemas:
+    foo:
+      name: dms_metadata_schema_$UNIQUE_NAME
+      catalog_name: main
+
+targets:
+  dev:
+    default: true
+  prod:
+    mode: production

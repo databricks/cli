@@ -28,7 +28,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> errcode assert_not_exists.py .databricks/bundle/default/resources.json.wal
 
->>> errcode cat .databricks/bundle/default/resources.json
+>>> errcode print_state.py
 {
   "serial": 1,
   "state_keys": [

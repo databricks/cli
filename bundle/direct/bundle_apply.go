@@ -43,6 +43,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
+	// The state DB records every write with DMS from here on (via the buffer InitializeOperationBuffer opened
+	// in the deploy phase), so the service mirrors the WAL. Writes go out on one background
+	// goroutine, off the apply path, and are drained below once every worker has finished recording.
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
@@ -70,6 +73,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			if action != deployplan.Skip {
 				logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
 			}
+			return false
+		}
+
+		// Stop resource CRUD once recording state with DMS has failed.
+		if err := b.StateDB.RecordingError(); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
 
@@ -103,7 +112,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
-				err = b.StateDB.DeleteState(resourceKey)
+				err = b.StateDB.DeleteState(ctx, resourceKey, false)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
 			}
@@ -134,8 +143,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			//
+			// Success is recorded by the state writes inside Deploy, so a recreate reports
+			// each of its steps.
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
+				// Empty for a create that never got an ID, and for a recreate whose delete
+				// step already dropped it.
+				failedID := b.StateDB.GetResourceID(resourceKey)
+				b.StateDB.RecordFailure(resourceKey, failedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
@@ -162,6 +178,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		return true
 	})
+
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {

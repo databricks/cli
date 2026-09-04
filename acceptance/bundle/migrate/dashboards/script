@@ -15,7 +15,7 @@ rm out.requests.txt
 # Badness: known issue with dashboards, will show up as 'recreate' see https://github.com/databricks/cli/pull/3966
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "1 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "1 unchanged"
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json > out.plan_after_migrate.json
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json | nostamp.py > out.plan_after_migrate.json
 trace print_requests.py --get //dashboards | contains.py 'engine/direct' > /dev/null
 
 trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy --auto-approve
@@ -32,7 +32,7 @@ rm out.requests.txt
 #title "Update databricks.yml, run plan & update"
 #trace update_file.py databricks.yml dashboard DASHBOARD
 #trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
-#trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json > out.plan_update.json
+#trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json | nostamp.py > out.plan_update.json
 #trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
 
 #rm out.requests.txt

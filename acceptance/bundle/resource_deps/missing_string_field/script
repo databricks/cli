@@ -1,4 +1,4 @@
-trace $CLI bundle validate -o json | nostamp | jq .resources
+trace $CLI bundle validate -o json | nostamp.py | jq .resources
 errcode $CLI bundle plan
 trace print_requests.py --nostamp //pipeline
 

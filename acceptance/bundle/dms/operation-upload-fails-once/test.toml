@@ -1,0 +1,3 @@
+# Local only: this case needs an injected failure - DMS itself must reject the operation upload, once - and fault.py registers
+# its rule on the fake, which a cloud run does not have.
+Cloud = false

@@ -14,7 +14,7 @@ title "Change endpoint_type (recreates endpoint; index recreate cascade is not y
 trace update_file.py databricks.yml "endpoint_type: STANDARD" "endpoint_type: STORAGE_OPTIMIZED"
 
 trace $CLI bundle plan
-trace $CLI bundle plan --output json
+trace $CLI bundle plan --output json | nostamp.py
 rm -f out.requests.txt
 trace $CLI bundle deploy --auto-approve
 

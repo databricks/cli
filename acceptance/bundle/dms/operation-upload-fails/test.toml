@@ -1,0 +1,10 @@
+# Local only: this case needs an injected failure - DMS itself must reject the operation upload - and fault.py registers
+# its rule on the fake, which a cloud run does not have.
+Cloud = false
+
+# Which requests are made depends on how far apply got before a background upload
+# failed, so recording them would make the output nondeterministic.
+RecordRequests = false
+
+# Completed versions make DMS the source of truth; unrecorded resources get recreated.
+# Deploy must stop rather than continue creating.

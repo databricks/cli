@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -158,6 +159,21 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
+	// Complete version before deleting remote files; the deployment node is under statePath.
+	completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	// A completed destroy's resources are gone, so its deployment record is deleted too.
+	if completed {
+		deploymentID, _ := deploymentAndNextVersion(b)
+		if err := b.DeploymentBundle.StateDB.DmsClient().DeleteDeployment(ctx, deploymentID); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
+			return
+		}
+	}
+
 	bundle.ApplyContext(ctx, b, files.Delete())
 
 	if !logdiag.HasError(ctx) && b.Quiet < bundle.QuietAll {
@@ -196,12 +212,26 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
+	// DMS recording of this destroy: the version is created after approval, so a cancelled
+	// destroy records nothing. Deferred before lock.Release to hold the lock; a no-op once
+	// destroyCore has completed the version.
 	defer func() {
+		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
+		if err != nil {
+			logdiag.LogError(ctx, err)
+		} else if completed {
+			// A completed destroy's resources are gone, so its deployment record is deleted too.
+			deploymentID, _ := deploymentAndNextVersion(b)
+			if err := b.DeploymentBundle.StateDB.DmsClient().DeleteDeployment(ctx, deploymentID); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
+			}
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
 	if !engine.IsDirect() {
-		bundle.ApplySeqContext(ctx, b,
+		bundle.ApplySeqContext(
+			ctx, b,
 			// We need to resolve artifact variable (how we do it in build phase)
 			// because some of the to-be-destroyed resource might use this variable.
 			// Not resolving might lead to terraform "Reference to undeclared resource" error
@@ -249,6 +279,22 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		if engine.IsDirect() {
 			// Upgrade from read (opened by process.go) to write mode
 			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+		}
+		// Record a destroy version now that it is approved and the state WAL is open, but only when
+		// the state is recorded with DMS (its marker is set). This is the single gate on the
+		// destroy's recording: it opens the operation buffer that destroyCore drains and completes,
+		// so the drain and the deployment delete follow only when a version was started here.
+		// Destroy never creates or updates the deployment - it is about to be deleted.
+		if engine.IsDirect() && b.DeploymentBundle.StateDB.RequiresDeploymentHistory() {
+			staged, err := stagedOperations(plan)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			if err := startVersion(ctx, b, dms.VersionTypeDestroy, staged); err != nil {
 				logdiag.LogError(ctx, err)
 				return
 			}

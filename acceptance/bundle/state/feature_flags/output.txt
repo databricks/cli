@@ -1,12 +1,12 @@
 
-=== a version-3 state recording a feature is rejected (this CLI records no features yet)
+=== a state depending on a feature this CLI does not recognize is rejected
 >>> errcode [CLI] bundle plan
-Error: migrating state [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: the deployment state requires features this CLI does not support: future_feature; upgrade to the latest CLI version and see https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features for more information
+Error: the deployment state requires features this CLI does not support: future_feature; upgrade to the latest CLI version and see https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features for more information
 
 
 Exit code: 1
 
-=== a version-3 state with an empty features map is accepted, and a deploy keeps it at version 3 (no flip to 2)
+=== a state with an empty features map is accepted, and a deploy keeps it at version 2
 >>> [CLI] bundle plan
 create jobs.my_job
 
@@ -19,4 +19,4 @@ Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> gron.py .databricks/bundle/default/resources.json
-json.state_version = 3;
+json.state_version = 2;

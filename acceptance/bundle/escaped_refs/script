@@ -12,10 +12,12 @@ title "Validate: escapes are still escaped in the config"
 trace $CLI bundle validate -o json | jq '.resources.jobs.example_ingestion_job.tasks[0].notebook_task.base_parameters'
 
 title "Plan (json)"
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Not traced: the READPLAN variant adds "--plan ...", and the point of that variant is
 # that the payload below is identical either way.
 title "Deploy: payload sent to the jobs API\n"
 $CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
-trace print_requests.py //jobs
+# --nostamp: under deployment-history recording the job payload carries the DMS deployment
+# stamp; drop it so the assertion is the same whether or not recording is on.
+trace print_requests.py //jobs --nostamp

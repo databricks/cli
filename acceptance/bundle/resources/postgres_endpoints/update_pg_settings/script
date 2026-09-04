@@ -22,7 +22,7 @@ trace update_file.py databricks.yml "statement_timeout: 8000" "statement_timeout
 # spec.settings.pg_settings are both accepted, while an indexed path is answered with
 # 400 "Unknown field path in update_mask".
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 

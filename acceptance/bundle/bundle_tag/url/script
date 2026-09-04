@@ -1,5 +1,5 @@
 trace $CLI bundle validate
-trace $CLI bundle validate -o json | nostamp | jq .resources
+trace $CLI bundle validate -o json | nostamp.py | jq .resources
 trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs

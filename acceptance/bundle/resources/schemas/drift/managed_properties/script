@@ -7,7 +7,7 @@ title "Plan is a no-op despite UC auto-populating managed properties"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "The remote-only properties map is skipped as a backend default (confirms the matched rule)"
-trace $CLI bundle plan --output json | jq '.plan[].changes'
+trace $CLI bundle plan --output json | nostamp.py | jq '.plan[].changes'
 
 title "Redeploy is a no-op (no UpdateSchema call)"
 trace $CLI bundle deploy

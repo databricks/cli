@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy: the deployment is created carrying this bundle's metadata"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The plan records DEPLOYMENT_METADATA_SERVICE; the service holds the schema at version 1"
+trace $CLI bundle plan -o json | nostamp.py
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-metadata-pinned-${UNIQUE_NAME}/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "Rename the bundle and switch target+mode. The state path is pinned, so this is the same deployment, updated in place - the mask carries every field that changed"
+trace update_file.py databricks.yml dms-metadata-before dms-metadata-after
+trace $CLI bundle deploy -t prod
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The metadata changed but the schema did not: still one deployment, recorded at version 1"
+trace $CLI bundle plan -t prod -o json | nostamp.py
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "Deploy again without touching anything: the record already says this, so no deployment update"
+trace $CLI bundle deploy -t prod
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The no-op redeploy leaves the schema at version 1"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+rm -f out.requests.txt

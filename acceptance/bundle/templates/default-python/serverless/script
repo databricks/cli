@@ -7,19 +7,19 @@ trace $CLI bundle validate -t prod
 trace $CLI bundle plan -t dev
 trace $CLI bundle plan -t prod
 
-$CLI bundle plan -o json -t dev > ../../out.plan_dev.$DATABRICKS_BUNDLE_ENGINE.json
-$CLI bundle plan -o json -t prod > ../../out.plan_prod.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json -t dev | nostamp.py > ../../out.plan_dev.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json -t prod | nostamp.py > ../../out.plan_prod.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm ../../out.requests.txt
 trace $CLI bundle deploy -t dev
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.dev.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle plan -t dev  # check if if there is drift
-trace $CLI bundle plan -t dev -o json > ../../out.plan_after_deploy_dev.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -t dev -o json | nostamp.py > ../../out.plan_after_deploy_dev.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle deploy -t prod
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.prod.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle plan -t prod  # check if there is drift
-trace $CLI bundle plan -t prod -o json > ../../out.plan_after_deploy_prod.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -t prod -o json | nostamp.py > ../../out.plan_after_deploy_prod.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Do not affect this repository's git behaviour #2318
 mv .gitignore out.gitignore

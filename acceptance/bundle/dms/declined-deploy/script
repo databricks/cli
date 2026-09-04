@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy a schema, so the deployment and its first version exist"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE; the service holds the schema at version 1"
+trace $CLI bundle plan -o json | nostamp.py
+trace print_state.py
+
+title "A destructive change without --auto-approve is declined: this console cannot prompt"
+# Changing the catalog recreates the schema, which needs approval.
+# Unity Catalog has no catalog called "other", so make one to move the schema into.
+other_catalog="dms_other_${UNIQUE_NAME}"
+$CLI catalogs create "$other_catalog" &> LOG.catalog
+trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1' EXIT
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
+trace musterr $CLI bundle deploy
+
+title "Nothing was recorded for the declined deploy - no version, so none to abort"
+# The version number it would have used is left for the next deploy to take, so the
+# history has no entry that reads like a deploy which failed or did nothing.
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The recorded resources are unchanged by the decline: the schema is still at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-declined-deploy-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+trace $CLI bundle destroy --auto-approve
+title "After the destroy the deployment is gone, so the summary reports no history rather than a dangling id"
+trace $CLI bundle summary -o json | jq '.bundle.deployment | has("history")'
+rm -f out.requests.txt

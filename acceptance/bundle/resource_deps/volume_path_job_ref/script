@@ -1,5 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
-trace $CLI bundle validate -o json | nostamp | jq '.resources.jobs, .resources.volumes'
+trace $CLI bundle validate -o json | nostamp.py | jq '.resources.jobs, .resources.volumes'
 
 # The job's data_path default references the volume's computed volume_path.
 # Record the JSON plan per engine to confirm the reference is resolved into the

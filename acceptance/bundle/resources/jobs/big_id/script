@@ -1,5 +1,5 @@
 trace $CLI bundle validate -o json | jq .resources > out.validate.json
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 $CLI bundle deploy $(readplanarg out.plan.direct.json)
 trace print_requests.py //jobs --nostamp
 print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json

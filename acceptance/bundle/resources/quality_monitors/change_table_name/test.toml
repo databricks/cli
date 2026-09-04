@@ -1,2 +1,6 @@
 # this does not work on terraform
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# The plan is captured with `errcode ... &> out` (trace line + JSON together), which nostamp.py
+# cannot filter; opt out of the recording variant (deploy --plan recording is covered by bundle/dms).
+EnvMatrix.DMS = [""]

@@ -21,7 +21,7 @@ if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
     # seconds after create, so the schema's `properties` change is present
     # nondeterministically. Prune it with normalize_uc_payload.py before reshaping so
     # the golden is stable. See #6027 and #6040.
-    $CLI bundle plan -o json \
+    $CLI bundle plan -o json | nostamp.py \
         | normalize_uc_payload.py \
         | jq '.plan | to_entries | map({resource: .key, changes: (.value.changes // {} | map_values({action, reason}))})' \
         >> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

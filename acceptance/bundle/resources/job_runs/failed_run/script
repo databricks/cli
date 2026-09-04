@@ -15,7 +15,7 @@ musterr trace $CLI bundle deploy
 # The framework saves the run id before WaitAfterCreate, so FAILED vs SUCCESS is drift.
 title "the failed run is recorded, and not having succeeded is drift"
 trace read_id.py my_run
-trace $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"]'
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan["resources.job_runs.my_run"]'
 
 # Name the job too, so the run-now bodies below say which number it is.
 read_id.py my_job > /dev/null

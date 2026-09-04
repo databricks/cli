@@ -8,7 +8,7 @@ bar_id=`read_id.py bar`
 
 title "Delete bar, keep foo (foo config updated to not depend on bar)"
 cp only_foo.yml databricks.yml
-trace $CLI bundle plan -o json | nostamp > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 # Sort requests because foo's update and bar's delete have no dependency edge
 # (foo's dependency on bar was removed in only_foo.yml), so execution order is non-deterministic.

@@ -25,7 +25,7 @@ trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_ti
 # member of the suspension oneof, nested under default_endpoint_settings, and the
 # direct engine masks it under its own name. See test.toml.
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

@@ -149,7 +149,7 @@ func OpenDeploymentState(ctx context.Context, b *bundle.Bundle, engine engine.En
 
 	deployBundle := &direct.DeploymentBundle{}
 	_, statePath := b.StateFilenameConfigSnapshot(ctx)
-	if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
+	if err := deployBundle.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), ""); err != nil {
 		return nil, fmt.Errorf("failed to open state: %w", err)
 	}
 	return deployBundle, nil

@@ -1,4 +1,4 @@
-trace $CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs/ > out.requests_create.json
 
@@ -11,7 +11,7 @@ title "Delete permissions remotely"
 trace $CLI permissions set jobs "$job_id" --json @remote_delete.json
 trace print_requests.py --nostamp //jobs/
 
-trace $CLI bundle plan -o json | nostamp > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs/ > out.requests_restore.json
 

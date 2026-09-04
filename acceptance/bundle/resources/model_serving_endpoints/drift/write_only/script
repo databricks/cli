@@ -7,7 +7,7 @@ title "Plan is a no-op despite write-only secret and burst_scaling_enabled not r
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
 title "The write-only fields are skipped as input_only (confirms the matched rules)"
-trace $CLI bundle plan --output json | jq '.plan[].changes'
+trace $CLI bundle plan --output json | nostamp.py | jq '.plan[].changes'
 
 title "Redeploy is a no-op (no config/ai-gateway/tags update calls)"
 trace $CLI bundle deploy

@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Save a plan, then deploy it: records version 1"
+$CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle plan -o json | nostamp.py
+# READPLAN deploys from the saved raw plan; without it the plan is recomputed. Untraced so the
+# variant-dependent command line stays out of the golden (the deploy output is identical either way).
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-stale-plan-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state the service holds for this deployment"
+trace print_state.py
+
+title "A saved plan carries the deployment id and the versions it targets (last 1, next 2)"
+trace $CLI bundle plan -o json | jq '{deployment_id, last_version_id, next_version_id}'
+
+title "Replay: re-deploying the same plan is rejected - it predates the recorded version"
+trace musterr $CLI bundle deploy --plan tmp.plan.json
+
+title "Only the first deploy recorded a version; the rejected replay created none"
+trace print_requests.py --dms //api/2.0/bundle --oneline
+
+rm -f tmp.plan.json out.requests.txt

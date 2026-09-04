@@ -1,0 +1,3 @@
+# This test deploys without recording first, then turns it on per-command, so it opts out of
+# the parent's DMS=true and drives DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY inline instead.
+EnvMatrix.DMS = [""]

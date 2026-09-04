@@ -1,0 +1,40 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy: the state write records the resource"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service lists the schema, recorded at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-successful-recreate-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state the service holds for this deployment"
+trace print_state.py
+
+title "Recreate writes state twice - the entry is dropped, then the new resource is saved"
+# One operation per resource per version; both writes land on the same one.
+# The drop opens it IN_PROGRESS, the save patches it to SUCCEEDED.
+# Unity Catalog has no catalog called "other", so make one to move the schema into.
+other_catalog="dms_other_${UNIQUE_NAME}"
+$CLI catalogs create "$other_catalog" &> LOG.catalog
+trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1' EXIT
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The plan now shows the recreate action"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service lists the schema at version 2 with recreate action"
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state after recreate"
+trace print_state.py
+
+title "Destroy: the delete is recorded with the id and no state"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle
+rm -f out.requests.txt

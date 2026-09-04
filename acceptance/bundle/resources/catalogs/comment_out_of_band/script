@@ -18,7 +18,7 @@ title "Set the comment out of band, the way Catalog Explorer does"
 MSYS_NO_PATHCONV=1 $CLI api patch "/api/2.1/unity-catalog/catalogs/$CATALOG" --json '{"comment":"set outside the bundle"}' > /dev/null
 
 title "The remote comment is drift, so the plan updates the catalog"
-trace $CLI bundle plan --output json | jq '.plan[].changes'
+trace $CLI bundle plan --output json | nostamp.py | jq '.plan[].changes'
 
 title "Redeploy clears the comment"
 trace $CLI bundle deploy

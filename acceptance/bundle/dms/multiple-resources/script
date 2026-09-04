@@ -1,0 +1,31 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; bundle/dms/record covers it."
+trace $CLI bundle deploy
+trace print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
+
+title "The plan records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service lists all five resources at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-multiple-resources-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state the service holds for this deployment"
+trace print_state.py
+
+title "Redeploy with no changes: nothing is applied, so no operations are recorded and only the version is opened and completed"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --sort --oneline
+
+title "The plan records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service still lists all five resources, now at version 2"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-multiple-resources-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state after redeploy"
+trace print_state.py
+
+rm -f out.requests.txt

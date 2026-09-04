@@ -1,0 +1,208 @@
+
+=== Deploy a schema with one grant: the grants node is recorded with its state
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default/files...
+Created schemas.foo
+Created schemas.foo.grants
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments",
+  "body": {
+    "display_name": "dms-emptied-resource-[UNIQUE_NAME]",
+    "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default/state",
+    "target_name": "default",
+    "workspace_info": {
+      "file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default/files",
+      "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "operations": [
+      {
+        "resource_key": "schemas.foo",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      },
+      {
+        "resource_key": "schemas.foo.grants",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "main.dms_emptied_resource_[UNIQUE_NAME]",
+    "sequence_id": "0",
+    "state": "{\"state\":{\"catalog_name\":\"main\",\"name\":\"dms_emptied_resource_[UNIQUE_NAME]\"}}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/schemas.foo.grants",
+  "q": {
+    "update_mask": "state,error_message,resource_id,status"
+  },
+  "body": {
+    "error_message": "",
+    "resource_id": "schema/main.dms_emptied_resource_[UNIQUE_NAME]",
+    "sequence_id": "0",
+    "state": "{\"state\":{\"securable_type\":\"schema\",\"full_name\":\"main.dms_emptied_resource_[UNIQUE_NAME]\",\"__embed__\":[{\"principal\":\"deco-test-user@databricks.com\",\"privileges\":[\"USE_SCHEMA\"]}]},\"depends_on\":[{\"node\":\"resources.schemas.foo\",\"label\":\"${resources.schemas.foo.id}\"}]}",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== Revoke the grant, so the grants node empties out
+>>> update_file.py databricks.yml grants: [{principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA]}] grants: []
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default/files...
+Updated schemas.foo.grants
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "previous_version_id": "1",
+    "operations": [
+      {
+        "resource_key": "schemas.foo.grants",
+        "action_type": "OPERATION_ACTION_TYPE_UPDATE"
+      }
+    ]
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo.grants",
+  "q": {
+    "update_mask": "state,error_message,status"
+  },
+  "body": {
+    "error_message": "",
+    "sequence_id": "0",
+    "status": "OPERATION_STATUS_SUCCEEDED"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== Plan again: reading state back from the service works and reports no work
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 2,
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "plan": {
+    "resources.schemas.foo": {
+      "action": "skip",
+      "remote_state": {
+        "browse_only": false,
+        "catalog_name": "main",
+        "catalog_type": "MANAGED_CATALOG",
+        "created_at": [UNIX_TIME_MILLIS][0],
+        "created_by": "[USERNAME]",
+        "effective_predictive_optimization_flag": {
+          "inherited_from_name": "[METASTORE_NAME]",
+          "inherited_from_type": "METASTORE",
+          "value": "ENABLE"
+        },
+        "enable_predictive_optimization": "INHERIT",
+        "full_name": "main.dms_emptied_resource_[UNIQUE_NAME]",
+        "metastore_id": "[UUID]",
+        "name": "dms_emptied_resource_[UNIQUE_NAME]",
+        "owner": "[USERNAME]",
+        "schema_id": "[UUID]",
+        "updated_at": [UNIX_TIME_MILLIS][1],
+        "updated_by": "[USERNAME]"
+      }
+    }
+  }
+}
+
+=== The grants node emptied out, so the service no longer lists it - only the schema remains
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "schemas.foo"
+  }
+]
+
+=== The raw recorded state the service holds for this deployment
+>>> print_state.py
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 2,
+ "features": {
+  "record_deployment_history": {}
+ },
+ "state": {
+  "resources.schemas.foo": {
+   "__id__": "main.dms_emptied_resource_[UNIQUE_NAME]",
+   "state": {
+    "catalog_name": "main",
+    "name": "dms_emptied_resource_[UNIQUE_NAME]"
+   }
+  }
+ }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.schemas.foo
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-emptied-resource-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

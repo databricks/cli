@@ -1,0 +1,41 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy the schema, so there is a resource to recreate"
+trace $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "After deploy, the service lists the resource at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-failed-recreate-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw state after successful deploy"
+trace print_state.py
+
+title "A recreate deletes and then fails to create. The delete went through, so the resource really is gone: the failed operation clears its state (self-contained, not assuming the delete's own write reached the service), rather than describing the resource as it was before the deploy"
+# Unity Catalog has no catalog called "other", so make one to move the schema into.
+other_catalog="dms_other_${UNIQUE_NAME}"
+$CLI catalogs create "$other_catalog" &> LOG.catalog
+trap '$CLI catalogs delete "$other_catalog" --force >> LOG.catalog 2>&1' EXIT
+trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_catalog}"
+# Fail only the create that follows the delete; the delete itself still goes through.
+trace fault.py "POST /api/2.1/unity-catalog/schemas" 400 0 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle deploy --auto-approve
+# Not sorted: the point of this test is the order the operations are recorded in.
+trace print_requests.py --dms //api/2.0/bundle
+
+title "The resource is not listed: state is what projects a resource, and the failed recreate left none"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-failed-recreate-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw state after failed recreate shows no resource"
+trace print_state.py
+
+title "Planning from DMS state alone creates the schema, which is what has to happen: it no longer exists"
+rm -rf .databricks
+trace $CLI bundle plan
+# plan probes the state files concurrently, so the recorded order varies. Only the
+# operations above are asserted; drop the rest rather than diff a racy order.
+rm -f out.requests.txt

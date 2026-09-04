@@ -10,7 +10,7 @@ trace update_file.py databricks.yml myvolume mynewvolume
 
 trace $CLI bundle plan
 # terraform marks this as "update", direct marks this as "update_with_id"
-$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //unity
 

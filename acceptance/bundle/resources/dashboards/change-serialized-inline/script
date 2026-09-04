@@ -23,7 +23,7 @@ update_file.py databricks.yml "Page 1" "Page One"
 
 trace $CLI bundle plan | contains.py "update" "!recreate"
 
-trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 title "deploy the change\n"
 $CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
