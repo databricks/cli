@@ -27,6 +27,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 		"postgres_snapshot_schedules",
 		// AI Gateway model service is deployed through the direct engine only.
 		"model_services",
+		"mcp_services",
 		"secrets",
 		"vector_search_endpoints",
 		"vector_search_indexes",

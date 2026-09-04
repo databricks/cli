@@ -142,6 +142,11 @@ func TestCaptureUCDependencies(t *testing.T) {
 						Name: "mycatalog.myschema.myindex",
 					}},
 				},
+				McpServices: map[string]*resources.McpService{
+					"my_mcp_service": {McpServiceConfig: resources.McpServiceConfig{
+						Parent: "schemas/mycatalog.myschema", McpServiceId: "mymcp",
+					}},
+				},
 			},
 		},
 	}
@@ -180,6 +185,9 @@ func TestCaptureUCDependencies(t *testing.T) {
 
 	// Vector search index (three-part "catalog.schema.index" name).
 	assert.Equal(t, catalogRef+"."+schemaRef+".myindex", b.Config.Resources.VectorSearchIndexes["my_index"].Name)
+
+	// MCP service (same compound parent field).
+	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.McpServices["my_mcp_service"].Parent)
 }
 
 // Pipeline schema and target are mutually exclusive; only the populated field

@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created mcp_services.mcp1
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Delete the resource out of band
+>>> [CLI] ai-gateway delete-mcp-service mcp-services/main.myschema.myservice
+
+=== Plan should detect the resource is gone and re-create it
+>>> [CLI] bundle plan
+create mcp_services.mcp1
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 0 deleted
