@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
@@ -40,8 +41,13 @@ func shouldRetry(err error) bool {
 // oneofGroups renames a change path to the group it belongs to, for fields the API only
 // accepts under their oneof group name; see the per-resource maps below.
 //
+// spec is the value the request body carries. A change that lands on a message is
+// expanded against it rather than against the plan's own copy of the new value,
+// because a plan read back from disk carries that copy as deserialized JSON, with the
+// types the expansion needs erased.
+//
 // Sorted, so the generated update_mask does not depend on map iteration order.
-func collectUpdatePathsWithPrefix(changes Changes, prefix string, oneofGroups map[string]string) []string {
+func collectUpdatePathsWithPrefix(changes Changes, prefix string, oneofGroups map[string]string, spec any) []string {
 	var paths []string
 	for path, change := range changes {
 		if change.Action != deployplan.Update {
@@ -61,7 +67,7 @@ func collectUpdatePathsWithPrefix(changes Changes, prefix string, oneofGroups ma
 			masked := maskPath(path)
 			// A change that lands on a message rather than on a field inside it masks the
 			// leaves the body populates, not the message: see expandMaskedMessage.
-			if leaves := expandMaskedMessage(masked, change.New); len(leaves) > 0 {
+			if leaves := expandMaskedMessage(masked, specValue(spec, masked)); len(leaves) > 0 {
 				for _, leaf := range leaves {
 					paths = append(paths, prefix+oneofGroup(oneofGroups, leaf))
 				}
@@ -83,6 +89,16 @@ func oneofGroup(oneofGroups map[string]string, path string) string {
 		return group
 	}
 	return path
+}
+
+// specValue returns the value spec carries at path, or nil when the path names
+// something that is not part of the spec, such as an input-only state field.
+func specValue(spec any, path string) any {
+	value, err := structaccess.GetByString(spec, path)
+	if err != nil {
+		return nil
+	}
+	return value
 }
 
 // expandMaskedMessage returns the paths of the leaves that value populates, relative to

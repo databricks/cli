@@ -35,9 +35,7 @@ func assertFieldsCovered(t *testing.T, sdkType, remoteType reflect.Type, skip ma
 func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 	upd := func() *deployplan.ChangeDesc { return &deployplan.ChangeDesc{Action: deployplan.Update} }
 	skip := func() *deployplan.ChangeDesc { return &deployplan.ChangeDesc{Action: deployplan.Skip} }
-	updTo := func(v any) *deployplan.ChangeDesc {
-		return &deployplan.ChangeDesc{Action: deployplan.Update, New: v}
-	}
+
 	suspension := map[string]string{
 		"default_endpoint_settings.suspend_timeout_duration": "default_endpoint_settings.suspension",
 	}
@@ -46,6 +44,7 @@ func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 		name        string
 		changes     Changes
 		oneofGroups map[string]string
+		spec        any
 		want        []string
 	}{
 		{
@@ -91,56 +90,67 @@ func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 			want:    []string{"spec.settings.pg_settings"},
 		},
 		{
-			name: "expands a whole new message to the fields the body populates",
-			changes: Changes{"default_endpoint_settings": updTo(&postgres.ProjectDefaultEndpointSettings{
-				AutoscalingLimitMinCu: 0.5,
-			})},
+			name:    "expands a whole new message to the fields the body populates",
+			changes: Changes{"default_endpoint_settings": upd()},
+			spec: &postgres.ProjectSpec{
+				DefaultEndpointSettings: &postgres.ProjectDefaultEndpointSettings{AutoscalingLimitMinCu: 0.5},
+			},
 			want: []string{"spec.default_endpoint_settings.autoscaling_limit_min_cu"},
 		},
 		{
-			name: "renames a oneof member the expansion reaches",
-			changes: Changes{"default_endpoint_settings": updTo(&postgres.ProjectDefaultEndpointSettings{
-				SuspendTimeoutDuration: duration.New(300 * time.Second),
-			})},
+			name:    "renames a oneof member the expansion reaches",
+			changes: Changes{"default_endpoint_settings": upd()},
+			spec: &postgres.ProjectSpec{
+				DefaultEndpointSettings: &postgres.ProjectDefaultEndpointSettings{
+					AutoscalingLimitMinCu:  0.5,
+					SuspendTimeoutDuration: duration.New(300 * time.Second),
+				},
+			},
 			oneofGroups: suspension,
-			want:        []string{"spec.default_endpoint_settings.suspension"},
+			want:        []string{"spec.default_endpoint_settings.autoscaling_limit_min_cu", "spec.default_endpoint_settings.suspension"},
 		},
 		{
-			name: "keeps the message when the body leaves nothing under it unset",
-			changes: Changes{"settings": updTo(&postgres.EndpointSettings{
-				PgSettings: map[string]string{"work_mem": "4MB"},
-			})},
+			name:    "keeps the message when the body leaves nothing under it unset",
+			changes: Changes{"settings": upd()},
+			spec: &postgres.EndpointSpec{
+				Settings: &postgres.EndpointSettings{PgSettings: map[string]string{"work_mem": "4MB"}},
+			},
 			want: []string{"spec.settings"},
 		},
 		{
-			name: "keeps a map inside an expanded message whole",
-			changes: Changes{"group": updTo(&postgres.EndpointGroupSpec{
-				Min: 1,
-				Max: 1,
-			})},
+			name:    "expands a partly populated message and keeps its map whole",
+			changes: Changes{"group": upd()},
+			spec: &postgres.EndpointSpec{
+				Group: &postgres.EndpointGroupSpec{Min: 1, Max: 1},
+			},
 			want: []string{"spec.group.max", "spec.group.min"},
 		},
 		{
 			name:    "does not expand a repeated field",
-			changes: Changes{"custom_tags": updTo([]postgres.ProjectCustomTag{{Key: "release_id", Value: "1"}})},
-			want:    []string{"spec.custom_tags"},
+			changes: Changes{"custom_tags": upd()},
+			spec: &postgres.ProjectSpec{
+				CustomTags: []postgres.ProjectCustomTag{{Key: "release_id", Value: "1"}},
+			},
+			want: []string{"spec.custom_tags"},
 		},
 		{
 			name:        "does not expand a timestamp wrapper",
-			changes:     Changes{"expire_time": updTo(sdktime.New(time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)))},
+			changes:     Changes{"expire_time": upd()},
+			spec:        &postgres.BranchSpec{ExpireTime: sdktime.New(time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC))},
 			oneofGroups: map[string]string{"expire_time": "expiration"},
 			want:        []string{"spec.expiration"},
 		},
 		{
 			name:    "keeps the message when the body populates nothing under it",
-			changes: Changes{"default_endpoint_settings": updTo(&postgres.ProjectDefaultEndpointSettings{})},
+			changes: Changes{"default_endpoint_settings": upd()},
+			spec:    &postgres.ProjectSpec{DefaultEndpointSettings: &postgres.ProjectDefaultEndpointSettings{}},
 			want:    []string{"spec.default_endpoint_settings"},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, collectUpdatePathsWithPrefix(tc.changes, "spec.", tc.oneofGroups))
+			assert.Equal(t, tc.want, collectUpdatePathsWithPrefix(tc.changes, "spec.", tc.oneofGroups, tc.spec))
 		})
 	}
 }

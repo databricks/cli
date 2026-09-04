@@ -9,9 +9,7 @@ trap cleanup EXIT
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 
 title "Deploy a project without default_endpoint_settings"
-rm -f out.requests.txt
 trace $CLI bundle deploy
-rm -f out.requests.txt
 
 title "Add the block with a single field, leaving its siblings unset"
 # The change lands on the message itself, so the mask must name the one field the
@@ -22,9 +20,12 @@ trace update_file.py databricks.yml "      #  autoscaling_limit_min_cu: 0.5" "  
 
 trace $CLI bundle plan
 $CLI bundle plan -o json > tmp.plan.json
-trace $CLI bundle deploy $(readplanarg tmp.plan.json)
 
-trace print_requests.py --del-body project_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
 rm -f out.requests.txt
+# Not traced: the command line carries --plan only in the saved-plan run, and both
+# runs must produce the same output.
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+
+trace print_requests.py --del-body project_id '//postgres' > out.requests.json
 
 trace $CLI postgres get-project "${project_name}" | project_fields
