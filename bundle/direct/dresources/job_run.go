@@ -107,10 +107,9 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	if input.HasOnBundleDeploy() {
 		ts.OnBundleDeploy = uuid.NewString()
 	}
-	if ts.OnBundleDeploy == "" && len(ts.OnFileChange) == 0 {
-		return state
+	if !ts.IsEmpty() {
+		state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
 	}
-	state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
 	return state
 }
 
