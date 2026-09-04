@@ -110,10 +110,7 @@ func normalizeLaunchStage(launchStage string) (clijson.LaunchStage, error) {
 }
 
 // parseFieldLaunchStage validates a field's contract launch stage, keeping every
-// explicit stage (GA included) so the generated schema records each field's
-// stability, not just previews. An empty stage means the contract assigns none;
-// it stays empty (unmarked) instead of defaulting to GA, so only fields the
-// contract actually stamps carry a stage.
+// explicit stage. An empty stage means the contract assigns none;
 func parseFieldLaunchStage(launchStage string) (clijson.LaunchStage, error) {
 	if launchStage == "" {
 		return "", nil
