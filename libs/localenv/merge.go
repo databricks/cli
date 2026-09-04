@@ -81,8 +81,8 @@ type dbconnectPlan struct {
 // multi-line string protection) and runs both databricks-connect passes on a clone,
 // in the same order as MergeManaged, so replacedDevPin and removed match what the
 // real merge does.
-func planDBConnect(target []byte, c Constraints, skipDBConnect bool) dbconnectPlan {
-	if skipDBConnect || c.DatabricksConnect == "" {
+func planDBConnect(target []byte, c Constraints, opts MergeOptions) dbconnectPlan {
+	if opts.SkipDBConnect || c.DatabricksConnect == "" {
 		return dbconnectPlan{}
 	}
 	// Mirror MergeManaged's own preprocessing so the same lines are inspected.
@@ -140,12 +140,15 @@ func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byt
 	}
 	lines := strings.Split(protected, "\n")
 
-	// requires-python is a managed value; if there is no [project] table to hold
-	// it, this is not a file we can faithfully merge (greenfield goes through
-	// RenderFreshPyproject, which always writes [project]). Fail loudly rather
-	// than silently skip the version pin.
-	if _, _, ok := tableBounds(lines, "[project]"); !ok {
-		return nil, nil, errNoProjectTable
+	// requires-python needs a [project] table to hold it; without one the merge
+	// would silently drop the pin, so fail loudly instead. Only enforced when
+	// constraints are managed — under SkipConstraints there is no requires-python to
+	// write, so a [project]-less file (e.g. one with only dependency groups) is
+	// merged for its other axes rather than rejected.
+	if !opts.SkipConstraints {
+		if _, _, ok := tableBounds(lines, "[project]"); !ok {
+			return nil, nil, errNoProjectTable
+		}
 	}
 
 	if !opts.SkipConstraints {
@@ -1264,8 +1267,7 @@ func RenderFreshPyproject(projectName string, c Constraints, opts MergeOptions) 
 	fmt.Fprintf(&b, "name = %q\n", projectName)
 	// uv requires project.version when a [project] table is present.
 	fmt.Fprintf(&b, "version = %q\n", freshProjectVersion)
-	// requires-python is omitted when constraints are skipped (--no-constraints),
-	// which lets uv pick the interpreter for the fresh project.
+	// Omitted under SkipConstraints, letting uv pick the interpreter for the project.
 	if !opts.SkipConstraints {
 		fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
 	}
@@ -1286,9 +1288,8 @@ func RenderFreshPyproject(projectName string, c Constraints, opts MergeOptions) 
 		fmt.Fprintf(&b, "environment_version = %q\n", c.EnvironmentVersion)
 		b.WriteString("\n")
 	}
-	// The [tool.uv] constraint block is omitted when constraints are skipped
-	// (--no-constraints); otherwise it is always written (an empty block when the
-	// artifact carries no constraint-dependencies).
+	// Written whenever constraints are managed — an empty block when the artifact
+	// carries no constraint-dependencies (nil and empty are treated alike).
 	if !opts.SkipConstraints {
 		for _, line := range renderToolUvBlock(c.ConstraintDeps, true) {
 			b.WriteString(line)

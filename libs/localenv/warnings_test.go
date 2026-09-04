@@ -12,7 +12,7 @@ import (
 // against a different notion of what the merge rewrites or removes than production uses —
 // that divergence is the bug this wiring exists to prevent.
 func detectWarnings(userPyproject []byte, c Constraints) []Warning {
-	return detectMergeWarnings(userPyproject, c, planDBConnect(userPyproject, c, false), MergeOptions{})
+	return detectMergeWarnings(userPyproject, c, planDBConnect(userPyproject, c, MergeOptions{}), MergeOptions{})
 }
 
 // codes extracts the warning codes in order for concise assertions.
@@ -63,7 +63,7 @@ dev = ["databricks-connect~=16.1.0", "pydantic~=1.0"]
 		DatabricksConnect: "databricks-connect~=18.0.0",
 		ConstraintDeps:    []string{"pydantic~=2.10.6"},
 	}
-	got := detectMergeWarnings(user, c, planDBConnect(user, c, false), MergeOptions{SkipConstraints: true})
+	got := detectMergeWarnings(user, c, planDBConnect(user, c, MergeOptions{}), MergeOptions{SkipConstraints: true})
 	assert.Equal(t, []string{WarnDBConnectPinOverridden}, codes(got))
 }
 
@@ -82,7 +82,7 @@ dev = ["databricks-connect~=16.1.0"]
 		RequiresPython:    "==3.12.*",
 		DatabricksConnect: "databricks-connect~=18.0.0",
 	}
-	got := detectMergeWarnings(user, c, planDBConnect(user, c, true), MergeOptions{SkipDBConnect: true})
+	got := detectMergeWarnings(user, c, planDBConnect(user, c, MergeOptions{SkipDBConnect: true}), MergeOptions{SkipDBConnect: true})
 	assert.Equal(t, []string{WarnRequiresPythonOverridden}, codes(got))
 }
 

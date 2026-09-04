@@ -173,12 +173,8 @@ func resolutionRequirements(p userPyprojectTOML) []string {
 // deterministic and ordered (requires-python, then databricks-connect, then the
 // standalone-pyspark collision, then constraint conflicts in the order uv would
 // encounter them) so goldens are stable.
-// opts suppresses the warnings for whichever axes are left unmanaged: under
-// SkipConstraints the merge neither overrides the user's requires-python nor imposes
-// constraints, and under SkipDBConnect it neither injects nor rewrites the
-// databricks-connect pin — so there is nothing to warn about on those axes. The
-// flags are threaded explicitly for the same reason MergeManaged takes them: intent
-// is not inferred from empty/nil values in c.
+// opts suppresses the warnings for whichever axes are left unmanaged: a skipped
+// axis is not written, so there is nothing on it to warn about.
 func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan, opts MergeOptions) []Warning {
 	if len(userPyproject) == 0 {
 		return nil

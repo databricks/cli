@@ -1152,6 +1152,22 @@ constraint-dependencies = ["old~=1.0"]
 	assert.ErrorIs(t, err, errNoProjectTable)
 }
 
+func TestMergeManagedSkipConstraintsAllowsMissingProjectTable(t *testing.T) {
+	// The [project] table is required only to hold requires-python. Under
+	// SkipConstraints there is none to write, so a [project]-less file (e.g. one with
+	// only dependency groups) is merged for its other axes rather than rejected.
+	in := []byte(`[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`)
+	out, regions, err := MergeManaged(in, testConstraints(), MergeOptions{SkipConstraints: true})
+	require.NoError(t, err)
+	// databricks-connect is still reconciled; requires-python is not written.
+	assert.Contains(t, regions, regionDatabricksConnect)
+	assert.Contains(t, string(out), `"databricks-connect~=17.2.0"`)
+	assert.NotContains(t, string(out), "requires-python")
+	requireValidTOML(t, out)
+}
+
 func countOccurrences(s, substr string) int {
 	return strings.Count(s, substr)
 }
