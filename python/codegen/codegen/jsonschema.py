@@ -17,6 +17,8 @@ class LaunchStage:
 
 def is_experimental_stage(stage: Optional[str]) -> bool:
     # Beta and private preview may still change; GA and public preview are frozen.
+    # Since PyDABs is typed so field behavior can change in experimental stages,
+    # this can lead to breaking changes hence these fields are declared experimental.
     return stage in (LaunchStage.PUBLIC_BETA, LaunchStage.PRIVATE_PREVIEW)
 
 
