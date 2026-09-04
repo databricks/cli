@@ -132,7 +132,7 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, InprocessMode, nil, false)
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -147,8 +147,13 @@ func TestInprocessMode(t *testing.T) {
 	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 	// Run the "deco env flip workspace" command to configure a workspace.
 
-	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
-	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
+	// Keep this to a single cheap test: it only needs to catch in-process mode
+	// rotting, and every testAccept call redoes the whole setup. This used to run
+	// selftest/server too, which meant a second setup after StartDefaultServer had
+	// pointed HOME at an empty temp dir, so building yamlfmt there re-downloaded the
+	// entire module cache: 44s on Linux CI, 140s on Windows. Tool builds are skipped
+	// for the same reason - selftest/basic uses neither terraform, the wheel, nor yamlfmt.
+	require.Equal(t, 1, testAccept(t, true, []string{"selftest/basic"}, true))
 }
 
 // Configure replacements for environment variables we read from test environments.
@@ -219,7 +224,11 @@ func requirePrerequisites(t *testing.T) bool {
 	})
 }
 
-func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+// selectedTests, when non-empty, limits the run to those test directories.
+// skipToolBuilds skips building the tools that the selected tests do not use
+// (terraform, the databricks-bundles wheel, yamlfmt); it must stay false for a
+// full run.
+func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipToolBuilds bool) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
 	}
@@ -274,7 +283,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
-	if !WorkspaceTmpDir {
+	if !WorkspaceTmpDir && !skipToolBuilds {
 		setupTerraform(t, cwd, buildDir, &repls)
 	}
 
@@ -287,7 +296,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("UV_FIND_LINKS", vendoredPyPackages)
 	t.Setenv("UV_OFFLINE", "true")
 
-	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
+	wheelPath := ""
+	if !skipToolBuilds {
+		wheelPath = buildDatabricksBundlesWheel(t, buildDir)
+	}
 	if wheelPath != "" {
 		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
@@ -346,7 +358,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Skip building yamlfmt when running on workspace filesystem (DBR).
 	// This fails today on DBR. Can be looked into and fixed as a follow-up
 	// as and when needed.
-	if !WorkspaceTmpDir {
+	if !WorkspaceTmpDir && !skipToolBuilds {
 		BuildYamlfmt(t)
 	}
 
@@ -471,11 +483,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 	subset.changed = changedTests
 
-	if singleTest != "" {
+	if len(selectedTests) > 0 {
 		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
-			return n != singleTest
+			return !slices.Contains(selectedTests, n)
 		})
-		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+		require.Len(t, testDirs, len(selectedTests), "selectedTests=%#v did not match all tests\n%#v", selectedTests, testDirs)
 	}
 
 	skippedDirs := 0
