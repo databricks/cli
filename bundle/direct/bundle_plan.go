@@ -64,7 +64,7 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan: it parses the
 // plan's entries (loaded as JSON when the plan came from a file) into the typed state cache the
 // apply reads. A first deployment's id does not exist until the deploy creates it after approval;
-// StampDeploymentID fills it in then. StateDB must already be open for write before calling this.
+// StampDeploymentIdForFirstVersion fills it in then. StateDB must already be open for write before calling this.
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
 	b.StateDB.AssertOpenedForWrite()
 
@@ -118,11 +118,11 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-// StampDeploymentID fills deploymentID into the plan's jobs and pipelines that still lack one, in
+// StampDeploymentIdForFirstVersion fills deploymentID into the plan's jobs and pipelines that still lack one, in
 // both the state cache the apply reads and the plan JSON. It is called after approval creates the
 // deployment, for a first deploy whose id did not exist at plan time; the version and any
 // pre-existing id were stamped then.
-func (b *DeploymentBundle) StampDeploymentID(deploymentID string) error {
+func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string) error {
 	for resourceKey, entry := range b.Plan.Plan {
 		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
 			continue

@@ -22,12 +22,12 @@ func TestRecordDeploymentHistoryEnv(t *testing.T) {
 		{"yes", false},
 	} {
 		ctx := env.Set(t.Context(), RecordDeploymentHistoryVariable, tc.value)
-		assert.Equal(t, tc.want, RecordDeploymentHistoryEnv(ctx), "value %q", tc.value)
+		assert.Equal(t, tc.want, RecordsDeploymentHistory(ctx, false), "value %q", tc.value)
 	}
 }
 
 func TestRecordDeploymentHistoryEnvUnset(t *testing.T) {
-	assert.False(t, RecordDeploymentHistoryEnv(t.Context()))
+	assert.False(t, RecordsDeploymentHistory(t.Context(), false))
 }
 
 func TestRecordsDeploymentHistory(t *testing.T) {

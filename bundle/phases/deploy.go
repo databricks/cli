@@ -339,7 +339,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 		if existingID == "" {
 			deploymentID, _ := deploymentAndNextVersion(b)
-			if err := b.DeploymentBundle.StampDeploymentID(deploymentID); err != nil {
+			if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(deploymentID); err != nil {
 				logdiag.LogError(ctx, err)
 				return
 			}

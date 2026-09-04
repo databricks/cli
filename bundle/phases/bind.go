@@ -135,11 +135,9 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}()
 
 	if engine.IsDirect() {
-		if b.ConfiguresDeploymentHistory(ctx) {
-			logdiag.LogError(ctx, errors.New("unbind is not supported for a bundle that records deployment history"))
-			return
-		}
-
+		// A recorded deployment cannot be unbound: DeploymentBundle.Unbind opens the state without
+		// recording, so the state guard refuses it when the marker is set. State is the source of
+		// truth, so a config flag that disagrees with the marker cannot slip an unbind through.
 		groupName, ok := terraform.TerraformToGroupName[tfResourceType]
 		if !ok {
 			groupName = tfResourceType

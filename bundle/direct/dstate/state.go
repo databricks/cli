@@ -33,9 +33,19 @@ const (
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
 
-	// supportedStateVersion is the highest schema version this CLI can read: the
-	// version it writes. A state newer than this is rejected as too new.
-	supportedStateVersion = currentStateVersion
+	// featureStateVersion is the schema version a future CLI will write once it records feature flags
+	// in the state version itself. This CLI does not write it, but reads such states (see
+	// migrateState): featureStateVersion with no features is equivalent to currentStateVersion and is
+	// accepted as-is (the on-disk version is left at featureStateVersion, not flipped down);
+	// featureStateVersion with any feature depends on capabilities this CLI lacks, so it is refused.
+	// Forward-compat scaffolding so a later release can write featureStateVersion + features without
+	// this CLI rejecting them outright. Always 3.
+	featureStateVersion = 3
+
+	// supportedStateVersion is the highest schema version this CLI can read. Normally equal to
+	// currentStateVersion - the version it reads is the version it writes - but this CLI can also
+	// read (never write) featureStateVersion. A state newer than this is rejected as too new.
+	supportedStateVersion = featureStateVersion
 )
 
 // featureRecordDeploymentHistory marks a state whose resources are also recorded with the
