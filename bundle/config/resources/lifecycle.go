@@ -48,3 +48,10 @@ type JobRunTriggersState struct {
 	OnBundleDeploy string            `json:"on_bundle_deploy,omitempty"`
 	OnFileChange   map[string]string `json:"on_file_change,omitempty"`
 }
+
+// IsEmpty reports whether no trigger is armed. An empty state is left off the
+// job run entirely, so this has to cover every field above: a new fingerprint
+// added without extending it would be dropped instead of persisted.
+func (s JobRunTriggersState) IsEmpty() bool {
+	return s.OnBundleDeploy == "" && len(s.OnFileChange) == 0
+}
