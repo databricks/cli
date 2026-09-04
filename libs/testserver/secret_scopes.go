@@ -7,6 +7,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// maxSecretScopeNameLength is the backend's cap on a scope name.
+const maxSecretScopeNameLength = 128
+
 func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -15,6 +18,17 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 		return Response{
 			Body:       fmt.Sprintf("internal error: %s", err),
 			StatusCode: 500,
+		}
+	}
+
+	// The name is validated before the collision check, so an empty one is refused on its own terms
+	// rather than reported as colliding with a previous empty-named scope.
+	if request.Scope == "" || len(request.Scope) > maxSecretScopeNameLength {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"message": fmt.Sprintf("Scope name must be non-empty and at most %d characters!", maxSecretScopeNameLength),
+			},
 		}
 	}
 

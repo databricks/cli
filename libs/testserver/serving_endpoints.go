@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -204,6 +205,12 @@ func autoCaptureConfigInputToOutput(input *serving.AutoCaptureConfigInput) *serv
 	}
 }
 
+// servingEndpointNamePattern and servingEndpointNameMessage are the backend's own constraint and
+// wording for an endpoint name. An empty name fails the pattern, which is how clearing one is refused.
+var servingEndpointNamePattern = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9_-]{0,61}[a-zA-Z0-9])?$`)
+
+const servingEndpointNameMessage = "Endpoint name must be maximum 63 characters, and alphanumeric with hyphens and underscores allowed in between."
+
 func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -213,6 +220,18 @@ func (s *FakeWorkspace) ServingEndpointCreate(req Request) Response {
 		return Response{
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
 			StatusCode: 400,
+		}
+	}
+
+	// The name is validated before the collision check, so an empty one is refused on its own terms
+	// rather than colliding with a previous empty-named endpoint.
+	if !servingEndpointNamePattern.MatchString(createReq.Name) {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    servingEndpointNameMessage,
+			},
 		}
 	}
 

@@ -10,7 +10,8 @@
 
 
 === summary
-OK                         563
+OK                         561
+CANNOT_DELETE_REQUIRED     2
 OK_INERT                   12
 SUPPRESSED                 32
 NOT_OBSERVABLE             25

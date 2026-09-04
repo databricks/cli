@@ -8,8 +8,14 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
+catalog_name                                 absent     main       BASE_ERROR  Invalid input: RPC CreateVolume Field managedcatalog.volume.VolumeInfo.catalog_name: name "" is not a valid name. Valid names cannot contain spaces, p...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+catalog_name                                 main       absent     BACKEND_ERROR  Invalid input: RPC CreateVolume Field managedcatalog.volume.VolumeInfo.catalog_name: name "" is not a valid name. Valid names cannot contain spaces, p...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+schema_name                                  absent     default    BASE_ERROR  Invalid input: RPC CreateVolume Field managedcatalog.volume.VolumeInfo.schema_name: name "" is not a valid name. Valid names cannot contain spaces, pe...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+schema_name                                  default    absent     BACKEND_ERROR  Invalid input: RPC CreateVolume Field managedcatalog.volume.VolumeInfo.schema_name: name "" is not a valid name. Valid names cannot contain spaces, pe...ntrol characters. (400 INVALID_PARAMETER_VALUE)
 
 === summary
 OK                         12
-OK_RECREATE                6
+CANNOT_DELETE_REQUIRED     2
+BACKEND_ERROR              2
 SKIPPED                    2
+BASE_ERROR                 2
