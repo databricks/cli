@@ -3,6 +3,9 @@
 >>> [CLI] experimental air register-image nvcr.io/org/img:1.0
 Error: image "nvcr.io/org/img:1.0" requires credentials, and the credentials found in your local Docker config could not be stored: creating secret scope "docker-credentials-[USERNAME]" was denied (user does not have permission to create secret scopes). Ask a workspace admin for permission to create secret scopes
 
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air register-image …
+
 Host:      [DATABRICKS_URL]
 Auth type: Personal Access Token (pat)
 
