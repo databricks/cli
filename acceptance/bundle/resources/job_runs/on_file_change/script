@@ -4,9 +4,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-plan_no_changes() {
-    trace $CLI bundle plan | contains.py "0 to add, 0 to change"
-}
+# Asserted after every deploy: the fingerprints just written match the files on
+# disk, so a second plan has nothing left to do.
+NO_CHANGES="0 to add, 0 to change"
 
 title "first deploy triggers a run"
 trace $CLI bundle plan -o json > out.plan.create.json
@@ -34,7 +34,7 @@ $CLI bundle deploy $(readplanarg tmp.plan1.json)
 read_id.py my_run > /dev/null
 trace print_requests.py --keep //jobs/runs/delete
 trace print_requests.py //jobs/run-now
-plan_no_changes
+trace $CLI bundle plan | contains.py "$NO_CHANGES"
 
 title "deleting the file warns and re-fires"
 mv seed.txt tmp.seed.txt
@@ -43,7 +43,7 @@ trace jq '.plan["resources.job_runs.my_run"]' tmp.plan2.json
 $CLI bundle deploy $(readplanarg tmp.plan2.json)
 read_id.py my_run > /dev/null
 trace print_requests.py //jobs/run-now
-plan_no_changes
+trace $CLI bundle plan | contains.py "$NO_CHANGES"
 
 title "restoring the file re-fires again"
 mv tmp.seed.txt seed.txt
@@ -51,7 +51,7 @@ trace $CLI bundle plan -o json > tmp.plan3.json
 $CLI bundle deploy $(readplanarg tmp.plan3.json)
 read_id.py my_run > /dev/null
 trace print_requests.py //jobs/run-now
-plan_no_changes
+trace $CLI bundle plan | contains.py "$NO_CHANGES"
 
 title "removing on_file_change is unchanged and does not run"
 update_file.py databricks.yml "      lifecycle:
@@ -63,7 +63,7 @@ $CLI bundle plan -o json > tmp.plan4.json
 title "bundle deploy\n"
 $CLI bundle deploy $(readplanarg tmp.plan4.json)
 trace print_requests.py //jobs/run-now
-plan_no_changes
+trace $CLI bundle plan | contains.py "$NO_CHANGES"
 
 title "re-adding on_file_change does not re-fire an unchanged file"
 # Removing the trigger left the last hash in state, so re-adding it compares
@@ -77,4 +77,4 @@ update_file.py databricks.yml '      job_id: ${resources.jobs.my_job.id}
 '
 trace $CLI bundle plan -o json > tmp.plan5.json
 $CLI bundle deploy $(readplanarg tmp.plan5.json)
-plan_no_changes
+trace $CLI bundle plan | contains.py "$NO_CHANGES"
