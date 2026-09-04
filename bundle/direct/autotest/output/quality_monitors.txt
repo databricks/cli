@@ -12,11 +12,17 @@ latest_monitor_failure_msg                   absent     x          POST_DEPLOY_D
 latest_monitor_failure_msg                   absent     y          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
 latest_monitor_failure_msg                   x          y          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
 latest_monitor_failure_msg                   y          x          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+table_name                                   absent     x-UNIQUE   BASE_ERROR  No stub found for pattern: POST /api/2.1/unity-catalog/tables/monitor (501 <nil>)
+table_name                                   absent     y-UNIQUE   BASE_ERROR  No stub found for pattern: POST /api/2.1/unity-catalog/tables/monitor (501 <nil>)
+table_name                                   x-UNIQUE   absent     DEPLOY_ERROR  No stub found for pattern: POST /api/2.1/unity-catalog/tables/monitor (501 <nil>)
+table_name                                   y-UNIQUE   absent     DEPLOY_ERROR  No stub found for pattern: POST /api/2.1/unity-catalog/tables/monitor (501 <nil>)
 
 === summary
-OK                 100
-OK_RECREATE        4
-SUPPRESSED         7
+OK                 138
+OK_RECREATE        8
+SUPPRESSED         11
 NOT_OBSERVABLE     3
 POST_DEPLOY_DRIFT  4
+DEPLOY_ERROR       2
 SKIPPED            1
+BASE_ERROR         2

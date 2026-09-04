@@ -10,6 +10,6 @@
 
 
 === summary
-OK                 26
+OK                 42
 NOT_OBSERVABLE     6
 SKIPPED            17

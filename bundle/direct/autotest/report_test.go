@@ -91,6 +91,14 @@ const (
 	// never off the error: which field the message happens to name is not evidence, since a
 	// recreate carries the whole resource.
 	verdictIDFieldRequired verdict = "OK_ID_FIELD_REQUIRED"
+	// The API refused to remove the field, and the bundle schema marks it required -- so the refusal is
+	// the contract both sides already agree on. A 400 says the request was rejected, which leaves the
+	// remote holding the value it had, so the resource is untouched and the run carries on.
+	verdictCannotDeleteRequired verdict = "CANNOT_DELETE_REQUIRED"
+	// The API refused to remove the field and the bundle schema does not mark it required. One of the
+	// two is wrong: either the schema is missing a required annotation, or the API is stricter than it
+	// means to be. Worth a look, which is why it is a separate word from the one above.
+	verdictCannotDeleteNotRequired verdict = "CANNOT_DELETE_NOT_REQUIRED"
 
 	verdictUnsettable verdict = "UNSETTABLE"
 	// Left out on purpose by the resource's value library, with a reason.
@@ -113,7 +121,8 @@ const (
 func (v verdict) leavesResourceUsable() bool {
 	switch v {
 	case verdictOK, verdictRecreate, verdictSuppressed, verdictNotObservable, verdictUnsettable,
-		verdictSkipped, verdictInertConfirmed, verdictInertViolated:
+		verdictSkipped, verdictInertConfirmed, verdictInertViolated,
+		verdictCannotDeleteRequired, verdictCannotDeleteNotRequired:
 		return true
 	case verdictDrift, verdictCollateral, verdictDriftChild, verdictUpdateIgnored,
 		verdictStaleRead, verdictBaselineDrift, verdictStartNotReached:
@@ -148,7 +157,7 @@ var benignSuppressions = map[string]bool{
 func (r result) isProblem() bool {
 	switch r.verdict {
 	case verdictOK, verdictRecreate, verdictNotObservable, verdictSkipped, verdictInertConfirmed,
-		verdictIDFieldRequired:
+		verdictIDFieldRequired, verdictCannotDeleteRequired:
 		return false
 	case verdictSuppressed:
 		return !benignSuppressions[r.detail]
@@ -350,7 +359,8 @@ func (r *report) render(problemsOnly bool) string {
 
 	sb.WriteString("\n=== summary\n")
 	for _, v := range []verdict{
-		verdictOK, verdictRecreate, verdictIDFieldRequired, verdictInertConfirmed, verdictSuppressed,
+		verdictOK, verdictRecreate, verdictIDFieldRequired, verdictCannotDeleteRequired,
+		verdictCannotDeleteNotRequired, verdictInertConfirmed, verdictSuppressed,
 		verdictNotObservable, verdictNoPlan, verdictInertViolated,
 		verdictBaselineDrift, verdictStaleRead, verdictUpdateIgnored, verdictDrift,
 		verdictCollateral, verdictDriftChild,
