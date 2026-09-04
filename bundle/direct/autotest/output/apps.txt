@@ -104,9 +104,9 @@ user_api_scopes                              len1       absent     UPDATE_IGNORE
 user_api_scopes                              len2       absent     UPDATE_IGNORED
 
 === summary
-OK                 20
-SUPPRESSED         16
-UPDATE_IGNORED     4
-UNSETTABLE         2
-SKIPPED            95
-START_NOT_REACHED  72
+OK                         20
+SUPPRESSED                 16
+UPDATE_IGNORED             4
+UNSETTABLE                 2
+SKIPPED                    95
+START_NOT_REACHED          72

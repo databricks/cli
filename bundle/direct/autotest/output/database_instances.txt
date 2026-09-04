@@ -36,11 +36,11 @@ name                                         x-UNIQUE   absent     POST_DEPLOY_D
 name                                         y-UNIQUE   absent     POST_DEPLOY_DRIFT  create
 
 === summary
-OK                 28
-OK_RECREATE        32
-SUPPRESSED         9
-NOT_OBSERVABLE     1
-UPDATE_IGNORED     4
-POST_DEPLOY_DRIFT  2
-COLLATERAL_DRIFT   20
-SKIPPED            24
+OK                         28
+OK_RECREATE                32
+SUPPRESSED                 9
+NOT_OBSERVABLE             1
+UPDATE_IGNORED             4
+POST_DEPLOY_DRIFT          2
+COLLATERAL_DRIFT           20
+SKIPPED                    24

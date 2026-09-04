@@ -10,6 +10,7 @@
 
 
 === summary
-OK                 42
-NOT_OBSERVABLE     6
-SKIPPED            17
+OK                         26
+CANNOT_DELETE_REQUIRED     16
+NOT_OBSERVABLE             6
+SKIPPED                    17

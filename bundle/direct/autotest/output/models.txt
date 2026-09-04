@@ -15,10 +15,10 @@ description                                  x          absent     CANNOT_DELETE
 description                                  y          absent     CANNOT_DELETE_NOT_REQUIRED  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
 
 === summary
-OK                 2
-OK_RECREATE        2
-OK_ID_FIELD_REQUIRED 4
+OK                         2
+OK_RECREATE                2
+OK_ID_FIELD_REQUIRED       4
 CANNOT_DELETE_NOT_REQUIRED 4
-BASE_SHIFTED       1
-OK_INERT           18
-SKIPPED            1
+BASE_SHIFTED               1
+OK_INERT                   18
+SKIPPED                    1

@@ -16,10 +16,10 @@ target_qps                                   1          absent     UPDATE_IGNORE
 target_qps                                   2          absent     UPDATE_IGNORED
 
 === summary
-OK                 10
-OK_RECREATE        8
-UPDATE_IGNORED     2
-BACKEND_ERROR      1
-DEPLOY_ERROR       1
-SKIPPED            2
-BASE_ERROR         2
+OK                         10
+OK_RECREATE                8
+UPDATE_IGNORED             2
+BACKEND_ERROR              1
+DEPLOY_ERROR               1
+SKIPPED                    2
+BASE_ERROR                 2

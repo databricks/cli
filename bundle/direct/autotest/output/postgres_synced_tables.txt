@@ -10,9 +10,9 @@
 
 
 === summary
-OK_RECREATE        122
-OK_ID_FIELD_REQUIRED 4
-CANNOT_DELETE_REQUIRED 4
-SUPPRESSED         6
-NOT_OBSERVABLE     4
-SKIPPED            1
+OK_RECREATE                122
+OK_ID_FIELD_REQUIRED       4
+CANNOT_DELETE_REQUIRED     4
+SUPPRESSED                 6
+NOT_OBSERVABLE             4
+SKIPPED                    1

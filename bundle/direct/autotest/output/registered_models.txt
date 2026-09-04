@@ -18,10 +18,10 @@ owner                                        x          y          UPDATE_IGNORE
 owner                                        y          x          UPDATE_IGNORED
 
 === summary
-OK                 44
-OK_RECREATE        2
-OK_ID_FIELD_REQUIRED 8
-SUPPRESSED         1
-NOT_OBSERVABLE     1
-UPDATE_IGNORED     8
-SKIPPED            9
+OK                         44
+OK_RECREATE                2
+OK_ID_FIELD_REQUIRED       8
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+UPDATE_IGNORED             8
+SKIPPED                    9
