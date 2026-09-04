@@ -618,6 +618,9 @@ resources:
                       notebook_path: "./src/my_notebook.py"
           ```
       "$fields":
+        "libraries":
+          "description": |-
+            A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.

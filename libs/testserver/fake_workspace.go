@@ -199,6 +199,7 @@ type FakeWorkspace struct {
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
 	Clusters              map[string]compute.ClusterDetails
+	ClusterLibraries      map[string][]compute.Library // cluster id -> installed libraries
 	InstancePools         map[string]compute.GetInstancePool
 	ClusterPolicies       map[string]compute.Policy
 	Catalogs              map[string]catalog.CatalogInfo
@@ -512,7 +513,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				SingleUserName:   TestUser.UserName,
 			},
 		},
-		InstancePools: map[string]compute.GetInstancePool{},
+		InstancePools:    map[string]compute.GetInstancePool{},
+		ClusterLibraries: map[string][]compute.Library{},
 		ClusterPolicies: map[string]compute.Policy{
 			// Seeded so the stateful list keeps backing the variable-lookup tests
 			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).

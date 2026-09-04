@@ -1,0 +1,10 @@
+
+=== Deploy libraries on a started=false cluster: no restart
+=== Change the libraries and redeploy: cluster is stopped, so no restart is issued
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

@@ -923,8 +923,25 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ClustersStart(req)
 	})
 
+	server.Handle("POST", "/api/2.1/clusters/restart", func(req Request) any {
+		return req.Workspace.ClustersRestart(req)
+	})
+
 	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
 		return req.Workspace.ClustersPermanentDelete(req)
+	})
+
+	// Cluster libraries:
+	server.Handle("POST", "/api/2.0/libraries/install", func(req Request) any {
+		return req.Workspace.LibrariesInstall(req)
+	})
+
+	server.Handle("POST", "/api/2.0/libraries/uninstall", func(req Request) any {
+		return req.Workspace.LibrariesUninstall(req)
+	})
+
+	server.Handle("GET", "/api/2.0/libraries/cluster-status", func(req Request) any {
+		return req.Workspace.LibrariesClusterStatus(req, req.URL.Query().Get("cluster_id"))
 	})
 
 	// MLflow Experiments:

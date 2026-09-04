@@ -68,6 +68,8 @@ func collectLocalLibraries(b *bundle.Bundle) (map[string][]LocationToUpdate, err
 		taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
 		forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
+		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
+		clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 		envDepsPattern.Append(dyn.AnyIndex()),
 		pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
 		// The AI Runtime task's code_source_path is a local archive (typically an

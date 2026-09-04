@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy output is noisy and differs fake vs cloud, so route it to LOG and assert
+# only the deterministic signals. The cluster ends up stopped (started=false), so no
+# restart is ever issued.
+title "Deploy libraries on a started=false cluster: no restart"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "Created clusters.mycluster" "!Restarting cluster" > /dev/null
+
+title "Change the libraries and redeploy: cluster is stopped, so no restart is issued"
+update_file.py databricks.yml "        - pypi:
+            package: requests" "        - pypi:
+            package: requests
+        - pypi:
+            package: numpy"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
+cat LOG.redeploy | contains.py "Updated clusters.mycluster" "!Restarting cluster" > /dev/null

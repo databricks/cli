@@ -1,0 +1,44 @@
+
+=== Deploy a cluster with a pypi and a local wheel library
+=== Libraries installed via the Libraries API (wheel rewritten to its uploaded path)
+>>> print_requests.py //libraries/install
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[UUID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      },
+      {
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+      }
+    ]
+  }
+}
+
+=== Removing the wheel and redeploying uninstalls it and restarts the running cluster
+>>> print_requests.py //libraries/uninstall
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[UUID]",
+    "libraries": [
+      {
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

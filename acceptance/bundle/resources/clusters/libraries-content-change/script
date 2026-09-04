@@ -1,0 +1,27 @@
+export DATA_SECURITY_MODE=USER_ISOLATION
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# First deploy builds the wheel, uploads it, and installs it on the fresh cluster.
+title "Deploy a cluster with a local wheel library"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
+trace print_requests.py //libraries/install
+
+# Change only the wheel's code, keeping version 0.0.1 so the built filename - and
+# thus the uploaded workspace path - is byte-for-byte identical to the first deploy.
+title "Badness: wheel code changes but version does not, so redeploy neither reinstalls nor restarts"
+update_file.py my_test_code/__main__.py "Hello from my func" "Hello from my func v2"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
+# The libraries path is unchanged, so the plan sees no library change: the cluster is
+# not restarted and no install request is issued, leaving the stale wheel running. The
+# following two assertions encode that known limitation (see the TODO in cluster.go).
+cat LOG.redeploy | contains.py "!Restarting cluster" > /dev/null
+trace print_requests.py //libraries/install
