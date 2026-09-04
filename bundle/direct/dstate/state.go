@@ -138,14 +138,30 @@ type WALEntry struct {
 // StartRecording opens the operation buffer that records each subsequent state write with DMS
 // under deploymentID and versionID, so what the service holds mirrors the WAL. It uses the client
 // Open built, so it is called only when the deployment records history, and once the version
-// exists (after approval) - which is why it is not an Open option. Returns the buffer so the
-// deploy can drain it.
-func (db *DeploymentState) StartRecording(ctx context.Context, deploymentID string, versionID int64) *dms.OperationBuffer {
+// exists (after approval) - which is why it is not an Open option.
+func (db *DeploymentState) StartRecording(ctx context.Context, deploymentID string, versionID int64) {
 	buf := dms.StartOperationBuffer(ctx, db.dmsClient, deploymentID, versionID)
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.operationBuffer = buf
+}
+
+// OperationBuffer returns the buffer recording state writes to DMS, or nil when the bundle does not
+// record deployment history. Apply reads it to surface a recording failure and to drain uploads.
+func (db *DeploymentState) OperationBuffer() *dms.OperationBuffer {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.operationBuffer
+}
+
+// TakeOperationBuffer returns the operation buffer and clears it, so a deferred safety-net
+// completion after an explicit one is a no-op.
+func (db *DeploymentState) TakeOperationBuffer() *dms.OperationBuffer {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	buf := db.operationBuffer
+	db.operationBuffer = nil
 	return buf
 }
 

@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
-	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
@@ -51,13 +50,6 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
-
-	// DMS carries deployment-history recording across the phases; nil unless the bundle records
-	// history. DmsApiClient is set where the state is opened. The deployment id and version live
-	// in bundle.deployment.history, not here. DmsAsyncOperationClient is opened once the deploy
-	// phase creates the version, and Apply drains it before returning.
-	DmsApiClient            *dms.Client
-	DmsAsyncOperationClient *dms.OperationBuffer
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

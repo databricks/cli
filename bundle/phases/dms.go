@@ -85,18 +85,19 @@ func deploymentAndNextVersion(b *bundle.Bundle) (string, int64) {
 // no deployment behind; a first deploy's new id is then stamped into the plan (StampDeploymentID).
 func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) {
 	db := &b.DeploymentBundle
+	dmsClient := db.StateDB.DmsClient()
 	metadata := deploymentMetadata(b)
 	deploymentID, _ := deploymentAndNextVersion(b)
 	switch mask := metadata.StaleFields(current); {
 	case deploymentID == "":
-		id, err := db.DmsApiClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
+		id, err := dmsClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
 			return
 		}
 		deploymentID = id
 	case mask != "":
-		if err := db.DmsApiClient.UpdateDeployment(ctx, deploymentID, metadata, mask); err != nil {
+		if err := dmsClient.UpdateDeployment(ctx, deploymentID, metadata, mask); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))
 			return
 		}
@@ -116,7 +117,8 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 // A no-op when the bundle does not record deployment history.
 func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.VersionType, staged []dms.StagedOperation) error {
 	db := &b.DeploymentBundle
-	if db.DmsApiClient == nil {
+	dmsClient := db.StateDB.DmsClient()
+	if dmsClient == nil {
 		return nil
 	}
 	deploymentID, versionID := deploymentAndNextVersion(b)
@@ -139,7 +141,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 			OriginUrl: git.OriginURL,
 		}
 	}
-	version, err := db.DmsApiClient.CreateVersion(ctx, deploymentID, versionID, dms.CreateVersionRequest{
+	version, err := dmsClient.CreateVersion(ctx, deploymentID, versionID, dms.CreateVersionRequest{
 		CliVersion:        build.GetInfo().Version,
 		VersionType:       versionType,
 		PreviousVersionId: previousVersionID,
@@ -151,7 +153,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	}
 	log.Infof(ctx, "Created deployment version: deployment=%s version=%s", deploymentID, version.VersionId)
 
-	db.DmsAsyncOperationClient = db.StateDB.StartRecording(ctx, deploymentID, versionID)
+	db.StateDB.StartRecording(ctx, deploymentID, versionID)
 	return nil
 }
 
@@ -162,11 +164,10 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 // was created.
 func drainOperationsAndCompleteVersion(ctx context.Context, b *bundle.Bundle, success bool) (bool, error) {
 	db := &b.DeploymentBundle
-	buf := db.DmsAsyncOperationClient
+	buf := db.StateDB.TakeOperationBuffer()
 	if buf == nil {
 		return false, nil
 	}
-	db.DmsAsyncOperationClient = nil
 
 	// Drain first; a recording error fails the deploy even when the resources applied. Its error
 	// is left to whoever drained (apply), not returned twice.
@@ -179,7 +180,7 @@ func drainOperationsAndCompleteVersion(ctx context.Context, b *bundle.Bundle, su
 		reason = bundledeployments.VersionCompleteVersionCompleteFailure
 	}
 	deploymentID, versionID := deploymentAndNextVersion(b)
-	if err := db.DmsApiClient.CompleteVersion(ctx, deploymentID, versionID, reason); err != nil {
+	if err := db.StateDB.DmsClient().CompleteVersion(ctx, deploymentID, versionID, reason); err != nil {
 		return false, err
 	}
 	log.Infof(ctx, "Completed deployment version: deployment=%s version=%d reason=%s", deploymentID, versionID, reason)

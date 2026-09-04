@@ -293,10 +293,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
-
-				// Open built the DMS client from the workspace client on the context; hand it to the
-				// phases that create versions and deployments.
-				b.DeploymentBundle.DmsApiClient = b.DeploymentBundle.StateDB.DmsClient()
 			} else {
 				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), ""); err != nil {
 					logdiag.LogError(ctx, err)

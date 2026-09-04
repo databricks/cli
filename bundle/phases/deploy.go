@@ -326,7 +326,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
-	if b.DeploymentBundle.DmsApiClient != nil {
+	if b.DeploymentBundle.StateDB.DmsClient() != nil {
 		existingID, _ := deploymentAndNextVersion(b)
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
