@@ -12,8 +12,8 @@ name                                         v1         absent     UPDATE_IGNORE
 name                                         v2         absent     UPDATE_IGNORED
 
 === summary
-OK                 4
-OK_RECREATE        16
-OK_INERT           18
-UPDATE_IGNORED     2
-SKIPPED            2
+OK                         4
+OK_RECREATE                16
+OK_INERT                   18
+UPDATE_IGNORED             2
+SKIPPED                    2

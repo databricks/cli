@@ -27,8 +27,8 @@ spot_instance_policy                         COST_OPTIMIZED absent     UPDATE_IG
 spot_instance_policy                         RELIABILITY_OPTIMIZED absent     UPDATE_IGNORED
 
 === summary
-OK                 31
-SUPPRESSED         2
-UPDATE_IGNORED     11
-SKIPPED            6
-START_NOT_REACHED  6
+OK                         31
+SUPPRESSED                 2
+UPDATE_IGNORED             11
+SKIPPED                    6
+START_NOT_REACHED          6

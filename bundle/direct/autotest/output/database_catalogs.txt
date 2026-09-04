@@ -18,10 +18,10 @@ name                                         x-UNIQUE   absent     POST_DEPLOY_D
 name                                         y-UNIQUE   absent     POST_DEPLOY_DRIFT  create
 
 === summary
-OK                 2
-OK_RECREATE        12
-SUPPRESSED         1
-NOT_OBSERVABLE     1
-POST_DEPLOY_DRIFT  2
-SKIPPED            2
-BASE_ERROR         6
+OK                         2
+OK_RECREATE                12
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+POST_DEPLOY_DRIFT          2
+SKIPPED                    2
+BASE_ERROR                 6

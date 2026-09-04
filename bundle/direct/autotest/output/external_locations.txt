@@ -10,8 +10,8 @@
 
 
 === summary
-OK                 34
-OK_RECREATE        114
-SUPPRESSED         5
-NOT_OBSERVABLE     3
-SKIPPED            18
+OK                         34
+OK_RECREATE                114
+SUPPRESSED                 5
+NOT_OBSERVABLE             3
+SKIPPED                    18
