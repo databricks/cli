@@ -28,6 +28,8 @@ job_runs: jobs.RunNow
 
 jobs: jobs.JobSettings
 
+model_services: catalog.CreateModelServiceRequest
+
 model_serving_endpoints: serving.CreateServingEndpoint
 
 models: ml.CreateModelRequest

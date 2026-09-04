@@ -156,6 +156,11 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.triggers[*].sql_condition.trigger_mode":                                              {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
 	"resources.jobs.*.triggers[*].table_update.condition":                                                  {"ALL_UPDATED", "ANY_UPDATED"},
 
+	"resources.model_services.*.config.rate_limits[*].key":                                {"RATE_LIMIT_KEY_REQUEST_TAG", "RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"},
+	"resources.model_services.*.config.rate_limits[*].renewal_period":                     {"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
+	"resources.model_services.*.config.routing.destinations[*].destination_type":          {"DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL", "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL", "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL"},
+	"resources.model_services.*.config.routing.fallback.destinations[*].destination_type": {"DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL", "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL", "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL"},
+
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior":                                        {"BLOCK", "MASK", "NONE"},
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior":                                       {"BLOCK", "MASK", "NONE"},
 	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].key":                                                   {"endpoint", "service_principal", "user", "user_group"},

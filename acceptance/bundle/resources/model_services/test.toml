@@ -1,0 +1,3 @@
+# AI Gateway securables are only deployable via the direct deployment engine
+# (there is no Terraform provider path for them in bundles).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

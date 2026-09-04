@@ -95,6 +95,14 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"model_services": &resources.ModelService{
+		ModelServiceConfig: resources.ModelServiceConfig{
+			Parent:         "schemas/main.default",
+			ModelServiceId: "my_model_service",
+			Comment:        "Test model service",
+		},
+	},
+
 	"registered_models": &resources.RegisteredModel{
 		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 			Name:            "my_registered_model",
