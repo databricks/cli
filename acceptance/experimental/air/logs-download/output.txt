@@ -7,16 +7,10 @@ No logs available for run 123. Run terminated in state SUCCESS
 >>> [CLI] experimental air logs 123 --download-to dl-logs --node 5
 Error: invalid --node 5: run has 2 node(s), indexed 0 to 1
 
-Tip: use the --debug flag to see more details and a trace of this error:
-  databricks --debug experimental air logs …
-
 Exit code: 1
 
 === download-to cannot be combined with --lines
 >>> [CLI] experimental air logs 123 --download-to dl-logs --lines 50
 Error: --download-to writes complete logs, so it cannot be combined with --lines or --minutes
-
-Tip: use the --debug flag to see more details and a trace of this error:
-  databricks --debug experimental air logs …
 
 Exit code: 1

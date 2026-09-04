@@ -33,7 +33,7 @@ func TestRunErrorIncludesDebugTip(t *testing.T) {
 	}
 	airCommand := &cobra.Command{Use: "air"}
 	airCommand.AddCommand(runCommand)
-	wrapRunErrorsWithDebugTip(airCommand)
+	wrapRunErrorWithDebugTip(runCommand)
 	experimentalCommand := &cobra.Command{Use: "experimental"}
 	experimentalCommand.AddCommand(airCommand)
 	rootCommand := &cobra.Command{Use: "databricks"}
@@ -58,7 +58,7 @@ func TestRunErrorOmitsDebugTipWhenDebugEnabled(t *testing.T) {
 	}
 	airCommand := &cobra.Command{Use: "air"}
 	airCommand.AddCommand(runCommand)
-	wrapRunErrorsWithDebugTip(airCommand)
+	wrapRunErrorWithDebugTip(runCommand)
 	rootCommand := &cobra.Command{Use: "databricks"}
 	rootCommand.PersistentFlags().Bool("debug", true, "")
 	rootCommand.AddCommand(airCommand)

@@ -18,27 +18,25 @@ This command set is the Go port of the standalone Python "air" CLI. It is
 experimental and may change in future versions.`,
 	}
 
-	cmd.AddCommand(newRunCommand())
+	runCommand := newRunCommand()
+	wrapRunErrorWithDebugTip(runCommand)
+	cmd.AddCommand(runCommand)
 	cmd.AddCommand(newGetCommand())
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newLogsCommand())
 	cmd.AddCommand(newCancelCommand())
-	cmd.AddCommand(newRegisterImageCommand())
+	registerImageCommand := newRegisterImageCommand()
+	wrapRunErrorWithDebugTip(registerImageCommand)
+	cmd.AddCommand(registerImageCommand)
 	cmd.AddCommand(newConvertToDabsCommand())
-	wrapRunErrorsWithDebugTip(cmd)
 
 	return cmd
 }
 
-func wrapRunErrorsWithDebugTip(cmd *cobra.Command) {
-	if cmd.RunE != nil {
-		runE := cmd.RunE
-		cmd.RunE = func(cmd *cobra.Command, args []string) error {
-			return withDebugErrorTip(cmd, runE(cmd, args))
-		}
-	}
-	for _, child := range cmd.Commands() {
-		wrapRunErrorsWithDebugTip(child)
+func wrapRunErrorWithDebugTip(cmd *cobra.Command) {
+	runE := cmd.RunE
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return withDebugErrorTip(cmd, runE(cmd, args))
 	}
 }
 
