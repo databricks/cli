@@ -20,6 +20,7 @@ var resourceURLPatterns = map[string]string{
 	"experiments":             "ml/experiments/%s",
 	"genie_spaces":            "genie/rooms/%s",
 	"jobs":                    "jobs/%s",
+	"mcp_services":            "explore/data/mcp-services/%s",
 	"models":                  "ml/models/%s",
 	"model_serving_endpoints": "ml/endpoints/%s",
 	"model_services":          "explore/data/model-services/%s",
@@ -54,6 +55,7 @@ var resourceAliases = map[string]string{
 // requires slash-separated segments.
 var dotSeparatedResources = map[string]bool{
 	"catalogs":               true,
+	"mcp_services":           true,
 	"model_services":         true,
 	"postgres_synced_tables": true,
 	"quality_monitors":       true,
