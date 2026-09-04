@@ -1,0 +1,1 @@
+* `databricks aitools install --output json` now reports an `error_category` for a failed or skipped install (per agent, and at the top level for a failure with no per-agent entry), giving coding agents and CI a stable classification of why an install did not complete. ([#6482](https://github.com/databricks/cli/pull/6482))

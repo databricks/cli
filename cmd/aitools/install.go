@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
 
@@ -57,11 +58,12 @@ func (d delivery) String() string {
 
 // agentPlanItem is the resolved plan for one agent: what we'll do and why.
 type agentPlanItem struct {
-	agent    *agents.Agent
-	delivery delivery
-	scope    string // agent-native plugin scope (deliveryPlugin only)
-	reason   string // why the agent is skipped (deliverySkip only)
-	explicit bool   // named via --agents (blocking it is an error)
+	agent     *agents.Agent
+	delivery  delivery
+	scope     string                      // agent-native plugin scope (deliveryPlugin only)
+	reason    string                      // why the agent is skipped (deliverySkip only)
+	skipError protos.AitoolsErrorCategory // error category for the skip (deliverySkip only)
+	explicit  bool                        // named via --agents (blocking it is an error)
 }
 
 // agentChoice is one row in the interactive agent picker.
@@ -206,12 +208,16 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				}
 			}
 
-			defer logInstallEvent(ctx, plan, installOpts{
-				Scope:        opts.Scope,
-				Experimental: opts.IncludeExperimental,
-			})
+			var outcomes []agentOutcome
+			var runErr error
+			defer func() {
+				logInstallEvent(ctx, plan, installOpts{
+					Scope:        opts.Scope,
+					Experimental: opts.IncludeExperimental,
+				}, classifyInstallError(topLevelFailure(runErr)), outcomes)
+			}()
 
-			outcomes, runErr := executePlan(ctx, src, plan, opts, jsonMode)
+			outcomes, runErr = executePlan(ctx, src, plan, opts, jsonMode)
 			if jsonMode {
 				if jerr := renderJSON(cmd.OutOrStdout(), buildInstallOutput(opts.Scope, outcomes, runErr)); jerr != nil {
 					// Rendering failed, so the JSON the caller parses is broken.
@@ -408,6 +414,7 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 		if scope == installer.ScopeProject && !a.SupportsProjectScope {
 			item.delivery = deliverySkip
 			item.reason = "does not support project-scoped skills"
+			item.skipError = protos.AitoolsErrorCategoryUnsupportedScope
 		} else {
 			item.delivery = deliverySkills
 		}
@@ -416,6 +423,7 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 		if !ok {
 			item.delivery = deliverySkip
 			item.reason = reason
+			item.skipError = protos.AitoolsErrorCategoryUnsupportedScope
 		} else {
 			item.delivery = deliveryPlugin
 			item.scope = nativeScope
@@ -442,13 +450,15 @@ func printPlanSummary(ctx context.Context, plan []agentPlanItem, scope string) {
 }
 
 // agentOutcome is one agent's result after executePlan: how the databricks
-// tools were delivered (or attempted), and, when the agent did not succeed, a
-// human-readable message for --output json.
+// tools were delivered (or attempted), and, when the agent did not succeed, the
+// failure category and a human-readable message for --output json. The category
+// is what telemetry records; the message is local-only and never sent.
 type agentOutcome struct {
-	agent    *agents.Agent
-	delivery delivery
-	status   outcomeStatus
-	message  string // set when skipped or failed
+	agent         *agents.Agent
+	delivery      delivery
+	status        outcomeStatus
+	errorCategory protos.AitoolsErrorCategory // Unspecified when status == outcomeInstalled
+	message       string                      // set when skipped or failed
 }
 
 type outcomeStatus string
@@ -460,9 +470,9 @@ const (
 )
 
 // agentErrors wraps the failures of explicitly named agents, which are already
-// reported in their per-agent outcomes. Wrapping lets the JSON layer tell a
-// per-agent failure apart from a top-level failure that has no per-agent entry,
-// so each is surfaced exactly once.
+// reported in their per-agent outcomes. Wrapping lets the JSON and telemetry
+// layers tell a per-agent failure apart from a top-level failure that has no
+// per-agent entry, so each is surfaced exactly once.
 type agentErrors struct{ err error }
 
 func (e *agentErrors) Error() string { return e.err.Error() }
@@ -470,7 +480,7 @@ func (e *agentErrors) Unwrap() error { return e.err }
 
 // topLevelFailure returns the run error when it has no per-agent entry, or nil
 // when the failure is already reported per agent — so a per-agent failure is not
-// duplicated in the top-level error field.
+// duplicated in the top-level error/errorCategory fields.
 func topLevelFailure(runErr error) error {
 	if _, ok := errors.AsType[*agentErrors](runErr); ok {
 		return nil
@@ -503,7 +513,8 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 		if !quiet {
 			installer.PrintInstallingFor(ctx, skillsAgents)
 		}
-		// A skills install runs as a group; on failure the whole command fails.
+		// A skills install runs as a group; on failure the whole command fails and
+		// the top-level error category classifies it.
 		if err := installSkillsForAgentsFn(ctx, src, skillsAgents, opts); err != nil {
 			return outcomes, err
 		}
@@ -529,10 +540,11 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", it.agent.DisplayName, err)))
 				}
 				outcomes = append(outcomes, agentOutcome{
-					agent:    it.agent,
-					delivery: deliveryPlugin,
-					status:   outcomeFailed,
-					message:  err.Error(),
+					agent:         it.agent,
+					delivery:      deliveryPlugin,
+					status:        outcomeFailed,
+					errorCategory: classifyInstallError(err),
+					message:       err.Error(),
 				})
 				if it.explicit {
 					explicitErrs = append(explicitErrs, err)
@@ -563,10 +575,11 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			cmdio.LogString(ctx, cmdio.Yellow(ctx, "Skipped "+it.agent.DisplayName+": "+it.reason))
 		}
 		outcomes = append(outcomes, agentOutcome{
-			agent:    it.agent,
-			delivery: deliverySkip,
-			status:   outcomeSkipped,
-			message:  it.reason,
+			agent:         it.agent,
+			delivery:      deliverySkip,
+			status:        outcomeSkipped,
+			errorCategory: it.skipError,
+			message:       it.reason,
 		})
 		if it.explicit {
 			explicitErrs = append(explicitErrs, fmt.Errorf("%s: %s", it.agent.DisplayName, it.reason))
@@ -591,17 +604,20 @@ type installOutput struct {
 	Scope  string            `json:"scope"`
 	Agents []agentResultJSON `json:"agents"`
 
-	// Error is a top-level failure message with no per-agent entry (e.g. a
-	// skills-group install failure); empty on success. It is local-only and never
-	// sent to telemetry.
-	Error string `json:"error,omitempty"`
+	// Error and ErrorCategory describe a top-level failure with no per-agent
+	// entry (e.g. a skills-group install failure); both empty on success. Error
+	// is the local-only message; ErrorCategory is the classification telemetry
+	// also records.
+	Error         string `json:"error,omitempty"`
+	ErrorCategory string `json:"error_category,omitempty"`
 }
 
 type agentResultJSON struct {
-	Name     string `json:"name"`
-	Delivery string `json:"delivery"`
-	Status   string `json:"status"`
-	Message  string `json:"message,omitempty"`
+	Name          string `json:"name"`
+	Delivery      string `json:"delivery"`
+	Status        string `json:"status"`
+	ErrorCategory string `json:"error_category,omitempty"`
+	Message       string `json:"message,omitempty"`
 }
 
 func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) installOutput {
@@ -613,6 +629,9 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 			Status:   string(o.status),
 			Message:  o.message,
 		}
+		if o.errorCategory != "" {
+			entry.ErrorCategory = string(o.errorCategory)
+		}
 		out.Agents = append(out.Agents, entry)
 	}
 	// A top-level failure (skills-group install, ref lookup, plugin recording)
@@ -621,6 +640,7 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 	// stay in the agents entries above and are not repeated here.
 	if e := topLevelFailure(runErr); e != nil {
 		out.Error = e.Error()
+		out.ErrorCategory = string(classifyInstallError(e))
 	}
 	return out
 }
