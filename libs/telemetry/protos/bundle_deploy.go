@@ -113,6 +113,34 @@ type BundleDeployExperimental struct {
 
 	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
 	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
+
+	// PII-free descriptions of why a post-deploy migration to the direct engine
+	// failed. Each is a message
+	// template produced by libs/safeerr — the format string of the error, with
+	// everything the user supplied left as a verb — plus the safe fields of any
+	// API error at the end of its chain.
+	//
+	// These are the aggregatable counterpart to BundleDeployEvent.ErrorMessage,
+	// which is scrubbed heuristically and still treated as privileged. They are
+	// composed of source literals and closed enums only, so they need no
+	// scrubbing and can be grouped on directly.
+
+	// DirectMigrateSaferr describes a post-deploy migration to the direct
+	// engine whose state could not be read or converted. Set alongside
+	// direct_migrate_error on opt-in deploys and direct_drymigrate_success on the
+	// dry run.
+	DirectMigrateSaferr string `json:"direct_migrate_serror,omitempty"`
+
+	// DirectMigrateCommitSaferr describes a migration whose state
+	// converted cleanly but could not be committed. Set alongside
+	// direct_migrate_commit_error.
+	DirectMigrateCommitSaferr string `json:"direct_migrate_commit_serror,omitempty"`
+
+	// DirectMigrateWarningSaferr describes the first warning a conversion
+	// emitted. A warning stops an automatic migration just as an error does, but
+	// carries no error to describe it. Set alongside direct_migrate_warnings, or
+	// direct_drymigrate_warnings on the dry run.
+	DirectMigrateWarningSaferr string `json:"direct_migrate_warning_serror,omitempty"`
 }
 
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts

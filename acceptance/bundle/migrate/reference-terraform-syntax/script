@@ -1,0 +1,21 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# Terraform's own reference syntax, which users copy from Terraform docs or carry
+# over from a raw Terraform project. Terraform resolves it, so the deploy and the
+# migration both succeed.
+title "Deploy on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Opt in: the migration reports success"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+# Badness: the migration reports success but writes an unusable state.
+# BuildStateFromTF derives depends_on from each reference via GetNodeAndType,
+# which returns an empty node for a path that does not start with "resources",
+# and the empty node lands in resources.json. Nothing warns until the next plan.
+title "Badness: the migrated state cannot be planned\n"
+trace musterr $CLI bundle plan 2>&1 | contains.py 'invalid dependency' 'no such node'
+rm -f out.requests.txt

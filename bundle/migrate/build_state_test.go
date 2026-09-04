@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/safeerr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,7 +51,7 @@ func runBuildStateFromTF(
 	db.OpenWithData(statePath, dstate.NewDatabase("lineage", 1))
 	require.NoError(t, db.UpgradeToWrite())
 
-	_, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
+	_, _, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
 	require.NoError(t, err)
 
 	_, err = db.Finalize(t.Context())
@@ -301,5 +302,161 @@ resources:
 				}
 			}
 		})
+	}
+}
+
+// openEmptyWriteState opens an empty write-mode deployment state under a fresh
+// temp dir and registers cleanup that closes the WAL file. The error and warning
+// paths below never reach the Finalize that the success helper relies on to close
+// it, and Windows cannot remove the temp dir while the .wal handle is still open.
+func openEmptyWriteState(t *testing.T) *dstate.DeploymentState {
+	t.Helper()
+
+	db := &dstate.DeploymentState{}
+	db.OpenWithData(filepath.Join(t.TempDir(), "resources.json"), dstate.NewDatabase("lineage", 1))
+	require.NoError(t, db.UpgradeToWrite())
+	t.Cleanup(func() { _, _ = db.Finalize(t.Context()) })
+	return db
+}
+
+// buildStateErrFromTF is runBuildStateFromTF's failure counterpart: it returns
+// the error instead of requiring success.
+func buildStateErrFromTF(
+	t *testing.T,
+	yaml string,
+	tfAttrs migrate.TFStateAttrs,
+	tfIDs map[string]string,
+) error {
+	t.Helper()
+
+	root := rootFromYAML(t, yaml)
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	db := openEmptyWriteState(t)
+
+	_, _, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, db, tfAttrs, tfIDs, "")
+	return err
+}
+
+// TestBuildStateFromTFErrors covers the ways a conversion fails, and pins the
+// message against the template reported to telemetry: the message names the
+// resource and field, the template names neither but still says which failure
+// it was. Together these are what a migration failure population can be broken
+// down by.
+func TestBuildStateFromTFErrors(t *testing.T) {
+	tests := []struct {
+		name string
+
+		yaml    string
+		tfAttrs migrate.TFStateAttrs
+		tfIDs   map[string]string
+
+		// wantErrContains is a substring of the user-facing message; secrets
+		// below must appear there and must not appear in the template.
+		wantErrContains string
+		wantTemplate    string
+	}{
+		{
+			name: "referenced resource missing from TF state",
+			yaml: `
+resources:
+  pipelines:
+    src_secret:
+      name: "source"
+  jobs:
+    dst_secret:
+      name: "${resources.pipelines.src_secret.name}"
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_job": {"dst_secret": json.RawMessage(`{"id": "j1"}`)},
+			},
+			tfIDs:           map[string]string{"resources.jobs.dst_secret": "j1"},
+			wantErrContains: "databricks_pipeline.src_secret not found in TF state",
+			wantTemplate:    `jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %q: key not found; method B: cannot look up %q: databricks_pipeline.%s not found in TF state`,
+		},
+		{
+			name: "referenced field absent from TF attributes",
+			yaml: `
+resources:
+  pipelines:
+    src_secret:
+      name: "source"
+  jobs:
+    dst_secret:
+      name: "${resources.pipelines.src_secret.name}"
+`,
+			tfAttrs: migrate.TFStateAttrs{
+				"databricks_pipeline": {"src_secret": json.RawMessage(`{"id": "p1"}`)},
+				"databricks_job":      {"dst_secret": json.RawMessage(`{"id": "j1"}`)},
+			},
+			tfIDs: map[string]string{
+				"resources.pipelines.src_secret": "p1",
+				"resources.jobs.dst_secret":      "j1",
+			},
+			wantErrContains: "key not found",
+			wantTemplate:    `jobs.*: cannot resolve field %q (template %q): jobs.%s field %s: method A: %q: key not found; method B: cannot look up %q: %q: key not found`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := buildStateErrFromTF(t, tc.yaml, tc.tfAttrs, tc.tfIDs)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErrContains)
+			assert.Equal(t, tc.wantTemplate, safeerr.SafeError(err))
+
+			// The names the message carries must not reach the template.
+			for _, secret := range []string{"src_secret", "dst_secret"} {
+				assert.Contains(t, err.Error(), secret, "message should name the resource")
+				assert.NotContains(t, safeerr.SafeError(err), secret, "template must not")
+			}
+		})
+	}
+}
+
+// TestBuildStateFromTFMethodsDisagree covers the one blocking outcome that is
+// not an error: both resolution methods succeed but return different values, so
+// the conversion warns and keeps going. MigrateToDirect stops on a warning just
+// as it does on an error, but there is no error to describe — nothing records
+// which field disagreed.
+func TestBuildStateFromTFMethodsDisagree(t *testing.T) {
+	yaml := `
+resources:
+  jobs:
+    src:
+      name: source
+    dst:
+      name: dst
+      description: ${resources.jobs.src.name}
+`
+	// Method A reads dst's own description; Method B reads src's name. They
+	// disagree here, which is what the backend normalizing a value on write
+	// looks like to the conversion.
+	tfAttrs := migrate.TFStateAttrs{
+		"databricks_job": {
+			"src": json.RawMessage(`{"id": "1", "name": "source"}`),
+			"dst": json.RawMessage(`{"id": "2", "name": "dst", "description": "stale-value"}`),
+		},
+	}
+	tfIDs := map[string]string{"resources.jobs.src": "1", "resources.jobs.dst": "2"}
+
+	root := rootFromYAML(t, yaml)
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	db := openEmptyWriteState(t)
+
+	warnings, warnSaferr, err := migrate.BuildStateFromTF(t.Context(), &root, adapters, db, tfAttrs, tfIDs, "")
+
+	// No error: the conversion completed. But it warned, which is enough to stop
+	// an automatic migration, so the warning carries its own PII-free template.
+	require.NoError(t, err)
+	assert.True(t, warnings, "disagreeing methods must be reported as a warning")
+	assert.Equal(t, `jobs.%s field %q: method A and method B disagree`, warnSaferr)
+
+	// Neither the resource name nor the disagreeing values reach the template.
+	for _, secret := range []string{"dst", "stale-value", "source"} {
+		assert.NotContains(t, warnSaferr, secret)
 	}
 }

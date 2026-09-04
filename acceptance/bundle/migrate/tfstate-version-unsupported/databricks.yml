@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+# Enabled by the script before the second deploy: with it enabled for the first
+# one too, that deploy would leave a state terraform itself cannot read.
+#experimental: {scripts: {postdeploy: "python3 bump_state_version.py"}}
+
+resources:
+  jobs:
+    my_job:
+      name: my-job

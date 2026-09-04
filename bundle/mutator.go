@@ -122,6 +122,30 @@ func ApplyFuncContext(ctx context.Context, b *Bundle, fn func(context.Context, *
 	ApplyContext(ctx, b, funcMutator{fn})
 }
 
+type errFuncMutator struct {
+	fn  func(context.Context, *Bundle) error
+	err error
+}
+
+func (m *errFuncMutator) Name() string {
+	return "<func>"
+}
+
+func (m *errFuncMutator) Apply(ctx context.Context, b *Bundle) diag.Diagnostics {
+	m.err = m.fn(ctx, b)
+	return nil
+}
+
+// ApplyFuncErr applies an inline-specified function mutator and returns its error
+// rather than turning it into a diagnostic. The mutator machinery still runs, so
+// typed config changes are synced back to the dynamic tree. A failure to sync is
+// logged as a diagnostic, not returned.
+func ApplyFuncErr(ctx context.Context, b *Bundle, fn func(context.Context, *Bundle) error) error {
+	m := &errFuncMutator{fn: fn}
+	ApplyContext(ctx, b, m)
+	return m.err
+}
+
 // Test helpers. TODO: move to separate package.
 
 func Apply(ctx context.Context, b *Bundle, m Mutator) diag.Diagnostics {

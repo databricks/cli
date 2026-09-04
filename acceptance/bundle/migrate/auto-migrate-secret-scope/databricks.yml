@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: my-scope
+      permissions:
+        - level: READ
+          user_name: someone@example.com

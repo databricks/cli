@@ -2,8 +2,10 @@ package filer
 
 import (
 	"io/fs"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/safeerr"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -108,4 +110,73 @@ func TestPermissionError_Unwrap(t *testing.T) {
 	var got *apierr.APIError
 	require.ErrorAs(t, err, &got)
 	assert.Equal(t, "MAX_CHILD_NODE_SIZE_EXCEEDED", got.ErrorCode)
+}
+
+// TestErrorSafeStringOmitsPath is the property that lets these errors be
+// reported to telemetry: the classification survives, the path does not.
+func TestErrorSafeStringOmitsPath(t *testing.T) {
+	const path = "/Workspace/Users/someone@example.com/secret_project"
+
+	tests := []struct {
+		err            error
+		wantSafeString string
+	}{
+		{
+			err:            fileAlreadyExistsError{path: path},
+			wantSafeString: "file already exists",
+		},
+		{
+			err:            fileDoesNotExistError{path: path},
+			wantSafeString: "file does not exist",
+		},
+		{
+			err:            noSuchDirectoryError{path: path},
+			wantSafeString: "no such directory",
+		},
+		{
+			err:            notADirectory{path: path},
+			wantSafeString: "not a directory",
+		},
+		{
+			err:            notAFile{path: path},
+			wantSafeString: "not a file",
+		},
+		{
+			err:            directoryNotEmptyError{path: path},
+			wantSafeString: "directory not empty",
+		},
+		{
+			err:            permissionError{path: path},
+			wantSafeString: "access denied",
+		},
+		{
+			err:            cannotDeleteRootError{},
+			wantSafeString: "unable to delete filer root",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.wantSafeString, func(t *testing.T) {
+			safe, ok := tt.err.(interface{ SafeString() string })
+			require.True(t, ok, "%T must supply a stand-in", tt.err)
+
+			assert.Equal(t, tt.wantSafeString, safe.SafeString())
+			assert.NotContains(t, safe.SafeString(), path)
+
+			// The message still leads with the same classification.
+			assert.True(t, strings.HasPrefix(tt.err.Error(), tt.wantSafeString),
+				"%q should start with %q", tt.err.Error(), tt.wantSafeString)
+		})
+	}
+}
+
+// TestErrorSafeStringReachesTemplate covers the end-to-end path: a filer error
+// wrapped by safeerr contributes its classification to the template.
+func TestErrorSafeStringReachesTemplate(t *testing.T) {
+	const path = "/Workspace/Users/someone@example.com/x"
+	err := safeerr.Errorf("pushing direct state to workspace: %w", permissionError{path: path})
+
+	assert.Equal(t, "pushing direct state to workspace: access denied: "+path, err.Error())
+	assert.Equal(t, "pushing direct state to workspace: access denied", safeerr.SafeError(err))
+	assert.NotContains(t, safeerr.SafeError(err), path)
 }

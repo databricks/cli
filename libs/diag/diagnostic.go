@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/safeerr"
 )
 
 type Diagnostic struct {
@@ -51,6 +52,33 @@ func FromErr(err error) Diagnostics {
 			Summary:  FormatAPIErrorSummary(err),
 			Detail:   FormatAPIErrorDetails(err),
 		},
+	}
+}
+
+// SafeError returns a PII-free description of err for telemetry: the safe
+// message of a safeerr error, or a typed error's own stand-in, plus the safe
+// fields of any API error at the end of its chain. The halves are independent: a CLI error carries a template but
+// may wrap no API error, and an API error reached without any safeerr wrapping
+// has safe fields but no template.
+func SafeError(err error) string {
+	safe := safeerr.SafeError(err)
+	if safe == "" {
+		// Not raised through safeerr, but a typed error can still describe itself
+		// — libs/filer's errors do. This covers the call sites not yet converted,
+		// which is most of them.
+		if ss, ok := err.(safeerr.SafeStringer); ok {
+			safe = ss.SafeString()
+		}
+	}
+	apiDescription := SafeAPIErrorDescription(err)
+
+	switch {
+	case apiDescription == "":
+		return safe
+	case safe == "":
+		return apiDescription
+	default:
+		return safe + " [" + apiDescription + "]"
 	}
 }
 

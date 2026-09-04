@@ -305,6 +305,12 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
 				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
+
+				// Own alignment group: these names are long enough that sharing one
+				// would re-align every field above them.
+				DirectMigrateSaferr:        b.Metrics.DirectMigrateSaferr,
+				DirectMigrateCommitSaferr:  b.Metrics.DirectMigrateCommitSaferr,
+				DirectMigrateWarningSaferr: b.Metrics.DirectMigrateWarningSaferr,
 			},
 		},
 	})
