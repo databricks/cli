@@ -7,7 +7,6 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/mutator/aicode"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
@@ -27,13 +26,6 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		scripts.Execute(config.ScriptPreBuild),
 		artifacts.Build(),
 		scripts.Execute(config.ScriptPostBuild),
-
-		// Package any AI Runtime task code_source_path that points at a local
-		// directory into a content-addressed tarball overlaid on the sync root, and
-		// rewrite the field to the synced workspace path. No requirements.yaml is
-		// synthesized: the runtime installs pip deps from the job's serverless
-		// environment (environments[].spec.dependencies) directly.
-		aicode.PackageCodeSource(),
 
 		mutator.ResolveVariableReferencesWithoutResources(
 			"artifacts",
