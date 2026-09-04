@@ -2,6 +2,7 @@ package vscode
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -352,8 +353,38 @@ func TestCheckIDESSHExtension_NoPrompt_WithoutAutoApprove_Errors(t *testing.T) {
 
 	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "--install-extension")
 	assert.ErrorIs(t, err, ErrSSHExtensionInstallUnavailable)
+	// The sentinel is a telemetry tag, so it must stay out of the message: what the user needs
+	// to read first is the problem, not that the CLI had no way to ask about it.
+	assert.Equal(t, `Required extension "Remote - SSH" is not installed in VS Code. `+
+		"Install it with: code --install-extension ms-vscode-remote.remote-ssh, or pass --auto-approve",
+		err.Error())
+}
+
+// Declining at the prompt is the outcome that separates "the user said no" from "there was no
+// way to ask", which is the distinction the split exists to make. Drive the real prompt rather
+// than asserting against a hand-built error, so the wiring is covered and not just the mapping.
+func TestCheckIDESSHExtension_Declined(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("PATH", tmpDir)
+	ctx, tst := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	defer tst.Done()
+
+	createFakeIDEExecutable(t, tmpDir, "code", "ms-python.python@2024.1.1\n")
+
+	// Drain stderr, where the prompt is written, or AskYesOrNo blocks on the pipe.
+	go func() { _, _ = io.Copy(io.Discard, tst.Stderr) }()
+	go func() {
+		_, _ = tst.Stdin.WriteString("n\n")
+		_ = tst.Stdin.Flush()
+	}()
+
+	err := CheckIDESSHExtension(ctx, VSCodeOption, false)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrSSHExtensionInstallDeclined)
+	assert.NotErrorIs(t, err, ErrSSHExtensionInstallUnavailable)
+	assert.Equal(t, `Required extension "Remote - SSH" is not installed in VS Code. `+
+		"Install it with: code --install-extension ms-vscode-remote.remote-ssh", err.Error())
 }
 
 // A command that is on PATH but whose --list-extensions fails is reported separately from a

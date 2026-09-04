@@ -280,6 +280,12 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	outcome := connectOutcome{isReconnect: opts.ServerMetadata != ""}
 	defer func() {
 		outcome.err = retErr
+		// A cancelled context is the only trace a Ctrl-C leaves: exec.CommandContext kills the
+		// child and reports *exec.ExitError, which does not wrap context.Canceled, so a step
+		// that shells out cannot recognise the interruption itself. This defer is registered
+		// after `defer cancel()` and so runs before it (LIFO), which means ctx is cancelled
+		// here only by the signal handler or the caller, never by Run's own cleanup.
+		outcome.interrupted = ctx.Err() != nil
 		logSshTunnelEvent(ctx, opts, outcome)
 	}()
 
@@ -1245,6 +1251,10 @@ type connectOutcome struct {
 	// errorCategory is set at the failure site. Empty means the failure was not attributed.
 	errorCategory protos.SshTunnelErrorCategory
 	err           error
+	// interrupted reports whether the connect context was cancelled, i.e. the user gave up on
+	// the attempt. Tracked apart from err because a step that shells out reports a killed child
+	// as *exec.ExitError, which carries no trace of the cancellation.
+	interrupted bool
 }
 
 // sshExtensionErrorCategory attributes a Remote SSH extension check failure to the outcome that
@@ -1267,15 +1277,14 @@ func sshExtensionErrorCategory(err error) protos.SshTunnelErrorCategory {
 	return protos.SshTunnelErrorCategoryUnknown
 }
 
-// category returns the error category to report. A cancelled context means the user
-// interrupted the attempt, whichever call happened to observe it first, so it wins over the
-// category recorded at the failure site. An unattributed failure is reported as UNKNOWN so
-// that it stays countable.
+// category returns the error category to report. An interrupted attempt means the user gave
+// up, whichever call happened to observe it first, so it wins over the category recorded at
+// the failure site. An unattributed failure is reported as UNKNOWN so that it stays countable.
 func (o connectOutcome) category() protos.SshTunnelErrorCategory {
 	if o.isSuccess || o.err == nil {
 		return protos.SshTunnelErrorCategoryUnspecified
 	}
-	if errors.Is(o.err, context.Canceled) {
+	if o.interrupted || errors.Is(o.err, context.Canceled) {
 		return protos.SshTunnelErrorCategoryUserAborted
 	}
 	if o.errorCategory == "" {

@@ -550,6 +550,26 @@ func TestConnectOutcomeCategory(t *testing.T) {
 			},
 			want: protos.SshTunnelErrorCategoryUserAborted,
 		},
+		{
+			// A step that shells out reports a killed child as *exec.ExitError, which does not
+			// wrap context.Canceled, so the cancelled context is the only evidence left. Without
+			// this branch a Ctrl-C during the extension install counts as a rejected install and
+			// pollutes the bucket that is supposed to mean "the marketplace or a policy blocked
+			// it" -- one of only two reachable under --auto-approve.
+			name: "interruption wins over the category set at the failure site",
+			outcome: connectOutcome{
+				interrupted:   true,
+				errorCategory: protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed,
+				err:           errors.New("signal: killed"),
+			},
+			want: protos.SshTunnelErrorCategoryUserAborted,
+		},
+		{
+			// Interrupting an established tunnel is not a connection failure.
+			name:    "interruption after a successful connection reports no category",
+			outcome: connectOutcome{isSuccess: true, interrupted: true, err: errFailed},
+			want:    protos.SshTunnelErrorCategoryUnspecified,
+		},
 	}
 
 	for _, tt := range tests {

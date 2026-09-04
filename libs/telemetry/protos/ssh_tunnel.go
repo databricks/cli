@@ -41,7 +41,7 @@ const (
 
 	// The Remote SSH extension was missing or too old, an install was attempted, and the IDE
 	// rejected it. Points at the marketplace or a policy that forbids the install rather than
-	// at anything the user chose.
+	// at anything the user chose: an install the user interrupted lands in USER_ABORTED.
 	SshTunnelErrorCategoryIDESSHExtensionInstallFailed SshTunnelErrorCategory = "IDE_SSH_EXTENSION_INSTALL_FAILED"
 
 	// The user was asked to install the Remote SSH extension and declined. Unreachable with
@@ -75,7 +75,9 @@ const (
 	// its metadata never appeared before the timeout.
 	SshTunnelErrorCategoryServerStartTimeout SshTunnelErrorCategory = "SERVER_START_TIMEOUT"
 
-	// The user interrupted the connection (Ctrl-C or a termination signal).
+	// The user interrupted the connection (Ctrl-C or a termination signal). Takes precedence
+	// over the category of whichever step observed the interruption, including steps that shell
+	// out to the IDE and see only a killed child process.
 	SshTunnelErrorCategoryUserAborted SshTunnelErrorCategory = "USER_ABORTED"
 
 	// A failure that does not correspond to any of the categories above. The connect path

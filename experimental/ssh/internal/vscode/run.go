@@ -130,6 +130,25 @@ var (
 	ErrSSHExtensionInstallUnavailable = errors.New("cannot prompt to install the Remote SSH extension")
 )
 
+// consentError renders only the message written for the user while still matching its sentinel
+// via errors.Is. The two exec failures wrap theirs with %w instead: their message ends in the
+// underlying error, so the sentinel reads as a natural prefix. A consent message is a full
+// sentence that already states the problem, and prefixing it would lead with an internal tag
+// and then restate what follows.
+type consentError struct {
+	msg      string
+	sentinel error
+}
+
+func (e *consentError) Error() string { return e.msg }
+
+func (e *consentError) Unwrap() error { return e.sentinel }
+
+// consentErrorf formats a user-facing message and tags it with sentinel.
+func consentErrorf(sentinel error, format string, args ...any) error {
+	return &consentError{msg: fmt.Sprintf(format, args...), sentinel: sentinel}
+}
+
 // CheckIDESSHExtension verifies that the required Remote SSH extension is installed
 // with a compatible version, and offers to install/update it if not.
 // When autoApprove is true, the extension is installed without asking.
@@ -158,8 +177,9 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 
 	if !autoApprove {
 		if !cmdio.IsPromptSupported(ctx) {
-			return fmt.Errorf("%w: %s Install it with: %s --install-extension %s, or pass --auto-approve",
-				ErrSSHExtensionInstallUnavailable, msg, ide.Command, ide.SSHExtensionID)
+			return consentErrorf(ErrSSHExtensionInstallUnavailable,
+				"%s Install it with: %s --install-extension %s, or pass --auto-approve",
+				msg, ide.Command, ide.SSHExtensionID)
 		}
 
 		shouldInstall, err := cmdio.AskYesOrNo(ctx, msg+" Would you like to install it?")
@@ -167,8 +187,9 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 			return fmt.Errorf("%w: %w", ErrSSHExtensionInstallUnavailable, err)
 		}
 		if !shouldInstall {
-			return fmt.Errorf("%w: %s Install it with: %s --install-extension %s",
-				ErrSSHExtensionInstallDeclined, msg, ide.Command, ide.SSHExtensionID)
+			return consentErrorf(ErrSSHExtensionInstallDeclined,
+				"%s Install it with: %s --install-extension %s",
+				msg, ide.Command, ide.SSHExtensionID)
 		}
 	} else {
 		cmdio.LogString(ctx, msg+" Installing automatically (--auto-approve).")
