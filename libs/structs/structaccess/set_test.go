@@ -857,6 +857,10 @@ func TestSet_ShallowerEmbedWinsAcrossMembers(t *testing.T) {
 	assert.Equal(t, "set", target.Value)
 	assert.Empty(t, target.deeperEmbed.Value)
 
+	got, err := structaccess.GetByString(target, "value")
+	require.NoError(t, err)
+	assert.Equal(t, "set", got)
+
 	require.NoError(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
 
 	blob, err := json.Marshal(target)
