@@ -32,7 +32,11 @@ config.env                                   len0       absent     START_NOT_REA
 config.env                                   len0       len1       START_NOT_REACHED  no active deployment
 config.env                                   len1       absent     START_NOT_REACHED  no active deployment
 config.env                                   len1       len0       START_NOT_REACHED  no active deployment
+config.env[0].name                           absent     x          START_NOT_REACHED  no active deployment
+config.env[0].name                           absent     y          START_NOT_REACHED  no active deployment
+config.env[0].name                           x          absent     START_NOT_REACHED  no active deployment
 config.env[0].name                           x          y          START_NOT_REACHED  no active deployment
+config.env[0].name                           y          absent     START_NOT_REACHED  no active deployment
 config.env[0].name                           y          x          START_NOT_REACHED  no active deployment
 config.env[0].value                          absent     x          START_NOT_REACHED  no active deployment
 config.env[0].value                          absent     y          START_NOT_REACHED  no active deployment
@@ -105,4 +109,4 @@ SUPPRESSED         16
 UPDATE_IGNORED     4
 UNSETTABLE         2
 SKIPPED            95
-START_NOT_REACHED  68
+START_NOT_REACHED  72

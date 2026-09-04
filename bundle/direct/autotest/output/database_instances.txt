@@ -32,12 +32,15 @@ enable_readable_secondaries                  absent     true       COLLATERAL_DR
 enable_readable_secondaries                  false      true       COLLATERAL_DRIFT  capacity
 enable_readable_secondaries                  true       absent     COLLATERAL_DRIFT  capacity
 enable_readable_secondaries                  true       false      COLLATERAL_DRIFT  capacity
+name                                         x-UNIQUE   absent     POST_DEPLOY_DRIFT  create
+name                                         y-UNIQUE   absent     POST_DEPLOY_DRIFT  create
 
 === summary
-OK                 26
+OK                 28
 OK_RECREATE        32
 SUPPRESSED         9
 NOT_OBSERVABLE     1
 UPDATE_IGNORED     4
+POST_DEPLOY_DRIFT  2
 COLLATERAL_DRIFT   20
 SKIPPED            24
