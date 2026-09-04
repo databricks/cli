@@ -36,6 +36,9 @@ CUDA out of memory
 >>> [CLI] experimental air logs 123 --lines 100 --minutes 30
 Error: cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window
 
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air logs …
+
 Exit code: 1
 
 === logs --lines and --minutes are mutually exclusive (json)
@@ -57,10 +60,16 @@ Exit code: 1
 >>> [CLI] experimental air logs notanumber
 Error: invalid JOB_RUN_ID "notanumber": must be a positive integer
 
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air logs …
+
 Exit code: 1
 
 === negative node
 >>> [CLI] experimental air logs 123 --node -1
 Error: invalid --node -1: must not be negative
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air logs …
 
 Exit code: 1
