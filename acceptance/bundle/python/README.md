@@ -36,8 +36,7 @@ files:
    `file_path`) — this test is local and deterministic.
 4. `test.toml`: add `EnvMatrix.PYDAB_VERSION = ["current"]` for a brand-new resource
    (it only exists in the current wheel), and `EnvMatrix.DATABRICKS_BUNDLE_ENGINE =
-   ["direct"]` for a direct-only resource (terraform is deprecated — never a
-   `["terraform", "direct"]` matrix). Match the newest fixture when unsure.
+   ["direct"]` for a direct-only resource.
 5. Generate the golden:
    `go test ./acceptance -run 'TestAccept/bundle/python/<plural>-support' -update`.
 6. **Re-run without `-update`** — it must pass against the golden you just generated. A
