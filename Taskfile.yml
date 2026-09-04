@@ -529,10 +529,10 @@ tasks:
       # acceptance/install_terraform.py parses the provider version from this file.
       - bundle/internal/tf/codegen/schema/version.go
       - acceptance/**
-      # Pydabs wheel is built in-process by TestInprocessMode (cd python && uv build).
+      # Pydabs wheel is built in-process by TestAccept (cd python && uv build).
       - python/**
       - libs/vendored_py_packages/**
-      # TestInprocessMode builds yamlfmt via tools/go.mod.
+      # TestAccept builds yamlfmt via tools/go.mod.
       - tools/go.mod
       - tools/go.sum
       - go.mod
