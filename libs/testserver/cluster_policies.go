@@ -3,12 +3,13 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"reflect"
 	"slices"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 // policyFamilyDefinition mimics the real backend: a policy created from a policy
@@ -173,31 +174,32 @@ func (s *FakeWorkspace) clusterPolicyValues(policyID string, applyDefaults bool)
 }
 
 // applyClusterPolicy fills in attributes the request omitted from the policy attached via
-// policyID. Callers must hold the workspace lock.
+// policyID. It returns the backend's validation message when a supplied value contradicts a
+// "fixed" element, or "" when the spec is acceptable; callers must hold the workspace lock and
+// surface a non-empty message as a 400.
 //
-// spec is a pointer to any struct with cluster-spec JSON tags (compute.ClusterDetails,
-// compute.ClusterSpec, pipelines.PipelineCluster); the policy's attribute paths are applied
-// against its JSON shape so one implementation covers all three. Attributes already present
-// are left alone — a policy value never overrides what the request supplied (the real
-// backend rejects a conflicting "fixed" value instead, which is not modeled here).
-func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefaults bool) {
+// spec is a pointer to any struct with cluster-spec JSON tags (compute.ClusterDetails or
+// compute.ClusterSpec); the policy's attribute paths are applied against its JSON shape so
+// one implementation covers both.
+func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefaults bool) string {
 	if policyID == "" {
-		return
+		return ""
 	}
 	values := s.clusterPolicyValues(policyID, applyDefaults)
 	if len(values) == 0 {
-		return
+		return ""
 	}
 
+	// spec came from a successful decode of the request, so re-encoding it cannot fail.
 	raw, err := json.Marshal(spec)
 	if err != nil {
-		return
+		return ""
 	}
 	// doc is only read, to test whether an attribute is already present; the spec itself is
 	// updated from patch below, so decoded numbers are never written back.
 	var doc map[string]any
 	if err := json.Unmarshal(raw, &doc); err != nil {
-		return
+		return ""
 	}
 
 	// Collect only the attributes the request omitted, then unmarshal just those back onto
@@ -205,33 +207,58 @@ func (s *FakeWorkspace) applyClusterPolicy(spec any, policyID string, applyDefau
 	// every key present, which makes fields the backend omits (e.g. the Jobs API dropping
 	// apply_policy_default_values) serialize as explicit zeros.
 	patch := map[string]any{}
-	for path, value := range values {
-		setIfAbsent(doc, patch, strings.Split(path, "."), value)
+	for _, path := range slices.Sorted(maps.Keys(values)) {
+		value := values[path]
+		segments := strings.Split(path, ".")
+		if existing, ok := lookup(doc, segments); ok {
+			// A "fixed" element enforces its value as well as supplying it; anything else
+			// only supplies a default, which the request is free to override.
+			if s.isFixed(policyID, path) && !reflect.DeepEqual(existing, value) {
+				// Message shape copied from the real backend for a nested attribute
+				// ("custom_tags, CostCenter must be ..."); the wording for a top-level
+				// attribute has not been observed, so it is only approximated here.
+				return fmt.Sprintf("Cluster validation error: Validation failed for %s must be %v (is %q)",
+					strings.Join(segments, ", "), value, existing)
+			}
+			continue
+		}
+		setPatch(patch, segments, value)
 	}
 	if len(patch) == 0 {
-		return
+		return ""
 	}
 
 	if raw, err = json.Marshal(patch); err == nil {
 		_ = json.Unmarshal(raw, spec)
 	}
+	return ""
 }
 
-// setIfAbsent records value in patch at the given key path, unless doc already has an
-// attribute there — a policy value never overrides what the request supplied. doc mirrors
-// the current spec; patch collects only what is missing from it.
-func setIfAbsent(doc, patch map[string]any, path []string, value any) {
+// isFixed reports whether the policy's element at path is a "fixed" element.
+func (s *FakeWorkspace) isFixed(policyID, path string) bool {
+	var elements map[string]policyElement
+	if err := json.Unmarshal([]byte(s.ClusterPolicies[policyID].Definition), &elements); err != nil {
+		return false
+	}
+	return elements[path].Type == "fixed"
+}
+
+// lookup returns the value at the given key path in doc.
+func lookup(doc map[string]any, path []string) (any, bool) {
 	for _, key := range path[:len(path)-1] {
 		child, ok := doc[key].(map[string]any)
 		if !ok {
-			if _, exists := doc[key]; exists {
-				// Attribute exists but is not an object: the policy path does not apply.
-				return
-			}
-			child = map[string]any{}
+			return nil, false
 		}
 		doc = child
+	}
+	value, ok := doc[path[len(path)-1]]
+	return value, ok
+}
 
+// setPatch records value in patch at the given key path, creating intermediate maps.
+func setPatch(patch map[string]any, path []string, value any) {
+	for _, key := range path[:len(path)-1] {
 		next, ok := patch[key].(map[string]any)
 		if !ok {
 			next = map[string]any{}
@@ -239,11 +266,7 @@ func setIfAbsent(doc, patch map[string]any, path []string, value any) {
 		}
 		patch = next
 	}
-	leaf := path[len(path)-1]
-	if _, exists := doc[leaf]; exists {
-		return
-	}
-	patch[leaf] = value
+	patch[path[len(path)-1]] = value
 }
 
 // applyPolicyDefaultValues reads apply_policy_default_values from a raw cluster request body.
@@ -258,31 +281,34 @@ func applyPolicyDefaultValues(body []byte) bool {
 
 // applyJobClusterPolicies applies attached cluster policies to every cluster spec a job can
 // carry. Callers must hold the workspace lock.
-func (s *FakeWorkspace) applyJobClusterPolicies(settings *jobs.JobSettings) {
+//
+// The Pipelines API does not expand cluster policies into the stored spec: a pipeline cluster
+// with a policy_id reads back exactly as authored, verified against a real workspace by
+// acceptance/bundle/resources/cluster_policies/policy_no_drift_variants. So there is
+// deliberately no pipeline equivalent.
+func (s *FakeWorkspace) applyJobClusterPolicies(settings *jobs.JobSettings) string {
 	for i := range settings.JobClusters {
-		s.applyClusterSpecPolicy(settings.JobClusters[i].NewCluster)
+		if msg := s.applyClusterSpecPolicy(settings.JobClusters[i].NewCluster); msg != "" {
+			return msg
+		}
 	}
 	for i := range settings.Tasks {
 		task := &settings.Tasks[i]
-		s.applyClusterSpecPolicy(task.NewCluster)
+		if msg := s.applyClusterSpecPolicy(task.NewCluster); msg != "" {
+			return msg
+		}
 		if task.ForEachTask != nil {
-			s.applyClusterSpecPolicy(task.ForEachTask.Task.NewCluster)
+			if msg := s.applyClusterSpecPolicy(task.ForEachTask.Task.NewCluster); msg != "" {
+				return msg
+			}
 		}
 	}
+	return ""
 }
 
-func (s *FakeWorkspace) applyClusterSpecPolicy(spec *compute.ClusterSpec) {
+func (s *FakeWorkspace) applyClusterSpecPolicy(spec *compute.ClusterSpec) string {
 	if spec == nil {
-		return
+		return ""
 	}
-	s.applyClusterPolicy(spec, spec.PolicyId, spec.ApplyPolicyDefaultValues)
-}
-
-// applyPipelineClusterPolicies applies attached cluster policies to a pipeline's clusters.
-// Callers must hold the workspace lock.
-func (s *FakeWorkspace) applyPipelineClusterPolicies(spec *pipelines.PipelineSpec) {
-	for i := range spec.Clusters {
-		cluster := &spec.Clusters[i]
-		s.applyClusterPolicy(cluster, cluster.PolicyId, cluster.ApplyPolicyDefaultValues)
-	}
+	return s.applyClusterPolicy(spec, spec.PolicyId, spec.ApplyPolicyDefaultValues)
 }

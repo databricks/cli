@@ -214,12 +214,6 @@ resources:
       - reason: immutable
 
   pipelines:
-    # Same as clusters/jobs: a cluster policy supplies settings server-side, so a pipeline
-    # cluster the config never declared coming back set is not drift.
-    ignore_remote_additions:
-      - field: clusters[*]
-        when_set: policy_id
-
     recreate_on_changes:
       - field: storage
         reason: immutable

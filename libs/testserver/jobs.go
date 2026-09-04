@@ -101,7 +101,15 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 
-	s.applyJobClusterPolicies(&jobSettings)
+	if msg := s.applyJobClusterPolicies(&jobSettings); msg != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    msg,
+			},
+		}
+	}
 	jobFixUps(&jobSettings)
 
 	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
@@ -131,7 +139,15 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	s.applyJobClusterPolicies(&request.NewSettings)
+	if msg := s.applyJobClusterPolicies(&request.NewSettings); msg != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    msg,
+			},
+		}
+	}
 	jobFixUps(&request.NewSettings)
 
 	jobId := request.JobId

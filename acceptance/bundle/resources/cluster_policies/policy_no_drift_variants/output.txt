@@ -53,18 +53,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
         }
       }
     }
-  },
-  {
-    "node": "resources.pipelines.pipe",
-    "tags": {
-      "clusters[0].custom_tags": {
-        "action": "skip",
-        "reason": "policy_managed",
-        "remote": {
-          "CostCenter": "from-policy"
-        }
-      }
-    }
   }
 ]
 
