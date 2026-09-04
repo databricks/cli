@@ -103,3 +103,15 @@ def get_resources(target):
         page_token = listed.get("next_page_token")
         if not page_token:
             return result
+
+
+def get_recorded_state(target):
+    """The recorded resources in the on-disk state file's `state` shape (resources.<key> ->
+    {__id__, state, depends_on}), so a recording run prints the same shape as a non-recording one."""
+    state = {}
+    for key, value in sorted(get_resources(target).items()):
+        entry = {"__id__": value["id"], "state": value["state"]}
+        if value["depends_on"]:
+            entry["depends_on"] = value["depends_on"]
+        state[f"resources.{key}"] = entry
+    return state

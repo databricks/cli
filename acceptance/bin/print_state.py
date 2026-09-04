@@ -65,16 +65,10 @@ def print_recorded_state(filename, target):
     printing it raw would show an empty state and differ from the same test's non-recording run.
     """
     # Imported here rather than at module level: dms_resources reads get_state_file from this module.
-    from dms_resources import get_resources
+    from dms_resources import get_recorded_state
 
     data = json.loads(open(filename).read())
-    state = {}
-    for key, value in sorted(get_resources(target).items()):
-        entry = {"__id__": value["id"], "state": value["state"]}
-        if value["depends_on"]:
-            entry["depends_on"] = value["depends_on"]
-        state[f"resources.{key}"] = entry
-    data["state"] = state
+    data["state"] = get_recorded_state(target)
     print(json.dumps(data, indent=1))
 
 
