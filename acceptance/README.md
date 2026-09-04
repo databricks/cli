@@ -11,7 +11,7 @@ A test can *additionally* opt into running against a real workspace by setting `
 - `Cloud` is inherited from parent `test.toml` files, so a whole subtree can be opted in at once. The root `acceptance/test.toml` defaults it to `Cloud = false`, i.e. local only.
 - Each test's effective settings are visible in its generated `out.test.toml`.
 
-The cloud run is keyed off `CLOUD_ENV`; see `getSkipReason` in `acceptance/acceptance_test.go` for the exact gating. What skips a test *locally* is a different set of settings entirely: `GOOS`, `RunsOnDbr`, and `DATABRICKS_TEST_SKIPLOCAL` (used by cloud CI runs to skip tests that already ran locally).
+The cloud run is keyed off `CLOUD_ENV`; see `getSkipReason` in `acceptance/acceptance_test.go` for the exact gating. What skips a test *locally* is a different set of settings entirely: `GOOS`, `RunsOnDbr`, and `DATABRICKS_TEST_SELECT_CHANGED` (used by cloud PR runs to cover only the tests the branch touches).
 
 To run tests against a real workspace: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires the `deco` tool and access to a test env).
 
