@@ -4,6 +4,10 @@ title "Deploy a schema, so the deployment and its first version exist"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle
 
+title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE; the service holds the schema at version 1"
+trace $CLI bundle plan -o json | nostamp.py
+trace print_state.py
+
 title "A destructive change without --auto-approve is declined: this console cannot prompt"
 # Changing the catalog recreates the schema, which needs approval.
 # Unity Catalog has no catalog called "other", so make one to move the schema into.
