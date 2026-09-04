@@ -151,49 +151,29 @@ func TestStalePlaceholderDoesNotShadowMergedDescription(t *testing.T) {
 }
 
 func TestAssignAnnotationLaunchStage(t *testing.T) {
-	t.Run("private preview prefixes description, emits stage, and hides from autocomplete", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "Internal field.",
-			LaunchStage: "PRIVATE_PREVIEW",
+	// Each stamped stage emits x-databricks-launch-stage and prefixes the
+	// description with its tag (GA renders no tag); only private preview also
+	// hides the field from autocomplete.
+	tests := []struct {
+		name         string
+		stage        clijson.LaunchStage
+		wantDesc     string
+		wantSuppress bool
+	}{
+		{"private preview", clijson.LaunchStagePrivatePreview, "[Private Preview] A field.", true},
+		{"public beta", clijson.LaunchStagePublicBeta, "[Beta] A field.", false},
+		{"public preview", clijson.LaunchStagePublicPreview, "[Public Preview] A field.", false},
+		{"GA", clijson.LaunchStageGA, "A field.", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &jsonschema.Schema{}
+			assignAnnotation(s, annotation.Descriptor{Description: "A field.", LaunchStage: tc.stage})
+			assert.Equal(t, tc.wantDesc, s.Description)
+			assert.Equal(t, tc.wantSuppress, s.DoNotSuggest)
+			assert.Equal(t, string(tc.stage), s.LaunchStage)
 		})
-		assert.Equal(t, "[Private Preview] Internal field.", s.Description)
-		assert.True(t, s.DoNotSuggest)
-		assert.Equal(t, "PRIVATE_PREVIEW", s.LaunchStage)
-	})
-
-	t.Run("public beta prefixes description, emits stage, and stays suggestible", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "A field.",
-			LaunchStage: "PUBLIC_BETA",
-		})
-		assert.Equal(t, "[Beta] A field.", s.Description)
-		assert.False(t, s.DoNotSuggest)
-		assert.Equal(t, "PUBLIC_BETA", s.LaunchStage)
-	})
-
-	t.Run("public preview prefixes description, emits stage, and stays suggestible", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "Target QPS for the endpoint.",
-			LaunchStage: "PUBLIC_PREVIEW",
-		})
-		assert.Equal(t, "[Public Preview] Target QPS for the endpoint.", s.Description)
-		assert.False(t, s.DoNotSuggest)
-		assert.Equal(t, "PUBLIC_PREVIEW", s.LaunchStage)
-	})
-
-	t.Run("GA emits the stage without a description prefix and stays suggestible", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "A field.",
-			LaunchStage: "GA",
-		})
-		assert.Equal(t, "A field.", s.Description)
-		assert.False(t, s.DoNotSuggest)
-		assert.Equal(t, "GA", s.LaunchStage)
-	})
+	}
 
 	t.Run("unstamped field emits no stage", func(t *testing.T) {
 		s := &jsonschema.Schema{}
