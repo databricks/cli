@@ -364,29 +364,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
 
-		// The plan records the DMS deployment and version it targeted. Reject it if the live
-		// deployment moved on - a newer version (someone deployed since, possibly from another
-		// machine) or a different id (deleted and recreated) - so a stale plan is never applied on
-		// top of newer state. This runs before the lineage/serial check and is the authoritative
-		// stale guard for recorded bundles, whose local state is only a tombstone (its serial does
-		// not catch a deploy from elsewhere). Both sides are empty when not recording, a no-op there.
-		remoteLastVersion := ""
-		if dmsDeployment != nil {
-			remoteLastVersion = dmsDeployment.LastVersionId
-		}
-		if plan.LastVersionId != remoteLastVersion {
-			logdiag.LogError(ctx, fmt.Errorf("this plan predates the deployment's current version %s; run 'bundle plan' again", remoteLastVersion))
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-		if plan.DeploymentId != dmsDeploymentID {
-			logdiag.LogError(ctx, errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again"))
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-
-		// Validate that the plan's lineage and serial match the local state. This is the stale guard
-		// for non-recorded bundles (recorded ones are covered by the version check above).
-		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
-		if err != nil {
+		if err := validatePlan(ctx, b, plan, dmsDeployment, dmsDeploymentID); err != nil {
 			logdiag.LogError(ctx, err)
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
@@ -482,6 +460,45 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	return b, stateDesc, nil
+}
+
+// validatePlan rejects a --plan file that no longer matches the target: its recording shape must
+// match the target's config, and a plan that targets an existing recorded deployment must not
+// predate the deployment the service now holds. It ends with the local lineage/serial guard.
+func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment, dmsDeploymentID string) error {
+	// A plan records its storage backend, which must match the target's current one, or it would
+	// deploy against the wrong backend. StateDB.StorageBackend is the target's source of truth, and
+	// it is set even for a first recorded deploy (unlike the version ids, which are empty then).
+	isDMSPlan := plan.StorageBackend == string(dstate.StorageBackendDeploymentMetadataService)
+	switch records := b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService; {
+	case isDMSPlan && !records:
+		return errors.New("this plan records deployment history, but the target no longer does; run 'bundle plan' again")
+	case !isDMSPlan && records:
+		return errors.New("this plan does not record deployment history, but the target now does; run 'bundle plan' again")
+	}
+
+	// The plan records the DMS deployment and version it targeted. Reject it if the live deployment
+	// moved on - a newer version (someone deployed since, possibly from another machine) or a
+	// different id (deleted and recreated) - so a stale plan is never applied on top of newer state.
+	// This is the authoritative stale guard for a recorded bundle, whose local state is only a
+	// tombstone (its serial does not catch a deploy from elsewhere). Gated on the plan being a DMS
+	// plan; a first-deploy plan has empty version ids that still get compared (and match) here.
+	if isDMSPlan {
+		remoteLastVersion := ""
+		if dmsDeployment != nil {
+			remoteLastVersion = dmsDeployment.LastVersionId
+		}
+		if plan.LastVersionId != remoteLastVersion {
+			return fmt.Errorf("this plan predates the deployment's current version %s; run 'bundle plan' again", remoteLastVersion)
+		}
+		if plan.DeploymentId != dmsDeploymentID {
+			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
+		}
+	}
+
+	// Validate that the plan's lineage and serial match the local state. This is the stale guard for
+	// non-recorded bundles (recorded ones are covered by the version check above).
+	return direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.

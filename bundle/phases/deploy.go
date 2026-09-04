@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -204,8 +205,12 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
 	defer func() {
-		if _, err := drainOperationsAndCompleteVersion(ctx, b, !logdiag.HasError(ctx)); err != nil {
-			logdiag.LogError(ctx, err)
+		// Skip entirely when not recording; CompleteVersion runs after Finalize has closed the state,
+		// so it is gated on the config rather than the (reset) StateDB.
+		if b.ConfiguresDeploymentHistory(ctx) {
+			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+				logdiag.LogError(ctx, err)
+			}
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
@@ -326,7 +331,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
-	if b.DeploymentBundle.StateDB.DmsClient() != nil {
+	if b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		existingID, _ := deploymentAndNextVersion(b)
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {

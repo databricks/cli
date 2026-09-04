@@ -157,37 +157,6 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	return nil
 }
 
-// drainOperationsAndCompleteVersion drains the buffered operations and completes the version.
-// It returns whether the version completed successfully, which a destroy uses to decide whether
-// to delete the deployment. Idempotent: the first call clears the buffer, so a deferred
-// safety-net after an explicit completion is a no-op returning false. Also false when no version
-// was created.
-func drainOperationsAndCompleteVersion(ctx context.Context, b *bundle.Bundle, success bool) (bool, error) {
-	db := &b.DeploymentBundle
-	buf := db.StateDB.TakeOperationBuffer()
-	if buf == nil {
-		return false, nil
-	}
-
-	// Drain first; a recording error fails the deploy even when the resources applied. Its error
-	// is left to whoever drained (apply), not returned twice.
-	if buf.Drain() != nil {
-		success = false
-	}
-
-	reason := bundledeployments.VersionCompleteVersionCompleteSuccess
-	if !success {
-		reason = bundledeployments.VersionCompleteVersionCompleteFailure
-	}
-	deploymentID, versionID := deploymentAndNextVersion(b)
-	if err := db.StateDB.DmsClient().CompleteVersion(ctx, deploymentID, versionID, reason); err != nil {
-		return false, err
-	}
-	log.Infof(ctx, "Completed deployment version: deployment=%s version=%d reason=%s", deploymentID, versionID, reason)
-
-	return success, nil
-}
-
 // logDeploymentVersion logs the deployment version URL. Workspace ID is omitted
 // so the page stays clickable in a terminal and redirects correctly without it.
 func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, deploymentID string, version int64) {

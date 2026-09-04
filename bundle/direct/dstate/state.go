@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/google/uuid"
 )
 
@@ -50,6 +51,16 @@ const featureRecordDeploymentHistory = "record_deployment_history"
 // featuresDocURL explains the state-features mechanism in the error shown when this CLI refuses a
 // state that depends on a feature it does not recognize.
 const featuresDocURL = "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features"
+
+// StorageBackend identifies where a deployment's resource state lives: the workspace filesystem
+// (the state file) or the deployment metadata service. It is the source of truth for gating DMS
+// behavior after Open; the plan carries its string form to check against the target's config.
+type StorageBackend string
+
+const (
+	StorageBackendWorkspaceFilesystem       StorageBackend = "WORKSPACE_FILESYSTEM"
+	StorageBackendDeploymentMetadataService StorageBackend = "DEPLOYMENT_METADATA_SERVICE"
+)
 
 // recognizedFeatures is the set of state feature flags this CLI understands. A state depending on
 // any feature not listed here is refused (see checkStateFeatures), so a newer CLI's feature is not
@@ -95,6 +106,20 @@ type DeploymentState struct {
 	// dmsClient talks to the deployment metadata service. Open builds it from the workspace
 	// client when the deployment records history; nil otherwise.
 	dmsClient *dms.Client
+
+	// storageBackend is where this deployment's state lives, set by Open from the feature marker.
+	// It is the source of truth for gating DMS behavior after Open, in place of nil client checks.
+	storageBackend StorageBackend
+
+	// deploymentID and versionID identify the recorded deployment and the version this run writes,
+	// stored by StartRecording. CompleteVersion reads them after Finalize's reset has cleared Path,
+	// Data and stateIDs, so - like operationBuffer and dmsClient - they must survive reset.
+	deploymentID string
+	versionID    int64
+
+	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
+	// completion after an explicit one does nothing.
+	versionCompleted bool
 }
 
 type Header struct {
@@ -145,31 +170,55 @@ func (db *DeploymentState) StartRecording(ctx context.Context, deploymentID stri
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.operationBuffer = buf
+	db.deploymentID = deploymentID
+	db.versionID = versionID
 }
 
-// OperationBuffer returns the buffer recording state writes to DMS, or nil when the bundle does not
-// record deployment history. Apply reads it to surface a recording failure and to drain uploads.
-func (db *DeploymentState) OperationBuffer() *dms.OperationBuffer {
+// RecordingError reports whether recording state writes to the service has failed, so the apply
+// stops touching resources once the service is no longer keeping up. Nil when the bundle does not
+// record deployment history or recording is healthy.
+func (db *DeploymentState) RecordingError() error {
 	db.mu.Lock()
-	defer db.mu.Unlock()
-	return db.operationBuffer
-}
-
-// TakeOperationBuffer returns the operation buffer and clears it, so a deferred safety-net
-// completion after an explicit one is a no-op.
-func (db *DeploymentState) TakeOperationBuffer() *dms.OperationBuffer {
-	db.mu.Lock()
-	defer db.mu.Unlock()
 	buf := db.operationBuffer
-	db.operationBuffer = nil
-	return buf
+	db.mu.Unlock()
+	if buf == nil {
+		return nil
+	}
+	return buf.Err()
+}
+
+// CompleteVersion marks the recorded version done, reporting whether it completed here. A no-op
+// returning false when no version was created (the bundle does not record history, or a deploy was
+// declined) or the version was already completed, so a deferred safety-net call after an explicit
+// one does nothing. Finalize has already drained the buffered operations. It reads only fields that
+// survive Finalize's reset and asserts nothing, so it is safe to call after the state is closed.
+func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (bool, error) {
+	db.mu.Lock()
+	if db.operationBuffer == nil || db.versionCompleted {
+		db.mu.Unlock()
+		return false, nil
+	}
+	db.versionCompleted = true
+	deploymentID, versionID, client := db.deploymentID, db.versionID, db.dmsClient
+	db.mu.Unlock()
+
+	reason := bundledeployments.VersionCompleteVersionCompleteSuccess
+	if !success {
+		reason = bundledeployments.VersionCompleteVersionCompleteFailure
+	}
+	if err := client.CompleteVersion(ctx, deploymentID, versionID, reason); err != nil {
+		return false, err
+	}
+	log.Infof(ctx, "Completed deployment version: deployment=%s version=%d reason=%s", deploymentID, versionID, reason)
+	// Report the success value the version completed with, not merely that it completed: a destroy
+	// deletes the deployment record only for a version that completed successfully.
+	return success, nil
 }
 
 // RecordFailure records that a resource did not apply, so the history says why rather than
 // leaving the resource out. resourceID is the id it had before the failure.
 func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause error) {
-	r := db.recorder()
-	if r == nil {
+	if db.StorageBackend() != StorageBackendDeploymentMetadataService {
 		return
 	}
 
@@ -186,15 +235,11 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 		}
 	}
 
-	r.RecordFailure(resourceKey, resourceID, recorded, cause)
-}
-
-// recorder reads the buffer under db.mu, which guards it, and returns nil when the bundle does
-// not record deployment history.
-func (db *DeploymentState) recorder() *dms.OperationBuffer {
+	// A failure is recorded only while a version is open (after StartRecording), so the buffer is set.
 	db.mu.Lock()
-	defer db.mu.Unlock()
-	return db.operationBuffer
+	buf := db.operationBuffer
+	db.mu.Unlock()
+	buf.RecordFailure(resourceKey, resourceID, recorded, cause)
 }
 
 func NewDatabase(lineage string, serial int) Database {
@@ -331,6 +376,15 @@ func (db *DeploymentState) RequiresDeploymentHistory() bool {
 
 	_, ok := db.Data.Features[featureRecordDeploymentHistory]
 	return ok
+}
+
+// StorageBackend reports where this deployment's state lives - the source of truth for whether the
+// bundle records deployment history. Set by Open; valid only after the state is opened.
+func (db *DeploymentState) StorageBackend() StorageBackend {
+	db.AssertOpenedForReadOrWrite()
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.storageBackend
 }
 
 // DmsClient returns the deployment metadata service client Open built from the workspace client,
@@ -493,7 +547,10 @@ To record this bundle's history, start it over as a new deployment:
 This deployment's resources are recorded with the deployment metadata service. Set experimental.record_deployment_history: true to deploy or destroy this bundle`)
 	}
 
+	db.storageBackend = StorageBackendWorkspaceFilesystem
 	if recorded {
+		db.storageBackend = StorageBackendDeploymentMetadataService
+
 		// The service is the source of truth for a recorded deployment; the file is a tombstone
 		// carrying only the marker, and applyDMSState loads the resources the service holds.
 		client, err := dms.NewClient(cmdctx.WorkspaceClient(ctx))
@@ -695,6 +752,15 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		}
 		db.walFile = nil
 		err = db.replayWAL(ctx)
+	}
+
+	// A recorded deployment uploads each write to the service on a background goroutine; block until
+	// they land or fail so the version completes only over state the service actually holds. A nil
+	// buffer means the deployment does not record history.
+	if db.operationBuffer != nil {
+		if drainErr := db.operationBuffer.Drain(); drainErr != nil {
+			err = errors.Join(err, drainErr)
+		}
 	}
 
 	state := ExportStateFromData(db.Data)

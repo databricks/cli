@@ -172,6 +172,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// deploy --plan can reject a plan the deployment has moved on from, and pass last_version_id
 	// as previous_version_id. History is set only while recording, so other plans leave these empty.
 	// configRoot is nil for destroy, which records its version separately.
+	// The plan records where its state lives so deploy --plan can reject a plan whose target has
+	// since switched backends. Set from StateDB (the source of truth) so a first deploy - which has
+	// no History yet - still carries it.
+	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
+		plan.StorageBackend = string(dstate.StorageBackendDeploymentMetadataService)
+	}
 	if configRoot != nil && configRoot.Bundle.Deployment.History != nil {
 		h := configRoot.Bundle.Deployment.History
 		next, err := dms.NextVersion(h.LatestVersionID)

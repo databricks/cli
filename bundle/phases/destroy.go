@@ -160,7 +160,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	}
 
 	// Complete version before deleting remote files; the deployment node is under statePath.
-	completed, err := drainOperationsAndCompleteVersion(ctx, b, true)
+	completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -216,7 +216,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	// destroy records nothing. Deferred before lock.Release to hold the lock; a no-op once
 	// destroyCore has completed the version.
 	defer func() {
-		completed, err := drainOperationsAndCompleteVersion(ctx, b, !logdiag.HasError(ctx))
+		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
 		if err != nil {
 			logdiag.LogError(ctx, err)
 		} else if completed {

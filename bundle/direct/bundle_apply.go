@@ -77,11 +77,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		// Stop resource CRUD once recording state with DMS has failed.
-		if buf := b.StateDB.OperationBuffer(); buf != nil {
-			if err := buf.Err(); err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
-				return false
-			}
+		if err := b.StateDB.RecordingError(); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
 		}
 
 		adapter, err := b.getAdapterForKey(resourceKey)
@@ -181,13 +179,6 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return true
 	})
 
-	// Wait for the uploads and report a failure here, with the deploy's other errors. The phase
-	// completes the version afterwards and drains again, quietly, so this is not printed twice.
-	if buf := b.StateDB.OperationBuffer(); buf != nil {
-		if err := buf.Drain(); err != nil {
-			logdiag.LogError(ctx, err)
-		}
-	}
 }
 
 func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
