@@ -164,22 +164,9 @@ func Variants(root, dir string) [][]string {
 	return internal.ExpandEnvMatrix(config.EnvMatrix, nil, nil)
 }
 
-// variantIndex answers whether a test dir runs a given variant, reading each dir's
-// materialized config at most once.
-type variantIndex struct {
-	root    string
-	envsets map[string][][]string
-}
-
-// has reports whether dir runs a variant matching filter.
-func (v *variantIndex) has(dir, filter string) bool {
-	envsets, ok := v.envsets[dir]
-	if !ok {
-		envsets = Variants(v.root, dir)
-		v.envsets[dir] = envsets
-	}
-
-	for _, envset := range envsets {
+// hasVariant reports whether the test dir at root/dir runs a variant matching filter.
+func hasVariant(root, dir, filter string) bool {
+	for _, envset := range Variants(root, dir) {
 		if MatchesFilters(envset, []string{filter}) {
 			return true
 		}
@@ -409,7 +396,6 @@ func markChanged(dirs changedDirs, dir, path string) *changedDir {
 // acceptance directory, read for the variants each test dir runs.
 func FromDiff(root, diff string, testDirs map[string]bool, limit int) Result {
 	dirs := changedDirs{}
-	variants := &variantIndex{root: root, envsets: map[string][][]string{}}
 
 	for line := range strings.SplitSeq(diff, "\n") {
 		// A rename line carries both paths ("R100\told\tnew"); the last field is the
@@ -441,7 +427,7 @@ func FromDiff(root, diff string, testDirs map[string]bool, limit int) Result {
 				// A dir that does not run this config would be selected with every
 				// variant skipped, spending the limit on a test that runs nothing.
 				// A deleted config is gone from every matrix, so this drops it too.
-				if !variants.has(dir, filter) {
+				if !hasVariant(root, dir, filter) {
 					continue
 				}
 				d := dirs.get(dir)
