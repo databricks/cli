@@ -1,0 +1,27 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# SecretScopeFixups adds a MANAGE ACL for the current user, because the backend
+# creates that implicitly and the direct engine would otherwise see it as a
+# persistent diff. The fixups mutate typed config, while the state is built from
+# the dynamic config, so the migration has to sync one into the other. Without
+# that sync the ACL is missing from the state below. The plan stays a no-op
+# either way, because the acls resource re-reads the live ACLs, so the state
+# dump rather than the plan is what pins this down.
+
+title "Initial deploy uses the terraform engine"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Opt in to the direct engine and redeploy, which migrates the state"
+trace update_file.py databricks.yml "name: test-bundle" $'name: test-bundle\n  engine: direct'
+trace $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "The migrated state records the MANAGE ACL the fixups added\n"
+trace print_state.py | jq '.state["resources.secret_scopes.my_scope.permissions"].state.acls'
+
+title "So the first plan after migrating is a no-op"
+trace $CLI bundle plan | contains.py "2 unchanged"
+
+rm -f out.requests.txt
