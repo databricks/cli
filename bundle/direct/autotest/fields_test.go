@@ -854,8 +854,26 @@ func isTimeout(diags diag.Diagnostics) bool {
 // agreement is the contract working, disagreement is a gap in one of them. Read off the schema and the
 // engine's own declarations, never the error's wording, which a recreate can attribute to any field.
 func classifyRejection(value any, path string, decl declarations, diags diag.Diagnostics) verdict {
-	// Same nil test valueLabel uses to print "absent", so the verdict and the row's column agree.
-	if value != nil || !hasErrorCode(diags, invalidRequestCodes) {
+	if !hasErrorCode(diags, invalidRequestCodes) {
+		return verdictBackendError
+	}
+	// The engine building the request wrong is our defect, not a statement about the field. Checked
+	// before the direction gate below because a malformed mask is a malformed mask whichever way the
+	// field was moving, and checked before requiredness because it would otherwise read as the API
+	// insisting on a value it was never sent.
+	if saysAny(diags, updateMaskPhrases) {
+		return verdictUpdateMaskOmitted
+	}
+	// Everything below is about removing a value, which is the direction that says something about
+	// whether the field is needed. Same nil test valueLabel uses to print "absent", so the verdict and
+	// the row's own column cannot disagree about which value this was.
+	if value != nil {
+		return verdictBackendError
+	}
+	// Only a message that says the value is needed supports a conclusion about requiredness. A refusal
+	// for some other reason -- an unsupported disk type, a value the API does not recognise -- says
+	// nothing about whether the field can be removed, so it stays a plain backend error.
+	if !saysAny(diags, valueNeededPhrases) {
 		return verdictBackendError
 	}
 	// An ID field is the same thing with a name the engine already gives it: the resource has no
@@ -867,6 +885,49 @@ func classifyRejection(value any, path string, decl declarations, diags diag.Dia
 		return verdictCannotDeleteRequired
 	}
 	return verdictCannotDeleteNotRequired
+}
+
+// updateMaskPhrases are how the backend reports a request whose update_mask names a field the body does
+// not carry. Both observed on aws; the mask is the engine's to build, so either is a defect of ours.
+var updateMaskPhrases = []string{
+	"in update_mask but not provided",
+	"Unknown field path in update_mask",
+}
+
+// valueNeededPhrases are how the backends this suite drives say a value has to be there. Collected from
+// real responses rather than guessed -- the wording differs per service, and a phrase that is not on
+// this list means the refusal was about something else:
+//
+//	'name' must be supplied.                                   cluster policies
+//	CreateRegisteredModel Missing required field: name          unity catalog
+//	Description cannot be empty.                               mlflow models
+//	Invalid value for SQL Endpoint name, it cannot be empty.    sql warehouses
+//	[Request Validation] display name cannot be empty           dashboards
+//	Field 'synced_table.spec...' is required                    lakebase
+//	libraries must contain at least one element                 pipelines
+var valueNeededPhrases = []string{
+	"must be supplied",
+	"Missing required field",
+	"is required",
+	"cannot be empty",
+	"must contain at least one element",
+	"expected non-empty",
+	"must be set",
+}
+
+// saysAny reports whether any error diagnostic contains one of the phrases.
+func saysAny(diags diag.Diagnostics, phrases []string) bool {
+	for _, d := range diags {
+		if d.Severity != diag.Error {
+			continue
+		}
+		for _, phrase := range phrases {
+			if strings.Contains(d.Summary, phrase) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func isAPIError(diags diag.Diagnostics) bool {
