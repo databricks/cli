@@ -1,0 +1,9 @@
+# Model provider service lifecycle also runs against a real workspace. It uses a
+# custom OpenAI-compatible provider with placeholder base_url/api_key, the
+# smallest config the backend accepts (it cannot be created with only a comment).
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]
