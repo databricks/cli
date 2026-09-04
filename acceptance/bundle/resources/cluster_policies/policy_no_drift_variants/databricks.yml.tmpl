@@ -23,6 +23,9 @@ resources:
       cluster_name: test-cluster-$UNIQUE_NAME
       spark_version: $DEFAULT_SPARK_VERSION
       node_type_id: $NODE_TYPE_ID
+      # Use the shared instance pool: a cold cluster boot made this the slowest test in the
+      # cloud suite (6-8 minutes per env), and the policy tag under test is unaffected.
+      instance_pool_id: $TEST_INSTANCE_POOL_ID
       num_workers: 1
       policy_id: ${resources.cluster_policies.pol.id}
 
