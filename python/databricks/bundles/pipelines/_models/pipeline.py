@@ -102,7 +102,11 @@ class Pipeline(Resource):
 
     continuous: VariableOrOptional[bool] = None
     """
-    Whether the pipeline is continuous or triggered. This replaces `trigger`.
+    [DEPRECATED] Whether the pipeline is continuous or triggered. This replaces `trigger`.
+    
+    Deprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage
+    of job-level settings such as performance mode. When the pipeline is started by a continuous
+    job, the job's setting takes precedence and this field is ignored.
     """
 
     development: VariableOrOptional[bool] = None
@@ -293,7 +297,11 @@ class PipelineDict(TypedDict, total=False):
 
     continuous: VariableOrOptional[bool]
     """
-    Whether the pipeline is continuous or triggered. This replaces `trigger`.
+    [DEPRECATED] Whether the pipeline is continuous or triggered. This replaces `trigger`.
+    
+    Deprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage
+    of job-level settings such as performance mode. When the pipeline is started by a continuous
+    job, the job's setting takes precedence and this field is ignored.
     """
 
     development: VariableOrOptional[bool]

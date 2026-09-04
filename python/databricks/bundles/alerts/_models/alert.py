@@ -78,8 +78,17 @@ class Alert(Resource):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Query parameters bound when executing the alert query, referenced in the
-    query text with `:name` syntax. Static values only.
+    [Private Preview] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
+    
+    Reference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.
+    Each parameter consists of a name, a value, and optionally a type. To represent a NULL
+    value, the `value` field may be omitted or set to `null` explicitly. If the `type` field
+    is omitted, the value is interpreted as a string.
+    
+    If the type is given, parameters will be checked for type correctness according
+    to the given type. A value is correct if the provided string can be converted to
+    the requested type using the `cast` function. The exact semantics are described in
+    the section [`cast` function](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.
     """
 
     parent_path: VariableOrOptional[str] = None
@@ -159,8 +168,17 @@ class AlertDict(TypedDict, total=False):
     """
     :meta private: [EXPERIMENTAL]
     
-    [Private Preview] Query parameters bound when executing the alert query, referenced in the
-    query text with `:name` syntax. Static values only.
+    [Private Preview] A list of parameters to pass into the alert SQL query statement containing parameter markers. Static values only.
+    
+    Reference a parameter in the query text as `:name`. Each parameter must have a unique, non-empty name.
+    Each parameter consists of a name, a value, and optionally a type. To represent a NULL
+    value, the `value` field may be omitted or set to `null` explicitly. If the `type` field
+    is omitted, the value is interpreted as a string.
+    
+    If the type is given, parameters will be checked for type correctness according
+    to the given type. A value is correct if the provided string can be converted to
+    the requested type using the `cast` function. The exact semantics are described in
+    the section [`cast` function](https://docs.databricks.com/sql/language-manual/functions/cast.html) of the SQL language reference.
     """
 
     parent_path: VariableOrOptional[str]
