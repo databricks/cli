@@ -1,5 +1,9 @@
-# Local only: the failure is injected, and fault.py registers its rule on the fake, which
-# a cloud run does not have. Simulating it for real instead - a catalog or principal that
-# does not exist - does not work either: the fake accepts both, so the case would stop
-# failing locally. Making it portable needs the fake to model that existence.
-Cloud = false
+# The job's cluster names a node type that does not exist, so the create fails for real: on cloud
+# the Jobs API rejects it. The local fake is lax and would accept it, so this one test stubs the
+# create to return the same error - scoped here, not the shared fake, so no other test is affected.
+Cloud = true
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.StatusCode = 400
+Response.Body = '''{"error_code": "INVALID_PARAMETER_VALUE", "message": "Cluster validation failed: node type nonexistent-node-type is not supported"}'''

@@ -1,7 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 title "A resource that fails to apply is recorded as a failed operation carrying the error, so the deployment history says why rather than omitting the resource"
-trace fault.py "POST /api/2.2/jobs/create" 400 0 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle
 

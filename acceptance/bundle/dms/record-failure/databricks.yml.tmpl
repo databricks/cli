@@ -7,3 +7,11 @@ resources:
   jobs:
     doomed:
       name: doomed
+      tasks:
+        - task_key: doomed
+          new_cluster:
+            node_type_id: nonexistent-node-type
+            spark_version: 15.4.x-scala2.12
+            num_workers: 1
+          notebook_task:
+            notebook_path: /nonexistent
