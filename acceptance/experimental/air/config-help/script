@@ -15,6 +15,7 @@ trace $CLI experimental air run -h config.compute
 title "new submission fields are documented"
 trace $CLI experimental air run -h config.mlflow_artifact_location
 trace $CLI experimental air run -h config.compute.provisioned_capacity_id
+trace $CLI experimental air run -h config.compute.priority_class
 trace $CLI experimental air run -h config.environment.dependencies
 
 title "leaf field"
