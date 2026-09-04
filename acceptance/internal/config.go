@@ -41,7 +41,7 @@ type TestConfig struct {
 	// three cloud fields that follow can prevent that: they are only consulted when
 	// CLOUD_ENV is set (an additional run against a real workspace) and can only
 	// subtract from that run. What skips a test locally is a different set entirely:
-	// GOOS, RunsOnDbr, DATABRICKS_TEST_SKIPLOCAL.
+	// GOOS, RunsOnDbr, DATABRICKS_TEST_SELECT_CHANGED.
 
 	// Which Clouds the test is enabled on. Allowed values: "aws", "azure", "gcp".
 	// If absent, default to true.
