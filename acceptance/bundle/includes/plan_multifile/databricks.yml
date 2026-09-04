@@ -1,0 +1,17 @@
+bundle:
+  name: plan_multifile
+
+# Resources are spread across separate files matched by two globs, plus one job
+# defined directly in the root file. The plan must account for every one of them.
+include:
+  - resources/*.yml
+  - resources/*/*.yml
+
+resources:
+  jobs:
+    root_job:
+      name: root_job
+
+targets:
+  dev:
+    default: true
