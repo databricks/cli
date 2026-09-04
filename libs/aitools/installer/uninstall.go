@@ -88,8 +88,10 @@ func UninstallSkillsOpts(ctx context.Context, opts UninstallOptions) error {
 			}
 			delete(state.Plugins, name)
 			pluginCount++
+			// Mirror the de-register condition in UninstallPluginForAgent: a Shared
+			// marketplace is never removed, so don't claim we did.
 			note := " + marketplace"
-			if opts.KeepMarketplace || !rec.InstalledMarketplace {
+			if opts.KeepMarketplace || !rec.InstalledMarketplace || agent.Plugin.Shared {
 				note = ""
 			}
 			cmdio.LogString(ctx, fmt.Sprintf("  %s  removed databricks plugin%s", agent.DisplayName, note))

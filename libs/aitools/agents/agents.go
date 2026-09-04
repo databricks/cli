@@ -21,9 +21,13 @@ type PluginSpec struct {
 	// ID is the plugin identifier that is installed/enabled (e.g. "databricks").
 	ID string
 	// Source is the argument passed to `<agent> plugin marketplace add`
-	// (e.g. "databricks/databricks-agent-skills"). Empty marks a built-in
-	// marketplace that must not be added or de-registered.
+	// (e.g. "databricks/databricks-agent-skills").
 	Source string
+	// Shared marks a marketplace we do not own (e.g. Claude's official
+	// claude-plugins-official). It is still added when missing — an unregistered
+	// marketplace can't be refreshed or installed from — but is never de-registered
+	// on uninstall, since other plugins may rely on it.
+	Shared bool
 }
 
 // Agent defines a supported coding agent.
@@ -141,12 +145,12 @@ const (
 	databricksPluginID    = "databricks"
 	databricksPluginSrc   = "databricks/databricks-agent-skills"
 
-	// claudeOfficialMarketplace is Claude Code's built-in marketplace
-	// (anthropics/claude-plugins-official), registered by default. The databricks
-	// plugin is published there, so Claude installs from it and we never register
-	// our own marketplace for Claude. An empty PluginSpec.Source marks a built-in
-	// marketplace that must not be added.
-	claudeOfficialMarketplace = "claude-plugins-official"
+	// claudeOfficialMarketplace is Claude Code's official marketplace, where the
+	// databricks plugin is published. It is not reliably registered locally, so the
+	// CLI adds it (from claudeOfficialMarketplaceSrc) before refreshing and
+	// installing, but never de-registers it since it is shared, not ours.
+	claudeOfficialMarketplace    = "claude-plugins-official"
+	claudeOfficialMarketplaceSrc = "anthropics/claude-plugins-official"
 )
 
 // databricksPlugin returns the shared plugin descriptor for an agent that
@@ -160,13 +164,16 @@ func databricksPlugin() *PluginSpec {
 }
 
 // claudePlugin returns Claude's plugin descriptor. Claude installs the databricks
-// plugin from its built-in claude-plugins-official marketplace (Source empty), so
-// the CLI doesn't register a separate databricks-agent-skills marketplace for it.
+// plugin from Claude's official claude-plugins-official marketplace. The CLI adds
+// that marketplace before installing (it is not reliably registered locally, and
+// an unregistered marketplace can't be refreshed or installed from) but never
+// de-registers it, since it is shared infrastructure rather than ours (Shared).
 func claudePlugin() *PluginSpec {
 	return &PluginSpec{
 		Marketplace: claudeOfficialMarketplace,
 		ID:          databricksPluginID,
-		Source:      "",
+		Source:      claudeOfficialMarketplaceSrc,
+		Shared:      true,
 	}
 }
 
