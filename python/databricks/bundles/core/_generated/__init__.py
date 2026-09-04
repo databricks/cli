@@ -3,16 +3,81 @@
 from typing import TYPE_CHECKING
 
 from databricks.bundles.core._generated.alerts import _AlertResources, alert_mutator
+from databricks.bundles.core._generated.apps import _AppResources, app_mutator
 from databricks.bundles.core._generated.catalogs import (
     _CatalogResources,
     catalog_mutator,
 )
+from databricks.bundles.core._generated.clusters import (
+    _ClusterResources,
+    cluster_mutator,
+)
+from databricks.bundles.core._generated.database_catalogs import (
+    _DatabaseCatalogResources,
+    database_catalog_mutator,
+)
+from databricks.bundles.core._generated.database_instances import (
+    _DatabaseInstanceResources,
+    database_instance_mutator,
+)
+from databricks.bundles.core._generated.experiments import (
+    _MlflowExperimentResources,
+    mlflow_experiment_mutator,
+)
+from databricks.bundles.core._generated.external_locations import (
+    _ExternalLocationResources,
+    external_location_mutator,
+)
+from databricks.bundles.core._generated.instance_pools import (
+    _InstancePoolResources,
+    instance_pool_mutator,
+)
+from databricks.bundles.core._generated.job_runs import (
+    _JobRunResources,
+    job_run_mutator,
+)
 from databricks.bundles.core._generated.jobs import _JobResources, job_mutator
+from databricks.bundles.core._generated.model_serving_endpoints import (
+    _ModelServingEndpointResources,
+    model_serving_endpoint_mutator,
+)
+from databricks.bundles.core._generated.models import (
+    _MlflowModelResources,
+    mlflow_model_mutator,
+)
 from databricks.bundles.core._generated.pipelines import (
     _PipelineResources,
     pipeline_mutator,
 )
+from databricks.bundles.core._generated.quality_monitors import (
+    _QualityMonitorResources,
+    quality_monitor_mutator,
+)
+from databricks.bundles.core._generated.registered_models import (
+    _RegisteredModelResources,
+    registered_model_mutator,
+)
 from databricks.bundles.core._generated.schemas import _SchemaResources, schema_mutator
+from databricks.bundles.core._generated.secret_scopes import (
+    _SecretScopeResources,
+    secret_scope_mutator,
+)
+from databricks.bundles.core._generated.sql_warehouses import (
+    _SqlWarehouseResources,
+    sql_warehouse_mutator,
+)
+from databricks.bundles.core._generated.synced_database_tables import (
+    _SyncedDatabaseTableResources,
+    synced_database_table_mutator,
+)
+from databricks.bundles.core._generated.vector_search_endpoints import (
+    _VectorSearchEndpointResources,
+    vector_search_endpoint_mutator,
+)
+from databricks.bundles.core._generated.vector_search_indexes import (
+    _VectorSearchIndexResources,
+    vector_search_index_mutator,
+)
 from databricks.bundles.core._generated.volumes import _VolumeResources, volume_mutator
 
 if TYPE_CHECKING:
@@ -22,20 +87,54 @@ __all__ = [
     "_GeneratedResources",
     "_all_resource_types",
     "alert_mutator",
+    "app_mutator",
     "catalog_mutator",
+    "cluster_mutator",
+    "database_catalog_mutator",
+    "database_instance_mutator",
+    "external_location_mutator",
+    "instance_pool_mutator",
     "job_mutator",
+    "job_run_mutator",
+    "mlflow_experiment_mutator",
+    "mlflow_model_mutator",
+    "model_serving_endpoint_mutator",
     "pipeline_mutator",
+    "quality_monitor_mutator",
+    "registered_model_mutator",
     "schema_mutator",
+    "secret_scope_mutator",
+    "sql_warehouse_mutator",
+    "synced_database_table_mutator",
+    "vector_search_endpoint_mutator",
+    "vector_search_index_mutator",
     "volume_mutator",
 ]
 
 
 class _GeneratedResources(
     _AlertResources,
+    _AppResources,
     _CatalogResources,
+    _ClusterResources,
+    _DatabaseCatalogResources,
+    _DatabaseInstanceResources,
+    _MlflowExperimentResources,
+    _ExternalLocationResources,
+    _InstancePoolResources,
+    _JobRunResources,
     _JobResources,
+    _ModelServingEndpointResources,
+    _MlflowModelResources,
     _PipelineResources,
+    _QualityMonitorResources,
+    _RegisteredModelResources,
     _SchemaResources,
+    _SecretScopeResources,
+    _SqlWarehouseResources,
+    _SyncedDatabaseTableResources,
+    _VectorSearchEndpointResources,
+    _VectorSearchIndexResources,
     _VolumeResources,
 ):
     pass
@@ -44,18 +143,52 @@ class _GeneratedResources(
 def _all_resource_types() -> "tuple[_ResourceType, ...]":
     from databricks.bundles.core._generated import (
         alerts,
+        apps,
         catalogs,
+        clusters,
+        database_catalogs,
+        database_instances,
+        experiments,
+        external_locations,
+        instance_pools,
+        job_runs,
         jobs,
+        model_serving_endpoints,
+        models,
         pipelines,
+        quality_monitors,
+        registered_models,
         schemas,
+        secret_scopes,
+        sql_warehouses,
+        synced_database_tables,
+        vector_search_endpoints,
+        vector_search_indexes,
         volumes,
     )
 
     return (
         alerts._resource_type(),
+        apps._resource_type(),
         catalogs._resource_type(),
+        clusters._resource_type(),
+        database_catalogs._resource_type(),
+        database_instances._resource_type(),
+        experiments._resource_type(),
+        external_locations._resource_type(),
+        instance_pools._resource_type(),
+        job_runs._resource_type(),
         jobs._resource_type(),
+        model_serving_endpoints._resource_type(),
+        models._resource_type(),
         pipelines._resource_type(),
+        quality_monitors._resource_type(),
+        registered_models._resource_type(),
         schemas._resource_type(),
+        secret_scopes._resource_type(),
+        sql_warehouses._resource_type(),
+        synced_database_tables._resource_type(),
+        vector_search_endpoints._resource_type(),
+        vector_search_indexes._resource_type(),
         volumes._resource_type(),
     )
