@@ -205,7 +205,14 @@ func BuildStateFromTF(
 			}
 		}
 
-		if err := stateDB.SaveState(node, id, sv.Value, dependsOn); err != nil {
+		// Compact hashed_fields fields so the migrated state stays small. Not needed for
+		// correctness — the first plan (CalculatePlan) compacts the saved state on read.
+		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
+		if err != nil {
+			return warningsSeen, fmt.Errorf("%s: compacting state: %w", node, err)
+		}
+
+		if err := stateDB.SaveState(node, id, compacted, dependsOn); err != nil {
 			return warningsSeen, fmt.Errorf("%s: SaveState: %w", node, err)
 		}
 	}

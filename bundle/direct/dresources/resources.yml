@@ -503,6 +503,11 @@ resources:
       - field: dataset_schema
         reason: input_only
 
+    # "serialized_dashboard" holds inlined dashboard JSON that is never read back
+    # from state, so we persist only its content hash.
+    hashed_fields:
+      - serialized_dashboard
+
   genie_spaces:
     ignore_remote_changes:
       # serialized_space locally (structured YAML) and remotely (JSON string) will differ
