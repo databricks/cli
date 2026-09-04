@@ -173,7 +173,9 @@ func resolutionRequirements(p userPyprojectTOML) []string {
 // deterministic and ordered (requires-python, then databricks-connect, then the
 // standalone-pyspark collision, then constraint conflicts in the order uv would
 // encounter them) so goldens are stable.
-func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan) []Warning {
+// opts suppresses the warnings for whichever axes are left unmanaged: a skipped
+// axis is not written, so there is nothing on it to warn about.
+func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan, opts MergeOptions) []Warning {
 	if len(userPyproject) == 0 {
 		return nil
 	}
@@ -188,8 +190,9 @@ func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan
 	var warnings []Warning
 
 	// The user pinned a requires-python that differs from the env's pin; the merge
-	// replaces it with the managed value.
-	if up := strings.TrimSpace(p.Project.RequiresPython); up != "" && c.RequiresPython != "" && up != strings.TrimSpace(c.RequiresPython) {
+	// replaces it with the managed value. Skipped under --no-constraints, where the
+	// merge leaves the user's requires-python untouched.
+	if up := strings.TrimSpace(p.Project.RequiresPython); !opts.SkipConstraints && up != "" && c.RequiresPython != "" && up != strings.TrimSpace(c.RequiresPython) {
 		warnings = append(warnings, Warning{
 			Code:    WarnRequiresPythonOverridden,
 			Message: fmt.Sprintf("requires-python %q is replaced by the environment's %q", up, c.RequiresPython),
@@ -202,24 +205,28 @@ func detectMergeWarnings(userPyproject []byte, c Constraints, plan dbconnectPlan
 	// survive it, so excluding both keeps the conflict scan honest.
 	survivors := removeDBConnectPins(retainedRequirements(p, plan.replacedDevPin), plan.removed)
 
-	// The user's databricks-connect pins differ from the env's. Only meaningful in
-	// default mode (c.DatabricksConnect is empty in constraints-only, where
-	// databricks-connect is left untouched).
-	if c.DatabricksConnect != "" {
+	// The user's databricks-connect pins differ from the env's. Only meaningful when
+	// databricks-connect is managed: skipped under --no-dbconnect / --constraints-only,
+	// and a no-op when the artifact carries no pin.
+	managesDBConnect := !opts.SkipDBConnect && c.DatabricksConnect != ""
+	if managesDBConnect {
 		warnings = append(warnings, dbconnectWarnings(plan, survivors, c.DatabricksConnect)...)
 	}
 
 	// A standalone pyspark collides with databricks-connect's vendored pyspark whenever
-	// databricks-connect ends up in the environment — whether the env manages it (default
-	// mode, c.DatabricksConnect set) or the user's own pyproject pins it (kept as-is in
-	// constraints-only mode, since mergeDatabricksConnect is a no-op on an empty managed
-	// value). Gate on its presence by either route, not on the mode, so this agrees with
-	// the validate hard-fail, which keys on the installed venv rather than the mode.
-	if c.DatabricksConnect != "" || len(dbconnectPins(survivors)) > 0 {
+	// databricks-connect ends up in the environment — whether the env manages it (a pin
+	// is managed) or the user's own pyproject pins it (kept as-is when databricks-connect
+	// is skipped). Gate on its presence by either route, not on the mode, so this agrees
+	// with the validate hard-fail, which keys on the installed venv rather than the mode.
+	if managesDBConnect || len(dbconnectPins(survivors)) > 0 {
 		warnings = append(warnings, standalonePysparkWarnings(survivors)...)
 	}
 
-	warnings = append(warnings, constraintConflicts(survivors, c.ConstraintDeps)...)
+	// Skipped under --no-constraints: no constraint block is written, so the user's
+	// requirements cannot conflict with a managed one.
+	if !opts.SkipConstraints {
+		warnings = append(warnings, constraintConflicts(survivors, c.ConstraintDeps)...)
+	}
 
 	// A cluster target leaves c.EnvironmentVersion empty and does not manage the
 	// serverless environment section, so an environment_version left over from an
