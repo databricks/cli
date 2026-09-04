@@ -12,6 +12,14 @@ base:
     version: 1
 
 skip:
+  # title is omitempty in the update request, so clearing it never reaches the backend: the space keeps
+  # whatever title it had, and every transition the suite records as starting from absent actually
+  # starts from the previous field value. The from-labels are then fiction and the verdicts depend on
+  # the walk order, which is why aws and the fake server disagree on four of the six rows without
+  # either being wrong. Covering it needs a starting value the suite can establish, which a field that
+  # cannot be cleared does not have.
+  title: cannot be cleared, so the suite cannot establish a starting value
+
   # Same two as dashboards: both name workspace objects this suite does not provision a second
   # of. See dashboards.yml.
   parent_path: needs a second workspace folder to exist

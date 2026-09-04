@@ -910,8 +910,10 @@ var updateMaskPhrases = []string{
 //	[Request Validation] display name cannot be empty           dashboards
 //	Field 'synced_table.spec...' is required                    lakebase
 //	libraries must contain at least one element                 pipelines
+//	An experiment name must be provided                         mlflow experiments
 var valueNeededPhrases = []string{
 	"must be supplied",
+	"must be provided",
 	"Missing required field",
 	"is required",
 	"cannot be empty",

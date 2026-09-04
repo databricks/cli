@@ -45,6 +45,12 @@ skip:
   # Same constraint, same reason: "use_ml_runtime is not allowed with unspecified kind."
   use_ml_runtime: only allowed on a cluster with a kind, which this fixture does not set
 
+  # "dependency_mode requires DBR major version >= 19." The fixture runs DEFAULT_SPARK_VERSION, which
+  # is DBR 13, and raising it for one field would change the runtime every other field is measured on.
+  # The fake server has no DBR notion and accepted every value, so all six rows read OK locally and
+  # were refused on aws.
+  dependency_mode: requires DBR 19 or newer, and the fixture runs the default spark version
+
   # A cluster policy has to exist: "'x' is not a valid cluster policy ID." The fake server takes any
   # string, so these rows only ever measured the fake.
   policy_id: needs a cluster policy to exist
