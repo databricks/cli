@@ -78,3 +78,9 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
+
+=== The service lists no resources for the deployment: nothing was recorded beyond the deployment itself
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  
+]
