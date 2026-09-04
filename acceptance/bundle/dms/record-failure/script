@@ -2,6 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "A resource that fails to apply is recorded as a failed operation carrying the error, so the deployment history says why rather than omitting the resource"
 trace musterr $CLI bundle deploy
+trace $CLI bundle plan -o json | nostamp.py
 trace print_requests.py --dms //api/2.0/bundle
 
 title "The failed resource is not listed at all: state is what projects a resource, and a failed create records none, so a later deploy plans to create it rather than treating it as already deployed"
@@ -11,6 +12,10 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 # MSYS_NO_PATHCONV as above: Git Bash on Windows would rewrite the leading-'/' API
 # path into C:/Program Files/Git/api/2.0/... before the CLI saw it.
 trace MSYS_NO_PATHCONV=1 $CLI api get "/api/2.0/bundle/deployments/${deployment_id}/resources"
+
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+trace print_state.py
 
 title "Redeploying from DMS state alone still creates the failed resource: it was never applied, so it must not be skipped as unchanged"
 rm -rf .databricks

@@ -4,9 +4,27 @@ title "Deploy the job and its permissions"
 trace $CLI bundle deploy
 rm -f out.requests.txt
 
+title "The plan records DEPLOYMENT_METADATA_SERVICE backend and the job"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "The service lists the job at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-failed-update-permissions-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state after deploy"
+trace print_state.py
+
 title "A permissions update that fails records the failure with the permissions it still has. The resource ID here is a path rather than a number, and the state is the embedded permission list, so this covers a shape the resource tests do not"
 trace update_file.py databricks.yml "CAN_VIEW" "CAN_MANAGE"
 # A 403 is what the API returns when the caller cannot change a job's owner.
 trace fault.py "PUT /api/2.0/permissions/jobs/*" 403 0 1 PERMISSION_DENIED
 trace musterr $CLI bundle deploy --auto-approve
+
+title "The service lists the job with the failure"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-failed-update-permissions-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw recorded state after the failure"
+trace print_state.py
+
 trace print_requests.py --dms //api/2.0/bundle --oneline

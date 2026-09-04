@@ -2,6 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Deploy without recording: ordinary direct-engine state tracking one job, unknown to DMS"
 trace $CLI bundle deploy
+trace $CLI bundle plan -o json | nostamp.py
 trace print_requests.py --dms //api/2.0/bundle --oneline
 trace jq '{state_version, features}' .databricks/bundle/default/resources.json
 

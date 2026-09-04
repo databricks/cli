@@ -4,13 +4,29 @@ title "Deploy: the job is recorded"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle
 
+title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE as its backend"
+trace $CLI bundle plan -o json | nostamp.py
+
+title "After deploy, the service lists the resource at version 1"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-failed-delete-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The raw state after successful deploy"
+trace print_state.py
+
 title "A resource that fails to delete is recorded as a failed operation carrying the error, so the history says why rather than showing the resource gone"
 # The state entry survives too, so the next deploy still knows about the resource.
 trace fault.py "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle destroy --auto-approve
 trace print_requests.py --dms //api/2.0/bundle
+
+title "After failure, the service shows the operation failed"
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-failed-delete-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
+
+title "The state shows the resource still exists but the operation is marked failed"
 trace print_state.py
 
 # print_state.py asks the service for the resources while recording, so drain those reads instead
 # of leaving them behind for the harness to diff.
-print_requests.py //api/2.0 > /dev/null
+rm -f out.requests.txt
