@@ -8,11 +8,16 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
+git_source.git_provider                      absent     gitHub     BASE_ERROR  git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit (400 INVALID_PARAMETER_VALUE)
+git_source.git_provider                      absent     gitLab     BASE_ERROR  git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit (400 INVALID_PARAMETER_VALUE)
+git_source.git_provider                      gitHub     absent     BACKEND_ERROR  git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit (400 INVALID_PARAMETER_VALUE)
+git_source.git_provider                      gitLab     absent     BACKEND_ERROR  git_source.git_provider must be one of: github,gitlab,bitbucketcloud,gitlabenterpriseedition,bitbucketserver,azuredevopsservices,githubenterprise,awscodecommit (400 INVALID_PARAMETER_VALUE)
 
 === summary
 OK                 118
-CANNOT_DELETE_REQUIRED 4
 OK_INERT           6
 SUPPRESSED         8
 NOT_OBSERVABLE     8
+BACKEND_ERROR      2
 SKIPPED            88
+BASE_ERROR         2

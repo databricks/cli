@@ -8,45 +8,43 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
-budget_policy_id                             absent     x          CANNOT_DELETE_NOT_REQUIRED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-budget_policy_id                             absent     y          CANNOT_DELETE_NOT_REQUIRED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-budget_policy_id                             x          absent     CANNOT_DELETE_NOT_REQUIRED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-budget_policy_id                             y          absent     CANNOT_DELETE_NOT_REQUIRED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-custom_tags                                  absent     len0       CANNOT_DELETE_NOT_REQUIRED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-custom_tags                                  absent     len1       CANNOT_DELETE_NOT_REQUIRED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-custom_tags                                  len0       absent     BASE_ERROR  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-custom_tags                                  len0       len1       BASE_ERROR  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-custom_tags                                  len1       absent     CANNOT_DELETE_NOT_REQUIRED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-custom_tags                                  len1       len0       BACKEND_ERROR  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_max_cu 1          2          BASE_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_max_cu 1          absent     BASE_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_max_cu 2          1          BASE_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_max_cu 2          absent     BASE_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_max_cu absent     1          BACKEND_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_max_cu absent     2          BACKEND_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_min_cu 1          2          BASE_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_min_cu 1          absent     BASE_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_min_cu 2          1          BASE_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_min_cu 2          absent     BASE_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_min_cu absent     1          BACKEND_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.autoscaling_limit_min_cu absent     2          BACKEND_ERROR  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.no_suspension      absent     false      CANNOT_DELETE_NOT_REQUIRED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.no_suspension      absent     true       CANNOT_DELETE_NOT_REQUIRED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.no_suspension      false      absent     CANNOT_DELETE_NOT_REQUIRED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-default_endpoint_settings.no_suspension      true       absent     CANNOT_DELETE_NOT_REQUIRED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-display_name                                 absent     x          CANNOT_DELETE_NOT_REQUIRED  Field 'spec.display_name' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-display_name                                 absent     y          CANNOT_DELETE_NOT_REQUIRED  Field 'spec.display_name' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-display_name                                 x          absent     CANNOT_DELETE_NOT_REQUIRED  Field 'spec.display_name' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-display_name                                 y          absent     CANNOT_DELETE_NOT_REQUIRED  Field 'spec.display_name' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-enable_pg_native_login                       absent     false      CANNOT_DELETE_NOT_REQUIRED  Field 'spec.enable_pg_native_login' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-enable_pg_native_login                       true       absent     CANNOT_DELETE_NOT_REQUIRED  Field 'spec.enable_pg_native_login' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+budget_policy_id                             absent     x          UPDATE_MASK_OMITTED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+budget_policy_id                             absent     y          UPDATE_MASK_OMITTED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+budget_policy_id                             x          absent     UPDATE_MASK_OMITTED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+budget_policy_id                             y          absent     UPDATE_MASK_OMITTED  Field 'spec.budget_policy_id' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+custom_tags                                  absent     len0       UPDATE_MASK_OMITTED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+custom_tags                                  absent     len1       UPDATE_MASK_OMITTED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+custom_tags                                  len0       absent     UPDATE_MASK_OMITTED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+custom_tags                                  len0       len1       UPDATE_MASK_OMITTED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+custom_tags                                  len1       absent     UPDATE_MASK_OMITTED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+custom_tags                                  len1       len0       UPDATE_MASK_OMITTED  Field 'spec.custom_tags' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_max_cu 1          2          UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_max_cu 1          absent     UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_max_cu 2          1          UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_max_cu 2          absent     UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_max_cu absent     1          UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_max_cu absent     2          UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_min_cu 1          2          UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_min_cu 1          absent     UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_min_cu 2          1          UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_min_cu 2          absent     UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_min_cu absent     1          UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.autoscaling_limit_min_cu absent     2          UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.no_suspension      absent     false      UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.no_suspension      absent     true       UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.no_suspension      false      absent     UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+default_endpoint_settings.no_suspension      true       absent     UPDATE_MASK_OMITTED  Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+display_name                                 absent     x          UPDATE_MASK_OMITTED  Field 'spec.display_name' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+display_name                                 absent     y          UPDATE_MASK_OMITTED  Field 'spec.display_name' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+display_name                                 x          absent     UPDATE_MASK_OMITTED  Field 'spec.display_name' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+display_name                                 y          absent     UPDATE_MASK_OMITTED  Field 'spec.display_name' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+enable_pg_native_login                       absent     false      UPDATE_MASK_OMITTED  Field 'spec.enable_pg_native_login' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+enable_pg_native_login                       true       absent     UPDATE_MASK_OMITTED  Field 'spec.enable_pg_native_login' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
 
 === summary
 OK                 25
 OK_RECREATE        8
 OK_ID_FIELD_REQUIRED 4
-CANNOT_DELETE_NOT_REQUIRED 17
+UPDATE_MASK_OMITTED 32
 SUPPRESSED         3
-BACKEND_ERROR      5
 SKIPPED            3
-BASE_ERROR         10
