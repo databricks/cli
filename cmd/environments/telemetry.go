@@ -29,10 +29,11 @@ func buildSetupLocalEvent(res *libslocalenv.Result) *protos.SetupLocalEvent {
 		return nil
 	}
 	event := &protos.SetupLocalEvent{
-		Success:       res.OK,
-		Mode:          modeType(res.Mode),
-		Greenfield:    res.Greenfield,
-		ComputeSource: protos.SetupLocalComputeSourceUnspecified,
+		Success:         res.OK,
+		Mode:            modeType(res.Mode),
+		SkipConstraints: res.SkipConstraints,
+		Greenfield:      res.Greenfield,
+		ComputeSource:   protos.SetupLocalComputeSourceUnspecified,
 	}
 	if res.Compute != nil {
 		event.ComputeSource = computeSourceType(res.Compute.Source)

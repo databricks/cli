@@ -106,6 +106,7 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	p.res.Command = CommandName
 	p.res.Mode = p.Mode.String()
 	p.res.DryRun = p.Check
+	p.res.SkipConstraints = p.SkipConstraints
 	// Phases start as pending and flip to ok/error as the run progresses.
 	p.res.Phases = initialPhases()
 
