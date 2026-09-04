@@ -34,8 +34,16 @@ __all__ = [
     "ModelServiceConfigRoutingConfig",
     "ModelServiceConfigRoutingConfigDict",
     "ModelServiceConfigRoutingConfigParam",
+    "ModelServiceConfigRoutingConfigTrafficSplitting",
+    "ModelServiceConfigRoutingConfigTrafficSplittingDict",
+    "ModelServiceConfigRoutingConfigTrafficSplittingParam",
     "ModelServiceDict",
     "ModelServiceParam",
+    "Privilege",
+    "PrivilegeAssignment",
+    "PrivilegeAssignmentDict",
+    "PrivilegeAssignmentParam",
+    "PrivilegeParam",
     "RateLimit",
     "RateLimitDict",
     "RateLimitParam",
@@ -104,6 +112,20 @@ from databricks.bundles.model_services._models.model_service_config_routing_conf
     ModelServiceConfigRoutingConfig,
     ModelServiceConfigRoutingConfigDict,
     ModelServiceConfigRoutingConfigParam,
+)
+from databricks.bundles.model_services._models.model_service_config_routing_config_traffic_splitting import (
+    ModelServiceConfigRoutingConfigTrafficSplitting,
+    ModelServiceConfigRoutingConfigTrafficSplittingDict,
+    ModelServiceConfigRoutingConfigTrafficSplittingParam,
+)
+from databricks.bundles.model_services._models.privilege import (
+    Privilege,
+    PrivilegeParam,
+)
+from databricks.bundles.model_services._models.privilege_assignment import (
+    PrivilegeAssignment,
+    PrivilegeAssignmentDict,
+    PrivilegeAssignmentParam,
 )
 from databricks.bundles.model_services._models.rate_limit import (
     RateLimit,

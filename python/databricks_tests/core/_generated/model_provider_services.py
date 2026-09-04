@@ -9,6 +9,9 @@ from databricks.bundles.model_provider_services._models.model_provider_service i
 from databricks.bundles.model_provider_services._models.model_provider_service_config import (
     ModelProviderServiceConfig,
 )
+from databricks.bundles.model_provider_services._models.privilege_assignment import (
+    PrivilegeAssignment,
+)
 from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
@@ -18,12 +21,14 @@ def _test_case():
             add_resource=Resources.add_model_provider_service,
             dict_example={
                 "config": {},
+                "grants": [{}],
                 "lifecycle": {},
                 "model_provider_service_id": "model_provider_service_id",
                 "parent": "parent",
             },
             dataclass_example=ModelProviderService(
                 config=ModelProviderServiceConfig(),
+                grants=[PrivilegeAssignment()],
                 lifecycle=Lifecycle(),
                 model_provider_service_id="model_provider_service_id",
                 parent="parent",
