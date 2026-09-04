@@ -14,11 +14,15 @@ database_instance_name                       x          absent     BASE_ERROR  d
 database_instance_name                       x          y          BASE_ERROR  database instance with name 'x' not found (404 UNKNOWN)
 database_instance_name                       y          absent     BASE_ERROR  database instance with name 'y' not found (404 UNKNOWN)
 database_instance_name                       y          x          BASE_ERROR  database instance with name 'y' not found (404 UNKNOWN)
+name                                         x          absent     POST_DEPLOY_DRIFT  create
+name                                         y          absent     POST_DEPLOY_DRIFT  create
 
 === summary
+OK                 2
 OK_RECREATE        68
 SUPPRESSED         4
 NOT_OBSERVABLE     2
+POST_DEPLOY_DRIFT  2
 DEPLOY_ERROR       2
 SKIPPED            35
 BASE_ERROR         4

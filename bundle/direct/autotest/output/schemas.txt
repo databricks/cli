@@ -17,7 +17,7 @@ properties['team']                           y          absent     UPDATE_IGNORE
 
 === summary
 OK                 16
-OK_RECREATE        2
+OK_RECREATE        8
 SUPPRESSED         1
 NOT_OBSERVABLE     1
 UPDATE_IGNORED     6

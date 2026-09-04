@@ -167,7 +167,7 @@ func runType(t *testing.T, ctx context.Context, client *databricks.WorkspaceClie
 	ignoredLocally := declaredIgnoredLocally(adapter)
 	// Every rule the resource declares about deliberately not acting, which is what makes a
 	// skipped change the expected outcome rather than a failure to reach a value.
-	decl := declarations{deliberate: declaredDeliberate(adapter), idFields: declaredIDFields(adapter)}
+	decl := declarations{resourceType: resourceType, deliberate: declaredDeliberate(adapter), idFields: declaredIDFields(adapter)}
 
 	for path, reason := range fv.skip {
 		rep.add(result{path, "", "", verdictSkipped, reason, ""})
@@ -490,6 +490,10 @@ func reachedValue(change *deployplan.ChangeDesc, path string, deliberate []dreso
 // declarations are the resource's own claims about its fields, read from resources.yml. Two
 // slices of the same type as separate parameters would let a caller swap them unnoticed.
 type declarations struct {
+	// resourceType names the type these declarations belong to, so a lookup that needs it -- whether a
+	// field is required, which is keyed by resource -- does not need a parameter of its own.
+	resourceType string
+
 	// deliberate: rules saying the engine does not act on a field, so a skipped change is the
 	// declared behaviour rather than a value that failed to land.
 	deliberate []dresources.FieldRule
@@ -509,7 +513,13 @@ func runTransition(t *testing.T, h *bundleHarness, path string, tr transition, s
 	}
 	if !startsDeployed {
 		if _, diags := h.deploy(); diags.HasError() {
-			res.verdict = idFieldRequired(from, path, decl, diags, verdictBaseError)
+			// The same rejection seen from the other side: a field that cannot be cleared cannot be a
+			// starting value either, and saying so is more use than a bare error. classifyRejection
+			// reads "from" here because that is the value this deploy was trying to reach.
+			res.verdict = classifyRejection(from, path, decl, diags)
+			if res.verdict == verdictBackendError {
+				res.verdict = verdictBaseError
+			}
 			res.detail = firstError(diags)
 			res.evidence = withContext("error from the deploy:", allErrors(diags))
 			return res
@@ -570,7 +580,7 @@ func runTransition(t *testing.T, h *bundleHarness, path string, tr transition, s
 		case isTimeout(diags):
 			res.verdict = verdictTimeout
 		case isAPIError(diags):
-			res.verdict = idFieldRequired(to, path, decl, diags, verdictBackendError)
+			res.verdict = classifyRejection(to, path, decl, diags)
 		default:
 			res.verdict = verdictDeployError
 		}
@@ -834,28 +844,29 @@ func isTimeout(diags diag.Diagnostics) bool {
 	return false
 }
 
-// idFieldRequired downgrades a rejected deploy to OK_ID_FIELD_REQUIRED when the value it was
-// carrying was absent on a field the resource declares as part of its ID. Every input is a
-// declaration or a fact about the run -- the field is named in provided_id_fields, the value is
-// absent, the backend refused -- and none is the error's wording, which cannot be attributed
-// to a single field because a recreate carries the whole resource.
+// classifyRejection names what a rejected request means for the field under test.
 //
-// The backend having refused still has to hold: an internal CLI failure on the same deploy is a
-// real defect and keeps its own verdict.
-func idFieldRequired(value any, path string, decl declarations, diags diag.Diagnostics, otherwise verdict) verdict {
-	// Same nil test valueLabel uses to print "absent", so the verdict and the row's own column
-	// can never disagree about which value this was.
-	//
-	// Not any API error: a rejection is only evidence about the request when it says the request
-	// was malformed. PERMISSION_DENIED and REQUEST_LIMIT_EXCEEDED are answers about the caller
-	// and the moment, and would have come back whatever the field held.
+// A 400 is a statement about the request, not about the resource: the backend did not act, so the remote
+// still holds the value it had and the run carries on with it rather than replacing it.
+//
+// Removing a value is the informative direction. A field the API will not let go of is required in
+// practice, whatever the bundle schema says, and the two disagree often enough to be worth separating:
+// agreement is the contract working, disagreement is a gap in one of them. Read off the schema and the
+// engine's own declarations, never the error's wording, which a recreate can attribute to any field.
+func classifyRejection(value any, path string, decl declarations, diags diag.Diagnostics) verdict {
+	// Same nil test valueLabel uses to print "absent", so the verdict and the row's column agree.
 	if value != nil || !hasErrorCode(diags, invalidRequestCodes) {
-		return otherwise
+		return verdictBackendError
 	}
-	if _, isID := ruleReason(decl.idFields, path); !isID {
-		return otherwise
+	// An ID field is the same thing with a name the engine already gives it: the resource has no
+	// identity without it, so there was never a resource to remove it from.
+	if _, isID := ruleReason(decl.idFields, path); isID {
+		return verdictIDFieldRequired
 	}
-	return verdictIDFieldRequired
+	if isRequired(decl.resourceType, path) {
+		return verdictCannotDeleteRequired
+	}
+	return verdictCannotDeleteNotRequired
 }
 
 func isAPIError(diags diag.Diagnostics) bool {

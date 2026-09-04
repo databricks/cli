@@ -8,12 +8,15 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
-description                                  x          absent     BACKEND_ERROR  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
-description                                  y          absent     BACKEND_ERROR  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
+description                                  absent     x          CANNOT_DELETE_NOT_REQUIRED  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
+description                                  absent     y          CANNOT_DELETE_NOT_REQUIRED  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
+description                                  x          absent     CANNOT_DELETE_NOT_REQUIRED  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
+description                                  y          absent     CANNOT_DELETE_NOT_REQUIRED  Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
 
 === summary
-OK                 4
+OK                 2
 OK_RECREATE        2
+OK_ID_FIELD_REQUIRED 4
+CANNOT_DELETE_NOT_REQUIRED 4
 OK_INERT           18
-BACKEND_ERROR      2
 SKIPPED            1

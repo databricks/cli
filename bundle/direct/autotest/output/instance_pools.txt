@@ -12,7 +12,7 @@ enable_elastic_disk                          false      true       UPDATE_IGNORE
 enable_elastic_disk                          true       false      UPDATE_IGNORED
 
 === summary
-OK                 45
+OK                 53
 OK_RECREATE        46
 SUPPRESSED         5
 NOT_OBSERVABLE     2

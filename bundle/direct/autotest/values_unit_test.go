@@ -49,17 +49,23 @@ func TestTransitionsCoverEveryPairInOneChain(t *testing.T) {
 	}
 }
 
-// A required field has no absent value, so its chain is one vertex smaller.
-func TestTransitionsSkipAbsentForRequiredField(t *testing.T) {
+// A field the bundle schema marks required still gets its absent transitions: the API is the authority
+// on whether a value can be removed, and the two disagree often enough that the disagreement is the
+// finding -- see classifyRejection, which names which side is wrong.
+func TestTransitionsIncludeAbsentForRequiredField(t *testing.T) {
 	f := field{path: "name", values: []any{"a", "b"}, required: true} //exhaustruct:ignore
 
 	got := f.transitions()
 
-	require.Len(t, got, 2)
+	// Three values, so every ordered pair of them.
+	require.Len(t, got, 6)
+	absents := 0
 	for _, tr := range got {
-		assert.NotEqual(t, "absent", valueLabel(tr.from))
-		assert.NotEqual(t, "absent", valueLabel(tr.to))
+		if valueLabel(tr.from) == "absent" || valueLabel(tr.to) == "absent" {
+			absents++
+		}
 	}
+	assert.Equal(t, 4, absents, "absent is one of the three values, so it is on one side of four pairs")
 }
 
 // A pattern from the type walk has to expand against the deployed resource, or the fields

@@ -443,10 +443,11 @@ func (f field) transitions() []transition {
 	// twice per field -- once to decide whether the field has anything to test, once to run it
 	// -- and shuffling the field's own values would make the second call walk a different chain
 	// than the first agreed to.
+	// absent is in the set for every field, required ones included. A field the bundle schema calls
+	// required is still worth removing: the API is the authority, and the two disagree often enough
+	// that the disagreement is a finding either way -- a field the schema does not mark required that
+	// the API refuses to clear, or one it does that the API clears happily.
 	values := append([]any{absent}, f.values...)
-	if f.required {
-		values = slices.Clone(f.values)
-	}
 	if len(values) < 2 {
 		return nil
 	}
