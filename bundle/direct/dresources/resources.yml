@@ -371,6 +371,34 @@ resources:
       # and the remote diverges, normal drift detection still applies.
       - field: config.traffic_config
 
+  model_services:
+    provided_id_fields:
+      # parent + model_service_id compose the server-derived resource name
+      # (model-services/{catalog}.{schema}.{model_service}), which is the ID the
+      # resource is fetched by. Both are immutable; a local change recreates.
+      # DoRead reconstructs them from the returned name, so a remote-only
+      # difference can only be normalization and is skipped.
+      - field: parent
+        reason: id_field
+      - field: model_service_id
+        reason: id_field
+    ignore_remote_changes:
+      # Server-resolved / tombstone fields returned on read, not user-authored.
+      # The generator maps model_services to the create-request type (config
+      # nested under model_service.*) so it can't emit these config.* paths;
+      # classify them by hand to avoid phantom drift.
+      - field: config.inference_table.table
+        reason: output_only
+      - field: config.inference_table.is_deleted
+        reason: output_only
+      # A routing target (model / MPS) that gets soft-deleted stays visible on
+      # read with is_deleted=true so the broken dependency is identifiable; the
+      # field is server-computed, not user-authored, so suppress it like above.
+      - field: config.routing.destinations[*].is_deleted
+        reason: output_only
+      - field: config.routing.fallback.destinations[*].is_deleted
+        reason: output_only
+
   registered_models:
     ignore_remote_changes:
       # Output-only timestamp/user fields populated by the backend on read.

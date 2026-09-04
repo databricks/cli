@@ -1185,6 +1185,25 @@ resources:
             "table_update":
               "description": |-
                 PLACEHOLDER
+    "model_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "model_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
     "model_serving_endpoints":
       "description": |-
         The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.

@@ -21,6 +21,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 		"genie_spaces",
 		"instance_pools",
 		"job_runs",
+		"model_services",
 		"secrets",
 		"vector_search_endpoints",
 		"vector_search_indexes",
