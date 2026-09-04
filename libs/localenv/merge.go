@@ -75,13 +75,14 @@ type dbconnectPlan struct {
 }
 
 // planDBConnect returns the databricks-connect edits merging target would make, or
-// the zero plan in constraints-only mode (empty pin) where databricks-connect is left
+// the zero plan when databricks-connect is skipped (--no-dbconnect / --constraints-only)
+// or the artifact carries no pin — the cases where MergeManaged leaves databricks-connect
 // untouched. It mirrors MergeManaged's preprocessing (CRLF normalization and
 // multi-line string protection) and runs both databricks-connect passes on a clone,
 // in the same order as MergeManaged, so replacedDevPin and removed match what the
 // real merge does.
-func planDBConnect(target []byte, c Constraints) dbconnectPlan {
-	if c.DatabricksConnect == "" {
+func planDBConnect(target []byte, c Constraints, skipDBConnect bool) dbconnectPlan {
+	if skipDBConnect || c.DatabricksConnect == "" {
 		return dbconnectPlan{}
 	}
 	// Mirror MergeManaged's own preprocessing so the same lines are inspected.
@@ -99,17 +100,27 @@ func planDBConnect(target []byte, c Constraints) dbconnectPlan {
 	return dbconnectPlan{replacedDevPin: replaced, removed: removed}
 }
 
+// MergeOptions selects which orthogonal managed axes are left unmanaged. Each flag
+// is threaded explicitly rather than inferred from empty/nil values in the
+// Constraints, so a caller's intent is unambiguous and the Constraints always carry
+// the real artifact values. The zero value manages every axis. A new axis is a new
+// field here — callers that manage everything keep passing MergeOptions{} unchanged.
+type MergeOptions struct {
+	// SkipConstraints (--no-constraints) leaves the requires-python and [tool.uv]
+	// constraint regions unmanaged: existing values are preserved and none written.
+	SkipConstraints bool
+	// SkipDBConnect (--no-dbconnect / --constraints-only) leaves the
+	// databricks-connect dependency unmanaged: an existing pin is preserved and none
+	// is injected or asserted.
+	SkipDBConnect bool
+}
+
 // MergeManaged applies the managed transforms to target, preserving every other
 // byte (comments, ordering, whitespace). It returns the merged bytes and the list of
 // regions that actually changed. The operation is idempotent: feeding its own output
-// back in produces identical bytes.
-// skipConstraints (--no-constraints) leaves the requires-python and [tool.uv]
-// constraint regions unmanaged: any existing values are preserved and none are
-// written. It is threaded explicitly rather than inferred from empty/nil values in
-// c, so the caller's intent is unambiguous and c always carries the real artifact
-// values. The databricks-connect and environment regions are orthogonal and are
-// always reconciled.
-func MergeManaged(target []byte, c Constraints, skipConstraints bool) (merged []byte, regions []string, err error) {
+// back in produces identical bytes. opts selects which axes are managed; the
+// environment region is always reconciled.
+func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byte, regions []string, err error) {
 	s := string(target)
 
 	// Detect and normalize line endings. We process on "\n" and restore "\r\n" on
@@ -137,7 +148,7 @@ func MergeManaged(target []byte, c Constraints, skipConstraints bool) (merged []
 		return nil, nil, errNoProjectTable
 	}
 
-	if !skipConstraints {
+	if !opts.SkipConstraints {
 		var rpChanged bool
 		lines, rpChanged = mergeRequiresPython(lines, c.RequiresPython)
 		if rpChanged {
@@ -145,17 +156,21 @@ func MergeManaged(target []byte, c Constraints, skipConstraints bool) (merged []
 		}
 	}
 
-	lines, _, dbcChanged := mergeDatabricksConnect(lines, c.DatabricksConnect)
-	// In the install flow, after the managed pin lands in the dev group, remove any
-	// databricks-connect pin elsewhere that is disjoint from it — the pins that would
-	// otherwise make uv unsatisfiable. Compatible pins are left alone. Skipped in
-	// constraints-only mode (empty pin), where databricks-connect is left untouched.
-	strayChanged := false
-	if c.DatabricksConnect != "" {
-		lines, _, strayChanged = removeStrayDatabricksConnect(lines, c.DatabricksConnect)
-	}
-	if dbcChanged || strayChanged {
-		regions = append(regions, regionDatabricksConnect)
+	if !opts.SkipDBConnect {
+		var dbcChanged bool
+		lines, _, dbcChanged = mergeDatabricksConnect(lines, c.DatabricksConnect)
+		// In the install flow, after the managed pin lands in the dev group, remove any
+		// databricks-connect pin elsewhere that is disjoint from it — the pins that would
+		// otherwise make uv unsatisfiable. Compatible pins are left alone. An empty pin
+		// (an artifact without databricks-connect) is a data no-op, distinct from the
+		// SkipDBConnect intent handled by the gate above.
+		strayChanged := false
+		if c.DatabricksConnect != "" {
+			lines, _, strayChanged = removeStrayDatabricksConnect(lines, c.DatabricksConnect)
+		}
+		if dbcChanged || strayChanged {
+			regions = append(regions, regionDatabricksConnect)
+		}
 	}
 
 	lines, envChanged := mergeDatabricksEnvironment(lines, c.EnvironmentVersion)
@@ -163,7 +178,7 @@ func MergeManaged(target []byte, c Constraints, skipConstraints bool) (merged []
 		regions = append(regions, regionDatabricksEnvironment)
 	}
 
-	if !skipConstraints {
+	if !opts.SkipConstraints {
 		var uvChanged bool
 		lines, uvChanged = mergeToolUv(lines, c.ConstraintDeps)
 		if uvChanged {
@@ -1241,9 +1256,9 @@ const freshProjectVersion = "0.0.0"
 // RenderFreshPyproject produces a complete managed pyproject.toml for a project that has
 // none, with [project], [dependency-groups].dev (carrying the databricks-connect pin), the
 // [tool.databricks.environment] section (serverless targets only), and the marker-bracketed
-// [tool.uv] constraint block. When c.DatabricksConnect is empty (constraints-only mode) the
-// dev group is emitted empty rather than with a blank entry.
-func RenderFreshPyproject(projectName string, c Constraints, skipConstraints bool) []byte {
+// [tool.uv] constraint block. When databricks-connect is skipped (--no-dbconnect /
+// --constraints-only) or the artifact carries no pin, the dev group is emitted empty.
+func RenderFreshPyproject(projectName string, c Constraints, opts MergeOptions) []byte {
 	var b strings.Builder
 	b.WriteString("[project]\n")
 	fmt.Fprintf(&b, "name = %q\n", projectName)
@@ -1251,12 +1266,12 @@ func RenderFreshPyproject(projectName string, c Constraints, skipConstraints boo
 	fmt.Fprintf(&b, "version = %q\n", freshProjectVersion)
 	// requires-python is omitted when constraints are skipped (--no-constraints),
 	// which lets uv pick the interpreter for the fresh project.
-	if !skipConstraints {
+	if !opts.SkipConstraints {
 		fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
 	}
 	b.WriteString("\n")
 	b.WriteString("[dependency-groups]\n")
-	if c.DatabricksConnect != "" {
+	if !opts.SkipDBConnect && c.DatabricksConnect != "" {
 		b.WriteString("dev = [\n")
 		fmt.Fprintf(&b, "    %q,\n", c.DatabricksConnect)
 		b.WriteString("]\n")
@@ -1274,7 +1289,7 @@ func RenderFreshPyproject(projectName string, c Constraints, skipConstraints boo
 	// The [tool.uv] constraint block is omitted when constraints are skipped
 	// (--no-constraints); otherwise it is always written (an empty block when the
 	// artifact carries no constraint-dependencies).
-	if !skipConstraints {
+	if !opts.SkipConstraints {
 		for _, line := range renderToolUvBlock(c.ConstraintDeps, true) {
 			b.WriteString(line)
 			b.WriteString("\n")

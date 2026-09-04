@@ -213,18 +213,22 @@ func (p *Pipeline) run(ctx context.Context) error {
 		return p.fail(PhaseFetch, false, NewError(ErrFetch, err, "cannot parse python version from constraints %q", c.RequiresPython))
 	}
 
-	dbcPin := c.DatabricksConnect
-	if p.Mode == ModeConstraintsOnly {
-		// constraints-only stops *managing* the databricks-connect pin rather than
-		// removing it. Clearing dbcPin means the merge neither injects nor asserts a
-		// pin: greenfield renders dev = [] (no databricks-connect), while an existing
-		// project that already pins databricks-connect keeps its pin untouched (see
-		// mergeDatabricksConnect — an empty value is a no-op, not a deletion).
-		dbcPin = ""
+	// --no-dbconnect / --constraints-only stops *managing* the databricks-connect
+	// pin rather than removing it: the merge neither injects nor asserts a pin
+	// (greenfield renders dev = [], an existing pin is left untouched), the version
+	// is not reported, and validate skips the databricks-connect assertion. It is
+	// threaded explicitly (skipDBConnect / MergeOptions) rather than by clearing the
+	// pin, so c keeps the real artifact value.
+	skipDBConnect := p.Mode == ModeConstraintsOnly
+	opts := MergeOptions{SkipConstraints: p.SkipConstraints, SkipDBConnect: skipDBConnect}
+
+	dbcVersion := dbcVersionFromPin(c.DatabricksConnect)
+	if skipDBConnect {
+		dbcVersion = ""
 	}
 	p.res.Resolved = &ResolvedInfo{
 		PythonVersion:    pyMinor,
-		DBConnectVersion: dbcVersionFromPin(dbcPin),
+		DBConnectVersion: dbcVersion,
 		ArtifactSource:   artifactSource(c.FromCache),
 	}
 
@@ -232,7 +236,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// The serverless environment version (empty for cluster targets) is written
 	// into [tool.databricks.environment] so the project also runs in serverless Jobs.
 	p.report(ctx, PhaseMerge)
-	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin, compute.ServerlessEnvironmentVersion())
+	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, compute.ServerlessEnvironmentVersion(), opts)
 	if err != nil {
 		return err
 	}
@@ -260,7 +264,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 
 	// Phase: validate — assert the venv matches the target.
 	p.report(ctx, PhaseValidate)
-	return p.validate(ctx, pyMinor, dbcPin)
+	return p.validate(ctx, pyMinor, c.DatabricksConnect, skipDBConnect)
 }
 
 // resolve runs ResolveCompute and records the resolve phase.
@@ -351,10 +355,10 @@ func (p *Pipeline) plannedBackupName() (string, error) {
 
 // mergePlan computes the merged pyproject.toml bytes (without writing to disk),
 // decides greenfield vs. existing, and builds the Plan (populated only under
-// --dry-run). dbcPin is the databricks-connect pin to inject, or "" in
-// constraints-only mode. envVersion is the serverless environment version to
-// write into [tool.databricks.environment], or "" for a cluster target.
-func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin, envVersion string) (merged []byte, greenfield bool, err error) {
+// --dry-run). opts selects which managed axes are written. envVersion is the
+// serverless environment version to write into [tool.databricks.environment], or
+// "" for a cluster target.
+func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, envVersion string, opts MergeOptions) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
 
 	// The merge base is the live pyproject.toml, not the backup. MergeManaged
@@ -379,47 +383,41 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	}
 	greenfield = baseBytes == nil
 
-	// The artifact drives the merge; in constraints-only mode we clear the
-	// databricks-connect pin so it is neither written nor asserted. envVersion is
-	// the resolved serverless version (empty for cluster targets).
+	// The artifact drives the merge. envVersion is the resolved serverless version
+	// (empty for cluster targets); it is deliberately NOT gated by SkipDBConnect —
+	// unlike the databricks-connect pin (a managed *dependency* the mode opts out
+	// of), the environment version records the resolved compute *target*, which is
+	// still resolved. Recording it keeps the target discoverable for VS Code and
+	// serverless Jobs even when the databricks-connect dependency is turned off.
 	//
-	// envVersion is deliberately NOT cleared in constraints-only mode: unlike the
-	// databricks-connect pin (a managed *dependency* the mode opts out of), the
-	// environment version records the resolved compute *target*, which the mode
-	// still resolves. Recording it keeps the target discoverable for VS Code and
-	// serverless Jobs even when dependency management is turned off.
+	// The skip axes in opts are threaded explicitly into the merge, fresh render,
+	// and warning detector rather than encoded by clearing effective's values, so
+	// those functions see the real artifact values and the intent is unambiguous.
+	// Each governs only what is *written*: a provisioning run still installs and
+	// validates the resolved Python (pyMinor), so if a kept requires-python is
+	// disjoint from the target, uv surfaces a normal E_PROVISION rather than the
+	// command guessing an alternative.
 	effective := *c
-	effective.DatabricksConnect = dbcPin
 	effective.EnvironmentVersion = envVersion
-	// --no-constraints (p.SkipConstraints) leaves the remote Python version and
-	// dependency pins unmanaged. It is threaded explicitly into the merge, fresh
-	// render, and warning detector below rather than encoded by clearing
-	// effective's values, so those functions see the real artifact values and the
-	// intent is unambiguous.
-	//
-	// The flag governs only what is *written*. A provisioning run still installs
-	// and validates the resolved Python (pyMinor), so if the user's kept
-	// requires-python is disjoint from the target, uv surfaces it as a normal
-	// E_PROVISION rather than this command guessing an alternative.
 
 	var changedRegions []string
 	if greenfield {
 		// No existing pyproject.toml — render a fresh one. The project name comes
 		// from the directory name as a reasonable default. Only the regions actually
-		// rendered are reported (requires-python and tool.uv are omitted under
-		// --no-constraints).
-		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective, p.SkipConstraints)
-		if !p.SkipConstraints {
+		// rendered are reported (requires-python and tool.uv omitted under
+		// --no-constraints; databricks-connect omitted under --no-dbconnect).
+		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective, opts)
+		if !opts.SkipConstraints {
 			changedRegions = append(changedRegions, regionRequiresPython, regionToolUv)
 		}
-		if dbcPin != "" {
+		if !opts.SkipDBConnect && c.DatabricksConnect != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
 		}
 		if envVersion != "" {
 			changedRegions = append(changedRegions, regionDatabricksEnvironment)
 		}
 	} else {
-		merged, changedRegions, err = MergeManaged(baseBytes, effective, p.SkipConstraints)
+		merged, changedRegions, err = MergeManaged(baseBytes, effective, opts)
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
@@ -430,7 +428,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// edits come from the merge itself (planDBConnect), so a warning can never claim a
 		// rewrite or removal that did not happen.
 		p.res.Warnings = append(p.res.Warnings,
-			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective), p.SkipConstraints)...)
+			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective, opts.SkipDBConnect), opts)...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
@@ -538,9 +536,10 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 }
 
 // validate reads the Python and databricks-connect versions from the venv and
-// populates the venv path. dbcPin is "" in constraints-only mode, where the DB
-// Connect assertion is skipped.
-func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string) error {
+// populates the venv path. dbcPin is the resolved databricks-connect pin (the real
+// artifact value); skipDBConnect is true under --no-dbconnect / --constraints-only,
+// where the databricks-connect assertion and version reporting are skipped.
+func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string, skipDBConnect bool) error {
 	info, err := p.PM.Validate(ctx, p.ProjectDir)
 	if err != nil {
 		return p.fail(PhaseValidate, true, asPipelineError(err, ErrValidate, "validation failed"))
@@ -568,9 +567,10 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 			"python version mismatch: want %s, got %s", expectedPyMinor, pyVer))
 	}
 
-	// In default mode, assert the installed databricks-connect major matches the
+	// When databricks-connect is managed, assert the installed major matches the
 	// pin's major. dbcPin is e.g. "databricks-connect~=17.2.0"; dbcVer is "17.2.0".
-	if dbcPin != "" {
+	// Skipped under --no-dbconnect / --constraints-only.
+	if !skipDBConnect && dbcPin != "" {
 		pinMajor := dbcMajorFromPin(dbcPin)
 		if pinMajor == "" {
 			return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
@@ -587,10 +587,10 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 		}
 	}
 
-	// Report the installed databricks-connect version only in default mode. In
-	// constraints-only mode databricks-connect is not a managed dependency, so the
-	// spec omits dbconnectVersion even if the package is present transitively.
-	defaultMode := dbcPin != ""
+	// Report the installed databricks-connect version only when it is a managed
+	// dependency. Under --no-dbconnect / --constraints-only it is not, so the spec
+	// omits dbconnectVersion even if the package is present transitively.
+	defaultMode := !skipDBConnect && dbcPin != ""
 
 	detail := "python=" + pyVer
 	if defaultMode && dbcVer != "" {

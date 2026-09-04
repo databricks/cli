@@ -12,7 +12,7 @@ import (
 // against a different notion of what the merge rewrites or removes than production uses —
 // that divergence is the bug this wiring exists to prevent.
 func detectWarnings(userPyproject []byte, c Constraints) []Warning {
-	return detectMergeWarnings(userPyproject, c, planDBConnect(userPyproject, c), false)
+	return detectMergeWarnings(userPyproject, c, planDBConnect(userPyproject, c, false), MergeOptions{})
 }
 
 // codes extracts the warning codes in order for concise assertions.
@@ -63,8 +63,27 @@ dev = ["databricks-connect~=16.1.0", "pydantic~=1.0"]
 		DatabricksConnect: "databricks-connect~=18.0.0",
 		ConstraintDeps:    []string{"pydantic~=2.10.6"},
 	}
-	got := detectMergeWarnings(user, c, planDBConnect(user, c), true)
+	got := detectMergeWarnings(user, c, planDBConnect(user, c, false), MergeOptions{SkipConstraints: true})
 	assert.Equal(t, []string{WarnDBConnectPinOverridden}, codes(got))
+}
+
+func TestDetectMergeWarningsSkipDBConnectSuppressesDBConnectWarning(t *testing.T) {
+	// Under --no-dbconnect the merge leaves the databricks-connect pin unmanaged, so
+	// no databricks-connect override warning is reported — but the orthogonal
+	// requires-python override still is.
+	user := []byte(`[project]
+name = "demo"
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.1.0"]
+`)
+	c := Constraints{
+		RequiresPython:    "==3.12.*",
+		DatabricksConnect: "databricks-connect~=18.0.0",
+	}
+	got := detectMergeWarnings(user, c, planDBConnect(user, c, true), MergeOptions{SkipDBConnect: true})
+	assert.Equal(t, []string{WarnRequiresPythonOverridden}, codes(got))
 }
 
 func TestDetectMergeWarningsWithMultilineString(t *testing.T) {
@@ -321,7 +340,7 @@ spark = ["databricks-connect==15.0.0"]
 
 	// Consolidation actually fixes the project: re-running on the merged file finds a
 	// single managed pin and nothing to warn about (the spark stray is gone).
-	merged, _, err := MergeManaged(both, c, false)
+	merged, _, err := MergeManaged(both, c, MergeOptions{})
 	require.NoError(t, err)
 	assert.Empty(t, detectWarnings(merged, c))
 
@@ -529,7 +548,7 @@ Dev = ["databricks-connect==16.1.0"]
 	assert.Equal(t, []string{WarnDBConnectConsolidated}, codes(got))
 	assert.NotContains(t, got[0].Message, "is replaced")
 
-	merged, _, err := MergeManaged(user, c, false)
+	merged, _, err := MergeManaged(user, c, MergeOptions{})
 	require.NoError(t, err)
 	assert.NotContains(t, string(merged), `databricks-connect==16.1.0`, "the stray pin is removed, not retained")
 }
@@ -565,7 +584,7 @@ requires-python = "==3.12.*"
 		assert.NotContains(t, got[0].Message, "is replaced", name)
 
 		// The merged file really does carry both pins, which is what the code reports.
-		merged, _, err := MergeManaged([]byte(body), c, false)
+		merged, _, err := MergeManaged([]byte(body), c, MergeOptions{})
 		require.NoError(t, err, name)
 		assert.Contains(t, string(merged), "databricks-connect==16.1.0", name)
 		assert.Contains(t, string(merged), "databricks-connect==17.0.0", name)
@@ -581,7 +600,7 @@ Dev = ["databricks-connect==16.1.0"]
 `)
 	got := detectWarnings(capitalized, c)
 	assert.Equal(t, []string{WarnDBConnectConsolidated}, codes(got))
-	merged, _, err := MergeManaged(capitalized, c, false)
+	merged, _, err := MergeManaged(capitalized, c, MergeOptions{})
 	require.NoError(t, err)
 	assert.NotContains(t, string(merged), "databricks-connect==16.1.0")
 	assert.Contains(t, string(merged), "databricks-connect==17.0.0")
