@@ -3,8 +3,10 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
@@ -107,6 +109,16 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
+
+	if cfg.Profile != "" {
+		fingerprint, err := profilehash.FromFile(cfg.ConfigFile, cfg.Profile)
+		if err != nil {
+			return nil, fmt.Errorf("fingerprint profile %q: %w", cfg.Profile, err)
+		}
+
+		tokenStore = storage.NewProfileFingerprintStore(tokenStore, cfg.Profile, fingerprint)
+	}
+
 	ts, err := c.persistentAuth(ctx,
 		u2m.WithOAuthArgument(oauthArg),
 		u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenStore, mode)),
@@ -114,6 +126,7 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
+
 	cp := credentials.NewOAuthCredentialsProviderFromTokenSource(
 		auth.NewCachedTokenSource(ts, auth.WithAsyncRefresh(!cfg.DisableOAuthRefreshToken)),
 	)

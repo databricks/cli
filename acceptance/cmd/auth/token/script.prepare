@@ -15,6 +15,10 @@ ENDCFG
 
 setup_test_token_cache() {
     mkdir -p "./home/.databricks"
+    # Match the cache metadata that login writes for the two-field test profile.
+    profile_fingerprint=$(profile_fingerprint.py \
+        "auth_type=databricks-cli" \
+        "host=$DATABRICKS_HOST_ORIG")
     cat > "./home/.databricks/token-cache.json" <<ENDCACHE
 {
   "version": 1,
@@ -23,7 +27,8 @@ setup_test_token_cache() {
       "access_token": "cached-access-token",
       "token_type": "Bearer",
       "refresh_token": "test-refresh-token",
-      "expiry": "2099-01-01T00:00:00Z"
+      "expiry": "2099-01-01T00:00:00Z",
+      "profile_fingerprint": "$profile_fingerprint"
     }
   }
 }

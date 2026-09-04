@@ -82,7 +82,10 @@ func TestKeyringStore_Store_WritesJSON(t *testing.T) {
 
 	tok := &oauth2.Token{AccessToken: "abc", TokenType: "Bearer"}
 
-	require.NoError(t, c.Put("my-profile", Entry{Token: tok}))
+	require.NoError(t, c.Put("my-profile", Entry{
+		Token:              tok,
+		ProfileFingerprint: "profile-fingerprint",
+	}))
 
 	stored, ok := backend.items[itemKey("databricks-cli", "my-profile")]
 	require.True(t, ok, "token should be stored under service=databricks-cli, account=my-profile")
@@ -92,6 +95,7 @@ func TestKeyringStore_Store_WritesJSON(t *testing.T) {
 	require.NotNil(t, got.Token)
 	assert.Equal(t, "abc", got.Token.AccessToken)
 	assert.Equal(t, "Bearer", got.Token.TokenType)
+	assert.Equal(t, "profile-fingerprint", got.ProfileFingerprint)
 }
 
 func TestKeyringStore_Store_PropagatesBackendError(t *testing.T) {
@@ -110,12 +114,16 @@ func TestKeyringStore_Lookup_ReturnsStoredToken(t *testing.T) {
 	c := newTestStore(backend)
 
 	want := &oauth2.Token{AccessToken: "abc", TokenType: "Bearer"}
-	require.NoError(t, c.Put("my-profile", Entry{Token: want}))
+	require.NoError(t, c.Put("my-profile", Entry{
+		Token:              want,
+		ProfileFingerprint: "profile-fingerprint",
+	}))
 
 	got, err := c.Lookup("my-profile")
 	require.NoError(t, err)
 	assert.Equal(t, "abc", got.Token.AccessToken)
 	assert.Equal(t, "Bearer", got.Token.TokenType)
+	assert.Equal(t, "profile-fingerprint", got.ProfileFingerprint)
 }
 
 func TestKeyringStore_Lookup_MissingReturnsCacheErrNotFound(t *testing.T) {

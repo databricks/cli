@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
@@ -30,7 +31,10 @@ import (
 // newTestStore returns an in-memory token cache for tests so that
 // discoveryLogin and other login helpers don't touch ~/.databricks/token-cache.json.
 func newTestStore() storage.Store {
-	return &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
+	// Prepopulate the entry because the fake Challenge does not perform the real OAuth cache write.
+	return &inMemoryStore{Tokens: map[string]*oauth2.Token{
+		"DISCOVERY": {AccessToken: "test-token"},
+	}}
 }
 
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
@@ -804,6 +808,46 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Equal(t, "all-apis,sql", savedProfile.Scopes)
 	assert.Empty(t, savedProfile.AccountID)
 	assert.Empty(t, savedProfile.WorkspaceID)
+}
+
+// TestDiscoveryLoginStoresSavedProfileFingerprint verifies that discovery login binds
+// its cached token to the profile values ultimately written to disk.
+func TestDiscoveryLoginStoresSavedProfileFingerprint(t *testing.T) {
+	home := t.TempDir()
+	configPath := filepath.Join(home, ".databrickscfg")
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
+
+	tokenStore := newTestStore()
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspection: &auth.IntrospectionResult{},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  tokenStore,
+	})
+	require.NoError(t, err)
+
+	fingerprint, err := profilehash.FromFile(configPath, "DISCOVERY")
+	require.NoError(t, err)
+	entry, err := tokenStore.Lookup("DISCOVERY")
+	require.NoError(t, err)
+
+	assert.Equal(t, fingerprint, entry.ProfileFingerprint)
 }
 
 func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
