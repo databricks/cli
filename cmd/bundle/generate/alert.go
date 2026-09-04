@@ -10,12 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/generate"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -57,17 +52,14 @@ After generation, you can deploy this alert to other targets using:
 	cmd.Flags().StringVar(&alertID, "existing-id", "", `ID of the alert to generate configuration for`)
 	cmd.MarkFlagRequired("existing-id")
 
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `directory to write the configuration to`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `directory to write the alert definition to`)
-	cmd.Flags().BoolVarP(&force, "force", "f", false, `force overwrite existing files in the output directory`)
+	addOutputDirFlag(cmd, &configDir, "config-dir", "d", "resources", `directory to write the configuration to`)
+	addOutputDirFlag(cmd, &sourceDir, "source-dir", "s", "src", `directory to write the alert definition to`)
+	addForceFlag(cmd, &force, `force overwrite existing files in the output directory`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		ctx, b, err := configureBundle(cmd)
+		if err != nil {
+			return err
 		}
 
 		w := b.WorkspaceClient(ctx)
@@ -83,18 +75,11 @@ After generation, you can deploy this alert to other targets using:
 		}
 
 		// Calculate paths
-		alertKey := cmd.Flag("key").Value.String()
-		if alertKey == "" {
-			alertKey = textutil.NormalizeString(alert.DisplayName)
-		}
+		alertKey := selectedResourceKey(cmd, alert.DisplayName)
 
 		// Make paths absolute if they aren't already
-		if !filepath.IsAbs(configDir) {
-			configDir = filepath.Join(b.BundleRootPath, configDir)
-		}
-		if !filepath.IsAbs(sourceDir) {
-			sourceDir = filepath.Join(b.BundleRootPath, sourceDir)
-		}
+		configDir = absolutePath(b.BundleRootPath, configDir)
+		sourceDir = absolutePath(b.BundleRootPath, sourceDir)
 
 		// Calculate relative path from config dir to source dir
 		relativeSourceDir, err := filepath.Rel(configDir, sourceDir)
@@ -141,13 +126,7 @@ After generation, you can deploy this alert to other targets using:
 			return err
 		}
 
-		result := map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				"alerts": dyn.V(map[string]dyn.Value{
-					alertKey: v,
-				}),
-			}),
-		}
+		result := generatedResourceConfig("alerts", alertKey, v)
 
 		// Create config directory if needed
 		if err := os.MkdirAll(configDir, 0o755); err != nil {
@@ -156,11 +135,9 @@ After generation, you can deploy this alert to other targets using:
 
 		// Save configuration file
 		configPath := filepath.Join(configDir, alertKey+".alert.yml")
-		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
+		err = saveGeneratedResourceConfig(result, configPath, force, map[string]yaml.Style{
 			"display_name": yaml.DoubleQuotedStyle,
 		})
-
-		err = saver.SaveAsYAML(result, configPath, force)
 		if err != nil {
 			return err
 		}

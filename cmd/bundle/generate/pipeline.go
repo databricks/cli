@@ -1,20 +1,10 @@
 package generate
 
 import (
-	"errors"
-	"fmt"
-	"io/fs"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/generate"
-	"github.com/databricks/cli/cmd/bundle/deployment"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
@@ -58,19 +48,15 @@ like catalogs, schemas, and compute configurations per target.`,
 	cmd.Flags().StringVar(&pipelineId, "existing-pipeline-id", "", `ID of the pipeline to generate config for`)
 	cmd.MarkFlagRequired("existing-pipeline-id")
 
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
-	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
-	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
-	cmd.Flags().MarkHidden("bind")
+	addOutputDirFlag(cmd, &configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
+	addOutputDirFlag(cmd, &sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
+	addForceFlag(cmd, &force, `Force overwrite existing files in the output directory`)
+	addHiddenBindFlag(cmd, &bind, `automatically bind the generated resource to the existing resource`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		ctx, b, err := configureBundle(cmd)
+		if err != nil {
+			return err
 		}
 
 		w := b.WorkspaceClient(ctx)
@@ -107,36 +93,23 @@ like catalogs, schemas, and compute configurations per target.`,
 			return err
 		}
 
-		pipelineKey := cmd.Flag("key").Value.String()
-		if pipelineKey == "" {
-			pipelineKey = textutil.NormalizeString(pipeline.Name)
-		}
-
-		result := map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				"pipelines": dyn.V(map[string]dyn.Value{
-					pipelineKey: v,
-				}),
-			}),
-		}
+		pipelineKey := selectedResourceKey(cmd, pipeline.Name)
+		result := generatedResourceConfig("pipelines", pipelineKey, v)
 
 		err = downloader.FlushToDisk(ctx, force)
 		if err != nil {
 			return err
 		}
 
-		oldFilename := filepath.Join(configDir, pipelineKey+".yml")
-		filename := filepath.Join(configDir, pipelineKey+".pipeline.yml")
-
 		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
 		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
 		// Otherwise users can end up with duplicated resources.
-		err = os.Rename(oldFilename, filename)
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
+		filename, err := migrateGeneratedResourceFilename(configDir, pipelineKey, "pipeline")
+		if err != nil {
+			return err
 		}
 
-		saver := yamlsaver.NewSaverWithStyle(
+		err = saveGeneratedResourceConfig(result, filename, force,
 			// Including all CreatePipeline and nested fields which are map[string]string type
 			map[string]yaml.Style{
 				"spark_conf":    yaml.DoubleQuotedStyle,
@@ -144,7 +117,6 @@ like catalogs, schemas, and compute configurations per target.`,
 				"configuration": yaml.DoubleQuotedStyle,
 			},
 		)
-		err = saver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err
 		}
@@ -154,7 +126,7 @@ like catalogs, schemas, and compute configurations per target.`,
 		warnIfNotIncluded(ctx, b, filename)
 
 		if bind {
-			return deployment.BindResource(cmd, pipelineKey, pipelineId, true, false, true)
+			return bindGeneratedResource(cmd, pipelineKey, pipelineId)
 		}
 
 		return nil

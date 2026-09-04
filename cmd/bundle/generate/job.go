@@ -1,21 +1,11 @@
 package generate
 
 import (
-	"errors"
-	"fmt"
-	"io/fs"
-	"os"
 	"path/filepath"
 	"strconv"
 
 	"github.com/databricks/cli/bundle/generate"
-	"github.com/databricks/cli/cmd/bundle/deployment"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
@@ -59,19 +49,15 @@ After generation, you can deploy this job to other targets using:
 	cmd.Flags().Int64Var(&jobId, "existing-job-id", 0, `Job ID of the job to generate config for`)
 	cmd.MarkFlagRequired("existing-job-id")
 
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
-	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
-	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated resource to the existing resource`)
-	cmd.Flags().MarkHidden("bind")
+	addOutputDirFlag(cmd, &configDir, "config-dir", "d", "resources", `Dir path where the output config will be stored`)
+	addOutputDirFlag(cmd, &sourceDir, "source-dir", "s", "src", `Dir path where the downloaded files will be stored`)
+	addForceFlag(cmd, &force, `Force overwrite existing files in the output directory`)
+	addHiddenBindFlag(cmd, &bind, `automatically bind the generated resource to the existing resource`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		ctx, b, err := configureBundle(cmd)
+		if err != nil {
+			return err
 		}
 
 		w := b.WorkspaceClient(ctx)
@@ -103,18 +89,8 @@ After generation, you can deploy this job to other targets using:
 			return err
 		}
 
-		jobKey := cmd.Flag("key").Value.String()
-		if jobKey == "" {
-			jobKey = textutil.NormalizeString(job.Settings.Name)
-		}
-
-		result := map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				"jobs": dyn.V(map[string]dyn.Value{
-					jobKey: v,
-				}),
-			}),
-		}
+		jobKey := selectedResourceKey(cmd, job.Settings.Name)
+		result := generatedResourceConfig("jobs", jobKey, v)
 
 		err = downloader.FlushToDisk(ctx, force)
 		if err != nil {
@@ -123,24 +99,20 @@ After generation, you can deploy this job to other targets using:
 
 		downloader.CleanupOldFiles(ctx)
 
-		oldFilename := filepath.Join(configDir, jobKey+".yml")
-		filename := filepath.Join(configDir, jobKey+".job.yml")
-
 		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
 		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
 		// Otherwise users can end up with duplicated resources.
-		err = os.Rename(oldFilename, filename)
-		if err != nil && !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
+		filename, err := migrateGeneratedResourceFilename(configDir, jobKey, "job")
+		if err != nil {
+			return err
 		}
 
-		saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
+		err = saveGeneratedResourceConfig(result, filename, force, map[string]yaml.Style{
 			// Including all JobSettings and nested fields which are map[string]string type
 			"spark_conf":  yaml.DoubleQuotedStyle,
 			"custom_tags": yaml.DoubleQuotedStyle,
 			"tags":        yaml.DoubleQuotedStyle,
 		})
-		err = saver.SaveAsYAML(result, filename, force)
 		if err != nil {
 			return err
 		}
@@ -150,7 +122,7 @@ After generation, you can deploy this job to other targets using:
 		warnIfNotIncluded(ctx, b, filename)
 
 		if bind {
-			return deployment.BindResource(cmd, jobKey, strconv.FormatInt(jobId, 10), true, false, true)
+			return bindGeneratedResource(cmd, jobKey, strconv.FormatInt(jobId, 10))
 		}
 
 		return nil

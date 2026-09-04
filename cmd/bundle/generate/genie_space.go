@@ -5,28 +5,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
-	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/cmd/bundle/deployment"
-	"github.com/databricks/cli/cmd/bundle/utils"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/spf13/cobra"
@@ -135,13 +123,7 @@ func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, ge
 		return err
 	}
 
-	result := map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"genie_spaces": dyn.V(map[string]dyn.Value{
-				key: v,
-			}),
-		}),
-	}
+	result := generatedResourceConfig("genie_spaces", key, v)
 
 	// Make sure the output directory exists.
 	if err := os.MkdirAll(g.resourceDir, 0o755); err != nil {
@@ -150,9 +132,6 @@ func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, ge
 
 	// Save the configuration to the resource directory.
 	resourcePath := filepath.Join(g.resourceDir, key+".genie_space.yml")
-	saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
-		"title": yaml.DoubleQuotedStyle,
-	})
 
 	// Attempt to make the path relative to the bundle root.
 	rel, err := filepath.Rel(b.BundleRootPath, resourcePath)
@@ -161,7 +140,9 @@ func (g *genieSpace) saveConfiguration(ctx context.Context, b *bundle.Bundle, ge
 	}
 
 	cmdio.LogString(ctx, "Writing configuration to "+filepath.ToSlash(rel))
-	err = saver.SaveAsYAML(result, resourcePath, g.force)
+	err = saveGeneratedResourceConfig(result, resourcePath, g.force, map[string]yaml.Style{
+		"title": yaml.DoubleQuotedStyle,
+	})
 	if err != nil {
 		return err
 	}
@@ -264,10 +245,7 @@ func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, 
 		return
 	}
 
-	key := g.cmd.Flag("key").Value.String()
-	if key == "" {
-		key = textutil.NormalizeString(genieSpace.Title)
-	}
+	key := selectedResourceKey(g.cmd, genieSpace.Title)
 	err = g.saveConfiguration(ctx, b, genieSpace, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -275,7 +253,7 @@ func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, 
 	}
 
 	if g.bind {
-		err = deployment.BindResource(g.cmd, key, genieSpaceID, true, false, true)
+		err = bindGeneratedResource(g.cmd, key, genieSpaceID)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -286,12 +264,8 @@ func (g *genieSpace) generateForExisting(ctx context.Context, b *bundle.Bundle, 
 
 func (g *genieSpace) initialize(ctx context.Context, b *bundle.Bundle) {
 	// Make the paths absolute if they aren't already.
-	if !filepath.IsAbs(g.resourceDir) {
-		g.resourceDir = filepath.Join(b.BundleRootPath, g.resourceDir)
-	}
-	if !filepath.IsAbs(g.genieSpaceDir) {
-		g.genieSpaceDir = filepath.Join(b.BundleRootPath, g.genieSpaceDir)
-	}
+	g.resourceDir = absolutePath(b.BundleRootPath, g.resourceDir)
+	g.genieSpaceDir = absolutePath(b.BundleRootPath, g.genieSpaceDir)
 
 	// Make sure we know how the genie space path is relative to the resource path.
 	rel, err := filepath.Rel(g.resourceDir, g.genieSpaceDir)
@@ -304,41 +278,7 @@ func (g *genieSpace) initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) {
-	phases.Initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	var state statemgmt.ExportedResourcesMap
-	if stateDesc.Engine.IsDirect() {
-		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		state = b.DeploymentBundle.ExportState(ctx)
-	} else {
-		var err error
-		state, err = terraform.ParseResourcesState(ctx, b)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	}
-
-	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(state),
-	)
+	ctx = loadBundleResourceState(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -357,17 +297,14 @@ func (g *genieSpace) runForExisting(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (g *genieSpace) RunE(cmd *cobra.Command, args []string) error {
-	ctx := logdiag.InitContext(cmd.Context())
-	cmd.SetContext(ctx)
-
-	b := root.MustConfigureBundle(cmd)
-	if b == nil || logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+	ctx, b, err := configureBundle(cmd)
+	if err != nil {
+		return err
 	}
 
 	g.initialize(ctx, b)
 	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+		return errAlreadyPrinted()
 	}
 
 	if g.resource != "" {
@@ -377,7 +314,7 @@ func (g *genieSpace) RunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+		return errAlreadyPrinted()
 	}
 
 	return nil
@@ -390,16 +327,7 @@ func filterGenieSpaces(ref resources.Reference) bool {
 
 // genieSpaceResourceCompletion executes to autocomplete the argument to the resource flag.
 func genieSpaceResourceCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	b := root.MustConfigureBundle(cmd)
-	if logdiag.HasError(cmd.Context()) {
-		return nil, cobra.ShellCompDirectiveError
-	}
-
-	if b == nil {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-
-	return slices.Collect(maps.Keys(resources.Completions(b, filterGenieSpaces))), cobra.ShellCompDirectiveNoFileComp
+	return resourceKeyCompletion(filterGenieSpaces)(cmd, args, toComplete)
 }
 
 func NewGenerateGenieSpaceCommand() *cobra.Command {
@@ -444,12 +372,11 @@ bundle files automatically, useful during active Genie space development.`,
 	cmd.Flags().StringVar(&g.resource, "resource", "", `resource key of Genie space to watch for changes`)
 
 	// Output flags.
-	cmd.Flags().StringVarP(&g.resourceDir, "resource-dir", "d", "resources", `directory to write the configuration to`)
-	cmd.Flags().StringVarP(&g.genieSpaceDir, "genie-space-dir", "s", "src", `directory to write the Genie space representation to`)
-	cmd.Flags().BoolVarP(&g.force, "force", "f", false, `force overwrite existing files in the output directory`)
+	addOutputDirFlag(cmd, &g.resourceDir, "resource-dir", "d", "resources", `directory to write the configuration to`)
+	addOutputDirFlag(cmd, &g.genieSpaceDir, "genie-space-dir", "s", "src", `directory to write the Genie space representation to`)
+	addForceFlag(cmd, &g.force, `force overwrite existing files in the output directory`)
 
-	cmd.Flags().BoolVarP(&g.bind, "bind", "b", false, `automatically bind the generated Genie space config to the existing Genie space`)
-	cmd.Flags().MarkHidden("bind")
+	addHiddenBindFlag(cmd, &g.bind, `automatically bind the generated Genie space config to the existing Genie space`)
 
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(

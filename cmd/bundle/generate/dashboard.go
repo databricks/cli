@@ -7,30 +7,18 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
-	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/cmd/bundle/deployment"
-	"github.com/databricks/cli/cmd/bundle/utils"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
@@ -220,13 +208,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		return err
 	}
 
-	result := map[string]dyn.Value{
-		"resources": dyn.V(map[string]dyn.Value{
-			"dashboards": dyn.V(map[string]dyn.Value{
-				key: v,
-			}),
-		}),
-	}
+	result := generatedResourceConfig("dashboards", key, v)
 
 	// Make sure the output directory exists.
 	if err := os.MkdirAll(d.resourceDir, 0o755); err != nil {
@@ -235,9 +217,6 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 
 	// Save the configuration to the resource directory.
 	resourcePath := filepath.Join(d.resourceDir, key+".dashboard.yml")
-	saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
-		"display_name": yaml.DoubleQuotedStyle,
-	})
 
 	// Attempt to make the path relative to the bundle root.
 	rel, err := filepath.Rel(b.BundleRootPath, resourcePath)
@@ -246,7 +225,9 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	}
 
 	cmdio.LogString(ctx, "Writing configuration to "+filepath.ToSlash(rel))
-	err = saver.SaveAsYAML(result, resourcePath, d.force)
+	err = saveGeneratedResourceConfig(result, resourcePath, d.force, map[string]yaml.Style{
+		"display_name": yaml.DoubleQuotedStyle,
+	})
 	if err != nil {
 		return err
 	}
@@ -347,17 +328,14 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 	}
 
 	// The "key" flag is a persistent flag on the parent "generate" command.
-	key := d.cmd.Flag("key").Value.String()
-	if key == "" {
-		key = textutil.NormalizeString(dashboard.DisplayName)
-	}
+	key := selectedResourceKey(d.cmd, dashboard.DisplayName)
 	err = d.saveConfiguration(ctx, b, dashboard, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
 
 	if d.bind {
-		err = deployment.BindResource(d.cmd, key, dashboardID, true, false, true)
+		err = bindGeneratedResource(d.cmd, key, dashboardID)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -368,12 +346,8 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 
 func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 	// Make the paths absolute if they aren't already.
-	if !filepath.IsAbs(d.resourceDir) {
-		d.resourceDir = filepath.Join(b.BundleRootPath, d.resourceDir)
-	}
-	if !filepath.IsAbs(d.dashboardDir) {
-		d.dashboardDir = filepath.Join(b.BundleRootPath, d.dashboardDir)
-	}
+	d.resourceDir = absolutePath(b.BundleRootPath, d.resourceDir)
+	d.dashboardDir = absolutePath(b.BundleRootPath, d.dashboardDir)
 
 	// Make sure we know how the dashboard path is relative to the resource path.
 	rel, err := filepath.Rel(d.resourceDir, d.dashboardDir)
@@ -386,41 +360,7 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
-	phases.Initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	var state statemgmt.ExportedResourcesMap
-	if stateDesc.Engine.IsDirect() {
-		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		state = b.DeploymentBundle.ExportState(ctx)
-	} else {
-		var err error
-		state, err = terraform.ParseResourcesState(ctx, b)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	}
-
-	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(state),
-	)
+	ctx = loadBundleResourceState(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -439,17 +379,14 @@ func (d *dashboard) runForExisting(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
-	ctx := logdiag.InitContext(cmd.Context())
-	cmd.SetContext(ctx)
-
-	b := root.MustConfigureBundle(cmd)
-	if b == nil || logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+	ctx, b, err := configureBundle(cmd)
+	if err != nil {
+		return err
 	}
 
 	d.initialize(ctx, b)
 	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+		return errAlreadyPrinted()
 	}
 
 	if d.resource != "" {
@@ -459,7 +396,7 @@ func (d *dashboard) RunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+		return errAlreadyPrinted()
 	}
 
 	return nil
@@ -472,16 +409,7 @@ func filterDashboards(ref resources.Reference) bool {
 
 // dashboardResourceCompletion executes to autocomplete the argument to the resource flag.
 func dashboardResourceCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	b := root.MustConfigureBundle(cmd)
-	if logdiag.HasError(cmd.Context()) {
-		return nil, cobra.ShellCompDirectiveError
-	}
-
-	if b == nil {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	}
-
-	return slices.Collect(maps.Keys(resources.Completions(b, filterDashboards))), cobra.ShellCompDirectiveNoFileComp
+	return resourceKeyCompletion(filterDashboards)(cmd, args, toComplete)
 }
 
 func NewGenerateDashboardCommand() *cobra.Command {
@@ -532,12 +460,11 @@ bundle files automatically, useful during active dashboard development.`,
 	cmd.Flags().StringVar(&d.resource, "resource", "", `resource key of dashboard to watch for changes`)
 
 	// Output flags.
-	cmd.Flags().StringVarP(&d.resourceDir, "resource-dir", "d", "resources", `directory to write the configuration to`)
-	cmd.Flags().StringVarP(&d.dashboardDir, "dashboard-dir", "s", "src", `directory to write the dashboard representation to`)
-	cmd.Flags().BoolVarP(&d.force, "force", "f", false, `force overwrite existing files in the output directory`)
+	addOutputDirFlag(cmd, &d.resourceDir, "resource-dir", "d", "resources", `directory to write the configuration to`)
+	addOutputDirFlag(cmd, &d.dashboardDir, "dashboard-dir", "s", "src", `directory to write the dashboard representation to`)
+	addForceFlag(cmd, &d.force, `force overwrite existing files in the output directory`)
 
-	cmd.Flags().BoolVarP(&d.bind, "bind", "b", false, `automatically bind the generated dashboard config to the existing dashboard`)
-	cmd.Flags().MarkHidden("bind")
+	addHiddenBindFlag(cmd, &d.bind, `automatically bind the generated dashboard config to the existing dashboard`)
 
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(

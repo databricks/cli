@@ -5,13 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/generate"
-	"github.com/databricks/cli/cmd/bundle/deployment"
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
-	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -55,19 +49,15 @@ per target environment.`,
 	cmd.Flags().StringVar(&appName, "existing-app-name", "", `App name to generate config for`)
 	cmd.MarkFlagRequired("existing-app-name")
 
-	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `Directory path where the output bundle config will be stored`)
-	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src/app", `Directory path where the app files will be stored`)
-	cmd.Flags().BoolVarP(&force, "force", "f", false, `Force overwrite existing files in the output directory`)
-	cmd.Flags().BoolVarP(&bind, "bind", "b", false, `automatically bind the generated app config to the existing app`)
-	cmd.Flags().MarkHidden("bind")
+	addOutputDirFlag(cmd, &configDir, "config-dir", "d", "resources", `Directory path where the output bundle config will be stored`)
+	addOutputDirFlag(cmd, &sourceDir, "source-dir", "s", "src/app", `Directory path where the app files will be stored`)
+	addForceFlag(cmd, &force, `Force overwrite existing files in the output directory`)
+	addHiddenBindFlag(cmd, &bind, `automatically bind the generated app config to the existing app`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := root.MustConfigureBundle(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		ctx, b, err := configureBundle(cmd)
+		if err != nil {
+			return err
 		}
 
 		w := b.WorkspaceClient(ctx)
@@ -100,18 +90,8 @@ per target environment.`,
 			return err
 		}
 
-		appKey := cmd.Flag("key").Value.String()
-		if appKey == "" {
-			appKey = textutil.NormalizeString(app.Name)
-		}
-
-		result := map[string]dyn.Value{
-			"resources": dyn.V(map[string]dyn.Value{
-				"apps": dyn.V(map[string]dyn.Value{
-					appKey: v,
-				}),
-			}),
-		}
+		appKey := selectedResourceKey(cmd, app.Name)
+		result := generatedResourceConfig("apps", appKey, v)
 
 		err = downloader.FlushToDisk(ctx, force)
 		if err != nil {
@@ -120,8 +100,7 @@ per target environment.`,
 
 		filename := filepath.Join(configDir, appKey+".app.yml")
 
-		saver := yamlsaver.NewSaver()
-		err = saver.SaveAsYAML(result, filename, force)
+		err = saveGeneratedResourceConfig(result, filename, force, nil)
 		if err != nil {
 			return err
 		}
@@ -131,7 +110,7 @@ per target environment.`,
 		warnIfNotIncluded(ctx, b, filename)
 
 		if bind {
-			return deployment.BindResource(cmd, appKey, app.Name, true, false, true)
+			return bindGeneratedResource(cmd, appKey, app.Name)
 		}
 
 		return nil
