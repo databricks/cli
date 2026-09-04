@@ -210,6 +210,38 @@ def is_shallow(root):
     return result.returncode == 0 and result.stdout.strip() == "true"
 
 
+def is_valid_semver(version_str):
+    """Check if a string is a valid semantic version.
+
+    Valid formats (bare or v-prefixed, with optional pre-release/metadata):
+    >>> is_valid_semver("1.0.0")
+    True
+    >>> is_valid_semver("v1.0.0")
+    True
+    >>> is_valid_semver("1.2.3-alpha")
+    True
+    >>> is_valid_semver("1.2.3+build")
+    True
+    >>> is_valid_semver("1.2.3-rc.1+build.123")
+    True
+
+    Invalid formats:
+    >>> is_valid_semver("1.0")
+    False
+    >>> is_valid_semver("v1.0")
+    False
+    >>> is_valid_semver("not-a-version")
+    False
+    >>> is_valid_semver("")
+    False
+
+    Whitespace is stripped, so "1.0.0" with leading/trailing whitespace is valid:
+    >>> is_valid_semver("  1.0.0  ")
+    True
+    """
+    return bool(SEMVER_RE.match(version_str.strip()) if version_str else False)
+
+
 def load_sections(root):
     """Return the section slugs from .codegen.json, in changelog order.
 
@@ -280,7 +312,7 @@ def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=No
     version_path = changelog_dir / VERSION_FILE
     if not version_path.is_file():
         problems.append((version_path, "missing; expected the next release version (e.g. 1.4.0)"))
-    elif not SEMVER_RE.match(version_path.read_text(encoding="utf-8").strip()):
+    elif not is_valid_semver(version_path.read_text(encoding="utf-8")):
         problems.append((version_path, "not a valid semver version (e.g. 1.4.0)"))
     return problems
 

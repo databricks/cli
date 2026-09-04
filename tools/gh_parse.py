@@ -91,6 +91,28 @@ class KnownFailuresRule:
             return test_name == self.test_pattern or self._matches_path_prefix(self.test_pattern, test_name)
 
     def _matches_path_prefix(self, s, pattern):
+        """
+        Check if string s matches pattern as a path prefix.
+
+        Matches if pattern is empty (wildcard), s equals pattern exactly,
+        or s starts with pattern followed by a "/".
+
+        >>> rule = KnownFailuresRule("", "", False, False, "")
+        >>> rule._matches_path_prefix("bundle", "")
+        True
+
+        >>> rule._matches_path_prefix("bundle", "bundle")
+        True
+
+        >>> rule._matches_path_prefix("libs/auth", "libs")
+        True
+
+        >>> rule._matches_path_prefix("libsother", "libs")
+        False
+
+        >>> rule._matches_path_prefix("bundle", "bundle/subtest")
+        False
+        """
         if pattern == "":
             return True
         if s == pattern:
@@ -131,6 +153,24 @@ def parse_known_failures(content):
 
 
 def _parse_pattern(pattern):
+    """
+    Parse a pattern string, extracting the base and a prefix flag.
+
+    Returns (base, is_prefix) where is_prefix indicates if the pattern
+    ended with "/" (directory prefix match) or was "*" (wildcard).
+
+    >>> _parse_pattern("bundle")
+    ('bundle', False)
+
+    >>> _parse_pattern("*")
+    ('', True)
+
+    >>> _parse_pattern("libs/")
+    ('libs', True)
+
+    >>> _parse_pattern("foo/bar/")
+    ('foo/bar', True)
+    """
     if pattern == "*":
         return "", True
     if pattern.endswith("/"):
@@ -343,7 +383,25 @@ def parse_file(path, filter):
 
 
 def mark_known_failures(results, known_failures_config):
-    """Mark tests as KNOWN_FAILURE or RECOVERED based on known failures config."""
+    """Mark tests as KNOWN_FAILURE or RECOVERED based on known failures config.
+
+    A ``None`` config leaves every result unchanged:
+
+    >>> mark_known_failures({("pkg", "TestA"): FAIL}, None) == {("pkg", "TestA"): FAIL}
+    True
+
+    A matching rule remaps FAIL/PASS/SKIP to their known variants; non-matching
+    tests are left as-is:
+
+    >>> cfg = parse_known_failures("pkg TestA")
+    >>> mark_known_failures({("pkg", "TestA"): FAIL, ("pkg", "TestB"): FAIL}, cfg) == {
+    ...     ("pkg", "TestA"): KNOWN_FAILURE,
+    ...     ("pkg", "TestB"): FAIL,
+    ... }
+    True
+    >>> mark_known_failures({("pkg", "TestA"): PASS}, cfg) == {("pkg", "TestA"): RECOVERED}
+    True
+    """
     marked_results = {}
     for test_key, action in results.items():
         package_name, testname = test_key
@@ -592,6 +650,21 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
 
 
 def make_summary_message(table, summary):
+    """
+    Create a summary message from test results.
+
+    Formats as "N interesting tests: count1 info1, count2 info2, ..."
+    with results sorted by count (highest first).
+
+    >>> make_summary_message([{}, {}, {}], {"failed": 2, "flaky": 1})
+    '3 interesting tests: 2 failed, 1 flaky'
+
+    >>> make_summary_message([{}], {"panic": 5})
+    '1 interesting tests: 5 panic'
+
+    >>> make_summary_message([], {})
+    '0 interesting tests: '
+    """
     items = list(summary.items())
     items.sort(key=lambda x: x[1], reverse=True)
     items = ", ".join(f"{count} {info}" for (info, count) in items)
@@ -601,6 +674,25 @@ def make_summary_message(table, summary):
 # For test table, use shorter version of action.
 # We have full action name in env table, so that is used as agenda.
 def short_action(action):
+    """
+    Return short version of action for table display.
+
+    If the action has a zero-width space at position 1 (emoji format),
+    return first 3 characters (emoji + zero-width space + first letter).
+    Otherwise return the action unchanged.
+
+    >>> short_action("\u274c\\u200bFAIL")
+    '\u274c\\u200bF'
+
+    >>> short_action("\u2705\\u200bpass")
+    '\u2705\\u200bp'
+
+    >>> short_action("regular_text")
+    'regular_text'
+
+    >>> short_action("AB")
+    'AB'
+    """
     if len(action) >= 4 and action[1] == "\u200b":
         # include first non-emoji letter in case emoji rendering is broken
         return action[:3]
@@ -615,6 +707,22 @@ def format_table(table, columns=None, markdown=False):
         table (list[dict]): the data rows
         columns (list[str]): header names & column order
         markdown (bool): whether to output in markdown format
+
+    Columns are padded to a common width (``.splitlines()`` keeps the alignment
+    padding out of this file's own trailing whitespace):
+
+    >>> format_table([{"a": "1", "b": "hello"}], columns=["a", "b"]).splitlines()
+    ['a    b  ', '1  hello']
+    >>> print(format_table([{"Env": "aws", "x": "1"}], columns=["Env", "x"], markdown=True))
+    | Env | x |
+    | --- | - |
+    | aws | 1 |
+    <BLANKLINE>
+
+    An empty table yields an empty list rather than a string:
+
+    >>> format_table([])
+    []
     """
     if not table:
         return []
@@ -659,10 +767,45 @@ def format_table(table, columns=None, markdown=False):
 
 
 def fmt(cells, widths):
+    """
+    Format cells as a single table row with specified column widths.
+
+    Joins cells with two spaces, applying autojust to each cell.
+
+    >>> fmt(["Name", "123", "Status"], [8, 5, 6])
+    'Name       123   Status'
+
+    >>> fmt(["A", "B"], [3, 3])
+    ' A    B '
+
+    >>> fmt([], [])
+    ''
+    """
     return "  ".join(autojust(cell, w) for cell, w in zip(cells, widths, strict=False))
 
 
 def autojust(value, width):
+    """
+    Right-align numeric and short values, left-align longer text.
+
+    For terminal display: numeric strings and values with 3 or fewer
+    characters are centered. Longer strings are left-justified.
+
+    >>> autojust("123", 5)
+    ' 123 '
+
+    >>> autojust("test", 6)
+    'test  '
+
+    >>> autojust("AB", 4)
+    ' AB '
+
+    >>> autojust("", 3)
+    '   '
+
+    >>> autojust(0, 3)
+    ' 0 '
+    """
     # Note, this has no effect on how markdown is rendered, only relevant for terminal output
     value = str(value)
     if value.isdigit():
@@ -673,11 +816,39 @@ def autojust(value, width):
 
 
 def wrap_in_details(txt, summary):
+    r"""Wrap ``txt`` in a collapsible GitHub-markdown ``<details>`` block.
+
+    >>> wrap_in_details("BODY", "3 interesting tests")
+    '<details><summary>3 interesting tests</summary>\n\nBODY\n\n</details>'
+    """
     return f"<details><summary>{summary}</summary>\n\n{txt}\n\n</details>"
 
 
 def format_duration(seconds):
-    """Format duration from seconds to MM:SS format."""
+    """
+    Format duration from seconds to MM:SS format.
+
+    Returns empty string for None input. Handles fractional seconds
+    by truncating to integers.
+
+    >>> format_duration(65)
+    '1:05'
+
+    >>> format_duration(3661)
+    '61:01'
+
+    >>> format_duration(0)
+    '0:00'
+
+    >>> format_duration(59)
+    '0:59'
+
+    >>> format_duration(None)
+    ''
+
+    >>> format_duration(3.7)
+    '0:03'
+    """
     if seconds is None:
         return ""
     minutes = int(seconds // 60)

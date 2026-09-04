@@ -31,11 +31,55 @@ def load_ignores():
 
 
 def count_trailing_newlines(s):
+    """Count consecutive newlines at the end of a string.
+
+    >>> count_trailing_newlines("hello")
+    0
+    >>> count_trailing_newlines("hello\\n")
+    1
+    >>> count_trailing_newlines("hello\\n\\n")
+    2
+    >>> count_trailing_newlines("\\n\\n\\n")
+    3
+    >>> count_trailing_newlines("")
+    0
+    """
     match = re.search(r"(\n+)$", s)
     return len(match.group(1)) if match else 0
 
 
 def validate_contents(data):
+    """Validate file contents and yield error messages for issues found.
+
+    Returns empty for valid content (ends with single newline, no trailing spaces):
+    >>> msgs = list(validate_contents(b'hello\\nworld\\n'))
+    >>> len(msgs)
+    0
+
+    Detects missing final newline:
+    >>> msgs = list(validate_contents(b'hello'))
+    >>> ' File does not end with a newline' in msgs
+    True
+
+    Detects trailing whitespace:
+    >>> msgs = list(validate_contents(b'hello  \\n'))
+    >>> any('Trailing whitespace' in m for m in msgs)
+    True
+
+    Detects whitespace-only lines:
+    >>> msgs = list(validate_contents(b'hello\\n  \\nworld\\n'))
+    >>> any('Whitespace-only line' in m for m in msgs)
+    True
+
+    Detects multiple trailing newlines:
+    >>> msgs = list(validate_contents(b'hello\\n\\n\\n'))
+    >>> any('3 newlines at the end' in m for m in msgs)
+    True
+
+    Empty data yields nothing:
+    >>> list(validate_contents(b''))
+    []
+    """
     if not data:
         return
     try:
@@ -63,7 +107,30 @@ def validate_contents(data):
 
 
 def fix_contents(data):
-    """Fix whitespace issues in file contents."""
+    """Fix whitespace issues in file contents.
+
+    Removes trailing whitespace and ensures exactly one final newline:
+    >>> result = fix_contents(b'hello  \\nworld  \\n\\n\\n')
+    >>> result == b'hello\\nworld\\n'
+    True
+
+    Adds missing final newline:
+    >>> fix_contents(b'hello') == b'hello\\n'
+    True
+
+    Handles whitespace-only lines by removing trailing spaces:
+    >>> result = fix_contents(b'hello\\n  \\nworld\\n')
+    >>> result == b'hello\\n\\nworld\\n'
+    True
+
+    Returns empty input as-is:
+    >>> fix_contents(b'') == b''
+    True
+
+    Preserves valid content unchanged:
+    >>> fix_contents(b'hello\\nworld\\n') == b'hello\\nworld\\n'
+    True
+    """
     if not data:
         return data
     try:

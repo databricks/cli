@@ -37,7 +37,23 @@ def parse_out_fields(path):
 
 
 def get_schema_fields(schemas):
-    """Get top-level field names for each schema type."""
+    """Get top-level field names for each schema type.
+
+    >>> get_schema_fields({})
+    {}
+    >>> get_schema_fields({"TypeA": {}})
+    {}
+    >>> get_schema_fields({"TypeA": {"fields": {"x": {}}}})
+    {'TypeA': {'x'}}
+    >>> result = get_schema_fields({"A": {"fields": {"x": {}}}, "B": {"fields": {"y": {}, "z": {}}}})
+    >>> result["A"] == {"x"}
+    True
+    >>> result["B"] == {"y", "z"}
+    True
+    >>> result = get_schema_fields({"TypeA": {"fields": {}}, "TypeB": {"fields": {"x": {}}}})
+    >>> "TypeA" not in result and "TypeB" in result
+    True
+    """
     schema_fields = {}
     for name, schema in schemas.items():
         props = schema.get("fields", {})
