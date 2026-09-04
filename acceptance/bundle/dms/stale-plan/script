@@ -3,7 +3,9 @@ envsubst < databricks.yml.tmpl > databricks.yml
 title "Save a plan, then deploy it: records version 1"
 $CLI bundle plan -o json > tmp.plan.json
 trace $CLI bundle plan -o json | nostamp.py
-trace $CLI bundle deploy --plan tmp.plan.json
+# READPLAN deploys from the saved raw plan; without it the plan is recomputed. Untraced so the
+# variant-dependent command line stays out of the golden (the deploy output is identical either way).
+$CLI bundle deploy $(readplanarg tmp.plan.json)
 
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-stale-plan-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
