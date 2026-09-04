@@ -22,5 +22,10 @@ const (
 )
 
 func (e *SkillError) Error() string {
-	return fmt.Sprintf("skill %q %s", e.Skill, e.Detail)
+	// Detail is the human-readable remainder; fall back to Reason when it is empty
+	// so the message stays self-describing (mirrors BlockedError.Error()).
+	if e.Detail != "" {
+		return fmt.Sprintf("skill %q %s", e.Skill, e.Detail)
+	}
+	return fmt.Sprintf("skill %q %s", e.Skill, e.Reason)
 }

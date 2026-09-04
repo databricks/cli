@@ -50,7 +50,7 @@ const (
 // user-authored text.
 type AitoolsAgentResult struct {
 	Agent         AitoolsAgentType     `json:"agent"`
-	ErrorCategory AitoolsErrorCategory `json:"errorCategory"`
+	ErrorCategory AitoolsErrorCategory `json:"error_category"`
 }
 
 // AitoolsInstallEvent is emitted on every execution of the `databricks aitools
@@ -68,7 +68,8 @@ type AitoolsInstallEvent struct {
 	// ErrorCategory is the top-level command outcome: the category of the error
 	// that failed the run, or Unspecified when the command succeeded. It captures
 	// failures that have no per-agent entry (e.g. a skills-group install failure).
-	ErrorCategory AitoolsErrorCategory `json:"error_category,omitempty"`
+	// Always populated (Unspecified on success), so no omitempty.
+	ErrorCategory AitoolsErrorCategory `json:"error_category"`
 
 	// AgentResults records the per-agent failure/skip categories, one entry per
 	// non-successful agent. Empty when every targeted agent succeeded.

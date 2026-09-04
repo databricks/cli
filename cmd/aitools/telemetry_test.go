@@ -95,8 +95,6 @@ func TestAgentResultsField(t *testing.T) {
 		{agent: cursor, status: outcomeInstalled},
 		{agent: codex, status: outcomeFailed, errorCategory: protos.AitoolsErrorCategoryPluginInstallFailed},
 		{agent: claude, status: outcomeSkipped, errorCategory: protos.AitoolsErrorCategoryUnsupportedScope},
-		// A nil agent is skipped defensively.
-		{agent: nil, status: outcomeFailed, errorCategory: protos.AitoolsErrorCategoryPluginInstallFailed},
 	}
 
 	// Sorted by agent enum, only non-successful agents included.

@@ -8,7 +8,7 @@ Fetching skills manifest...
   "scope": "global",
   "agents": [],
   "error": "skill \"nonexistent\" not found",
-  "errorCategory": "SKILL_NOT_FOUND"
+  "error_category": "SKILL_NOT_FOUND"
 }
 
 Exit code: 1
