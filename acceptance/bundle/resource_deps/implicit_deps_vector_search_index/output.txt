@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "catalogs": {
+    "my_catalog": {
+      "name": "mycatalog"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "dev_[USERNAME]_myschema"
+    }
+  },
+  "vector_search_endpoints": {
+    "my_endpoint": {
+      "endpoint_type": "STANDARD",
+      "name": "my-endpoint"
+    }
+  },
+  "vector_search_indexes": {
+    "my_index": {
+      "delta_sync_index_spec": {
+        "pipeline_type": "TRIGGERED",
+        "source_table": "mycatalog.myschema.source"
+      },
+      "endpoint_name": "${resources.vector_search_endpoints.my_endpoint.name}",
+      "index_type": "DELTA_SYNC",
+      "name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.my_index",
+      "primary_key": "id"
+    }
+  }
+}

@@ -193,7 +193,7 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): same paths — merges grant entries by principal and deduplicates privileges
 		MergeGrants(),
 
-		// Reads (typed): resources.{volumes,registered_models,pipelines,quality_monitors,model_serving_endpoints}.*.{catalog_name,schema_name,...}
+		// Reads (typed): resources.{volumes,registered_models,pipelines,quality_monitors,model_serving_endpoints,vector_search_indexes}.*.{catalog_name,schema_name,...}
 		// Updates (typed): same paths — converts implicit schema/catalog references to explicit ${resources.schemas/catalogs.<key>.name} syntax
 		// Also updates: resources.schemas.*.catalog_name (catalog dependency for schemas)
 		// Translates implicit schema and catalog references across all UC resources to explicit syntax to capture dependencies

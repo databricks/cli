@@ -131,6 +131,24 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 			qm.OutputSchemaName = resolved
 		}
 	}
+	for _, vsi := range b.Config.Resources.VectorSearchIndexes {
+		if vsi == nil {
+			continue
+		}
+		// Name is a compound "catalog.schema.index" string naming the parent the
+		// index is created into. Resolving it also keeps the index pointing at the
+		// right schema in development mode, where the schema's own name is prefixed.
+		//
+		// delta_sync_index_spec.source_table is deliberately left alone: it points at
+		// a pre-existing table rather than naming this resource's parent, matching how
+		// quality_monitors.table_name is handled.
+		parts := strings.SplitN(vsi.Name, ".", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		catalogName, schemaName := parts[0], parts[1]
+		vsi.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
 		if mse == nil {
 			continue

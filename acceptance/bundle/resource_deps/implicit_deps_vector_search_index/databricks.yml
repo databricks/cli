@@ -1,0 +1,31 @@
+bundle:
+  name: test-bundle
+
+# Tests implicit dependency detection for vector search indexes:
+# - name (format "catalog.schema.index") should resolve the catalog and schema parts
+# - delta_sync_index_spec.source_table is left alone (points at a pre-existing table)
+resources:
+  catalogs:
+    my_catalog:
+      name: mycatalog
+  schemas:
+    my_schema:
+      catalog_name: mycatalog
+      name: myschema
+  vector_search_endpoints:
+    my_endpoint:
+      name: my-endpoint
+      endpoint_type: STANDARD
+  vector_search_indexes:
+    my_index:
+      name: mycatalog.myschema.my_index
+      endpoint_name: ${resources.vector_search_endpoints.my_endpoint.name}
+      primary_key: id
+      index_type: DELTA_SYNC
+      delta_sync_index_spec:
+        source_table: mycatalog.myschema.source
+        pipeline_type: TRIGGERED
+
+targets:
+  dev:
+    mode: development

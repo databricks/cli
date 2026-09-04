@@ -1,0 +1,1 @@
+`vector_search_indexes` now capture an implicit dependency on a bundle-defined catalog and schema referenced by the `catalog.schema.index` name. The index is deployed after its parent catalog and schema, and in development mode its name follows the prefixed schema instead of pointing at a schema that was never created.

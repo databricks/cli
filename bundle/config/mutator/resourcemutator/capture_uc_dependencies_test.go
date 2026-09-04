@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -131,6 +132,11 @@ func TestCaptureUCDependencies(t *testing.T) {
 						},
 					}},
 				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"my_index": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "mycatalog.myschema.myindex",
+					}},
+				},
 			},
 		},
 	}
@@ -163,6 +169,9 @@ func TestCaptureUCDependencies(t *testing.T) {
 	itc := b.Config.Resources.ModelServingEndpoints["my_endpoint"].AiGateway.InferenceTableConfig
 	assert.Equal(t, schemaRef, itc.SchemaName)
 	assert.Equal(t, catalogRef, itc.CatalogName)
+
+	// Vector search index (compound "catalog.schema.index" field); the leaf is preserved.
+	assert.Equal(t, catalogRef+"."+schemaRef+".myindex", b.Config.Resources.VectorSearchIndexes["my_index"].Name)
 }
 
 // Pipeline schema and target are mutually exclusive; only the populated field
@@ -279,6 +288,51 @@ func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
 	assert.Nil(t, b.Config.Resources.ModelServingEndpoints["nil_endpoint"])
 }
 
+func TestCaptureUCDependenciesVectorSearchIndexEdgeCases(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+				},
+				Schemas: map[string]*resources.Schema{
+					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"catalog_only": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "mycatalog.other.idx"}},
+					"no_match":     {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "other.other.idx"}},
+					"empty":        {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: ""}},
+					"two_part":     {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "mycatalog.myschema"}},
+					// A leaf containing dots must not be split further.
+					"dotted_leaf": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "mycatalog.myschema.a.b"}},
+					// source_table is intentionally not resolved.
+					"with_source": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "other.other.idx",
+						DeltaSyncIndexSpec: &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+							SourceTable: "mycatalog.myschema.source",
+						},
+					}},
+					"nil_index": nil,
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+	require.Nil(t, d)
+
+	schemaRef := "${resources.schemas.my_schema.name}"
+	catalogRef := "${resources.catalogs.my_catalog.name}"
+
+	assert.Equal(t, catalogRef+".other.idx", b.Config.Resources.VectorSearchIndexes["catalog_only"].Name)
+	assert.Equal(t, "other.other.idx", b.Config.Resources.VectorSearchIndexes["no_match"].Name)
+	assert.Empty(t, b.Config.Resources.VectorSearchIndexes["empty"].Name)
+	assert.Equal(t, "mycatalog.myschema", b.Config.Resources.VectorSearchIndexes["two_part"].Name)
+	assert.Equal(t, catalogRef+"."+schemaRef+".a.b", b.Config.Resources.VectorSearchIndexes["dotted_leaf"].Name)
+	assert.Equal(t, "mycatalog.myschema.source", b.Config.Resources.VectorSearchIndexes["with_source"].DeltaSyncIndexSpec.SourceTable)
+	assert.Nil(t, b.Config.Resources.VectorSearchIndexes["nil_index"])
+}
+
 // Nil and empty resources should not panic.
 func TestCaptureUCDependenciesNilResources(t *testing.T) {
 	b := &bundle.Bundle{
@@ -291,6 +345,7 @@ func TestCaptureUCDependenciesNilResources(t *testing.T) {
 				Pipelines:             map[string]*resources.Pipeline{"nil": nil, "empty": {}},
 				QualityMonitors:       map[string]*resources.QualityMonitor{"nil": nil, "empty": {}},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{"nil": nil, "empty": {}},
+				VectorSearchIndexes:   map[string]*resources.VectorSearchIndex{"nil": nil, "empty": {}},
 			},
 		},
 	}
