@@ -1,0 +1,16 @@
+from databricks.bundles.core import Resources, ${singular}_mutator
+from databricks.bundles.core._generated.${plural} import _resource_type
+from databricks_tests.core._resource_test_case import TestCase
+$model_imports
+
+
+def _test_case():
+    return (
+        TestCase(
+            add_resource=Resources.add_${singular},
+            dict_example=$dict_example,
+            dataclass_example=$dataclass_example,
+            mutator=${singular}_mutator,
+        ),
+        _resource_type(),
+    )
