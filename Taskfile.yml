@@ -313,8 +313,13 @@ tasks:
     cmds:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
+  check-agents-setup:
+    desc: Sync Cursor's per-rule .mdc symlinks with .agents/rules; fails if any were out of sync
+    cmds:
+      - "./tools/validate_agents_setup.py"
+
   checks:
-    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles, agent setup)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with the whitespace scanner.
     cmds:
@@ -323,6 +328,7 @@ tasks:
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles
+      - task: check-agents-setup
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
