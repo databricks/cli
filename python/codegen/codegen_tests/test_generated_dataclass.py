@@ -81,3 +81,7 @@ def test_get_class_name_string():
     class_name = packages.get_class_name("#/$defs/string")
 
     assert class_name == "str"
+
+
+def test_get_snake_case_name():
+    assert packages.get_snake_case_name("resources.JobRun") == "job_run"

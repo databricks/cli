@@ -30,6 +30,7 @@ from databricks.bundles.core import (
     job_mutator,
     pipeline_mutator,
 )
+from databricks.bundles.job_runs import JobRun
 from databricks.bundles.jobs import Job
 from databricks.bundles.pipelines._models.pipeline import Pipeline
 
@@ -234,6 +235,9 @@ def test_append_resources():
                 "job_0": {"name": "job_0"},
                 "job_1": {"name": "job_1"},
             },
+            "job_runs": {
+                "run_0": {"job_id": 1},
+            },
             "pipelines": {
                 "pipeline_0": {"name": "pipeline_0"},
             },
@@ -243,6 +247,8 @@ def test_append_resources():
     resources = Resources()
     resources.add_job("job_1", Job(name="new name", description="new description"))
     resources.add_job("job_2", Job(name="job_2"))
+    resources.add_job_run("run_0", JobRun(job_id=2))
+    resources.add_job_run("run_1", JobRun(job_id=3))
     resources.add_pipeline("pipeline_1", Pipeline(name="pipeline_1"))
 
     out = _append_resources(input, resources)
@@ -254,6 +260,10 @@ def test_append_resources():
                 "job_0": {"name": "job_0"},
                 "job_1": {"name": "new name", "description": "new description"},
                 "job_2": {"name": "job_2"},
+            },
+            "job_runs": {
+                "run_0": {"job_id": 2},
+                "run_1": {"job_id": 3},
             },
             "pipelines": {
                 "pipeline_0": {"name": "pipeline_0"},
@@ -271,6 +281,10 @@ def test_load_resources_from_input():
                     "job_0": {"name": "Job 0"},
                     "job_1": {"name": "Job 1"},
                 },
+                "job_runs": {
+                    "run_0": {"job_id": 1},
+                    "run_1": {"job_id": 2},
+                },
                 "pipelines": {
                     "pipeline_0": {"name": "Pipeline 0"},
                     "pipeline_1": {"name": "Pipeline 1"},
@@ -284,6 +298,11 @@ def test_load_resources_from_input():
     assert resources.jobs == {
         "job_0": Job(name="Job 0"),
         "job_1": Job(name="Job 1"),
+    }
+
+    assert resources.job_runs == {
+        "run_0": JobRun(job_id=1),
+        "run_1": JobRun(job_id=2),
     }
 
     assert resources.pipelines == {

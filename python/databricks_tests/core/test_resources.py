@@ -18,6 +18,7 @@ from databricks.bundles.core import (
     alert_mutator,
     catalog_mutator,
     job_mutator,
+    job_run_mutator,
     pipeline_mutator,
     schema_mutator,
     volume_mutator,
@@ -26,6 +27,7 @@ from databricks.bundles.core._bundle import Bundle
 from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._resource_type import _ResourceType
+from databricks.bundles.job_runs import JobRun, JobRunLifecycle, JobRunTrigger
 from databricks.bundles.jobs._models.job import Job
 from databricks.bundles.pipelines._models.pipeline import Pipeline
 from databricks.bundles.schemas._models.schema import Schema
@@ -50,6 +52,25 @@ test_cases = [
             mutator=job_mutator,
         ),
         resource_types[Job],
+    ),
+    (
+        TestCase(
+            add_resource=Resources.add_job_run,
+            dict_example={
+                "job_id": 123,
+                "job_parameters": {"environment": "test"},
+                "lifecycle": {"triggers": [{"on_bundle_deploy": True}]},
+            },
+            dataclass_example=JobRun(
+                job_id=123,
+                job_parameters={"environment": "test"},
+                lifecycle=JobRunLifecycle(
+                    triggers=[JobRunTrigger(on_bundle_deploy=True)]
+                ),
+            ),
+            mutator=job_run_mutator,
+        ),
+        resource_types[JobRun],
     ),
     (
         TestCase(

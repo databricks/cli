@@ -16,6 +16,7 @@ __all__ = [
     alert_mutator,
     catalog_mutator,
     job_mutator,
+    job_run_mutator,
     load_resources_from_current_package_module,
     load_resources_from_module,
     load_resources_from_modules,
@@ -71,6 +72,7 @@ class Resources:
     def add_diagnostic_warning(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostics(self, other: Diagnostics) -> None
     def add_job(self, resource_name: str, job: JobParam, *, location: Union[Location, None] = None) -> None
+    def add_job_run(self, resource_name: str, job_run: JobRunParam, *, location: Union[Location, None] = None) -> None
     def add_location(self, path: tuple[str, ...], location: Location) -> None
     def add_pipeline(self, resource_name: str, pipeline: PipelineParam, *, location: Union[Location, None] = None) -> None
     def add_resource(self, resource_name: str, resource: Resource, *, location: Union[Location, None] = None) -> None
@@ -80,6 +82,7 @@ class Resources:
     @property alerts -> dict[str, Alert]
     @property catalogs -> dict[str, Catalog]
     @property diagnostics -> Diagnostics
+    @property job_runs -> dict[str, JobRun]
     @property jobs -> dict[str, Job]
     @property pipelines -> dict[str, Pipeline]
     @property schemas -> dict[str, Schema]
@@ -114,6 +117,10 @@ def catalog_mutator(function: Callable) -> ResourceMutator[Catalog]
 @overload def job_mutator(function: Callable[[Job], Job]) -> ResourceMutator[Job]
 def job_mutator(function: Callable) -> ResourceMutator[Job]
 
+@overload def job_run_mutator(function: Callable[[Bundle, JobRun], JobRun]) -> ResourceMutator[JobRun]
+@overload def job_run_mutator(function: Callable[[JobRun], JobRun]) -> ResourceMutator[JobRun]
+def job_run_mutator(function: Callable) -> ResourceMutator[JobRun]
+
 def load_resources_from_current_package_module() -> Resources
 
 def load_resources_from_module(module: module) -> Resources
@@ -140,6 +147,7 @@ def volume_mutator(function: Callable) -> ResourceMutator[Volume]
 singular_name=alert plural_name=alerts resource_type=Alert
 singular_name=catalog plural_name=catalogs resource_type=Catalog
 singular_name=job plural_name=jobs resource_type=Job
+singular_name=job_run plural_name=job_runs resource_type=JobRun
 singular_name=pipeline plural_name=pipelines resource_type=Pipeline
 singular_name=schema plural_name=schemas resource_type=Schema
 singular_name=volume plural_name=volumes resource_type=Volume

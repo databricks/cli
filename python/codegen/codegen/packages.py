@@ -4,6 +4,7 @@ from typing import Optional
 # All supported resource types and their namespace
 RESOURCE_NAMESPACE = {
     "resources.Job": "jobs",
+    "resources.JobRun": "job_runs",
     "resources.Pipeline": "pipelines",
     "resources.Catalog": "catalogs",
     "resources.Schema": "schemas",
@@ -41,6 +42,11 @@ def get_class_name(ref: str) -> str:
     return RENAMES.get(name, name)
 
 
+def get_snake_case_name(ref: str) -> str:
+    class_name = get_class_name(ref)
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", class_name).lower()
+
+
 def is_resource(ref: str) -> bool:
     return ref in RESOURCE_TYPES
 
@@ -60,7 +66,6 @@ def get_package(namespace: str, ref: str) -> Optional[str]:
     if full_name in PRIMITIVES:
         return None
 
-    [_, name] = full_name.split(".")
-    package_name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
+    package_name = get_snake_case_name(ref)
 
     return f"{get_root_package(namespace)}._models.{package_name}"
