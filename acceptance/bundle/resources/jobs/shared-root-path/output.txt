@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Warning: the bundle root path /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME] is writable by all workspace users
 
-The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
+The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>. For more information, see https://docs.databricks.com/dev-tools/bundles/faqs#move-off-shared
 
 Uploading bundle files to /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created jobs.foo
@@ -12,7 +12,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle deploy -q
 Warning: the bundle root path /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME] is writable by all workspace users
 
-The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
+The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>. For more information, see https://docs.databricks.com/dev-tools/bundles/faqs#move-off-shared
 
 Uploading bundle files to /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Files: 1 uploaded, 0 deleted
@@ -21,13 +21,13 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> [CLI] bundle deploy -qq
 Warning: the bundle root path /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME] is writable by all workspace users
 
-The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
+The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>. For more information, see https://docs.databricks.com/dev-tools/bundles/faqs#move-off-shared
 
 
 >>> [CLI] bundle destroy --auto-approve
 Warning: the bundle root path /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME] is writable by all workspace users
 
-The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
+The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>. For more information, see https://docs.databricks.com/dev-tools/bundles/faqs#move-off-shared
 
 The following resources will be deleted:
   delete resources.jobs.foo
