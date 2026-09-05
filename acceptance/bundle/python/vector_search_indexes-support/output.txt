@@ -1,0 +1,30 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_vector_search_index"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "vector_search_indexes": {
+      "my_index_1": {
+        "endpoint_name": "my_endpoint",
+        "index_type": "DELTA_SYNC",
+        "name": "my_index_1 (updated)",
+        "primary_key": "id"
+      },
+      "my_index_2": {
+        "endpoint_name": "my_endpoint",
+        "index_type": "DELTA_SYNC",
+        "name": "my_index_2 (updated)",
+        "primary_key": "id"
+      }
+    }
+  }
+}

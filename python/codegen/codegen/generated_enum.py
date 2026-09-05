@@ -5,7 +5,7 @@ from typing import Optional
 import codegen.packages as packages
 from codegen.code_builder import CodeBuilder
 from codegen.generated_dataclass import _append_description
-from codegen.jsonschema import LaunchStage, Schema
+from codegen.jsonschema import Schema, is_experimental_stage
 
 
 @dataclass(kw_only=True)
@@ -35,7 +35,7 @@ def generate_enum(namespace: str, schema_name: str, schema: Schema) -> Generated
         package=package,
         values=values,
         description=schema.description,
-        experimental=schema.stage == LaunchStage.PRIVATE_PREVIEW,
+        experimental=is_experimental_stage(schema.stage),
         deprecated=schema.deprecated or False,
     )
 
@@ -81,5 +81,6 @@ def get_code(generated: GeneratedEnum) -> str:
 
 def _camel_to_upper_snake(value):
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", value)
-
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).upper()
+    s1 = re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1)
+    # Non-identifier chars (e.g. "-" in "amazon-bedrock") become "_".
+    return re.sub(r"[^0-9a-zA-Z]+", "_", s1).upper()

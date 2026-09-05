@@ -1,0 +1,16 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_model_serving_endpoint"
+
+resources:
+  model_serving_endpoints:
+    my_endpoint_1:
+      name: "my_endpoint_1"
+      description: "My endpoint"

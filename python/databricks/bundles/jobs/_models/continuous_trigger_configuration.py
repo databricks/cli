@@ -24,6 +24,8 @@ class ContinuousTriggerConfiguration:
 
     task_retry_mode: VariableOrOptional[TaskRetryMode] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Whether the continuous job applies task-level retries. Defaults to NEVER.
     """
 
@@ -40,6 +42,8 @@ class ContinuousTriggerConfigurationDict(TypedDict, total=False):
 
     task_retry_mode: VariableOrOptional[TaskRetryModeParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Whether the continuous job applies task-level retries. Defaults to NEVER.
     """
 

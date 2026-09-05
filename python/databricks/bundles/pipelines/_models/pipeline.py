@@ -169,6 +169,8 @@ class Pipeline(Resource):
 
     parameters: VariableOrDict[str] = field(default_factory=dict)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Key/value map of default parameters to use for pipeline execution.
     Maximum total size: 10k characters (JSON format)
     """
@@ -360,6 +362,8 @@ class PipelineDict(TypedDict, total=False):
 
     parameters: VariableOrDict[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Key/value map of default parameters to use for pipeline execution.
     Maximum total size: 10k characters (JSON format)
     """

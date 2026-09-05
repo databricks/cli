@@ -14,15 +14,32 @@ __all__ = [
     VariableOrList,
     VariableOrOptional,
     alert_mutator,
+    app_mutator,
     catalog_mutator,
+    cluster_mutator,
+    database_catalog_mutator,
+    database_instance_mutator,
+    external_location_mutator,
+    instance_pool_mutator,
     job_mutator,
+    job_run_mutator,
     load_resources_from_current_package_module,
     load_resources_from_module,
     load_resources_from_modules,
     load_resources_from_package_module,
+    mlflow_experiment_mutator,
+    mlflow_model_mutator,
+    model_serving_endpoint_mutator,
     pipeline_mutator,
+    quality_monitor_mutator,
+    registered_model_mutator,
     schema_mutator,
+    secret_scope_mutator,
+    sql_warehouse_mutator,
+    synced_database_table_mutator,
     variables,
+    vector_search_endpoint_mutator,
+    vector_search_index_mutator,
     volume_mutator,
 ]
 
@@ -66,23 +83,57 @@ class ResourceMutator(Generic):
 
 class Resources:
     def add_alert(self, resource_name: str, alert: AlertParam, *, location: Union[Location, None] = None) -> None
+    def add_app(self, resource_name: str, app: AppParam, *, location: Union[Location, None] = None) -> None
     def add_catalog(self, resource_name: str, catalog: CatalogParam, *, location: Union[Location, None] = None) -> None
+    def add_cluster(self, resource_name: str, cluster: ClusterParam, *, location: Union[Location, None] = None) -> None
+    def add_database_catalog(self, resource_name: str, database_catalog: DatabaseCatalogParam, *, location: Union[Location, None] = None) -> None
+    def add_database_instance(self, resource_name: str, database_instance: DatabaseInstanceParam, *, location: Union[Location, None] = None) -> None
     def add_diagnostic_error(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostic_warning(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostics(self, other: Diagnostics) -> None
+    def add_external_location(self, resource_name: str, external_location: ExternalLocationParam, *, location: Union[Location, None] = None) -> None
+    def add_instance_pool(self, resource_name: str, instance_pool: InstancePoolParam, *, location: Union[Location, None] = None) -> None
     def add_job(self, resource_name: str, job: JobParam, *, location: Union[Location, None] = None) -> None
+    def add_job_run(self, resource_name: str, job_run: JobRunParam, *, location: Union[Location, None] = None) -> None
     def add_location(self, path: tuple[str, ...], location: Location) -> None
+    def add_mlflow_experiment(self, resource_name: str, mlflow_experiment: MlflowExperimentParam, *, location: Union[Location, None] = None) -> None
+    def add_mlflow_model(self, resource_name: str, mlflow_model: MlflowModelParam, *, location: Union[Location, None] = None) -> None
+    def add_model_serving_endpoint(self, resource_name: str, model_serving_endpoint: ModelServingEndpointParam, *, location: Union[Location, None] = None) -> None
     def add_pipeline(self, resource_name: str, pipeline: PipelineParam, *, location: Union[Location, None] = None) -> None
+    def add_quality_monitor(self, resource_name: str, quality_monitor: QualityMonitorParam, *, location: Union[Location, None] = None) -> None
+    def add_registered_model(self, resource_name: str, registered_model: RegisteredModelParam, *, location: Union[Location, None] = None) -> None
     def add_resource(self, resource_name: str, resource: Resource, *, location: Union[Location, None] = None) -> None
     def add_resources(self, other: Resources) -> None
     def add_schema(self, resource_name: str, schema: SchemaParam, *, location: Union[Location, None] = None) -> None
+    def add_secret_scope(self, resource_name: str, secret_scope: SecretScopeParam, *, location: Union[Location, None] = None) -> None
+    def add_sql_warehouse(self, resource_name: str, sql_warehouse: SqlWarehouseParam, *, location: Union[Location, None] = None) -> None
+    def add_synced_database_table(self, resource_name: str, synced_database_table: SyncedDatabaseTableParam, *, location: Union[Location, None] = None) -> None
+    def add_vector_search_endpoint(self, resource_name: str, vector_search_endpoint: VectorSearchEndpointParam, *, location: Union[Location, None] = None) -> None
+    def add_vector_search_index(self, resource_name: str, vector_search_index: VectorSearchIndexParam, *, location: Union[Location, None] = None) -> None
     def add_volume(self, resource_name: str, volume: VolumeParam, *, location: Union[Location, None] = None) -> None
     @property alerts -> dict[str, Alert]
+    @property apps -> dict[str, App]
     @property catalogs -> dict[str, Catalog]
+    @property clusters -> dict[str, Cluster]
+    @property database_catalogs -> dict[str, DatabaseCatalog]
+    @property database_instances -> dict[str, DatabaseInstance]
     @property diagnostics -> Diagnostics
+    @property experiments -> dict[str, MlflowExperiment]
+    @property external_locations -> dict[str, ExternalLocation]
+    @property instance_pools -> dict[str, InstancePool]
+    @property job_runs -> dict[str, JobRun]
     @property jobs -> dict[str, Job]
+    @property model_serving_endpoints -> dict[str, ModelServingEndpoint]
+    @property models -> dict[str, MlflowModel]
     @property pipelines -> dict[str, Pipeline]
+    @property quality_monitors -> dict[str, QualityMonitor]
+    @property registered_models -> dict[str, RegisteredModel]
     @property schemas -> dict[str, Schema]
+    @property secret_scopes -> dict[str, SecretScope]
+    @property sql_warehouses -> dict[str, SqlWarehouse]
+    @property synced_database_tables -> dict[str, SyncedDatabaseTable]
+    @property vector_search_endpoints -> dict[str, VectorSearchEndpoint]
+    @property vector_search_indexes -> dict[str, VectorSearchIndex]
     @property volumes -> dict[str, Volume]
 
 class Severity(Enum):
@@ -106,13 +157,41 @@ VariableOrOptional = Union[Variable[_T], _T, None]
 @overload def alert_mutator(function: Callable[[Alert], Alert]) -> ResourceMutator[Alert]
 def alert_mutator(function: Callable) -> ResourceMutator[Alert]
 
+@overload def app_mutator(function: Callable[[Bundle, App], App]) -> ResourceMutator[App]
+@overload def app_mutator(function: Callable[[App], App]) -> ResourceMutator[App]
+def app_mutator(function: Callable) -> ResourceMutator[App]
+
 @overload def catalog_mutator(function: Callable[[Bundle, Catalog], Catalog]) -> ResourceMutator[Catalog]
 @overload def catalog_mutator(function: Callable[[Catalog], Catalog]) -> ResourceMutator[Catalog]
 def catalog_mutator(function: Callable) -> ResourceMutator[Catalog]
 
+@overload def cluster_mutator(function: Callable[[Bundle, Cluster], Cluster]) -> ResourceMutator[Cluster]
+@overload def cluster_mutator(function: Callable[[Cluster], Cluster]) -> ResourceMutator[Cluster]
+def cluster_mutator(function: Callable) -> ResourceMutator[Cluster]
+
+@overload def database_catalog_mutator(function: Callable[[Bundle, DatabaseCatalog], DatabaseCatalog]) -> ResourceMutator[DatabaseCatalog]
+@overload def database_catalog_mutator(function: Callable[[DatabaseCatalog], DatabaseCatalog]) -> ResourceMutator[DatabaseCatalog]
+def database_catalog_mutator(function: Callable) -> ResourceMutator[DatabaseCatalog]
+
+@overload def database_instance_mutator(function: Callable[[Bundle, DatabaseInstance], DatabaseInstance]) -> ResourceMutator[DatabaseInstance]
+@overload def database_instance_mutator(function: Callable[[DatabaseInstance], DatabaseInstance]) -> ResourceMutator[DatabaseInstance]
+def database_instance_mutator(function: Callable) -> ResourceMutator[DatabaseInstance]
+
+@overload def external_location_mutator(function: Callable[[Bundle, ExternalLocation], ExternalLocation]) -> ResourceMutator[ExternalLocation]
+@overload def external_location_mutator(function: Callable[[ExternalLocation], ExternalLocation]) -> ResourceMutator[ExternalLocation]
+def external_location_mutator(function: Callable) -> ResourceMutator[ExternalLocation]
+
+@overload def instance_pool_mutator(function: Callable[[Bundle, InstancePool], InstancePool]) -> ResourceMutator[InstancePool]
+@overload def instance_pool_mutator(function: Callable[[InstancePool], InstancePool]) -> ResourceMutator[InstancePool]
+def instance_pool_mutator(function: Callable) -> ResourceMutator[InstancePool]
+
 @overload def job_mutator(function: Callable[[Bundle, Job], Job]) -> ResourceMutator[Job]
 @overload def job_mutator(function: Callable[[Job], Job]) -> ResourceMutator[Job]
 def job_mutator(function: Callable) -> ResourceMutator[Job]
+
+@overload def job_run_mutator(function: Callable[[Bundle, JobRun], JobRun]) -> ResourceMutator[JobRun]
+@overload def job_run_mutator(function: Callable[[JobRun], JobRun]) -> ResourceMutator[JobRun]
+def job_run_mutator(function: Callable) -> ResourceMutator[JobRun]
 
 def load_resources_from_current_package_module() -> Resources
 
@@ -122,15 +201,55 @@ def load_resources_from_modules(modules: Iterable[module]) -> Resources
 
 def load_resources_from_package_module(package_module: module) -> Resources
 
+@overload def mlflow_experiment_mutator(function: Callable[[Bundle, MlflowExperiment], MlflowExperiment]) -> ResourceMutator[MlflowExperiment]
+@overload def mlflow_experiment_mutator(function: Callable[[MlflowExperiment], MlflowExperiment]) -> ResourceMutator[MlflowExperiment]
+def mlflow_experiment_mutator(function: Callable) -> ResourceMutator[MlflowExperiment]
+
+@overload def mlflow_model_mutator(function: Callable[[Bundle, MlflowModel], MlflowModel]) -> ResourceMutator[MlflowModel]
+@overload def mlflow_model_mutator(function: Callable[[MlflowModel], MlflowModel]) -> ResourceMutator[MlflowModel]
+def mlflow_model_mutator(function: Callable) -> ResourceMutator[MlflowModel]
+
+@overload def model_serving_endpoint_mutator(function: Callable[[Bundle, ModelServingEndpoint], ModelServingEndpoint]) -> ResourceMutator[ModelServingEndpoint]
+@overload def model_serving_endpoint_mutator(function: Callable[[ModelServingEndpoint], ModelServingEndpoint]) -> ResourceMutator[ModelServingEndpoint]
+def model_serving_endpoint_mutator(function: Callable) -> ResourceMutator[ModelServingEndpoint]
+
 @overload def pipeline_mutator(function: Callable[[Bundle, Pipeline], Pipeline]) -> ResourceMutator[Pipeline]
 @overload def pipeline_mutator(function: Callable[[Pipeline], Pipeline]) -> ResourceMutator[Pipeline]
 def pipeline_mutator(function: Callable) -> ResourceMutator[Pipeline]
+
+@overload def quality_monitor_mutator(function: Callable[[Bundle, QualityMonitor], QualityMonitor]) -> ResourceMutator[QualityMonitor]
+@overload def quality_monitor_mutator(function: Callable[[QualityMonitor], QualityMonitor]) -> ResourceMutator[QualityMonitor]
+def quality_monitor_mutator(function: Callable) -> ResourceMutator[QualityMonitor]
+
+@overload def registered_model_mutator(function: Callable[[Bundle, RegisteredModel], RegisteredModel]) -> ResourceMutator[RegisteredModel]
+@overload def registered_model_mutator(function: Callable[[RegisteredModel], RegisteredModel]) -> ResourceMutator[RegisteredModel]
+def registered_model_mutator(function: Callable) -> ResourceMutator[RegisteredModel]
 
 @overload def schema_mutator(function: Callable[[Bundle, Schema], Schema]) -> ResourceMutator[Schema]
 @overload def schema_mutator(function: Callable[[Schema], Schema]) -> ResourceMutator[Schema]
 def schema_mutator(function: Callable) -> ResourceMutator[Schema]
 
+@overload def secret_scope_mutator(function: Callable[[Bundle, SecretScope], SecretScope]) -> ResourceMutator[SecretScope]
+@overload def secret_scope_mutator(function: Callable[[SecretScope], SecretScope]) -> ResourceMutator[SecretScope]
+def secret_scope_mutator(function: Callable) -> ResourceMutator[SecretScope]
+
+@overload def sql_warehouse_mutator(function: Callable[[Bundle, SqlWarehouse], SqlWarehouse]) -> ResourceMutator[SqlWarehouse]
+@overload def sql_warehouse_mutator(function: Callable[[SqlWarehouse], SqlWarehouse]) -> ResourceMutator[SqlWarehouse]
+def sql_warehouse_mutator(function: Callable) -> ResourceMutator[SqlWarehouse]
+
+@overload def synced_database_table_mutator(function: Callable[[Bundle, SyncedDatabaseTable], SyncedDatabaseTable]) -> ResourceMutator[SyncedDatabaseTable]
+@overload def synced_database_table_mutator(function: Callable[[SyncedDatabaseTable], SyncedDatabaseTable]) -> ResourceMutator[SyncedDatabaseTable]
+def synced_database_table_mutator(function: Callable) -> ResourceMutator[SyncedDatabaseTable]
+
 def variables(cls: type[_T]) -> type[_T]
+
+@overload def vector_search_endpoint_mutator(function: Callable[[Bundle, VectorSearchEndpoint], VectorSearchEndpoint]) -> ResourceMutator[VectorSearchEndpoint]
+@overload def vector_search_endpoint_mutator(function: Callable[[VectorSearchEndpoint], VectorSearchEndpoint]) -> ResourceMutator[VectorSearchEndpoint]
+def vector_search_endpoint_mutator(function: Callable) -> ResourceMutator[VectorSearchEndpoint]
+
+@overload def vector_search_index_mutator(function: Callable[[Bundle, VectorSearchIndex], VectorSearchIndex]) -> ResourceMutator[VectorSearchIndex]
+@overload def vector_search_index_mutator(function: Callable[[VectorSearchIndex], VectorSearchIndex]) -> ResourceMutator[VectorSearchIndex]
+def vector_search_index_mutator(function: Callable) -> ResourceMutator[VectorSearchIndex]
 
 @overload def volume_mutator(function: Callable[[Bundle, Volume], Volume]) -> ResourceMutator[Volume]
 @overload def volume_mutator(function: Callable[[Volume], Volume]) -> ResourceMutator[Volume]
@@ -138,8 +257,25 @@ def volume_mutator(function: Callable) -> ResourceMutator[Volume]
 
 == _ResourceType.all() registry ==
 singular_name=alert plural_name=alerts resource_type=Alert
+singular_name=app plural_name=apps resource_type=App
 singular_name=catalog plural_name=catalogs resource_type=Catalog
+singular_name=cluster plural_name=clusters resource_type=Cluster
+singular_name=database_catalog plural_name=database_catalogs resource_type=DatabaseCatalog
+singular_name=database_instance plural_name=database_instances resource_type=DatabaseInstance
+singular_name=external_location plural_name=external_locations resource_type=ExternalLocation
+singular_name=instance_pool plural_name=instance_pools resource_type=InstancePool
 singular_name=job plural_name=jobs resource_type=Job
+singular_name=job_run plural_name=job_runs resource_type=JobRun
+singular_name=mlflow_experiment plural_name=experiments resource_type=MlflowExperiment
+singular_name=mlflow_model plural_name=models resource_type=MlflowModel
+singular_name=model_serving_endpoint plural_name=model_serving_endpoints resource_type=ModelServingEndpoint
 singular_name=pipeline plural_name=pipelines resource_type=Pipeline
+singular_name=quality_monitor plural_name=quality_monitors resource_type=QualityMonitor
+singular_name=registered_model plural_name=registered_models resource_type=RegisteredModel
 singular_name=schema plural_name=schemas resource_type=Schema
+singular_name=secret_scope plural_name=secret_scopes resource_type=SecretScope
+singular_name=sql_warehouse plural_name=sql_warehouses resource_type=SqlWarehouse
+singular_name=synced_database_table plural_name=synced_database_tables resource_type=SyncedDatabaseTable
+singular_name=vector_search_endpoint plural_name=vector_search_endpoints resource_type=VectorSearchEndpoint
+singular_name=vector_search_index plural_name=vector_search_indexes resource_type=VectorSearchIndex
 singular_name=volume plural_name=volumes resource_type=Volume
