@@ -2,17 +2,22 @@ package aitools
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,6 +32,21 @@ func drainReader(r *bufio.Reader) {
 }
 
 // --- Test helpers ---
+
+// newTestInstallCmd builds the install command with the pieces the root command
+// supplies in production: the persistent --output flag (so cobra can parse
+// `--output` on this detached command; install reads it via installOutputIsJSON)
+// and silenced cobra error/usage output (root sets SilenceErrors and prints
+// errors itself). Without the latter, a detached command prints cobra's own
+// "Error:"/usage to the captured buffers.
+func newTestInstallCmd() *cobra.Command {
+	cmd := NewInstallCmd()
+	output := flags.OutputText
+	cmd.PersistentFlags().VarP(&output, "output", "o", "output type: text or json")
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	return cmd
+}
 
 type installCall struct {
 	agents []string
@@ -228,13 +248,18 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	claude := testPluginAgent(agents.NameClaudeCode, "Claude Code", "claude")
 	ctx := cmdio.MockDiscard(t.Context())
 
-	// Non-explicit blocked install is a warning, not an error.
+	// Non-explicit blocked install is a warning, not an error, but the agent's
+	// failure is still recorded in its outcome.
 	plan := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, false)
-	require.NoError(t, executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}))
+	outcomes, err := executePlan(ctx, nil, plan, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	require.NoError(t, err)
+	require.Len(t, outcomes, 1)
+	assert.Equal(t, outcomeFailed, outcomes[0].status)
 
 	// Explicit (--agents) blocked install is an error.
 	planExplicit := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
-	require.Error(t, executePlan(ctx, nil, planExplicit, installer.InstallOptions{Scope: installer.ScopeGlobal}))
+	_, err = executePlan(ctx, nil, planExplicit, installer.InstallOptions{Scope: installer.ScopeGlobal}, false)
+	require.Error(t, err)
 }
 
 // --- RunE: skills-only path (config-dir detection, no plugin) ---
@@ -244,7 +269,7 @@ func TestInstallSkillsOnlyAllAgents(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only"})
 
@@ -259,7 +284,7 @@ func TestInstallSkillsOnlySpecificSkills(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only", "--skills", "databricks,databricks-apps"})
 
@@ -273,7 +298,7 @@ func TestInstallSkillsOnlyExperimental(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only", "--experimental"})
 
@@ -292,7 +317,7 @@ func TestInstallPluginFirstDefault(t *testing.T) {
 	skills := setupInstallMock(t)
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(telemetry.WithNewLogger(ctx))
 
 	require.NoError(t, cmd.Execute())
@@ -341,7 +366,7 @@ func TestInstallInteractivePickerAndConfirm(t *testing.T) {
 	go drainReader(test.Stdout)
 	go drainReader(test.Stderr)
 
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(telemetry.WithNewLogger(ctx))
 
 	require.NoError(t, cmd.RunE(cmd, nil))
@@ -360,7 +385,7 @@ func TestInstallExplicitAgentWorksUndetected(t *testing.T) {
 	plugins := setupPluginMock(t)
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--agents", "codex"})
 
@@ -369,10 +394,165 @@ func TestInstallExplicitAgentWorksUndetected(t *testing.T) {
 	assert.Equal(t, agents.NameCodex, (*plugins)[0].agent)
 }
 
+func TestInstallOutputJSON(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	fakeBinsOnPath(t, "codex")
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+
+	origInstall := installPluginForAgentFn
+	origRecord := recordPluginInstallsFn
+	t.Cleanup(func() { installPluginForAgentFn = origInstall; recordPluginInstallsFn = origRecord })
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed, Detail: "boom"}
+	}
+	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
+
+	var out bytes.Buffer
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	cmd := newTestInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--agents", "codex", "--scope", "global", "--output", "json"})
+
+	// Explicit --agents makes a blocked install a hard error, but the JSON result
+	// is still emitted for the extension to consume. The command returns
+	// ErrAlreadyPrinted so root exits non-zero without printing a duplicate
+	// "Error:" line over the JSON (exercised end-to-end in
+	// TestInstallOutputJSONThroughRoot).
+	err := cmd.Execute()
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got installOutput
+	require.NoError(t, json.Unmarshal(out.Bytes(), &got))
+	require.Len(t, got.Agents, 1)
+	assert.Equal(t, agents.NameCodex, got.Agents[0].Name)
+	assert.Equal(t, deliveryPlugin.String(), got.Agents[0].Delivery)
+	assert.Equal(t, string(outcomeFailed), got.Agents[0].Status)
+	// A per-agent failure stays in the agent entry; it is not repeated in the
+	// top-level error field.
+	assert.Empty(t, got.Error)
+}
+
+// TestInstallOutputJSONThroughRoot runs a failing `install --output json` through
+// the real root command, where the "Error:" line is actually printed (root does
+// it, not cobra). It guards the contract that a failed JSON run writes only the
+// JSON to stdout and no text error to stderr.
+func TestInstallOutputJSONThroughRoot(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+	fakeBinsOnPath(t, "codex")
+	t.Setenv("DATABRICKS_SKILLS_REF", "v0.2.6")
+
+	origInstall := installPluginForAgentFn
+	origRecord := recordPluginInstallsFn
+	t.Cleanup(func() { installPluginForAgentFn = origInstall; recordPluginInstallsFn = origRecord })
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed, Detail: "boom"}
+	}
+	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
+
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	cli := root.New(ctx)
+	cli.AddCommand(NewInstallCmd())
+	var out, errOut bytes.Buffer
+	cli.SetOut(&out)
+	cli.SetErr(&errOut)
+	cli.SetArgs([]string{"install", "--agents", "codex", "--scope", "global", "--output", "json"})
+
+	err := root.Execute(ctx, cli)
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.NotContains(t, errOut.String(), "Error:")
+
+	var got installOutput
+	require.NoError(t, json.Unmarshal(out.Bytes(), &got))
+	require.Len(t, got.Agents, 1)
+	assert.Equal(t, string(outcomeFailed), got.Agents[0].Status)
+}
+
+func TestInstallOutputJSONTopLevelFailure(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	t.Setenv("USERPROFILE", tmp)
+
+	orig := installSkillsForAgentsFn
+	t.Cleanup(func() { installSkillsForAgentsFn = orig })
+	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
+		return errors.New(`skill "databricks" not found`)
+	}
+
+	var out bytes.Buffer
+	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+	cmd := newTestInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetOut(&out)
+	// Cursor is skills-only, so this fails in the skills-group path, which returns
+	// before appending any per-agent outcome.
+	cmd.SetArgs([]string{"--agents", "cursor", "--scope", "global", "--output", "json"})
+
+	// A top-level failure has no per-agent entry, so it must still be represented
+	// in the JSON (not just a bare non-zero exit with an empty agents array).
+	err := cmd.Execute()
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got installOutput
+	require.NoError(t, json.Unmarshal(out.Bytes(), &got))
+	assert.Empty(t, got.Agents)
+	assert.Contains(t, got.Error, "databricks")
+}
+
+func TestInstallOutputJSONRequiresNonInteractiveFlags(t *testing.T) {
+	setupTestAgents(t)
+
+	cases := []struct {
+		name string
+		args []string
+		want []string // substrings the error must name
+	}{
+		{
+			name: "no scope or agents",
+			args: []string{"--output", "json"},
+			want: []string{"--scope", "--agents"},
+		},
+		{
+			name: "agents without scope",
+			args: []string{"--agents", "claude-code", "--output", "json"},
+			want: []string{"--scope"},
+		},
+		{
+			name: "scope without agents",
+			args: []string{"--scope", "global", "--output", "json"},
+			want: []string{"--agents"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var out bytes.Buffer
+			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
+			cmd := newTestInstallCmd()
+			cmd.SetContext(ctx)
+			cmd.SetOut(&out)
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+			cmd.SetArgs(tc.args)
+
+			err := cmd.Execute()
+			require.Error(t, err)
+			for _, w := range tc.want {
+				assert.Contains(t, err.Error(), w)
+			}
+			// The command errors before rendering, so no JSON is emitted.
+			assert.Empty(t, out.String())
+		})
+	}
+}
+
 func TestInstallUnknownAgentErrors(t *testing.T) {
 	setupTestAgents(t)
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--agents", "invalid-agent"})
 	cmd.SilenceErrors = true
@@ -393,7 +573,7 @@ func TestInstallNoAgentsDetected(t *testing.T) {
 	skills := setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 
 	require.NoError(t, cmd.Execute())
@@ -404,7 +584,7 @@ func TestInstallNoAgentsDetected(t *testing.T) {
 func TestInstallSkillsRequiresSkillsOnlyOrPath(t *testing.T) {
 	setupTestAgents(t)
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills", "databricks"})
 	cmd.SilenceErrors = true
@@ -430,7 +610,7 @@ func TestInstallInteractivePickerErrorPropagates(t *testing.T) {
 	go drainReader(test.Stdout)
 	go drainReader(test.Stderr)
 
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 
 	err := cmd.RunE(cmd, nil)
@@ -440,7 +620,7 @@ func TestInstallInteractivePickerErrorPropagates(t *testing.T) {
 
 func TestInstallPathConflictsWithSkillsOnly(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only", "--path", "./out"})
 	cmd.SilenceErrors = true
@@ -449,6 +629,23 @@ func TestInstallPathConflictsWithSkillsOnly(t *testing.T) {
 	err := cmd.Execute()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot use --skills-only with --path")
+}
+
+func TestInstallOutputJSONConflictsWithPath(t *testing.T) {
+	var out bytes.Buffer
+	ctx := cmdio.MockDiscard(t.Context())
+	cmd := newTestInstallCmd()
+	cmd.SetContext(ctx)
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"--path", "./out", "--output", "json"})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cannot use --output json with --path")
+	// The command errors before dumping, so nothing is emitted.
+	assert.Empty(t, out.String())
 }
 
 // --- Scope flag parsing (exercised via the skills path so opts.Scope is observable) ---
@@ -473,7 +670,7 @@ func TestInstallScopeFlag(t *testing.T) {
 			calls := setupInstallMock(t)
 
 			ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-			cmd := NewInstallCmd()
+			cmd := newTestInstallCmd()
 			cmd.SetContext(ctx)
 			cmd.SetArgs(tt.args)
 			cmd.SilenceErrors = true
@@ -497,7 +694,7 @@ func TestInstallGlobalAndProjectErrors(t *testing.T) {
 	setupInstallMock(t)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--global", "--project"})
 	cmd.SilenceErrors = true
@@ -513,7 +710,7 @@ func TestInstallNoFlagNonInteractiveUsesGlobal(t *testing.T) {
 	calls := setupInstallMock(t)
 
 	ctx := telemetry.WithNewLogger(cmdio.MockDiscard(t.Context()))
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--skills-only"})
 
@@ -526,7 +723,7 @@ func TestInstallNoFlagNonInteractiveUsesGlobal(t *testing.T) {
 
 func TestInstallRejectsPositionalArgs(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
-	cmd := NewInstallCmd()
+	cmd := newTestInstallCmd()
 	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"databricks-jobs"})
 	cmd.SilenceErrors = true

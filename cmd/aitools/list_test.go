@@ -80,7 +80,7 @@ func TestRenderListJSON(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	require.NoError(t, renderListJSON(&buf, out))
+	require.NoError(t, renderJSON(&buf, out))
 
 	var got listOutput
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
@@ -131,7 +131,7 @@ func TestRenderListJSONWithAgents(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	require.NoError(t, renderListJSON(&buf, out))
+	require.NoError(t, renderJSON(&buf, out))
 
 	var raw map[string]any
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &raw))
@@ -358,7 +358,7 @@ func TestRenderListJSONScopeFiltersSummary(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	require.NoError(t, renderListJSON(&buf, out))
+	require.NoError(t, renderJSON(&buf, out))
 
 	var raw map[string]any
 	require.NoError(t, json.Unmarshal(buf.Bytes(), &raw))
