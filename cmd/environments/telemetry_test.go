@@ -117,6 +117,7 @@ func TestErrorCodeCoversLocalenv(t *testing.T) {
 		libslocalenv.ErrMerge,
 		libslocalenv.ErrPythonInstall,
 		libslocalenv.ErrProvision,
+		libslocalenv.ErrProvisionConflict,
 		libslocalenv.ErrValidate,
 		libslocalenv.ErrCanceled,
 	}
