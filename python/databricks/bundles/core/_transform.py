@@ -137,6 +137,9 @@ def _transform_field(cls: Type[_T], field: Field, value: Any) -> _T:
 def _transform(cls: Type[_T], value: Any) -> _T:
     origin = get_origin(cls)
 
+    if cls is Any:
+        return value
+
     if is_dataclass(cls) and isinstance(value, cls):  # type:ignore
         return value
 

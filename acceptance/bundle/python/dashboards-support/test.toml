@@ -1,0 +1,4 @@
+Cloud = false # tests don't interact with APIs
+
+# dashboards are only supported in the current version of the wheel
+EnvMatrix.PYDAB_VERSION = ["current"]

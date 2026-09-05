@@ -9,6 +9,7 @@ RESOURCE_NAMESPACE = {
     "resources.Schema": "schemas",
     "resources.Volume": "volumes",
     "resources.Alert": "alerts",
+    "resources.Dashboard": "dashboards",
 }
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
@@ -20,6 +21,7 @@ RENAMES = {
     "number": "float",
     "int64": "int",
     "float64": "float",
+    "interface": "Any",
 }
 
 PRIMITIVES = [
@@ -31,6 +33,7 @@ PRIMITIVES = [
     "int",
     "int64",
     "float64",
+    "interface",
 ]
 
 

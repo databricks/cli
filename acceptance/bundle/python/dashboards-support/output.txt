@@ -1,0 +1,39 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_dashboard"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "dashboards": {
+      "my_dashboard_1": {
+        "display_name": "My Dashboard (updated)",
+        "embed_credentials": false,
+        "file_path": "dashboard.lvdash.json",
+        "parent_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/resources",
+        "serialized_dashboard": "{\n  \"pages\": []\n}\n",
+        "warehouse_id": "my_warehouse"
+      },
+      "my_dashboard_2": {
+        "display_name": "My Dashboard (2) (updated)",
+        "embed_credentials": false,
+        "parent_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/resources",
+        "serialized_dashboard": {
+          "pages": [
+            {
+              "name": "python_page"
+            }
+          ]
+        },
+        "warehouse_id": "my_warehouse_2"
+      }
+    }
+  }
+}

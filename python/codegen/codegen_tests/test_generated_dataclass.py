@@ -26,6 +26,20 @@ def test_generate_type_string():
     )
 
 
+def test_generate_type_interface():
+    generated_type = generate_type(
+        namespace="dashboards",
+        ref="#/$defs/interface",
+        is_param=False,
+    )
+
+    assert generated_type == GeneratedType(
+        name="Any",
+        package=None,
+        parameters=[],
+    )
+
+
 def test_generate_type_dict():
     generated_type = generate_type(
         namespace="jobs",

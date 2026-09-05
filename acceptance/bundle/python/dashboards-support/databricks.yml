@@ -1,0 +1,17 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_dashboard"
+
+resources:
+  dashboards:
+    my_dashboard_1:
+      display_name: "My Dashboard"
+      file_path: dashboard.lvdash.json
+      warehouse_id: my_warehouse
