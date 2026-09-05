@@ -53,6 +53,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed) b.Config.{Sync,Include,Exclude} they set to be relative to SyncRootPath instead of bundle root
 		mutator.SyncInferRoot(),
 
+		// Surface the null-in-targets signal computed at load time as telemetry.
+		// Must run before InitializeCache so it appears first in bool_values.
+		mutator.CollectNullTelemetry(),
+
 		// Updates (typed): b.Cache (initializes cache for API responses)
 		// Initialize cache before any mutator that might need it
 		mutator.InitializeCache(),

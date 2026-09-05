@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle
+
+workspace:
+  root_path: /Workspace/Users/base-root
+
+targets:
+  dev-null:
+    workspace:
+      # YAML null: normalization drops the null, so the base root_path survives
+      # in the merged config. When null-merge semantics change, this field should
+      # become absent (reverting to the default ~/.bundle/... path).
+      root_path:
+
+  dev-empty:
+    workspace:
+      # Explicit empty string: not a null, so normalization keeps it.
+      # The empty string overrides the base, then DefineDefaultWorkspaceRoot
+      # re-fills it with the default ~/.bundle/... path (since the field is "").
+      # Empty string and YAML null currently produce the same final value via
+      # different paths; this is captured here to document both behaviors.
+      root_path: ""
+
+resources:
+  jobs:
+    my_job:
+      name: my job
