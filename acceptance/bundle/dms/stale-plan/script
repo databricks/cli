@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Save a plan, then deploy it: records version 1"
 $CLI bundle plan -o json > tmp.plan.json
-trace $CLI bundle plan -o json | nostamp.py
+trace $CLI bundle plan -o json
 # READPLAN deploys from the saved raw plan; without it the plan is recomputed. Untraced so the
 # variant-dependent command line stays out of the golden (the deploy output is identical either way).
 $CLI bundle deploy $(readplanarg tmp.plan.json)

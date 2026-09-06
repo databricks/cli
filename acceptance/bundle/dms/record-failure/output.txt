@@ -15,6 +15,9 @@ Files: 6 uploaded, 0 deleted
 {
   "plan_version": 3,
   "cli_version": "[CLI_VERSION]",
+  "deployment_id": "[NUMID]",
+  "next_version_id": "2",
+  "last_version_id": "1",
   "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
   "plan": {
     "resources.jobs.doomed": {
@@ -22,8 +25,10 @@ Files: 6 uploaded, 0 deleted
       "new_state": {
         "value": {
           "deployment": {
+            "deployment_id": "[NUMID]",
             "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure-[UNIQUE_NAME]/default/state/metadata.json"
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-record-failure-[UNIQUE_NAME]/default/state/metadata.json",
+            "version_id": "2"
           },
           "edit_mode": "UI_LOCKED",
           "format": "MULTI_TASK",

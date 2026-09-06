@@ -34,6 +34,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
+  "deployment_id": "[NUMID]",
+  "next_version_id": "2",
+  "last_version_id": "1",
   "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
   "plan": {
     "resources.jobs.foo": {
@@ -42,8 +45,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -59,6 +64,13 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "2",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -83,8 +95,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edition": "ADVANCED",
         "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
@@ -103,6 +117,15 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "schema": "default",
         "serverless": true,
         "state": "IDLE"
+      },
+      "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "2",
+          "remote": "1"
+        }
       }
     }
   }
@@ -277,6 +300,9 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
+  "deployment_id": "[NUMID]",
+  "next_version_id": "3",
+  "last_version_id": "2",
   "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
   "plan": {
     "resources.jobs.foo": {
@@ -285,8 +311,10 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -302,6 +330,13 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "3",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -326,8 +361,10 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
         "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "2"
         },
         "development": true,
         "edition": "ADVANCED",
@@ -347,6 +384,15 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
         "schema": "default",
         "serverless": true,
         "state": "IDLE"
+      },
+      "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "2",
+          "new": "3",
+          "remote": "2"
+        }
       }
     }
   }

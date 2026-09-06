@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "A resource that fails to apply is recorded as a failed operation carrying the error, so the deployment history says why rather than omitting the resource"
 trace musterr $CLI bundle deploy
-trace $CLI bundle plan -o json | nostamp.py
+trace $CLI bundle plan -o json
 trace print_requests.py --dms //api/2.0/bundle
 
 title "The failed resource is not listed at all: state is what projects a resource, and a failed create records none, so a later deploy plans to create it rather than treating it as already deployed"

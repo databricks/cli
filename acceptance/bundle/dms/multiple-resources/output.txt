@@ -24,6 +24,9 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
+  "deployment_id": "[NUMID]",
+  "next_version_id": "2",
+  "last_version_id": "1",
   "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
   "plan": {
     "resources.jobs.five": {
@@ -32,8 +35,10 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -49,6 +54,13 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "2",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -72,8 +84,10 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "created_time": [UNIX_TIME_MILLIS][1],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -89,6 +103,13 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "2",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -112,8 +133,10 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "created_time": [UNIX_TIME_MILLIS][2],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -129,6 +152,13 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "2",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -152,8 +182,10 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "created_time": [UNIX_TIME_MILLIS][3],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -169,6 +201,13 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "2",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -192,8 +231,10 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "created_time": [UNIX_TIME_MILLIS][4],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -209,6 +250,13 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "2",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -380,6 +428,9 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
+  "deployment_id": "[NUMID]",
+  "next_version_id": "3",
+  "last_version_id": "2",
   "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
   "plan": {
     "resources.jobs.five": {
@@ -388,8 +439,10 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -405,6 +458,13 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "3",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -428,8 +488,10 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "created_time": [UNIX_TIME_MILLIS][1],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -445,6 +507,13 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "3",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -468,8 +537,10 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "created_time": [UNIX_TIME_MILLIS][2],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -485,6 +556,13 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "3",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -508,8 +586,10 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "created_time": [UNIX_TIME_MILLIS][3],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -525,6 +605,13 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "3",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",
@@ -548,8 +635,10 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "created_time": [UNIX_TIME_MILLIS][4],
         "creator_user_name": "[USERNAME]",
         "deployment": {
+          "deployment_id": "[NUMID]",
           "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json"
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/state/metadata.json",
+          "version_id": "1"
         },
         "edit_mode": "UI_LOCKED",
         "email_notifications": {},
@@ -565,6 +654,13 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
         "webhook_notifications": {}
       },
       "changes": {
+        "deployment.version_id": {
+          "action": "skip",
+          "reason": "auto",
+          "old": "1",
+          "new": "3",
+          "remote": "1"
+        },
         "email_notifications": {
           "action": "skip",
           "reason": "empty",

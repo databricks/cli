@@ -13,6 +13,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
+  "deployment_id": "[NUMID]",
+  "next_version_id": "2",
+  "last_version_id": "1",
   "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
   "plan": {
     "resources.schemas.foo": {

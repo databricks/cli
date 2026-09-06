@@ -5,7 +5,7 @@ trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle
 
 title "The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend"
-trace $CLI bundle plan -o json | nostamp.py
+trace $CLI bundle plan -o json
 
 title "After deploy, the service lists the resource at version 1"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-failed-recreate-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')

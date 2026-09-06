@@ -12,7 +12,8 @@
         "value": {
           "deployment": {
             "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/state/metadata.json"
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/state/metadata.json",
+            "version_id": "1"
           },
           "edit_mode": "UI_LOCKED",
           "format": "MULTI_TASK",
