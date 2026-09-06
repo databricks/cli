@@ -157,7 +157,6 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   }
 }
 
-=== The metadata changed but the schema did not: still one deployment, recorded at version 1
 >>> [CLI] bundle plan -t prod -o json
 Recommendation: target with 'mode: production' should set 'workspace.root_path' to make sure only one copy is deployed
 
@@ -243,7 +242,6 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   }
 }
 
-=== The no-op redeploy leaves the schema at version 1
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
 [
   {

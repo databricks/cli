@@ -14,7 +14,6 @@ trace update_file.py databricks.yml dms-metadata-before dms-metadata-after
 trace $CLI bundle deploy -t prod
 trace print_requests.py --dms //api/2.0/bundle
 
-title "The metadata changed but the schema did not: still one deployment, recorded at version 1"
 trace $CLI bundle plan -t prod -o json
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
@@ -22,6 +21,5 @@ title "Deploy again without touching anything: the record already says this, so 
 trace $CLI bundle deploy -t prod
 trace print_requests.py --dms //api/2.0/bundle
 
-title "The no-op redeploy leaves the schema at version 1"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 rm -f out.requests.txt
