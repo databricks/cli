@@ -1,4 +1,62 @@
 
+=== Plan before first deploy: no deployment yet, so no deployment_id or version fields
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": 3,
+  "cli_version": "[CLI_VERSION]",
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "plan": {
+    "resources.jobs.child": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.parent",
+          "label": "${resources.jobs.parent.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/state/metadata.json",
+            "version_id": "1"
+          },
+          "description": "depends on ${resources.jobs.parent.id}",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "child",
+          "queue": {
+            "enabled": true
+          }
+        },
+        "vars": {
+          "description": "depends on ${resources.jobs.parent.id}"
+        }
+      }
+    },
+    "resources.jobs.parent": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/state/metadata.json",
+            "version_id": "1"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "parent",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    }
+  }
+}
+
 === Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/files...
