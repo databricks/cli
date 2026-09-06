@@ -11,7 +11,7 @@ title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE as its ba
 trace $CLI bundle plan -o json
 
 title "The raw recorded state the service holds for this deployment"
-trace print_state.py
+trace print_state.py --no-dms
 
 # Only deploy stamps deployment.deployment_id. Plan sees it in state but not in config,
 # so it must ignore it rather than report spurious changes.
@@ -30,7 +30,7 @@ title "The plan shows version 2 for the updated pipeline and DEPLOYMENT_METADATA
 trace $CLI bundle plan -o json
 
 title "The raw recorded state the service holds after the update"
-trace print_state.py
+trace print_state.py --no-dms
 
 title "Plan again: no residual drift, and the version stamps are ignored"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"

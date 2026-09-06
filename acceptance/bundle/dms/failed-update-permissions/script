@@ -12,7 +12,7 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state after deploy"
-trace print_state.py
+trace print_state.py --no-dms
 
 title "A permissions update that fails records the failure with the permissions it still has. The resource ID here is a path rather than a number, and the state is the embedded permission list, so this covers a shape the resource tests do not"
 trace update_file.py databricks.yml "CAN_VIEW" "CAN_MANAGE"
@@ -25,6 +25,6 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state after the failure"
-trace print_state.py
+trace print_state.py --no-dms
 
 trace print_requests.py --dms //api/2.0/bundle --oneline

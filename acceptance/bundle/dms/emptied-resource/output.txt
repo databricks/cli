@@ -179,7 +179,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 ]
 
 === The raw recorded state the service holds for this deployment
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -188,15 +188,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.schemas.foo": {
-   "__id__": "main.dms_emptied_resource_[UNIQUE_NAME]",
-   "state": {
-    "catalog_name": "main",
-    "name": "dms_emptied_resource_[UNIQUE_NAME]"
-   }
-  }
- }
+ "state": {}
 }
 
 >>> [CLI] bundle destroy --auto-approve

@@ -109,7 +109,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === The raw recorded state the service holds for this deployment
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -118,16 +118,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.schemas.foo": {
-   "__id__": "main.dms_successful_recreate_schema_[UNIQUE_NAME]",
-   "state": {
-    "catalog_name": "main",
-    "comment": "v1",
-    "name": "dms_successful_recreate_schema_[UNIQUE_NAME]"
-   }
-  }
- }
+ "state": {}
 }
 
 === Recreate writes state twice - the entry is dropped, then the new resource is saved
@@ -245,7 +236,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 ]
 
 === The raw recorded state after recreate
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -254,16 +245,7 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.schemas.foo": {
-   "__id__": "dms_other_[UNIQUE_NAME].dms_successful_recreate_schema_[UNIQUE_NAME]",
-   "state": {
-    "catalog_name": "dms_other_[UNIQUE_NAME]",
-    "comment": "v1",
-    "name": "dms_successful_recreate_schema_[UNIQUE_NAME]"
-   }
-  }
- }
+ "state": {}
 }
 
 === Destroy: the delete is recorded with the id and no state

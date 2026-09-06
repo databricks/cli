@@ -61,7 +61,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 []
 
 === The raw recorded state the service holds for this deployment
->>> print_state.py
+>>> print_state.py --no-dms
 
 === Redeploy: the deployment is resolved from that node, so no second deployment is created
 >>> [CLI] bundle deploy
@@ -127,4 +127,4 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 []
 
 === The raw recorded state after redeploy
->>> print_state.py
+>>> print_state.py --no-dms

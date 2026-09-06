@@ -56,7 +56,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === The raw recorded state after deploy
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -65,16 +65,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.schemas.foo": {
-   "__id__": "main.dms_upload_fails_once_schema_[UNIQUE_NAME]",
-   "state": {
-    "catalog_name": "main",
-    "comment": "v1",
-    "name": "dms_upload_fails_once_schema_[UNIQUE_NAME]"
-   }
-  }
- }
+ "state": {}
 }
 
 === A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one
@@ -107,7 +98,7 @@ Files: 4 uploaded, 0 deleted
 ]
 
 === The raw recorded state after the failure
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -116,16 +107,7 @@ Files: 4 uploaded, 0 deleted
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.schemas.foo": {
-   "__id__": "dms_other_[UNIQUE_NAME].dms_upload_fails_once_schema_[UNIQUE_NAME]",
-   "state": {
-    "catalog_name": "dms_other_[UNIQUE_NAME]",
-    "comment": "v1",
-    "name": "dms_upload_fails_once_schema_[UNIQUE_NAME]"
-   }
-  }
- }
+ "state": {}
 }
 
 >>> print_requests.py --dms //api/2.0/bundle

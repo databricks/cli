@@ -76,12 +76,18 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target")
     parser.add_argument("--backup", action="store_true")
+    parser.add_argument(
+        "--no-dms",
+        action="store_true",
+        help="Print resources.json as-is without fetching state from DMS. "
+        "Use in bundle/dms tests to assert the tombstone content of the file.",
+    )
     args = parser.parse_args()
 
     for filename in get_state_files(args.target, args.backup):
         if not os.path.exists(filename):
             continue
-        if filename.endswith("resources.json") and records_deployment_history():
+        if filename.endswith("resources.json") and records_deployment_history() and not args.no_dms:
             print_recorded_state(filename, args.target)
         else:
             print_file(filename)

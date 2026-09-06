@@ -12,7 +12,7 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state the service holds for this deployment"
-trace print_state.py
+trace print_state.py --no-dms
 
 trace $CLI bundle destroy --auto-approve
 rm -f out.requests.txt

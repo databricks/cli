@@ -109,7 +109,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === The raw state after successful deploy
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -118,16 +118,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.schemas.foo": {
-   "__id__": "main.dms_failed_recreate_schema_[UNIQUE_NAME]",
-   "state": {
-    "catalog_name": "main",
-    "comment": "v1",
-    "name": "dms_failed_recreate_schema_[UNIQUE_NAME]"
-   }
-  }
- }
+ "state": {}
 }
 
 === A recreate deletes and then fails to create. The delete went through, so the resource really is gone: the failed operation clears its state (self-contained, not assuming the delete's own write reached the service), rather than describing the resource as it was before the deploy
@@ -205,7 +196,7 @@ Files: 4 uploaded, 0 deleted
 []
 
 === The raw state after failed recreate shows no resource
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",

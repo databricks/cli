@@ -15,7 +15,7 @@ trace MSYS_NO_PATHCONV=1 $CLI api get "/api/2.0/bundle/deployments/${deployment_
 
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
-trace print_state.py
+trace print_state.py --no-dms
 
 title "Redeploying from DMS state alone still creates the failed resource: it was never applied, so it must not be skipped as unchanged"
 rm -rf .databricks

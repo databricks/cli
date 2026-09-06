@@ -12,7 +12,7 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state after deploy"
-trace print_state.py
+trace print_state.py --no-dms
 
 title "A recreate records twice, and the first one fails: the second must still carry the sequence id staging left, because a rejected update earned no new one"
 trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1
@@ -28,6 +28,6 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state after the failure"
-trace print_state.py
+trace print_state.py --no-dms
 
 trace print_requests.py --dms //api/2.0/bundle

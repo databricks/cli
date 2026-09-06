@@ -12,7 +12,7 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state the service holds for this deployment"
-trace print_state.py
+trace print_state.py --no-dms
 
 title "Recreate writes state twice - the entry is dropped, then the new resource is saved"
 # One operation per resource per version; both writes land on the same one.
@@ -32,7 +32,7 @@ title "The service lists the schema at version 2 with recreate action"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state after recreate"
-trace print_state.py
+trace print_state.py --no-dms
 
 title "Destroy: the delete is recorded with the id and no state"
 trace $CLI bundle destroy --auto-approve

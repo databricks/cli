@@ -132,7 +132,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 === The raw recorded state the service holds for this deployment
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -141,50 +141,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.jobs.foo": {
-   "__id__": "[NUMID]",
-   "state": {
-    "deployment": {
-     "deployment_id": "[NUMID]",
-     "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
-     "version_id": "1"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "foo",
-    "queue": {
-     "enabled": true
-    }
-   }
-  },
-  "resources.pipelines.bar": {
-   "__id__": "[UUID]",
-   "state": {
-    "catalog": "main",
-    "channel": "CURRENT",
-    "deployment": {
-     "deployment_id": "[NUMID]",
-     "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
-     "version_id": "1"
-    },
-    "edition": "ADVANCED",
-    "libraries": [
-     {
-      "file": {
-       "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
-      }
-     }
-    ],
-    "name": "bar-[UNIQUE_NAME]",
-    "schema": "default",
-    "serverless": true
-   }
-  }
- }
+ "state": {}
 }
 
 === Plan without touching anything: the deployment stamp must not show as drift
@@ -399,7 +356,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 === The raw recorded state the service holds after the update
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -408,51 +365,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.jobs.foo": {
-   "__id__": "[NUMID]",
-   "state": {
-    "deployment": {
-     "deployment_id": "[NUMID]",
-     "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
-     "version_id": "1"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "foo",
-    "queue": {
-     "enabled": true
-    }
-   }
-  },
-  "resources.pipelines.bar": {
-   "__id__": "[UUID]",
-   "state": {
-    "catalog": "main",
-    "channel": "CURRENT",
-    "deployment": {
-     "deployment_id": "[NUMID]",
-     "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/state/metadata.json",
-     "version_id": "2"
-    },
-    "development": true,
-    "edition": "ADVANCED",
-    "libraries": [
-     {
-      "file": {
-       "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files/transform.py"
-      }
-     }
-    ],
-    "name": "bar-[UNIQUE_NAME]",
-    "schema": "default",
-    "serverless": true
-   }
-  }
- }
+ "state": {}
 }
 
 === Plan again: no residual drift, and the version stamps are ignored

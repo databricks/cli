@@ -6,7 +6,8 @@ trace print_requests.py --dms --get //api/2.0/bundle
 
 title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE; the service holds the schema at version 1"
 trace $CLI bundle plan -o json
-trace print_state.py
+trace print_requests.py --dms --get //api/2.0/bundle
+trace print_state.py --no-dms
 
 title "A destructive change without --auto-approve is declined: this console cannot prompt"
 # Changing the catalog recreates the schema, which needs approval.
@@ -29,3 +30,4 @@ trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${d
 trace $CLI bundle destroy --auto-approve
 title "After the destroy the deployment is gone, so the summary reports no history rather than a dangling id"
 trace $CLI bundle summary -o json | jq '.bundle.deployment | has("history")'
+trace print_requests.py --dms --get //api/2.0/bundle

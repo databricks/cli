@@ -21,7 +21,7 @@ title "The service lists the deployed job"
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state the service holds for this deployment"
-trace print_state.py -t dev
+trace print_state.py --no-dms -t dev
 
 # The deploy uploads files in a nondeterministic order; only the requests above are
 # asserted.

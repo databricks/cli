@@ -12,7 +12,7 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw state after successful deploy"
-trace print_state.py
+trace print_state.py --no-dms
 
 title "A resource that fails to delete is recorded as a failed operation carrying the error, so the history says why rather than showing the resource gone"
 # The state entry survives too, so the next deploy still knows about the resource.
@@ -25,8 +25,7 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The state shows the resource still exists but the operation is marked failed"
-trace print_state.py
+trace print_state.py --no-dms
 
-# print_state.py asks the service for the resources while recording, so drain those reads instead
-# of leaving them behind for the harness to diff.
+# Drain any accumulated requests (plan, state reads) so the harness has nothing to diff.
 rm -f out.requests.txt

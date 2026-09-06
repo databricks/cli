@@ -12,7 +12,7 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw state after successful deploy"
-trace print_state.py
+trace print_state.py --no-dms
 
 title "A recreate deletes and then fails to create. The delete went through, so the resource really is gone: the failed operation clears its state (self-contained, not assuming the delete's own write reached the service), rather than describing the resource as it was before the deploy"
 # Unity Catalog has no catalog called "other", so make one to move the schema into.
@@ -31,7 +31,7 @@ deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/$
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw state after failed recreate shows no resource"
-trace print_state.py
+trace print_state.py --no-dms
 
 title "Planning from DMS state alone creates the schema, which is what has to happen: it no longer exists"
 rm -rf .databricks

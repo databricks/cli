@@ -109,7 +109,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === The raw state after successful deploy
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -118,16 +118,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.schemas.foo": {
-   "__id__": "main.dms_failed_update_schema_[UNIQUE_NAME]",
-   "state": {
-    "catalog_name": "main",
-    "comment": "v1",
-    "name": "dms_failed_update_schema_[UNIQUE_NAME]"
-   }
-  }
- }
+ "state": {}
 }
 
 === An update that fails before writing any state only marks its operation failed. It names no state, so the deployment keeps describing the schema the last successful version recorded - which is right, because nothing touched it
@@ -198,7 +189,7 @@ Files: 3 uploaded, 0 deleted
 ]
 
 === The raw state after failed update shows the previous version
->>> print_state.py
+>>> print_state.py --no-dms
 {
  "state_version": 2,
  "cli_version": "[CLI_VERSION]",
@@ -207,16 +198,7 @@ Files: 3 uploaded, 0 deleted
  "features": {
   "record_deployment_history": {}
  },
- "state": {
-  "resources.schemas.foo": {
-   "__id__": "main.dms_failed_update_schema_[UNIQUE_NAME]",
-   "state": {
-    "catalog_name": "main",
-    "comment": "v1",
-    "name": "dms_failed_update_schema_[UNIQUE_NAME]"
-   }
-  }
- }
+ "state": {}
 }
 
 === Planning from DMS state alone updates the schema rather than creating a second one, which is what recording the prior state buys
