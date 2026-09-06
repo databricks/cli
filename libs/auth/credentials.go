@@ -5,11 +5,11 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
 // The credentials chain used by the CLI. It is a custom implementation
