@@ -61,10 +61,8 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 	return nil
 }
 
-// InitForApply initializes the DeploymentBundle for applying a pre-computed plan: it parses the
-// plan's entries (loaded as JSON when the plan came from a file) into the typed state cache the
-// apply reads. A first deployment's id does not exist until the deploy creates it after approval;
-// StampDeploymentIdForFirstVersion fills it in then. StateDB must already be open for write before calling this.
+// InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
+// StateDB must already be open for write before calling this function.
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
 	b.StateDB.AssertOpenedForWrite()
 
@@ -120,8 +118,9 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 
 // StampDeploymentIdForFirstVersion fills deploymentID into the plan's jobs and pipelines that still lack one, in
 // both the state cache the apply reads and the plan JSON. It is called after approval creates the
-// deployment, for a first deploy whose id did not exist at plan time; the version and any
-// pre-existing id were stamped then.
+// deployment, for a first deploy whose deployment_id did not exist at plan time.
+//
+// For subsequent deployments, the deployment_id is already stamped in the plan.
 func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string) error {
 	for resourceKey, entry := range b.Plan.Plan {
 		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
@@ -169,23 +168,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	}
 
 	// The plan records where its state lives so deploy --plan can reject a plan whose target has
-	// since switched backends. StateDB is the source of truth, so a first deploy - which has no
-	// recorded deployment yet - still carries the backend.
+	// since switched backends or has an outdated version or a wrong deployment_id.
 	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		plan.StorageBackend = string(dstate.StorageBackendDeploymentMetadataService)
-	}
-	// Record the DMS deployment and version this plan targets, from StateDB (not the config tree).
-	// A saved plan carries them so deploy --plan can reject a plan the deployment has moved on from,
-	// and passes last_version_id as previous_version_id. Empty for a first deploy, which has no
-	// recorded deployment yet - the deploy phase stamps the created id.
-	if b.StateDB.DeploymentID != "" {
-		next, err := dms.NextVersion(b.StateDB.LatestVersionID)
-		if err != nil {
-			return nil, fmt.Errorf("computing next deployment version: %w", err)
+		// Not the first deployment, stamp the deployment_id and version_id into the plan.
+		if b.StateDB.DeploymentID != "" {
+			next, err := dms.NextVersion(b.StateDB.LatestVersionID)
+			if err != nil {
+				return nil, fmt.Errorf("computing next deployment version: %w", err)
+			}
+			plan.DeploymentId = b.StateDB.DeploymentID
+			plan.LastVersionId = b.StateDB.LatestVersionID
+			plan.NextVersionId = strconv.FormatInt(next, 10)
 		}
-		plan.DeploymentId = b.StateDB.DeploymentID
-		plan.LastVersionId = b.StateDB.LatestVersionID
-		plan.NextVersionId = strconv.FormatInt(next, 10)
 	}
 
 	b.Plan = plan

@@ -205,9 +205,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
 	defer func() {
-		// Skip entirely when not recording; CompleteVersion runs after Finalize has closed the state,
-		// so it is gated on the config rather than the (reset) StateDB.
-		if b.ConfiguresDeploymentHistory(ctx) {
+		// Close the version when backend type is deployment metadata service.
+		if b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
 				logdiag.LogError(ctx, err)
 			}
@@ -299,8 +298,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if planFromFile {
-		// Parse the loaded plan into the state cache the apply reads. A first deploy's deployment id
-		// is stamped later, after approval creates it (see below).
+		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
@@ -315,13 +313,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	haveApproval, approvalErr := approvalForDeploy(ctx, b, plan)
+	haveApproval, err := approvalForDeploy(ctx, b, plan)
 	if !haveApproval {
 		// No version was created, so the deferred CompleteVersion is a no-op and the version
 		// number is left for the next deploy. Both the user declining and a console that
 		// cannot prompt land here.
-		if approvalErr != nil {
-			logdiag.LogError(ctx, approvalErr)
+		if err != nil {
+			logdiag.LogError(ctx, err)
 			return
 		}
 		cmdio.LogString(ctx, "Deployment cancelled!")
@@ -345,22 +343,22 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				return
 			}
 		}
-	}
 
-	// Create the version the plan was stamped with, staging an operation for every resource
-	// it touches. Doing it here rather than before the prompt means a declined deploy never
-	// claims a version number.
-	staged, err := stagedOperations(plan)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
+		// Create the version the plan was stamped with, staging an operation for every resource
+		// it touches. Doing it here rather than before the prompt means a declined deploy never
+		// claims a version number.
+		staged, err := stagedOperations(plan)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		deploymentID, versionID := deploymentAndNextVersion(b)
+		logDeploymentVersion(ctx, b, deploymentID, versionID)
 	}
-	if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	deploymentID, versionID := deploymentAndNextVersion(b)
-	logDeploymentVersion(ctx, b, deploymentID, versionID)
 
 	deployCore(ctx, b, plan, stateEngine)
 
