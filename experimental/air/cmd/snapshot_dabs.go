@@ -93,7 +93,7 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 		pinnedTip = plan.commitSHA
 	}
 
-	sidecar, err := buildGitStateSidecar(ctx, git, mode, pinnedTip, time.Now())
+	sidecar, err := buildGitStateSidecar(ctx, git, mode, pinnedTip, plan.hasUncommit, time.Now())
 	if err != nil {
 		log.Warnf(ctx, "skipping git provenance sidecar: %v", err)
 		return "", ""
@@ -101,7 +101,7 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 
 	// Capture the dirty diff first so its status/path land in git_state.json.
 	if sidecar.Dirty {
-		status, diff := captureDirtyDiff(ctx, git, dirtyDiffSizeCapBytes, dirtyDiffTimeout)
+		status, diff := captureDirtyDiff(ctx, git, plan.includePaths, dirtyDiffSizeCapBytes, dirtyDiffTimeout)
 		sidecar.DiffStatus = status
 		if status == diffStatusCaptured {
 			if err := sidecarStore.Write(ctx, gitDiffName, bytes.NewReader(diff), filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
@@ -147,7 +147,7 @@ func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, ta
 	if plan.mode == modeGitArchive {
 		return createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, dirName, plan.includePaths)
 	}
-	return createPlainTarball(ctx, repoPath, tarball, plan.includePaths)
+	return createPlainTarball(ctx, repoPath, tarball, plan.includePaths, plan.isGitRepo)
 }
 
 // uploadSnapshotViaDABs uploads the snapshot through DABs' artifact-upload machinery

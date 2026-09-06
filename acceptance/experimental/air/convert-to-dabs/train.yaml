@@ -1,5 +1,7 @@
 experiment_name: torchrun-a10-smoke-test
-command: torchrun --nproc_per_node=1 train.py
+command: |
+  cd $CODE_SOURCE_PATH
+  torchrun --nproc_per_node=1 train.py
 compute:
   accelerator_type: GPU_1xA10
   num_accelerators: 1

@@ -140,13 +140,24 @@ func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.
 		return fmt.Errorf("field %q cannot be set", sf.Name)
 	}
 
-	// Handle ForceSendFields: remove if setting nil, add if setting empty value
-	err := updateForceSendFields(parentVal, sf.Name, embeddedIndex, valueVal, sf)
+	// Assign first: a value that cannot be converted must leave the struct exactly as it was.
+	converted, err := convertValue(valueVal, fv.Type())
 	if err != nil {
 		return err
 	}
+	if err := assignValue(fv, converted); err != nil {
+		return err
+	}
 
-	return assignValue(fv, valueVal)
+	// ForceSendFields is decided from the converted value, not the caller's: setting an
+	// omitempty int64 from the string "0" stores 0, which is empty and must be forced, while
+	// the string "0" is not empty and would have left the field to be omitted.
+	if !valueVal.IsValid() {
+		// Setting nil: the field is being made absent, which convertValue renders as the zero
+		// value. Pass the invalid value through so it is removed from ForceSendFields.
+		return updateForceSendFields(parentVal, sf.Name, embeddedIndex, valueVal, sf)
+	}
+	return updateForceSendFields(parentVal, sf.Name, embeddedIndex, converted, sf)
 }
 
 // setMapValue sets a value in a map

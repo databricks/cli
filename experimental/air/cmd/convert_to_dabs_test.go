@@ -46,6 +46,35 @@ func TestConvertToDabsForceOverwrite(t *testing.T) {
 	assert.Contains(t, string(regenerated), "ai_runtime_task")
 }
 
+// command.sh is the user's command copied verbatim — convert injects no cd. The
+// launcher exports $CODE_SOURCE_PATH and runs the command in the launch dir without
+// cd-ing, so (as under air run) the command owns its own cd; convert must not add one,
+// which would make it more lenient than air run.
+func TestConvertToDabsCommandVerbatim(t *testing.T) {
+	cfg := minimalConfig + `
+code_source:
+  type: snapshot
+  snapshot:
+    root_path: ./src
+`
+	path := writeConfigFile(t, "run.yaml", cfg)
+	require.NoError(t, os.MkdirAll(filepath.Join(filepath.Dir(path), "src"), 0o700))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	_, artifacts, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.NoError(t, err)
+
+	var cmd string
+	for _, it := range artifacts {
+		if it.name == commandScriptName {
+			cmd = string(it.data)
+		}
+	}
+	assert.Equal(t, "python train.py", cmd, "command.sh must be the verbatim command, no injected cd")
+	assert.NotContains(t, cmd, "cd /databricks/code_source")
+}
+
 func TestConvertToDabsCommandShape(t *testing.T) {
 	cmd := newConvertToDabsCommand()
 	assert.Equal(t, "convert-to-dabs <yaml_path>", cmd.Use)
@@ -298,12 +327,13 @@ func TestConvertToDabsRejectsCodeOutsideBundle(t *testing.T) {
 	require.ErrorContains(t, err, "not inside the bundle")
 }
 
-// A git-pinned code_source is rejected: convert no longer materializes a commit;
-// the deploy-time mutator packages the working tree in place.
-func TestConvertToDabsRejectsGitPin(t *testing.T) {
+// A git-pinned code_source is emitted as a `tgz` artifact (the DABs artifact
+// snapshotter): DABs builds the tarball from the ref at deploy and code_source_path
+// points at it.
+func TestConvertToDabsGitPinEmitsArtifact(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
-	cfg := "experiment_name: git-pin\ncommand: python train.py\n" +
+	cfg := "experiment_name: gitpin\ncommand: python train.py\n" +
 		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
 		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n    git:\n      commit: abc123\n"
 	path := filepath.Join(dir, "run.yaml")
@@ -311,8 +341,22 @@ func TestConvertToDabsRejectsGitPin(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	_, _, err = convertToDabs(t.Context(), loaded, path, dir)
-	require.ErrorContains(t, err, "git is not supported")
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, "tgz", get(t, root, a+".type").MustString())
+	// path is the code dir's parent; include is the basename, so archive entries are
+	// "src/..." (the layout the runtime extracts to /databricks/code_source/src).
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
+	assert.Equal(t, "abc123", get(t, root, a+".git.commit").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 1)
+	assert.Equal(t, "src", inc[0].MustString())
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, a+".files[0].source").MustString())
+
+	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, task+".code_source_path").MustString())
 }
 
 // A requirements-FILE dependency set (environment.dependencies is a path) is folded
@@ -398,9 +442,9 @@ func TestConvertToDabsSafeJobKey(t *testing.T) {
 	}
 }
 
-// include_paths narrows the archive to a subset of root_path, which a bundle can't
-// express per code source. Rejected rather than silently uploading the whole dir.
-func TestConvertToDabsRejectsIncludePaths(t *testing.T) {
+// include_paths narrows the archive to a subset of root_path: emitted as the `tgz`
+// artifact's include (relative to the code-source root), matching air CLI semantics.
+func TestConvertToDabsIncludePathsEmitsArtifact(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
 	cfg := "experiment_name: inc\ncommand: python train.py\n" +
@@ -412,8 +456,75 @@ func TestConvertToDabsRejectsIncludePaths(t *testing.T) {
 	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	_, _, err = convertToDabs(t.Context(), loaded, path, dir)
-	require.ErrorContains(t, err, "include_paths is not supported")
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, "tgz", get(t, root, a+".type").MustString())
+	// path is the code dir's parent; include_paths are basename-prefixed, so the
+	// entry is "src/keep" (relative to the bundle root, path ".").
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 1)
+	assert.Equal(t, "src/keep", inc[0].MustString())
+
+	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, task+".code_source_path").MustString())
+}
+
+// include_paths pointing at directories (the primary use case, not single files):
+// each entry is basename-prefixed the same way, so a subdirectory `pkg` under a
+// `./src` root becomes `src/pkg`. Convert is a syntactic mapping — whether the entry
+// names a directory or a file is identical here; the tgz builder (#6428) walks a
+// directory entry recursively at deploy.
+func TestConvertToDabsIncludePathsDirectories(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src", "pkg"), 0o700))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src", "config"), 0o700))
+	cfg := "experiment_name: incdir\ncommand: python train.py\n" +
+		"compute: {accelerator_type: GPU_1xH100, num_accelerators: 1}\n" +
+		"code_source:\n  type: snapshot\n  snapshot:\n    root_path: ./src\n" +
+		"    include_paths:\n      - pkg\n      - config\n"
+	path := filepath.Join(dir, "run.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
+	require.NoError(t, err)
+
+	a := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, ".", get(t, root, a+".path").MustString())
+	inc := get(t, root, a+".include").MustSequence()
+	require.Len(t, inc, 2)
+	assert.Equal(t, "src/pkg", inc[0].MustString())
+	assert.Equal(t, "src/config", inc[1].MustString())
+}
+
+// root_path "." (the code source is the whole bundle directory) has no basename to
+// nest the archive under, and an include rooted at "." would sweep the bundle's own
+// generated files into the tarball — so a git/include snapshot there is rejected with
+// a message pointing at a subdirectory. (A plain snapshot with root_path "." is not an
+// artifact case and is unaffected.)
+func TestConvertToDabsDotRootPathRejected(t *testing.T) {
+	for _, tc := range []struct{ name, snap string }{
+		{"git", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    git:\n      commit: abc123\n"},
+		{"include", "code_source:\n  type: snapshot\n  snapshot:\n    root_path: .\n    include_paths:\n      - foo\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(dir, "foo"), 0o700))
+			cfg := "experiment_name: dot\ncommand: python train.py\n" +
+				"compute: {accelerator_type: GPU_1xA10, num_accelerators: 1}\n" + tc.snap
+			path := filepath.Join(dir, "run.yaml")
+			require.NoError(t, os.WriteFile(path, []byte(cfg), 0o600))
+			loaded, err := loadRunConfig(path)
+			require.NoError(t, err)
+
+			_, _, err = convertToDabs(t.Context(), loaded, path, dir)
+			require.ErrorContains(t, err, "resolves to the bundle root")
+		})
+	}
 }
 
 func TestConvertToDabsRejectsUnsupported(t *testing.T) {

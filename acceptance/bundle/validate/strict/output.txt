@@ -33,7 +33,7 @@ Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [complex]
   at variables.my_variable.type
   in databricks.yml:6:11
 
-Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [whl jar]
+Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [whl jar tgz]
   at artifacts.my_artifact.type
   in databricks.yml:16:15
 

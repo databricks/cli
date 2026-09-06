@@ -87,7 +87,7 @@ func TestCreatePlainTarball(t *testing.T) {
 	writeRepoFile(t, repo, ".git/config", "x")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createPlainTarball(ctx, repo, out, nil))
+	require.NoError(t, createPlainTarball(ctx, repo, out, nil, false))
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -107,7 +107,7 @@ func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {
 	writeRepoFile(t, repo, ".gitignore", "*.log\n")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createPlainTarball(ctx, repo, out, nil))
+	require.NoError(t, createPlainTarball(ctx, repo, out, nil, false))
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -122,7 +122,7 @@ func TestCreatePlainTarball_IncludePaths(t *testing.T) {
 	writeRepoFile(t, repo, "src/model.py", "print()")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createPlainTarball(ctx, repo, out, []string{"src"}))
+	require.NoError(t, createPlainTarball(ctx, repo, out, []string{"src"}, false))
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -142,7 +142,7 @@ func TestCreatePlainTarball_HonorsNestedGitignoreAndNegation(t *testing.T) {
 	writeRepoFile(t, repo, "nested/keep.tmp", "keep")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil))
+	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil, false))
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -162,7 +162,7 @@ func TestCreatePlainTarball_SkipsDeletedTrackedFiles(t *testing.T) {
 	require.NoError(t, os.Remove(filepath.Join(repo, "deleted.txt")))
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil))
+	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil, true))
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)

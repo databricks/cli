@@ -31,7 +31,9 @@ type fakePM struct{ py, dbc, pyspark, dbcImportErr string }
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
-func (fakePM) EnsurePython(context.Context, string) error      { return nil }
+func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
+	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
+}
 func (fakePM) Provision(context.Context, string, string) error { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
 func (f fakePM) Validate(context.Context, string) (VenvInfo, error) {
@@ -48,8 +50,8 @@ func (noProvisionPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("EnsureAvailable must not be called under --dry-run")
 }
 
-func (noProvisionPM) EnsurePython(context.Context, string) error {
-	return errors.New("EnsurePython must not be called under --dry-run")
+func (noProvisionPM) EnsurePython(context.Context, string) (PythonSelection, error) {
+	return PythonSelection{}, errors.New("EnsurePython must not be called under --dry-run")
 }
 
 func (noProvisionPM) Provision(context.Context, string, string) error {
@@ -71,6 +73,26 @@ type uvMissingPM struct{ fakePM }
 
 func (uvMissingPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("uv not found and install failed")
+}
+
+type recordingPM struct {
+	fakePM
+	minor           string
+	provisionPython string
+	provisionErr    error
+}
+
+func (p *recordingPM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
+	p.minor = minor
+	return PythonSelection{
+		Executable: "/installed/python3.12",
+		Resolution: PythonResolutionInstalledFallback,
+	}, nil
+}
+
+func (p *recordingPM) Provision(_ context.Context, _, python string) error {
+	p.provisionPython = python
+	return p.provisionErr
 }
 
 // cancelPM simulates uv being interrupted: Provision closes entered (so the test
@@ -107,6 +129,48 @@ requires-python = ">=3.10"
 dev = ["databricks-connect~=16.0.0"]
 `), 0o644))
 	return dir
+}
+
+func TestPipelineProvisionsWithSelectedPython(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{}, PM: pm,
+	}
+
+	res, err := p.Run(t.Context())
+
+	require.NoError(t, err)
+	assert.Equal(t, "3.12", pm.minor)
+	assert.Equal(t, "/installed/python3.12", pm.provisionPython)
+	assert.Equal(t, PythonResolutionInstalledFallback, res.PythonResolution)
+	assert.Equal(t, "/installed/python3.12", res.PythonInterpreter)
+}
+
+func TestPipelineRetainsFallbackResolutionWhenProvisioningFails(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+	pm := &recordingPM{
+		fakePM:       fakePM{py: "3.12", dbc: "17.2.0"},
+		provisionErr: errors.New("sync failed"),
+	}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{}, PM: pm,
+	}
+
+	res, err := p.Run(t.Context())
+
+	require.Error(t, err)
+	assert.Equal(t, PythonResolutionInstalledFallback, res.PythonResolution)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrProvision, res.Error.Code)
 }
 
 func newTestServer(t *testing.T) *httptest.Server {
@@ -1200,4 +1264,62 @@ func TestPipelineReportsPhaseStarts(t *testing.T) {
 	require.NoError(t, err)
 	// A full successful run enters every phase exactly once in canonical order.
 	assert.Equal(t, allPhases, rep.started)
+}
+
+func TestPipelineNoConstraintsLeavesExistingPinsUntouched(t *testing.T) {
+	dir := t.TempDir()
+	// An existing project with the user's own requires-python and no managed
+	// [tool.uv] constraint block.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
+name = "demo"
+requires-python = ">=3.9"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`), 0o644))
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, SkipConstraints: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	s := string(data)
+	// requires-python keeps the user's value; the artifact's ==3.12.* is not written.
+	assert.Contains(t, s, `requires-python = ">=3.9"`)
+	assert.NotContains(t, s, "==3.12.*")
+	// No managed [tool.uv] constraint-dependencies block is written.
+	assert.NotContains(t, s, "constraint-dependencies")
+	// databricks-connect is still managed: --no-constraints is orthogonal to it.
+	assert.Contains(t, s, "databricks-connect~=17.2.0")
+}
+
+func TestPipelineNoConstraintsGreenfieldOmitsPins(t *testing.T) {
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, SkipConstraints: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	assert.True(t, res.Greenfield)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	s := string(data)
+	// The artifact's Python pin and constraint-dependencies are not written.
+	assert.NotContains(t, s, "==3.12.*")
+	assert.NotContains(t, s, "constraint-dependencies")
+	// databricks-connect (orthogonal) is still added.
+	assert.Contains(t, s, "databricks-connect~=17.2.0")
 }
