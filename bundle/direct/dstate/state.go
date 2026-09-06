@@ -519,6 +519,8 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		db.stateIDs[key] = entry.ID
 	}
 
+	recording := bool(withDeploymentHistory)
+
 	walPath := db.Path + walSuffix
 	_, err = os.Stat(walPath)
 	switch {
@@ -527,33 +529,48 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	case err != nil:
 		return fmt.Errorf("failed to stat WAL file %s: %w", walPath, err)
 	default: // WAL exists
-		if withRecovery {
+		switch {
+		case recording:
+			// A recording open discards a leftover WAL - the service owns the resources, so a local
+			// log from a crash or a declined deploy is irrelevant, even when recording is refused below.
+			if err := os.Remove(walPath); err != nil {
+				return fmt.Errorf("removing WAL file %s: %w", walPath, err)
+			}
+		case bool(withRecovery):
 			if err := db.replayWAL(ctx); err != nil {
 				return fmt.Errorf("reading state from %s: %w", path, err)
 			}
-		} else if withDeploymentHistory {
-			// Ignore the WAL file. That is not read for deployments that record history.
-		} else {
+		default:
 			return fmt.Errorf("unexpected WAL file found at %s", walPath)
 		}
 	}
 
-	_, stateHasRecordDeploymentHistory := db.Data.Features[featureRecordDeploymentHistory]
-	if !stateHasRecordDeploymentHistory && bool(withDeploymentHistory) {
+	// Reconcile the config against the state. A brand-new deployment is where recording begins, so
+	// the config bootstraps the marker there. On an existing deployment the state is authoritative:
+	// the config can neither start recording one that was not (its resources would be created a
+	// second time) nor stop recording one that is (the service still holds it).
+	_, recorded := db.Data.Features[featureRecordDeploymentHistory]
+	switch {
+	case recording && !recorded && len(db.Data.State) == 0:
+		if db.Data.Features == nil {
+			db.Data.Features = make(map[string]struct{}, 1)
+		}
+		db.Data.Features[featureRecordDeploymentHistory] = struct{}{}
+		recorded = true
+	case recording && !recorded:
 		return errors.New(`this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
 
-		To record this bundle's history, start it over as a new deployment:
-		  1. remove experimental.record_deployment_history from your bundle configuration
-		  2. run "databricks bundle destroy" to delete the existing resources
-		  3. add experimental.record_deployment_history back and deploy again`)
+To record this bundle's history, start it over as a new deployment:
+  1. remove experimental.record_deployment_history from your bundle configuration
+  2. run "databricks bundle destroy" to delete the existing resources
+  3. add experimental.record_deployment_history back and deploy again`)
+	case !recording && recorded:
+		return ErrUnsettingRecording
 	}
 
 	db.storageBackend = StorageBackendWorkspaceFilesystem
-	if stateHasRecordDeploymentHistory {
+	if recorded {
 		db.storageBackend = StorageBackendDeploymentMetadataService
-		if !bool(withDeploymentHistory) {
-			return ErrUnsettingRecording
-		}
 
 		// The service is the source of truth for a recorded deployment; the file is a tombstone
 		// carrying only the marker, and applyDMSState loads the resources the service holds.

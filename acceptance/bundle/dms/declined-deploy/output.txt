@@ -6,7 +6,7 @@ Created schemas.foo
 Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --dms --get //api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/bundle/deployments",
@@ -129,7 +129,27 @@ To proceed, use --auto-approve after reviewing the plan above.
 Files: 4 uploaded, 0 deleted
 
 === Nothing was recorded for the declined deploy - no version, so none to abort
->>> print_requests.py --dms //api/2.0/bundle
+>>> print_requests.py --dms --get //api/2.0/bundle
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
+}
 
 === The recorded resources are unchanged by the decline: the schema is still at version 1
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
