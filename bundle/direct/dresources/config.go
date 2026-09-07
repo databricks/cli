@@ -49,11 +49,11 @@ func (b *BackendDefaultRule) UnmarshalYAML(unmarshal func(any) error) error {
 // object's WhenSet field is set. Inside such an object, a field the config never declared
 // coming back set from the remote is an addition by the backend, not drift.
 //
-// Field is a prefix pattern selecting the object (omitted = the resource root); WhenSet is
-// the name of a field within that object which gates the rule.
+// Field is a prefix pattern selecting the object (omitted = the resource root); WhenSet is a
+// path within that object, relative to it, whose value gates the rule.
 type RemoteAdditionRule struct {
 	Field   *structpath.PatternNode `yaml:"field"`
-	WhenSet string                  `yaml:"when_set"`
+	WhenSet *structpath.PathNode    `yaml:"when_set"`
 }
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.

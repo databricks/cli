@@ -598,8 +598,10 @@ func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *str
 		if !path.HasPatternPrefix(rule.Field) {
 			continue
 		}
-		gate := structpath.NewDotString(path.Prefix(rule.Field.Len()), rule.WhenSet)
-		value, err := structaccess.Get(newState, gate)
+		// Resolve the gate in two steps: the concrete object the rule matched, then the gate
+		// path relative to it. The wildcards in Field are filled in from the change path, so
+		// each object is gated on its own value.
+		object, err := structaccess.Get(newState, path.Prefix(rule.Field.Len()))
 		if err != nil {
 			// The gated object is absent from the config entirely (e.g. the remote grew a
 			// whole new_cluster the bundle does not declare), so there is no policy to gate
@@ -607,7 +609,8 @@ func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *str
 			// are validated against the state type by TestResourcesYMLRemoteAdditionGates.
 			continue
 		}
-		if allEmpty(value) {
+		value, err := structaccess.Get(object, rule.WhenSet)
+		if err != nil || allEmpty(value) {
 			continue
 		}
 		return deployplan.ReasonPolicyManaged, true

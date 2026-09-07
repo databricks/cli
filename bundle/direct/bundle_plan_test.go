@@ -411,7 +411,7 @@ func TestShouldSkipRemoteAddition(t *testing.T) {
 	require.NoError(t, err)
 	cfg := &dresources.ResourceLifecycleConfig{
 		IgnoreRemoteAdditions: []dresources.RemoteAdditionRule{
-			{Field: jobCluster, WhenSet: "policy_id"},
+			{Field: jobCluster, WhenSet: structpath.MustParsePath("policy_id")},
 		},
 	}
 
@@ -423,6 +423,12 @@ func TestShouldSkipRemoteAddition(t *testing.T) {
 		JobClusterKey: "small",
 		NewCluster:    &compute.ClusterSpec{},
 	}}}
+	// when_set resolves against the concrete object the rule matched, so two clusters in one
+	// job are gated independently.
+	mixed := &jobs.JobSettings{JobClusters: []jobs.JobCluster{
+		{JobClusterKey: "gated", NewCluster: &compute.ClusterSpec{PolicyId: "p1"}},
+		{JobClusterKey: "plain", NewCluster: &compute.ClusterSpec{}},
+	}}
 
 	const tagPath = "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']"
 
@@ -481,6 +487,20 @@ func TestShouldSkipRemoteAddition(t *testing.T) {
 			state:    withPolicy,
 			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
 			expected: false,
+		},
+		{
+			name:     "sibling cluster with a policy does not gate one without",
+			path:     "job_clusters[job_cluster_key='plain'].new_cluster.custom_tags['CostCenter']",
+			state:    mixed,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "the cluster with the policy is gated on its own policy_id",
+			path:     "job_clusters[job_cluster_key='gated'].new_cluster.custom_tags['CostCenter']",
+			state:    mixed,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: true,
 		},
 		{
 			// The remote grew a whole cluster the config does not declare: there is no
