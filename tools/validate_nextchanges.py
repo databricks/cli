@@ -217,7 +217,8 @@ def fragment_on_base(path, base_ref, root):
                 timeout=10,
                 cwd=root,
             )
-        except (OSError, subprocess.SubprocessError):
+        except (OSError, subprocess.SubprocessError) as e:
+            print(f"git cat-file failed: {e}", file=sys.stderr)
             return False
         if result.returncode == 0:
             return True
