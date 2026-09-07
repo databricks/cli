@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/auth/u2m/cache"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"golang.org/x/oauth2"
 )
 
@@ -19,7 +19,7 @@ import (
 // their cached credentials are no longer being read.
 //
 // errors.Is(err, cache.ErrNotFound) continues to return true because the
-// wrap uses %w; the SDK's branches on ErrNotFound still fire.
+// wrap uses %w; PersistentAuth's branches on ErrNotFound still fire.
 //
 // Store is delegated unchanged; only Lookup needs the message polish.
 type notFoundHintCache struct {
@@ -45,7 +45,7 @@ func (c *notFoundHintCache) Lookup(key string) (*oauth2.Token, error) {
 
 // notFoundHint replaces cache.ErrNotFound's terse "token not found" string
 // with an actionable message while still satisfying errors.Is(err,
-// cache.ErrNotFound). The SDK's loadToken wraps every cache error with
+// cache.ErrNotFound). PersistentAuth.loadToken wraps every cache error with
 // "cache: %w", and fmt.Errorf("...: %w", ErrNotFound) would tack the
 // original "token not found" onto the end of our hint, producing
 // "cache: <hint>: token not found". A custom type lets us own the
