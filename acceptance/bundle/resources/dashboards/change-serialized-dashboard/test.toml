@@ -9,6 +9,10 @@ Ignore = [
 # in-memory plan; both variants share the request goldens below.
 EnvMatrix.READPLAN = ["", "1"]
 
+# Deploying from a pre-computed plan when the target has DMS deployment history
+# is not supported; this variant is skipped.
+EnvMatrixExclude.dms_readplan_mismatch = ["READPLAN=1", "DMS=true"]
+
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
