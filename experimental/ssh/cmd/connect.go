@@ -7,7 +7,24 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
+
+// resolveServerTimeout returns the lifetime to submit the SSH tunnel server job with.
+//
+// Before --server-timeout existed the lifetime was max(24h, --shutdown-delay), so
+// `ssh setup --shutdown-delay=48h` produced a working 48h tunnel and persisted that delay into
+// the generated ProxyCommand. Keep honoring it whenever --server-timeout is not set: OpenSSH
+// runs a persisted ProxyCommand verbatim, so a user whose host config predates the flag cannot
+// add it, and rejecting the pair would break `ssh <name>` with an error naming a flag they have
+// no way to pass. An explicit --server-timeout always wins, and ClientOptions.Validate still
+// rejects a shutdown delay that outlives a lifetime the user asked for explicitly.
+func resolveServerTimeout(flags *pflag.FlagSet, serverTimeout, shutdownDelay time.Duration) time.Duration {
+	if flags.Changed("server-timeout") {
+		return serverTimeout
+	}
+	return max(serverTimeout, shutdownDelay)
+}
 
 func newConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -123,7 +140,7 @@ Connect to a dedicated cluster:
 			HandoverTimeout:      handoverTimeout,
 			KeepaliveInterval:    defaultKeepaliveInterval,
 			ReleasesDir:          releasesDir,
-			ServerTimeout:        serverTimeout,
+			ServerTimeout:        resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
 			TaskStartupTimeout:   startupTimeout,
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,

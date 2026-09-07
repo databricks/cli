@@ -56,7 +56,7 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 			SSHConfigPath:    sshConfigPath,
 			ShutdownDelay:    shutdownDelay,
 			MaxClients:       maxClients,
-			ServerTimeout:    serverTimeout,
+			ServerTimeout:    resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
 			Profile:          wsClient.Config.Profile,
 			AutoApprove:      autoApprove,
 		}
