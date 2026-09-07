@@ -5,7 +5,7 @@ trace $CLI bundle deploy
 trace print_requests.py --dms --get //api/2.0/bundle
 
 title "The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE; the service holds the schema at version 1"
-trace $CLI bundle plan -o json
+dms_plan
 trace print_requests.py --dms --get //api/2.0/bundle
 trace print_state.py --no-dms
 

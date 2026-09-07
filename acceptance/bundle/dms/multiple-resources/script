@@ -5,7 +5,7 @@ trace $CLI bundle deploy
 trace print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
 
 title "The plan records DEPLOYMENT_METADATA_SERVICE as its backend"
-trace $CLI bundle plan -o json
+dms_plan
 
 title "The service lists all five resources at version 1"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-multiple-resources-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
@@ -19,7 +19,7 @@ trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --sort --oneline
 
 title "The plan records DEPLOYMENT_METADATA_SERVICE as its backend"
-trace $CLI bundle plan -o json
+dms_plan
 
 title "The service still lists all five resources, now at version 2"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-multiple-resources-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')

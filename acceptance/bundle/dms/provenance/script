@@ -9,7 +9,7 @@ add_repl.py "$(git rev-parse HEAD)" COMMIT
 trace print_requests.py --dms //versions
 
 title "The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend"
-trace $CLI bundle plan -o json
+dms_plan
 
 title "The service denormalizes them onto the deployment, so a reader gets the provenance of the latest version"
 deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-provenance-${UNIQUE_NAME}/dev/state/resources.deployment.json" -o json | python3 -c 'import sys,json; print(json.load(sys.stdin)["object_id"])')

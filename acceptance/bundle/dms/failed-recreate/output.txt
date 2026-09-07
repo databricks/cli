@@ -69,34 +69,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "deployment_id": "[NUMID]",
   "next_version_id": "2",
   "last_version_id": "1",
-  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
-  "plan": {
-    "resources.schemas.foo": {
-      "action": "skip",
-      "remote_state": {
-        "browse_only": false,
-        "catalog_name": "main",
-        "catalog_type": "MANAGED_CATALOG",
-        "comment": "v1",
-        "created_at": [UNIX_TIME_MILLIS][0],
-        "created_by": "[USERNAME]",
-        "effective_predictive_optimization_flag": {
-          "inherited_from_name": "[METASTORE_NAME]",
-          "inherited_from_type": "METASTORE",
-          "value": "ENABLE"
-        },
-        "enable_predictive_optimization": "INHERIT",
-        "full_name": "main.dms_failed_recreate_schema_[UNIQUE_NAME]",
-        "metastore_id": "[UUID]",
-        "name": "dms_failed_recreate_schema_[UNIQUE_NAME]",
-        "owner": "[USERNAME]",
-        "schema_id": "[UUID]",
-        "updated_at": [UNIX_TIME_MILLIS][0],
-        "updated_by": "[USERNAME]"
-      }
-    }
-  }
+  "storage_backend": "DEPLOYMENT_METADATA_SERVICE"
 }
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === After deploy, the service lists the resource at version 1
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
