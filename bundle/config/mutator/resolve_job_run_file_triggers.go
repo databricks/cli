@@ -80,6 +80,11 @@ func (*resolveJobRunFileTriggers) Apply(ctx context.Context, b *bundle.Bundle) d
 func listSyncableRelPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) {
 	// Match sync's effective include set, not just Sync.Include, so a pattern can
 	// hash the internal and AI-snapshot dirs sync force-includes.
+	//
+	// This is the candidate set, not sync's post-snapshot upload set: NewSnapshotState
+	// additionally drops files whose notebook type it cannot determine, such as a
+	// malformed .ipynb. Those stay watched on purpose - editing one is exactly when the
+	// run should re-fire - so a pattern can hash a file that this deploy will not upload.
 	includes, err := b.GetSyncIncludePatterns(ctx)
 	if err != nil {
 		return nil, err
