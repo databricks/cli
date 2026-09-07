@@ -4,7 +4,3 @@ Ignore = [
 ]
 
 EnvMatrix.READPLAN = ["", "1"]
-
-# Deploying from a pre-computed plan when the target has DMS deployment history
-# is not supported; this variant is skipped.
-EnvMatrixExclude.dms_readplan_mismatch = ["READPLAN=1", "DMS=true"]

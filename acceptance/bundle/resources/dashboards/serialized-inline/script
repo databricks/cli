@@ -11,7 +11,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp.py > tmp.plan.json
+$CLI bundle plan -o json > tmp.plan.json
 $CLI bundle deploy $(readplanarg tmp.plan.json)
 replace_ids.py
 

@@ -15,7 +15,7 @@ title "redeploy re-fires with unchanged config"
 trace $CLI bundle plan
 # Save the plan so the READPLAN=1 variant deploys the fingerprint minted here.
 # The deploys are not traced: readplanarg makes the command line differ per variant.
-$CLI bundle plan -o json | nostamp.py > tmp.plan.json
+$CLI bundle plan -o json > tmp.plan.json
 trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
 title "bundle deploy\n"
 $CLI bundle deploy $(readplanarg tmp.plan.json)
@@ -34,7 +34,7 @@ update_file.py databricks.yml "      lifecycle:
           - on_bundle_deploy: true
 " ""
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp.py > tmp.plan.json
+$CLI bundle plan -o json > tmp.plan.json
 trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
 title "bundle deploy\n"
 $CLI bundle deploy $(readplanarg tmp.plan.json)
