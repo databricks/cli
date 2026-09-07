@@ -13,31 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// knownDivergences lists the disagreements the bundle's resource types have with
-// encoding/json today. Each entry is a bug somewhere other than this test; the test
-// enumerates them so that a *new* disagreement fails while these are worked through.
-//
-// Nothing in the CLI marshals a resource config type with encoding/json today -- bundle
-// validate -o json marshals the dyn tree -- so none of these is user-visible yet. They
-// are one json.Marshal away from being so.
-var knownDivergences = map[string][]string{
-	// The resource type embeds another struct that declares MarshalJSON and does not
-	// declare its own, so the embedded marshaler takes over and every field the outer
-	// struct adds -- id, url, lifecycle, permissions -- never reaches the wire. Fixed by
-	// giving the resource type the marshaler pair resources.Job has.
-	"dashboards":             baseResourceFields("file_path", "permissions"),
-	"genie_spaces":           baseResourceFields("file_path", "permissions"),
-	"database_instances":     baseResourceFields("permissions"),
-	"database_catalogs":      baseResourceFields(),
-	"synced_database_tables": baseResourceFields(),
-	"postgres_projects":      baseResourceFields("permissions"),
-	"postgres_branches":      baseResourceFields(),
-	"postgres_endpoints":     baseResourceFields(),
-	"postgres_catalogs":      baseResourceFields(),
-	"postgres_databases":     baseResourceFields(),
-	"postgres_roles":         baseResourceFields(),
-	"postgres_synced_tables": baseResourceFields(),
-}
+// knownDivergences is empty: #6542 added MarshalJSON to the resource types that were
+// previously inheriting an embedded SDK marshaler, so all resources now serialise their
+// BaseResource fields (id, url, lifecycle, permissions) correctly.
+var knownDivergences = map[string][]string{}
 
 // walkDuplicates lists the paths structwalk visits twice for a resource, because the resource
 // embeds BaseResource alongside an SDK type that declares the same json name, or two structs
