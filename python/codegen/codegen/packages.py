@@ -62,18 +62,20 @@ RESOURCE_NAMESPACE = _load_resource_namespace()
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
 
 RENAMES = {
+    # time.Time is a scalar serialized as an RFC3339 string; the Go side models
+    # it as a string too (see libs/dyn/convert/sdk_native_types.go).
+    "time.Time": "str",
     "string": "str",
     "boolean": "bool",
     "integer": "int",
     "number": "float",
     "int64": "int",
     "float64": "float",
-    # time.Time is a scalar serialized as an RFC3339 string; the Go side models
-    # it as a string too (see libs/dyn/convert/sdk_native_types.go).
-    "time.Time": "str",
 }
 
 PRIMITIVES = [
+    # Treated as str
+    "time.Time",
     "string",
     "boolean",
     "integer",
@@ -82,15 +84,12 @@ PRIMITIVES = [
     "int",
     "int64",
     "float64",
-    # Treated as str (see RENAMES): no package/import and terminal for reachability.
-    "time.Time",
 ]
 
 
 def get_class_name(ref: str) -> str:
     name = ref.split("/")[-1]
 
-    # time.Time keeps its package qualifier in RENAMES; match before stripping it.
     if name in RENAMES:
         return RENAMES[name]
 
