@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Generate and save plan WITHOUT DMS recording"
+$CLI bundle plan -o json > tmp.plan.json
+trace jq '{storage_backend, deployment_id, next_version_id}' < tmp.plan.json
+
+title "Enable DMS recording and try to deploy the non-DMS plan"
+# Corrupt the plan by removing the storage_backend field to simulate a non-DMS plan
+jq 'del(.storage_backend)' tmp.plan.json > tmp.plan.corrupted.json
+# Now enable DMS in the config
+update_file.py databricks.yml 'bundle:' 'experimental:
+  record_deployment_history: true
+
+bundle:'
+trace musterr $CLI bundle deploy --plan tmp.plan.corrupted.json
+
+rm -f tmp.plan.json tmp.plan.corrupted.json
