@@ -148,6 +148,48 @@ func TestRoundtripAllFieldsInputConfigType(t *testing.T) {
 	testRoundtripAllFields(t, "InputConfigType", (*Adapter).InputConfigType, []string{"cluster_policies"})
 }
 
+// TestMarshalerValueReceiver asserts that no adapter surface type declares
+// MarshalJSON on a pointer receiver only.
+//
+// A pointer-receiver MarshalJSON is satisfied by *T but not by T, and
+// encoding/json reaches it only for an addressable value. json.Marshal(&x) then
+// uses the marshaler while json.Marshal(x) silently falls back to plain
+// struct-field encoding -- two code paths for one type, disagreeing on more than
+// key order, because encoding/json knows nothing about ForceSendFields (tagged
+// json:"-"). A force-sent zero value survives one path and vanishes on the other.
+//
+// The round-trip tests above cannot catch this: they build values with
+// reflect.New, so they only ever marshal a pointer.
+func TestMarshalerValueReceiver(t *testing.T) {
+	marshaler := reflect.TypeFor[json.Marshaler]()
+
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		t.Run(resourceType, func(t *testing.T) {
+			for _, surface := range []struct {
+				label  string
+				typeOf func(*Adapter) reflect.Type
+			}{
+				{"InputConfigType", (*Adapter).InputConfigType},
+				{"StateType", (*Adapter).StateType},
+				{"RemoteType", (*Adapter).RemoteType},
+			} {
+				typ := surface.typeOf(adapter).Elem()
+				// A type with no marshaler at all is fine: encoding/json handles it
+				// the same way by value and by pointer. Only the asymmetry is a bug.
+				if !reflect.PointerTo(typ).Implements(marshaler) {
+					continue
+				}
+				require.True(t, typ.Implements(marshaler),
+					"%s %s: %s declares MarshalJSON on a pointer receiver only; change it to a value receiver so marshalling by value and by pointer agree",
+					surface.label, resourceType, typ)
+			}
+		})
+	}
+}
+
 // fillNonZero recursively populates v with non-zero values so that every
 // serializable field is observable in a round-trip. It skips ForceSendFields
 // (json:"-") and bounds recursion depth to avoid runaway on self-referential
