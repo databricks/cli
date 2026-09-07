@@ -12,7 +12,7 @@ import (
 )
 
 func TestGenerateHostConfigSetsServerAliveInterval(t *testing.T) {
-	config := GenerateHostConfig("myhost", "root", "/keys/myhost", "databricks ssh connect --proxy")
+	config := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/myhost", "databricks ssh connect --proxy")
 
 	// `ssh setup` and `--ide` reach ssh through this block and nothing else, so the option has to
 	// be in it.

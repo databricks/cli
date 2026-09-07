@@ -101,13 +101,18 @@ type ClientOptions struct {
 	ClientPublicKeyName string
 	// Client private key name located in the ssh-tunnel secrets scope.
 	ClientPrivateKeyName string
+	// Server public key name located in the ssh-tunnel secrets scope. The server publishes
+	// its host key there; the client pins it so ssh can verify the server.
+	ServerPublicKeyName string
 	// If true, the CLI will attempt to start the cluster if it is not running.
 	AutoStartCluster bool
 	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand while spawning ssh client.
 	Profile string
 	// Additional arguments to pass to the SSH client in the non proxy mode.
 	AdditionalArgs []string
-	// Optional path to the user known hosts file.
+	// Optional path to the known hosts file for this session. Defaults to
+	// ~/.databricks/ssh-tunnel-known-hosts/<session>. The CLI owns this file and rewrites
+	// it with the server's host key on every connection.
 	UserKnownHostsFile string
 	// Liteswap header value for traffic routing (dev/test only).
 	Liteswap string
@@ -441,6 +446,15 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		log.Infof(ctx, "Cluster ID (from serverless job): %s", clusterID)
 	}
 
+	// Pin the running server's host key for this session name. In proxy mode this happens
+	// before the tunnel carries a single byte, so it is in place well before the ssh client
+	// that spawned us verifies the key during the key exchange.
+	opts.UserKnownHostsFile, err = pinServerHostKey(ctx, client, sessionID, secretScopeName, opts)
+	if err != nil {
+		outcome.errorCategory = protos.SshTunnelErrorCategoryKeyGenerationFailed
+		return err
+	}
+
 	if !opts.ProxyMode {
 		cmdio.LogString(ctx, "Connected!")
 	}
@@ -457,6 +471,37 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 		log.Infof(ctx, "Additional SSH arguments: %v", opts.AdditionalArgs)
 		return spawnSSHClient(ctx, client, userName, keyPath, serverPort, clusterID, opts)
 	}
+}
+
+// pinServerHostKey records the running server's host key as the entry ssh accepts for this
+// session, and returns the path of the known_hosts file it wrote.
+//
+// The server publishes its host key to the session's secret scope when it starts and reuses
+// it for every sshd it launches, which makes the scope the authority on the key. Reading it
+// here replaces whatever was recorded for this session name before, so a key left by an
+// earlier instance - or by the same name in another workspace, since a name is unique only
+// within one - can no longer fail an otherwise valid connection (DECO-27882).
+func pinServerHostKey(ctx context.Context, client *databricks.WorkspaceClient, sessionID, secretScopeName string, opts ClientOptions) (string, error) {
+	knownHostsPath := opts.UserKnownHostsFile
+	if knownHostsPath == "" {
+		var err error
+		knownHostsPath, err = sshconfig.GetKnownHostsPath(ctx, sessionID)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	publicKey, err := keys.GetSecret(ctx, client, secretScopeName, opts.ServerPublicKeyName)
+	if err != nil {
+		return "", fmt.Errorf("failed to read the SSH server host key: %w", err)
+	}
+
+	if err := sshconfig.PinHostKey(knownHostsPath, sessionID, publicKey); err != nil {
+		return "", err
+	}
+
+	log.Infof(ctx, "Pinned the SSH server host key for %s in %s", sessionID, knownHostsPath)
+	return knownHostsPath, nil
 }
 
 func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
@@ -501,7 +546,7 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
-	hostConfig := sshconfig.GenerateHostConfig(hostName, userName, keyPath, proxyCommand)
+	hostConfig := sshconfig.GenerateHostConfig(hostName, userName, keyPath, opts.UserKnownHostsFile, proxyCommand)
 
 	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, true)
 	if err != nil {
@@ -819,18 +864,20 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome string) []string {
 // allocation (-t) for the interactive case is added before the host: ssh stops
 // parsing options at the destination, so a -t placed after the host would be
 // treated as part of the remote command rather than as ssh's force-PTY flag.
+//
+// Host key checking is strict rather than accept-new because the caller has already
+// pinned the server's key in opts.UserKnownHostsFile (see pinServerHostKey), so there is
+// nothing left to accept on trust.
 func buildSSHArgs(userName, privateKeyPath, proxyCommand, hostName, wsHome string, opts ClientOptions) []string {
 	sshArgs := []string{
 		"-l", userName,
 		"-i", privateKeyPath,
 		"-o", "IdentitiesOnly=yes",
-		"-o", "StrictHostKeyChecking=accept-new",
+		"-o", "StrictHostKeyChecking=yes",
+		"-o", "UserKnownHostsFile=" + opts.UserKnownHostsFile,
 		"-o", "ConnectTimeout=360",
 		"-o", "ServerAliveInterval=" + strconv.Itoa(sshconfig.ServerAliveIntervalSeconds),
 		"-o", "ProxyCommand=" + proxyCommand,
-	}
-	if opts.UserKnownHostsFile != "" {
-		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
 	}
 	if len(opts.AdditionalArgs) == 0 {
 		sshArgs = append(sshArgs, "-t")
@@ -1158,10 +1205,11 @@ func (w *tailWriter) String() string {
 	return string(w.buf)
 }
 
-// hostKeyChangedHint returns advice for clearing a stale known_hosts entry when ssh's stderr
-// shows a host-key-verification failure, or "" if the failure was something else. A cluster that
-// has been recreated keeps the same connection name but gets a new host key, so the old entry no
-// longer matches and ssh aborts the connection.
+// hostKeyChangedHint returns advice when ssh's stderr shows a host-key-verification failure,
+// or "" if the failure was something else. The CLI pins the key the workspace published for
+// this session into knownHostsFile immediately before connecting, so the entry ssh rejected
+// is not a leftover from an earlier session: the server that answered is presenting a
+// different key than the one the workspace recorded for it.
 func hostKeyChangedHint(stderr, hostName, knownHostsFile string) string {
 	// "Host key verification failed." is OpenSSH's fixed message for this case; matching it is the
 	// only signal ssh gives (the "don't branch on err.Error()" rule is about Go errors, not the
@@ -1169,13 +1217,10 @@ func hostKeyChangedHint(stderr, hostName, knownHostsFile string) string {
 	if !strings.Contains(stderr, "Host key verification failed") {
 		return ""
 	}
-	cmd := "ssh-keygen -R " + hostName
-	if knownHostsFile != "" {
-		// ssh-keygen -R defaults to ~/.ssh/known_hosts, so name the custom file explicitly.
-		cmd += " -f " + knownHostsFile
-	}
-	return "The host key for " + hostName + " has changed. " +
-		"Remove the stale entry and reconnect:\n  " + cmd
+	return "The SSH server answering for " + hostName + " presented a host key that does not match the one " +
+		"the workspace published for it.\nThe CLI refreshed that key in " + knownHostsFile +
+		" just before connecting, so this is not a stale local entry: the tunnel reached a server " +
+		"the workspace does not know about"
 }
 
 func usagePolicyMatches(storedPolicy, requestedPolicy string) bool {

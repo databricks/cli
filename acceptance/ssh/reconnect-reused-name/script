@@ -1,0 +1,37 @@
+# DECO-27882: reconnecting with a name used before must not fail on the host key
+# recorded for that name earlier. The tunnel's host key lives in the workspace, and the
+# CLI pins it for the connection name, so a key recorded by an earlier instance (or by
+# the same name in another workspace) is replaced rather than tripping strict checking.
+#
+# The test server backs the /ssh websocket with a real sshd whose host key comes from the
+# session's secret scope, so this asserts a full handshake against a pinned key. Skip when
+# sshd is absent (only task test-exp-ssh provisions it).
+if [ -z "$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 2>/dev/null)" ]; then
+  echo "SKIP_TEST sshd (openssh-server) not installed"
+  exit 0
+fi
+
+# No release artifacts locally and they're never executed; stand in empty archives.
+mkdir -p releases
+: >releases/databricks_cli_linux_amd64.zip
+: >releases/databricks_cli_linux_arm64.zip
+CLI_RELEASES_DIR="$PWD/releases"
+
+# The state a user reconnecting with a reused name is in: an entry for this connection
+# name, pinned days earlier, whose key no longer belongs to anything.
+STALE_KEY=AAAAC3NzaC1lZDI1NTE5AAAAICTzJweKcgiNoBUAyuvCY2Qu1Od8mKBON5aJeA03Nl+D
+echo "reused-name ssh-ed25519 $STALE_KEY" >known_hosts
+
+title "CLI ssh connect with a stale host key for the connection name\n"
+errcode $CLI ssh connect --name reused-name --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'"
+
+title "The stale key is replaced by the one the workspace published\n"
+if grep -q "$STALE_KEY" known_hosts; then
+  echo "stale key still pinned"
+else
+  echo "stale key replaced"
+fi
+trace grep -c "^reused-name ssh-" known_hosts
+
+title "Reconnecting to the running server keeps working\n"
+errcode $CLI ssh connect --name reused-name --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'"

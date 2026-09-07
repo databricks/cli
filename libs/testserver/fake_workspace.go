@@ -248,6 +248,13 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
+	// serves, generated on first use. See sshTunnelHostKey.
+	sshTunnelHostKeyPEM []byte
+	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
+	// to the tunnel's secret scope so a client can pin it.
+	sshTunnelHostPublicKey []byte
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {

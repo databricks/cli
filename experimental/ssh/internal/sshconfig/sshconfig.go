@@ -213,15 +213,20 @@ func PromptRecreateConfig(ctx context.Context, hostName string) (bool, error) {
 	return response, nil
 }
 
-func GenerateHostConfig(hostName, userName, identityFile, proxyCommand string) string {
+// GenerateHostConfig renders the host block for a tunnel connection. Host key checking is
+// strict rather than accept-new: the ProxyCommand pins the server's key (see PinHostKey)
+// into knownHostsFile before ssh gets as far as verifying it, so there is no first
+// connection that has to be taken on trust.
+func GenerateHostConfig(hostName, userName, identityFile, knownHostsFile, proxyCommand string) string {
 	return fmt.Sprintf(`
 Host %s
     User %s
     ConnectTimeout 360
     ServerAliveInterval %d
-    StrictHostKeyChecking accept-new
+    StrictHostKeyChecking yes
+    UserKnownHostsFile %q
     IdentitiesOnly yes
     IdentityFile %q
     ProxyCommand %s
-`, hostName, userName, ServerAliveIntervalSeconds, identityFile, proxyCommand)
+`, hostName, userName, ServerAliveIntervalSeconds, knownHostsFile, identityFile, proxyCommand)
 }

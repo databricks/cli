@@ -63,7 +63,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().StringVar(&releasesDir, "releases-dir", "", "Directory for local SSH tunnel development releases")
 	cmd.Flags().MarkHidden("releases-dir")
 
-	cmd.Flags().StringVar(&userKnownHostsFile, "user-known-hosts-file", "", "Path to user known hosts file for SSH client")
+	cmd.Flags().StringVar(&userKnownHostsFile, "user-known-hosts-file", "", "Path to the known hosts file for this connection, owned and rewritten by the CLI")
 	cmd.Flags().MarkHidden("user-known-hosts-file")
 
 	cmd.Flags().StringVar(&liteswap, "liteswap", "", "Liteswap header value for traffic routing (dev/test only)")
@@ -126,6 +126,7 @@ Connect to a dedicated cluster:
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,
 			ClientPrivateKeyName: clientPrivateKeyName,
+			ServerPublicKeyName:  serverPublicKeyName,
 			UserKnownHostsFile:   userKnownHostsFile,
 			Liteswap:             liteswap,
 			SkipSettingsCheck:    skipSettingsCheck,

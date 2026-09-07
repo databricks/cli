@@ -1,0 +1,18 @@
+Cloud = false
+
+# The connection name is explicit, so nothing here depends on the local host name.
+
+# Local runs stage stand-in release archives here; not part of the golden output.
+Ignore = [
+  "releases",
+  "known_hosts",
+]
+
+# Linux-only: the local run drives a real sshd, reliable only there (and where
+# task test-exp-ssh provisions it). Absent GOOS keys default to enabled, so the
+# other OSes must be disabled explicitly.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

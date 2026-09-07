@@ -39,7 +39,14 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, proxyCommand)
+	// The ProxyCommand writes this file before the connection reaches host key
+	// verification, so it does not have to exist yet.
+	knownHostsPath, err := sshconfig.GetKnownHostsPath(ctx, opts.ClusterID)
+	if err != nil {
+		return "", err
+	}
+
+	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, knownHostsPath, proxyCommand)
 	return hostConfig, nil
 }
 
