@@ -155,7 +155,7 @@ func setupTestClientWithDialHook(ctx context.Context, t *testing.T, serverURL st
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
-	clientProxy := newProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
+	clientProxy := newProxyConnection(func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
 		if onDial != nil {
 			onDial()
 		}

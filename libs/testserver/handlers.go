@@ -791,6 +791,15 @@ func AddDefaultHandlers(server *Server) {
 		return Response{Body: ""}
 	})
 
+	// /capabilities reports which optional parts of the tunnel protocol the server speaks.
+	// This fake drives sshd directly over the websocket rather than running the CLI's own
+	// proxy server, so it has none of the session bookkeeping a resume needs and says so.
+	// The resume protocol itself is covered by the proxy package's tests, which run the
+	// real server implementation.
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/capabilities", func(req Request) any {
+		return Response{Body: map[string]bool{"resume": false}}
+	})
+
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
 
 	// Secrets ACLs:

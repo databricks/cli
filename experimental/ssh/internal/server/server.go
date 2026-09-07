@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -107,10 +108,12 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	http.Handle("/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/metadata", serveMetadata)
 	http.HandleFunc("/logs", logBuf.serveHTTP)
+	http.HandleFunc("/capabilities", serveCapabilities)
 
 	http.Handle("/driver-proxy-http/ssh", proxy.NewProxyServer(ctx, connections, createServerCommand))
 	http.HandleFunc("/driver-proxy-http/metadata", serveMetadata)
 	http.HandleFunc("/driver-proxy-http/logs", logBuf.serveHTTP)
+	http.HandleFunc("/driver-proxy-http/capabilities", serveCapabilities)
 
 	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)
 
@@ -119,6 +122,16 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		r.URL.Path = path.Clean(r.URL.Path)
 		http.DefaultServeMux.ServeHTTP(w, r)
 	}))
+}
+
+// serveCapabilities tells the client which optional parts of the tunnel protocol this server
+// speaks. A server from an older CLI has no such route and returns 404, which the client reads as
+// "none of them" - the negotiation this endpoint exists for.
+func serveCapabilities(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]bool{"resume": true}); err != nil {
+		http.Error(w, "Failed to write capabilities", http.StatusInternalServerError)
+	}
 }
 
 func serveMetadata(w http.ResponseWriter, r *http.Request) {
