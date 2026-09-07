@@ -1,5 +1,4 @@
-# Local only: the failure is injected, and fault.py registers its rule on the fake, which
-# a cloud run does not have. Simulating it for real instead - a catalog or principal that
-# does not exist - does not work either: the fake accepts both, so the case would stop
-# failing locally. Making it portable needs the fake to model that existence.
-Cloud = false
+# The recreate fails naturally by pointing the schema at a catalog that does not
+# exist - the fake models catalog existence, so this fails the same way locally and
+# on cloud without fault injection.
+Cloud = true

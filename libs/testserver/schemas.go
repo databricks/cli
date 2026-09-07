@@ -29,6 +29,18 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 		}
 	}
 
+	// UC rejects a schema whose parent catalog does not exist; model it so a deploy into a
+	// missing catalog fails the same way locally as on cloud.
+	if _, ok := s.Catalogs[schema.CatalogName]; !ok {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body: map[string]string{
+				"error_code": "CATALOG_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Catalog '%s' does not exist.", schema.CatalogName),
+			},
+		}
+	}
+
 	// UC normalizes schema names to lowercase.
 	schema.Name = strings.ToLower(schema.Name)
 	schema.FullName = schema.CatalogName + "." + schema.Name

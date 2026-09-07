@@ -467,7 +467,12 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PipelineUpdates:     map[string]bool{},
 		Monitors:            map[string]catalog.MonitorInfo{},
 		Apps:                map[string]apps.App{},
-		Catalogs:            map[string]catalog.CatalogInfo{},
+		// Seed the "main" catalog: it exists on every real workspace, and schema
+		// creation now checks the catalog exists, so tests that deploy schemas into
+		// main (the common case) keep working without creating it first.
+		Catalogs: map[string]catalog.CatalogInfo{
+			"main": {Name: "main", FullName: "main", CatalogType: catalog.CatalogTypeManagedCatalog},
+		},
 		ExternalLocations:   map[string]catalog.ExternalLocationInfo{},
 		Schemas:             map[string]catalog.SchemaInfo{},
 		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
