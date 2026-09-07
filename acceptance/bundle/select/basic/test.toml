@@ -8,4 +8,3 @@ EnvMatrix.READPLAN = ["", "1"]
 # databricks.yml and the serialized plans are generated at runtime; the plan JSON
 # is kept out of the recorded output because it embeds local/cloud-specific state.
 Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json", "plan-full.json"]
-
