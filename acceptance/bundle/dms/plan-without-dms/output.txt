@@ -1,15 +1,15 @@
 
 === Generate and save plan WITHOUT DMS recording
->>> jq {storage_backend, deployment_id, next_version_id}
+>>> jq {features, deployment_id, next_version_id}
 {
-  "storage_backend": null,
+  "features": null,
   "deployment_id": null,
   "next_version_id": null
 }
 
 === Enable DMS recording and try to deploy the non-DMS plan
 >>> musterr [CLI] bundle deploy --plan tmp.plan.json
-Error: this plan does not record deployment history, but the target now does; run 'bundle plan' again
+Error: this plan was created for a different set of state features than the target now has; run 'bundle plan' again
 
 
 >>> print_requests.py //api/2.0/bundle --get

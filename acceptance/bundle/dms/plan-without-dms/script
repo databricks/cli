@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Generate and save plan WITHOUT DMS recording"
 $CLI bundle plan -o json > tmp.plan.json
-trace jq '{storage_backend, deployment_id, next_version_id}' < tmp.plan.json
+trace jq '{features, deployment_id, next_version_id}' < tmp.plan.json
 
 title "Enable DMS recording and try to deploy the non-DMS plan"
 update_file.py databricks.yml 'bundle:' 'experimental:

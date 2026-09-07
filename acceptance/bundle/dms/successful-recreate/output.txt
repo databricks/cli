@@ -69,7 +69,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "deployment_id": "[NUMID]",
   "next_version_id": "2",
   "last_version_id": "1",
-  "storage_backend": "DEPLOYMENT_METADATA_SERVICE"
+  "features": {
+    "record_deployment_history": {}
+  }
 }
 
 >>> [CLI] bundle plan
@@ -173,7 +175,9 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   "deployment_id": "[NUMID]",
   "next_version_id": "3",
   "last_version_id": "2",
-  "storage_backend": "DEPLOYMENT_METADATA_SERVICE"
+  "features": {
+    "record_deployment_history": {}
+  }
 }
 
 >>> [CLI] bundle plan

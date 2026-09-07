@@ -170,7 +170,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// The plan records where its state lives so deploy --plan can reject a plan whose target has
 	// since switched backends or has an outdated version or a wrong deployment_id.
 	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
-		plan.StorageBackend = string(dstate.StorageBackendDeploymentMetadataService)
+		plan.Features = b.StateDB.StateFeatures()
 		if b.StateDB.DeploymentID != "" {
 			// Subsequent deployment: compute next version from current state.
 			next, err := dms.NextVersion(b.StateDB.LatestVersionID)

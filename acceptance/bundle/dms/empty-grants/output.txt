@@ -140,7 +140,9 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "deployment_id": "[NUMID]",
   "next_version_id": "3",
   "last_version_id": "2",
-  "storage_backend": "DEPLOYMENT_METADATA_SERVICE"
+  "features": {
+    "record_deployment_history": {}
+  }
 }
 
 >>> [CLI] bundle plan

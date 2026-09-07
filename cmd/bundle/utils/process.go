@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -468,16 +469,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 // match the target's config, and a plan that targets an existing recorded deployment must not
 // predate the deployment the service now holds. It ends with the local lineage/serial guard.
 func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment, dmsDeploymentID string) error {
-	// A plan records its storage backend, which must match the target's current one, or it would
-	// deploy against the wrong backend. StateDB.StorageBackend is the target's source of truth, and
-	// it is set even for a first recorded deploy (unlike the version ids, which are empty then).
-	isDMSPlan := plan.StorageBackend == string(dstate.StorageBackendDeploymentMetadataService)
-	switch records := b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService; {
-	case isDMSPlan && !records:
-		return errors.New("this plan records deployment history, but the target no longer does; run 'bundle plan' again")
-	case !isDMSPlan && records:
-		return errors.New("this plan does not record deployment history, but the target now does; run 'bundle plan' again")
+	// A plan is built against a set of state features, and the stamps it carries follow from
+	// them, so applying it to a target with a different set would deploy the wrong shape.
+	// The state is the target's source of truth and carries its features even on a first
+	// recorded deploy (unlike the version ids, which are empty then).
+	if !maps.Equal(plan.Features, b.DeploymentBundle.StateDB.StateFeatures()) {
+		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
 	}
+	_, isDMSPlan := plan.Features[dstate.FeatureRecordDeploymentHistory]
 
 	// The plan records the DMS deployment and version it targeted. Reject it if the live deployment
 	// moved on - a newer version (someone deployed since, possibly from another machine) or a

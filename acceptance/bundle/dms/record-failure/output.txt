@@ -18,7 +18,9 @@ Files: 6 uploaded, 0 deleted
   "deployment_id": "[NUMID]",
   "next_version_id": "2",
   "last_version_id": "1",
-  "storage_backend": "DEPLOYMENT_METADATA_SERVICE"
+  "features": {
+    "record_deployment_history": {}
+  }
 }
 
 >>> [CLI] bundle plan

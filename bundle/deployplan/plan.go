@@ -29,10 +29,10 @@ type Plan struct {
 	NextVersionId string `json:"next_version_id,omitempty"`
 	LastVersionId string `json:"last_version_id,omitempty"`
 
-	// StorageBackend is where this deployment's state lives, the string form of a
-	// dstate.StorageBackend. deploy --plan checks it against the target's config so a recorded plan
-	// is never applied to a non-recording target or the reverse. Set only for a recorded plan.
-	StorageBackend string `json:"storage_backend,omitempty"`
+	// Features are the state feature flags this plan was built against, mirroring the state
+	// file's own "features" field. The stamps above exist because of a feature being set, so
+	// deploy --plan rejects a plan whose features differ from the target's (see process.go).
+	Features map[string]struct{} `json:"features,omitempty"`
 
 	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
