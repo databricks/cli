@@ -24,8 +24,8 @@ type PluginSpec struct {
 	// (e.g. "databricks/databricks-agent-skills").
 	Source string
 	// Shared marks a marketplace we do not own. It is still added when missing — an
-        // unregistered marketplace can't be refreshed or installed from — but is never
-        // de-registered on uninstall, since other plugins may rely on it.
+	// unregistered marketplace can't be refreshed or installed from — but is never
+	// de-registered on uninstall, since other plugins may rely on it.
 	Shared bool
 }
 
