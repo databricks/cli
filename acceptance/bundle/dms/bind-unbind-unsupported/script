@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Before any deploy there is no recorded state: bind just fails to find the workspace resource, and unbind is a no-op"
+trace musterr $CLI bundle deployment bind foo 123
+trace $CLI bundle deployment unbind foo
+
+title "Deploy so the bundle records the job with the deployment metadata service"
+trace $CLI bundle deploy
+
+# bind and unbind adopt or release a resource by editing local state directly. A recorded
+# deployment keeps its resource set in the service, so both are refused: bind hits the gate
+# after fetching the resource, unbind when it opens the recording state without recording.
+title "With deployment history recorded, both bind and unbind are refused"
+job_id=$(read_id.py foo)
+trace musterr $CLI bundle deployment bind foo "$job_id"
+trace musterr $CLI bundle deployment unbind foo
+
+rm -f out.requests.txt

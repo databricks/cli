@@ -1,0 +1,22 @@
+
+=== Before any deploy there is no recorded state: bind just fails to find the workspace resource, and unbind is a no-op
+>>> musterr [CLI] bundle deployment bind foo 123
+Error: failed to fetch the resource, err: Job 123 does not exist.
+
+>>> [CLI] bundle deployment unbind foo
+
+=== Deploy so the bundle records the job with the deployment metadata service
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-bind-unbind-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== With deployment history recorded, both bind and unbind are refused
+>>> musterr [CLI] bundle deployment bind foo [FOO_ID]
+Error: bind is not supported for a bundle that records deployment history
+
+
+>>> musterr [CLI] bundle deployment unbind foo
+Error: unbind is not supported for a bundle that records deployment history
+

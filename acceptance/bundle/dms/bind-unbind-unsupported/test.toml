@@ -1,0 +1,3 @@
+# bind/unbind refusal is a client-side gate on the recording config; it needs no real
+# workspace, so this stays local-only rather than inheriting the suite's cloud run.
+Cloud = false
