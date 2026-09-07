@@ -21,6 +21,10 @@ const (
 // The categories name the distinct early-return sites of the connect flow so a failure can
 // be attributed without logging the error text, which carries cluster names, paths and user
 // names.
+//
+// IDE_SSH_EXTENSION_MISSING was retired in favour of the four IDE_SSH_EXTENSION_* categories
+// below: it reported all four outcomes as one, and they call for different fixes. Rows written
+// before the split still carry it, so a query spanning that release has to accept both.
 type SshTunnelErrorCategory string
 
 const (
@@ -30,8 +34,23 @@ const (
 	// condition rather than a transient failure, so it is distinguished from the rest.
 	SshTunnelErrorCategoryIDECommandNotOnPath SshTunnelErrorCategory = "IDE_COMMAND_NOT_ON_PATH"
 
-	// The required Remote-SSH extension is missing or too old and was not installed.
-	SshTunnelErrorCategoryIDESSHExtensionMissing SshTunnelErrorCategory = "IDE_SSH_EXTENSION_MISSING"
+	// The IDE's installed-extension list could not be read, so whether the Remote SSH
+	// extension was present is unknown. Distinct from the install failures below because it
+	// says nothing about the extension itself, only that the check could not run.
+	SshTunnelErrorCategoryIDESSHExtensionListFailed SshTunnelErrorCategory = "IDE_SSH_EXTENSION_LIST_FAILED"
+
+	// The Remote SSH extension was missing or too old, an install was attempted, and the IDE
+	// rejected it. Points at the marketplace or a policy that forbids the install rather than
+	// at anything the user chose: an install the user interrupted lands in USER_ABORTED.
+	SshTunnelErrorCategoryIDESSHExtensionInstallFailed SshTunnelErrorCategory = "IDE_SSH_EXTENSION_INSTALL_FAILED"
+
+	// The user was asked to install the Remote SSH extension and declined. Unreachable with
+	// --auto-approve, so absent from IDE-button traffic.
+	SshTunnelErrorCategoryIDESSHExtensionInstallDeclined SshTunnelErrorCategory = "IDE_SSH_EXTENSION_INSTALL_DECLINED"
+
+	// The Remote SSH extension was missing or too old and consent could not be obtained: no
+	// --auto-approve and no usable prompt. Also unreachable with --auto-approve.
+	SshTunnelErrorCategoryIDESSHExtensionInstallUnavailable SshTunnelErrorCategory = "IDE_SSH_EXTENSION_INSTALL_UNAVAILABLE"
 
 	// IDE settings had to be updated for serverless but the update failed and the user
 	// declined to continue (or --auto-approve turned the failure into an abort).
@@ -56,7 +75,9 @@ const (
 	// its metadata never appeared before the timeout.
 	SshTunnelErrorCategoryServerStartTimeout SshTunnelErrorCategory = "SERVER_START_TIMEOUT"
 
-	// The user interrupted the connection (Ctrl-C or a termination signal).
+	// The user interrupted the connection (Ctrl-C or a termination signal). Takes precedence
+	// over the category of whichever step observed the interruption, including steps that shell
+	// out to the IDE and see only a killed child process.
 	SshTunnelErrorCategoryUserAborted SshTunnelErrorCategory = "USER_ABORTED"
 
 	// A failure that does not correspond to any of the categories above. The connect path

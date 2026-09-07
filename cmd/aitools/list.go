@@ -2,10 +2,8 @@ package aitools
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"maps"
 	"os"
 	"slices"
@@ -142,7 +140,7 @@ func defaultListSkills(cmd *cobra.Command, scope string) error {
 
 	switch root.OutputType(cmd) {
 	case flags.OutputJSON:
-		return renderListJSON(cmd.OutOrStdout(), out)
+		return renderJSON(cmd.OutOrStdout(), out)
 	default:
 		renderListText(ctx, out, scope)
 		return nil
@@ -309,12 +307,6 @@ func loadStateForScope(ctx context.Context, scopeFilter, excludeScope string, di
 		return nil
 	}
 	return state
-}
-
-func renderListJSON(w io.Writer, out listOutput) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(out)
 }
 
 func renderListText(ctx context.Context, out listOutput, scope string) {

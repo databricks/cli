@@ -275,8 +275,8 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if err != nil {
 		return err
 	}
-	cmdio.LogString(ctx, "Using skills version "+DisplaySkillsVersion(ref))
-	cmdio.LogString(ctx, "Fetching skills manifest...")
+	cmdio.LogProgress(ctx, "Using skills version "+DisplaySkillsVersion(ref))
+	cmdio.LogProgress(ctx, "Fetching skills manifest...")
 	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
 	if err != nil {
 		return err
@@ -422,7 +422,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if len(targetSkills) == 1 {
 		noun = "skill"
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
+	cmdio.LogProgress(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
 	return nil
 }
 
@@ -441,7 +441,7 @@ func filterProjectAgents(ctx context.Context, targetAgents []*agents.Agent) []*a
 		if a.SupportsProjectScope {
 			compatible = append(compatible, a)
 		} else {
-			cmdio.LogString(ctx, "Skipped "+a.DisplayName+": does not support project-scoped skills.")
+			cmdio.LogProgress(ctx, "Skipped "+a.DisplayName+": does not support project-scoped skills.")
 		}
 	}
 	return compatible

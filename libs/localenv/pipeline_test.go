@@ -1265,3 +1265,61 @@ func TestPipelineReportsPhaseStarts(t *testing.T) {
 	// A full successful run enters every phase exactly once in canonical order.
 	assert.Equal(t, allPhases, rep.started)
 }
+
+func TestPipelineNoConstraintsLeavesExistingPinsUntouched(t *testing.T) {
+	dir := t.TempDir()
+	// An existing project with the user's own requires-python and no managed
+	// [tool.uv] constraint block.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
+name = "demo"
+requires-python = ">=3.9"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`), 0o644))
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, SkipConstraints: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	s := string(data)
+	// requires-python keeps the user's value; the artifact's ==3.12.* is not written.
+	assert.Contains(t, s, `requires-python = ">=3.9"`)
+	assert.NotContains(t, s, "==3.12.*")
+	// No managed [tool.uv] constraint-dependencies block is written.
+	assert.NotContains(t, s, "constraint-dependencies")
+	// databricks-connect is still managed: --no-constraints is orthogonal to it.
+	assert.Contains(t, s, "databricks-connect~=17.2.0")
+}
+
+func TestPipelineNoConstraintsGreenfieldOmitsPins(t *testing.T) {
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, SkipConstraints: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	assert.True(t, res.Greenfield)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	s := string(data)
+	// The artifact's Python pin and constraint-dependencies are not written.
+	assert.NotContains(t, s, "==3.12.*")
+	assert.NotContains(t, s, "constraint-dependencies")
+	// databricks-connect (orthogonal) is still added.
+	assert.Contains(t, s, "databricks-connect~=17.2.0")
+}
