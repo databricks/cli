@@ -2,12 +2,14 @@
 === Generate and save plan WITHOUT DMS recording
 >>> jq {storage_backend, deployment_id, next_version_id}
 {
-  "storage_backend": "DEPLOYMENT_METADATA_SERVICE",
+  "storage_backend": null,
   "deployment_id": null,
-  "next_version_id": "1"
+  "next_version_id": null
 }
 
 === Enable DMS recording and try to deploy the non-DMS plan
 >>> musterr [CLI] bundle deploy --plan tmp.plan.corrupted.json
 Error: this plan does not record deployment history, but the target now does; run 'bundle plan' again
 
+
+>>> print_requests.py //api/2.0/bundle --get

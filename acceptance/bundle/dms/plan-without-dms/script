@@ -13,5 +13,6 @@ update_file.py databricks.yml 'bundle:' 'experimental:
 
 bundle:'
 trace musterr $CLI bundle deploy --plan tmp.plan.corrupted.json
+trace print_requests.py //api/2.0/bundle --get
 
-rm -f tmp.plan.json tmp.plan.corrupted.json
+rm -f tmp.plan.json tmp.plan.corrupted.json out.requests.txt

@@ -1,1 +1,4 @@
 Cloud = false
+RecordRequests = true
+# Override inherited DMS matrix to disable it for the initial plan generation
+EnvMatrix.DMS = [""]
