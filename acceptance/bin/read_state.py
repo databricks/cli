@@ -10,7 +10,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from dms_resources import get_resources, records_deployment_history
+from print_state import get_resources, records_deployment_history
 
 
 def print_resource_terraform(group, name, *attrs):

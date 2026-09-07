@@ -10,8 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl
-from dms_resources import get_resources, records_deployment_history
-from print_state import get_state_file
+from print_state import get_resources, records_deployment_history, get_state_file
 
 
 def iter_ids_terraform(filename):
