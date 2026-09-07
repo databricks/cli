@@ -22,7 +22,7 @@ trace $CLI bundle plan | contains.py "1 unchanged"
 update_file.py databricks.yml "table_name: $TABLE_NAME" "table_name: ${TABLE_NAME}_2"
 
 trace errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-trace errcode $CLI bundle plan -o json | nostamp.py &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace errcode $CLI bundle plan -o json | nostamp &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

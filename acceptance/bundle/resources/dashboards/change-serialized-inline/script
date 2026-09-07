@@ -25,8 +25,8 @@ trace $CLI bundle plan | contains.py "update" "!recreate"
 
 # Save raw plan (with DMS headers) to tmp file for deployment
 trace $CLI bundle plan -o json > plan_raw.$DATABRICKS_BUNDLE_ENGINE.json
-# Generate golden file by applying nostamp.py for comparison (discard output)
-cat plan_raw.$DATABRICKS_BUNDLE_ENGINE.json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# Generate golden file by applying nostamp for comparison (discard output)
+cat plan_raw.$DATABRICKS_BUNDLE_ENGINE.json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 title "deploy the change\n"
 $CLI bundle deploy $(readplanarg plan_raw.$DATABRICKS_BUNDLE_ENGINE.json)

@@ -1,1 +1,1 @@
-$CLI bundle plan -o json | nostamp.py
+$CLI bundle plan -o json | nostamp

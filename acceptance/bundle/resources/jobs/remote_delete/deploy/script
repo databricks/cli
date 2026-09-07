@@ -3,5 +3,5 @@ trace $CLI bundle deploy
 job_id=`$CLI bundle summary -o json | jq -r .resources.jobs.foo.id`
 trace $CLI jobs delete $job_id
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp.py &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 $CLI bundle deploy $(readplanarg out.plan.direct.json)
