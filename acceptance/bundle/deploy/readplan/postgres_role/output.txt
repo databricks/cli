@@ -1,9 +1,7 @@
 
 >>> [CLI] bundle plan -o json
 
->>> jq .plan."resources.postgres_roles.role" plan.json
-
->>> [CLI] bundle deploy --plan plan.json
+>>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created postgres_branches.branch
 Created postgres_projects.project
