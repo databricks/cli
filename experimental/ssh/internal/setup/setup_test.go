@@ -183,6 +183,8 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 		SSHConfigPath: configPath,
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 30 * time.Second,
+		MaxClients:    10,
+		ServerTimeout: 24 * time.Hour,
 		Profile:       "test-profile",
 	}
 
@@ -234,6 +236,8 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 		SSHConfigPath: configPath,
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 30 * time.Second,
+		MaxClients:    10,
+		ServerTimeout: 24 * time.Hour,
 		AutoApprove:   true,
 	}
 
@@ -246,6 +250,89 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 	s := string(content)
 	assert.NotContains(t, s, "User stale")
 	assert.Contains(t, s, "--cluster=cluster-123")
+}
+
+func TestSetup_SerializesServerLifecycleFlags(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
+	}, nil)
+
+	opts := SetupOptions{
+		HostName:      "test-host",
+		ClusterID:     "cluster-123",
+		SSHConfigPath: filepath.Join(tmpDir, "ssh_config"),
+		SSHKeysDir:    tmpDir,
+		ShutdownDelay: 30 * time.Second,
+		MaxClients:    25,
+		ServerTimeout: 48 * time.Hour,
+	}
+
+	require.NoError(t, Setup(ctx, m.WorkspaceClient, opts))
+
+	// The ProxyCommand is the invocation that submits the server job, so both values have to
+	// reach the persisted host config or the user's choice is silently dropped.
+	hostContent, err := os.ReadFile(filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host"))
+	require.NoError(t, err)
+	assert.Contains(t, string(hostContent), "--max-clients=25")
+	assert.Contains(t, string(hostContent), "--server-timeout=48h0m0s")
+}
+
+func TestSetup_RejectsUnusableServerLifecycleFlags(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    SetupOptions
+		wantErr string
+	}{
+		{
+			name:    "zero max clients",
+			opts:    SetupOptions{ServerTimeout: 24 * time.Hour},
+			wantErr: "--max-clients must be at least 1, got 0",
+		},
+		{
+			name:    "zero server timeout",
+			opts:    SetupOptions{MaxClients: 10},
+			wantErr: "--server-timeout must be greater than zero, got 0s",
+		},
+		{
+			name:    "shutdown delay longer than server timeout",
+			opts:    SetupOptions{MaxClients: 10, ShutdownDelay: 48 * time.Hour, ServerTimeout: 24 * time.Hour},
+			wantErr: "--shutdown-delay (48h0m0s) cannot be longer than --server-timeout (24h0m0s)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := cmdio.MockDiscard(t.Context())
+			tmpDir := t.TempDir()
+			t.Setenv("HOME", tmpDir)
+			t.Setenv("USERPROFILE", tmpDir)
+
+			m := mocks.NewMockWorkspaceClient(t)
+			m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+				DataSecurityMode: compute.DataSecurityModeSingleUser,
+				SingleUserName:   "me@example.com",
+			}, nil)
+
+			opts := tt.opts
+			opts.HostName = "test-host"
+			opts.ClusterID = "cluster-123"
+			opts.SSHConfigPath = filepath.Join(tmpDir, "ssh_config")
+			opts.SSHKeysDir = tmpDir
+
+			assert.EqualError(t, Setup(ctx, m.WorkspaceClient, opts), tt.wantErr)
+
+			// Nothing is written when the values are rejected.
+			_, err := os.Stat(filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host"))
+			assert.ErrorIs(t, err, os.ErrNotExist)
+		})
+	}
 }
 
 func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
@@ -278,6 +365,8 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 		SSHConfigPath: configPath,
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 30 * time.Second,
+		MaxClients:    10,
+		ServerTimeout: 24 * time.Hour,
 	}
 
 	err := Setup(ctx, m.WorkspaceClient, opts)
@@ -320,6 +409,8 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 		SSHConfigPath: configPath,
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 60 * time.Second,
+		MaxClients:    10,
+		ServerTimeout: 24 * time.Hour,
 	}
 
 	err = Setup(ctx, m.WorkspaceClient, opts)

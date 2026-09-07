@@ -32,6 +32,7 @@ Connect to a dedicated cluster:
 	var serverMetadata string
 	var shutdownDelay time.Duration
 	var maxClients int
+	var serverTimeout time.Duration
 	var handoverTimeout time.Duration
 	var releasesDir string
 	var autoStartCluster bool
@@ -46,6 +47,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
+	cmd.Flags().DurationVar(&serverTimeout, "server-timeout", defaultServerTimeout, "Maximum lifetime of the SSH server; it is terminated after this duration even if clients are connected")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
@@ -121,7 +123,7 @@ Connect to a dedicated cluster:
 			HandoverTimeout:      handoverTimeout,
 			KeepaliveInterval:    defaultKeepaliveInterval,
 			ReleasesDir:          releasesDir,
-			ServerTimeout:        max(serverTimeout, shutdownDelay),
+			ServerTimeout:        serverTimeout,
 			TaskStartupTimeout:   startupTimeout,
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,

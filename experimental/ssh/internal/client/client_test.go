@@ -125,6 +125,70 @@ func TestValidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			opts := tt.opts
+			// Validate range-checks MaxClients and ServerTimeout, which the commands always
+			// supply from a flag default. Set them for every case here so the cases above,
+			// which are about unrelated fields, aren't rejected by those checks;
+			// TestValidateServerLifecycle covers them directly.
+			opts.MaxClients = 10
+			opts.ServerTimeout = 24 * time.Hour
+			err := opts.Validate()
+			if tt.wantErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateServerLifecycle(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    client.ClientOptions
+		wantErr string
+	}{
+		{
+			name: "defaults",
+			opts: client.ClientOptions{ClusterID: "abc-123", MaxClients: 10, ShutdownDelay: 10 * time.Minute, ServerTimeout: 24 * time.Hour},
+		},
+		{
+			name: "single client slot",
+			opts: client.ClientOptions{ClusterID: "abc-123", MaxClients: 1, ServerTimeout: time.Hour},
+		},
+		{
+			name:    "zero max clients",
+			opts:    client.ClientOptions{ClusterID: "abc-123", MaxClients: 0, ServerTimeout: time.Hour},
+			wantErr: "--max-clients must be at least 1, got 0",
+		},
+		{
+			name:    "negative max clients",
+			opts:    client.ClientOptions{ClusterID: "abc-123", MaxClients: -1, ServerTimeout: time.Hour},
+			wantErr: "--max-clients must be at least 1, got -1",
+		},
+		{
+			name:    "zero server timeout",
+			opts:    client.ClientOptions{ClusterID: "abc-123", MaxClients: 10},
+			wantErr: "--server-timeout must be greater than zero, got 0s",
+		},
+		{
+			name:    "negative server timeout",
+			opts:    client.ClientOptions{ClusterID: "abc-123", MaxClients: 10, ServerTimeout: -time.Minute},
+			wantErr: "--server-timeout must be greater than zero, got -1m0s",
+		},
+		{
+			name:    "shutdown delay longer than server timeout",
+			opts:    client.ClientOptions{ClusterID: "abc-123", MaxClients: 10, ShutdownDelay: 48 * time.Hour, ServerTimeout: 24 * time.Hour},
+			wantErr: "--shutdown-delay (48h0m0s) cannot be longer than --server-timeout (24h0m0s)",
+		},
+		{
+			name: "shutdown delay equal to server timeout",
+			opts: client.ClientOptions{ClusterID: "abc-123", MaxClients: 10, ShutdownDelay: time.Hour, ServerTimeout: time.Hour},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			err := tt.opts.Validate()
 			if tt.wantErr == "" {
 				assert.NoError(t, err)
@@ -246,6 +310,18 @@ func TestToProxyCommand(t *testing.T) {
 			name: "serverless with usage policy",
 			opts: client.ClientOptions{ConnectionName: "my-conn", UsagePolicyID: "pol-1", ShutdownDelay: 2 * time.Minute},
 			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --usage-policy-id=pol-1",
+		},
+		{
+			// Both are fixed at server submission, so a host configured by `ssh setup` can only
+			// carry them through the ProxyCommand.
+			name: "with server lifecycle flags",
+			opts: client.ClientOptions{ClusterID: "abc-123", ShutdownDelay: 5 * time.Minute, MaxClients: 25, ServerTimeout: 48 * time.Hour},
+			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=5m0s --max-clients=25 --server-timeout=48h0m0s",
+		},
+		{
+			name: "serverless with server lifecycle flags",
+			opts: client.ClientOptions{ConnectionName: "my-conn", ShutdownDelay: 2 * time.Minute, MaxClients: 25, ServerTimeout: 48 * time.Hour},
+			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --max-clients=25 --server-timeout=48h0m0s",
 		},
 		{
 			name: "with metadata",

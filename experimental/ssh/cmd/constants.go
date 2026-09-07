@@ -13,8 +13,10 @@ const (
 	// 30 second SSH-level keepalive that was verified to prevent it.
 	defaultKeepaliveInterval  = 20 * time.Second
 	defaultEnvironmentVersion = 4
+	// Default cap on how long an SSH tunnel server is allowed to live. Fixed when the
+	// server job is submitted, so it is only settable by the invocation that starts it.
+	defaultServerTimeout = 24 * time.Hour
 
-	serverTimeout         = 24 * time.Hour
 	taskStartupTimeout    = 10 * time.Minute
 	gpuTaskStartupTimeout = 45 * time.Minute
 	serverPortRange       = 100

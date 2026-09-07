@@ -155,6 +155,21 @@ func (o *ClientOptions) Validate() error {
 	if o.BaseEnvironment != "" && o.ClusterID != "" {
 		return errors.New("--base-environment can only be used with serverless compute")
 	}
+	// A server started with fewer than one client slot rejects every connection with an
+	// opaque websocket handshake failure, so catch it here instead.
+	if o.MaxClients < 1 {
+		return fmt.Errorf("--max-clients must be at least 1, got %d", o.MaxClients)
+	}
+	// timeout_seconds: 0 means "no timeout" in the Jobs API, which would turn the cap into an
+	// unbounded run rather than the intended default.
+	if o.ServerTimeout <= 0 {
+		return fmt.Errorf("--server-timeout must be greater than zero, got %s", o.ServerTimeout)
+	}
+	// The server only starts counting down the shutdown delay once the last client leaves, so a
+	// delay longer than the server's lifetime can never elapse.
+	if o.ShutdownDelay > o.ServerTimeout {
+		return fmt.Errorf("--shutdown-delay (%s) cannot be longer than --server-timeout (%s)", o.ShutdownDelay, o.ServerTimeout)
+	}
 	return nil
 }
 
@@ -227,6 +242,18 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	} else {
 		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
 			executablePath, o.ClusterID, o.AutoStartCluster, o.ShutdownDelay.String())
+	}
+
+	// Both of these are fixed when the server job is submitted, and for a host configured by
+	// `ssh setup` the submitting invocation is always the ProxyCommand, so they have to be
+	// carried here or the user's choice is lost. Zero means "not set": the receiving command
+	// then applies its own flag default.
+	if o.MaxClients > 0 {
+		proxyCommand += " --max-clients=" + strconv.Itoa(o.MaxClients)
+	}
+
+	if o.ServerTimeout > 0 {
+		proxyCommand += " --server-timeout=" + o.ServerTimeout.String()
 	}
 
 	if o.ServerMetadata != "" {

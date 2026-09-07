@@ -73,4 +73,21 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		assert.Empty(t, got.Tasks[0].EnvironmentKey)
 		assert.Empty(t, got.Environments)
 	})
+
+	t.Run("server lifecycle", func(t *testing.T) {
+		opts := ClientOptions{
+			ClusterID:     "abc-123",
+			MaxClients:    25,
+			ShutdownDelay: 15 * time.Minute,
+			ServerTimeout: 48 * time.Hour,
+		}
+		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
+
+		// This is the only place these two take effect: the server reads maxClients from the
+		// widget at startup, and the run's timeout caps the tunnel's lifetime.
+		assert.Equal(t, "25", got.Tasks[0].NotebookTask.BaseParameters["maxClients"])
+		assert.Equal(t, "15m0s", got.Tasks[0].NotebookTask.BaseParameters["shutdownDelay"])
+		assert.Equal(t, 48*60*60, got.TimeoutSeconds)
+		assert.Equal(t, 48*60*60, got.Tasks[0].TimeoutSeconds)
+	})
 }
