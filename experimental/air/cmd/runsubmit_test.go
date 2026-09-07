@@ -109,9 +109,40 @@ func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(42), runID)
+}
+
+func TestSubmitRunInjectsPriorityClass(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		tasks := body["tasks"].([]any)
+		task := tasks[0].(map[string]any)
+		airTask := task["ai_runtime_task"].(map[string]any)
+		// priority_class rides directly on the ai_runtime_task, next to
+		// provisioned_capacity_id on the deployment compute.
+		assert.Equal(t, "CRITICAL", airTask["priority_class"])
+		deployment := airTask["deployments"].([]any)[0].(map[string]any)
+		compute := deployment["compute"].(map[string]any)
+		assert.Equal(t, "capacity-1", compute["provisioned_capacity_id"])
+		return jobs.SubmitRunResponse{RunId: 7}
+	})
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
+	require.NoError(t, err)
+	payload := buildSubmitPayload(&runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+	}, "/command.sh", "4", "", snapshotResult{}, nil)
+
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL")
+	require.NoError(t, err)
+	assert.Equal(t, int64(7), runID)
 }
 
 func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {

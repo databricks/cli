@@ -1,14 +1,13 @@
 name: python build
 
 on:
+  # Not restricted to python/**: these tests also cover contracts shared with the Go
+  # code, such as libs/dyn/dynvar/testdata/reference_vectors.json, so a change outside
+  # python/ can break them.
   pull_request:
     types: [opened, synchronize]
-    paths:
-      - python/**
   merge_group:
     types: [checks_requested]
-    paths:
-      - python/**
   push:
     # Always run on push to main. The build cache can only be reused
     # if it was saved by a run from the repository's default branch.

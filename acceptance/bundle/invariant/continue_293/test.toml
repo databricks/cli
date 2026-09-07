@@ -39,3 +39,7 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 
 # secret resource is not supported on v0.293.0
 EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]
+
+# $${...} escaping is not supported on v0.293.0: the seed deploy fails with
+# 'invalid dependency "${batch_id}", no such node ""' (issue #6480).
+EnvMatrixExclude.no_escaped_refs = ["INPUT_CONFIG=job_escaped_refs.yml.tmpl"]

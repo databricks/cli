@@ -45,7 +45,7 @@ func (c configureClusterPolicyDefinition) Apply(_ context.Context, b *bundle.Bun
 				case dyn.KindInvalid, dyn.KindNil, dyn.KindString:
 					// KindInvalid means the field is absent; leave it for backend validation.
 					continue
-				case dyn.KindMap, dyn.KindSequence:
+				case dyn.KindMap:
 					jsonBytes, err := json.Marshal(def.AsAny())
 					if err != nil {
 						return dyn.InvalidValue, fmt.Errorf("failed to marshal inline %s: %w", field, err)
@@ -57,7 +57,7 @@ func (c configureClusterPolicyDefinition) Apply(_ context.Context, b *bundle.Bun
 				default:
 					diags = diags.Append(diag.Diagnostic{
 						Severity:  diag.Error,
-						Summary:   fmt.Sprintf("%s must be a string, map, or sequence, got %s", field, def.Kind()),
+						Summary:   fmt.Sprintf("%s must be a string or map, got %s", field, def.Kind()),
 						Locations: def.Locations(),
 					})
 				}

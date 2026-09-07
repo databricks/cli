@@ -64,6 +64,27 @@ func TestBuildSetupLocalEvent(t *testing.T) {
 		}, got)
 	})
 
+	t.Run("no-constraints run records skipConstraints", func(t *testing.T) {
+		res := &libslocalenv.Result{
+			OK:              true,
+			Mode:            libslocalenv.ModeDefault.String(),
+			SkipConstraints: true,
+			Compute:         &libslocalenv.ComputeInfo{Source: "cluster", EnvKey: "dbr/16.4"},
+		}
+		got := buildSetupLocalEvent(res)
+		assert.True(t, got.SkipConstraints)
+	})
+
+	t.Run("run without --no-constraints leaves skipConstraints false", func(t *testing.T) {
+		res := &libslocalenv.Result{
+			OK:      true,
+			Mode:    libslocalenv.ModeDefault.String(),
+			Compute: &libslocalenv.ComputeInfo{Source: "cluster", EnvKey: "dbr/16.4"},
+		}
+		got := buildSetupLocalEvent(res)
+		assert.False(t, got.SkipConstraints)
+	})
+
 	t.Run("nil compute leaves source and envKey empty", func(t *testing.T) {
 		res := &libslocalenv.Result{
 			OK:    false,

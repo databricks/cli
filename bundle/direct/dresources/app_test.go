@@ -129,7 +129,8 @@ func TestAppDoUpdate_UpdateMaskHasAllFields(t *testing.T) {
 	// iterate over all apps.App fields using reflection and ensure that UpdateMaskFields contains all of them.
 	config := GetGeneratedResourceConfig("apps")
 	require.NotNil(t, config)
-	var nonUpdatableFields []string
+	// forward_user_access_token is not supported, so it's not in UpdateMaskFields.
+	nonUpdatableFields := []string{"forward_user_access_token"}
 	for _, field := range config.IgnoreRemoteChanges {
 		nonUpdatableFields = append(nonUpdatableFields, field.Field.String())
 	}

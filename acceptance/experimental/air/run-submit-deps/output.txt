@@ -63,3 +63,6 @@ Stream logs after submission using:
 === a requirements.yaml file path is rejected; deps must be inline
 >>> [CLI] experimental air run -f run-file.yaml
 Error: invalid config run-file.yaml: environment.dependencies must be a list of packages or reference a requirements.txt (see https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference). A direct file reference is not supported
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air run …

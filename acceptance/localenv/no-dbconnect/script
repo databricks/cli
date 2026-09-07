@@ -1,0 +1,15 @@
+# --no-dbconnect is the orthogonal spelling of --constraints-only: it omits the
+# databricks-connect dependency (mode "constraints-only") while still managing
+# requires-python and the [tool.uv] constraints. Existing databricks-connect
+# requirements the user already had are left untouched.
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = ">=3.10"
+dependencies = ["databricks-connect==15.1.*"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+PY
+
+trace $CLI environments setup-local --serverless-version 4 --no-dbconnect --dry-run --output json

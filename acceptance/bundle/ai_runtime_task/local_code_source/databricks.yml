@@ -1,20 +1,13 @@
 bundle:
   name: ai-runtime-test
 
-sync:
-  # *.log excluded; data/*.bin force-included despite .gitignore.
-  exclude:
-    - "**/*.log"
-  include:
-    - src/data/*.bin
-
 resources:
   jobs:
     train:
       name: "[${bundle.target}] AI Runtime training"
       tasks:
-        # Two AI Runtime tasks with distinct local code dirs: each is packaged into
-        # its own content-addressed tarball, both under the repo root's .air_snapshots.
+        # Two AI Runtime tasks with distinct local code dirs: each is turned into its
+        # own tgz artifact and uploaded through the standard artifact path.
         - task_key: train
           environment_key: default
           ai_runtime_task:

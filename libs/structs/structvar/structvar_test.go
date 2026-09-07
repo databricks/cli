@@ -169,6 +169,46 @@ func TestResolveRefMultiReference(t *testing.T) {
 	assert.Equal(t, map[string]string{}, sv.Refs) // fully resolved, reference removed
 }
 
+func TestResolveRefEscaped(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		want     string
+	}{
+		{
+			name:     "escaped placeholder beside a real reference",
+			template: "$${runtime} ${var.name}",
+			want:     "${runtime} Resolved",
+		},
+		{
+			name:     "same name escaped first must not be substituted",
+			template: "$${var.name} ${var.name}",
+			want:     "${var.name} Resolved",
+		},
+		{
+			name:     "same name real first",
+			template: "${var.name} $${var.name}",
+			want:     "Resolved ${var.name}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sv := structvar.NewStructVar(
+				&TestObj{Name: tt.template},
+				map[string]string{"name": tt.template},
+			)
+
+			require.NoError(t, sv.ResolveRef("${var.name}", "Resolved"))
+
+			// The struct holds the unescaped value that is sent to the API, and the
+			// entry is dropped because the only reference left is a literal.
+			assert.Equal(t, tt.want, sv.Value.(*TestObj).Name)
+			assert.Empty(t, sv.Refs)
+		})
+	}
+}
+
 func TestResolveRefJobSettings(t *testing.T) {
 	// Create a realistic JobSettings based on the provided YAML config
 	jobSettings := jobs.JobSettings{
