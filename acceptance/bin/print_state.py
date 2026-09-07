@@ -87,7 +87,7 @@ def main():
     for filename in get_state_files(args.target, args.backup):
         if not os.path.exists(filename):
             continue
-        if filename.endswith("resources.json") and records_deployment_history() and not args.no_dms:
+        if records_deployment_history() and not args.no_dms:
             print_recorded_state(filename, args.target)
         else:
             print_file(filename)
