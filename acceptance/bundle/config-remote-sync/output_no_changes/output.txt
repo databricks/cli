@@ -13,6 +13,7 @@ No changes detected.
 
 === JSON output
 {
+  "status": "success",
   "files": null,
   "changes": {}
 }

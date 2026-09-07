@@ -8,6 +8,7 @@ import codegen.generated_dataclass as generated_dataclass
 import codegen.generated_dataclass_patch as generated_dataclass_patch
 import codegen.generated_enum as generated_enum
 import codegen.generated_imports as generated_imports
+import codegen.generated_wiring as generated_wiring
 import codegen.jsonschema as openapi
 import codegen.jsonschema_patch as openapi_patch
 import codegen.packages as packages
@@ -45,6 +46,11 @@ def main(output: str):
         _write_code(dataclasses, enums, output)
 
         _write_exports(namespace, dataclasses, enums, output)
+
+    # Generate the per-resource wiring in databricks.bundles.core (the
+    # _ResourceType registry, Resources add_*/property methods, *_mutator
+    # decorators, and the core package __init__).
+    generated_wiring.write_wiring(output)
 
 
 def _transitively_mark_deprecated_and_private(

@@ -72,6 +72,11 @@ func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
 		"experiment":  cfg.ExperimentName,
 		"deployments": []any{map[string]any{"command_path": commandPath, "compute": compute}},
 	}
+	if cfg.Compute != nil {
+		// priority_class rides on the ai_runtime_task (task-level), not the deployment
+		// compute where provisioned_capacity_id lives.
+		putOpt(task, "priority_class", cfg.Compute.PriorityClass)
+	}
 	putOpt(task, "mlflow_run", cfg.MLflowRunName)
 	putOpt(task, "mlflow_experiment_directory", cfg.MLflowExperimentDirectory)
 	putOpt(task, "mlflow_artifact_location", cfg.MLflowArtifactLocation)

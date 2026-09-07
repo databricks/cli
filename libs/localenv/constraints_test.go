@@ -259,3 +259,18 @@ func TestFetchConstraintsUnusableBodyDoesNotPoisonCache(t *testing.T) {
 	assert.True(t, c.FromCache)
 	assert.Equal(t, "==3.12.*", c.RequiresPython)
 }
+
+func TestParseConstraintsMissingConstraintDepsIsValid(t *testing.T) {
+	// An artifact without [tool.uv].constraint-dependencies is valid; the parsed
+	// slice is empty. Its nil-vs-empty shape carries no meaning — whether the
+	// constraint region is managed is decided by the --no-constraints flag, threaded
+	// explicitly, so the merge treats nil and empty identically.
+	_, _, deps, err := parseConstraints([]byte(`[project]
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+`))
+	require.NoError(t, err)
+	assert.Empty(t, deps)
+}

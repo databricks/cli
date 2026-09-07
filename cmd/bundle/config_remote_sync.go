@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -17,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -68,6 +66,13 @@ Examples:
 			}
 		}()
 
+		// Populated by PostStateFunc on success; rendered after the run so an
+		// error raised anywhere in ProcessBundleRet takes the same output path.
+		var (
+			files   []configsync.FileChange
+			changes configsync.Changes
+		)
+
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			ReadState:  true,
 			Build:      true,
@@ -96,12 +101,12 @@ Examples:
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				changes, err := configsync.ExtractChanges(ctx, b, plan, stateDesc.Engine)
+				detected, err := configsync.ExtractChanges(ctx, b, plan, stateDesc.Engine)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
 				}
-				stats.CollectChangeStats(ctx, changes)
+				stats.CollectChangeStats(ctx, detected)
 
 				// Record the ids present in state and the ids requested: on failure
 				// they are what classifies the miss.
@@ -116,14 +121,14 @@ Examples:
 					if err != nil {
 						return err
 					}
-					changes = configsync.FilterChanges(changes, selected)
+					detected = configsync.FilterChanges(detected, selected)
 				}
 
 				// Loaded once and shared: ResolveChanges uses it to skip changes whose
 				// parent is a variable reference, RestoreVariableReferences to restore refs.
 				preResolved := configsync.LoadPreResolvedConfig(ctx, b)
 
-				fieldChanges, skipped, err := configsync.ResolveChanges(ctx, b, changes, preResolved)
+				fieldChanges, skipped, err := configsync.ResolveChanges(ctx, b, detected, preResolved)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
 					return fmt.Errorf("failed to resolve field changes: %w", err)
@@ -134,49 +139,28 @@ Examples:
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
 				}
 
-				files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
+				applied, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryYamlApplyFailed
 					return fmt.Errorf("failed to generate YAML files: %w", err)
 				}
-				stats.FilesChangedCount = int64(len(files))
+				stats.FilesChangedCount = int64(len(applied))
 
 				if save {
-					if err := configsync.SaveFiles(ctx, b, files); err != nil {
+					if err := configsync.SaveFiles(ctx, b, applied); err != nil {
 						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategorySaveFailed
 						return fmt.Errorf("failed to save files: %w", err)
 					}
-					stats.FilesWrittenCount = int64(len(files))
+					stats.FilesWrittenCount = int64(len(applied))
 				}
 
-				var result []byte
-				if root.OutputType(cmd) == flags.OutputJSON {
-					diffOutput := &configsync.DiffOutput{
-						Files:   files,
-						Changes: changes,
-					}
-					result, err = json.MarshalIndent(diffOutput, "", "  ")
-					if err != nil {
-						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryOutputFailed
-						return fmt.Errorf("failed to marshal output: %w", err)
-					}
-				} else if root.OutputType(cmd) == flags.OutputText {
-					result = []byte(configsync.FormatTextOutput(changes))
-				}
-
-				out := cmd.OutOrStdout()
-				_, _ = out.Write(result)
-				_, _ = out.Write([]byte{'\n'})
+				files = applied
+				changes = detected
 				return nil
 			},
 		})
-		if err != nil {
-			if stats.ErrorCategory == "" {
-				stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
-			}
-			stats.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
-		}
-		return err
+
+		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, err)
 	}
 
 	return cmd

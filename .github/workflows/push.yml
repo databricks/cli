@@ -609,8 +609,9 @@ jobs:
             -f commit_sha=${{ github.event.pull_request.head.sha }}
 
       # Dispatch the nightly workflow; as a workflow_dispatch event it runs
-      # integration-short (CloudSlow still skips via -short, but locally-covered
-      # tests run against real clouds, unlike the PR task's skiplocal variant).
+      # integration-short (CloudSlow still skips via -short, but the whole acceptance
+      # suite runs against real clouds, unlike the PR task which only runs the
+      # acceptance tests the PR touches).
       - name: Trigger integration tests (push to main)
         if: ${{ github.event_name == 'push' }}
         env:

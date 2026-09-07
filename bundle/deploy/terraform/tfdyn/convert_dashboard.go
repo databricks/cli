@@ -2,7 +2,6 @@ package tfdyn
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/databricks/cli/bundle/internal/tf/schema"
@@ -11,46 +10,15 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-const (
-	serializedDashboardFieldName = "serialized_dashboard"
-)
-
-// Marshal "serialized_dashboard" as JSON if it is set in the input but not in the output.
-func marshalSerializedDashboard(vin, vout dyn.Value) (dyn.Value, error) {
-	// Skip if the "serialized_dashboard" field is already set.
-	if v := vout.Get(serializedDashboardFieldName); v.IsValid() {
-		return vout, nil
-	}
-
-	// Skip if the "serialized_dashboard" field on the input is not set.
-	v := vin.Get(serializedDashboardFieldName)
-	if !v.IsValid() {
-		return vout, nil
-	}
-
-	// Marshal the "serialized_dashboard" field as JSON.
-	data, err := json.Marshal(v.AsAny())
-	if err != nil {
-		return dyn.InvalidValue, fmt.Errorf("failed to marshal serialized_dashboard: %w", err)
-	}
-
-	// Set the "serialized_dashboard" field on the output.
-	return dyn.Set(vout, serializedDashboardFieldName, dyn.V(string(data)))
-}
-
 func convertDashboardResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	var err error
 
-	// Normalize the output value to the target schema.
+	// Normalize the output value to the target schema. ConfigureDashboardSerializedDashboard
+	// normalizes serialized_dashboard to a JSON string before this runs, so it maps
+	// straight onto the schema's string field.
 	vout, diags := convert.Normalize(schema.ResourceDashboard{}, vin)
 	for _, diag := range diags {
 		log.Debugf(ctx, "dashboard normalization diagnostic: %s", diag.Summary)
-	}
-
-	// Marshal "serialized_dashboard" as JSON if it is set in the input but not in the output.
-	vout, err = marshalSerializedDashboard(vin, vout)
-	if err != nil {
-		return dyn.InvalidValue, err
 	}
 
 	// Drop the "file_path" field. It's always inlined into "serialized_dashboard".

@@ -1,0 +1,28 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.test_job
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A selector that matches nothing is reported as skipped, exit 0
+{
+  "status": "skipped",
+  "error": "no deployed jobs resource with id no-such-id-999; deployed jobs ids in state: [TEST_JOB_ID]",
+  "files": null,
+  "changes": {}
+}
+
+=== A malformed selector is reported as failed, exit 0
+{
+  "status": "failed",
+  "error": "invalid --select-ids value \"no-such-id-999\", expected \u003ctype\u003e:\u003cid\u003e (e.g. jobs:[NUMID])",
+  "files": null,
+  "changes": {}
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

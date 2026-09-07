@@ -281,17 +281,8 @@ tasks:
     cmds:
       - "./tools/validate_whitespace.py --fix"
 
-  links:
-    desc: Update GitHub links in CHANGELOG.md and .nextchanges/ fragments
-    sources:
-      - CHANGELOG.md
-      - ".nextchanges/**/*.md"
-      - tools/update_github_links.py
-    cmds:
-      - "./tools/update_github_links.py"
-
   check-changelog:
-    desc: Validate .nextchanges fragment placement
+    desc: Validate .nextchanges fragment placement and links
     cmds:
       - "./tools/validate_nextchanges.py"
 
@@ -323,13 +314,12 @@ tasks:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
-    # touching more paths should not race with whitespace/link scanners.
+    # touching more paths should not race with the whitespace scanner.
     cmds:
       - task: tidy
       - task: ws
-      - task: links
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles
@@ -539,10 +529,10 @@ tasks:
       # acceptance/install_terraform.py parses the provider version from this file.
       - bundle/internal/tf/codegen/schema/version.go
       - acceptance/**
-      # Pydabs wheel is built in-process by TestInprocessMode (cd python && uv build).
+      # Pydabs wheel is built in-process by TestAccept (cd python && uv build).
       - python/**
       - libs/vendored_py_packages/**
-      # TestInprocessMode builds yamlfmt via tools/go.mod.
+      # TestAccept builds yamlfmt via tools/go.mod.
       - tools/go.mod
       - tools/go.sum
       - go.mod
@@ -562,6 +552,15 @@ tasks:
           --rerun-fails \
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+
+  local-select:
+    desc: Run selection of local tests (tests changed in this branch)
+    # Local counterpart of cloud-select: the same DATABRICKS_TEST_SELECT_CHANGED selection,
+    # against the testserver instead of a real workspace. -v to show the selection summary
+    # and the tests that ran; no sources/generates because the selection depends on the git
+    # diff, which Task cannot checksum.
+    cmds:
+      - "DATABRICKS_TEST_SELECT_CHANGED=${DATABRICKS_TEST_SELECT_CHANGED:-50} go test ./acceptance -run '^TestAccept$' -v -timeout=${LOCAL_TIMEOUT:-60m}"
 
   test-update:
     desc: Update acceptance test output (local)
@@ -772,12 +771,16 @@ tasks:
           --packages "./acceptance ./integration/..." \
           -- -parallel 4 -timeout=12h -short
 
-  integration-short-skiplocal:
-    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
+  cloud-select:
+    desc: Run selection of integration tests (tests changed in this branch)
+    # The alias is the name the eng-dev-ecosystem CI job dispatches (cli-isolated-pr.yml
+    # passes it as integration_task, and cli-isolated-tests.yml greps Taskfile.yml for it
+    # and falls back to integration-short, the full cloud suite, if it is missing).
+    aliases: [integration-short-skiplocal]
     deps: [install-pythons]
     cmds:
       - |
-        DATABRICKS_TEST_SKIPLOCAL=withchanged VERBOSE_TEST=1 \
+        DATABRICKS_TEST_SELECT_CHANGED=50 VERBOSE_TEST=1 \
         go run -modfile=tools/go.mod ./tools/testrunner/main.go \
           {{.GO_TOOL}} gotestsum \
           --format github-actions \

@@ -1,0 +1,8 @@
+# depends_on is only present in the direct engine's plan JSON.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Also deploy from the saved plan, so the payload is asserted whether it is built
+# in-process or read back from a plan file.
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = ["plan.json"]
