@@ -91,3 +91,29 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		assert.Equal(t, 48*60*60, got.Tasks[0].TimeoutSeconds)
 	})
 }
+
+// Validate's lower bound on --server-timeout exists only to keep timeout_seconds off 0, which the
+// Jobs API reads as "no timeout". Tie the two together: no value Validate accepts may submit an
+// unbounded run, whichever side is changed later.
+func TestServerTimeoutNeverSubmitsUnboundedRun(t *testing.T) {
+	const notebookPath = "/Workspace/Users/me/.databricks/ssh-tunnel/v1/conn/ssh-server-bootstrap"
+
+	for _, d := range []time.Duration{
+		-time.Minute,
+		0,
+		time.Nanosecond,
+		500 * time.Millisecond,
+		999 * time.Millisecond,
+		time.Second,
+		10 * time.Minute,
+		24 * time.Hour,
+	} {
+		opts := ClientOptions{ClusterID: "abc-123", MaxClients: 10, ServerTimeout: d}
+		if err := opts.Validate(); err != nil {
+			continue
+		}
+		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
+		assert.NotZero(t, got.TimeoutSeconds, "--server-timeout=%s passed Validate but submits timeout_seconds: 0 (no timeout)", d)
+		assert.NotZero(t, got.Tasks[0].TimeoutSeconds, "--server-timeout=%s passed Validate but submits a task with timeout_seconds: 0", d)
+	}
+}

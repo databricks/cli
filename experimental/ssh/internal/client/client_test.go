@@ -169,12 +169,23 @@ func TestValidateServerLifecycle(t *testing.T) {
 		{
 			name:    "zero server timeout",
 			opts:    client.ClientOptions{ClusterID: "abc-123", MaxClients: 10},
-			wantErr: "--server-timeout must be greater than zero, got 0s",
+			wantErr: "--server-timeout must be at least 1s, got 0s",
 		},
 		{
 			name:    "negative server timeout",
 			opts:    client.ClientOptions{ClusterID: "abc-123", MaxClients: 10, ServerTimeout: -time.Minute},
-			wantErr: "--server-timeout must be greater than zero, got -1m0s",
+			wantErr: "--server-timeout must be at least 1s, got -1m0s",
+		},
+		{
+			// Anything under a second truncates to timeout_seconds: 0, which the Jobs API reads
+			// as "no timeout" - the opposite of the short lifetime this asks for.
+			name:    "sub-second server timeout",
+			opts:    client.ClientOptions{ClusterID: "abc-123", MaxClients: 10, ServerTimeout: 999 * time.Millisecond},
+			wantErr: "--server-timeout must be at least 1s, got 999ms",
+		},
+		{
+			name: "one second server timeout",
+			opts: client.ClientOptions{ClusterID: "abc-123", MaxClients: 10, ServerTimeout: time.Second},
 		},
 		{
 			name:    "shutdown delay longer than server timeout",

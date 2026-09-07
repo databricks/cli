@@ -160,10 +160,11 @@ func (o *ClientOptions) Validate() error {
 	if o.MaxClients < 1 {
 		return fmt.Errorf("--max-clients must be at least 1, got %d", o.MaxClients)
 	}
-	// timeout_seconds: 0 means "no timeout" in the Jobs API, which would turn the cap into an
-	// unbounded run rather than the intended default.
-	if o.ServerTimeout <= 0 {
-		return fmt.Errorf("--server-timeout must be greater than zero, got %s", o.ServerTimeout)
+	// The submitted job carries this as timeout_seconds, a whole number of seconds, and 0 means
+	// "no timeout" in the Jobs API. So every value below one second - not just zero - truncates
+	// to an unbounded run instead of the short-lived server that was asked for.
+	if o.ServerTimeout < time.Second {
+		return fmt.Errorf("--server-timeout must be at least 1s, got %s", o.ServerTimeout)
 	}
 	// The server only starts counting down the shutdown delay once the last client leaves, so a
 	// delay longer than the server's lifetime can never elapse.

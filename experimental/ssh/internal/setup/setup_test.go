@@ -298,7 +298,7 @@ func TestSetup_RejectsUnusableServerLifecycleFlags(t *testing.T) {
 		{
 			name:    "zero server timeout",
 			opts:    SetupOptions{MaxClients: 10},
-			wantErr: "--server-timeout must be greater than zero, got 0s",
+			wantErr: "--server-timeout must be at least 1s, got 0s",
 		},
 		{
 			name:    "shutdown delay longer than server timeout",
