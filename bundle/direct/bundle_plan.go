@@ -180,10 +180,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			plan.DeploymentId = b.StateDB.DeploymentID
 			plan.LastVersionId = b.StateDB.LatestVersionID
 			plan.NextVersionId = strconv.FormatInt(next, 10)
-		} else {
-			// First deployment: version will be "1" with no prior version.
-			plan.NextVersionId = "1"
-			plan.LastVersionId = ""
 		}
 	}
 

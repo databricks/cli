@@ -496,17 +496,6 @@ func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, 
 		if plan.DeploymentId != dmsDeploymentID {
 			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
 		}
-
-		// For DMS plans, validate that all required fields are present.
-		// NextVersionId is always set: "1" for first deploy, or the computed next version for subsequent deploys.
-		// DeploymentId and LastVersionId are only set for subsequent deployments.
-		if plan.NextVersionId == "" {
-			return errors.New("this plan is missing the deployment version ID required for deployment history recording; run 'bundle plan' again")
-		}
-		// For non-first deployments (version > "1"), both deployment ID and last version ID must be set.
-		if plan.NextVersionId != "1" && plan.DeploymentId == "" {
-			return errors.New("this plan is missing the deployment ID required for deployment history recording; run 'bundle plan' again")
-		}
 	}
 
 	// Validate that the plan's lineage and serial match the local state. This is the stale guard for
