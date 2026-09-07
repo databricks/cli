@@ -104,7 +104,7 @@ def _is_composite(ref: str) -> bool:
 
 
 def _synth_scalar(name: str, hint: str) -> _Scalar:
-    """Placeholder value for a primitive (str -> hint, int -> 0, float -> 0.0, bool -> True).
+    """Placeholder value for a primitive (str -> hint, int -> 0, float -> 0.0, bool -> True, time.Time -> RFC3339 string).
 
     :param name: the primitive's schema name, e.g. "string", "int", "boolean".
     :param hint: enclosing field name, used as the string placeholder so examples read meaningfully.
@@ -117,6 +117,9 @@ def _synth_scalar(name: str, hint: str) -> _Scalar:
         return _Scalar("0.0", "0.0")
     if name in ("boolean", "bool"):
         return _Scalar("True", "True")
+    # time.Time is generated as a str (see packages.RENAMES); serialized as RFC3339.
+    if name == "time.Time":
+        return _Scalar('"2020-01-01T00:00:00Z"', '"2020-01-01T00:00:00Z"')
 
     raise ValueError(f"Unknown primitive: {name}")
 
