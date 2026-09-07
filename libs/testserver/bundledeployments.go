@@ -569,6 +569,43 @@ func (s *FakeWorkspace) ListResources(deploymentID string) Response {
 	return Response{Body: bundledeployments.ListResourcesResponse{Resources: resources}}
 }
 
+func (s *FakeWorkspace) ListOperations(deploymentID, versionID string) Response {
+	defer s.LockUnlock()()
+
+	d, ok := s.DmsDeployments[deploymentID]
+	if !ok {
+		return dmsNotFound("deployment " + deploymentID)
+	}
+
+	_, ok = d.Versions[versionID]
+	if !ok {
+		return dmsNotFound("version " + versionID)
+	}
+
+	// Collect operations for this version by filtering the operation name prefix.
+	// Operation names are: deployments/{deployment_id}/versions/{version_id}/operations/{resource_key}
+	versionPrefix := "deployments/" + deploymentID + "/versions/" + versionID + "/operations/"
+	var ops []*bundledeployments.Operation
+	for name, op := range d.Operations {
+		if strings.HasPrefix(name, versionPrefix) {
+			ops = append(ops, op)
+		}
+	}
+
+	// Sort by resource key so the response order is deterministic.
+	slices.SortFunc(ops, func(a, b *bundledeployments.Operation) int {
+		return strings.Compare(a.ResourceKey, b.ResourceKey)
+	})
+
+	response := bundledeployments.ListOperationsResponse{
+		Operations: make([]bundledeployments.Operation, len(ops)),
+	}
+	for i, op := range ops {
+		response.Operations[i] = *op
+	}
+	return Response{Body: response}
+}
+
 // leavesLiveResource reports whether a failed operation of this type leaves a resource behind
 // that it still has to describe. A create leaves nothing, and a recreate already deleted.
 func leavesLiveResource(action bundledeployments.OperationActionType) bool {

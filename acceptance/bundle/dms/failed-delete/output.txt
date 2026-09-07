@@ -214,6 +214,17 @@ API message: Fault injected by test.
   }
 ]
 
+=== The failed operation records the error message
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/2 -o json
+[
+  {
+    "action_type": "OPERATION_ACTION_TYPE_DELETE",
+    "error_message": "deleting id=[NUMID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)",
+    "resource_key": "jobs.stuck",
+    "status": "OPERATION_STATUS_FAILED"
+  }
+]
+
 === The state shows the resource still exists but the operation is marked failed
 >>> print_state.py --no-dms
 {
