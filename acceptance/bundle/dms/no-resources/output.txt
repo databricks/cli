@@ -47,7 +47,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 === The plan records DEPLOYMENT_METADATA_SERVICE as its backend
 >>> [CLI] bundle plan -o json
 {
-  "plan_version": 3,
+  "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "deployment_id": "[NUMID]",
   "next_version_id": "2",
@@ -123,7 +123,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 === The plan records DEPLOYMENT_METADATA_SERVICE as its backend
 >>> [CLI] bundle plan -o json
 {
-  "plan_version": 3,
+  "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "deployment_id": "[NUMID]",
   "next_version_id": "3",

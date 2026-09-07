@@ -95,9 +95,9 @@ New = "[METASTORE_NAME]"
 
 # Normalize plan_version so bumping it doesn't churn every recorded plan.
 [[Repls]]
-Old = '"plan_version": 2,'
+Old = '"plan_version": 3,'
 New = '"plan_version": [PLAN_VERSION],'
 
 [[Repls]]
-Old = 'json\.plan_version = 2;'
+Old = 'json\.plan_version = 3;'
 New = 'json.plan_version = [PLAN_VERSION];'

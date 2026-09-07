@@ -133,7 +133,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend
 >>> [CLI] bundle plan -o json
 {
-  "plan_version": 3,
+  "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,

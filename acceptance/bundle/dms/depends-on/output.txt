@@ -2,7 +2,7 @@
 === Plan before first deploy: no deployment yet, so no deployment_id or version fields
 >>> [CLI] bundle plan -o json
 {
-  "plan_version": 3,
+  "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "storage_backend": "DEPLOYMENT_METADATA_SERVICE"
 }
@@ -54,7 +54,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === The plan is a no-op now and records DEPLOYMENT_METADATA_SERVICE as its backend
 >>> [CLI] bundle plan -o json
 {
-  "plan_version": 3,
+  "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,

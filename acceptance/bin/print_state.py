@@ -13,7 +13,6 @@ import json
 import os
 import posixpath
 import subprocess
-import sys
 
 
 def print_file(filename):
