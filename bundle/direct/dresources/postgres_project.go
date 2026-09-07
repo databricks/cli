@@ -150,7 +150,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	// expands to nested attributes the body would have to set too — so we
 	// can't use a static all-fields mask. The change list naturally tracks
 	// what the user actually set, so the body and mask stay consistent.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", projectOneofGroups)
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", projectOneofGroups, &config.ProjectSpec)
 
 	// purge_on_delete is an input-only flag consulted at delete time; it is
 	// not a spec field. Strip it from the mask so toggling it between deploys

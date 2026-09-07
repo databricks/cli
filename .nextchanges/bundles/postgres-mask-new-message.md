@@ -1,0 +1,1 @@
+* Fixed a Lakebase (`postgres_*`) deploy failing with `Field ... is in update_mask but not provided in request` when a nested block such as `default_endpoint_settings` was added to the configuration and left some of its fields unset. ([#6374](https://github.com/databricks/cli/pull/6374))

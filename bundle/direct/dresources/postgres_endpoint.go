@@ -188,7 +188,7 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Endpoint object,
 	// not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", endpointOneofGroups)
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", endpointOneofGroups, &config.EndpointSpec)
 
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
 		Endpoint: postgres.Endpoint{
