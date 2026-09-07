@@ -15,9 +15,9 @@ title "The raw state after successful deploy"
 trace print_state.py --no-dms
 
 title "A recreate deletes and then fails to create. The delete went through, so the resource really is gone: the failed operation clears its state (self-contained, not assuming the delete's own write reached the service), rather than describing the resource as it was before the deploy"
-# Point the schema at a catalog that does not exist: the delete goes through, then the
-# create fails naturally against both the fake and a real workspace (no fault injection).
-trace update_file.py databricks.yml "catalog_name: main" "catalog_name: dms_nonexistent_${UNIQUE_NAME}"
+# Inject a fault on the schema create for the recreate operation. The delete goes through,
+# then the create fails.
+trace fault.py "POST /api/2.1/unity-catalog/schemas" 400 0 1 INVALID_PARAMETER_VALUE
 trace musterr $CLI bundle deploy --auto-approve
 # Not sorted: the point of this test is the order the operations are recorded in.
 trace print_requests.py --dms //api/2.0/bundle

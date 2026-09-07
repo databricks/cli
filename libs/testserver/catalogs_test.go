@@ -19,8 +19,7 @@ func TestCatalogsCreate_RejectsEmptyName(t *testing.T) {
 
 	// A stored-but-unreadable catalog under the empty key is the original bug. Asserted
 	// before the require below so it is still reported when the rejection is missing.
-	// (The workspace seeds "main", so the map is not empty; the empty key must be absent.)
-	assert.NotContains(t, workspace.Catalogs, "")
+	assert.Empty(t, workspace.Catalogs)
 
 	body, ok := response.Body.(map[string]string)
 	require.True(t, ok)

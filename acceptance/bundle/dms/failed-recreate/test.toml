@@ -1,4 +1,2 @@
-# The recreate fails naturally by pointing the schema at a catalog that does not
-# exist - the fake models catalog existence, so this fails the same way locally and
-# on cloud without fault injection.
-Cloud = true
+# Local only: the failure is injected to make schema creation fail for the recreate.
+Cloud = false
