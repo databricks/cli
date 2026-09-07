@@ -39,6 +39,14 @@ type PostgresEndpoint struct {
 	PostgresEndpointConfig
 }
 
+func (e *PostgresEndpoint) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, e)
+}
+
+func (e PostgresEndpoint) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(e)
+}
+
 func (e *PostgresEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
 	if err != nil {

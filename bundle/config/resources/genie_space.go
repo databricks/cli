@@ -62,6 +62,14 @@ type GenieSpace struct {
 	FilePath string `json:"file_path,omitempty"`
 }
 
+func (r *GenieSpace) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r GenieSpace) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
+}
+
 func (*GenieSpace) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	_, err := w.Genie.GetSpace(ctx, dashboards.GenieGetSpaceRequest{
 		SpaceId: id,
