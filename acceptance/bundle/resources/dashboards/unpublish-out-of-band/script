@@ -6,7 +6,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-trace $CLI bundle plan -o json | nostamp.py > out.plan_initial.$DATABRICKS_BUNDLE_ENGINE.json
+# Save raw plan (with DMS headers), then apply nostamp.py for golden file
+trace $CLI bundle plan -o json > plan_raw_initial.$DATABRICKS_BUNDLE_ENGINE.json
+cat plan_raw_initial.$DATABRICKS_BUNDLE_ENGINE.json | nostamp.py > out.plan_initial.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Deploy the dashboard
 trace $CLI bundle deploy -qq
@@ -25,7 +27,9 @@ trace $CLI lakeview unpublish $DASHBOARD_ID
 # Direct: shows "update" because Published field changes from false to true
 trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 
-$CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# Save raw plan (with DMS headers), then apply nostamp.py for golden file
+$CLI bundle plan -o json > plan_raw.$DATABRICKS_BUNDLE_ENGINE.json
+cat plan_raw.$DATABRICKS_BUNDLE_ENGINE.json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 json_in_json_normalize.py out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle deploy -qq
