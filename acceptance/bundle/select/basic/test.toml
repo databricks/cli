@@ -7,4 +7,4 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.READPLAN = ["", "1"]
 # databricks.yml and the serialized plans are generated at runtime; the plan JSON
 # is kept out of the recorded output because it embeds local/cloud-specific state.
-Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json", "plan-full.json", "plan.direct.json"]
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.direct.json", "plan-full.direct.json"]

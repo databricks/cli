@@ -1,7 +1,7 @@
 
 === bundle deploy --plan (no --select)
 
->>> [CLI] bundle deploy --plan plan.json
+>>> [CLI] bundle deploy --plan plan.direct.json
 Error: this plan is missing the deployment version ID required for deployment history recording; run 'bundle plan' again
 
 
