@@ -106,7 +106,11 @@ func normalizePath(path string, location dyn.Location, bundleRootPath string) (s
 		return "", err
 	}
 
-	// if path has scheme, it's a full path and doesn't need to be relativized
+	// if path has scheme, it's a full path and doesn't need to be relativized.
+	//
+	// Note url.Parse also succeeds on a relative path whose first segment contains a
+	// colon: "foo:bar" parses with scheme "foo". Such a path is left as-is instead of
+	// being resolved against the YAML file that defines it.
 	if pathAsUrl.Scheme != "" {
 		return path, nil
 	}
