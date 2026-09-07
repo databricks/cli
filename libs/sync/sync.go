@@ -49,8 +49,6 @@ type SyncOptions struct {
 	OutputHandler OutputHandler
 
 	DryRun bool
-
-	NoValidateRemotePath bool
 }
 
 type Sync struct {
@@ -84,12 +82,10 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 
 	WriteGitIgnore(ctx, opts.LocalRoot.Native())
 
-	if !opts.NoValidateRemotePath {
-		// Verify that the remote path we're about to synchronize to is valid and allowed.
-		err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser, opts.DryRun)
-		if err != nil {
-			return nil, err
-		}
+	// Verify that the remote path we're about to synchronize to is valid and allowed.
+	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser, opts.DryRun)
+	if err != nil {
+		return nil, err
 	}
 
 	// TODO: The host may be late-initialized in certain Azure setups where we

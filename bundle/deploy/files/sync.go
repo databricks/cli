@@ -15,7 +15,6 @@ func GetSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get sync options: %w", err)
 	}
-	opts.NoValidateRemotePath = true
 	return sync.New(ctx, *opts)
 }
 
