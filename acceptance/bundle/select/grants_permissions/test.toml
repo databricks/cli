@@ -10,4 +10,4 @@ Cloud = false
 RecordRequests = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.READPLAN = ["", "1"]
-Ignore = [".databricks", ".gitignore", "databricks.yml", "plan-job.json", "plan-schema.json"]
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan-job.json", "plan-schema.json", "plan-job.direct.json", "plan-schema.direct.json"]

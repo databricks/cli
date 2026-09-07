@@ -2,7 +2,7 @@
 === bundle deploy --plan (no --select)
 
 >>> [CLI] bundle deploy --plan plan.json
-Error: this plan does not record deployment history, but the target now does; run 'bundle plan' again
+Error: this plan is missing the deployment version ID required for deployment history recording; run 'bundle plan' again
 
 
 >>> [CLI] bundle destroy --auto-approve
