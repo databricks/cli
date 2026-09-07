@@ -226,7 +226,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 				// the outcome. On failure, exit non-zero without root printing a
 				// duplicate "Error: ..." line to stderr; root prints errors itself
 				// (see cmd/root/root.go), so ErrAlreadyPrinted is how a command
-				// opts out of that, not cmd.SilenceErrors.
+				// opts out of that
 				if runErr != nil {
 					return root.ErrAlreadyPrinted
 				}
