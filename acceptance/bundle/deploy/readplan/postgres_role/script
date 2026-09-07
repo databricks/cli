@@ -6,12 +6,12 @@
 # empty role_id, the server would generate its own, and the next plan would
 # report phantom "recreate" drift on the immutable role_id.
 
-trace $CLI bundle plan -o json | nostamp > plan.json
+trace $CLI bundle plan -o json > tmp.plan.json
 
 # Keep only the role entry; role_id and parent must survive serialization.
-trace jq '.plan."resources.postgres_roles.role"' plan.json > out.plan.role.json
+nostamp < tmp.plan.json | jq '.plan."resources.postgres_roles.role"' > out.plan.role.json
 
-trace $CLI bundle deploy --plan plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
 
 # The create request must carry the configured role_id, not an empty one.
 trace print_requests.py //roles

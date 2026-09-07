@@ -1,6 +1,6 @@
-trace $CLI bundle plan -o json | nostamp > plan.json
+trace $CLI bundle plan -o json > tmp.plan.json
 
-jq '.cli_version = "1.2.3"' plan.json > plan.json.tmp && mv plan.json.tmp plan.json
+jq '.cli_version = "1.2.3"' tmp.plan.json > plan.json
 
 trace $CLI bundle deploy --plan plan.json
 rm plan.json

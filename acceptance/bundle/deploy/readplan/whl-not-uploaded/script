@@ -15,8 +15,9 @@ trace $CLI bundle destroy --auto-approve
 rm out.requests.txt
 
 title "bundle deploy --plan does NOT upload the wheel (bug)"
-trace $CLI bundle plan -o json | nostamp > out.plan.json
-trace $CLI bundle deploy --plan out.plan.json
+trace $CLI bundle plan -o json > tmp.plan.json
+nostamp < tmp.plan.json > out.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
 # BUG: no import-file request for the wheel here (output below is empty), yet the job was
 # created pointing the task at the same .../artifacts/.internal/ path that was never uploaded.
 trace print_requests.py //artifacts/.internal --del-field raw_body

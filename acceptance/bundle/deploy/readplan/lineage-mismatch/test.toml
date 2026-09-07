@@ -1,2 +1,4 @@
 # Test that --plan with mismatched lineage produces an error
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# Committed plan.json lacks DMS headers, so skip DMS=true
+EnvMatrixExclude.plan_no_dms = ["DMS=true"]
