@@ -1,6 +1,6 @@
 {
   "plan_version": 3,
-  "cli_version": "[CLI_VERSION]",
+  "cli_version": "[CLI_VERSION]+ef650bc194e6",
   "plan": {
     "resources.models.foo": {
       "action": "create",

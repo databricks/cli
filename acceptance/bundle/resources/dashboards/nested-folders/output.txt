@@ -1,28 +1,7 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-nested-folders-[UNIQUE_NAME]/default/files...
-Created dashboards.dashboard1
-Files: 9 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Error: this plan does not record deployment history, but the target now does; run 'bundle plan' again
 
->>> retry [CLI] lakeview get [DASHBOARD_ID]
-{
-  "lifecycle_state": "ACTIVE",
-  "parent_path": "/Users/[USERNAME]",
-  "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
-  "serialized_dashboard": {
-    "pages": [
-      {
-        "name": "02724bf2",
-        "displayName": "Dashboard test bundle-deploy-dashboard",
-        "pageType": "PAGE_TYPE_CANVAS"
-      }
-    ]
-  }
-}
 
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.dashboards.dashboard1
+No active deployment found to destroy!
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-nested-folders-[UNIQUE_NAME]/default
-
-Destroy: 1 deleted
+Exit code: 1

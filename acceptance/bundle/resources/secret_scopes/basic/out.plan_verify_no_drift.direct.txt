@@ -1,5 +1,5 @@
 json.plan_version = 3;
-json.cli_version = "[CLI_VERSION]";
+json.cli_version = "[CLI_VERSION]+ef650bc194e6";
 json.lineage = "[UUID]";
 json.serial = 2;
 json.plan.resources.secret_scopes.my_scope.action = "skip";

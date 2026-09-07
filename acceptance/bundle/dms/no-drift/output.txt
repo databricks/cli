@@ -31,7 +31,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan -o json
 {
   "plan_version": 3,
-  "cli_version": "[CLI_VERSION]",
+  "cli_version": "[CLI_VERSION]+ef650bc194e6",
   "lineage": "[UUID]",
   "serial": 1,
   "deployment_id": "[NUMID]",
@@ -47,7 +47,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 >>> print_state.py --no-dms
 {
  "state_version": 2,
- "cli_version": "[CLI_VERSION]",
+ "cli_version": "[CLI_VERSION]+ef650bc194e6",
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
@@ -166,7 +166,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 >>> [CLI] bundle plan -o json
 {
   "plan_version": 3,
-  "cli_version": "[CLI_VERSION]",
+  "cli_version": "[CLI_VERSION]+ef650bc194e6",
   "lineage": "[UUID]",
   "serial": 2,
   "deployment_id": "[NUMID]",
@@ -182,7 +182,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 >>> print_state.py --no-dms
 {
  "state_version": 2,
- "cli_version": "[CLI_VERSION]",
+ "cli_version": "[CLI_VERSION]+ef650bc194e6",
  "lineage": "[UUID]",
  "serial": 2,
  "features": {
