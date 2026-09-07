@@ -3,10 +3,48 @@
 create dashboards.my_dashboard
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
-Error: this plan does not record deployment history, but the target now does; run 'bundle plan' again
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/files...
+Created dashboards.my_dashboard
+Files: 9 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+{
+  "display_name": "test dashboard",
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources",
+  "path": "/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources/test dashboard.lvdash.json",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+{
+  "displayName": "name1",
+  "name": "name1",
+  "pageType": "PAGE_TYPE_CANVAS"
+}
 
+>>> [CLI] bundle plan
+update dashboards.my_dashboard
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/files...
+Updated dashboards.my_dashboard
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+{
+  "display_name": "test dashboard",
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources",
+  "path": "/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources/test dashboard.lvdash.json",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+{
+  "displayName": "name2",
+  "name": "name2",
+  "pageType": "PAGE_TYPE_CANVAS"
+}
 
 >>> [CLI] bundle destroy --auto-approve
-No active deployment found to destroy!
+The following resources will be deleted:
+  delete resources.dashboards.my_dashboard
 
-Exit code: 1
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
