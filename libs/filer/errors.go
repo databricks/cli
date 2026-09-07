@@ -2,6 +2,25 @@ package filer
 
 import "io/fs"
 
+// Each error below is a fixed classification followed by the path it concerns.
+// The classification is a source literal and safe to report to telemetry; the
+// path is user data. Naming the literals here lets Error() and SafeString()
+// derive from one string, so the message and what telemetry sees cannot drift.
+//
+// SafeString implements safeerr.SafeStringer: an error wrapped with %w by a
+// safeerr error contributes its classification to that error's message
+// template. See libs/safeerr.
+const (
+	msgFileAlreadyExists = "file already exists"
+	msgFileDoesNotExist  = "file does not exist"
+	msgNoSuchDirectory   = "no such directory"
+	msgNotADirectory     = "not a directory"
+	msgNotAFile          = "not a file"
+	msgDirectoryNotEmpty = "directory not empty"
+	msgCannotDeleteRoot  = "unable to delete filer root"
+	msgPermissionDenied  = "access denied"
+)
+
 // fileAlreadyExistsError is returned when attempting to write a file at a path
 // that already exists, without using the OverwriteIfExists WriteMode flag.
 type fileAlreadyExistsError struct {
@@ -9,7 +28,11 @@ type fileAlreadyExistsError struct {
 }
 
 func (err fileAlreadyExistsError) Error() string {
-	return "file already exists: " + err.path
+	return msgFileAlreadyExists + ": " + err.path
+}
+
+func (err fileAlreadyExistsError) SafeString() string {
+	return msgFileAlreadyExists
 }
 
 func (err fileAlreadyExistsError) Is(other error) bool {
@@ -28,7 +51,11 @@ func (err fileDoesNotExistError) Is(other error) bool {
 }
 
 func (err fileDoesNotExistError) Error() string {
-	return "file does not exist: " + err.path
+	return msgFileDoesNotExist + ": " + err.path
+}
+
+func (err fileDoesNotExistError) SafeString() string {
+	return msgFileDoesNotExist
 }
 
 // noSuchDirectoryError is returned when attempting to write a file to a path
@@ -39,7 +66,11 @@ type noSuchDirectoryError struct {
 }
 
 func (err noSuchDirectoryError) Error() string {
-	return "no such directory: " + err.path
+	return msgNoSuchDirectory + ": " + err.path
+}
+
+func (err noSuchDirectoryError) SafeString() string {
+	return msgNoSuchDirectory
 }
 
 func (err noSuchDirectoryError) Is(other error) bool {
@@ -53,7 +84,11 @@ type notADirectory struct {
 }
 
 func (err notADirectory) Error() string {
-	return "not a directory: " + err.path
+	return msgNotADirectory + ": " + err.path
+}
+
+func (err notADirectory) SafeString() string {
+	return msgNotADirectory
 }
 
 func (err notADirectory) Is(other error) bool {
@@ -67,7 +102,11 @@ type notAFile struct {
 }
 
 func (err notAFile) Error() string {
-	return "not a file: " + err.path
+	return msgNotAFile + ": " + err.path
+}
+
+func (err notAFile) SafeString() string {
+	return msgNotAFile
 }
 
 func (err notAFile) Is(other error) bool {
@@ -82,7 +121,11 @@ type directoryNotEmptyError struct {
 }
 
 func (err directoryNotEmptyError) Error() string {
-	return "directory not empty: " + err.path
+	return msgDirectoryNotEmpty + ": " + err.path
+}
+
+func (err directoryNotEmptyError) SafeString() string {
+	return msgDirectoryNotEmpty
 }
 
 func (err directoryNotEmptyError) Is(other error) bool {
@@ -95,7 +138,12 @@ func (err directoryNotEmptyError) Is(other error) bool {
 type cannotDeleteRootError struct{}
 
 func (err cannotDeleteRootError) Error() string {
-	return "unable to delete filer root"
+	return msgCannotDeleteRoot
+}
+
+// SafeString is the whole message: this error carries no path.
+func (err cannotDeleteRootError) SafeString() string {
+	return msgCannotDeleteRoot
 }
 
 func (err cannotDeleteRootError) Is(other error) bool {
@@ -113,7 +161,11 @@ type permissionError struct {
 }
 
 func (err permissionError) Error() string {
-	return "access denied: " + err.path
+	return msgPermissionDenied + ": " + err.path
+}
+
+func (err permissionError) SafeString() string {
+	return msgPermissionDenied
 }
 
 func (err permissionError) Is(other error) bool {

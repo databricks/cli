@@ -2,7 +2,7 @@ package resourcemutator
 
 import (
 	"context"
-	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/iamutil"
+	"github.com/databricks/cli/libs/safeerr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -63,7 +64,7 @@ func collapsePermissions(scope *resources.SecretScope) error {
 	for _, perm := range scope.Permissions {
 		// Validate permission level
 		if _, ok := permissionRank[perm.Level]; !ok {
-			return fmt.Errorf("unknown permission level %q for secret scope", perm.Level)
+			return safeerr.Errorf("unknown permission level %q for secret scope", perm.Level)
 		}
 
 		// Add a prefix to retain the original principal type. In practice collisions here should
@@ -76,7 +77,7 @@ func collapsePermissions(scope *resources.SecretScope) error {
 		} else if perm.ServicePrincipalName != "" {
 			principal = "sp:" + perm.ServicePrincipalName
 		} else {
-			return fmt.Errorf("missing principal in permissions for secret scope %q", scope.Name)
+			return safeerr.Errorf("missing principal in permissions for secret scope %q", scope.Name)
 		}
 
 		existing, exists := principalPermissions[principal]
@@ -120,19 +121,28 @@ func collapsePermissions(scope *resources.SecretScope) error {
 	return nil
 }
 
-func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+// ApplySecretScopeFixups is the mutator's body, exported so a caller that wants
+// the failure as an error rather than a diagnostic can have it. The migration to
+// the direct engine is one: it reports the error's template to telemetry, which a
+// diagnostic's summary cannot carry. The returned key names the offending scope.
+func ApplySecretScopeFixups(b *bundle.Bundle, eng engine.EngineType) (string, error) {
 	// Secret scopes by default have the current user as a MANAGE ACL. We need to add it to the client ACL list
 	// to prevent a phantom persistent diff.
 	// We do not need to do this in terraform because terraform naively always applies the config during ACL
 	// creation without checking if the ACL already exists.
 	// https://github.com/databricks/terraform-provider-databricks/blob/5cb5d3fa46bc4843be1a4c4bce89296eaa2e14fc/secrets/resource_secret_acl.go#L43
-	if !m.engine.IsDirect() {
-		return nil
+	if !eng.IsDirect() {
+		return "", nil
 	}
 
 	// Secret scopes assigns the create MANAGE ACL on it by default. So we always add it to
 	// the client ACL list as a default.
-	for key, scope := range b.Config.Resources.SecretScopes {
+	//
+	// Sorted because the key travels out to a diagnostic and to migration
+	// telemetry: with two invalid scopes, map order would decide which one is
+	// reported and the output would vary between runs.
+	for _, key := range slices.Sorted(maps.Keys(b.Config.Resources.SecretScopes)) {
+		scope := b.Config.Resources.SecretScopes[key]
 		if scope == nil {
 			continue
 		}
@@ -140,19 +150,27 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		currentUser := b.Config.Workspace.CurrentUser.User
 
 		addManageForCurrentUser(scope, currentUser)
-		err := collapsePermissions(scope)
-		if err != nil {
-			return diag.Diagnostics{
-				{
-					Severity:  diag.Error,
-					Summary:   "Failed to collapse permissions for secret scope",
-					Detail:    err.Error(),
-					Paths:     []dyn.Path{dyn.MustPathFromString("resources.secret_scopes." + key)},
-					Locations: []dyn.Location{b.Config.GetLocation("resources.secret_scopes." + key)},
-				},
-			}
+		if err := collapsePermissions(scope); err != nil {
+			return key, err
 		}
 	}
 
-	return nil
+	return "", nil
+}
+
+func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	key, err := ApplySecretScopeFixups(b, m.engine)
+	if err == nil {
+		return nil
+	}
+
+	return diag.Diagnostics{
+		{
+			Severity:  diag.Error,
+			Summary:   "Failed to collapse permissions for secret scope",
+			Detail:    err.Error(),
+			Paths:     []dyn.Path{dyn.MustPathFromString("resources.secret_scopes." + key)},
+			Locations: []dyn.Location{b.Config.GetLocation("resources.secret_scopes." + key)},
+		},
+	}
 }

@@ -1,0 +1,24 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# A DABs-only field pointing at another resource's DABs-only field. Neither is in
+# terraform.tfstate, so both of the conversion's resolution methods fail.
+#
+# The deploy is unaffected: the field has no Terraform equivalent, so it is
+# dropped on conversion and Terraform never sees the reference inside it. That is
+# what lets the conversion, rather than the deploy, be the thing that fails.
+title "Deploy on terraform: the dry run already reports the failure"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+trace update_file.py databricks.yml "name: test-bundle" "name: test-bundle
+  engine: direct"
+
+title "Opt in via config: the same failure stops the automatic migration"
+trace $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "State is still terraform, so nothing was migrated\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
