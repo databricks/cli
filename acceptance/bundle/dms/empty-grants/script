@@ -8,9 +8,13 @@ title "Revoke the grant, so the grants node empties out"
 trace update_file.py databricks.yml 'grants: [{principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA]}]' 'grants: []'
 trace $CLI bundle deploy
 
-# The action type stays update: it is staged from the plan, before apply knows the state
-# comes back empty. What drops the resource from the deployment is the update naming state
-# with no value.
+# KNOWN BUG (why this test is Cloud=false): emptying the grants node makes apply call
+# DeleteState, which records the operation as a delete with no state. The staged action
+# is still UPDATE, so the service sees a succeeded UPDATE that names no state while the
+# schema (a live resource) still exists, and rejects it (400 INVALID_PARAMETER_VALUE). The
+# fake does not model that check, so this passes locally; the recorded requests below are
+# the buggy output. Fix: emptying grants should record an update carrying the emptied
+# grants state, not a delete.
 trace print_requests.py --dms //api/2.0/bundle
 
 title "Plan again: reading state back from the service works and reports no work"
@@ -20,7 +24,7 @@ title "The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backen
 dms_plan
 
 title "The grants node emptied out, so the service no longer lists it - only the schema remains"
-deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-emptied-resource-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
+deployment_id=$(MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-empty-grants-${UNIQUE_NAME}/default/state/resources.deployment.json" | python3 -c 'import sys, json; print(json.load(sys.stdin)["object_id"])')
 trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${deployment_id}" -o json | jq -S 'map({resource_key, last_version_id, last_action_type})'
 
 title "The raw recorded state the service holds for this deployment"
