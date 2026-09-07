@@ -497,13 +497,13 @@ func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, 
 			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
 		}
 
-		// For DMS plans, validate that required fields are present.
-		// A DMS plan must have next_version_id, and if it's not "1" or has a previous_version_id,
-		// then deployment_id must also be set (not a first-deploy).
-		if plan.NextVersionId == "" {
+		// For DMS plans, validate that required fields are present for non-first deployments.
+		// On first deploy, NextVersionId and DeploymentId are empty (computed during deploy).
+		// On subsequent deploys, both must be set to ensure the plan targets the right deployment.
+		if plan.DeploymentId != "" && plan.NextVersionId == "" {
 			return errors.New("this plan is missing the deployment version ID required for deployment history recording; run 'bundle plan' again")
 		}
-		if plan.NextVersionId != "1" && plan.DeploymentId == "" {
+		if plan.NextVersionId != "" && plan.NextVersionId != "1" && plan.DeploymentId == "" {
 			return errors.New("this plan is missing the deployment ID required for deployment history recording; run 'bundle plan' again")
 		}
 	}
