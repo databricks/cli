@@ -8,6 +8,7 @@ CloudEnvs.azure = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
 
 Ignore = [
+    "out.requests.txt",
     "databricks.yml",
     ".databricks",
 ]
