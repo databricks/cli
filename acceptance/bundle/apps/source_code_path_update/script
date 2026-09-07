@@ -28,7 +28,7 @@ title "Redeploy from saved plan after description change"
 # Changing a non-deploy-only field (description) so DoUpdate is called.
 sed -i.bak 's/description: "first description"/description: "second description"/' databricks.yml
 # Route bundle plan stderr (diagnostics) to a log so output.txt stays clean.
-$CLI bundle plan -o json 2> LOG.plan | tee plan.json | nostamp.py > /dev/null
+$CLI bundle plan -o json > plan.json 2> LOG.plan
 # bundle deploy --plan triggers InitForApply, which JSON-round-trips AppState.
 # Without the fix, apps.App.ForceSendFields ends up containing "SourceCodePath",
 # causing "source_code_path": "" to be sent in the UpdateApp body (API returns 400).

@@ -24,7 +24,7 @@ cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
 envsubst < databricks_header.yml.tmpl > databricks.yml
 echo "resources: {}" >> databricks.yml
 
-trace $CLI bundle plan -o json 2>LOG.plan_delete.err | tee plan_delete.json | nostamp.py > /dev/null
+trace $CLI bundle plan -o json > plan_delete.json 2>LOG.plan_delete.err
 cat LOG.plan_delete.err | contains.py '!panic' '!internal error' > /dev/null
 
 # Out-of-band delete flips the app into DELETING: a second delete now returns 400.
