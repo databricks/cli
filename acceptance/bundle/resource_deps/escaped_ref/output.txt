@@ -12,7 +12,7 @@
 }
 
 === Payload: escaped stays literal, real is resolved
-Warn: Plan was created with CLI version [CLI_VERSION] but current version is [CLI_VERSION]+ef650bc194e6
+Warn: Plan was created with CLI version [CLI_VERSION] but current version is [CLI_VERSION]
 Error: this plan does not record deployment history, but the target now does; run 'bundle plan' again
 
 
