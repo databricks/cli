@@ -8,12 +8,21 @@ import (
 	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 type DatabaseCatalog struct {
 	BaseResource
 	database.DatabaseCatalog
+}
+
+func (d *DatabaseCatalog) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, d)
+}
+
+func (d DatabaseCatalog) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(d)
 }
 
 func (d *DatabaseCatalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

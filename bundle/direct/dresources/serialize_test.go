@@ -123,6 +123,18 @@ func TestRoundtripAllFieldsRemoteType(t *testing.T) {
 	testRoundtripAllFields(t, "RemoteType", (*Adapter).RemoteType)
 }
 
+// TestRoundtripAllFieldsInputConfigType verifies InputConfigType, the typed
+// bundle config a resource is loaded into, survives a JSON round-trip with every
+// field populated. Bundle config is normally read and written through libs/dyn,
+// which walks the struct itself and never calls these marshalers, so this is a
+// latent trap rather than live corruption. It is guarded anyway because it is the
+// same trap as StateType and RemoteType: a resource that embeds a member with its
+// own MarshalJSON and defines none of its own inherits that method by promotion
+// and silently drops id, url, lifecycle, modified_status and permissions.
+func TestRoundtripAllFieldsInputConfigType(t *testing.T) {
+	testRoundtripAllFields(t, "InputConfigType", (*Adapter).InputConfigType)
+}
+
 // fillNonZero recursively populates v with non-zero values so that every
 // serializable field is observable in a round-trip. It skips ForceSendFields
 // (json:"-") and bounds recursion depth to avoid runaway on self-referential
@@ -156,8 +168,13 @@ func fillNonZero(v reflect.Value, depth int) {
 		fillNonZero(val, depth+1)
 		v.SetMapIndex(reflect.ValueOf("k").Convert(v.Type().Key()), val)
 	case reflect.Interface:
-		// Free-form any fields decode to map[string]any from JSON.
-		v.Set(reflect.ValueOf(map[string]any{"k": "v"}))
+		// A free-form any field is filled with a string rather than a map so that
+		// it also round-trips when it shadows a string field in an embedded struct
+		// (ClusterPolicy.Definition over compute.CreatePolicy.Definition). Only the
+		// shallower field is reachable by that JSON name, but the SDK unmarshaler
+		// writes the raw JSON text into the shadowed one too, so a map would come
+		// back as the string `{"k":"v"}` there and read as a lost field.
+		v.Set(reflect.ValueOf("x"))
 	case reflect.Struct:
 		t := v.Type()
 		for i := range t.NumField() {
