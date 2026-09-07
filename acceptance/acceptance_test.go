@@ -419,6 +419,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if base, _, found := strings.Cut(cliVersion, "+"); found {
 		repls.Set(base, "[CLI_VERSION]")
 	}
+	// A dev build may embed a +<git-sha> that the base-version replacement above leaves
+	// behind (e.g. "[CLI_VERSION]+abc123def456"), which would otherwise bake into a
+	// regenerated golden. Strip any such trailing suffix so goldens stay sha-independent.
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile(`\[CLI_VERSION\]\+[0-9a-f]{7,40}`), New: "[CLI_VERSION]"})
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementTfProviderVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
