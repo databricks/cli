@@ -171,8 +171,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// since switched backends or has an outdated version or a wrong deployment_id.
 	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		plan.StorageBackend = string(dstate.StorageBackendDeploymentMetadataService)
-		// Not the first deployment, stamp the deployment_id and version_id into the plan.
 		if b.StateDB.DeploymentID != "" {
+			// Subsequent deployment: compute next version from current state.
 			next, err := dms.NextVersion(b.StateDB.LatestVersionID)
 			if err != nil {
 				return nil, fmt.Errorf("computing next deployment version: %w", err)
@@ -180,6 +180,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			plan.DeploymentId = b.StateDB.DeploymentID
 			plan.LastVersionId = b.StateDB.LatestVersionID
 			plan.NextVersionId = strconv.FormatInt(next, 10)
+		} else {
+			// First deployment: version will be "1" with no prior version.
+			plan.NextVersionId = "1"
+			plan.LastVersionId = ""
 		}
 	}
 
