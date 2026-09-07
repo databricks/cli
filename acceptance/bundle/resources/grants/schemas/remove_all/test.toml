@@ -1,0 +1,4 @@
+# Emptying a grants node is a known bug under DMS (deployment-history recording).
+# It records a succeeded UPDATE with no state, which the service rejects.
+# See: acceptance/bundle/dms/empty-grants
+EnvMatrixExclude.empty_grants_dms_bug = ["DMS=true"]
