@@ -148,46 +148,101 @@ func TestRoundtripAllFieldsInputConfigType(t *testing.T) {
 	testRoundtripAllFields(t, "InputConfigType", (*Adapter).InputConfigType, []string{"cluster_policies"})
 }
 
-// TestMarshalerValueReceiver asserts that no adapter surface type declares
-// MarshalJSON on a pointer receiver only.
+var jsonMarshalerType = reflect.TypeFor[json.Marshaler]()
+
+// derefType strips pointer indirection so a type is classified by what it holds.
+func derefType(t reflect.Type) reflect.Type {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	return t
+}
+
+// hasPointerOnlyMarshaler reports whether *T marshals itself but T does not.
 //
-// A pointer-receiver MarshalJSON is satisfied by *T but not by T, and
-// encoding/json reaches it only for an addressable value. json.Marshal(&x) then
-// uses the marshaler while json.Marshal(x) silently falls back to plain
-// struct-field encoding -- two code paths for one type, disagreeing on more than
-// key order, because encoding/json knows nothing about ForceSendFields (tagged
-// json:"-"). A force-sent zero value survives one path and vanishes on the other.
+// A type with no marshaler at all is not a defect: encoding/json treats it the
+// same by value and by pointer. Only the asymmetry is.
+func hasPointerOnlyMarshaler(t reflect.Type) bool {
+	return t.Kind() == reflect.Struct &&
+		reflect.PointerTo(t).Implements(jsonMarshalerType) &&
+		!t.Implements(jsonMarshalerType)
+}
+
+// collectPointerOnlyMarshalers records into found every struct type reachable
+// from t whose MarshalJSON is declared on a pointer receiver only. seen bounds
+// the walk, which terminates because the type graph is finite even though SDK
+// types are self-referential.
+func collectPointerOnlyMarshalers(t reflect.Type, seen, found map[reflect.Type]bool) {
+	t = derefType(t)
+	if seen[t] {
+		return
+	}
+	seen[t] = true
+
+	if hasPointerOnlyMarshaler(t) {
+		found[t] = true
+	}
+
+	switch t.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map:
+		collectPointerOnlyMarshalers(t.Elem(), seen, found)
+	case reflect.Struct:
+		for field := range t.Fields() {
+			if field.IsExported() {
+				collectPointerOnlyMarshalers(field.Type, seen, found)
+			}
+		}
+	default:
+		// Scalars hold no named type to check, and an interface field's dynamic
+		// type is not knowable from the static type.
+	}
+}
+
+// TestMarshalerValueReceiver asserts that no type reachable from an adapter
+// surface declares MarshalJSON on a pointer receiver only.
 //
-// The round-trip tests above cannot catch this: they build values with
+// Such a method is satisfied by *T but not by T, and encoding/json reaches it
+// only for an addressable value. json.Marshal(&x) then uses the marshaler while
+// json.Marshal(x) silently falls back to plain struct-field encoding -- two code
+// paths for one type. They disagree on more than key order, because encoding/json
+// knows nothing about ForceSendFields (tagged json:"-"), so a force-sent zero
+// value of an omitempty field survives one path and vanishes on the other.
+//
+// The walk covers embedded members and named fields, not just the surface type
+// itself. Both matter, for different reasons: an embedded member's pointer
+// receiver is promoted to *T only, which makes T itself asymmetric unless T
+// declares its own marshaler -- and if it does, the member's asymmetry is hidden
+// from a top-level check while still applying wherever that member is marshalled
+// directly. A named field or collection element is stronger still: marshal's
+// structAsMap stores it into a map via .Interface(), and a map value is not
+// addressable, so the pointer receiver is unreachable there.
+//
+// The round-trip tests above cannot catch any of this: they build values with
 // reflect.New, so they only ever marshal a pointer.
 func TestMarshalerValueReceiver(t *testing.T) {
-	marshaler := reflect.TypeFor[json.Marshaler]()
+	seen := make(map[reflect.Type]bool)
+	found := make(map[reflect.Type]bool)
 
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
-
-		t.Run(resourceType, func(t *testing.T) {
-			for _, surface := range []struct {
-				label  string
-				typeOf func(*Adapter) reflect.Type
-			}{
-				{"InputConfigType", (*Adapter).InputConfigType},
-				{"StateType", (*Adapter).StateType},
-				{"RemoteType", (*Adapter).RemoteType},
-			} {
-				typ := surface.typeOf(adapter).Elem()
-				// A type with no marshaler at all is fine: encoding/json handles it
-				// the same way by value and by pointer. Only the asymmetry is a bug.
-				if !reflect.PointerTo(typ).Implements(marshaler) {
-					continue
-				}
-				require.True(t, typ.Implements(marshaler),
-					"%s %s: %s declares MarshalJSON on a pointer receiver only; change it to a value receiver so marshalling by value and by pointer agree",
-					surface.label, resourceType, typ)
-			}
-		})
+		for _, typeOf := range []func(*Adapter) reflect.Type{
+			(*Adapter).InputConfigType,
+			(*Adapter).StateType,
+			(*Adapter).RemoteType,
+		} {
+			collectPointerOnlyMarshalers(typeOf(adapter), seen, found)
+		}
 	}
+
+	names := make([]string, 0, len(found))
+	for t := range found {
+		names = append(names, t.String())
+	}
+	slices.Sort(names)
+	require.Empty(t, names,
+		"these types declare MarshalJSON on a pointer receiver only; give each a value receiver so marshalling by value and by pointer agree:\n  %s",
+		strings.Join(names, "\n  "))
 }
 
 // fillNonZero recursively populates v with non-zero values so that every
