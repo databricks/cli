@@ -24,12 +24,18 @@ Dry run: configuration for "smoke-test" is valid; not submitting.
 >>> [CLI] experimental air run -f valid.yaml --dry-run --override bogus=1
 Error: invalid --override "bogus": "bogus" is not a known field; available fields are: code_source, command, compute, env_variables, environment, experiment_name, idempotency_token, max_retries, mlflow_artifact_location, mlflow_experiment_directory, mlflow_run_name, parameters, permissions, secrets, timeout_minutes, usage_policy_id, usage_policy_name
 
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air run …
+
 Exit code: 1
 
 === override still runs schema validation
 >>> [CLI] experimental air run -f valid.yaml --dry-run --override compute.num_accelerators=0
 Override: changing compute.num_accelerators from 1 to 0
 Error: compute.num_accelerators must be positive, got 0
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air run …
 
 Exit code: 1
 
@@ -45,11 +51,17 @@ Dry run: configuration for "smoke-test" is valid; not submitting.
 >>> [CLI] experimental air run -f git-remote.yaml --dry-run
 Error: git.remote is no longer supported: the snapshot archives your local copy, so a branch resolves to its local HEAD. To deploy a specific committed revision, use git.commit
 
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air run …
+
 Exit code: 1
 
 === invalid config is rejected
 >>> [CLI] experimental air run -f invalid.yaml --dry-run
 Error: invalid experiment_name "bad.name": only alphanumeric characters, hyphens (-), and underscores (_) are allowed
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air run …
 
 Exit code: 1
 

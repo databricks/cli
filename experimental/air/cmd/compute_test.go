@@ -59,6 +59,30 @@ func TestGPUsPerNode(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestParsePriorityClass(t *testing.T) {
+	// Case-insensitive: mixed/lower case and surrounding whitespace normalize to
+	// the enum's contract value.
+	for _, in := range []string{"CRITICAL", "critical", "Critical", "  critical  "} {
+		got, err := parsePriorityClass(in)
+		require.NoError(t, err)
+		assert.Equal(t, priorityClassCritical, got)
+	}
+
+	for _, in := range []string{"urgent", "", "high"} {
+		_, err := parsePriorityClass(in)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "valid values are")
+	}
+}
+
+func TestComputeConfigValidateNormalizesPriorityClass(t *testing.T) {
+	// A lower-case value is upper-cased in place so the submitted payload carries
+	// the enum's contract value.
+	cfg := computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", ProvisionedCapacityID: new("cap"), PriorityClass: new("critical")}
+	require.NoError(t, cfg.validate())
+	assert.Equal(t, "CRITICAL", *cfg.PriorityClass)
+}
+
 func TestComputeConfigValidate(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -75,6 +99,9 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"legacy type rejected", computeConfig{NumAccelerators: 8, AcceleratorType: "h100_80gb"}, "accelerator_type"},
 		{"non-positive count", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_1xH100"}, "must be positive"},
 		{"count not a multiple", computeConfig{NumAccelerators: 4, AcceleratorType: "GPU_8xH100"}, "multiple of 8"},
+		{"priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", ProvisionedCapacityID: new("cap"), PriorityClass: new("critical")}, ""},
+		{"priority class requires reservation", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PriorityClass: new("NORMAL")}, "requires compute.provisioned_capacity_id"},
+		{"invalid priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", ProvisionedCapacityID: new("cap"), PriorityClass: new("urgent")}, "invalid priority_class"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

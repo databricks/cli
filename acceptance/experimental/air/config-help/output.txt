@@ -66,6 +66,7 @@ config.compute
     num_accelerators         Total number of GPUs to allocate.
     accelerator_type         Which accelerator to run on, e.g. GPU_1xA10.
     provisioned_capacity_id  Pre-provisioned AIR capacity reservation id.
+    priority_class           Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest).
 
 Use "-h config.compute.<field>" for details on a field.
 
@@ -79,7 +80,14 @@ config.mlflow_artifact_location
 
 >>> [CLI] experimental air run -h config.compute.provisioned_capacity_id
 config.compute.provisioned_capacity_id
-  Pre-provisioned AIR capacity reservation id. Must be 1-255 characters.
+  Pre-provisioned AIR capacity reservation id. Must be 1-255 characters. Contact your Databricks account team to provision capacity.
+
+  Type:     string
+  Required: no
+
+>>> [CLI] experimental air run -h config.compute.priority_class
+config.compute.priority_class
+  Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires provisioned_capacity_id.
 
   Type:     string
   Required: no
@@ -127,7 +135,7 @@ config.compute.num_accelerators
 >>> [CLI] experimental air run -h config.compute.acclerator_type
 Error: unknown config field "config.compute.acclerator_type"; did you mean "accelerator_type"?
 
-fields under "config.compute" are: accelerator_type, num_accelerators, provisioned_capacity_id
+fields under "config.compute" are: accelerator_type, num_accelerators, priority_class, provisioned_capacity_id
 
 === free-form map keys are not schema fields
 >>> [CLI] experimental air run -h config.parameters.learning_rate

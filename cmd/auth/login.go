@@ -11,6 +11,7 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -21,7 +22,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
@@ -47,8 +47,7 @@ const (
 	discoveryFallbackTip    = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
 	// discoveryHostEnvVar overrides the default https://login.databricks.com
 	// host used by the discovery login flow. Intended for testing and
-	// development against non-production environments. See WithDiscoveryHost
-	// in github.com/databricks/databricks-sdk-go/credentials/u2m.
+	// development against non-production environments.
 	discoveryHostEnvVar = "DATABRICKS_DISCOVERY_HOST"
 )
 
@@ -735,7 +734,8 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	// cluster_id, serverless_compute_id) from a prior login to a different host
 	// type must be cleared so they don't leak into the new profile. account_id
 	// and workspace_id are re-added from discovery/introspection results.
-	clearKeys = append(clearKeys,
+	clearKeys = append(
+		clearKeys,
 		"account_id",
 		"workspace_id",
 		databrickscfg.ExperimentalIsUnifiedHostKey,

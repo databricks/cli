@@ -3,7 +3,6 @@ package aicode
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -12,7 +11,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	ignore "github.com/sabhiram/go-gitignore"
 )
 
 // Validate checks AI Runtime tasks that reference a local code_source_path so
@@ -33,20 +31,11 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 
 	jobsPath := dyn.NewPath(dyn.Key("resources"), dyn.Key("jobs"))
 
-	// packagesCode records whether any task actually has a code_source_path this
-	// mutator will package. The bundle-level guards below (which reject configs that
-	// would drop the generated snapshot from sync) only matter in that case, so
-	// they're gated on it to avoid spurious errors on unrelated bundles.
-	packagesCode := false
-
 	for name, job := range b.Config.Resources.Jobs {
 		jobPath := jobsPath.Append(dyn.Key(name))
 
 		for i, task := range job.Tasks {
 			taskPath := jobPath.Append(dyn.Key("tasks"), dyn.Index(i))
-			if task.AiRuntimeTask != nil && v.packagesLocalDir(b, task.AiRuntimeTask.CodeSourcePath) {
-				packagesCode = true
-			}
 
 			// A local code_source_path under a for_each_task is not packaged by this
 			// mutator (aicode collects only direct tasks). Reject it rather than let a
@@ -74,73 +63,7 @@ func (v *validate) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics
 		}
 	}
 
-	if packagesCode {
-		diags = diags.Extend(validateSnapshotDir(b))
-	}
-
 	return diags
-}
-
-// packagesLocalDir reports whether codeSourcePath is one this mutator packages: a
-// local path that is an existing directory. A local *file* (a pre-built tarball from
-// an `artifacts` block) is uploaded by the artifact path instead, so it packages no
-// snapshot and the snapshot-directory guards must not apply to it.
-func (v *validate) packagesLocalDir(b *bundle.Bundle, codeSourcePath string) bool {
-	if codeSourcePath == "" || !libraries.IsLocalPath(codeSourcePath) {
-		return false
-	}
-	// A stat error is reported by validateTask; treat it as "not a directory" here.
-	isDir, err := isExistingDir(filepath.Join(b.SyncRootPath, filepath.FromSlash(codeSourcePath)))
-	return err == nil && isDir
-}
-
-// validateSnapshotDir rejects two configs that would silently drop the generated
-// code archive from sync (leaving the job pointing at an un-uploaded path):
-//
-//   - A real file/dir at bundle.AiCodeSnapshotDir collides with the overlay (sync
-//     carries the user's entry, not the archive).
-//   - A sync.exclude matching that path removes the archive (exclude is applied
-//     after include, so it beats the force-include).
-func validateSnapshotDir(b *bundle.Bundle) diag.Diagnostics {
-	var diags diag.Diagnostics
-	syncExcludePath := dyn.NewPath(dyn.Key("sync"), dyn.Key("exclude"))
-
-	// A user-owned file or directory at the reserved path collides with the overlay.
-	local := filepath.Join(b.SyncRootPath, bundle.AiCodeSnapshotDir)
-	if _, err := os.Stat(local); err == nil {
-		diags = diags.Append(diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  fmt.Sprintf("%q is reserved for AI Runtime code snapshots and must not exist in the bundle", bundle.AiCodeSnapshotDir),
-			Detail:   "Remove it; the deploy generates code archives under this path.",
-		})
-	}
-
-	// A sync.exclude matching the reserved path would drop the generated archive from
-	// the upload (exclude wins over the force-include).
-	if matchesSnapshotDir(b.Config.Sync.Exclude) {
-		diags = diags.Append(diag.Diagnostic{
-			Severity:  diag.Error,
-			Summary:   fmt.Sprintf("sync.exclude must not match %q, which holds the AI Runtime code snapshot", bundle.AiCodeSnapshotDir),
-			Detail:    "Remove the pattern that excludes it; otherwise the deployed job's code_source_path would not be uploaded.",
-			Locations: b.Config.GetLocations(syncExcludePath.String()),
-			Paths:     []dyn.Path{syncExcludePath},
-		})
-	}
-
-	return diags
-}
-
-// matchesSnapshotDir reports whether any sync.exclude pattern would remove a file
-// under the reserved snapshot directory, using the same gitignore-style matcher the
-// sync engine applies to exclude patterns (see libs/fileset).
-func matchesSnapshotDir(exclude []string) bool {
-	if len(exclude) == 0 {
-		return false
-	}
-	matcher := ignore.CompileIgnoreLines(exclude...)
-	// A representative archive path; the mutator names archives
-	// <AiCodeSnapshotDir>/<dir>_<sha>.tar.gz.
-	return matcher.MatchesPath(bundle.AiCodeSnapshotDir + "/probe.tar.gz")
 }
 
 func (v *validate) validateTask(b *bundle.Bundle, gitSource *jobs.GitSource, codeSourcePath string, codePath dyn.Path) diag.Diagnostics {
