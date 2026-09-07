@@ -9,7 +9,6 @@ RESOURCE_DENYLIST = {
     "resources.ClusterPolicy",  # interface{}
     "resources.Dashboard",  # interface{}
     "resources.GenieSpace",  # interface{}
-    "resources.Secret",  # time.Time
 }
 
 # Only GA and public-preview resources are generated; later stages may still change.
@@ -69,6 +68,9 @@ RENAMES = {
     "number": "float",
     "int64": "int",
     "float64": "float",
+    # time.Time is a scalar serialized as an RFC3339 string; the Go side models
+    # it as a string too (see libs/dyn/convert/sdk_native_types.go).
+    "time.Time": "str",
 }
 
 PRIMITIVES = [
@@ -80,11 +82,18 @@ PRIMITIVES = [
     "int",
     "int64",
     "float64",
+    # Treated as str (see RENAMES): no package/import and terminal for reachability.
+    "time.Time",
 ]
 
 
 def get_class_name(ref: str) -> str:
     name = ref.split("/")[-1]
+
+    # time.Time keeps its package qualifier in RENAMES; match before stripping it.
+    if name in RENAMES:
+        return RENAMES[name]
+
     name = name.split(".")[-1]
 
     return RENAMES.get(name, name)

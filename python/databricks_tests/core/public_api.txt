@@ -34,6 +34,7 @@ __all__ = [
     quality_monitor_mutator,
     registered_model_mutator,
     schema_mutator,
+    secret_mutator,
     secret_scope_mutator,
     sql_warehouse_mutator,
     synced_database_table_mutator,
@@ -105,6 +106,7 @@ class Resources:
     def add_resource(self, resource_name: str, resource: Resource, *, location: Union[Location, None] = None) -> None
     def add_resources(self, other: Resources) -> None
     def add_schema(self, resource_name: str, schema: SchemaParam, *, location: Union[Location, None] = None) -> None
+    def add_secret(self, resource_name: str, secret: SecretParam, *, location: Union[Location, None] = None) -> None
     def add_secret_scope(self, resource_name: str, secret_scope: SecretScopeParam, *, location: Union[Location, None] = None) -> None
     def add_sql_warehouse(self, resource_name: str, sql_warehouse: SqlWarehouseParam, *, location: Union[Location, None] = None) -> None
     def add_synced_database_table(self, resource_name: str, synced_database_table: SyncedDatabaseTableParam, *, location: Union[Location, None] = None) -> None
@@ -130,6 +132,7 @@ class Resources:
     @property registered_models -> dict[str, RegisteredModel]
     @property schemas -> dict[str, Schema]
     @property secret_scopes -> dict[str, SecretScope]
+    @property secrets -> dict[str, Secret]
     @property sql_warehouses -> dict[str, SqlWarehouse]
     @property synced_database_tables -> dict[str, SyncedDatabaseTable]
     @property vector_search_endpoints -> dict[str, VectorSearchEndpoint]
@@ -229,6 +232,10 @@ def registered_model_mutator(function: Callable) -> ResourceMutator[RegisteredMo
 @overload def schema_mutator(function: Callable[[Schema], Schema]) -> ResourceMutator[Schema]
 def schema_mutator(function: Callable) -> ResourceMutator[Schema]
 
+@overload def secret_mutator(function: Callable[[Bundle, Secret], Secret]) -> ResourceMutator[Secret]
+@overload def secret_mutator(function: Callable[[Secret], Secret]) -> ResourceMutator[Secret]
+def secret_mutator(function: Callable) -> ResourceMutator[Secret]
+
 @overload def secret_scope_mutator(function: Callable[[Bundle, SecretScope], SecretScope]) -> ResourceMutator[SecretScope]
 @overload def secret_scope_mutator(function: Callable[[SecretScope], SecretScope]) -> ResourceMutator[SecretScope]
 def secret_scope_mutator(function: Callable) -> ResourceMutator[SecretScope]
@@ -273,6 +280,7 @@ singular_name=pipeline plural_name=pipelines resource_type=Pipeline
 singular_name=quality_monitor plural_name=quality_monitors resource_type=QualityMonitor
 singular_name=registered_model plural_name=registered_models resource_type=RegisteredModel
 singular_name=schema plural_name=schemas resource_type=Schema
+singular_name=secret plural_name=secrets resource_type=Secret
 singular_name=secret_scope plural_name=secret_scopes resource_type=SecretScope
 singular_name=sql_warehouse plural_name=sql_warehouses resource_type=SqlWarehouse
 singular_name=synced_database_table plural_name=synced_database_tables resource_type=SyncedDatabaseTable
