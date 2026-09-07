@@ -26,11 +26,6 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 // expected base paths and if it is a directory or repository.
 // If dryRun is set, a missing remote directory is not created.
 func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User, dryRun bool) error {
-	// Skip validation if the path starts with a variable. This is the case for immutable folders because the path is resolved at runtime.
-	if strings.HasPrefix(remotePath, "${") {
-		return nil
-	}
-
 	var err error
 
 	// TODO: we should cache CurrentUser.Me at the SDK level
