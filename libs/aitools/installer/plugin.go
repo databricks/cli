@@ -246,11 +246,6 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 	// our add succeeded, so we never remove a marketplace another plugin shares.
 	// On any uncertainty marketplaceRegistered returns true, keeping us off the
 	// de-register path.
-	//
-	// A Shared marketplace (e.g. Claude's official claude-plugins-official) is
-	// still added here when missing — it is not reliably registered locally, and
-	// an unregistered marketplace can't be refreshed or installed from — but it is
-	// never de-registered on uninstall (see UninstallPluginForAgent).
 	installedMarketplace := false
 	if agent.Plugin.Source != "" {
 		alreadyPresent := marketplaceRegistered(ctx, bin, agent.Plugin.Marketplace)
@@ -332,8 +327,7 @@ func UninstallPluginForAgent(ctx context.Context, agent *agents.Agent, rec Plugi
 	if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, pluginUninstallArgs(agent, rec))); err != nil {
 		return &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
 	}
-	// Never de-register a Shared marketplace (e.g. Claude's claude-plugins-official):
-	// it is shared infrastructure we don't own, even if we added it when missing.
+	// Never de-register a Shared marketplace, it is shared infrastructure we don't own
 	if rec.InstalledMarketplace && !keepMarketplace && !agent.Plugin.Shared {
 		if _, err := runAgentCmd(ctx, pluginCmdTimeout, prepend(bin, marketplaceRemoveArgsForRecord(agent, rec))); err != nil {
 			log.Warnf(ctx, "Removed the %s plugin but could not de-register its marketplace (remove it manually if needed): %v", agent.DisplayName, stderrOf(err))
