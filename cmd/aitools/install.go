@@ -218,6 +218,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}()
 
 			outcomes, runErr = executePlan(ctx, src, plan, opts, jsonMode)
+      
 			if jsonMode {
 				if jerr := renderJSON(cmd.OutOrStdout(), buildInstallOutput(opts.Scope, outcomes, runErr)); jerr != nil {
 					// Rendering failed, so the JSON the caller parses is broken.

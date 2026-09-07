@@ -202,7 +202,7 @@ func TestBuildGitStateSidecar_PlainTarClean(t *testing.T) {
 	writeRepoFile(t, repo, "a.txt", "1")
 	head := commitAll(t, repo, "init")
 
-	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", fixedNow)
+	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", false, fixedNow)
 	require.NoError(t, err)
 	assert.Equal(t, snapshotStateSchemaVersion, sc.SchemaVersion)
 	assert.Equal(t, packagingModePlainTar, sc.PackagingMode)
@@ -228,7 +228,7 @@ func TestBuildGitStateSidecar_GitArchivePinsTip(t *testing.T) {
 	writeRepoFile(t, repo, "b.txt", "2")
 	commitAll(t, repo, "second")
 
-	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModeGitArchive, first, fixedNow)
+	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModeGitArchive, first, false, fixedNow)
 	require.NoError(t, err)
 	require.NotNil(t, sc.TipCommit)
 	assert.Equal(t, first, *sc.TipCommit)
@@ -242,7 +242,7 @@ func TestBuildGitStateSidecar_Dirty(t *testing.T) {
 	commitAll(t, repo, "init")
 	writeRepoFile(t, repo, "a.txt", "2") // uncommitted
 
-	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", fixedNow)
+	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", true, fixedNow)
 	require.NoError(t, err)
 	assert.True(t, sc.Dirty)
 }
@@ -253,7 +253,7 @@ func TestGitStateSidecar_MarshalNullsAbsentFields(t *testing.T) {
 	writeRepoFile(t, repo, "a.txt", "1")
 	commitAll(t, repo, "init")
 
-	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", fixedNow)
+	sc, err := buildGitStateSidecar(ctx, newGitRepo(repo), packagingModePlainTar, "", false, fixedNow)
 	require.NoError(t, err)
 	data, err := sc.marshal()
 	require.NoError(t, err)
@@ -277,20 +277,36 @@ func TestCaptureDirtyDiff(t *testing.T) {
 	commitAll(t, repo, "init")
 
 	// Clean tree → no diff.
-	status, diff := captureDirtyDiff(ctx, newGitRepo(repo), dirtyDiffSizeCapBytes, dirtyDiffTimeout)
+	status, diff := captureDirtyDiff(ctx, newGitRepo(repo), nil, dirtyDiffSizeCapBytes, dirtyDiffTimeout)
 	assert.Equal(t, diffStatusClean, status)
 	assert.Nil(t, diff)
 
 	// Dirty tree → captured, and the diff mentions the changed file.
 	writeRepoFile(t, repo, "a.txt", "two\n")
-	status, diff = captureDirtyDiff(ctx, newGitRepo(repo), dirtyDiffSizeCapBytes, dirtyDiffTimeout)
+	status, diff = captureDirtyDiff(ctx, newGitRepo(repo), nil, dirtyDiffSizeCapBytes, dirtyDiffTimeout)
 	assert.Equal(t, diffStatusCaptured, status)
 	assert.Contains(t, string(diff), "a.txt")
 
 	// A tiny size cap forces size_exceeded and drops the bytes.
-	status, diff = captureDirtyDiff(ctx, newGitRepo(repo), 1, dirtyDiffTimeout)
+	status, diff = captureDirtyDiff(ctx, newGitRepo(repo), nil, 1, dirtyDiffTimeout)
 	assert.Equal(t, diffStatusSizeExceeded, status)
 	assert.Nil(t, diff)
+}
+
+func TestCaptureDirtyDiff_IncludePaths(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "included/a.txt", "one\n")
+	writeRepoFile(t, repo, "excluded/b.txt", "one\n")
+	commitAll(t, repo, "init")
+	writeRepoFile(t, repo, "included/a.txt", "two\n")
+	writeRepoFile(t, repo, "excluded/b.txt", "two\n")
+
+	status, diff := captureDirtyDiff(ctx, newGitRepo(repo), []string{"included"}, dirtyDiffSizeCapBytes, dirtyDiffTimeout)
+
+	assert.Equal(t, diffStatusCaptured, status)
+	assert.Contains(t, string(diff), "included/a.txt")
+	assert.NotContains(t, string(diff), "excluded/b.txt")
 }
 
 var fixedNow = time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC)

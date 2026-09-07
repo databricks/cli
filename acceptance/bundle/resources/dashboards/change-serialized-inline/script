@@ -1,0 +1,31 @@
+# Inherited MSYS_NO_PATHCONV breaks bare python helpers on Windows; this test doesn't need it.
+unset MSYS_NO_PATHCONV
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy an inline-YAML-map dashboard.
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+rm out.requests.txt
+
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.inline_dash.id')
+add_repl "$dashboard_id" DASHBOARD_ID
+
+# Wait out eventual consistency before changing.
+retry --until "Page 1" $CLI lakeview get "$dashboard_id" > /dev/null
+
+update_file.py databricks.yml "Page 1" "Page One"
+
+trace $CLI bundle plan | contains.py "update" "!recreate"
+
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+title "deploy the change\n"
+$CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
+
+print_requests.py //api/2.0/lakeview/dashboards > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt

@@ -8,19 +8,16 @@ import (
 
 func TestBundleTagMethods(t *testing.T) {
 	tests := []struct {
-		tag         string
-		isReadOnly  bool
-		isInternal  bool
-		isSensitive bool
+		tag        string
+		isReadOnly bool
+		isInternal bool
 	}{
 		// only one annotation.
 		{tag: "readonly", isReadOnly: true},
 		{tag: "internal", isInternal: true},
-		{tag: "sensitive", isSensitive: true},
 
 		// multiple annotations.
 		{tag: "readonly,internal", isReadOnly: true, isInternal: true},
-		{tag: "readonly,sensitive", isReadOnly: true, isSensitive: true},
 
 		// unknown annotations are ignored.
 		{tag: "something"},
@@ -35,7 +32,6 @@ func TestBundleTagMethods(t *testing.T) {
 
 			assert.Equal(t, test.isReadOnly, tag.ReadOnly())
 			assert.Equal(t, test.isInternal, tag.Internal())
-			assert.Equal(t, test.isSensitive, tag.Sensitive())
 		})
 	}
 }

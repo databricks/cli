@@ -70,6 +70,12 @@ Add a changelog fragment under `.nextchanges/` when your change is user-visible.
 
 **How to add:**
 - Create `.nextchanges/<section>/<name>.md`, picking the section folder that fits: `cli`, `bundles`, `dependency-updates`, `notable-changes`, or `api-changes`. `<name>` is arbitrary (a feature name or your PR number) — just keep it unique.
-- Write one or two sentences in user-facing language, no Jira links. The leading `* ` is optional. Match the voice and tense of existing changelog entries.
-- A PR link is optional: write `(#NNNN)` (with NNNN being the PR number) in the text and it's expanded to a full link automatically.
+- Write a single line in user-facing language, no Jira links: start it with a `* ` bullet marker and end it with a period.
+- **Voice and tense: imperative mood, active voice.** Lead with a verb that names the change — `Add`, `Fix`, `Bump`, `Remove`, `Deprecate`, `Support`, `Reject`, `Warn` — and describe the user-facing effect, not the implementation. Never use past tense (`Added`/`Fixed`) or first person (`we`/`I`/`our`). When a change reads better as a resulting behavior than as a verb, lead with the affected command, flag, or field in the present tense with "now".
+  - GOOD: Add support for the `cluster_policies` resource type.
+  - GOOD: Fix `--force-lock` being ignored when set in `databricks.yml`.
+  - GOOD: `bundle plan` now ignores the output-only `securable_kind` field during drift detection.
+  - BAD: Added support for cluster policies. — past tense; write "Add".
+  - BAD: We now reject secret scopes that name no principal. — first person; write "Reject secret scopes that name no principal."
+- A trailing PR link is required whenever the change is associated with a PR, and the introducing PR must be among the linked ones (the checker infers it and fails if it's missing) — enforced in CI (every PR and `main`) and locally once your branch has an open PR. Write the full markdown link at the very end, after the period: `([#NNNN](https://github.com/databricks/cli/pull/NNNN))` (your PR number). For an entry spanning several PRs, list them comma-separated: `([#NNNN](…), [#MMMM](…))`. Every `#NNNN` reference must be a full markdown link — a bare or paren-wrapped `#NNNN` is rejected.
 - See `.nextchanges/README.md` for details.

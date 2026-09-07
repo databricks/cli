@@ -815,7 +815,7 @@ func parentPath(path string) string {
 // how a removal from bundle config reaches the API. Verified against a real
 // workspace: "Field 'spec.history_retention_duration' is in update_mask but not
 // provided in request".
-func missingMaskedField(req Request) string {
+func missingMaskedField(req Request, oneofGroups map[string][]string) string {
 	mask := req.URL.Query().Get("update_mask")
 	if mask == "" || len(req.Body) == 0 {
 		return ""
@@ -826,6 +826,11 @@ func missingMaskedField(req Request) string {
 	}
 	for path := range strings.SplitSeq(mask, ",") {
 		path = strings.TrimSpace(path)
+		if _, ok := oneofGroups[path]; ok {
+			// A group is not a body field of its own; a member populates it instead, which
+			// unpopulatedOneofGroup checks.
+			continue
+		}
 		parts := strings.Split(path, ".")
 		if path == "" || path == "*" || len(parts) < 2 {
 			// A whole message the request omits is tolerated: the Terraform provider
@@ -875,7 +880,7 @@ func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]
 		return &resp
 	}
 	// An unknown path is reported ahead of a missing one, matching the API.
-	if path := missingMaskedField(req); path != "" {
+	if path := missingMaskedField(req, oneofGroups); path != "" {
 		resp := missingMaskedFieldResponse(path)
 		return &resp
 	}

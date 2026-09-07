@@ -71,29 +71,6 @@ func TestBundleLocalStateDir(t *testing.T) {
 	assert.Equal(t, filepath.Join(projectDir, ".databricks", "bundle", "default"), cacheDir)
 }
 
-func TestGetSyncIncludePatternsScopesSnapshotDir(t *testing.T) {
-	ctx := t.Context()
-	projectDir := t.TempDir()
-	f, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
-	require.NoError(t, err)
-	f.Close()
-
-	b, err := Load(ctx, projectDir)
-	require.NoError(t, err)
-	b.Config.Bundle.Target = "default"
-
-	// Without an AI Runtime code snapshot, the dir is not force-included.
-	includes, err := b.GetSyncIncludePatterns(ctx)
-	require.NoError(t, err)
-	assert.NotContains(t, includes, AiCodeSnapshotDir+"/*")
-
-	// Once the aicode mutator sets the flag, it is.
-	b.HasAiRuntimeCodeSnapshot = true
-	includes, err = b.GetSyncIncludePatterns(ctx)
-	require.NoError(t, err)
-	assert.Contains(t, includes, AiCodeSnapshotDir+"/*")
-}
-
 func TestBundleLocalStateDirOverride(t *testing.T) {
 	ctx := t.Context()
 	projectDir := t.TempDir()

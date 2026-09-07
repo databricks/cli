@@ -1,7 +1,0 @@
-# default_endpoint_settings.no_suspension and .suspend_timeout_duration are two
-# sides of one oneof. The API masks them together under
-# spec.default_endpoint_settings.suspension and rejects either field name, so the
-# direct engine's mask is answered with 400 INVALID_PARAMETER_VALUE. Same bug as
-# postgres_endpoints/update_suspend_timeout, one level of nesting down, and a
-# separate fix from the diffing this test covers.
-Badness = "Direct engine cannot apply a default_endpoint_settings.suspend_timeout_duration change: it masks the field under its own name, but the API only accepts the oneof group name default_endpoint_settings.suspension"

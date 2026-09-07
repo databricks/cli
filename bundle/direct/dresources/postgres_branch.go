@@ -140,6 +140,15 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	return remote.Name, remote, nil
 }
 
+// expire_time, no_expiry and ttl are three sides of one oneof, and the API accepts them
+// in update_mask only under the group name: masking the field itself is answered with
+// "Unknown field path in update_mask". Probed against a real workspace on 2026-08-31.
+var branchOneofGroups = map[string]string{
+	"expire_time": "expiration",
+	"no_expiry":   "expiration",
+	"ttl":         "expiration",
+}
+
 func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, entry *PlanEntry) (*PostgresBranchRemote, error) {
 	// Build the mask from the plan's change list and prefix with "spec." (the
 	// API expects paths relative to Branch). The API rejects mask entries
@@ -147,7 +156,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 	// expands to nested attributes the body would have to set too — so we
 	// can't use a static all-fields mask. The change list naturally tracks
 	// what the user actually set, so the body and mask stay consistent.
-	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.")
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", branchOneofGroups)
 
 	// purge_on_delete is an input-only flag consulted at delete time; it is
 	// not a spec field. Strip it from the mask so toggling it between deploys

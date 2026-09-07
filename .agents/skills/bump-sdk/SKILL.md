@@ -72,9 +72,9 @@ Confirm no internal proxy URL leaked into any lock file: `./task check-uv-lock` 
 The `check-uv-lock` glob and the genkit lock revert are a known coverage gap; the internal proxy can re-leak into `internal/genkit/*.py.lock` on any future `generate-clijson`, so re-check after every run.
 
 **9. Changelog fragment.**
-Add a `dependency-updates` entry per the `pr-checklist` skill's "Changelog entry" section, modeled on prior bumps: ``Bump `github.com/databricks/databricks-sdk-go` from vOLD to vNEW.``.
+Add a `dependency-updates` entry per the `pr-checklist` skill's "Changelog entry" section, modeled on prior bumps: ``* Bump `github.com/databricks/databricks-sdk-go` from vOLD to vNEW.``.
 Never reference the Terraform provider version in the changelog fragment or PR body.
-Add it without `(#NNNN)` now; backfill the number after the PR exists, then run `./task links` to expand it into the full markdown link in place and commit the result.
+Omit the trailing PR link now (you don't have the number yet); after the PR exists, append `([#NNNN](https://github.com/databricks/cli/pull/NNNN))` after the period and commit the result.
 
 **10. Commit, push, PR.**
 If the push 403s, the active gh account lacks write access to `databricks/cli`; switch to one that has it with `gh auth switch`.

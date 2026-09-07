@@ -1,9 +1,8 @@
-# suspend_timeout_duration and no_suspension are two sides of one oneof. The API
-# masks them together under spec.suspension and rejects either field name, so
-# removing the field is answered with 400 INVALID_PARAMETER_VALUE just like changing
-# it (postgres_endpoints/update_suspend_timeout). Separate fix from the diffing this
-# test covers.
-#
-# out.plan.drift.direct.* records what the failed removal leaves behind: the old
-# value stays in state, so every later deploy plans the removal again and fails again.
-Badness = "Direct engine cannot remove suspend_timeout_duration: it masks the field under its own name, but the API only accepts the oneof group name spec.suspension, so the removal fails on every deploy"
+# The mask is now correct: suspend_timeout_duration is masked under its oneof group name
+# spec.suspension. The removal still cannot be applied, and that is a property of the API
+# rather than of the mask: a masked field has to be populated in the request body, so
+# dropping it from the bundle leaves nothing to send. Probed against a real workspace on
+# 2026-08-31 -- an absent value and an explicit null are both answered with "is in
+# update_mask but not provided in request". The only way to stop an endpoint suspending is
+# to set the other member of the oneof, no_suspension: true.
+Badness = "Removing suspend_timeout_duration cannot be applied: the API requires a masked field to be populated, so the removal fails on every deploy. Setting no_suspension: true instead is the supported way to express it"

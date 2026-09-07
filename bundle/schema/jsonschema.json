@@ -3167,14 +3167,22 @@
                       "description": "The relative or absolute path to the built artifact files.",
                       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile"
                     },
+                    "git": {
+                      "description": "For a `tgz` artifact, snapshot this git ref instead of the working tree. Mutually exclusive with `build`.",
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactGit"
+                    },
+                    "include": {
+                      "description": "For a `tgz` artifact, subpaths of `path` to pack, relative to it; empty packs the whole `path`. `.gitignore` is honored; the bundle-wide sync include/exclude do not apply. Archive entries are named relative to `path`. Mutually exclusive with `build`.",
+                      "$ref": "#/$defs/slice/string"
+                    },
                     "path": {
                       "description": "The local path of the directory for the artifact.",
                       "$ref": "#/$defs/string"
                     },
                     "type": {
-                      "description": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.",
+                      "description": "The type of the artifact. Valid values are `whl`, `jar`, and `tgz`. Required if the artifact is a Python wheel.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType",
-                      "markdownDescription": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`."
+                      "markdownDescription": "The type of the artifact. Valid values are `whl`, `jar`, and `tgz`. Required if the artifact is a Python wheel."
                     }
                   },
                   "additionalProperties": false
@@ -3199,6 +3207,28 @@
                   "required": [
                     "source"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "config.ArtifactGit": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "branch": {
+                      "description": "The git branch to snapshot.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "commit": {
+                      "description": "The git commit to snapshot. Takes precedence over `branch` when both are set.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",

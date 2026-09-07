@@ -33,9 +33,10 @@ func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 	skip := func() *deployplan.ChangeDesc { return &deployplan.ChangeDesc{Action: deployplan.Skip} }
 
 	tests := []struct {
-		name    string
-		changes Changes
-		want    []string
+		name        string
+		changes     Changes
+		oneofGroups map[string]string
+		want        []string
 	}{
 		{
 			name:    "drops parent when a child is also updated",
@@ -62,11 +63,28 @@ func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 			changes: Changes{"parent": skip()},
 			want:    nil,
 		},
+		{
+			name:        "renames a oneof member to its group",
+			changes:     Changes{"ttl": upd()},
+			oneofGroups: map[string]string{"ttl": "expiration"},
+			want:        []string{"spec.expiration"},
+		},
+		{
+			name:        "collapses two members of one oneof",
+			changes:     Changes{"ttl": upd(), "no_expiry": upd()},
+			oneofGroups: map[string]string{"ttl": "expiration", "no_expiry": "expiration"},
+			want:        []string{"spec.expiration"},
+		},
+		{
+			name:    "masks a map as a whole",
+			changes: Changes{"settings.pg_settings['work_mem']": upd(), "settings.pg_settings['jit']": upd()},
+			want:    []string{"spec.settings.pg_settings"},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, collectUpdatePathsWithPrefix(tc.changes, "spec."))
+			assert.Equal(t, tc.want, collectUpdatePathsWithPrefix(tc.changes, "spec.", tc.oneofGroups))
 		})
 	}
 }

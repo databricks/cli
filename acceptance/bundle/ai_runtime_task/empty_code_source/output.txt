@@ -1,4 +1,5 @@
 
 >>> [CLI] bundle deploy
-Error: code_source_path "./src" has no files to package (all excluded by .gitignore or sync.exclude, or the directory is empty)
+Building air_code_source_src...
+Error: artifact tgz: no files to pack under "[TEST_TMP_DIR]" (empty, gitignored, or no `include` match)
 
