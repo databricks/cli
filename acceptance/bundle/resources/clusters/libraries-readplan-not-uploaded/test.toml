@@ -1,6 +1,6 @@
-Badness = "bundle deploy --plan skips the build phase, so a cluster's local wheel library is never uploaded, yet the install still fires against its (missing) workspace path. This tripwire pins that bug. When it is fixed the second install below will reference an uploaded wheel and the golden will change, failing this test: at that point delete this test and restore EnvMatrix.READPLAN = [\"\", \"1\"] on clusters/libraries and clusters/libraries-content-change."
+Badness = "bundle deploy --plan skips the build phase, so a cluster's local wheel is never uploaded (proven in deploy/readplan/whl-not-uploaded). Kept as a note: when the bug is fixed, deploy --plan will print 'Uploading dist/...' and this golden changes - then delete this test and restore EnvMatrix.READPLAN = [\"\", \"1\"] on clusters/libraries and clusters/libraries-content-change."
 
-# --plan is direct-engine only.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-RecordRequests = true
+# This test is just asserting bad behaviour so that it can be removed once that behaviour is fixed
+RecordRequests = false
 Ignore = [".databricks"]
