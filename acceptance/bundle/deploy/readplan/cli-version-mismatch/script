@@ -1,4 +1,4 @@
-trace $CLI bundle plan -o json > plan.json
+trace $CLI bundle plan -o json | nostamp.py > plan.json
 
 jq '.cli_version = "1.2.3"' plan.json > plan.json.tmp && mv plan.json.tmp plan.json
 

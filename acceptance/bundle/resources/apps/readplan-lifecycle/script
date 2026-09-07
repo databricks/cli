@@ -10,6 +10,6 @@ trace print_requests.py //apps/myapp/start
 
 title "Change description and deploy from plan: no extra start"
 trace update_file.py databricks.yml "description: initial" "description: updated"
-$CLI bundle plan -o json > tmp.plan.json
+$CLI bundle plan -o json | nostamp.py > tmp.plan.json
 $CLI bundle deploy $(readplanarg tmp.plan.json)
 trace print_requests.py //apps/myapp/start

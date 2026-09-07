@@ -12,7 +12,7 @@ STATE_PATH=/Workspace/Users/$CURRENT_USER_NAME/.bundle/$bundle_name/default/stat
 # Initial deploy of the resources. Only pre-plan when READPLAN=1 exercises the
 # saved-plan deploy path; otherwise `bundle deploy` plans on its own.
 if [[ -n "$READPLAN" ]]; then
-    $CLI bundle plan -o json > plan_initial.json 2>LOG.plan_initial.err
+    $CLI bundle plan -o json | nostamp.py > plan_initial.json 2>LOG.plan_initial.err
     cat LOG.plan_initial.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
@@ -30,7 +30,7 @@ resources: {}
 EOF
 
 if [[ -n "$READPLAN" ]]; then
-    $CLI bundle plan -o json > plan_delete.json 2>LOG.plan_delete.err
+    $CLI bundle plan -o json | nostamp.py > plan_delete.json 2>LOG.plan_delete.err
     cat LOG.plan_delete.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
@@ -53,7 +53,7 @@ MSYS_NO_PATHCONV=1 $CLI workspace delete --recursive "$STATE_PATH" &> LOG.wipe_r
 cat LOG.wipe_remote_state | contains.py '!panic:' '!internal error' > /dev/null
 
 if [[ -n "$READPLAN" ]]; then
-    $CLI bundle plan -o json > plan_delete2.json 2>LOG.plan_delete2.err
+    $CLI bundle plan -o json | nostamp.py > plan_delete2.json 2>LOG.plan_delete2.err
     cat LOG.plan_delete2.err | contains.py '!panic:' '!internal error' > /dev/null
 fi
 
