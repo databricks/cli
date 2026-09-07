@@ -1,0 +1,6 @@
+
+# secrets require value to be a variable reference, so supply it at validate time.
+trace uv run $UV_ARGS -q $CLI bundle validate --var secret_value=my-secret-value --output json | \
+  jq "pick(.experimental.python, .resources)"
+
+rm -fr .databricks __pycache__
