@@ -22,7 +22,7 @@ import sys
 
 _STAMP_KEYS = ("deployment_id", "version_id")
 _CHANGE_KEYS = ("deployment.deployment_id", "deployment.version_id")
-_PLAN_HEADER_KEYS = ("deployment_id", "next_version_id", "last_version_id")
+_PLAN_HEADER_KEYS = ("deployment_id", "next_version_id", "last_version_id", "storage_backend")
 
 
 def scrub(node):
