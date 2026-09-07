@@ -23,9 +23,12 @@ update_file.py databricks.yml "Page 1" "Page One"
 
 trace $CLI bundle plan | contains.py "update" "!recreate"
 
-trace $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# Save raw plan (with DMS headers) to tmp file for deployment
+trace $CLI bundle plan -o json > plan_raw.$DATABRICKS_BUNDLE_ENGINE.json
+# Generate golden file by applying nostamp.py for comparison (discard output)
+cat plan_raw.$DATABRICKS_BUNDLE_ENGINE.json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 title "deploy the change\n"
-$CLI bundle deploy $(readplanarg out.plan.$DATABRICKS_BUNDLE_ENGINE.json)
+$CLI bundle deploy $(readplanarg plan_raw.$DATABRICKS_BUNDLE_ENGINE.json)
 
 print_requests.py //api/2.0/lakeview/dashboards > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
