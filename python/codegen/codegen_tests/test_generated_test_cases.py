@@ -68,8 +68,7 @@ def test_is_composite():
         ("float64", _Scalar("0.0", "0.0")),
         ("boolean", _Scalar("True", "True")),
         ("bool", _Scalar("True", "True")),
-        ("time.Time", _Scalar('"2020-01-01T00:00:00Z"', '"2020-01-01T00:00:00Z"'),
-        ),
+        ("time.Time", _Scalar('"2020-01-01T00:00:00Z"', '"2020-01-01T00:00:00Z"')),
     ],
 )
 def test_synth_scalar(name, expected):
