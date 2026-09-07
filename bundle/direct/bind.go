@@ -221,7 +221,7 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 	err := b.StateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(true), dstate.WithDeploymentHistory(false), "")
 	if err != nil {
 		if errors.Is(err, dstate.ErrUnsettingRecording) {
-			return errors.New("unbind is not supported for a bundle that records deployment history")
+			return errors.New("unbind is not supported for a bundle target that records deployment history")
 		}
 		return err
 	}

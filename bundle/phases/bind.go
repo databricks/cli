@@ -34,7 +34,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 
 	if engine.IsDirect() {
 		if b.ConfiguresDeploymentHistory(ctx) {
-			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle that records deployment history"))
+			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
 			return
 		}
 

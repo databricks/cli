@@ -1,7 +1,7 @@
 
 === bind is refused while recording deployment history
 >>> musterr [CLI] bundle deployment bind foo [JOB_ID]
-Error: bind is not supported for a bundle that records deployment history
+Error: bind is not supported for a bundle target that records deployment history
 
 
 === Deploy so the bundle records state, then unbind is refused too
@@ -12,5 +12,5 @@ Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> musterr [CLI] bundle deployment unbind foo
-Error: unbind is not supported for a bundle that records deployment history
+Error: unbind is not supported for a bundle target that records deployment history
 
