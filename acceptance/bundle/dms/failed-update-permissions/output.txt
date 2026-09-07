@@ -82,6 +82,17 @@ Files: 3 uploaded, 0 deleted
   }
 ]
 
+=== The failed operation (version 2) records the error message
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-operations deployments/[NUMID]/versions/2 -o json
+[
+  {
+    "action_type": "OPERATION_ACTION_TYPE_UPDATE",
+    "error_message": "updating id=/jobs/[NUMID]: Fault injected by test. (403 PERMISSION_DENIED)",
+    "resource_key": "jobs.foo.permissions",
+    "status": "OPERATION_STATUS_FAILED"
+  }
+]
+
 === The raw recorded state after the failure
 >>> print_state.py --no-dms
 {
