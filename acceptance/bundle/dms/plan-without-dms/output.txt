@@ -8,7 +8,7 @@
 }
 
 === Enable DMS recording and try to deploy the non-DMS plan
->>> musterr [CLI] bundle deploy --plan tmp.plan.corrupted.json
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json
 Error: this plan does not record deployment history, but the target now does; run 'bundle plan' again
 
 

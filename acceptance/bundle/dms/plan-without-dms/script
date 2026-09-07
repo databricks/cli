@@ -5,14 +5,11 @@ $CLI bundle plan -o json > tmp.plan.json
 trace jq '{storage_backend, deployment_id, next_version_id}' < tmp.plan.json
 
 title "Enable DMS recording and try to deploy the non-DMS plan"
-# Corrupt the plan by removing the storage_backend field to simulate a non-DMS plan
-jq 'del(.storage_backend)' tmp.plan.json > tmp.plan.corrupted.json
-# Now enable DMS in the config
 update_file.py databricks.yml 'bundle:' 'experimental:
   record_deployment_history: true
 
 bundle:'
-trace musterr $CLI bundle deploy --plan tmp.plan.corrupted.json
+trace musterr $CLI bundle deploy --plan tmp.plan.json
 trace print_requests.py //api/2.0/bundle --get
 
-rm -f tmp.plan.json tmp.plan.corrupted.json out.requests.txt
+rm -f tmp.plan.json out.requests.txt
