@@ -458,15 +458,15 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:                map[int64]jobs.Job{},
-		JobRuns:             map[int64]jobs.Run{},
-		JobRunOutputs:       map[int64]jobs.RunOutput{},
-		JobRunIdempotency:   map[string]int64{},
-		Grants:              map[string][]catalog.PrivilegeAssignment{},
-		Pipelines:           map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:     map[string]bool{},
-		Monitors:            map[string]catalog.MonitorInfo{},
-		Apps:                map[string]apps.App{},
+		Jobs:              map[int64]jobs.Job{},
+		JobRuns:           map[int64]jobs.Run{},
+		JobRunOutputs:     map[int64]jobs.RunOutput{},
+		JobRunIdempotency: map[string]int64{},
+		Grants:            map[string][]catalog.PrivilegeAssignment{},
+		Pipelines:         map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:   map[string]bool{},
+		Monitors:          map[string]catalog.MonitorInfo{},
+		Apps:              map[string]apps.App{},
 		// Seed the "main" catalog: it exists on every real workspace, and schema
 		// creation now checks the catalog exists, so tests that deploy schemas into
 		// main (the common case) keep working without creating it first.
