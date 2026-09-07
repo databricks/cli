@@ -18,7 +18,7 @@ trace read_id.py my_run
 trace print_requests.py //jobs/run-now
 
 title "a run that is still going is skipped"
-$CLI bundle plan -o json | nostamp.py > tmp.plan.json
+$CLI bundle plan -o json | tee tmp.plan.json | nostamp.py > /dev/null
 trace jq '.plan["resources.job_runs.my_run"]' tmp.plan.json
 
 # Replay the plan captured while the run was still going: a fresh plan would

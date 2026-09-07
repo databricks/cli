@@ -11,10 +11,6 @@ Ignore = [".databricks", "databricks.yml", "databricks.yml.bak", "plan.json", "L
 # Apps can take longer to start up and deploy on cloud.
 TimeoutCloud = "10m"
 
-# Test uses a saved plan file; not supported under DMS (which requires in-place
-# plan generation with deployment history recording).
-EnvMatrixExclude.dms_plan_file = ["DMS=true"]
-
 # logProgress ("✓ <message>") emits deployment progress lines whose count and
 # content vary between the local test server (single "Deployment succeeded") and
 # a real workspace (multiple intermediate states: "Shutting down app...",

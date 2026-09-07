@@ -4,7 +4,3 @@ RecordRequests = true
 Ignore = [".databricks", "databricks.yml", "plan.json"]
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
-# Test uses a saved plan file; not supported under DMS (which requires in-place
-# plan generation with deployment history recording).
-EnvMatrixExclude.dms_plan_file = ["DMS=true"]
