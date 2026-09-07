@@ -10,7 +10,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from print_state import get_resources, records_deployment_history
+from print_state import get_resources
 
 
 def print_resource_terraform(group, name, *attrs):
@@ -65,7 +65,7 @@ def print_resource_recorded(group, name, *attrs):
     print(group, name, " ".join(values))
 
 
-if records_deployment_history():
+if os.environ.get("DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY") == "true":
     print_resource_recorded(*sys.argv[1:])
 elif os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
     print_resource_direct(*sys.argv[1:])

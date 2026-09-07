@@ -10,12 +10,13 @@ Usage: <group> <name> [attr...]
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl
-from print_state import get_resources, records_deployment_history, get_state_file
+from print_state import get_resources, get_state_file
 
 
 def get_id_terraform(filename, name):
@@ -62,7 +63,7 @@ def main():
     parser.add_argument("name")
     args = parser.parse_args()
 
-    if records_deployment_history():
+    if os.environ.get("DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY") == "true":
         id = get_id_recorded(args.target, args.name)
     else:
         filename = get_state_file(args.target, args.backup)

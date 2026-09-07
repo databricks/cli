@@ -5,12 +5,13 @@ Read state and add all resource IDs to ACC_REPLS.
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl
-from print_state import get_resources, records_deployment_history, get_state_file
+from print_state import get_resources, get_state_file
 
 
 def iter_ids_terraform(filename):
@@ -50,7 +51,7 @@ def main():
     parser.add_argument("--backup", action="store_true")
     args = parser.parse_args()
 
-    if records_deployment_history():
+    if os.environ.get("DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY") == "true":
         it = iter_ids_recorded(args.target)
     else:
         filename = get_state_file(args.target, args.backup)

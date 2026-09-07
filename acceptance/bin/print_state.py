@@ -16,10 +16,6 @@ import subprocess
 import sys
 
 
-def records_deployment_history():
-    return os.environ.get("DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY") == "true"
-
-
 def print_file(filename):
     data = open(filename).read()
     print(data, end="")
@@ -182,7 +178,7 @@ def main():
     for filename in get_state_files(args.target, args.backup):
         if not os.path.exists(filename):
             continue
-        if records_deployment_history() and not args.no_dms:
+        if os.environ.get("DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY") == "true" and not args.no_dms:
             print_recorded_state(filename, args.target)
         else:
             print_file(filename)
