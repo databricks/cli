@@ -38,8 +38,8 @@ func TestBufferCoalescesWhileAKeyIsPending(t *testing.T) {
 
 	// Two writes for one resource with nothing draining. They carry the resource's full
 	// state, so only the newest needs to go: one slot in the queue, not two.
-	s.record("resources.jobs.foo", stateUpdate(t, "v1"))
-	s.record("resources.jobs.foo", stateUpdate(t, "v2"))
+	s.record("resources.jobs.foo", stateUpdate(t, "v1"), true, nil)
+	s.record("resources.jobs.foo", stateUpdate(t, "v2"), true, nil)
 
 	assert.Len(t, s.queue, 1)
 	update, ok := s.take("resources.jobs.foo")
@@ -48,7 +48,7 @@ func TestBufferCoalescesWhileAKeyIsPending(t *testing.T) {
 
 	// Taken means a request has it, and an in-flight request cannot be recalled, so the next
 	// write gets its own slot rather than joining it.
-	s.record("resources.jobs.foo", stateUpdate(t, "v3"))
+	s.record("resources.jobs.foo", stateUpdate(t, "v3"), true, nil)
 	assert.Len(t, s.queue, 2)
 	update, ok = s.take("resources.jobs.foo")
 	require.True(t, ok)
