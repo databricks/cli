@@ -36,6 +36,14 @@ def get_id_terraform(filename, name):
 
 
 def get_id_recorded(target, name):
+    """Find a recorded resource's id by its bare name ("foo"), scanning the resource list.
+
+    The GET resource API would be the direct lookup, but it needs the full resource key
+    ("jobs.foo"), and callers pass only the leaf name - matching how user-visible commands
+    take a bare name ("bundle run my_job"), which DABs allows because it enforces name
+    uniqueness across types. So list and match on the leaf instead. Switching to GET is a
+    reasonable follow-up; it likely needs the service to key resources by name as well.
+    """
     resources = get_resources(target)
     for key, value in resources.items():
         if key.split(".")[1] == name:
