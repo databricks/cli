@@ -18,6 +18,18 @@ func GetSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 	return sync.New(ctx, *opts)
 }
 
+// GetNoValidateSync returns a new sync instance for the given bundle.
+// The sync instance will be in no validate remote path mode.
+// This is used when the remote path is not known at bundle configuration validation time (e.g. immutable folder).
+func GetNoValidateSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
+	opts, err := GetSyncOptions(ctx, b)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get sync options: %w", err)
+	}
+	opts.NoValidateRemotePath = true
+	return sync.New(ctx, *opts)
+}
+
 func GetSyncOptions(ctx context.Context, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	cacheDir, err := b.LocalStateDir(ctx)
 	if err != nil {
