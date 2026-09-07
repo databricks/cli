@@ -150,30 +150,23 @@ func TestRoundtripAllFieldsInputConfigType(t *testing.T) {
 
 var jsonMarshalerType = reflect.TypeFor[json.Marshaler]()
 
-// derefType strips pointer indirection so a type is classified by what it holds.
-func derefType(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	return t
-}
-
 // hasPointerOnlyMarshaler reports whether *T marshals itself but T does not.
 //
 // A type with no marshaler at all is not a defect: encoding/json treats it the
-// same by value and by pointer. Only the asymmetry is.
+// same by value and by pointer. Only the asymmetry is. Kind is not restricted:
+// a named scalar, slice or map can declare MarshalJSON on a pointer receiver and
+// diverges exactly the same way.
 func hasPointerOnlyMarshaler(t reflect.Type) bool {
-	return t.Kind() == reflect.Struct &&
-		reflect.PointerTo(t).Implements(jsonMarshalerType) &&
+	return reflect.PointerTo(t).Implements(jsonMarshalerType) &&
 		!t.Implements(jsonMarshalerType)
 }
 
-// collectPointerOnlyMarshalers records into found every struct type reachable
-// from t whose MarshalJSON is declared on a pointer receiver only. seen bounds
-// the walk, which terminates because the type graph is finite even though SDK
-// types are self-referential.
+// collectPointerOnlyMarshalers records into found every type reachable from t
+// whose MarshalJSON is declared on a pointer receiver only.
+//
+// Pointers are followed as edges rather than stripped up front, so `type L *L`
+// terminates on seen rather than spinning in Elem().
 func collectPointerOnlyMarshalers(t reflect.Type, seen, found map[reflect.Type]bool) {
-	t = derefType(t)
 	if seen[t] {
 		return
 	}
@@ -184,16 +177,19 @@ func collectPointerOnlyMarshalers(t reflect.Type, seen, found map[reflect.Type]b
 	}
 
 	switch t.Kind() {
-	case reflect.Slice, reflect.Array, reflect.Map:
+	case reflect.Pointer, reflect.Slice, reflect.Array, reflect.Map:
 		collectPointerOnlyMarshalers(t.Elem(), seen, found)
 	case reflect.Struct:
 		for field := range t.Fields() {
-			if field.IsExported() {
-				collectPointerOnlyMarshalers(field.Type, seen, found)
+			// json:"-" is never serialized, so a type reachable only through one
+			// cannot diverge. Skipped for the same reason as unexported fields.
+			if !field.IsExported() || structtag.JSONTag(field.Tag.Get("json")).Name() == "-" {
+				continue
 			}
+			collectPointerOnlyMarshalers(field.Type, seen, found)
 		}
 	default:
-		// Scalars hold no named type to check, and an interface field's dynamic
+		// Scalars hold no reachable named type, and an interface field's dynamic
 		// type is not knowable from the static type.
 	}
 }
@@ -213,9 +209,11 @@ func collectPointerOnlyMarshalers(t reflect.Type, seen, found map[reflect.Type]b
 // receiver is promoted to *T only, which makes T itself asymmetric unless T
 // declares its own marshaler -- and if it does, the member's asymmetry is hidden
 // from a top-level check while still applying wherever that member is marshalled
-// directly. A named field or collection element is stronger still: marshal's
-// structAsMap stores it into a map via .Interface(), and a map value is not
-// addressable, so the pointer receiver is unreachable there.
+// directly. A named field is stronger still: marshal's structAsMap stores every
+// field into a map via .Interface(), and a map value is not addressable, so the
+// pointer receiver is unreachable there. (Slice elements, by contrast, stay
+// addressable and do reach it -- the walk covers them for the embedded-member
+// reason, not this one.)
 //
 // The round-trip tests above cannot catch any of this: they build values with
 // reflect.New, so they only ever marshal a pointer.
