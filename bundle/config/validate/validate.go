@@ -13,6 +13,7 @@ func Validate(ctx context.Context, b *bundle.Bundle) {
 		// Slow mutators that require network or file i/o. These are only
 		// run in the `bundle validate` command.
 		FilesToSync(),
+		ValidateRemoteFilePath(),
 		ValidateFolderPermissions(),
 		ValidateSyncPatterns(),
 	)
