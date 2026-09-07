@@ -208,12 +208,11 @@ func (db *DeploymentState) RecordingError() error {
 		return nil
 	}
 	db.mu.Lock()
-	buf := db.operationBuffer
-	db.mu.Unlock()
-	if buf == nil {
+	defer db.mu.Unlock()
+	if db.operationBuffer == nil {
 		return nil
 	}
-	return buf.Err()
+	return db.operationBuffer.Err()
 }
 
 // CompleteVersion marks the recorded version done, reporting whether it completed here. A no-op
