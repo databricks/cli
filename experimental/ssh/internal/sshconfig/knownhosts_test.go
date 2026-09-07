@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -59,6 +60,23 @@ func TestPinHostKeyReplacesPreviousEntry(t *testing.T) {
 	content, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Equal(t, "myhost "+testHostKey+"\n", string(content))
+}
+
+func TestPinHostKeyLeavesACorrectPinAlone(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "known-hosts", "myhost")
+	require.NoError(t, PinHostKey(path, "myhost", []byte(testHostKey)))
+
+	// An IDE opens several connections at once and each refreshes the pin, so an
+	// already-correct one must not be rewritten. Backdating the file makes the rewrite
+	// observable without depending on timer resolution.
+	backdated := time.Now().Add(-time.Hour).Truncate(time.Second)
+	require.NoError(t, os.Chtimes(path, backdated, backdated))
+
+	require.NoError(t, PinHostKey(path, "myhost", []byte(testHostKey)))
+
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, backdated, info.ModTime().Truncate(time.Second))
 }
 
 func TestPinHostKeyRejectsMalformedKey(t *testing.T) {

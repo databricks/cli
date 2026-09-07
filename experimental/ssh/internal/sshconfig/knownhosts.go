@@ -47,6 +47,13 @@ func PinHostKey(path, hostName string, publicKey []byte) error {
 	// MarshalAuthorizedKey drops any comment and terminates the line with "\n".
 	line := hostName + " " + string(ssh.MarshalAuthorizedKey(parsed))
 
+	// Leave an already-correct pin alone, which is the common case: every ssh invocation
+	// refreshes it through the ProxyCommand, and an IDE opens several at once. Renaming over
+	// a file another ssh has open fails on Windows.
+	if existing, err := os.ReadFile(path); err == nil && string(existing) == line {
+		return nil
+	}
+
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("failed to create known hosts directory: %w", err)
