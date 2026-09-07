@@ -72,14 +72,22 @@ def fragment_format_problem(text):
     starts with ``"* "`` and ends with ``"."``. An optional trailing PR link
     group (``([#N](pull-url))``, or a comma-separated list) may follow the period.
 
+    Valid fragments (with or without a trailing PR link) return None:
+
     >>> fragment_format_problem("* Added the `foo` command.")
     >>> fragment_format_problem("* Fixed a bug. ([#6208](https://github.com/databricks/cli/pull/6208))")
+
+    Each structural problem returns its own message:
+
     >>> fragment_format_problem("Added the `foo` command.")
     'must start with a "* " bullet marker'
+
     >>> fragment_format_problem("* Added the `foo` command")
     'must end with a period'
+
     >>> fragment_format_problem("* First entry.\n* Second entry.")
     'must be a single entry on one line'
+
     >>> fragment_format_problem("   ")
     'empty fragment'
     """
@@ -106,11 +114,20 @@ def link_problem(text):
     (which GitHub would auto-link in the rendered CHANGELOG.md) is rejected. A PR
     link's text number and URL number must also agree.
 
+    A fully-linked entry is fine (returns None):
+
     >>> link_problem("* Fixed a bug. ([#5](https://github.com/databricks/cli/pull/5))")
+
+    A bare or paren-wrapped reference is rejected:
+
     >>> link_problem("* Fixed a bug (#5).")
     'unexpanded reference #5: write it as a markdown link, e.g. [#5](https://github.com/databricks/cli/pull/5)'
+
     >>> link_problem("* Reverts #7 for now.")
     'unexpanded reference #7: write it as a markdown link, e.g. [#7](https://github.com/databricks/cli/pull/7)'
+
+    A link whose text and URL numbers disagree is rejected:
+
     >>> link_problem("* Oops. ([#5](https://github.com/databricks/cli/pull/9))")
     'PR link text #5 does not match its URL (pull/9)'
     """
@@ -134,17 +151,32 @@ def pr_link_problem(text, require_pr_link, expected_pr):
     the group mandatory — set whenever the change is associated with a PR (see
     ``main``). Text/URL number agreement is checked by ``link_problem``.
 
+    When no link is required, a link-less entry is fine:
+
     >>> pr_link_problem("* A change.", False, None)
+
+    When a link is required but absent, the message names the expected PR (or a
+    placeholder when it is unknown):
+
     >>> pr_link_problem("* A change.", True, "5")
     'missing trailing PR link: end with ([#5](https://github.com/databricks/cli/pull/5))'
+
     >>> pr_link_problem("* A change.", True, None)
     'missing trailing PR link: end with ([#<PR>](https://github.com/databricks/cli/pull/<PR>))'
+
+    A malformed PR link is reported as such:
+
     >>> pr_link_problem("* A change. ([#6177](https://github.com/databricks/cli/6177))", True, "6177")
     'malformed trailing PR link "[#6177](https://github.com/databricks/cli/6177)": expected [#N](https://github.com/databricks/cli/pull/N)'
+
+    The expected PR must appear among the linked PRs (follow-ups may also be listed):
+
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", True, "5")
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5), [#9](https://github.com/databricks/cli/pull/9))", True, "9")
+
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", True, "9")
     'trailing PR link #5 must include the PR that added this fragment (#9)'
+
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", False, None)
     """
     m = TRAILING_GROUP_RE.search(text.strip())
@@ -381,10 +413,18 @@ def fixed_fragment(text, pr):
     no trailing link group is changed; anything else is returned unchanged for the
     linter to report, so the fix never guesses at a malformed entry.
 
+    A well-formed fragment with no link gets one appended:
+
     >>> fixed_fragment("* Added a thing.\n", "42")
     '* Added a thing. ([#42](https://github.com/databricks/cli/pull/42))\n'
+
+    An already-linked fragment is unchanged:
+
     >>> fixed_fragment("* Already linked. ([#7](https://github.com/databricks/cli/pull/7))\n", "42")
     '* Already linked. ([#7](https://github.com/databricks/cli/pull/7))\n'
+
+    A malformed fragment is left for the linter to report:
+
     >>> fixed_fragment("No bullet.\n", "42")
     'No bullet.\n'
     """

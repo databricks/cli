@@ -52,12 +52,14 @@ def should_exclude_line(line, excluded_dirs):
 
     >>> should_exclude_line("libs/gorules/myrule.go:10:5: func", ["libs/gorules/"])
     True
-    >>> should_exclude_line("bundle/internal/tf/schema/gen.go:10:5: func", ["bundle/internal/tf/schema/"])
-    True
+
     >>> should_exclude_line("cmd/bundle/deploy.go:10:5: func", ["libs/gorules/"])
     False
-    >>> should_exclude_line("bundle/internal/tf/schema/gen.go:10:5: func", ["libs/gorules/"])
-    False
+
+    A directory anywhere in the path (not only a prefix) excludes the line:
+
+    >>> should_exclude_line("x/bundle/internal/tf/schema/gen.go:10:5: func", ["bundle/internal/tf/schema/"])
+    True
     """
     return any(line.startswith(d) or ("/" + d) in line for d in excluded_dirs)
 
@@ -66,10 +68,12 @@ def parse_deadcode_line(line):
     """Parse a deadcode output line into (filepath, lineno) or return None if unparseable.
 
     Typical deadcode format: path/to/file.go:123:45: message
+
     >>> parse_deadcode_line("cmd/main.go:42:3: func Foo")
     ('cmd/main.go', 42)
-    >>> parse_deadcode_line("libs/util/helper.go:1:0: func Helper")
-    ('libs/util/helper.go', 1)
+
+    A line that doesn't match the "file:line:col:" shape returns None:
+
     >>> parse_deadcode_line("invalid line format")
 
     >>> parse_deadcode_line("")

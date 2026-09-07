@@ -713,6 +713,7 @@ def format_table(table, columns=None, markdown=False):
 
     >>> format_table([{"a": "1", "b": "hello"}], columns=["a", "b"]).splitlines()
     ['a    b  ', '1  hello']
+
     >>> print(format_table([{"Env": "aws", "x": "1"}], columns=["Env", "x"], markdown=True))
     | Env | x |
     | --- | - |

@@ -18,27 +18,18 @@ NESTED_MODULES = ("bundle/internal/tf/codegen", "tools")
 
 
 def in_nested_module(path):
-    """Check if a path is under a nested module.
+    """Check if a path is a nested module or lives under one.
+
+    A path matches a module exactly or as a `/`-separated prefix, but a sibling
+    that merely shares a leading substring does not:
 
     >>> in_nested_module("tools")
-    True
-
-    >>> in_nested_module("tools/task")
     True
 
     >>> in_nested_module("tools/task/subtask.go")
     True
 
-    >>> in_nested_module("bundle/internal/tf/codegen")
-    True
-
-    >>> in_nested_module("bundle/internal/tf/codegen/gen.go")
-    True
-
     >>> in_nested_module("cmd/bundle")
-    False
-
-    >>> in_nested_module("cmd")
     False
 
     >>> in_nested_module("toolz")

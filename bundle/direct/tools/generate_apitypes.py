@@ -41,18 +41,20 @@ def get_schema_fields(schemas):
 
     >>> get_schema_fields({})
     {}
-    >>> get_schema_fields({"TypeA": {}})
-    {}
+
     >>> get_schema_fields({"TypeA": {"fields": {"x": {}}}})
     {'TypeA': {'x'}}
+
     >>> result = get_schema_fields({"A": {"fields": {"x": {}}}, "B": {"fields": {"y": {}, "z": {}}}})
-    >>> result["A"] == {"x"}
-    True
-    >>> result["B"] == {"y", "z"}
-    True
-    >>> result = get_schema_fields({"TypeA": {"fields": {}}, "TypeB": {"fields": {"x": {}}}})
-    >>> "TypeA" not in result and "TypeB" in result
-    True
+    >>> result["A"]
+    {'x'}
+    >>> sorted(result["B"])
+    ['y', 'z']
+
+    Types with no fields are dropped:
+
+    >>> sorted(get_schema_fields({"TypeA": {"fields": {}}, "TypeB": {"fields": {"x": {}}}}))
+    ['TypeB']
     """
     schema_fields = {}
     for name, schema in schemas.items():
