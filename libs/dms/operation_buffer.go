@@ -76,35 +76,28 @@ func (b *OperationBuffer) RecordOperation(ctx context.Context, resourceKey strin
 		return
 	}
 
-	b.record(resourceKey, update, true, nil)
+	b.record(resourceKey, update, false, nil)
 }
 
-// RecordFailure records that a resource did not apply, so the history says why rather than
-// leaving the resource out. When a write already recorded this resource's state, the failure
-// keeps that state - which the service may already hold - and changes only status and message;
-// recording the pre-deploy state instead would overwrite the newer state, and after a rename
-// pair the new id with the old state. state is the fallback, used only when no write recorded
-// anything: the operation failed before it saved state.
+// RecordFailure records that a resource did not apply, so the history says why. state is a
+// fallback used only when no write recorded state yet; otherwise record keeps the last state.
 func (b *OperationBuffer) RecordFailure(resourceKey, resourceID string, state json.RawMessage, cause error) {
 	// The passed update is the fallback used only when no write recorded state yet; record
 	// otherwise merges the failure onto the state the last write recorded (see below).
-	b.record(resourceKey, NewFailureUpdate(resourceID, state, cause), false, cause)
+	b.record(resourceKey, NewFailureUpdate(resourceID, state, cause), true, cause)
 }
 
-// record makes update the one waiting for resourceKey, waiting itself while the queue is
-// full. isStateWrite records update as the latest state for this resource, kept past the
-// writer taking it from pending so a later failure keeps it (see the latestState field);
-// a failure (isStateWrite false) instead merges its status and message onto that recorded
-// state when there is one, so it keeps the state - which the service may already hold -
-// rather than the pre-deploy one, and after a rename pairs the new id with the old state.
-// The latestState read/write shares this lock with the pending update so the two never
-// disagree. Recording after Drain panics, so every caller must return before Drain.
-func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, isStateWrite bool, cause error) {
+// record queues update for resourceKey. keepExistingUpdateIfAny (a failure) merges onto the
+// resource's last recorded state if one exists; otherwise (a state write) update is saved as
+// that latest state. latestState and pending are updated under the one lock. Panics after Drain.
+func (b *OperationBuffer) record(resourceKey string, update OperationUpdate, keepExistingUpdateIfAny bool, cause error) {
 	b.mu.Lock()
-	if isStateWrite {
+	if keepExistingUpdateIfAny {
+		if latest, recorded := b.latestState[resourceKey]; recorded {
+			update = latest.Merge(failureUpdate(cause))
+		}
+	} else {
 		b.latestState[resourceKey] = update
-	} else if latest, recorded := b.latestState[resourceKey]; recorded {
-		update = latest.Merge(failureUpdate(cause))
 	}
 	waiting, queued := b.pending[resourceKey]
 	if queued {
