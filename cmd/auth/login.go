@@ -472,7 +472,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	}
 
-	authArguments.Host = strings.TrimSuffix(authArguments.Host, "/")
+	authArguments.Host = normalizeLoginHost(authArguments.Host)
 
 	// Extract query parameters from the host URL (?o=workspace_id, ?a=account_id).
 	// URL params from explicit --host override stale profile values.
@@ -510,6 +510,19 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	}
 
 	return nil
+}
+
+func normalizeLoginHost(host string) string {
+	host = strings.TrimSuffix(host, "/")
+	if strings.Contains(host, "://") {
+		return host
+	}
+
+	canonicalHost := (&config.Config{Host: host}).CanonicalHostName()
+	if auth.IsClassicAccountHost(canonicalHost) {
+		return "https://" + host
+	}
+	return host
 }
 
 // needsAccountIDPrompt reports whether the target host requires an account ID

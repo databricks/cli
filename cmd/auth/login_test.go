@@ -150,8 +150,16 @@ func TestSetHost(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "https://www.host1.test", authArguments.Host)
 
+	// Test setting account console host from flag without scheme
+	authArguments.Host = "accounts.test/"
+	authArguments.AccountID = "account-id"
+	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{})
+	assert.NoError(t, err)
+	assert.Equal(t, "https://accounts.test", authArguments.Host)
+
 	// Test setting host from argument
 	authArguments.Host = ""
+	authArguments.AccountID = ""
 	err = setHostAndAccountId(ctx, profile1, &authArguments, []string{"val from [HOST]"})
 	assert.NoError(t, err)
 	assert.Equal(t, "val from [HOST]", authArguments.Host)
