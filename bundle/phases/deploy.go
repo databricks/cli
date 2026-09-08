@@ -344,18 +344,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			}
 		}
 
-		// Create the version the plan was stamped with, staging an operation for every resource
-		// it touches. Doing it here rather than before the prompt means a declined deploy never
-		// claims a version number.
-		//
-		// Create a version exactly when serial would bump. Serial advances only when the WAL
-		// gets an entry, i.e. when a resource state write happens, which is what a non-skip
-		// action leads to - so the two stay in step and the version can be derived from serial.
-		// The version has to exist before apply records into it, so the plan is where that is
-		// predicted, via stagedOperations - the same walk that stages them, so there is one
-		// source of truth. With no version there is no operation buffer, so the deferred
-		// CompleteVersion is a no-op too. A non-skip action that fails still gets a version,
-		// which is intended: the history should show the failure.
+		// Only create a version when the plan has at least one operation to record, so it moves
+		// with serial. Done after the prompt, so a declined deploy never claims a number.
 		staged, err := stagedOperations(plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
