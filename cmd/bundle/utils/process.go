@@ -293,6 +293,22 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
+				// A version is only created when serial bumps, so the recorded last version and
+				// the state serial must agree. If they do not, the local state and the recorded
+				// history have diverged - a deploy from elsewhere, or restored state - and going
+				// on would claim a version the service already has.
+				// A version is only created when serial bumps, so serial must never run ahead of
+				// the recorded history. It may lag: a version whose deploy failed is recorded
+				// without a state write. Ahead means state advanced with no version recorded, so
+				// the next version number is already taken.
+				if lastVersionID != "" {
+					last, cerr := strconv.Atoi(lastVersionID)
+					if cerr == nil && b.DeploymentBundle.StateDB.Data.Serial > last {
+						logdiag.LogError(ctx, fmt.Errorf("deployment state is ahead of its recorded history: state serial is %d but the deployment's last version is %s; destroy and redeploy to resync", b.DeploymentBundle.StateDB.Data.Serial, lastVersionID))
+						return b, stateDesc, root.ErrAlreadyPrinted
+					}
+				}
+
 				// StateDB owns the plan's lineage: CalculatePlan reads these, not the config tree.
 				b.DeploymentBundle.StateDB.DeploymentID = dmsDeploymentID
 				b.DeploymentBundle.StateDB.LatestVersionID = lastVersionID
@@ -485,6 +501,11 @@ func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, 
 	// tombstone (its serial does not catch a deploy from elsewhere). Gated on the plan being a DMS
 	// plan; a first-deploy plan has empty version ids that still get compared (and match) here.
 	if isDMSPlan {
+		// A plan built before the first deploy carries no deployment id; once one exists the plan
+		// predates it, which is staleness rather than a different target.
+		if plan.DeploymentId == "" && dmsDeploymentID != "" {
+			return errors.New("this plan predates the deployment now recorded for this bundle; run 'bundle plan' again")
+		}
 		if plan.DeploymentId != dmsDeploymentID {
 			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
 		}

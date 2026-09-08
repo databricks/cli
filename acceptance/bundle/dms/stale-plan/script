@@ -22,4 +22,17 @@ trace musterr $CLI bundle deploy --plan tmp.plan.json
 title "Only the first deploy recorded a version; the rejected replay created none"
 trace print_requests.py --dms //api/2.0/bundle --oneline
 
-rm -f tmp.plan.json out.requests.txt
+# The replay above predates the deployment entirely (its plan was built before one existed).
+# This covers the other shape: a plan that targets the right deployment but an outdated
+# version, which the serial guard has to catch.
+title "Save a plan against the recorded deployment, then move the deployment on"
+$CLI bundle plan -o json > tmp.plan2.json
+trace jq '{deployment_id, serial}' tmp.plan2.json
+trace update_file.py databricks.yml "name: foo" "name: foo_renamed"
+trace $CLI bundle deploy
+trace jq '{serial}' .databricks/bundle/default/resources.json
+
+title "Replaying the older plan is rejected: same deployment, outdated version"
+trace musterr $CLI bundle deploy --plan tmp.plan2.json
+
+rm -f tmp.plan.json tmp.plan2.json out.requests.txt
