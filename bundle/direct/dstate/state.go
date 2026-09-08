@@ -523,6 +523,13 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	return appendJSONLine(db.walFile, walHead)
 }
 
+// IsOpen reports whether the state has been opened (for read or write). It lets
+// callers probe the state without risking the panic in AssertOpenedForReadOrWrite,
+// e.g. code paths shared with the terraform engine where the state DB is never opened.
+func (db *DeploymentState) IsOpen() bool {
+	return db.Path != ""
+}
+
 func (db *DeploymentState) AssertOpenedForReadOrWrite() {
 	if db.Path == "" {
 		panic("internal error: DeploymentState must be opened first")

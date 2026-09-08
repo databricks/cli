@@ -1,0 +1,9 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "install --output json: every named agent skipped, each with its own category"
+# Neither cursor nor codex supports project-scoped skills, so at --scope=project both
+# are skipped with a per-agent UNSUPPORTED_SCOPE category and nothing is installed (no
+# manifest fetch). Both were named explicitly, so the run exits non-zero, yet the
+# top-level error_category stays unset because every failure is per-agent.
+trace $CLI aitools install --skills-only --scope=project --agents=cursor,codex --output json

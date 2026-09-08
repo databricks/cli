@@ -25,7 +25,7 @@ func (s *Secret) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }
 
-func (s *Secret) MarshalJSON() ([]byte, error) {
+func (s Secret) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 

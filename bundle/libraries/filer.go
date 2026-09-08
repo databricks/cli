@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 )
@@ -24,8 +25,13 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 		return nil, "", diag.Errorf("remote artifact path not configured")
 	}
 
-	uploadPath := path.Join(b.Config.Workspace.ArtifactPath, InternalDirName)
-	uploadPath = ensureWorkspaceOrVolumesPrefix(uploadPath)
+	var uploadPath string
+	if b.IsImmutableFolder() {
+		uploadPath = path.Join(resources.SnapshotFullPathRef, "artifacts", InternalDirName)
+	} else {
+		uploadPath = path.Join(b.Config.Workspace.ArtifactPath, InternalDirName)
+		uploadPath = ensureWorkspaceOrVolumesPrefix(uploadPath)
+	}
 
 	switch {
 	case IsVolumesPath(artifactPath):
@@ -37,6 +43,9 @@ func GetFilerForLibraries(ctx context.Context, b *bundle.Bundle) (filer.Filer, s
 }
 
 func GetFilerForLibrariesCleanup(ctx context.Context, b *bundle.Bundle) (filer.Filer, string, diag.Diagnostics) {
+	// No immutable-folder special case: immutable snapshots are never cleaned up
+	// remotely (they are immutable, and artifacts.CleanUp only runs for non-immutable
+	// deploys), so this only handles the regular artifact path.
 	artifactPath := b.Config.Workspace.ArtifactPath
 	if artifactPath == "" {
 		return nil, "", diag.Errorf("remote artifact path not configured")

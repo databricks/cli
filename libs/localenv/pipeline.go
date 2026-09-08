@@ -256,8 +256,21 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 	p.markOK(PhaseMerge, "")
 
-	// Phase: provision — ensure Python, run uv sync, seed pip.
+	// The merge proved the written pins conflict with the user's dependencies
+	// (W_USER_CONSTRAINT_CONFLICT): uv sync would deterministically fail to resolve
+	// them, so report the conflict now — with a distinct E_PROVISION_CONFLICT code —
+	// instead of spending a doomed Python install and sync. The constraints are
+	// already on disk (diskMutated=true), which the extension's recovery flow relies
+	// on, and the failure is attributed to the provision phase it stands in for.
+	// Gating on the CLI's own merge detection keeps the code precise (no stderr
+	// matching, and no false positive on an unrelated sync failure).
 	p.report(ctx, PhaseProvision)
+	if p.hasConstraintConflictWarning() {
+		return p.fail(PhaseProvision, true, NewError(ErrProvisionConflict, nil,
+			"dependency pins conflict with the environment constraints; relax the conflicting pins and re-run (see warnings)"))
+	}
+
+	// Phase: provision — ensure Python, run uv sync, seed pip.
 	if err := p.provision(ctx, pyMinor); err != nil {
 		return err
 	}
@@ -527,6 +540,19 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	}
 	p.markOK(PhaseProvision, "")
 	return nil
+}
+
+// hasConstraintConflictWarning reports whether the merge phase recorded a provable
+// user/environment version conflict (W_USER_CONSTRAINT_CONFLICT). It reads the
+// warnings already accumulated on the Result, which the merge phase populates
+// before provision runs, so it is only meaningful once merge has completed.
+func (p *Pipeline) hasConstraintConflictWarning() bool {
+	for _, w := range p.res.Warnings {
+		if w.Code == WarnUserConstraintConflict {
+			return true
+		}
+	}
+	return false
 }
 
 // validate reads the Python and databricks-connect versions from the venv and

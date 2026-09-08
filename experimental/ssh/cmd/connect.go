@@ -7,7 +7,24 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
+
+// resolveServerTimeout returns the lifetime to submit the SSH tunnel server job with.
+//
+// Before --server-timeout existed the lifetime was max(24h, --shutdown-delay), so
+// `ssh setup --shutdown-delay=48h` produced a working 48h tunnel and persisted that delay into
+// the generated ProxyCommand. Keep honoring it whenever --server-timeout is not set: OpenSSH
+// runs a persisted ProxyCommand verbatim, so a user whose host config predates the flag cannot
+// add it, and rejecting the pair would break `ssh <name>` with an error naming a flag they have
+// no way to pass. An explicit --server-timeout always wins, and ClientOptions.Validate still
+// rejects a shutdown delay that outlives a lifetime the user asked for explicitly.
+func resolveServerTimeout(flags *pflag.FlagSet, serverTimeout, shutdownDelay time.Duration) time.Duration {
+	if flags.Changed("server-timeout") {
+		return serverTimeout
+	}
+	return max(serverTimeout, shutdownDelay)
+}
 
 func newConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -32,6 +49,7 @@ Connect to a dedicated cluster:
 	var serverMetadata string
 	var shutdownDelay time.Duration
 	var maxClients int
+	var serverTimeout time.Duration
 	var handoverTimeout time.Duration
 	var releasesDir string
 	var autoStartCluster bool
@@ -46,6 +64,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks dedicated cluster ID")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
+	cmd.Flags().DurationVar(&serverTimeout, "server-timeout", defaultServerTimeout, "Maximum lifetime of the SSH server; it is terminated after this duration even if clients are connected")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
@@ -121,7 +140,7 @@ Connect to a dedicated cluster:
 			HandoverTimeout:      handoverTimeout,
 			KeepaliveInterval:    defaultKeepaliveInterval,
 			ReleasesDir:          releasesDir,
-			ServerTimeout:        max(serverTimeout, shutdownDelay),
+			ServerTimeout:        resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
 			TaskStartupTimeout:   startupTimeout,
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,

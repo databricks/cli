@@ -46,6 +46,10 @@ from databricks.bundles.pipelines._models.outlook_options import (
     OutlookOptions,
     OutlookOptionsParam,
 )
+from databricks.bundles.pipelines._models.rabbitmq_options import (
+    RabbitmqOptions,
+    RabbitmqOptionsParam,
+)
 from databricks.bundles.pipelines._models.reddit_ads_options import (
     RedditAdsOptions,
     RedditAdsOptionsParam,
@@ -142,6 +146,14 @@ class ConnectorOptions:
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Outlook specific options for ingestion
+    """
+
+    rabbitmq_options: VariableOrOptional[RabbitmqOptions] = None
+    """
+    [Beta] RabbitMQ specific options for ingestion.
+    Performance tuning options (consumers_per_task, max_messages_per_fetch, etc.)
+    are intentionally not exposed in the public API. The managed connector uses
+    sensible defaults internally. These can be added later if user demand arises.
     """
 
     reddit_ads_options: VariableOrOptional[RedditAdsOptions] = None
@@ -253,6 +265,14 @@ class ConnectorOptionsDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Outlook specific options for ingestion
+    """
+
+    rabbitmq_options: VariableOrOptional[RabbitmqOptionsParam]
+    """
+    [Beta] RabbitMQ specific options for ingestion.
+    Performance tuning options (consumers_per_task, max_messages_per_fetch, etc.)
+    are intentionally not exposed in the public API. The managed connector uses
+    sensible defaults internally. These can be added later if user demand arises.
     """
 
     reddit_ads_options: VariableOrOptional[RedditAdsOptionsParam]

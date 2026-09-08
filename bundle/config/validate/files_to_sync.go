@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/sync"
 )
 
 func FilesToSync() bundle.ReadOnlyMutator {
@@ -26,7 +27,14 @@ func (v *filesToSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnost
 		return nil
 	}
 
-	sync, err := files.GetSync(ctx, b)
+	var sync *sync.Sync
+	var err error
+	if b.IsImmutableFolder() {
+		sync, err = files.GetNoValidateSync(ctx, b)
+	} else {
+		sync, err = files.GetSync(ctx, b)
+	}
+
 	if err != nil {
 		return diag.FromErr(err)
 	}
