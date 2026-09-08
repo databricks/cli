@@ -21,9 +21,17 @@ func TestGetKnownHostsPath(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv(env.HomeEnvVar(), tmpDir)
 
-	path, err := GetKnownHostsPath(t.Context(), "databricks-cpu-6e7644d0")
+	path, err := GetKnownHostsPath(t.Context(), "databricks-cpu-6e7644d0", "")
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(tmpDir, ".databricks", "ssh-tunnel-known-hosts", "databricks-cpu-6e7644d0"), path)
+}
+
+func TestGetKnownHostsPathOverrideRelocatesTheDirectoryOnly(t *testing.T) {
+	// The override names a directory, never the file: PinHostKey replaces the file it is
+	// given, so a shared known_hosts must stay out of reach of it.
+	path, err := GetKnownHostsPath(t.Context(), "databricks-cpu-6e7644d0", filepath.Join("/home/me", ".ssh"))
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join("/home/me", ".ssh", "databricks-cpu-6e7644d0"), path)
 }
 
 func TestPinHostKey(t *testing.T) {

@@ -35,7 +35,7 @@ Connect to a dedicated cluster:
 	var handoverTimeout time.Duration
 	var releasesDir string
 	var autoStartCluster bool
-	var userKnownHostsFile string
+	var knownHostsDir string
 	var liteswap string
 	var skipSettingsCheck bool
 	var environmentVersion int
@@ -63,8 +63,8 @@ Connect to a dedicated cluster:
 	cmd.Flags().StringVar(&releasesDir, "releases-dir", "", "Directory for local SSH tunnel development releases")
 	cmd.Flags().MarkHidden("releases-dir")
 
-	cmd.Flags().StringVar(&userKnownHostsFile, "user-known-hosts-file", "", "Path to the known hosts file for this connection, owned and rewritten by the CLI")
-	cmd.Flags().MarkHidden("user-known-hosts-file")
+	cmd.Flags().StringVar(&knownHostsDir, "known-hosts-dir", "", "Directory for the known hosts files the CLI maintains for tunnel connections")
+	cmd.Flags().MarkHidden("known-hosts-dir")
 
 	cmd.Flags().StringVar(&liteswap, "liteswap", "", "Liteswap header value for traffic routing (dev/test only)")
 	cmd.Flags().MarkHidden("liteswap")
@@ -127,7 +127,7 @@ Connect to a dedicated cluster:
 			ClientPublicKeyName:  clientPublicKeyName,
 			ClientPrivateKeyName: clientPrivateKeyName,
 			ServerPublicKeyName:  serverPublicKeyName,
-			UserKnownHostsFile:   userKnownHostsFile,
+			KnownHostsDir:        knownHostsDir,
 			Liteswap:             liteswap,
 			SkipSettingsCheck:    skipSettingsCheck,
 			EnvironmentVersion:   environmentVersion,

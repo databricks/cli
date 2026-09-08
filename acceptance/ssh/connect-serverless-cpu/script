@@ -22,6 +22,6 @@ else
   CLI_RELEASES_DIR="$PWD/releases"
 
   title "CLI ssh connect (local sshd)\n"
-  errcode $CLI ssh connect --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
+  errcode $CLI ssh connect --releases-dir=$CLI_RELEASES_DIR --known-hosts-dir=known-hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
   trace print_requests.py //api/2.2/jobs/runs/submit
 fi

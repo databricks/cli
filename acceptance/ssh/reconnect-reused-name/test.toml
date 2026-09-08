@@ -5,7 +5,7 @@ Cloud = false
 # Local runs stage stand-in release archives here; not part of the golden output.
 Ignore = [
   "releases",
-  "known_hosts",
+  "known-hosts",
 ]
 
 # Linux-only: the local run drives a real sshd, reliable only there (and where

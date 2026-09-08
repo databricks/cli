@@ -4,7 +4,7 @@
 === The stale key is replaced by the one the workspace published
 stale key replaced
 
->>> grep -c ^reused-name ssh- known_hosts
+>>> grep -c ^reused-name ssh- known-hosts/reused-name
 1
 
 === Reconnecting to the running server keeps working

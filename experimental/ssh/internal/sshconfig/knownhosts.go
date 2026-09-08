@@ -10,24 +10,28 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// knownHostsDirName is the directory holding the known_hosts files the CLI maintains for
-// tunnel connections, relative to the user's home directory.
-const knownHostsDirName = ".databricks/ssh-tunnel-known-hosts"
-
 // GetKnownHostsPath returns the known_hosts file the CLI maintains for a session
 // (sessionID is the connection name for serverless, the cluster ID otherwise).
+// knownHostsDir defaults to ~/.databricks/ssh-tunnel-known-hosts.
+//
+// The file name is always the session ID, never a path the caller picks, because PinHostKey
+// rewrites the file: relocating the directory is all a caller can do, so no shared
+// known_hosts can end up being replaced with a single tunnel entry.
 //
 // Tunnel host keys are deliberately kept out of the user's ~/.ssh/known_hosts. A session
 // name identifies compute within one workspace, while ~/.ssh/known_hosts is global and
 // keyed by name alone, so the same name used in a second workspace - or against compute
 // whose host key was regenerated - collides with the entry left by the first and trips
 // strict host key checking on a connection that is perfectly legitimate.
-func GetKnownHostsPath(ctx context.Context, sessionID string) (string, error) {
-	homeDir, err := env.UserHomeDir(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
+func GetKnownHostsPath(ctx context.Context, sessionID, knownHostsDir string) (string, error) {
+	if knownHostsDir == "" {
+		homeDir, err := env.UserHomeDir(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to get home directory: %w", err)
+		}
+		knownHostsDir = filepath.Join(homeDir, ".databricks", "ssh-tunnel-known-hosts")
 	}
-	return filepath.Join(homeDir, filepath.FromSlash(knownHostsDirName), sessionID), nil
+	return filepath.Join(knownHostsDir, sessionID), nil
 }
 
 // PinHostKey makes publicKey the entry for hostName in the known_hosts file at path,

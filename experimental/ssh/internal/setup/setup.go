@@ -40,8 +40,9 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 	}
 
 	// The ProxyCommand writes this file before the connection reaches host key
-	// verification, so it does not have to exist yet.
-	knownHostsPath, err := sshconfig.GetKnownHostsPath(ctx, opts.ClusterID)
+	// verification, so it does not have to exist yet. It carries no directory override, so
+	// resolve the default one here as well.
+	knownHostsPath, err := sshconfig.GetKnownHostsPath(ctx, opts.ClusterID, "")
 	if err != nil {
 		return "", err
 	}

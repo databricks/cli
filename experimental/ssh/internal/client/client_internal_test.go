@@ -385,7 +385,7 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 }
 
 func TestBuildSSHArgsSetsServerAliveInterval(t *testing.T) {
-	args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{})
+	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{})
 
 	// ssh stops parsing options at the destination, so an option placed after the host would be
 	// treated as part of the remote command rather than as an ssh option.
@@ -396,8 +396,7 @@ func TestBuildSSHArgsSetsServerAliveInterval(t *testing.T) {
 }
 
 func TestBuildSSHArgsPinsHostKey(t *testing.T) {
-	opts := ClientOptions{UserKnownHostsFile: "/pins/myhost"}
-	args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", opts)
+	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{})
 
 	// The pinned file is the whole point of strict checking here: without it ssh would
 	// fall back to ~/.ssh/known_hosts, where an entry for this name may be left over from
@@ -422,7 +421,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	}
 
 	t.Run("interactive forces a PTY before the destination", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
+		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
 		ptyIdx := indexOf(args, "-t")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, ptyIdx, "-t must be present for interactive sessions")
@@ -434,7 +433,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	})
 
 	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
+		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
 		assert.Equal(t, -1, indexOf(args, "-t"), "no PTY for non-interactive passthrough")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, hostIdx)

@@ -114,7 +114,7 @@ func TestGenerateHostConfig_Valid(t *testing.T) {
 	// `ssh <name>` reaches ssh through this block and nothing else, so the host key the
 	// ProxyCommand pins has to be the one it verifies against (DECO-27882).
 	assert.Contains(t, result, "StrictHostKeyChecking yes")
-	expectedKnownHostsPath, err := sshconfig.GetKnownHostsPath(t.Context(), "cluster-123")
+	expectedKnownHostsPath, err := sshconfig.GetKnownHostsPath(t.Context(), "cluster-123", "")
 	require.NoError(t, err)
 	assert.Contains(t, result, fmt.Sprintf(`UserKnownHostsFile %q`, expectedKnownHostsPath))
 
