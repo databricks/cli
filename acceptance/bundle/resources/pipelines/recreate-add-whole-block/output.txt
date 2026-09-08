@@ -40,8 +40,3 @@ resources:
       libraries:
         - file:
             path: "./foo.py"
-
->>> [CLI] bundle plan
-update pipelines.my
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged

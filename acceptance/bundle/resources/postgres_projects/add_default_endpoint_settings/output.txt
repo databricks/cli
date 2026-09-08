@@ -14,17 +14,6 @@ update postgres_projects.my_project
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Error: cannot update resources.postgres_projects.my_project: updating id=projects/test-pg-proj-[UNIQUE_NAME]: Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
-
-Endpoint: PATCH [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]?update_mask=spec.default_endpoint_settings
-HTTP Status: 400 Bad Request
-API error_code: INVALID_PARAMETER_VALUE
-API message: Field 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in request
-
-Files: 0 uploaded, 0 deleted
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_projects.my_project
@@ -36,5 +25,3 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
-
-Exit code: 1

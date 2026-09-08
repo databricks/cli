@@ -1,14 +1,5 @@
-# Reproducer for the "whole block" struct-diff bug (removal direction).
-#
-# Mirror of recreate-add-whole-block: here the whole `ingestion_definition` block
-# is removed from config (populated in state/remote, nil in config). structdiff
-# records a single change at path "ingestion_definition" (diff.go, the v2-nil
-# branch) instead of descending to "ingestion_definition.connection_name". The
-# immutable recreate rule targets the leaf, HasPatternPrefix cannot match a rule
-# path longer than the change path, so removing an immutable field is
-# misclassified as "update" instead of "recreate".
-#
-# Direct-only: terraform classifies this correctly as recreate.
-Badness = "Removing the whole ingestion_definition block is planned as 'update' instead of 'recreate': structdiff records one change at path 'ingestion_definition' instead of descending to 'ingestion_definition.connection_name', so the immutable recreate rule never matches."
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# Runs on both engines to show the difference: the direct engine plans this as
+# 'update' (see Badness), while terraform correctly recreates. The plan verdict
+# is the only divergent output, so it is routed to per-engine out.plan.*.txt.
+Badness = "On the direct engine, removing the whole ingestion_definition block is planned as 'update' instead of 'recreate': structdiff records one change at path 'ingestion_definition' instead of descending to 'ingestion_definition.connection_name', so the immutable recreate rule never matches. Terraform recreates as expected."
 Ignore = ["foo.py", ".databricks"]

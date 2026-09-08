@@ -11,8 +11,10 @@ trace $CLI bundle deploy
 trace update_file.py databricks.yml "#TO_ADD: " ""
 trace cat databricks.yml
 
-# BUG: prints "update pipelines.my"; should print "recreate pipelines.my".
-trace $CLI bundle plan
+# The plan verdict diverges by engine, so route it to per-engine files: the direct
+# engine plans 'update' (the whole ingestion_definition block change misses the
+# recreate rule on the connection_name leaf), while terraform recreates.
+$CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm -f out.requests.txt
