@@ -3,4 +3,4 @@ Badness = "bundle deploy --plan skips the build phase, so a cluster's local whee
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # This test is just asserting bad behaviour so that it can be removed once that behaviour is fixed
 RecordRequests = false
-Ignore = [".databricks"]
+Ignore = [".databricks", "tmp.plan.json"]

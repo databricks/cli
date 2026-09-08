@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle plan -o json
 
->>> [CLI] bundle deploy --plan out.plan.json
+>>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/libraries-readplan-not-uploaded/default/files...
 Created clusters.mycluster
 Files: 6 uploaded, 0 deleted
