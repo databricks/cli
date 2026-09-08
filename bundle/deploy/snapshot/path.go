@@ -4,8 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/snapshot"
 	libsync "github.com/databricks/cli/libs/sync"
 )
 
@@ -71,12 +70,12 @@ func BundleZip(ctx context.Context, b *bundle.Bundle) ([]byte, int, error) {
 
 // addMetadataToZip writes the snapshot metadata file into the zip so that
 // any change to the ACL changes the snapshot hash and forces a new snapshot.
-func addMetadataToZip(zw *zip.Writer, acl []ACLEntry) error {
+func addMetadataToZip(zw *zip.Writer, acl []snapshot.ACLEntry) error {
 	aclJSON, err := json.Marshal(acl)
 	if err != nil {
 		return fmt.Errorf("marshal ACL for permissions hash: %w", err)
 	}
-	data, err := json.Marshal(snapshotMetadata{PermissionsHash: IDFromContent(aclJSON)})
+	data, err := json.Marshal(snapshotMetadata{PermissionsHash: snapshot.HashFromContent(aclJSON)})
 	if err != nil {
 		return fmt.Errorf("marshal snapshot metadata: %w", err)
 	}
@@ -91,23 +90,6 @@ func addMetadataToZip(zw *zip.Writer, acl []ACLEntry) error {
 	}
 	_, err = w.Write(data)
 	return err
-}
-
-// IDFromContent returns the SHA-256 hex digest of content.
-func IDFromContent(content []byte) string {
-	h := sha256.Sum256(content)
-	return hex.EncodeToString(h[:])
-}
-
-// SnapshotID builds the bundle zip and returns its SHA-256 hex digest.
-// Called after artifacts are built so that ApplyImmutableWorkspacePaths and
-// snapshot.Upload both hash identical content.
-func SnapshotID(ctx context.Context, b *bundle.Bundle) (string, error) {
-	content, _, err := BundleZip(ctx, b)
-	if err != nil {
-		return "", err
-	}
-	return IDFromContent(content), nil
 }
 
 // addSyncRootToZip returns the number of files added from the sync root.
@@ -168,8 +150,6 @@ func addArtifactsToZip(zw *zip.Writer, b *bundle.Bundle) error {
 			if af.Patched != "" {
 				source = af.Patched
 			}
-			// ".internal" matches libraries.InternalDirName so that ReplaceWithRemotePath
-			// produces library paths that resolve correctly inside the snapshot.
 			if err := addLocalFileToZip(zw, source, "artifacts/.internal"); err != nil {
 				return err
 			}

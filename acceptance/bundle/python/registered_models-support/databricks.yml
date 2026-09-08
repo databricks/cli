@@ -1,0 +1,16 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_registered_model"
+
+resources:
+  registered_models:
+    my_registered_model_1:
+      name: "my_registered_model_1"
+      comment: "My model"

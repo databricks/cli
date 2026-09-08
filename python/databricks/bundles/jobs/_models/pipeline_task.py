@@ -32,28 +32,38 @@ class PipelineTask:
 
     full_refresh_selection: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A list of tables to update with fullRefresh.
     """
 
     parameters: VariableOrDict[str] = field(default_factory=dict)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Key/value-map of parameters passed to the pipeline execution.
     Limited to 10k characters in total.
     """
 
     refresh_flow_selection: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Flow names to selectively refresh. These are unioned with other selective refresh
     options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.
     """
 
     refresh_selection: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A list of tables to update without fullRefresh.
     """
 
     reset_checkpoint_selection: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A list of streaming flows to reset checkpoints without clearing data.
     """
 
@@ -80,28 +90,38 @@ class PipelineTaskDict(TypedDict, total=False):
 
     full_refresh_selection: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A list of tables to update with fullRefresh.
     """
 
     parameters: VariableOrDict[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Key/value-map of parameters passed to the pipeline execution.
     Limited to 10k characters in total.
     """
 
     refresh_flow_selection: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Flow names to selectively refresh. These are unioned with other selective refresh
     options (refresh_selection, full_refresh_selection) to determine the final set of flows to refresh.
     """
 
     refresh_selection: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A list of tables to update without fullRefresh.
     """
 
     reset_checkpoint_selection: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A list of streaming flows to reset checkpoints without clearing data.
     """
 

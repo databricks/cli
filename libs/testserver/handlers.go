@@ -634,6 +634,12 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ReposDelete(req)
 	})
 
+	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
+		return map[string]any{
+			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots/",
+		}
+	})
+
 	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
 		contentType := req.Headers.Get("Content-Type")
 		mediaType, params, err := mime.ParseMediaType(contentType)
@@ -666,6 +672,7 @@ func AddDefaultHandlers(server *Server) {
 		// The real API uses the workspace user UUID (not email) in the snapshot path,
 		// matching service-principal identities used in cloud acceptance tests.
 		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
+		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: snapshotPath})
 		return map[string]any{
 			"snapshot": map[string]any{
 				"path": snapshotPath,

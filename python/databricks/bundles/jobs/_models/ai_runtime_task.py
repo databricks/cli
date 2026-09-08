@@ -61,6 +61,8 @@ class AiRuntimeTask:
 
     docker_image_url: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Optional Docker image URL for a custom container image. When set,
     the task runs on the specified container image instead of the default
     Databricks client image. Format:
@@ -133,6 +135,8 @@ class AiRuntimeTaskDict(TypedDict, total=False):
 
     docker_image_url: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Optional Docker image URL for a custom container image. When set,
     the task runs on the specified container image instead of the default
     Databricks client image. Format:

@@ -1,0 +1,26 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_instance_pool"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "instance_pools": {
+      "my_pool_1": {
+        "instance_pool_name": "my_pool_1 (updated)",
+        "node_type_id": "[NODE_TYPE_ID]"
+      },
+      "my_pool_2": {
+        "instance_pool_name": "my_pool_2 (updated)",
+        "node_type_id": "[NODE_TYPE_ID]"
+      }
+    }
+  }
+}

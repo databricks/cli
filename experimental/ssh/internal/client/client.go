@@ -155,6 +155,22 @@ func (o *ClientOptions) Validate() error {
 	if o.BaseEnvironment != "" && o.ClusterID != "" {
 		return errors.New("--base-environment can only be used with serverless compute")
 	}
+	// A server started with fewer than one client slot rejects every connection with an
+	// opaque websocket handshake failure, so catch it here instead.
+	if o.MaxClients < 1 {
+		return fmt.Errorf("--max-clients must be at least 1, got %d", o.MaxClients)
+	}
+	// The submitted job carries this as timeout_seconds, a whole number of seconds, and 0 means
+	// "no timeout" in the Jobs API. So every value below one second - not just zero - truncates
+	// to an unbounded run instead of the short-lived server that was asked for.
+	if o.ServerTimeout < time.Second {
+		return fmt.Errorf("--server-timeout must be at least 1s, got %s", o.ServerTimeout)
+	}
+	// The server only starts counting down the shutdown delay once the last client leaves, so a
+	// delay longer than the server's lifetime can never elapse.
+	if o.ShutdownDelay > o.ServerTimeout {
+		return fmt.Errorf("--shutdown-delay (%s) cannot be longer than --server-timeout (%s)", o.ShutdownDelay, o.ServerTimeout)
+	}
 	return nil
 }
 
@@ -227,6 +243,18 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	} else {
 		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
 			executablePath, o.ClusterID, o.AutoStartCluster, o.ShutdownDelay.String())
+	}
+
+	// Both of these are fixed when the server job is submitted, and for a host configured by
+	// `ssh setup` the submitting invocation is always the ProxyCommand, so they have to be
+	// carried here or the user's choice is lost. Zero means "not set": the receiving command
+	// then applies its own flag default.
+	if o.MaxClients > 0 {
+		proxyCommand += " --max-clients=" + strconv.Itoa(o.MaxClients)
+	}
+
+	if o.ServerTimeout > 0 {
+		proxyCommand += " --server-timeout=" + o.ServerTimeout.String()
 	}
 
 	if o.ServerMetadata != "" {
@@ -482,7 +510,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 		return fmt.Errorf("failed to ensure SSH config entry: %w", err)
 	}
 
-	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, userName, currentUser.UserName)
+	return vscode.LaunchIDE(ctx, opts.IDE, connectionName, currentUser.UserName)
 }
 
 func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {

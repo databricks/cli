@@ -1,0 +1,16 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_mlflow_model"
+
+resources:
+  models:
+    my_model_1:
+      name: "my_model_1"
+      description: "My model"
