@@ -1,0 +1,1 @@
+* Fix `databricks auth login --configure-cluster` reporting "no compatible clusters found" for clusters whose runtime reports a major-only version such as `19.x-scala2.13` ([#6569](https://github.com/databricks/cli/issues/6569)).
