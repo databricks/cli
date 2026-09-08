@@ -13,13 +13,14 @@ rm -f out.requests.txt
 title "Add the whole default_endpoint_settings block and re-deploy"
 trace update_file.py databricks.yml "#TO_ADD: " ""
 
-trace $CLI bundle plan
+# The direct plan's "changes" map is the structdiff artifact: it records one
+# change at path default_endpoint_settings (the whole block) instead of descending
+# to its leaves. (The top-level plan verdict is 'update' on both engines.)
+$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-# The deploy diverges by engine, so route it to per-engine files. The block goes from
-# absent to present. On the direct engine structdiff records one change at path
-# default_endpoint_settings instead of descending to its leaves, so the mask names the
-# enclosing message (update_mask=spec.default_endpoint_settings) and the deploy FAILS
-# with a 400: masking the message makes the API require the suspension oneof in the body
-# (see dresources/util.go). Terraform masks the leaf
-# spec.default_endpoint_settings.autoscaling_limit_max_cu and succeeds.
+# The consequence shows up at deploy time, which diverges by engine, so route it to
+# per-engine files. Masking the whole message means the API requires the suspension
+# oneof in the body (see dresources/util.go), so the direct deploy FAILS with a 400;
+# terraform masks the leaf spec.default_endpoint_settings.autoscaling_limit_max_cu
+# and succeeds.
 errcode $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1

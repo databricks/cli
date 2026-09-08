@@ -9,11 +9,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Add the whole default_endpoint_settings block and re-deploy
 >>> update_file.py databricks.yml #TO_ADD:  
 
->>> [CLI] bundle plan
-update postgres_projects.my_project
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_projects.my_project
