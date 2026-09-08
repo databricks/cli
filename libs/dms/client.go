@@ -50,7 +50,7 @@ func DeploymentName(deploymentID string) string {
 	return "deployments/" + deploymentID
 }
 
-func versionName(deploymentID string, version int64) string {
+func versionName(deploymentID string, version int) string {
 	return fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version)
 }
 
@@ -81,12 +81,12 @@ func (c *Client) DeleteDeployment(ctx context.Context, deploymentID string) erro
 }
 
 // CreateVersion claims the version and stages the operations body carries.
-func (c *Client) CreateVersion(ctx context.Context, deploymentID string, version int64, body CreateVersionRequest) (*bundledeployments.Version, error) {
-	return c.raw.CreateVersion(ctx, deploymentID, strconv.FormatInt(version, 10), body)
+func (c *Client) CreateVersion(ctx context.Context, deploymentID string, version int, body CreateVersionRequest) (*bundledeployments.Version, error) {
+	return c.raw.CreateVersion(ctx, deploymentID, strconv.Itoa(version), body)
 }
 
 // CompleteVersion closes the version out, which is what stops the service expiring its lease.
-func (c *Client) CompleteVersion(ctx context.Context, deploymentID string, version int64, reason bundledeployments.VersionComplete) error {
+func (c *Client) CompleteVersion(ctx context.Context, deploymentID string, version int, reason bundledeployments.VersionComplete) error {
 	_, err := c.Service.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
 		Name:             versionName(deploymentID, version),
 		CompletionReason: reason,
@@ -96,7 +96,7 @@ func (c *Client) CompleteVersion(ctx context.Context, deploymentID string, versi
 
 // UpdateOperation fills in one operation the version staged, and returns the sequence id the
 // next update for that resource must send.
-func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, version int64, stateKey, sequenceID string, update OperationUpdate) (string, error) {
+func (c *Client) UpdateOperation(ctx context.Context, deploymentID string, version int, stateKey, sequenceID string, update OperationUpdate) (string, error) {
 	return c.raw.UpdateOperation(ctx, deploymentID, version, stateKey, sequenceID, update)
 }
 
@@ -124,7 +124,7 @@ type requester interface {
 	// the service sends a JSON string, so it cannot read the response. sequenceID is the
 	// token the previous update for this resource returned, or 0 for the first, which is
 	// what staging leaves.
-	UpdateOperation(ctx context.Context, deploymentID string, version int64, stateKey, sequenceID string, update OperationUpdate) (next string, err error)
+	UpdateOperation(ctx context.Context, deploymentID string, version int, stateKey, sequenceID string, update OperationUpdate) (next string, err error)
 }
 
 // CreateVersionRequest is the CreateVersion request body.
@@ -242,7 +242,7 @@ func newUpdateRequest(update OperationUpdate, sequenceID string) map[string]any 
 	return body
 }
 
-func (r *rawClient) UpdateOperation(ctx context.Context, deploymentID string, version int64, stateKey, sequenceID string, update OperationUpdate) (string, error) {
+func (r *rawClient) UpdateOperation(ctx context.Context, deploymentID string, version int, stateKey, sequenceID string, update OperationUpdate) (string, error) {
 	body := newUpdateRequest(update, sequenceID)
 
 	var result operationResponse

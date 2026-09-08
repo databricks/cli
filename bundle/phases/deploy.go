@@ -331,14 +331,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// then - so stamp the one just created into the plan the apply reads.
 	// IsDirect first: StorageBackend asserts the state is open, and only the direct engine opens it.
 	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
-		existingID := b.DeploymentBundle.StateDB.DeploymentID
+		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
 			return
 		}
-		if existingID == "" {
-			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
-			if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(deploymentID); err != nil {
+		if firstDeploy {
+			if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
 				logdiag.LogError(ctx, err)
 				return
 			}
@@ -356,9 +355,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				logdiag.LogError(ctx, err)
 				return
 			}
-			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
-			versionID := int64(b.DeploymentBundle.StateDB.Data.Serial) + 1
-			logDeploymentVersion(ctx, b, deploymentID, versionID)
+			logDeploymentVersion(ctx, b)
 		}
 	}
 

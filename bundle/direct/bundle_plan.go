@@ -149,6 +149,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	// built for a target of a different shape.
 	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		plan.Features = b.StateDB.StateFeatures()
+		// The state file persists no serial under recording; the version the service recorded is
+		// what a saved plan is validated against, so carry that instead.
+		plan.Serial = b.StateDB.VersionID
 	}
 
 	b.Plan = plan

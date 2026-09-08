@@ -477,21 +477,25 @@ func validatePlan(b *bundle.Bundle, plan *deployplan.Plan) error {
 		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
 	}
 
-	// Under recording the serial tracks the version the service has recorded, so a plan built
-	// against an earlier one is stale. Checked ahead of the lineage guard because a plan from
-	// before the first deploy has no lineage and would otherwise exit through it.
-	if stateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService && plan.Serial < stateDB.Data.Serial {
-		return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	// Recorded deployments keep this counter in VersionID, everything else in the state serial; the
+	// two agree after the same sequence of deploys. A recorded plan built against an earlier version
+	// gets the clearer message, and is checked before the lineage comparison because a plan taken
+	// before the first deploy carries no lineage to compare.
+	expected := stateDB.Data.Serial
+	if stateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
+		expected = stateDB.VersionID
+		if plan.Serial < expected {
+			return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, expected)
+		}
+	}
+	if plan.Serial != expected {
+		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)
 	}
 
-	// A plan taken before the first deploy carries no lineage or serial, so both sides are empty
-	// then and the checks below pass. If a deployment has happened since, they catch it.
+	// A plan taken before the first deploy carries no lineage, so both sides are empty then and this
+	// passes. If a deployment has happened since, the counter above has already caught it.
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
-	}
-
-	if plan.Serial != stateDB.Data.Serial {
-		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
 	}
 
 	return nil

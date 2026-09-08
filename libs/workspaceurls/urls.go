@@ -74,7 +74,7 @@ func ResourceTypes() []string {
 
 // DeploymentURL returns the workspace URL for a bundle deployment:
 // <host>/deployments/<deploymentID>?version=<version>. Version pins the page to the deploy that produced it.
-func DeploymentURL(baseURL url.URL, deploymentID string, version int64) string {
+func DeploymentURL(baseURL url.URL, deploymentID string, version int) string {
 	if deploymentID == "" {
 		return ""
 	}
@@ -82,7 +82,7 @@ func DeploymentURL(baseURL url.URL, deploymentID string, version int64) string {
 	baseURL.Path = "deployments/" + deploymentID
 	if version > 0 {
 		values := baseURL.Query()
-		values.Set("version", strconv.FormatInt(version, 10))
+		values.Set("version", strconv.Itoa(version))
 		baseURL.RawQuery = values.Encode()
 	}
 	return baseURL.String()

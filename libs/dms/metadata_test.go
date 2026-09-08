@@ -10,7 +10,7 @@ import (
 func TestNextVersion(t *testing.T) {
 	for _, tt := range []struct {
 		last string
-		want int64
+		want int
 	}{
 		{"", 1},
 		{"4", 5},

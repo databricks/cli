@@ -21,7 +21,7 @@ const stagedSequenceID = "0"
 type OperationBuffer struct {
 	client       *Client
 	deploymentID string
-	versionNum   int64
+	versionNum   int
 
 	// The buffer. queue holds bundle state keys, and pending the newest update per key, so a
 	// second write for a resource replaces the first.
@@ -51,7 +51,7 @@ type OperationBuffer struct {
 
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
-func StartOperationBuffer(ctx context.Context, client *Client, deploymentID string, versionNum int64) *OperationBuffer {
+func StartOperationBuffer(ctx context.Context, client *Client, deploymentID string, versionNum int) *OperationBuffer {
 	b := &OperationBuffer{
 		client:       client,
 		deploymentID: deploymentID,

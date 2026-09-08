@@ -83,11 +83,11 @@ func (m Metadata) StaleFields(current *bundledeployments.Deployment) string {
 
 // NextVersion is the version number this run will create, given the deployment's most recent
 // one. lastVersionID is empty before the deployment has any version.
-func NextVersion(lastVersionID string) (int64, error) {
+func NextVersion(lastVersionID string) (int, error) {
 	if lastVersionID == "" {
 		return 1, nil
 	}
-	last, err := strconv.ParseInt(lastVersionID, 10, 64)
+	last, err := strconv.Atoi(lastVersionID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", lastVersionID, err)
 	}

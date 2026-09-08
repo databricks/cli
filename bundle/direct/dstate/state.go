@@ -150,9 +150,10 @@ type DeploymentState struct {
 	// reset - so, like operationBuffer and dmsClient, it must survive reset.
 	DeploymentID string
 
-	// versionID is the version InitializeOperationBuffer created. CompleteVersion runs after
-	// Finalize, which resets Data, so the serial is no longer there to derive it from.
-	versionID int64
+	// VersionID is the recorded version this run is anchored to: the deployment's last version at
+	// Open, then the version startVersion created. It lives outside Data because CompleteVersion
+	// runs after Finalize, which resets Data. Under recording this is the version, not the serial.
+	VersionID int
 }
 
 // DMSDeployment identifies the recorded deployment Open reads from. The zero value means the
@@ -212,14 +213,14 @@ type WALEntry struct {
 // Open built, so it is called only when the deployment records history, and once the version exists
 // (after approval) - which is why it is not an Open option. It also records the id a first deploy
 // just created, which Open could not know, so CompleteVersion later has it.
-func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploymentID string, versionID int64) {
+func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploymentID string, versionID int) {
 	buf := dms.StartOperationBuffer(ctx, db.dmsClient, deploymentID, versionID)
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	db.operationBuffer = buf
 	db.DeploymentID = deploymentID
-	db.versionID = versionID
+	db.VersionID = versionID
 }
 
 // SetDeploymentID publishes the id of a deployment created after Open, which could not know it.
@@ -262,7 +263,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 		return false, nil
 	}
 	db.versionCompleted = true
-	deploymentID, client, versionID := db.DeploymentID, db.dmsClient, db.versionID
+	deploymentID, client, versionID := db.DeploymentID, db.dmsClient, db.VersionID
 	db.mu.Unlock()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
@@ -624,18 +625,15 @@ To record this bundle's history, start it over as a new deployment:
 			}
 		}
 
-		// The service owns the version number, so the serial comes from it rather than from the
-		// state file, which no longer persists one. With no deployment yet there are no versions,
-		// hence zero - which matters for a state file written before recording was turned on, whose
-		// serial counts a history the service knows nothing about.
-		serial := 0
+		// The service owns the version number, so it is read from the deployment rather than from
+		// the state file, which persists none. No deployment yet means no versions, hence zero.
 		if dmsDeployment.LastVersionID != "" {
-			serial, err = strconv.Atoi(dmsDeployment.LastVersionID)
+			last, err := strconv.Atoi(dmsDeployment.LastVersionID)
 			if err != nil {
 				return fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionID, err)
 			}
+			db.VersionID = last
 		}
-		db.Data.Serial = serial
 	}
 
 	if withWrite {

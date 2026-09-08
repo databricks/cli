@@ -145,7 +145,7 @@ func TestDeploymentURL(t *testing.T) {
 	tests := []struct {
 		name         string
 		deploymentID string
-		version      int64
+		version      int
 		base         url.URL
 		expected     string
 	}{

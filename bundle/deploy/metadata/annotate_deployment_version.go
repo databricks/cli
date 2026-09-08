@@ -37,12 +37,12 @@ func (m *annotateDeployment) Apply(_ context.Context, b *bundle.Bundle) diag.Dia
 }
 
 type annotateDeploymentVersion struct {
-	version int64
+	version int
 }
 
 // AnnotateDeploymentVersion stamps the DMS version onto every job and pipeline.
 // Separate from AnnotateDeployment because version only exists after CreateVersion runs.
-func AnnotateDeploymentVersion(version int64) bundle.Mutator {
+func AnnotateDeploymentVersion(version int) bundle.Mutator {
 	return &annotateDeploymentVersion{version: version}
 }
 
@@ -51,7 +51,7 @@ func (m *annotateDeploymentVersion) Name() string {
 }
 
 func (m *annotateDeploymentVersion) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
-	versionID := strconv.FormatInt(m.version, 10)
+	versionID := strconv.Itoa(m.version)
 
 	for _, job := range b.Config.Resources.Jobs {
 		job.Deployment.VersionId = versionID

@@ -106,13 +106,14 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 		return nil
 	}
 	deploymentID := db.StateDB.DeploymentID
-	versionID := int64(db.StateDB.Data.Serial) + 1
-
-	// The state serial tracks the version the service last recorded, which is the one this run
-	// follows. Empty for the first version.
+	// This run's version follows the one the state is anchored to, which is empty for the first.
+	// InitializeOperationBuffer moves the anchor below, so callers afterwards read the created
+	// version straight off the state.
+	previous := db.StateDB.VersionID
+	versionID := previous + 1
 	previousVersionID := ""
-	if serial := db.StateDB.Data.Serial; serial > 0 {
-		previousVersionID = strconv.Itoa(serial)
+	if previous > 0 {
+		previousVersionID = strconv.Itoa(previous)
 	}
 
 	// The server rejects this unless the version number exceeds last_version_id and
@@ -144,7 +145,9 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 
 // logDeploymentVersion logs the deployment version URL. Workspace ID is omitted
 // so the page stays clickable in a terminal and redirects correctly without it.
-func logDeploymentVersion(ctx context.Context, b *bundle.Bundle, deploymentID string, version int64) {
+func logDeploymentVersion(ctx context.Context, b *bundle.Bundle) {
+	deploymentID := b.DeploymentBundle.StateDB.DeploymentID
+	version := b.DeploymentBundle.StateDB.VersionID
 	if version == 0 {
 		return
 	}
