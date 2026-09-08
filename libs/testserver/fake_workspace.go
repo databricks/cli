@@ -257,6 +257,13 @@ type FakeWorkspace struct {
 	// it. An ID appears here before DmsDeployments has a record, which its first version
 	// creates, so the node is what makes the ID valid in between.
 	DmsDeploymentNodes map[string]string
+
+	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
+	// serves, generated on first use. See sshTunnelHostKey.
+	sshTunnelHostKeyPEM []byte
+	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
+	// to the tunnel's secret scope so a client can pin it.
+	sshTunnelHostPublicKey []byte
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {

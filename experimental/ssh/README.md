@@ -17,6 +17,20 @@ B. Spawn an ssh session directly:
 databricks ssh connect --cluster=id
 ```
 
+### Connection names and host keys
+
+`--name` is a stable handle for serverless compute, not a live session id: connecting with a
+name reuses the SSH server still running under it, and starts a new one on the same name once
+the previous server has shut down (`--shutdown-delay` after its last client disconnects).
+
+Both cases verify the server's host key. The server generates the key on first use, keeps it in
+the connection's secret scope in the workspace and reuses it for every `sshd` it launches, so
+the workspace is the authority on the key. The client reads it from there and pins it in
+`~/.databricks/ssh-tunnel-known-hosts/<name>` before each connection, and points ssh at that
+file with `StrictHostKeyChecking yes`. Tunnel host keys therefore never land in
+`~/.ssh/known_hosts`, where a name - unique only within one workspace - would collide with an
+entry left by other compute.
+
 ## Development
 ```shell
 ./task build snapshot-release

@@ -666,6 +666,12 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ReposDelete(req)
 	})
 
+	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
+		return map[string]any{
+			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots/",
+		}
+	})
+
 	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
 		contentType := req.Headers.Get("Content-Type")
 		mediaType, params, err := mime.ParseMediaType(contentType)
@@ -698,6 +704,7 @@ func AddDefaultHandlers(server *Server) {
 		// The real API uses the workspace user UUID (not email) in the snapshot path,
 		// matching service-principal identities used in cloud acceptance tests.
 		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
+		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: snapshotPath})
 		return map[string]any{
 			"snapshot": map[string]any{
 				"path": snapshotPath,
@@ -821,6 +828,15 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
 		return Response{Body: ""}
+	})
+
+	// /capabilities reports which optional parts of the tunnel protocol the server speaks.
+	// This fake drives sshd directly over the websocket rather than running the CLI's own
+	// proxy server, so it has none of the session bookkeeping a resume needs and says so.
+	// The resume protocol itself is covered by the proxy package's tests, which run the
+	// real server implementation.
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/capabilities", func(req Request) any {
+		return Response{Body: map[string]bool{"resume": false}}
 	})
 
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)

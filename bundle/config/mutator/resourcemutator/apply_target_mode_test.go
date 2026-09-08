@@ -323,6 +323,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				Snapshots: map[string]*resources.Snapshot{
+					"snapshot1": {
+						BundleID: "bundle1",
+						ACL:      nil,
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
