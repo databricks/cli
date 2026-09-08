@@ -40,11 +40,17 @@ To use this image in your training config:
 >>> [CLI] experimental air register-image    
 Error: IMAGE_URL cannot be empty
 
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air register-image …
+
 Exit code: 1
 
 === tag-policy auto is rejected
 >>> [CLI] experimental air register-image my-image:latest --tag-policy auto
 Error: --tag-policy auto is no longer supported: auto mode was removed and registration now always checks the source registry for the latest digest; omit the flag or use --tag-policy latest
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air register-image …
 
 Exit code: 1
 
@@ -66,6 +72,9 @@ Exit code: 1
 === non-positive timeout is rejected
 >>> [CLI] experimental air register-image my-image:latest --timeout-minutes 0
 Error: --timeout-minutes must be positive, got 0
+
+Tip: use the --debug flag to see more details and a trace of this error:
+  databricks --debug experimental air register-image …
 
 Exit code: 1
 

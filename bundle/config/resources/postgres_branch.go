@@ -51,6 +51,14 @@ type PostgresBranch struct {
 	PostgresBranchConfig
 }
 
+func (b *PostgresBranch) UnmarshalJSON(data []byte) error {
+	return marshal.Unmarshal(data, b)
+}
+
+func (b PostgresBranch) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(b)
+}
+
 func (b *PostgresBranch) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: name})
 	if err != nil {

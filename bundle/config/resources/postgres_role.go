@@ -41,6 +41,14 @@ type PostgresRole struct {
 	PostgresRoleConfig
 }
 
+func (r *PostgresRole) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r PostgresRole) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
+}
+
 func (r *PostgresRole) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetRole(ctx, postgres.GetRoleRequest{Name: name})
 	if apierr.IsMissing(err) {

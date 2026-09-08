@@ -2,9 +2,16 @@
 
 package schema
 
+type ResourceJobContinuousMaintenanceWindow struct {
+	DayOfWeek  string `json:"day_of_week"`
+	StartHour  int    `json:"start_hour"`
+	TimezoneId string `json:"timezone_id"`
+}
+
 type ResourceJobContinuous struct {
-	PauseStatus   string `json:"pause_status,omitempty"`
-	TaskRetryMode string `json:"task_retry_mode,omitempty"`
+	PauseStatus       string                                  `json:"pause_status,omitempty"`
+	TaskRetryMode     string                                  `json:"task_retry_mode,omitempty"`
+	MaintenanceWindow *ResourceJobContinuousMaintenanceWindow `json:"maintenance_window,omitempty"`
 }
 
 type ResourceJobDbtTask struct {
@@ -159,6 +166,7 @@ type ResourceJobJobClusterNewClusterDockerImage struct {
 
 type ResourceJobJobClusterNewClusterDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterGcpAttributes struct {
@@ -253,6 +261,7 @@ type ResourceJobJobClusterNewClusterProviderConfig struct {
 
 type ResourceJobJobClusterNewClusterWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceJobJobClusterNewClusterWorkloadTypeClients struct {
@@ -422,6 +431,7 @@ type ResourceJobNewClusterDockerImage struct {
 
 type ResourceJobNewClusterDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceJobNewClusterGcpAttributes struct {
@@ -516,6 +526,7 @@ type ResourceJobNewClusterProviderConfig struct {
 
 type ResourceJobNewClusterWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceJobNewClusterWorkloadTypeClients struct {
@@ -674,6 +685,7 @@ type ResourceJobTaskAlertTaskSubscribers struct {
 
 type ResourceJobTaskAlertTask struct {
 	AlertId       string                                `json:"alert_id,omitempty"`
+	Parameters    map[string]string                     `json:"parameters,omitempty"`
 	WarehouseId   string                                `json:"warehouse_id,omitempty"`
 	WorkspacePath string                                `json:"workspace_path,omitempty"`
 	Subscribers   []ResourceJobTaskAlertTaskSubscribers `json:"subscribers,omitempty"`
@@ -776,6 +788,7 @@ type ResourceJobTaskForEachTaskTaskAlertTaskSubscribers struct {
 
 type ResourceJobTaskForEachTaskTaskAlertTask struct {
 	AlertId       string                                               `json:"alert_id,omitempty"`
+	Parameters    map[string]string                                    `json:"parameters,omitempty"`
 	WarehouseId   string                                               `json:"warehouse_id,omitempty"`
 	WorkspacePath string                                               `json:"workspace_path,omitempty"`
 	Subscribers   []ResourceJobTaskForEachTaskTaskAlertTaskSubscribers `json:"subscribers,omitempty"`
@@ -986,6 +999,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterDockerImage struct {
 
 type ResourceJobTaskForEachTaskTaskNewClusterDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterGcpAttributes struct {
@@ -1080,6 +1094,7 @@ type ResourceJobTaskForEachTaskTaskNewClusterProviderConfig struct {
 
 type ResourceJobTaskForEachTaskTaskNewClusterWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskNewClusterWorkloadTypeClients struct {
@@ -1487,6 +1502,7 @@ type ResourceJobTaskNewClusterDockerImage struct {
 
 type ResourceJobTaskNewClusterDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceJobTaskNewClusterGcpAttributes struct {
@@ -1581,6 +1597,7 @@ type ResourceJobTaskNewClusterProviderConfig struct {
 
 type ResourceJobTaskNewClusterWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceJobTaskNewClusterWorkloadTypeClients struct {
@@ -1889,8 +1906,15 @@ type ResourceJobTrigger struct {
 	TableUpdate  *ResourceJobTriggerTableUpdate  `json:"table_update,omitempty"`
 }
 
+type ResourceJobTriggersContinuousMaintenanceWindow struct {
+	DayOfWeek  string `json:"day_of_week"`
+	StartHour  int    `json:"start_hour"`
+	TimezoneId string `json:"timezone_id"`
+}
+
 type ResourceJobTriggersContinuous struct {
-	TaskRetryMode string `json:"task_retry_mode,omitempty"`
+	TaskRetryMode     string                                          `json:"task_retry_mode,omitempty"`
+	MaintenanceWindow *ResourceJobTriggersContinuousMaintenanceWindow `json:"maintenance_window,omitempty"`
 }
 
 type ResourceJobTriggersFileArrival struct {

@@ -13,13 +13,13 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.8 // MIT
-	github.com/databricks/databricks-sdk-go v0.175.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.177.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hashicorp/go-version v1.9.0 // MPL-2.0
 	github.com/hashicorp/hc-install v0.9.5 // MPL-2.0
-	github.com/hashicorp/terraform-exec v0.25.2 // MPL-2.0
+	github.com/hashicorp/terraform-exec v0.25.3 // MPL-2.0
 	github.com/hashicorp/terraform-json v0.28.0 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.10.0 // MIT

@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
@@ -16,6 +17,14 @@ type DatabaseInstance struct {
 	database.DatabaseInstance
 
 	Permissions []Permission `json:"permissions,omitempty"`
+}
+
+func (d *DatabaseInstance) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, d)
+}
+
+func (d DatabaseInstance) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(d)
 }
 
 func (d *DatabaseInstance) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

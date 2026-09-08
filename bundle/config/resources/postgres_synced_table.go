@@ -34,6 +34,14 @@ type PostgresSyncedTable struct {
 	PostgresSyncedTableConfig
 }
 
+func (s *PostgresSyncedTable) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresSyncedTable) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 func (s *PostgresSyncedTable) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: name})
 	if err != nil {

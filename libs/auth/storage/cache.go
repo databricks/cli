@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/auth/u2m/cache"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 )
 
 // storeFactories bundles the constructors ResolveStore depends on. Extracted
@@ -46,9 +46,9 @@ func defaultStoreFactories() storeFactories {
 // fallback does not persist auth_storage = plaintext to [__settings__];
 // pinning happens only on successful login.
 //
-// Every CLI code path that calls u2m.NewPersistentAuth must route the result
-// through u2m.WithTokenCache, otherwise the SDK defaults to the file cache
-// and splits the user's tokens across two backends.
+// Every CLI code path that calls u2m.NewPersistentAuth must supply the cache
+// returned by this package, otherwise U2M uses an in-memory cache and bypasses
+// the user's configured storage backend.
 func ResolveStore(ctx context.Context, override StorageMode) (Store, StorageMode, error) {
 	return resolveStoreForReadWith(ctx, override, defaultStoreFactories())
 }
@@ -75,7 +75,7 @@ func ResolveStoreForLogin(ctx context.Context, override StorageMode) (Store, Sto
 	return resolveStoreForLoginWith(ctx, override, defaultStoreFactories())
 }
 
-// OAuthTokenCache adapts a CLI Store to the SDK's u2m_cache.TokenCache for the
+// OAuthTokenCache adapts a CLI Store to the U2M cache.TokenCache for the
 // U2M PersistentAuth flow, applying the not-found hint so a cache miss carries
 // actionable "run databricks auth login" guidance. Use on read and credential
 // paths. M2M/OIDC callers use the CLI Store directly and must not route through
