@@ -101,6 +101,26 @@ func TestInitializeURLs(t *testing.T) {
 						},
 					},
 				},
+				PostgresProjects: map[string]*resources.PostgresProject{
+					"project1": {
+						BaseResource: resources.BaseResource{ID: "projects/myproject"},
+					},
+				},
+				PostgresBranches: map[string]*resources.PostgresBranch{
+					"branch1": {
+						BaseResource: resources.BaseResource{ID: "projects/myproject/branches/main"},
+					},
+				},
+				PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+					"endpoint1": {
+						BaseResource: resources.BaseResource{ID: "projects/myproject/branches/main/endpoints/primary"},
+					},
+				},
+				PostgresRoles: map[string]*resources.PostgresRole{
+					"role1": {
+						BaseResource: resources.BaseResource{ID: "projects/myproject/branches/main/roles/admin"},
+					},
+				},
 			},
 		},
 	}
@@ -117,6 +137,10 @@ func TestInitializeURLs(t *testing.T) {
 		"schema1":            "https://mycompany.databricks.com/explore/data/catalog/schema?w=123456",
 		"cluster1":           "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?w=123456",
 		"dashboard1":         "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?w=123456",
+		"project1":           "https://mycompany.databricks.com/lakebase/projects/myproject?w=123456",
+		"branch1":            "https://mycompany.databricks.com/lakebase/projects/myproject/branches/main?w=123456",
+		"endpoint1":          "https://mycompany.databricks.com/lakebase/projects/myproject/branches/main/computes?w=123456",
+		"role1":              "https://mycompany.databricks.com/lakebase/projects/myproject/branches/main/roles-and-databases?w=123456",
 	}
 
 	err := initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")

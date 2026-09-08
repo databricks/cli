@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -76,10 +77,14 @@ func (p *PostgresProject) GetName() string {
 }
 
 func (p *PostgresProject) GetURL() string {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return p.URL
 }
 
-func (p *PostgresProject) InitializeURL(_ url.URL) {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
+// InitializeURL points at the project's Lakebase page. ID is the project's
+// hierarchical name "projects/{project_id}".
+func (p *PostgresProject) InitializeURL(baseURL url.URL) {
+	if p.ID == "" {
+		return
+	}
+	p.URL = workspaceurls.ResourceURL(baseURL, "postgres_projects", p.ID)
 }

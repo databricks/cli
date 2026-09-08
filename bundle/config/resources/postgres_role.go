@@ -3,8 +3,10 @@ package resources
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -76,10 +78,17 @@ func (r *PostgresRole) GetName() string {
 }
 
 func (r *PostgresRole) GetURL() string {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return r.URL
 }
 
-func (r *PostgresRole) InitializeURL(_ url.URL) {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
+// InitializeURL points at the parent branch's roles-and-databases page, where
+// roles surface. The branch is derived from this role's resolved ID
+// ("projects/{project_id}/branches/{branch_id}/roles/{role_id}") rather than
+// from Parent, which may still hold an unresolved "${...}" reference.
+func (r *PostgresRole) InitializeURL(baseURL url.URL) {
+	branch, _, ok := strings.Cut(r.ID, "/roles/")
+	if !ok {
+		return
+	}
+	r.URL = workspaceurls.ResourceURL(baseURL, "postgres_roles", branch)
 }
