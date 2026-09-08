@@ -1,8 +1,7 @@
-# Not Cloud: on the direct engine this captures a real failure (the deploy 400s),
-# so it must not run against a real workspace until the whole-block behavior is
-# fixed. Runs on both engines locally to show the difference: direct masks the
-# enclosing message and fails; terraform masks the leaf and succeeds. The phase-2
-# plan and deploy diverge, so they are routed to per-engine out.plan/out.deploy files.
-Cloud = false
+# Inherits Cloud = true from the parent. On a real workspace this validates that the
+# API still rejects a message-level update_mask exactly as the testserver models it
+# (libs/testserver/postgres.go, probed 2026-08-31): the direct deploy is expected to
+# 400 there (tolerated by errcode), while terraform masks the leaf and succeeds. Runs
+# on both engines; the divergent plan/deploy are routed to per-engine files.
 
 Badness = "On the direct engine, adding the whole default_endpoint_settings block produces update_mask=spec.default_endpoint_settings (the enclosing message) instead of the leaf spec.default_endpoint_settings.autoscaling_limit_max_cu, and the deploy FAILS with 400: 'Field spec.default_endpoint_settings.suspension is in update_mask but not provided in request'. Root cause: structdiff records one change at the block level instead of descending to leaves, so collectUpdatePathsWithPrefix masks the message. Terraform masks the leaf and succeeds."
