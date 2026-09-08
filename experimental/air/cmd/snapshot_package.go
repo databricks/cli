@@ -59,16 +59,11 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 		return fmt.Errorf("failed to create tarball: %w", err)
 	}
 
-	// tar writes the uncompressed archive to stdout (`-cf -`) and we gzip it here with
-	// klauspost/pgzip instead of tar's built-in -z: tar's gzip is single-threaded and
-	// dominates packaging time on a large tree, whereas pgzip spreads the same
-	// compression across cores (~18x faster on a ~470 MiB archive). We keep the default
-	// level rather than BestSpeed: the archive is re-uploaded on every run, so its size
-	// matters, and now that compression is parallel a normal level costs only a few
-	// hundred ms more for ~15-18% fewer bytes (and matches the old `tar -czf` size);
-	// level 9 buys almost nothing beyond that for ~2x the time. Compressing outside tar
-	// also passes no archive path to tar, sidestepping the Windows colon-in-path issue a
-	// `-f <path>` argument otherwise hits (tar reads the `C:` in `C:\out\x` as a host).
+	// tar writes the uncompressed archive to stdout and we gzip it with klauspost/pgzip
+	// rather than tar's single-threaded -z, which dominates packaging time on a large
+	// tree (pgzip spreads the same compression across cores). Compressing outside tar
+	// also keeps any archive path out of tar's args, avoiding the Windows colon-in-path
+	// issue the `-f <path>` form otherwise hits.
 	gz, err := pgzip.NewWriterLevel(out, pgzip.DefaultCompression)
 	if err != nil {
 		out.Close()
