@@ -151,37 +151,35 @@ func TestStalePlaceholderDoesNotShadowMergedDescription(t *testing.T) {
 }
 
 func TestAssignAnnotationLaunchStage(t *testing.T) {
-	t.Run("public preview prefixes description and stays suggestible", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "Target QPS for the endpoint.",
-			LaunchStage: "PUBLIC_PREVIEW",
+	// Each stamped stage emits x-databricks-launch-stage and prefixes the
+	// description with its tag (GA renders no tag); only private preview also
+	// hides the field from autocomplete.
+	tests := []struct {
+		name         string
+		stage        clijson.LaunchStage
+		wantDesc     string
+		wantSuppress bool
+	}{
+		{"private preview", clijson.LaunchStagePrivatePreview, "[Private Preview] A field.", true},
+		{"public beta", clijson.LaunchStagePublicBeta, "[Beta] A field.", false},
+		{"public preview", clijson.LaunchStagePublicPreview, "[Public Preview] A field.", false},
+		{"GA", clijson.LaunchStageGA, "A field.", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &jsonschema.Schema{}
+			assignAnnotation(s, annotation.Descriptor{Description: "A field.", LaunchStage: tc.stage})
+			assert.Equal(t, tc.wantDesc, s.Description)
+			assert.Equal(t, tc.wantSuppress, s.DoNotSuggest)
+			assert.Equal(t, string(tc.stage), s.LaunchStage)
 		})
-		assert.Equal(t, "[Public Preview] Target QPS for the endpoint.", s.Description)
-		assert.False(t, s.DoNotSuggest)
+	}
+
+	t.Run("unstamped field emits no stage", func(t *testing.T) {
+		s := &jsonschema.Schema{}
+		assignAnnotation(s, annotation.Descriptor{Description: "A field."})
+		assert.Equal(t, "A field.", s.Description)
 		assert.Empty(t, s.LaunchStage)
-	})
-
-	t.Run("public beta prefixes description", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "A field.",
-			LaunchStage: "PUBLIC_BETA",
-		})
-		assert.Equal(t, "[Beta] A field.", s.Description)
-	})
-
-	t.Run("private preview also hides from autocomplete", func(t *testing.T) {
-		s := &jsonschema.Schema{}
-		// The private-preview stage both prefixes the description and hides the
-		// field; it is also emitted as x-databricks-launch-stage for pydabs.
-		assignAnnotation(s, annotation.Descriptor{
-			Description: "Internal field.",
-			LaunchStage: "PRIVATE_PREVIEW",
-		})
-		assert.Equal(t, "[Private Preview] Internal field.", s.Description)
-		assert.True(t, s.DoNotSuggest)
-		assert.Equal(t, "PRIVATE_PREVIEW", s.LaunchStage)
 	})
 
 	t.Run("per-enum-value launch stages do not leak into description", func(t *testing.T) {
@@ -222,7 +220,8 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	enum := []any{"STORAGE_OPTIMIZED", "STANDARD"}
 
 	t.Run("combines launch stage and description per value", func(t *testing.T) {
-		got := buildEnumDescriptions(enum,
+		got := buildEnumDescriptions(
+			enum,
 			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_PREVIEW"},
 			map[string]string{
 				"STORAGE_OPTIMIZED": "Storage-optimized endpoint.",
@@ -236,7 +235,8 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	})
 
 	t.Run("launch stage only emits bracketed label", func(t *testing.T) {
-		got := buildEnumDescriptions(enum,
+		got := buildEnumDescriptions(
+			enum,
 			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "PUBLIC_BETA"},
 			nil,
 		)
@@ -244,7 +244,8 @@ func TestBuildEnumDescriptions(t *testing.T) {
 	})
 
 	t.Run("description only is preserved verbatim", func(t *testing.T) {
-		got := buildEnumDescriptions(enum,
+		got := buildEnumDescriptions(
+			enum,
 			nil,
 			map[string]string{"STORAGE_OPTIMIZED": "Storage-optimized endpoint."},
 		)
@@ -253,7 +254,8 @@ func TestBuildEnumDescriptions(t *testing.T) {
 
 	t.Run("returns nil when neither stage nor description has content", func(t *testing.T) {
 		assert.Nil(t, buildEnumDescriptions(enum, nil, nil))
-		assert.Nil(t, buildEnumDescriptions(enum,
+		assert.Nil(t, buildEnumDescriptions(
+			enum,
 			map[string]clijson.LaunchStage{"STORAGE_OPTIMIZED": "GA"},
 			nil,
 		))
