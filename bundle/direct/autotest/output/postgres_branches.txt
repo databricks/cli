@@ -21,7 +21,7 @@ parent                                       y          x          BASE_ERROR  N
 
 === summary
 OK                         10
-OK_RECREATE                14
+OK_RECREATE                20
 OK_ID_FIELD_REQUIRED       4
 UPDATE_MASK_OMITTED        4
 OK_INERT                   6
