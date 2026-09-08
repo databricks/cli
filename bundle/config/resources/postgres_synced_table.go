@@ -25,7 +25,7 @@ func (c *PostgresSyncedTableConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresSyncedTableConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresSyncedTableConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 

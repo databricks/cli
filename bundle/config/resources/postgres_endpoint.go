@@ -30,7 +30,7 @@ func (c *PostgresEndpointConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresEndpointConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresEndpointConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
