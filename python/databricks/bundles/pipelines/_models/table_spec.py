@@ -33,15 +33,6 @@ class TableSpec:
     [Public Preview] Required. Destination schema to store table.
     """
 
-    source_table: VariableOr[str]
-    """
-    [Public Preview] Table name in the source database. Currently required; this field will become optional in
-    an upcoming release, since some source types (for example streaming / message-bus connectors)
-    do not use it. When that change ships, this field's type in the generated SDKs and CLI will
-    change from required to optional (nullable); clients that assume it is always present should
-    handle its absence.
-    """
-
     connector_options: VariableOrOptional[ConnectorOptions] = None
     """
     [Public Preview] (Optional) Source Specific Connector Options
@@ -60,6 +51,13 @@ class TableSpec:
     source_schema: VariableOrOptional[str] = None
     """
     [Public Preview] Schema name in the source database. Might be optional depending on the type of source.
+    """
+
+    source_table: VariableOrOptional[str] = None
+    """
+    [Public Preview] Table name in the source database. Optional: some source types (for example streaming or
+    message-bus connectors) do not use it, so it may be absent from a pipeline's definition.
+    Clients that assume it is always present should handle its absence.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
@@ -88,15 +86,6 @@ class TableSpecDict(TypedDict, total=False):
     [Public Preview] Required. Destination schema to store table.
     """
 
-    source_table: VariableOr[str]
-    """
-    [Public Preview] Table name in the source database. Currently required; this field will become optional in
-    an upcoming release, since some source types (for example streaming / message-bus connectors)
-    do not use it. When that change ships, this field's type in the generated SDKs and CLI will
-    change from required to optional (nullable); clients that assume it is always present should
-    handle its absence.
-    """
-
     connector_options: VariableOrOptional[ConnectorOptionsParam]
     """
     [Public Preview] (Optional) Source Specific Connector Options
@@ -115,6 +104,13 @@ class TableSpecDict(TypedDict, total=False):
     source_schema: VariableOrOptional[str]
     """
     [Public Preview] Schema name in the source database. Might be optional depending on the type of source.
+    """
+
+    source_table: VariableOrOptional[str]
+    """
+    [Public Preview] Table name in the source database. Optional: some source types (for example streaming or
+    message-bus connectors) do not use it, so it may be absent from a pipeline's definition.
+    Clients that assume it is always present should handle its absence.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]

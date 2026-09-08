@@ -19,18 +19,16 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "workspace-settings-v2",
-		Short: `*Public Preview* APIs to manage workspace level settings.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-APIs to manage workspace level settings`,
+		Use:     "workspace-settings-v2",
+		Short:   `APIs to manage workspace level settings.`,
+		Long:    `APIs to manage workspace level settings`,
 		GroupID: "settings",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGetPublicWorkspaceSetting())
@@ -60,10 +58,8 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 	var getPublicWorkspaceSettingReq settingsv2.GetPublicWorkspaceSettingRequest
 
 	cmd.Use = "get-public-workspace-setting NAME"
-	cmd.Short = `*Public Preview* Get a workspace setting.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get a workspace setting.
+	cmd.Short = `Get a workspace setting.`
+	cmd.Long = `Get a workspace setting.
 
   Get a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
@@ -73,8 +69,8 @@ Get a workspace setting.
     NAME: Name of the setting`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -136,18 +132,16 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-workspace-settings-metadata"
-	cmd.Short = `*Public Preview* List valid setting keys and their metadata.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List valid setting keys and their metadata.
+	cmd.Short = `List valid setting keys and their metadata.`
+	cmd.Long = `List valid setting keys and their metadata.
 
   List valid setting keys and metadata. These settings are available to be
   referenced via GET :method:settingsv2/getpublicworkspacesetting and PATCH
   :method:settingsv2/patchpublicworkspacesetting APIs`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -225,10 +219,8 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	// TODO: complex arg: string_val
 
 	cmd.Use = "patch-public-workspace-setting NAME"
-	cmd.Short = `*Public Preview* Update a workspace setting.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update a workspace setting.
+	cmd.Short = `Update a workspace setting.`
+	cmd.Long = `Update a workspace setting.
 
   Patch a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
@@ -242,8 +234,8 @@ Update a workspace setting.
     NAME: Name of the setting`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
