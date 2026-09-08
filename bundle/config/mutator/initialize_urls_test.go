@@ -104,9 +104,6 @@ func TestInitializeURLs(t *testing.T) {
 				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
 					"snapshotschedule1": {
 						BaseResource: resources.BaseResource{ID: "projects/myproject/branches/main/snapshot-schedule"},
-						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
-							Branch: "projects/myproject/branches/main",
-						},
 					},
 				},
 			},
