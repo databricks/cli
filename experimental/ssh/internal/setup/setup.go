@@ -46,7 +46,12 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 		return "", err
 	}
 
-	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, knownHostsPath, proxyCommand)
+	// The ProxyCommand pins the server's key under the cluster ID (the session ID for a
+	// dedicated cluster), but the block is written as `Host <opts.HostName>`. When the
+	// user-facing name differs from the cluster ID, ssh would look the key up under the name
+	// and fail strict checking, so pass the cluster ID as HostKeyAlias to match the pinned
+	// entry (DECO-27882).
+	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, knownHostsPath, opts.ClusterID, proxyCommand)
 	return hostConfig, nil
 }
 

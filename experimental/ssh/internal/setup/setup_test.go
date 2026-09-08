@@ -117,6 +117,11 @@ func TestGenerateHostConfig_Valid(t *testing.T) {
 	expectedKnownHostsPath, err := sshconfig.GetKnownHostsPath(t.Context(), "cluster-123")
 	require.NoError(t, err)
 	assert.Contains(t, result, fmt.Sprintf(`UserKnownHostsFile %q`, expectedKnownHostsPath))
+
+	// The host name (test-host) differs from the cluster ID the key is pinned under, so the
+	// block has to carry HostKeyAlias cluster-123 or strict checking looks the key up under
+	// test-host and fails (DECO-27882).
+	assert.Contains(t, result, "\n    HostKeyAlias cluster-123\n")
 }
 
 func TestGenerateHostConfig_WithoutProfile(t *testing.T) {
@@ -212,6 +217,9 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 	assert.Contains(t, hostConfigStr, "Host test-host")
 	assert.Contains(t, hostConfigStr, "--cluster=cluster-123")
 	assert.Contains(t, hostConfigStr, "--profile=test-profile")
+	// The written block pins the key lookup to the cluster ID, which differs from the host
+	// name test-host (DECO-27882).
+	assert.Contains(t, hostConfigStr, "HostKeyAlias cluster-123")
 }
 
 func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
