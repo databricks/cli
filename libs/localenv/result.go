@@ -94,7 +94,8 @@ const (
 	ErrWrite              ErrorCode = "E_WRITE"               // merge: greenfield write failed
 	ErrMerge              ErrorCode = "E_MERGE"               // merge: existing-project merge failed
 	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"      // provision: uv python install failed
-	ErrProvision          ErrorCode = "E_PROVISION"           // provision: uv sync failed
+	ErrProvision          ErrorCode = "E_PROVISION"           // provision: uv sync failed (generic)
+	ErrProvisionConflict  ErrorCode = "E_PROVISION_CONFLICT"  // provision: merge detected an unsatisfiable version conflict
 	ErrValidate           ErrorCode = "E_VALIDATE"            // validate: post-provision version mismatch
 
 	// ErrCanceled is not in the spec's error-code table: it reports a user/parent

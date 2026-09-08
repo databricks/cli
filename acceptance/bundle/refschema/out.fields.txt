@@ -409,6 +409,7 @@ resources.clusters.*.driver_instance_pool_id	string	ALL
 resources.clusters.*.driver_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.clusters.*.driver_node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.clusters.*.driver_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.clusters.*.driver_node_type_flexibility.aws_context_id	string	ALL
 resources.clusters.*.driver_node_type_id	string	ALL
 resources.clusters.*.enable_elastic_disk	bool	ALL
 resources.clusters.*.enable_local_disk_encryption	bool	ALL
@@ -530,6 +531,7 @@ resources.clusters.*.spec.driver_instance_pool_id	string	REMOTE
 resources.clusters.*.spec.driver_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
 resources.clusters.*.spec.driver_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
 resources.clusters.*.spec.driver_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
+resources.clusters.*.spec.driver_node_type_flexibility.aws_context_id	string	REMOTE
 resources.clusters.*.spec.driver_node_type_id	string	REMOTE
 resources.clusters.*.spec.enable_elastic_disk	bool	REMOTE
 resources.clusters.*.spec.enable_local_disk_encryption	bool	REMOTE
@@ -585,6 +587,7 @@ resources.clusters.*.spec.use_ml_runtime	bool	REMOTE
 resources.clusters.*.spec.worker_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
 resources.clusters.*.spec.worker_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
 resources.clusters.*.spec.worker_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
+resources.clusters.*.spec.worker_node_type_flexibility.aws_context_id	string	REMOTE
 resources.clusters.*.spec.workload_type	*compute.WorkloadType	REMOTE
 resources.clusters.*.spec.workload_type.clients	compute.ClientsTypes	REMOTE
 resources.clusters.*.spec.workload_type.clients.jobs	bool	REMOTE
@@ -606,6 +609,7 @@ resources.clusters.*.use_ml_runtime	bool	ALL
 resources.clusters.*.worker_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.clusters.*.worker_node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.clusters.*.worker_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.clusters.*.worker_node_type_flexibility.aws_context_id	string	ALL
 resources.clusters.*.workload_type	*compute.WorkloadType	ALL
 resources.clusters.*.workload_type.clients	compute.ClientsTypes	ALL
 resources.clusters.*.workload_type.clients.jobs	bool	ALL
@@ -867,6 +871,7 @@ resources.instance_pools.*.modified_status	string	INPUT
 resources.instance_pools.*.node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.instance_pools.*.node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.instance_pools.*.node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.instance_pools.*.node_type_flexibility.aws_context_id	string	ALL
 resources.instance_pools.*.node_type_id	string	ALL
 resources.instance_pools.*.preloaded_docker_images	[]compute.DockerImage	ALL
 resources.instance_pools.*.preloaded_docker_images[*]	compute.DockerImage	ALL
@@ -955,6 +960,10 @@ resources.job_runs.*.state.user_cancelled_or_timedout	bool	REMOTE
 resources.job_runs.*.url	string	INPUT
 resources.jobs.*.budget_policy_id	string	ALL
 resources.jobs.*.continuous	*jobs.Continuous	ALL
+resources.jobs.*.continuous.maintenance_window	*jobs.MaintenanceWindow	ALL
+resources.jobs.*.continuous.maintenance_window.day_of_week	jobs.DayOfWeek	ALL
+resources.jobs.*.continuous.maintenance_window.start_hour	int	ALL
+resources.jobs.*.continuous.maintenance_window.timezone_id	string	ALL
 resources.jobs.*.continuous.pause_status	jobs.PauseStatus	ALL
 resources.jobs.*.continuous.task_retry_mode	jobs.TaskRetryMode	ALL
 resources.jobs.*.created_time	int64	REMOTE
@@ -1069,6 +1078,7 @@ resources.jobs.*.job_clusters[*].new_cluster.driver_instance_pool_id	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_flexibility.aws_context_id	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_id	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.enable_elastic_disk	bool	ALL
 resources.jobs.*.job_clusters[*].new_cluster.enable_local_disk_encryption	bool	ALL
@@ -1124,6 +1134,7 @@ resources.jobs.*.job_clusters[*].new_cluster.use_ml_runtime	bool	ALL
 resources.jobs.*.job_clusters[*].new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.jobs.*.job_clusters[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.jobs.*.job_clusters[*].new_cluster.worker_node_type_flexibility.aws_context_id	string	ALL
 resources.jobs.*.job_clusters[*].new_cluster.workload_type	*compute.WorkloadType	ALL
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients	compute.ClientsTypes	ALL
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs	bool	ALL
@@ -1179,6 +1190,8 @@ resources.jobs.*.tasks[*].ai_runtime_task.mlflow_experiment_directory	string	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.mlflow_run	string	ALL
 resources.jobs.*.tasks[*].alert_task	*jobs.AlertTask	ALL
 resources.jobs.*.tasks[*].alert_task.alert_id	string	ALL
+resources.jobs.*.tasks[*].alert_task.parameters	map[string]string	ALL
+resources.jobs.*.tasks[*].alert_task.parameters.*	string	ALL
 resources.jobs.*.tasks[*].alert_task.subscribers	[]jobs.AlertTaskSubscriber	ALL
 resources.jobs.*.tasks[*].alert_task.subscribers[*]	jobs.AlertTaskSubscriber	ALL
 resources.jobs.*.tasks[*].alert_task.subscribers[*].destination_id	string	ALL
@@ -1265,6 +1278,8 @@ resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.mlflow_experiment_d
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.mlflow_run	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.alert_task	*jobs.AlertTask	ALL
 resources.jobs.*.tasks[*].for_each_task.task.alert_task.alert_id	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.alert_task.parameters	map[string]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.alert_task.parameters.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.alert_task.subscribers	[]jobs.AlertTaskSubscriber	ALL
 resources.jobs.*.tasks[*].for_each_task.task.alert_task.subscribers[*]	jobs.AlertTaskSubscriber	ALL
 resources.jobs.*.tasks[*].for_each_task.task.alert_task.subscribers[*].destination_id	string	ALL
@@ -1425,6 +1440,7 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility.aws_context_id	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_id	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.enable_elastic_disk	bool	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption	bool	ALL
@@ -1480,6 +1496,7 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.use_ml_runtime	bool	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility.aws_context_id	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.workload_type	*compute.WorkloadType	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.workload_type.clients	compute.ClientsTypes	ALL
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.workload_type.clients.jobs	bool	ALL
@@ -1712,6 +1729,7 @@ resources.jobs.*.tasks[*].new_cluster.driver_instance_pool_id	string	ALL
 resources.jobs.*.tasks[*].new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.jobs.*.tasks[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.jobs.*.tasks[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.jobs.*.tasks[*].new_cluster.driver_node_type_flexibility.aws_context_id	string	ALL
 resources.jobs.*.tasks[*].new_cluster.driver_node_type_id	string	ALL
 resources.jobs.*.tasks[*].new_cluster.enable_elastic_disk	bool	ALL
 resources.jobs.*.tasks[*].new_cluster.enable_local_disk_encryption	bool	ALL
@@ -1767,6 +1785,7 @@ resources.jobs.*.tasks[*].new_cluster.use_ml_runtime	bool	ALL
 resources.jobs.*.tasks[*].new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
 resources.jobs.*.tasks[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	ALL
 resources.jobs.*.tasks[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
+resources.jobs.*.tasks[*].new_cluster.worker_node_type_flexibility.aws_context_id	string	ALL
 resources.jobs.*.tasks[*].new_cluster.workload_type	*compute.WorkloadType	ALL
 resources.jobs.*.tasks[*].new_cluster.workload_type.clients	compute.ClientsTypes	ALL
 resources.jobs.*.tasks[*].new_cluster.workload_type.clients.jobs	bool	ALL
@@ -1990,6 +2009,10 @@ resources.jobs.*.trigger_state.table.using_scalable_monitoring	bool	REMOTE
 resources.jobs.*.triggers	[]jobs.TriggerConfiguration	ALL
 resources.jobs.*.triggers[*]	jobs.TriggerConfiguration	ALL
 resources.jobs.*.triggers[*].continuous	*jobs.ContinuousTriggerConfiguration	ALL
+resources.jobs.*.triggers[*].continuous.maintenance_window	*jobs.MaintenanceWindow	ALL
+resources.jobs.*.triggers[*].continuous.maintenance_window.day_of_week	jobs.DayOfWeek	ALL
+resources.jobs.*.triggers[*].continuous.maintenance_window.start_hour	int	ALL
+resources.jobs.*.triggers[*].continuous.maintenance_window.timezone_id	string	ALL
 resources.jobs.*.triggers[*].continuous.task_retry_mode	jobs.TaskRetryMode	ALL
 resources.jobs.*.triggers[*].file_arrival	*jobs.FileArrivalTriggerConfiguration	ALL
 resources.jobs.*.triggers[*].file_arrival.min_time_between_triggers_seconds	int	ALL
@@ -2885,6 +2908,8 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.o
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.subject_filter	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.subject_filter[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.rabbitmq_options	*pipelines.RabbitmqOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.rabbitmq_options.queue	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options	*pipelines.RedditAdsOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.custom_report_options	*pipelines.RedditAdsOptionsRedditAdsCustomReportOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.reddit_ads_options.custom_report_options.breakdowns	[]string	ALL
@@ -3109,6 +3134,8 @@ resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.ou
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.start_date	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.subject_filter	[]string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.subject_filter[*]	string	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.rabbitmq_options	*pipelines.RabbitmqOptions	ALL
+resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.rabbitmq_options.queue	string	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options	*pipelines.RedditAdsOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.custom_report_options	*pipelines.RedditAdsOptionsRedditAdsCustomReportOptions	ALL
 resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.reddit_ads_options.custom_report_options.breakdowns	[]string	ALL
@@ -3329,6 +3356,7 @@ resources.postgres_branches.*.replace_existing	bool	INPUT	STATE
 resources.postgres_branches.*.source_branch	string	ALL
 resources.postgres_branches.*.source_branch_lsn	string	ALL
 resources.postgres_branches.*.source_branch_time	*time.Time	ALL
+resources.postgres_branches.*.source_snapshot	string	ALL
 resources.postgres_branches.*.status	*postgres.BranchStatus	REMOTE
 resources.postgres_branches.*.status.branch_id	string	REMOTE
 resources.postgres_branches.*.status.current_state	postgres.BranchStatusState	REMOTE
@@ -3342,6 +3370,7 @@ resources.postgres_branches.*.status.purge_time	*time.Time	REMOTE
 resources.postgres_branches.*.status.source_branch	string	REMOTE
 resources.postgres_branches.*.status.source_branch_lsn	string	REMOTE
 resources.postgres_branches.*.status.source_branch_time	*time.Time	REMOTE
+resources.postgres_branches.*.status.source_snapshot	string	REMOTE
 resources.postgres_branches.*.status.state_change_time	*time.Time	REMOTE
 resources.postgres_branches.*.ttl	*duration.Duration	ALL
 resources.postgres_branches.*.uid	string	REMOTE

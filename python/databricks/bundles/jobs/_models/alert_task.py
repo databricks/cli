@@ -5,7 +5,11 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
+from databricks.bundles.core._variable import (
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+)
 from databricks.bundles.jobs._models.alert_task_subscriber import (
     AlertTaskSubscriber,
     AlertTaskSubscriberParam,
@@ -22,6 +26,18 @@ class AlertTask:
     alert_id: VariableOrOptional[str] = None
     """
     [Public Preview] The alert_id is the canonical identifier of the alert.
+    """
+
+    parameters: VariableOrDict[str] = field(default_factory=dict)
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Per-run parameter overrides, keyed by parameter name, applied onto the alert's stored
+    query parameters before the query is executed. Only scalar values are supported. Values
+    may reference job parameters with `{{job.parameters.*}}`, which are resolved before the
+    task runs. An override whose key does not match a stored parameter fails the task run.
+    Limited to 10000 characters when serialized as JSON; keys must be 1-100 characters and
+    contain only letters, digits, underscores, dashes, and periods.
     """
 
     subscribers: VariableOrList[AlertTaskSubscriber] = field(default_factory=list)
@@ -57,6 +73,18 @@ class AlertTaskDict(TypedDict, total=False):
     alert_id: VariableOrOptional[str]
     """
     [Public Preview] The alert_id is the canonical identifier of the alert.
+    """
+
+    parameters: VariableOrDict[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Per-run parameter overrides, keyed by parameter name, applied onto the alert's stored
+    query parameters before the query is executed. Only scalar values are supported. Values
+    may reference job parameters with `{{job.parameters.*}}`, which are resolved before the
+    task runs. An override whose key does not match a stored parameter fails the task run.
+    Limited to 10000 characters when serialized as JSON; keys must be 1-100 characters and
+    contain only letters, digits, underscores, dashes, and periods.
     """
 
     subscribers: VariableOrList[AlertTaskSubscriberParam]

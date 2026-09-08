@@ -261,6 +261,8 @@ resources:
         reason: spec:immutable
       - field: source_branch_time
         reason: spec:immutable
+      - field: source_snapshot
+        reason: spec:immutable
 
     ignore_remote_changes:
       - field: expire_time
@@ -274,6 +276,8 @@ resources:
       - field: source_branch_lsn
         reason: spec:input_only
       - field: source_branch_time
+        reason: spec:input_only
+      - field: source_snapshot
         reason: spec:input_only
       - field: ttl
         reason: spec:input_only

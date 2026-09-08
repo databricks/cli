@@ -32,7 +32,7 @@ func (c *PostgresRoleConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresRoleConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresRoleConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 

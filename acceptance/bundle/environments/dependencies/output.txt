@@ -32,6 +32,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
+        "test_package==2.0.*",
         "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/artifacts/.internal/test.whl",
         "/Workspace/Users/test@databricks.com/test-package.whl",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
@@ -74,6 +75,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
+        "test_package==2.0.*",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
         "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
         "--find-links=/Workspace/Users/test"
@@ -99,6 +101,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
         "test_package",
         "test_package==2.0.1",
         "test_package>=2.0.1",
+        "test_package==2.0.*",
         "./dist/*.whl",
         "/Workspace/Users/test@databricks.com/test-package.whl",
         "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
@@ -131,6 +134,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     "test_package",
     "test_package==2.0.1",
     "test_package>=2.0.1",
+    "test_package==2.0.*",
     "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
     "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
     "--find-links=/Workspace/Users/test"
