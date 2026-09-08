@@ -1,0 +1,27 @@
+SCHEMA_FULL_NAME=main.schema_oob_after_empty_$UNIQUE_NAME
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy with one grant"
+trace $CLI bundle deploy -qq
+
+title "Empty the list: the grant is revoked"
+update_file.py databricks.yml 'grants: [{ principal: deco-test-user@databricks.com, privileges: [USE_SCHEMA] }]' 'grants: []'
+trace $CLI bundle deploy -qq
+trace $CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort_lines.py --repl
+
+title "Add a grant out of band"
+trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.json > /dev/null
+trace $CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort_lines.py --repl | contains.py 'deco-test-user@databricks.com'
+
+# The engines diverge here, so the result goes to a per-engine file: direct re-plans the
+# emptied node and revokes the out-of-band grant, terraform leaves it in place.
+title "Redeploy: the enforced empty list revokes the out-of-band grant"
+trace $CLI bundle deploy -qq
+$CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort_lines.py --repl > out.grants.$DATABRICKS_BUNDLE_ENGINE.txt
