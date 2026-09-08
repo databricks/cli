@@ -129,11 +129,7 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 		// (job + run) so it can't be expressed as a single-ID pattern here; it's
 		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
 		"job_runs":           true,
-		"postgres_branches":  true,
 		"postgres_databases": true,
-		"postgres_endpoints": true,
-		"postgres_projects":  true,
-		"postgres_roles":     true,
 		"secret_scopes":      true,
 	}
 
