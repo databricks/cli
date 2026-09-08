@@ -1,5 +1,0 @@
-RecordRequests = false
-
-Ignore = [
-    "databricks.yml",
-]

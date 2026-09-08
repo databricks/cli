@@ -142,7 +142,7 @@ type policyElement struct {
 // attribute, or nil if it materializes none. Mirrors the backend: "fixed" applies whether
 // or not the request sets apply_policy_default_values, "defaultValue" only when it does.
 // Pinned against a real workspace by
-// acceptance/bundle/resources/cluster_policies/policy_value_semantics.
+// acceptance/bundle/resources/jobs/cluster_policy/policy_value_semantics.
 func (e policyElement) effectiveValue(applyDefaults bool) any {
 	if e.Type == "fixed" {
 		return e.Value

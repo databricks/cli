@@ -90,7 +90,7 @@ resources:
       # "defaultValue" elements when the request sets apply_policy_default_values. The bundle
       # is not the source for those, so the remote spec is legitimately a superset of what the
       # config declares and an added field is not drift. Measured backend behavior is pinned by
-      # acceptance/bundle/resources/cluster_policies/policy_value_semantics.
+      # acceptance/bundle/resources/jobs/cluster_policy/policy_value_semantics.
       # https://github.com/databricks/cli/issues/5179
       # https://github.com/databricks/cli/issues/6512
       - field: tasks[*].new_cluster
@@ -612,7 +612,7 @@ resources:
     # "defaultValue" elements when the request sets apply_policy_default_values. The bundle
     # is not the source for those, so the remote spec is legitimately a superset of what the
     # config declares and an added field is not drift. Measured backend behavior is pinned by
-    # acceptance/bundle/resources/cluster_policies/policy_value_semantics.
+    # acceptance/bundle/resources/jobs/cluster_policy/policy_value_semantics.
     # https://github.com/databricks/cli/issues/5179
     # https://github.com/databricks/cli/issues/6512
     ignore_remote_additions:
