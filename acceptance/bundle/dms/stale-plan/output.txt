@@ -40,10 +40,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
  "state": {}
 }
 
-=== A saved plan carries the deployment id and the version it was built against
+=== A saved plan carries the version it was built against
 >>> [CLI] bundle plan -o json
 {
-  "deployment_id": "[NUMID]",
   "serial": 1
 }
 
@@ -60,9 +59,8 @@ Error: this plan was built against version 0 but the deployment has recorded ver
 {"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
 === Save a plan against the recorded deployment, then move the deployment on
->>> jq {deployment_id, serial} tmp.plan2.json
+>>> jq {serial} tmp.plan2.json
 {
-  "deployment_id": "[NUMID]",
   "serial": 1
 }
 

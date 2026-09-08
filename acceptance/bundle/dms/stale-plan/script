@@ -13,8 +13,8 @@ trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${d
 title "The raw recorded state the service holds for this deployment"
 trace print_state.py --no-dms
 
-title "A saved plan carries the deployment id and the version it was built against"
-trace $CLI bundle plan -o json | jq '{deployment_id, serial}'
+title "A saved plan carries the version it was built against"
+trace $CLI bundle plan -o json | jq '{serial}'
 
 title "Replay: re-deploying the same plan is rejected - it predates the recorded version"
 trace musterr $CLI bundle deploy --plan tmp.plan.json
@@ -27,7 +27,7 @@ trace print_requests.py --dms //api/2.0/bundle --oneline
 # version, which the serial guard has to catch.
 title "Save a plan against the recorded deployment, then move the deployment on"
 $CLI bundle plan -o json > tmp.plan2.json
-trace jq '{deployment_id, serial}' tmp.plan2.json
+trace jq '{serial}' tmp.plan2.json
 trace update_file.py databricks.yml "name: foo" "name: foo_renamed"
 trace $CLI bundle deploy
 trace jq '{serial}' .databricks/bundle/default/resources.json

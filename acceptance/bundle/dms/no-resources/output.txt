@@ -31,7 +31,6 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "deployment_id": "[NUMID]",
   "features": {
     "deployment_history": {}
   }
@@ -88,7 +87,6 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
-  "deployment_id": "[NUMID]",
   "features": {
     "deployment_history": {}
   }

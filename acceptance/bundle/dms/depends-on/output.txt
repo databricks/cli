@@ -1,5 +1,5 @@
 
-=== Plan before first deploy: no deployment yet, so no deployment_id or version fields
+=== Plan before first deploy: no deployment yet, so serial is still 0
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -60,7 +60,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
-  "deployment_id": "[NUMID]",
   "features": {
     "deployment_history": {}
   }

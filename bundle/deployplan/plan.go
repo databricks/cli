@@ -13,19 +13,13 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-const currentPlanVersion = 3
+const currentPlanVersion = 2
 
 type Plan struct {
 	PlanVersion int    `json:"plan_version,omitempty"`
 	CLIVersion  string `json:"cli_version,omitempty"`
 	Lineage     string `json:"lineage,omitempty"`
 	Serial      int    `json:"serial,omitempty"`
-
-	// DeploymentId is the recorded deployment this plan targets, set only when the bundle records
-	// deployment history. The version this plan would create is derived from Serial rather than
-	// carried separately: a version is only created when the plan changes something, so the two
-	// advance together (see phases.Deploy). deploy --plan rejects a plan whose deployment moved on.
-	DeploymentId string `json:"deployment_id,omitempty"`
 
 	// Features are the state feature flags this plan was built against, mirroring the state
 	// file's own "features" field. The stamps above exist because of a feature being set, so

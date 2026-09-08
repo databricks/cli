@@ -34,7 +34,6 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
-  "deployment_id": "[NUMID]",
   "features": {
     "deployment_history": {}
   }
@@ -169,7 +168,6 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
-  "deployment_id": "[NUMID]",
   "features": {
     "deployment_history": {}
   }

@@ -41,27 +41,22 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 }
 
 // ValidatePlanAgainstState validates that a plan still matches the given state: the recorded
-// deployment and version it targeted, then its lineage and serial.
+// version it targeted, then its lineage and serial.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
-	stateDB.AssertOpenedForReadOrWrite()
-
-	if stateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
-		// Stale if the deployment recorded a version past the one the plan was built against.
-		// Covers a plan from before the first deploy too: its version is 0.
-		if stateDB.LatestVersionID != "" {
-			last, err := strconv.Atoi(stateDB.LatestVersionID)
-			if err == nil && plan.Serial < last {
-				return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, last)
-			}
-		}
-		if plan.DeploymentId != stateDB.DeploymentID {
-			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
+	// Stale if the deployment recorded a version past the one the plan was built against. Covers a
+	// plan from before the first deploy too: its version is 0. Only recorded bundles set this.
+	if stateDB.LatestVersionID != "" {
+		last, err := strconv.Atoi(stateDB.LatestVersionID)
+		if err == nil && plan.Serial < last {
+			return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, last)
 		}
 	}
 
 	if plan.Lineage == "" {
 		return nil
 	}
+
+	stateDB.AssertOpenedForReadOrWrite()
 
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
@@ -180,13 +175,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	// The plan records where its state lives so deploy --plan can reject a plan whose target has
-	// since switched backends or has an outdated version or a wrong deployment_id.
+	// The plan records the state features it was built against so deploy --plan can reject a plan
+	// built for a target of a different shape.
 	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		plan.Features = b.StateDB.StateFeatures()
-		if b.StateDB.DeploymentID != "" {
-			plan.DeploymentId = b.StateDB.DeploymentID
-		}
 	}
 
 	b.Plan = plan

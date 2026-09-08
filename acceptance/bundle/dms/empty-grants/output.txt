@@ -137,7 +137,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
-  "deployment_id": "[NUMID]",
   "features": {
     "deployment_history": {}
   }

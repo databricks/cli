@@ -1,6 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-title "Plan before first deploy: no deployment yet, so no deployment_id or version fields"
+title "Plan before first deploy: no deployment yet, so serial is still 0"
 dms_plan
 
 title "Deploy a job that references another: depends_on is recorded alongside the config, since the reference is resolved to a literal in the config itself"
