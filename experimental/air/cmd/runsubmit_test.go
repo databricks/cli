@@ -337,7 +337,7 @@ func TestSubmitWorkload(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false, false)
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
@@ -408,7 +408,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	cfg, err := loadRunConfigWithOverrides(t.Context(), cfgPath, []string{"compute.num_accelerators=4"})
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false, false)
 	require.NoError(t, err)
 
 	require.Len(t, got.Tasks, 1)
@@ -490,7 +490,7 @@ code_source:
 
 	// The DABs upload path logs via cmdio; the real `air run` context carries it.
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false, false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -535,7 +535,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false, false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -600,11 +600,11 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 	require.NotZero(t, snapshotUploads, "first submit should upload the tarball")
 	afterFirst := snapshotUploads
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 
 	// Content-addressed name: not the bare dir, but a 16-hex-char fingerprint.
@@ -663,9 +663,9 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 
 	// Same pinned commit → identical content-addressed remote path, uploaded once
@@ -707,7 +707,7 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 
 	assert.Empty(t, snap.GitStatePath)
@@ -756,7 +756,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false, false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -791,7 +791,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 
 		cfg := *base
 		cfg.UsagePolicyName = new("nope")
-		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false, false)
 		require.ErrorContains(t, err, `no usage policy named "nope"`)
 		for _, p := range paths {
 			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
@@ -828,7 +828,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false, false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})
@@ -839,7 +839,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false, false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})

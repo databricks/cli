@@ -55,15 +55,14 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 // macOS AppleDouble excluded), so the caller can reuse the same listing to
 // content-address the upload.
 func createPlainTarball(ctx context.Context, repoPath, outputTarball string, files []snapshotFile) error {
- dirName := filepath.Base(repoPath)
-
- entries := make([]tarpack.Entry, len(files))
- for i, f := range files {
-  entries[i] = tarpack.Entry{
-   Name: filepath.ToSlash(filepath.Join(dirName, f.rel)),
-   Path: filepath.Join(repoPath, f.rel),
-  }
- }
+	dirName := filepath.Base(repoPath)
+	entries := make([]tarpack.Entry, len(files))
+	for i, f := range files {
+		entries[i] = tarpack.Entry{
+			Name: filepath.ToSlash(filepath.Join(dirName, f.rel)),
+			Path: filepath.Join(repoPath, f.rel),
+		}
+	}
 
 	out, err := os.Create(outputTarball)
 	if err != nil {
@@ -92,7 +91,7 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, fil
 }
 
 // snapshotFile is a file selected for the snapshot: its repo-relative path (native
-// separators) plus the size and mtime used to content-address the plain_tar upload.
+// separators) plus the size and mtime used by content addressing and the warm cache.
 type snapshotFile struct {
 	rel     string
 	size    int64
