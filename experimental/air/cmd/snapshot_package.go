@@ -9,6 +9,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 // Tar builders ported from cli/utils/snapshot.py. Both shell out (git archive / tar)
@@ -58,33 +61,59 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 	}
 	outName := filepath.Base(outputTarball)
 
+	listStart := time.Now()
 	files, err := snapshotFiles(ctx, repoPath, includePaths, isGitRepo)
 	if err != nil {
 		return err
 	}
+	listDur := time.Since(listStart)
+
 	args := []string{"-czf", outName, "-C", parent, "--null", "--no-recursion", "-T", "-"}
 
 	cmd := exec.CommandContext(ctx, "tar", args...)
 	// Run tar in the output directory so the bare -f basename lands there.
 	cmd.Dir = outDirAbs
 	var stdin bytes.Buffer
+	var uncompressedBytes int64
 	for _, file := range files {
-		stdin.WriteString(filepath.ToSlash(filepath.Join(dirName, file)))
+		stdin.WriteString(filepath.ToSlash(filepath.Join(dirName, file.rel)))
 		stdin.WriteByte(0)
+		uncompressedBytes += file.size
 	}
 	cmd.Stdin = &stdin
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
+	packStart := time.Now()
 	if err := cmd.Run(); err != nil {
 		if msg := strings.TrimSpace(stderr.String()); msg != "" {
 			return fmt.Errorf("failed to create plain tarball: %w: %s", err, msg)
 		}
 		return fmt.Errorf("failed to create plain tarball: %w", err)
 	}
+
+	// Phase 0 profiling: decompose plain_tar cost into file walk (list) vs tar+gzip
+	// (pack_gzip) so we can judge whether a warm-tar cache would pay off before
+	// building one. Debug-only; enable with -v/--debug.
+	var compressedBytes int64 = -1
+	if fi, statErr := os.Stat(outputTarball); statErr == nil {
+		compressedBytes = fi.Size()
+	}
+	log.Debugf(ctx, "air snapshot profile: mode=plain_tar files=%d uncompressed_bytes=%d compressed_bytes=%d list=%s pack_gzip=%s",
+		len(files), uncompressedBytes, compressedBytes, listDur, time.Since(packStart))
 	return nil
 }
 
-func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) ([]string, error) {
+// snapshotFile is a file selected for the snapshot: its repo-relative path (native
+// separators) with the size and mtime the warm cache uses to detect changes.
+type snapshotFile struct {
+	rel     string
+	size    int64
+	modTime int64 // Unix nanoseconds
+}
+
+// snapshotFiles returns the files to archive (git-tracked and untracked, honoring
+// .gitignore, minus .git and AppleDouble files), each with its size and mtime.
+func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) ([]snapshotFile, error) {
 	args := []string{"-C", repoPath, "ls-files", "-z", "--cached", "--others", "--exclude-standard"}
 	if !isGitRepo {
 		gitDir, err := os.MkdirTemp("", "air-snapshot-git-")
@@ -108,7 +137,7 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		return nil, fmt.Errorf("failed to evaluate git ignore rules: %w", err)
 	}
 
-	var files []string
+	var files []snapshotFile
 	for raw := range bytes.SplitSeq(output, []byte{0}) {
 		if len(raw) == 0 {
 			continue
@@ -118,14 +147,14 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		if name == ".git" || strings.HasPrefix(name, ".git/") || strings.HasPrefix(base, "._") {
 			continue
 		}
-		_, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
+		info, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect snapshot path %q: %w", name, err)
 		}
-		files = append(files, filepath.FromSlash(name))
+		files = append(files, snapshotFile{rel: filepath.FromSlash(name), size: info.Size(), modTime: info.ModTime().UnixNano()})
 	}
 	return files, nil
 }
