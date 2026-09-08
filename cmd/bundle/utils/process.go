@@ -484,10 +484,8 @@ func validatePlan(b *bundle.Bundle, plan *deployplan.Plan) error {
 		return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
 	}
 
-	if plan.Lineage == "" {
-		return nil
-	}
-
+	// A plan taken before the first deploy carries no lineage or serial, so both sides are empty
+	// then and the checks below pass. If a deployment has happened since, they catch it.
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
