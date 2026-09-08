@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -309,4 +310,77 @@ func TestFailedAckWriteClosesResumableConnectionToDriveReattach(t *testing.T) {
 	// connection closed, the receiving loop's next read fails and reattaches, rather than the
 	// failure being silently swallowed.
 	require.ErrorIs(t, conn.Close(), net.ErrClosed, "sendMessage must close the poisoned connection so the receiving loop reattaches")
+}
+
+// A read that fails during teardown must not be mistaken for a drop. start's context watcher
+// closes the websocket to unblock this read, so on every clean exit the read fails with the
+// context already cancelled - and reattaching there told the user their connection had dropped on
+// every single session, having no chance of succeeding on a cancelled context either.
+func TestTeardownIsNotTreatedAsADrop(t *testing.T) {
+	// Signalled from inside the client's ReadMessage: gorilla dispatches control frames from
+	// there and keeps reading, so this proves the read is in flight and cannot return until the
+	// connection is closed. Without it the loop could be between iterations instead, where the
+	// check at the top of the loop handles the cancellation and the test passes vacuously.
+	readInFlight := make(chan struct{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		if err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(time.Minute)); err != nil {
+			return
+		}
+		// Send no payload: the client's read stays blocked until the test closes the connection.
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	conn, err := createTestWebsocketConnection(wsURL)
+	require.NoError(t, err)
+	conn.SetPingHandler(func(string) error {
+		close(readInFlight)
+		return nil
+	})
+
+	var dials atomic.Int32
+	pc := newResumableProxyConnection(func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		dials.Add(1)
+		return nil, errors.New("a teardown must never dial a reattach")
+	})
+	pc.conn.Store(conn)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	loopErr := make(chan error, 1)
+	go func() {
+		loopErr <- pc.runReceivingLoop(ctx, io.Discard)
+	}()
+
+	select {
+	case <-readInFlight:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the receiving loop never reached its read")
+	}
+
+	// Cancel first and close second, exactly as start's context watcher does it, so the read
+	// error always surfaces with the cancellation already visible.
+	cancel()
+	require.NoError(t, conn.Close())
+
+	select {
+	case err := <-loopErr:
+		require.ErrorIs(t, err, context.Canceled, "a read that fails after cancellation is the teardown, so the loop must report the cancellation")
+		require.NotErrorIs(t, err, ErrWebsocketDropped, "a clean teardown must not be attributed to a dropped websocket")
+	case <-time.After(10 * time.Second):
+		t.Fatal("the receiving loop never returned")
+	}
+
+	// No dial means no reattach was started, and the warning that prompted this test lives inside
+	// the reattach, so it cannot have been printed either.
+	require.Zero(t, dials.Load(), "the reattach must not be attempted once the context is cancelled")
 }

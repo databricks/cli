@@ -429,6 +429,15 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 				if errors.Is(err, io.EOF) || websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 					return errors.Join(errProxyEOF, err)
 				}
+				// A read that fails once our own context is cancelled is the teardown, not a drop:
+				// start's context watcher closes the connection to unblock this very read, and
+				// only after the context is done, so cancellation is always visible here first.
+				// Neither branch below fits - a reattach would warn the user about a drop on every
+				// clean exit and could not succeed anyway (its redial budget comes from this same
+				// context), and ErrWebsocketDropped would bill an ordinary exit to a tunnel failure.
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
 				// An unexpected drop. With resume negotiated the session state on both ends
 				// outlives the connection, so reattach instead of ending the session.
 				if pc.resumable() {
