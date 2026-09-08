@@ -1,0 +1,8 @@
+# Direct-only and not Cloud: this captures a real bug. The direct engine's deploy
+# FAILS here (the testserver rejects the request exactly as a real endpoint does),
+# so it must not run against a real workspace until the whole-block bug is fixed.
+# Terraform masks this correctly.
+Cloud = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Badness = "Adding the whole default_endpoint_settings block produces update_mask=spec.default_endpoint_settings (the enclosing message) instead of the leaf spec.default_endpoint_settings.autoscaling_limit_max_cu, and the deploy FAILS with 400: 'Field spec.default_endpoint_settings.suspension is in update_mask but not provided in request'. Root cause: structdiff records one change at the block level instead of descending to leaves, so collectUpdatePathsWithPrefix masks the message."

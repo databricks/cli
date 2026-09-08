@@ -1,0 +1,17 @@
+# Reproducer for the "whole block" struct-diff bug.
+#
+# The direct engine's structdiff emits a single change at the level where a
+# nested struct is nil on one side, instead of descending to leaves. When a
+# whole `ingestion_definition` block is added (nil in state/remote, populated in
+# config), the change is recorded at path "ingestion_definition" rather than
+# "ingestion_definition.connection_name". The recreate rule targets the leaf
+# (resources.yml: recreate_on_changes: ingestion_definition.connection_name), and
+# HasPatternPrefix cannot match a rule path longer than the change path, so the
+# change is misclassified as "update" instead of "recreate".
+#
+# Direct-only: the terraform engine classifies this correctly as recreate, so
+# running both engines would produce divergent plan text. The bug is in the
+# direct engine.
+Badness = "Adding the whole ingestion_definition block is planned as 'update' instead of 'recreate': structdiff records one change at path 'ingestion_definition' instead of descending to 'ingestion_definition.connection_name', so the immutable recreate rule never matches."
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Ignore = ["foo.py", ".databricks"]
