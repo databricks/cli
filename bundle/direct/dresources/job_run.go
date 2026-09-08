@@ -26,13 +26,6 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
-var (
-	jobRunLifecyclePath      = structpath.MustParsePath("lifecycle")
-	jobRunOnBundleDeployPath = structpath.MustParsePath("lifecycle.triggers_state.on_bundle_deploy")
-	jobRunOnFileChangePath   = structpath.MustParsePath("lifecycle.triggers_state.on_file_change")
-	jobRunResultStatePath    = structpath.MustParsePath("result_state")
-)
-
 // JobRunLifecycleState is the local-only trigger fingerprint.
 type JobRunLifecycleState struct {
 	TriggersState *resources.JobRunTriggersState `json:"triggers_state,omitempty"`
@@ -378,35 +371,40 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // so re-adding the trigger only re-fires when the watched files changed
 // meanwhile. All other trigger changes recreate the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	switch {
-	case path.Len() == jobRunLifecyclePath.Len() && path.HasPrefix(jobRunLifecyclePath):
+	switch path.String() {
+	case "lifecycle":
 		// Dropped when the trigger is removed (New nil) and when both sides are
 		// present, where the trigger fields below classify the change instead.
 		// Arming from no lifecycle at all keeps its recreate.
 		if change.New == nil || change.Old != nil {
 			change.Reason = deployplan.ReasonDrop
 		}
-	case path.Len() == jobRunOnBundleDeployPath.Len() && path.HasPrefix(jobRunOnBundleDeployPath):
+	case "lifecycle.triggers_state.on_bundle_deploy":
 		if change.New == nil || change.New == "" {
 			change.Reason = deployplan.ReasonDrop
 		}
-	case path.Len() == jobRunOnFileChangePath.Len() && path.HasPrefix(jobRunOnFileChangePath):
+	case "lifecycle.triggers_state.on_file_change":
 		// As above: an emptied map is a removal, and pattern entries classify a map
 		// that still has both sides.
 		if isEmptyFileTriggerMap(change.New) || change.Old != nil {
 			change.Reason = deployplan.ReasonDrop
 		}
-	case path.Len() == jobRunOnFileChangePath.Len()+1 && path.HasPrefix(jobRunOnFileChangePath):
-		if change.New == nil {
-			change.Reason = deployplan.ReasonDrop
-		}
-	case path.Len() == jobRunResultStatePath.Len() && path.HasPrefix(jobRunResultStatePath):
+	case "result_state":
 		// The planner passes no remote state when the run could not be read.
 		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
 			return nil
 		}
 		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
+	default:
+		// A single on_file_change pattern entry, e.g.
+		// lifecycle.triggers_state.on_file_change['seed.txt']. Removing one pattern
+		// drops its change and leaves the last fingerprint in state.
+		if parent := path.Parent(); parent != nil && parent.String() == "lifecycle.triggers_state.on_file_change" {
+			if change.New == nil {
+				change.Reason = deployplan.ReasonDrop
+			}
+		}
 	}
 	return nil
 }
