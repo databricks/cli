@@ -73,6 +73,18 @@ func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.Works
 }
 
 func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOptions) error {
+	// Reject invalid server-lifecycle flag values before the cluster picker and
+	// cluster-access check: these values don't depend on cluster details.
+	if opts.MaxClients < 1 {
+		return fmt.Errorf("--max-clients must be at least 1, got %d", opts.MaxClients)
+	}
+	if opts.ServerTimeout < time.Second {
+		return fmt.Errorf("--server-timeout must be at least 1s, got %s", opts.ServerTimeout)
+	}
+	if opts.ShutdownDelay > opts.ServerTimeout {
+		return fmt.Errorf("--shutdown-delay (%s) cannot be longer than --server-timeout (%s)", opts.ShutdownDelay, opts.ServerTimeout)
+	}
+
 	if opts.ClusterID == "" {
 		id, err := clusterSelectionPrompt(ctx, client)
 		if err != nil {

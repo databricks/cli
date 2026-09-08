@@ -314,11 +314,8 @@ func TestSetup_RejectsUnusableServerLifecycleFlags(t *testing.T) {
 			t.Setenv("HOME", tmpDir)
 			t.Setenv("USERPROFILE", tmpDir)
 
+			// Validation fires before any cluster API calls, so no mock expectations needed.
 			m := mocks.NewMockWorkspaceClient(t)
-			m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-				DataSecurityMode: compute.DataSecurityModeSingleUser,
-				SingleUserName:   "me@example.com",
-			}, nil)
 
 			opts := tt.opts
 			opts.HostName = "test-host"
