@@ -19,9 +19,9 @@ Logged out of profile "logfood". Use --delete to also remove it from the config 
 [DEFAULT]
 
 [logfood]
-host = [DATABRICKS_URL]
+host         = [DATABRICKS_URL]
 account_id = stale-account
-auth_type  = databricks-cli
+auth_type    = databricks-cli
 
 [__settings__]
 default_profile = logfood

@@ -2,44 +2,23 @@ package profilehash
 
 import (
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
-	"maps"
-	"slices"
+	"encoding/json"
 
-	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 )
 
-// Compute hashes parsed profile values so formatting-only edits do not
-// invalidate credentials.
-func Compute(values map[string]string) string {
-	keys := slices.Sorted(maps.Keys(values))
-	var serialized []byte
-
-	for _, key := range keys {
-		value := values[key]
-		serialized = binary.AppendUvarint(serialized, uint64(len(key)))
-		serialized = append(serialized, key...)
-		serialized = binary.AppendUvarint(serialized, uint64(len(value)))
-		serialized = append(serialized, value...)
+// Compute hashes every field in the simplified profile representation.
+func Compute(p profile.Profile) (string, error) {
+	// Marshal the whole simplified profile so newly added profile fields are
+	// included automatically. Only the code constructing Profile decides which
+	// configuration fields belong in the fingerprint.
+	serialized, err := json.Marshal(p)
+	if err != nil {
+		return "", err
 	}
 
 	sum := sha256.Sum256(serialized)
 
-	return hex.EncodeToString(sum[:])
-}
-
-// FromFile hashes every parsed key and value in the named profile section.
-func FromFile(configFilePath, profileName string) (string, error) {
-	file, err := config.LoadFile(configFilePath)
-	if err != nil {
-		return "", err
-	}
-
-	section, err := file.GetSection(profileName)
-	if err != nil {
-		return "", err
-	}
-
-	return Compute(section.KeysHash()), nil
+	return hex.EncodeToString(sum[:]), nil
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
@@ -267,9 +268,11 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 
 	tokenStore := args.tokenStore
 	if existingProfile != nil {
-		if fingerprint := existingProfile.Fingerprint(); fingerprint != "" {
-			tokenStore = storage.NewProfileFingerprintStore(tokenStore, existingProfile.Name, fingerprint)
+		fingerprint, err := profilehash.Compute(*existingProfile)
+		if err != nil {
+			return nil, fmt.Errorf("compute profile fingerprint: %w", err)
 		}
+		tokenStore = storage.NewProfileFingerprintStore(tokenStore, existingProfile.Name, fingerprint)
 	}
 
 	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenStore, args.mode))}, args.persistentAuthOpts...)

@@ -1,10 +1,18 @@
 # A token without fingerprint metadata must require a new login.
 setup_test_profile
-setup_test_token_cache
-
-# Tokens created before profile fingerprinting require one new interactive login.
-jq 'del(.tokens["test-profile"].profile_fingerprint)' \
-    "./home/.databricks/token-cache.json" > "./token-cache.json"
-mv "./token-cache.json" "./home/.databricks/token-cache.json"
+mkdir -p "./home/.databricks"
+cat > "./home/.databricks/token-cache.json" <<EOF
+{
+  "version": 1,
+  "tokens": {
+    "test-profile": {
+      "access_token": "cached-access-token",
+      "token_type": "Bearer",
+      "refresh_token": "test-refresh-token",
+      "expiry": "2099-01-01T00:00:00Z"
+    }
+  }
+}
+EOF
 
 trace musterr $CLI auth token --profile test-profile

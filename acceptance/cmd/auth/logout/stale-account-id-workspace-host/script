@@ -1,4 +1,6 @@
 sethome "./home"
+export BROWSER="browser.py"
+export DATABRICKS_AUTH_STORAGE=plaintext
 
 cat > "./home/.databrickscfg" <<EOF
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
@@ -6,42 +8,24 @@ cat > "./home/.databrickscfg" <<EOF
 
 [logfood]
 host = ${DATABRICKS_HOST}
-account_id = stale-account
 auth_type  = databricks-cli
 
 [__settings__]
 default_profile = logfood
 EOF
 
-mkdir -p "./home/.databricks"
-profile_fingerprint=$(profile_fingerprint.py \
-    "account_id=stale-account" \
-    "auth_type=databricks-cli" \
-    "host=${DATABRICKS_HOST}")
-
-# Host cache keys can be shared by profiles, so only the profile entry is bound.
-cat > "./home/.databricks/token-cache.json" <<EOF
-{
-  "version": 1,
-  "tokens": {
-    "logfood": {
-      "access_token": "logfood-cached-token",
-      "token_type": "Bearer",
-      "profile_fingerprint": "${profile_fingerprint}"
-    },
-    "${DATABRICKS_HOST}": {
-      "access_token": "logfood-host-token",
-      "token_type": "Bearer"
-    }
-  }
-}
-EOF
+$CLI auth login --host "$DATABRICKS_HOST" --profile logfood >/dev/null 2>&1
 
 title "Profiles before logout — logfood should be valid"
 trace $CLI auth profiles
 
 title "Token cache keys before logout\n"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
+
+# Reproduce a stale routing field after confirming that login created a valid profile.
+sed -i.bak '/^host/a account_id = stale-account' "./home/.databrickscfg"
+sed -i.bak '/scopes/d' "./home/.databrickscfg"
+sed -i.bak '/workspace_id/d' "./home/.databrickscfg"
 
 title "Logout without --delete"
 trace $CLI auth logout --profile logfood --auto-approve

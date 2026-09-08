@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
@@ -111,11 +112,18 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	}
 
 	if cfg.Profile != "" {
-		fingerprint, err := profilehash.FromFile(cfg.ConfigFile, cfg.Profile)
+		profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName(cfg.Profile))
 		if err != nil {
-			return nil, fmt.Errorf("fingerprint profile %q: %w", cfg.Profile, err)
+			return nil, fmt.Errorf("load profile %q for fingerprint: %w", cfg.Profile, err)
+		}
+		if len(profiles) == 0 {
+			return nil, fmt.Errorf("load profile %q for fingerprint: profile not found", cfg.Profile)
 		}
 
+		fingerprint, err := profilehash.Compute(profiles[0])
+		if err != nil {
+			return nil, fmt.Errorf("compute profile fingerprint: %w", err)
+		}
 		tokenStore = storage.NewProfileFingerprintStore(tokenStore, cfg.Profile, fingerprint)
 	}
 

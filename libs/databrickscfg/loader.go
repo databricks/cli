@@ -94,6 +94,10 @@ func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) boo
 // hostAttr is the SDK config attribute name for the workspace/account host.
 const hostAttr = "host"
 
+// WorkspaceIDNone is a legacy sentinel for profiles that intentionally do not
+// select a workspace.
+const WorkspaceIDNone = "none"
+
 // envAlwaysSkipAttrs lists env attributes envLoader must never read when a
 // profile is explicitly selected, in either pass: routing (workspace_id,
 // account_id) and auth-steering fields tagged auth:"-" (auth_type, discovery_url,

@@ -813,11 +813,8 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 // TestDiscoveryLoginStoresSavedProfileFingerprint verifies that discovery login binds
 // its cached token to the profile values ultimately written to disk.
 func TestDiscoveryLoginStoresSavedProfileFingerprint(t *testing.T) {
-	home := t.TempDir()
-	configPath := filepath.Join(home, ".databrickscfg")
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
-	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
 
 	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
 	require.NoError(t, err)
@@ -842,7 +839,10 @@ func TestDiscoveryLoginStoresSavedProfileFingerprint(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	fingerprint, err := profilehash.FromFile(configPath, "DISCOVERY")
+	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName("DISCOVERY"))
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	fingerprint, err := profilehash.Compute(profiles[0])
 	require.NoError(t, err)
 	entry, err := tokenStore.Lookup("DISCOVERY")
 	require.NoError(t, err)

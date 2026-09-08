@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -99,7 +100,12 @@ func setTokenProfileFingerprint(ctx context.Context, profiler profile.Profiler, 
 		return fmt.Errorf("saved profile %q not found", profileName)
 	}
 
-	if err := storage.SetProfileFingerprint(tokenStore, profileName, savedProfile.Fingerprint()); err != nil {
+	fingerprint, err := profilehash.Compute(*savedProfile)
+	if err != nil {
+		return fmt.Errorf("compute profile fingerprint: %w", err)
+	}
+
+	if err := storage.SetProfileFingerprint(tokenStore, profileName, fingerprint); err != nil {
 		return fmt.Errorf("save profile fingerprint: %w", err)
 	}
 

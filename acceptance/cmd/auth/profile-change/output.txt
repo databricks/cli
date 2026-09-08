@@ -1,0 +1,6 @@
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile fingerprint-test --scopes jobs
+Profile fingerprint-test was successfully saved
+
+>>> musterr [CLI] clusters list --profile fingerprint-test
+Error: error getting token: cache: profile "fingerprint-test" has changed since the last login; run `databricks auth login --profile "fingerprint-test"` to sign in again

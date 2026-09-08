@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -274,7 +275,10 @@ func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testi
 
 	// Expired cached token (keyed by profile name) so the command triggers a
 	// refresh, which the server rejects.
-	fingerprint, err := profilehash.FromFile(configFile, "only-workspace")
+	profiles, err := profile.DefaultProfiler.LoadProfiles(t.Context(), profile.WithName("only-workspace"))
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	fingerprint, err := profilehash.Compute(profiles[0])
 	require.NoError(t, err)
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".databricks"), 0o700))
 	tokenCache := fmt.Sprintf(`{

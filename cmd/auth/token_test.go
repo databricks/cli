@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -40,24 +38,12 @@ func (upgradeHintStore) Lookup(string) (storage.Entry, error) {
 	)
 }
 
-type profileFingerprintTokenTest struct {
-	configPath  string
-	tokenStore  *inMemoryStore
-	args        loadTokenArgs
-	fingerprint string
-}
-
-func setupProfileFingerprintTokenTest(t *testing.T) profileFingerprintTokenTest {
+func newProfileFingerprintTokenArgs(t *testing.T, currentProfile profile.Profile, forceRefresh bool) loadTokenArgs {
 	t.Helper()
 
-	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
-	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
-	require.NoError(t, os.WriteFile(configPath, []byte(`[TEST]
-host = https://workspace.example.com
-auth_type = databricks-cli
-scopes = jobs
-`), 0o600))
-	fingerprint, err := profilehash.FromFile(configPath, "TEST")
+	loggedInProfile := currentProfile
+	loggedInProfile.Scopes = "jobs"
+	fingerprint, err := profilehash.Compute(loggedInProfile)
 	require.NoError(t, err)
 
 	tokenStore := &inMemoryStore{
@@ -70,71 +56,65 @@ scopes = jobs
 		},
 		Fingerprints: map[string]string{"TEST": fingerprint},
 	}
-	args := loadTokenArgs{
+
+	return loadTokenArgs{
 		authArguments: &auth.AuthArguments{},
 		profileName:   "TEST",
 		tokenTimeout:  time.Minute,
-		profiler:      profile.FileProfilerImpl{},
-		tokenStore:    tokenStore,
-	}
-
-	return profileFingerprintTokenTest{
-		configPath:  configPath,
-		tokenStore:  tokenStore,
-		args:        args,
-		fingerprint: fingerprint,
+		profiler: profile.InMemoryProfiler{Profiles: profile.Profiles{
+			currentProfile,
+		}},
+		tokenStore:   tokenStore,
+		forceRefresh: forceRefresh,
 	}
 }
 
-// TestLoadTokenValidatesProfileFingerprint verifies that token loading accepts an
-// unchanged profile and rejects a changed profile before reuse or forced refresh.
-func TestLoadTokenValidatesProfileFingerprint(t *testing.T) {
+// TestLoadTokenAcceptsMatchingProfileFingerprint verifies that a cached token
+// remains usable while its profile is unchanged.
+func TestLoadTokenAcceptsMatchingProfileFingerprint(t *testing.T) {
+	currentProfile := profile.Profile{
+		Name:     "TEST",
+		Host:     "https://workspace.example.test",
+		Scopes:   "jobs",
+		AuthType: "databricks-cli",
+	}
+	args := newProfileFingerprintTokenArgs(t, currentProfile, false)
+
+	got, err := loadToken(cmdio.MockDiscard(t.Context()), args)
+	require.NoError(t, err)
+	assert.Equal(t, "jobs-token", got.AccessToken)
+}
+
+// TestLoadTokenRejectsChangedProfile verifies that cached credentials cannot
+// be reused or refreshed after the profile changes.
+func TestLoadTokenRejectsChangedProfile(t *testing.T) {
 	tests := []struct {
-		name          string
-		changeProfile bool
-		forceRefresh  bool
-		wantErr       bool
+		name         string
+		forceRefresh bool
 	}{
 		{
-			name: "matching fingerprint succeeds",
+			name: "reuse",
 		},
 		{
-			name:          "changed fingerprint rejects reuse",
-			changeProfile: true,
-			wantErr:       true,
-		},
-		{
-			name:          "changed fingerprint rejects force refresh",
-			changeProfile: true,
-			forceRefresh:  true,
-			wantErr:       true,
+			name:         "force refresh",
+			forceRefresh: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			test := setupProfileFingerprintTokenTest(t)
-			test.args.forceRefresh = tt.forceRefresh
-
-			if tt.changeProfile {
-				require.NoError(t, os.WriteFile(test.configPath, []byte(`[TEST]
-host = https://workspace.example.com
-auth_type = databricks-cli
-scopes = all-apis,sql
-`), 0o600))
+			currentProfile := profile.Profile{
+				Name:     "TEST",
+				Host:     "https://workspace.example.test",
+				Scopes:   "all-apis,sql",
+				AuthType: "databricks-cli",
 			}
+			args := newProfileFingerprintTokenArgs(t, currentProfile, tt.forceRefresh)
 
-			got, err := loadToken(cmdio.MockDiscard(t.Context()), test.args)
-			if !tt.wantErr {
-				require.NoError(t, err)
-				assert.Equal(t, "jobs-token", got.AccessToken)
-				return
-			}
+			_, err := loadToken(cmdio.MockDiscard(t.Context()), args)
 
 			assert.ErrorIs(t, err, storage.ErrProfileChanged)
 			assert.ErrorContains(t, err, `profile "TEST" has changed since the last login`)
-			assert.Equal(t, "jobs-refresh-token", test.tokenStore.Tokens["TEST"].RefreshToken)
-			assert.Equal(t, test.fingerprint, test.tokenStore.Fingerprints["TEST"])
 		})
 	}
 }

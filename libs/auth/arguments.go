@@ -2,12 +2,13 @@ package auth
 
 import (
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
 // WorkspaceIDNone is a sentinel value persisted to .databrickscfg when the
 // user explicitly skips workspace selection for SPOG account-level access.
-const WorkspaceIDNone = "none"
+const WorkspaceIDNone = databrickscfg.WorkspaceIDNone
 
 // AuthArguments is a struct that contains the common arguments passed to
 // `databricks auth` commands.

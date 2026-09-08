@@ -1,4 +1,3 @@
-setup_test_profile
 setup_test_token_cache
 
 # The cached token is "cached-access-token". The mock OIDC server returns
