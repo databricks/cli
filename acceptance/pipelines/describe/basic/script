@@ -1,0 +1,5 @@
+title "describe by pipeline id\n"
+trace $CLI pipelines describe 3fb8e5a1-0d2c-4a6b-9f1e-2c7d8e9f0a1b
+
+title "json output\n"
+trace $CLI pipelines describe 3fb8e5a1-0d2c-4a6b-9f1e-2c7d8e9f0a1b --output json
