@@ -1,4 +1,4 @@
-# DECO-27882: reconnecting with a name used before must not fail on the host key
+# Reconnecting with a name used before must not fail on the host key
 # recorded for that name earlier. The tunnel's host key lives in the workspace, and the
 # CLI pins it for the connection name, so a key recorded by an earlier instance (or by
 # the same name in another workspace) is replaced rather than tripping strict checking.
