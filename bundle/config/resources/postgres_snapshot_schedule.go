@@ -33,7 +33,7 @@ func (c *PostgresSnapshotScheduleConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresSnapshotScheduleConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresSnapshotScheduleConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
