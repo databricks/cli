@@ -1,5 +1,7 @@
 
 === Deploy a cluster with a pypi and a local wheel library
+OK: cluster created with libraries
+
 === Libraries installed via the Libraries API (wheel rewritten to its uploaded path)
 >>> print_requests.py //libraries/install
 {
@@ -21,6 +23,8 @@
 }
 
 === Removing the wheel and redeploying uninstalls it and restarts the running cluster
+OK: wheel uninstalled, cluster restarted
+
 >>> print_requests.py //libraries/uninstall
 {
   "method": "POST",

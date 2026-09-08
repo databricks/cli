@@ -7,10 +7,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# First deploy builds the wheel, uploads it, and installs it on the fresh cluster.
+# Deploy output goes to LOG (differs fake vs cloud); echo a pass line instead.
 title "Deploy a cluster with a local wheel library"
 $CLI bundle deploy &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
+printf '\n%s\n' "OK: cluster created with wheel"
 trace print_requests.py //libraries/install
 
 # Change only the wheel's code, keeping version 0.0.1 so the built filename - and
@@ -22,4 +23,5 @@ $CLI bundle deploy &> LOG.redeploy
 # not restarted and no install request is issued, leaving the stale wheel running. The
 # following two assertions encode that known limitation (see the TODO in cluster.go).
 cat LOG.redeploy | contains.py "!Restarting cluster" > /dev/null
+printf '\n%s\n' "OK: no restart on content-only change (known limitation)"
 trace print_requests.py //libraries/install

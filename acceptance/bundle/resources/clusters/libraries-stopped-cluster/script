@@ -6,13 +6,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Deploy output is noisy and differs fake vs cloud, so route it to LOG and assert
-# only the deterministic signals. The cluster ends up stopped (started=false), so no
-# restart is ever issued.
+# Deploy output goes to LOG (differs fake vs cloud); echo a pass line instead.
 title "Deploy libraries on a started=false cluster: no restart"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" "!Restarting cluster" > /dev/null
+printf '\n%s\n' "OK: created on stopped cluster, no restart"
 
 title "Change the libraries and redeploy: cluster is stopped, so no restart is issued"
 update_file.py databricks.yml "        - pypi:
@@ -23,3 +22,4 @@ update_file.py databricks.yml "        - pypi:
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
 cat LOG.redeploy | contains.py "Updated clusters.mycluster" "!Restarting cluster" > /dev/null
+printf '\n%s\n' "OK: libraries changed on stopped cluster, no restart"

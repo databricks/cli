@@ -1,5 +1,7 @@
 
 === Deploy a cluster with a local wheel library
+OK: cluster created with wheel
+
 >>> print_requests.py //libraries/install
 {
   "method": "POST",
@@ -15,6 +17,8 @@
 }
 
 === Badness: wheel code changes but version does not, so redeploy neither reinstalls nor restarts
+OK: no restart on content-only change (known limitation)
+
 >>> print_requests.py //libraries/install
 
 >>> [CLI] bundle destroy --auto-approve

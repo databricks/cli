@@ -6,12 +6,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Deploy output is noisy and differs fake vs cloud, so route it to LOG. The READPLAN
-# variant applies a plan saved by `bundle plan` instead of one computed inline by deploy.
+# Deploy output goes to LOG (differs fake vs cloud); echo a pass line instead.
 title "Deploy creates the cluster and installs the pypi library"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
+printf '\n%s\n' "OK: cluster created with pypi library"
 
 title "Plan is a no-op after deploy: the repo round-trips"
 trace $CLI bundle plan

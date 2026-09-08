@@ -1,7 +1,13 @@
 
 === Install (create): libraries install on the fresh cluster with no restart
+OK: libraries installed on create, no restart
+
 === Update: adding a library restarts the running cluster
+OK: library added, cluster restarted
+
 === Delete: removing all libraries restarts the running cluster
+OK: libraries removed, cluster restarted
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.clusters.mycluster
