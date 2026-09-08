@@ -132,6 +132,7 @@ a new profile is created.
 	var configureServerless bool
 	var skipWorkspace bool
 	var scopes string
+	var groupID string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
@@ -142,6 +143,8 @@ a new profile is created.
 		"Skip workspace selection for account-level access")
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
+	cmd.Flags().StringVar(&groupID, "group-id", "",
+		"Numeric Databricks group ID to assume during login (workspace-level logins only)")
 
 	cmd.PreRunE = profileHostConflictCheck
 
@@ -268,6 +271,7 @@ a new profile is created.
 				profileName:     profileName,
 				timeout:         loginTimeout,
 				scopes:          scopes,
+				groupID:         groupID,
 				existingProfile: existingProfile,
 				browserFunc:     getBrowserFunc(cmd),
 				tokenStore:      tokenStore,
@@ -293,6 +297,14 @@ a new profile is created.
 			scopesList = splitScopes(existingProfile.Scopes)
 		}
 
+		// The assumed group ID follows the same precedence as scopes: an
+		// explicit --group-id flag wins, otherwise re-login preserves the
+		// value from the existing profile.
+		assumeGroupID := groupID
+		if assumeGroupID == "" && existingProfile != nil {
+			assumeGroupID = existingProfile.AssumeGroupID
+		}
+
 		oauthArgument, err := authArguments.ToOAuthArgument()
 		if err != nil {
 			return err
@@ -304,6 +316,9 @@ a new profile is created.
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
+		}
+		if assumeGroupID != "" {
+			persistentAuthOpts = append(persistentAuthOpts, u2m.WithAssumeGroup(assumeGroupID))
 		}
 		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 		if err != nil {
@@ -393,6 +408,7 @@ a new profile is created.
 				ConfigFile:          env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID: serverlessComputeID,
 				Scopes:              scopesList,
+				AssumeGroupID:       assumeGroupID,
 			}, clearKeys...)
 			if err != nil {
 				return err
@@ -634,6 +650,7 @@ type discoveryLoginInputs struct {
 	profileName     string
 	timeout         time.Duration
 	scopes          string
+	groupID         string
 	existingProfile *profile.Profile
 	browserFunc     func(string) error
 	tokenStore      storage.Store
@@ -654,6 +671,11 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		scopesList = splitScopes(in.existingProfile.Scopes)
 	}
 
+	assumeGroupID := in.groupID
+	if assumeGroupID == "" && in.existingProfile != nil {
+		assumeGroupID = in.existingProfile.AssumeGroupID
+	}
+
 	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
@@ -662,6 +684,9 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
+	}
+	if assumeGroupID != "" {
+		opts = append(opts, u2m.WithAssumeGroup(assumeGroupID))
 	}
 	discoveryHost := env.Get(ctx, discoveryHostEnvVar)
 	if discoveryHost != "" {
@@ -743,13 +768,14 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		"serverless_compute_id",
 	)
 	err = databrickscfg.SaveToProfile(ctx, &config.Config{
-		Profile:     in.profileName,
-		Host:        discoveredHost,
-		AuthType:    authTypeDatabricksCLI,
-		AccountID:   accountID,
-		WorkspaceID: workspaceID,
-		Scopes:      scopesList,
-		ConfigFile:  configFile,
+		Profile:       in.profileName,
+		Host:          discoveredHost,
+		AuthType:      authTypeDatabricksCLI,
+		AccountID:     accountID,
+		WorkspaceID:   workspaceID,
+		Scopes:        scopesList,
+		AssumeGroupID: assumeGroupID,
+		ConfigFile:    configFile,
 	}, clearKeys...)
 	if err != nil {
 		if configFile != "" {

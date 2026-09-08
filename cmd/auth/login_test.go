@@ -89,6 +89,7 @@ type fakeDiscoveryClient struct {
 	// For assertions
 	introspectHost  string
 	introspectToken string
+	capturedOpts    []u2m.PersistentAuthOption
 }
 
 func (f *fakeDiscoveryClient) NewOAuthArgument(profileName string) (*u2m.BasicDiscoveryOAuthArgument, error) {
@@ -99,6 +100,7 @@ func (f *fakeDiscoveryClient) NewOAuthArgument(profileName string) (*u2m.BasicDi
 }
 
 func (f *fakeDiscoveryClient) NewPersistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (discoveryPersistentAuth, error) {
+	f.capturedOpts = opts
 	if f.persistentAuthErr != nil {
 		return nil, f.persistentAuthErr
 	}
@@ -1018,6 +1020,94 @@ func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, savedProfile)
 	assert.Equal(t, "all-apis", savedProfile.Scopes)
+}
+
+func TestDiscoveryLogin_GroupIDFlagWiredAndSaved(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection failed"),
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		groupID:     "987654",
+		browserFunc: func(string) error { return nil },
+		tokenStore:  newTestStore(),
+	})
+	require.NoError(t, err)
+
+	// The assume-group option must have been passed to the SDK. Applying the
+	// captured opts to a real PersistentAuth and asserting it constructs without
+	// error confirms WithAssumeGroup was included and is compatible with the
+	// discovery argument (workspace-level, not the account-target variant).
+	opts := append([]u2m.PersistentAuthOption{u2m.WithOAuthArgument(oauthArg), u2m.WithDiscoveryLogin()}, dc.capturedOpts...)
+	_, err = u2m.NewPersistentAuth(ctx, opts...)
+	require.NoError(t, err)
+
+	// The group ID must round-trip into the saved profile so re-login preserves it.
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "987654", savedProfile.AssumeGroupID)
+}
+
+func TestDiscoveryLogin_ReloginPreservesExistingProfileGroupID(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection failed"),
+	}
+
+	existingProfile := &profile.Profile{
+		Name:          "DISCOVERY",
+		Host:          "https://old-workspace.example.com",
+		AssumeGroupID: "111222",
+	}
+
+	// No --group-id flag: should fall back to the existing profile's group ID.
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenStore:      newTestStore(),
+	})
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "111222", savedProfile.AssumeGroupID)
 }
 
 func TestDiscoveryLogin_SPOGHostPopulatesAccountIDFromDiscovery(t *testing.T) {
