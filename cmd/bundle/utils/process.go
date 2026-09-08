@@ -248,22 +248,20 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			_, localPath := b.StateFilenameDirect(ctx)
 
 			if b.ConfiguresDeploymentHistory(ctx) {
-				deploymentID, deployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+				var err error
+				dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 				if err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
-
-				dmsDeploymentID = deploymentID
-				dmsDeployment = deployment
 
 				// Stamp the deployment and the version this run records onto every job and pipeline so
 				// the plan carries them. version_id is always known (last recorded + 1); deployment_id
 				// does not exist until a first deploy creates it, so it is left off here and the deploy
 				// phase stamps the created id.
 				lastVersionID := ""
-				if deployment != nil {
-					lastVersionID = deployment.LastVersionId
+				if dmsDeployment != nil {
+					lastVersionID = dmsDeployment.LastVersionId
 				}
 				nextVersion, verr := dms.NextVersion(lastVersionID)
 				if verr != nil {
@@ -271,14 +269,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 				muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
-				if deploymentID != "" {
+				if dmsDeploymentID != "" {
 					bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 						b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
-							DeploymentID:    deploymentID,
-							LatestVersionID: deployment.LastVersionId,
+							DeploymentID:    dmsDeploymentID,
+							LatestVersionID: lastVersionID,
 						}
 					})
-					muts = append(muts, metadata.AnnotateDeployment(deploymentID))
+					muts = append(muts, metadata.AnnotateDeployment(dmsDeploymentID))
 				}
 				bundle.ApplySeqContext(ctx, b, muts...)
 				if logdiag.HasError(ctx) {
