@@ -6,7 +6,7 @@ Created schemas.foo
 Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== The plan records DEPLOYMENT_METADATA_SERVICE backend and the schema
+=== The plan records the record_deployment_history feature and the schema
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -14,8 +14,6 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "deployment_id": "[NUMID]",
-  "next_version_id": "2",
-  "last_version_id": "1",
   "features": {
     "record_deployment_history": {}
   }

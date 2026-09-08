@@ -8,7 +8,6 @@ import (
 	"maps"
 	"reflect"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -16,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
-	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
@@ -172,14 +170,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		plan.Features = b.StateDB.StateFeatures()
 		if b.StateDB.DeploymentID != "" {
-			// Subsequent deployment: compute next version from current state.
-			next, err := dms.NextVersion(b.StateDB.LatestVersionID)
-			if err != nil {
-				return nil, fmt.Errorf("computing next deployment version: %w", err)
-			}
 			plan.DeploymentId = b.StateDB.DeploymentID
-			plan.LastVersionId = b.StateDB.LatestVersionID
-			plan.NextVersionId = strconv.FormatInt(next, 10)
 		}
 	}
 

@@ -485,13 +485,6 @@ func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, 
 	// tombstone (its serial does not catch a deploy from elsewhere). Gated on the plan being a DMS
 	// plan; a first-deploy plan has empty version ids that still get compared (and match) here.
 	if isDMSPlan {
-		remoteLastVersion := ""
-		if dmsDeployment != nil {
-			remoteLastVersion = dmsDeployment.LastVersionId
-		}
-		if plan.LastVersionId != remoteLastVersion {
-			return fmt.Errorf("this plan predates the deployment's current version %s; run 'bundle plan' again", remoteLastVersion)
-		}
 		if plan.DeploymentId != dmsDeploymentID {
 			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
 		}

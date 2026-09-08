@@ -21,13 +21,11 @@ type Plan struct {
 	Lineage     string `json:"lineage,omitempty"`
 	Serial      int    `json:"serial,omitempty"`
 
-	// DMS fields, set only when the bundle records deployment history. The plan targets DeploymentId
-	// and will create NextVersionId; LastVersionId is the deployment's most recent version at plan
-	// time. deploy --plan rejects the plan if the deployment moved on from these (see process.go),
-	// and passes LastVersionId as previous_version_id so the service rejects a stale version too.
-	DeploymentId  string `json:"deployment_id,omitempty"`
-	NextVersionId string `json:"next_version_id,omitempty"`
-	LastVersionId string `json:"last_version_id,omitempty"`
+	// DeploymentId is the recorded deployment this plan targets, set only when the bundle records
+	// deployment history. The version this plan would create is derived from Serial rather than
+	// carried separately: a version is only created when the plan changes something, so the two
+	// advance together (see phases.Deploy). deploy --plan rejects a plan whose deployment moved on.
+	DeploymentId string `json:"deployment_id,omitempty"`
 
 	// Features are the state feature flags this plan was built against, mirroring the state
 	// file's own "features" field. The stamps above exist because of a feature being set, so

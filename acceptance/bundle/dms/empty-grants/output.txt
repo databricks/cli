@@ -130,7 +130,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend
+=== The plan is a no-op and records the record_deployment_history feature
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -138,8 +138,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "lineage": "[UUID]",
   "serial": 2,
   "deployment_id": "[NUMID]",
-  "next_version_id": "3",
-  "last_version_id": "2",
   "features": {
     "record_deployment_history": {}
   }

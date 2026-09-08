@@ -17,7 +17,7 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.three", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
 {"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
 
-=== The plan records DEPLOYMENT_METADATA_SERVICE as its backend
+=== The plan records the record_deployment_history feature
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -25,8 +25,6 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "deployment_id": "[NUMID]",
-  "next_version_id": "2",
-  "last_version_id": "1",
   "features": {
     "record_deployment_history": {}
   }
@@ -78,17 +76,15 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
  "state": {}
 }
 
-=== Redeploy with no changes: nothing is applied, so no operations are recorded and only the version is opened and completed
+=== Redeploy with no changes: nothing is applied, so no version is created at all - the deployment's version tracks state changes, like serial
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle --sort --oneline
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "2"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "previous_version_id": "1"}}
-{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
 
-=== The plan records DEPLOYMENT_METADATA_SERVICE as its backend
+=== The plan records the record_deployment_history feature
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -96,8 +92,6 @@ Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
   "lineage": "[UUID]",
   "serial": 1,
   "deployment_id": "[NUMID]",
-  "next_version_id": "3",
-  "last_version_id": "2",
   "features": {
     "record_deployment_history": {}
   }

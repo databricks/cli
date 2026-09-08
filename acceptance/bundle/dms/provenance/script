@@ -8,7 +8,7 @@ trace $CLI bundle deploy
 add_repl.py "$(git rev-parse HEAD)" COMMIT
 trace print_requests.py --dms //versions
 
-title "The plan is a no-op and records DEPLOYMENT_METADATA_SERVICE as its backend"
+title "The plan is a no-op and records the record_deployment_history feature"
 dms_plan
 
 title "The service denormalizes them onto the deployment, so a reader gets the provenance of the latest version"

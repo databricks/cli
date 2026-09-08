@@ -5,7 +5,7 @@ trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --get
 trace MSYS_NO_PATHCONV=1 $CLI workspace get-status "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-no-resources-${UNIQUE_NAME}/default/state/resources.deployment.json" | jq '{object_type,path}'
 
-title "The plan records DEPLOYMENT_METADATA_SERVICE as its backend"
+title "The plan records the record_deployment_history feature"
 dms_plan
 
 title "The service lists no resources for the deployment"
@@ -19,7 +19,7 @@ title "Redeploy: the deployment is resolved from that node, so no second deploym
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --get
 
-title "The plan records DEPLOYMENT_METADATA_SERVICE as its backend"
+title "The plan records the record_deployment_history feature"
 dms_plan
 
 title "The service still lists no resources"

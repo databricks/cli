@@ -44,13 +44,13 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan -o json
 {
   "deployment_id": "[NUMID]",
-  "last_version_id": "1",
-  "next_version_id": "2"
+  "last_version_id": null,
+  "next_version_id": null
 }
 
 === Replay: re-deploying the same plan is rejected - it predates the recorded version
 >>> musterr [CLI] bundle deploy --plan tmp.plan.json
-Error: this plan predates the deployment's current version 1; run 'bundle plan' again
+Error: this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again
 
 
 === Only the first deploy recorded a version; the rejected replay created none

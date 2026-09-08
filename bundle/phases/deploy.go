@@ -347,17 +347,24 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// Create the version the plan was stamped with, staging an operation for every resource
 		// it touches. Doing it here rather than before the prompt means a declined deploy never
 		// claims a version number.
-		staged, err := stagedOperations(plan)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+		//
+		// A no-op plan creates no version: the deployment's version tracks state changes, the
+		// same way serial does, so a deploy that changes nothing leaves both untouched. With no
+		// version there is no operation buffer, so the deferred CompleteVersion is a no-op too.
+		counts := plan.CountActions()
+		if counts.Create+counts.Change+counts.Delete > 0 {
+			staged, err := stagedOperations(plan)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			deploymentID, versionID := deploymentAndNextVersion(b)
+			logDeploymentVersion(ctx, b, deploymentID, versionID)
 		}
-		if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		deploymentID, versionID := deploymentAndNextVersion(b)
-		logDeploymentVersion(ctx, b, deploymentID, versionID)
 	}
 
 	deployCore(ctx, b, plan, stateEngine)

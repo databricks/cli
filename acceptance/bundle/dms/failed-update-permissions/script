@@ -4,7 +4,7 @@ title "Deploy the job and its permissions"
 trace $CLI bundle deploy
 rm -f out.requests.txt
 
-title "The plan records DEPLOYMENT_METADATA_SERVICE backend and the job"
+title "The plan records the record_deployment_history feature and the job"
 dms_plan
 
 title "The service lists the job at version 1"
