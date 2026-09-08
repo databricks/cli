@@ -218,29 +218,34 @@ func collectPointerOnlyMarshalers(t reflect.Type, seen, found map[reflect.Type]b
 // The round-trip tests above cannot catch any of this: they build values with
 // reflect.New, so they only ever marshal a pointer.
 func TestMarshalerValueReceiver(t *testing.T) {
-	seen := make(map[reflect.Type]bool)
-	found := make(map[reflect.Type]bool)
-
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
-		for _, typeOf := range []func(*Adapter) reflect.Type{
-			(*Adapter).InputConfigType,
-			(*Adapter).StateType,
-			(*Adapter).RemoteType,
-		} {
-			collectPointerOnlyMarshalers(typeOf(adapter), seen, found)
-		}
-	}
 
-	names := make([]string, 0, len(found))
-	for t := range found {
-		names = append(names, t.String())
+		t.Run(resourceType, func(t *testing.T) {
+			// Each subtest walks with its own maps. Sharing them across subtests
+			// would attribute a type to whichever one reached it first, and
+			// iteration order over SupportedResources is random.
+			seen := make(map[reflect.Type]bool)
+			found := make(map[reflect.Type]bool)
+			for _, typeOf := range []func(*Adapter) reflect.Type{
+				(*Adapter).InputConfigType,
+				(*Adapter).StateType,
+				(*Adapter).RemoteType,
+			} {
+				collectPointerOnlyMarshalers(typeOf(adapter), seen, found)
+			}
+
+			names := make([]string, 0, len(found))
+			for typ := range found {
+				names = append(names, typ.String())
+			}
+			slices.Sort(names)
+			require.Empty(t, names,
+				"reachable from %s: these types declare MarshalJSON on a pointer receiver only; give each a value receiver so marshalling by value and by pointer agree:\n  %s",
+				resourceType, strings.Join(names, "\n  "))
+		})
 	}
-	slices.Sort(names)
-	require.Empty(t, names,
-		"these types declare MarshalJSON on a pointer receiver only; give each a value receiver so marshalling by value and by pointer agree:\n  %s",
-		strings.Join(names, "\n  "))
 }
 
 // fillNonZero recursively populates v with non-zero values so that every
