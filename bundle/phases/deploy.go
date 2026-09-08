@@ -244,7 +244,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// Only discard previously staged zips when building a fresh plan. When applying
 		// a pre-existing plan (plan != nil), its zip_path points at a file staged when
 		// the plan was produced, so leave the snapshots folder intact.
-		bundle.ApplyContext(ctx, b, snapshot.PlanUpload(plan == nil))
+		bundle.ApplyContext(ctx, b, snapshot.PlanUpload(snapshot.PlanUploadOptions{Clean: plan == nil}))
 		if logdiag.HasError(ctx) {
 			return
 		}

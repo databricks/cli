@@ -18,22 +18,26 @@ import (
 const fileLimitWarning = 1000
 
 type snapshotUpload struct {
-	// clean discards zips staged by a previous run before staging the current one so
-	// content-addressed "<hash>.zip" files don't accumulate. It must be false when
-	// applying a pre-existing plan (deploy --plan): that plan's zip_path points at a
-	// file staged when the plan was produced, which cleaning would delete out from
-	// under DoCreate.
+	// clean is true for a fresh plan or deploy: the mutator discards zips staged by a
+	// previous run (so content-addressed "<hash>.zip" files don't accumulate) and
+	// stages the current one. It is false when applying a pre-existing plan
+	// (deploy --plan): the plan already records the resource and the zip staged when it
+	// was produced, so the mutator reuses that staged file instead of rebuilding it.
 	clean bool
 }
 
+type PlanUploadOptions struct {
+	Clean bool
+}
+
 // PlanUpload returns a mutator that registers the immutable snapshot as an internal
-// resource. It builds the bundle zip, stages it under the bundle's local state
-// directory as "<hash>.zip", and records the path on the resource; the staged file
-// is uploaded when the resource is created on apply. Pass clean=true to first discard
-// zips staged by a previous run; pass false when applying a pre-existing plan so its
-// staged zip is preserved.
-func PlanUpload(clean bool) bundle.Mutator {
-	return &snapshotUpload{clean: clean}
+// resource. When Clean is true it discards zips staged by a previous run, builds the
+// bundle zip, stages it under the bundle's local state directory as "<hash>.zip", and
+// records the path on the resource; the staged file is uploaded when the resource is
+// created on apply. Pass Clean=false when applying a pre-existing plan: the plan
+// already carries the resource and its staged zip, so the mutator reuses them.
+func PlanUpload(opts PlanUploadOptions) bundle.Mutator {
+	return &snapshotUpload{clean: opts.Clean}
 }
 
 func (m *snapshotUpload) Name() string {
@@ -41,6 +45,13 @@ func (m *snapshotUpload) Name() string {
 }
 
 func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Applying a pre-existing plan: the plan already records the snapshot resource and
+	// the path of the zip staged when the plan was produced (InitForApply restores that
+	// state and DoCreate reads the staged file). Reuse it instead of rebuilding.
+	if !m.clean {
+		return nil
+	}
+
 	uploader, err := snapshot.NewSnapshotClient(b.WorkspaceClient(ctx))
 	if err != nil {
 		return diag.FromErr(err)
@@ -63,10 +74,10 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
 	}
 
-	if m.clean {
-		if err := os.RemoveAll(b.GetLocalStateDir(ctx, "snapshots")); err != nil {
-			return diag.FromErr(fmt.Errorf("failed to clean snapshot dir: %w", err))
-		}
+	// Discard zips staged by a previous run so content-addressed "<hash>.zip" files
+	// don't accumulate.
+	if err := os.RemoveAll(b.GetLocalStateDir(ctx, "snapshots")); err != nil {
+		return diag.FromErr(fmt.Errorf("failed to clean snapshot dir: %w", err))
 	}
 	dir, err := b.LocalStateDir(ctx, "snapshots")
 	if err != nil {

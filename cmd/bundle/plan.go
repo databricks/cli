@@ -65,7 +65,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		ctx := cmd.Context()
 
 		if b.IsImmutableFolder() {
-			bundle.ApplyContext(ctx, b, snapshot.PlanUpload(true))
+			bundle.ApplyContext(ctx, b, snapshot.PlanUpload(snapshot.PlanUploadOptions{Clean: true}))
 			if logdiag.HasError(ctx) {
 				return root.ErrAlreadyPrinted
 			}
