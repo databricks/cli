@@ -332,7 +332,7 @@ func TestRemoteLaunchArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := remoteLaunchArgs(tt.ide, "databricks-cpu-7f189c39", "me@example.com")
+			args := remoteLaunchArgs(getIDE(tt.ide), "databricks-cpu-7f189c39", "me@example.com")
 			assert.Equal(t, tt.want, args)
 		})
 	}

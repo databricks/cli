@@ -180,17 +180,17 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 // every connect a different authority. VS Code keys the "previously opened
 // folders" it lists under a host by URI, so a per-connect authority added a
 // duplicate row to the Remote Explorer on every `ssh connect --ide`.
-func remoteLaunchArgs(ideOption, connectionName, databricksUserName string) []string {
+func remoteLaunchArgs(ide ideDescriptor, connectionName, databricksUserName string) []string {
 	// Format: ssh-remote+<connection_name> /Workspace/Users/<databricks_user_name>/
 	remoteURI := "ssh-remote+" + connectionName
 	remotePath := fmt.Sprintf("/Workspace/Users/%s/", databricksUserName)
-	return append(append([]string{}, getIDE(ideOption).LaunchArgs...), "--remote", remoteURI, remotePath)
+	return append(append([]string{}, ide.LaunchArgs...), "--remote", remoteURI, remotePath)
 }
 
 // LaunchIDE launches the IDE with a remote SSH connection using special "ssh-remote" URI format.
 func LaunchIDE(ctx context.Context, ideOption, connectionName, databricksUserName string) error {
 	ide := getIDE(ideOption)
-	args := remoteLaunchArgs(ideOption, connectionName, databricksUserName)
+	args := remoteLaunchArgs(ide, connectionName, databricksUserName)
 
 	log.Infof(ctx, "Launching %s with args: %v", ideOption, args)
 
