@@ -480,7 +480,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 // it for every sshd it launches, which makes the scope the authority on the key. Reading it
 // here replaces whatever was recorded for this session name before, so a key left by an
 // earlier instance - or by the same name in another workspace, since a name is unique only
-// within one - can no longer fail an otherwise valid connection (DECO-27882).
+// within one - can no longer fail an otherwise valid connection.
 func pinServerHostKey(ctx context.Context, client *databricks.WorkspaceClient, sessionID, secretScopeName string, opts ClientOptions) (string, error) {
 	knownHostsPath := opts.UserKnownHostsFile
 	if knownHostsPath == "" {
