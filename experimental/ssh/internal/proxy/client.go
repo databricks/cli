@@ -101,9 +101,11 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 						// would throw away a working tunnel - the failure mode customers see as
 						// a drop every handover interval. The next tick tries again. Deferring
 						// the auth refresh is safe: the driver proxy authenticates a websocket
-						// at upgrade time, so a live connection is not re-checked.
+						// at upgrade time, so a live connection is not re-checked. Logged at
+						// debug because nothing changed for the user, and this would otherwise
+						// write into their interactive terminal.
 						if errors.Is(err, errHandoverDialFailed) {
-							log.Warnf(gCtx, "Could not open a replacement connection for the auth handover, staying on the current one: %v", err)
+							log.Debugf(gCtx, "Could not open a replacement connection for the auth handover, staying on the current one: %v", err)
 							continue
 						}
 						return errors.Join(ErrHandoverFailed, err)

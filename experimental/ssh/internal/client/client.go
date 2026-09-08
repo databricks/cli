@@ -919,14 +919,6 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 }
 
 // serverSupportsResume reports whether the running SSH server speaks the resume protocol.
-//
-// This must be established before the session starts, not discovered when a connection drops.
-// A server from an older CLI has no /capabilities endpoint and, worse, would answer a reattach
-// request by starting a fresh sshd: replaying into that fails the SSH stream with a corrupted MAC
-// instead of the clear error the user gets today. A 404 (or any other failure) therefore means
-// "assume not supported". Version skew is real here because the generated ssh config pins
-// --metadata into the ProxyCommand, which skips the version-scoped server lookup, so an upgraded
-// client can reach a server an older CLI started.
 func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, liteswap string) bool {
 	req, err := newDriverProxyRequest(ctx, client, clusterID, serverPort, "capabilities", liteswap)
 	if err != nil {
