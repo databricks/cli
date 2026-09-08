@@ -782,7 +782,8 @@ var testDeps = map[string]prepareWorkspace{
 	},
 
 	"postgres_snapshot_schedules": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
-		// Create parent project first
+		// Creating the project implicitly provisions the root "production"
+		// branch, the only branch a snapshot schedule may target.
 		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 			ProjectId: "test-project-for-snapshot-schedule",
 			Project: postgres.Project{
@@ -796,19 +797,9 @@ var testDeps = map[string]prepareWorkspace{
 			return nil, err
 		}
 
-		// Create parent branch
-		_, err = client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
-			Parent:   "projects/test-project-for-snapshot-schedule",
-			BranchId: "test-branch-for-snapshot-schedule",
-			Branch:   postgres.Branch{},
-		})
-		if err != nil {
-			return nil, err
-		}
-
 		return &resources.PostgresSnapshotSchedule{
 			PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
-				Branch: "projects/test-project-for-snapshot-schedule/branches/test-branch-for-snapshot-schedule",
+				Branch: "projects/test-project-for-snapshot-schedule/branches/production",
 			},
 		}, nil
 	},

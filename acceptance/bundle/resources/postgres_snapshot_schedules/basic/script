@@ -4,7 +4,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-schedule_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/snapshot-schedule"
+schedule_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/production/snapshot-schedule"
 
 title "Create with a snapshot schedule"
 envsubst < databricks.yml.tmpl > databricks.yml

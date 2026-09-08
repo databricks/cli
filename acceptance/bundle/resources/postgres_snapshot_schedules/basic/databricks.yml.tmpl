@@ -11,15 +11,11 @@ resources:
       display_name: "Test Project for Snapshot Schedules"
       pg_version: 16
 
-  postgres_branches:
-    main:
-      parent: ${resources.postgres_projects.my_project.id}
-      branch_id: main
-      no_expiry: true
-
   postgres_snapshot_schedules:
     main_schedule:
-      branch: ${resources.postgres_branches.main.id}
+      # Snapshots are only allowed on the project's root branch (the implicitly
+      # created "production" branch).
+      branch: ${resources.postgres_projects.my_project.id}/branches/production
       schedule:
         - daily_schedule:
             hour: 3

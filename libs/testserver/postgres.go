@@ -550,8 +550,15 @@ func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string)
 	defer s.LockUnlock()()
 
 	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
-	if _, exists := s.PostgresBranches[branchName]; !exists {
+	branch, exists := s.PostgresBranches[branchName]
+	if !exists {
 		return postgresNotFoundResponse("branch")
+	}
+
+	// Snapshots are only allowed on the root (default) branch; the backend
+	// rejects a schedule on any branch created off another.
+	if branch.Status == nil || !branch.Status.Default {
+		return postgresErrorResponse(400, "BAD_REQUEST", "not allowed to snapshot non-root branch")
 	}
 
 	var updateSchedule postgres.SnapshotSchedule
