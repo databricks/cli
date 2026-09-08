@@ -121,6 +121,10 @@ type DeploymentState struct {
 	mu      sync.Mutex
 	walFile *os.File
 
+	// openedForWrite records write mode explicitly. It used to be implied by walFile, but a recorded
+	// deployment writes no WAL, so the two are no longer the same question.
+	openedForWrite bool
+
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
 
@@ -332,23 +336,23 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		DependsOn: dependsOn,
 	}
 
-	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
-	if err == nil {
+	// A recorded deployment persists through the service, everything else through the WAL.
+	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
 		db.stateIDs[key] = newID
-	}
-	if err != nil {
-		return err
+		if buf := db.operationBuffer; buf != nil {
+			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
+			if err != nil {
+				return err
+			}
+			buf.RecordOperation(ctx, key, false, newID, recorded)
+		}
+		return nil
 	}
 
-	// Record operation in DMS.
-	buf := db.operationBuffer
-	if db.StorageBackend() == StorageBackendDeploymentMetadataService && buf != nil {
-		recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
-		if err != nil {
-			return err
-		}
-		buf.RecordOperation(ctx, key, false, newID, recorded)
+	if err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry}); err != nil {
+		return err
 	}
+	db.stateIDs[key] = newID
 	return nil
 }
 
@@ -365,18 +369,18 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	}
 	// Read before the delete: DMS needs the id to say which resource went away.
 	deletedID := db.stateIDs[key]
-	err := appendJSONLine(db.walFile, WALEntry{Key: key})
-	if err == nil {
+	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
 		delete(db.stateIDs, key)
-	}
-	if err != nil {
-		return err
+		if buf := db.operationBuffer; buf != nil {
+			buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
+		}
+		return nil
 	}
 
-	buf := db.operationBuffer
-	if db.StorageBackend() == StorageBackendDeploymentMetadataService && buf != nil {
-		buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
+	if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
+		return err
 	}
+	delete(db.stateIDs, key)
 	return nil
 }
 
@@ -504,6 +508,7 @@ func (db *DeploymentState) reset() {
 	db.Path = ""
 	db.Data = Database{}
 	db.stateIDs = nil
+	db.openedForWrite = false
 }
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment DMSDeployment) error {
@@ -632,6 +637,19 @@ To record this bundle's history, start it over as a new deployment:
 	}
 
 	if withWrite {
+		db.openedForWrite = true
+
+		// A recorded deployment needs no WAL: every state write goes to the service as it happens,
+		// and Open recovers from there rather than replaying a log. Stamp the header fields the
+		// replay would have carried over, then skip the file. The serial is left alone: under
+		// recording it comes from the deployment's last_version_id.
+		if db.storageBackend == StorageBackendDeploymentMetadataService {
+			db.Data.Lineage = db.GetOrInitLineage()
+			db.Data.StateVersion = currentStateVersion
+			db.Data.CLIVersion = build.GetInfo().Version
+			return nil
+		}
+
 		if err := os.MkdirAll(filepath.Dir(walPath), 0o755); err != nil {
 			return fmt.Errorf("failed to create state directory: %w", err)
 		}
@@ -812,6 +830,12 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		}
 		db.walFile = nil
 		err = db.replayWAL(ctx)
+	} else if db.openedForWrite && db.storageBackend == StorageBackendDeploymentMetadataService {
+		// replayWAL is what normally persists the file. Without one, write the tombstone here so
+		// the header (lineage, state version, CLI version) still lands on disk - even when no
+		// operations were recorded, since the deployment and any version this run created exist
+		// either way.
+		err = db.unlockedSave()
 	}
 
 	// Wait until all operations are recorded in the service.
@@ -837,8 +861,17 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	if db.Path == "" {
 		return errors.New("internal error: DeploymentState must be opened first")
 	}
-	if db.walFile != nil {
+	if db.openedForWrite {
 		return errors.New("internal error: DeploymentState is already open for write")
+	}
+	db.openedForWrite = true
+
+	// As in Open: a recorded deployment writes no WAL, so stamp the header and skip the file.
+	if db.storageBackend == StorageBackendDeploymentMetadataService {
+		db.Data.Lineage = db.GetOrInitLineage()
+		db.Data.StateVersion = currentStateVersion
+		db.Data.CLIVersion = build.GetInfo().Version
+		return nil
 	}
 
 	walPath := db.Path + walSuffix
@@ -868,14 +901,14 @@ func (db *DeploymentState) AssertOpenedForReadOrWrite() {
 
 func (db *DeploymentState) AssertOpenedForRead() {
 	db.AssertOpenedForReadOrWrite()
-	if db.walFile != nil {
+	if db.openedForWrite {
 		panic("internal error: DeploymentState must be opened in read mode")
 	}
 }
 
 func (db *DeploymentState) AssertOpenedForWrite() {
 	db.AssertOpenedForReadOrWrite()
-	if db.walFile == nil {
+	if !db.openedForWrite {
 		panic("internal error: DeploymentState must be opened in write mode")
 	}
 }

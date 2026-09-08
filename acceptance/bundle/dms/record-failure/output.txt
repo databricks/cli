@@ -15,6 +15,7 @@ Files: 6 uploaded, 0 deleted
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
   "serial": 1,
   "features": {
     "deployment_history": {}
@@ -85,6 +86,15 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 []
 
 >>> print_state.py --no-dms
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "features": {
+  "deployment_history": {}
+ },
+ "state": {}
+}
 
 === Redeploying from DMS state alone still creates the failed resource: it was never applied, so it must not be skipped as unchanged
 >>> [CLI] bundle plan

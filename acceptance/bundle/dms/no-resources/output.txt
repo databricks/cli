@@ -31,6 +31,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
   "features": {
     "deployment_history": {}
   }
@@ -45,6 +46,15 @@ Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The raw recorded state the service holds for this deployment
 >>> print_state.py --no-dms
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "features": {
+  "deployment_history": {}
+ },
+ "state": {}
+}
 
 === Redeploy: the deployment is resolved from that node, so no second deployment is created
 >>> [CLI] bundle deploy
@@ -87,6 +97,7 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
   "features": {
     "deployment_history": {}
   }
@@ -101,3 +112,12 @@ Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The raw recorded state after redeploy
 >>> print_state.py --no-dms
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "features": {
+  "deployment_history": {}
+ },
+ "state": {}
+}
