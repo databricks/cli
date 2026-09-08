@@ -88,15 +88,14 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	dmsClient := db.StateDB.DmsClient()
 	metadata := deploymentMetadata(b)
 	deploymentID, _ := deploymentAndNextVersion(b)
-	switch mask := metadata.StaleFields(current); {
-	case deploymentID == "":
+	if deploymentID == "" {
 		id, err := dmsClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
 			return
 		}
 		deploymentID = id
-	case mask != "":
+	} else if mask := metadata.StaleFields(current); mask != "" {
 		if err := dmsClient.UpdateDeployment(ctx, deploymentID, metadata, mask); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))
 			return
