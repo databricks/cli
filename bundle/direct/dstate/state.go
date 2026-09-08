@@ -586,6 +586,7 @@ To record this bundle's history, start it over as a new deployment:
 			return err
 		}
 		db.dmsClient = client
+		db.DeploymentID = dmsDeploymentID
 
 		if dmsDeploymentID != "" {
 			resources, err := db.dmsClient.ListResources(ctx, dmsDeploymentID)
