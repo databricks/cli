@@ -303,23 +303,24 @@ func (c *countWriter) Write(p []byte) (int, error) {
 	return n, err
 }
 
-// newGzFile creates outputTarball and returns a BestSpeed gzip writer over it plus an
-// idempotent close that flushes the gzip stream and the file. Compression level is
-// BestSpeed because the uploaded size does not matter for this workflow — only latency.
+// newGzFile creates outputTarball and returns a parallel gzip writer over it plus an
+// idempotent close that flushes the gzip stream and the file.
 //
 // gzip is parallel (klauspost/pgzip): compressing the whole tar is the dominant
 // packaging cost on a large tree and is paid on every run — even a no-change cache hit
-// re-gzips the warm tar — so it is spread across cores (measured ~18x faster than
-// compress/gzip on a 470 MiB tar). pgzip buffers its own blocks, so the tar writer's
-// small writes parallelize fine without extra buffering. Its output is an ordinary gzip
-// stream any gunzip/tar reads, and it falls back to serial below one block — fine, since
-// the cache only engages above snapshotCacheMinBytes.
+// re-gzips the warm tar — so it is spread across cores (~18x faster than compress/gzip
+// on a 470 MiB tar). The level is DefaultCompression, not BestSpeed: the tarball is
+// re-uploaded every run so its size matters, and with parallel compression a normal
+// level is nearly free (a few hundred ms for ~15-18% fewer bytes). pgzip buffers its
+// own blocks, so the tar writer's small writes parallelize fine without extra buffering;
+// its output is an ordinary gzip stream any gunzip/tar reads, and it falls back to serial
+// below one block — fine, since the cache only engages above snapshotCacheMinBytes.
 func newGzFile(outputTarball string) (io.Writer, func() error, error) {
 	f, err := os.Create(outputTarball)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create tarball: %w", err)
 	}
-	gz, err := pgzip.NewWriterLevel(f, pgzip.BestSpeed)
+	gz, err := pgzip.NewWriterLevel(f, pgzip.DefaultCompression)
 	if err != nil {
 		f.Close()
 		return nil, nil, err
