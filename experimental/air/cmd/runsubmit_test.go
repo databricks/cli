@@ -391,14 +391,26 @@ func testSidecarStore(t *testing.T, w *databricks.WorkspaceClient) (filer.Filer,
 	return f, base
 }
 
-// A plain-tar (working-tree) snapshot is uploaded under a unique, timestamped name so
-// two concurrent submissions of the same root_path don't clobber each other's upload.
-func TestSubmitWorkloadPlainTarNameIsUnique(t *testing.T) {
+// A plain-tar (working-tree) snapshot is content-addressed by its file fingerprint
+// (path+size+mtime): submitting the same unchanged tree twice reuses the already-uploaded
+// tarball and skips the second upload, resolving to the identical remote path.
+func TestSubmitWorkloadPlainTarContentAddressed(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	// Track snapshot uploads, preserving fake-workspace persistence so the second
+	// submit's existence Stat sees the first upload. Dedupe by path: the DABs uploader
+	// mkdirs-and-retries the import, so one logical upload can hit this route twice.
+	uploaded := map[string]bool{}
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		p := req.Vars["path"]
+		if strings.Contains(p, "/.air/repo_snapshots/") {
+			uploaded[p] = true
+		}
+		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -420,14 +432,21 @@ code_source:
 	loaded, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	// The uploaded name carries a discriminator (timestamp), not the bare dir name.
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
-	base := path.Base(snap.CodeSourcePath)
-	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be unique, not the bare dir name")
-	assert.Regexp(t, `^src_\d{8}_\d{6}\.tar\.gz$`, base)
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
+	require.NoError(t, err)
+
+	// Content-addressed name: not the bare dir, but a 16-hex-char fingerprint.
+	base := path.Base(first.CodeSourcePath)
+	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be content-addressed, not the bare dir name")
+	assert.Regexp(t, `^src_[0-9a-f]{16}\.tar\.gz$`, base)
+
+	// Same unchanged tree → identical remote path, uploaded once (second submit is a hit).
+	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
+	assert.Len(t, uploaded, 1, "unchanged plain_tar should skip the second upload")
 }
 
 // A git_archive snapshot is content-addressed by (commit, include_paths): submitting

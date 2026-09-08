@@ -34,12 +34,12 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 	return nil
 }
 
-// createPlainTarball writes a gzipped tar of repoPath's working tree to
+// createPlainTarball writes a gzipped tar of the given working-tree files to
 // outputTarball via `tar`. The archive preserves repoPath's directory name as the
-// top-level entry. When includePaths is set, only those paths (nested under the
-// directory name) are archived. .git and macOS AppleDouble files are always
-// excluded; a .gitignore at repoPath is honored.
-func createPlainTarball(ctx context.Context, repoPath, outputTarball string, includePaths []string, isGitRepo bool) error {
+// top-level entry. files come pre-resolved from snapshotFiles (.gitignore honored, .git
+// and macOS AppleDouble excluded), so the caller can reuse the same listing to
+// content-address the upload.
+func createPlainTarball(ctx context.Context, repoPath, outputTarball string, files []snapshotFile) error {
 	dirName := filepath.Base(repoPath)
 	// Absolute so it resolves correctly regardless of tar's working dir (set below).
 	parent, err := filepath.Abs(filepath.Dir(repoPath))
@@ -58,18 +58,13 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 	}
 	outName := filepath.Base(outputTarball)
 
-	files, err := snapshotFiles(ctx, repoPath, includePaths, isGitRepo)
-	if err != nil {
-		return err
-	}
 	args := []string{"-czf", outName, "-C", parent, "--null", "--no-recursion", "-T", "-"}
-
 	cmd := exec.CommandContext(ctx, "tar", args...)
 	// Run tar in the output directory so the bare -f basename lands there.
 	cmd.Dir = outDirAbs
 	var stdin bytes.Buffer
-	for _, file := range files {
-		stdin.WriteString(filepath.ToSlash(filepath.Join(dirName, file)))
+	for _, f := range files {
+		stdin.WriteString(filepath.ToSlash(filepath.Join(dirName, f.rel)))
 		stdin.WriteByte(0)
 	}
 	cmd.Stdin = &stdin
@@ -84,7 +79,15 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 	return nil
 }
 
-func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) ([]string, error) {
+// snapshotFile is a file selected for the snapshot: its repo-relative path (native
+// separators) plus the size and mtime used to content-address the plain_tar upload.
+type snapshotFile struct {
+	rel     string
+	size    int64
+	modTime int64 // Unix nanoseconds
+}
+
+func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) ([]snapshotFile, error) {
 	args := []string{"-C", repoPath, "ls-files", "-z", "--cached", "--others", "--exclude-standard"}
 	if !isGitRepo {
 		gitDir, err := os.MkdirTemp("", "air-snapshot-git-")
@@ -108,7 +111,7 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		return nil, fmt.Errorf("failed to evaluate git ignore rules: %w", err)
 	}
 
-	var files []string
+	var files []snapshotFile
 	for raw := range bytes.SplitSeq(output, []byte{0}) {
 		if len(raw) == 0 {
 			continue
@@ -118,14 +121,14 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		if name == ".git" || strings.HasPrefix(name, ".git/") || strings.HasPrefix(base, "._") {
 			continue
 		}
-		_, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
+		info, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect snapshot path %q: %w", name, err)
 		}
-		files = append(files, filepath.FromSlash(name))
+		files = append(files, snapshotFile{rel: filepath.FromSlash(name), size: info.Size(), modTime: info.ModTime().UnixNano()})
 	}
 	return files, nil
 }

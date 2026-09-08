@@ -7,12 +7,37 @@ package aircmd
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 )
 
 // snapshotPackagingVersion is bumped when packaging logic changes in a way that invalidates existing caches
 const snapshotPackagingVersion = "v1"
+
+// plainTarKeyVersion namespaces the plain_tar working-tree key (so it can never collide
+// with a git_archive key) and lets us invalidate it if the fingerprint scheme changes.
+const plainTarKeyVersion = "plaintar-v1"
+
+// computePlainTarKey returns a content-addressed key for a working-tree snapshot: the
+// SHA-256 over every file's path, size and mtime (sorted for stability). An unchanged
+// tree yields the same key, so an already-uploaded tarball can be reused instead of
+// re-packaged and re-uploaded. The fingerprint is size+mtime, not content — the same
+// trade-off DABs file-sync makes — so an edit preserving both size and mtime is not seen.
+func computePlainTarKey(files []snapshotFile) string {
+	sorted := slices.Clone(files)
+	slices.SortFunc(sorted, func(a, b snapshotFile) int {
+		return strings.Compare(a.rel, b.rel)
+	})
+
+	h := sha256.New()
+	for _, f := range sorted {
+		fmt.Fprintf(h, "%s\x00%d\x00%d\n", filepath.ToSlash(f.rel), f.size, f.modTime)
+	}
+	fmt.Fprint(h, plainTarKeyVersion)
+	return hex.EncodeToString(h.Sum(nil))
+}
 
 // computeSnapshotCacheKey returns a stable cache key for a snapshot tarball: the
 // SHA-256 digest of (commitSHA, normalized includePaths, snapshotPackagingVersion).
