@@ -10,13 +10,13 @@
    * DB Connect is only forward-compatible: a client connects to compute of the
    * same version and higher. We keep this conservative (low) so a freshly
    * initialized project can reach the widest range of DBR versions; a high
-   * version would rule out customers on older DBR. We use 16.4 rather than an
-   * older release because DBR 15 is no longer supported and used Python 3.11,
-   * whereas 16.4 uses Python 3.12 (matching the serverless environment and the
-   * template's Python pin). Customers can move to a newer version themselves
-   * after initializing the template.
+   * version would rule out customers on older DBR. Customers can move to a
+   * newer version themselves after initializing the template. This pin must
+   * stay compatible with python_version_spec and serverless_environment_version
+   * below.
    *
-   * See https://docs.databricks.com/dev-tools/databricks-connect/python/index.html#requirements
+   * See .agents/rules/template-versions.md before changing this, and
+   * https://docs.databricks.com/dev-tools/databricks-connect/python/index.html#requirements
    * for DB Connect release notes and version compatibility.
    */}}
 {{define "conservative_db_connect_version_spec" -}}
@@ -24,7 +24,8 @@
 {{- end}}
 
 {{/* The serverless environment version to use.
-   * See https://docs.databricks.com/release-notes/runtime/index.html for available versions.
+   * See https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/
+   * for available versions.
    */}}
 {{define "serverless_environment_version" -}}
   5
