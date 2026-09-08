@@ -42,7 +42,7 @@ func (c *PostgresBranchConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresBranchConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresBranchConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
