@@ -1,8 +1,11 @@
+# Create the profile and a valid profile-bound token that can be refreshed.
+setup_test_profile
 setup_test_token_cache
 
-# The refresh endpoint rejects the otherwise valid cached grant.
+# Make the refresh endpoint reject the otherwise valid cached grant.
 DATABRICKS_HOST="$DATABRICKS_HOST_ORIG" fault.py \
     --body '{"error":"invalid_request","error_description":"Refresh token is invalid"}' \
     "POST /oidc/v1/token" 401 0 2
 
+# The CLI must report that the user needs to log in again.
 musterr $CLI auth token --profile test-profile --force-refresh

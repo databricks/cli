@@ -1,4 +1,5 @@
 setup_test_profile() {
+    # Preserve the test server host before clearing ambient profile selection.
     export DATABRICKS_HOST_ORIG="$DATABRICKS_HOST"
 
     sethome "./home"
@@ -6,6 +7,7 @@ setup_test_profile() {
     unset DATABRICKS_TOKEN
     unset DATABRICKS_CONFIG_PROFILE
 
+    # Write the minimal OAuth profile used by token-cache tests.
     cat > "./home/.databrickscfg" <<ENDCFG
 [test-profile]
 host = $DATABRICKS_HOST_ORIG
@@ -14,12 +16,13 @@ ENDCFG
 }
 
 setup_test_token_cache() {
-    setup_test_profile
     export BROWSER="browser.py"
     export DATABRICKS_AUTH_STORAGE=plaintext
 
-    # Let login create the fingerprint, then change only the token fields used by these tests.
+    # Use login so the cached token contains a real binding to the saved profile.
     $CLI auth login --host "$DATABRICKS_HOST_ORIG" --profile test-profile >/dev/null 2>&1
+
+    # Change only the token fields needed to control refresh behavior in each test.
     jq '.tokens["test-profile"] += {
         "access_token": "cached-access-token",
         "refresh_token": "test-refresh-token",

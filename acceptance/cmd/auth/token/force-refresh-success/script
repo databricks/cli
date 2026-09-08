@@ -1,3 +1,5 @@
+# Create the profile and a valid profile-bound token that can be refreshed.
+setup_test_profile
 setup_test_token_cache
 
 # The cached token is "cached-access-token". The mock OIDC server returns
