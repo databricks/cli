@@ -19,6 +19,8 @@ const (
 	ReasonSkillNotFound = "skill-not-found"
 	// ReasonVersionIncompatible: the skill requires a newer CLI than the one running.
 	ReasonVersionIncompatible = "version-incompatible"
+	// ReasonExperimentalSkill: the named skill is experimental and --experimental was not set.
+	ReasonExperimentalSkill = "experimental-skill"
 )
 
 func (e *SkillError) Error() string {

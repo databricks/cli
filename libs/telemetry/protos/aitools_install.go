@@ -42,6 +42,7 @@ const (
 	AitoolsErrorCategoryCLINotOnPath        AitoolsErrorCategory = "CLI_NOT_ON_PATH"
 	AitoolsErrorCategoryPluginInstallFailed AitoolsErrorCategory = "PLUGIN_INSTALL_FAILED"
 	AitoolsErrorCategoryUnsupportedScope    AitoolsErrorCategory = "UNSUPPORTED_SCOPE"
+	AitoolsErrorCategoryExperimentalSkill   AitoolsErrorCategory = "EXPERIMENTAL_SKILL"
 	AitoolsErrorCategoryUncategorized       AitoolsErrorCategory = "UNCATEGORIZED"
 )
 

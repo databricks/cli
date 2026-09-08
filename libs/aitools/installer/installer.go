@@ -484,7 +484,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 	for name, meta := range candidates {
 		if meta.IsExperimental() && !opts.IncludeExperimental {
 			if isSpecific {
-				return nil, fmt.Errorf("skill %q is experimental; use --experimental to install", name)
+				return nil, &SkillError{Skill: name, Reason: ReasonExperimentalSkill, Detail: "is experimental; use --experimental to install"}
 			}
 			log.Debugf(ctx, "Skipping experimental skill %s", name)
 			continue

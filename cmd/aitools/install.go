@@ -58,12 +58,12 @@ func (d delivery) String() string {
 
 // agentPlanItem is the resolved plan for one agent: what we'll do and why.
 type agentPlanItem struct {
-	agent     *agents.Agent
-	delivery  delivery
-	scope     string                      // agent-native plugin scope (deliveryPlugin only)
-	reason    string                      // why the agent is skipped (deliverySkip only)
-	skipError protos.AitoolsErrorCategory // error category for the skip (deliverySkip only)
-	explicit  bool                        // named via --agents (blocking it is an error)
+	agent             *agents.Agent
+	delivery          delivery
+	scope             string                      // agent-native plugin scope (deliveryPlugin only)
+	reason            string                      // why the agent is skipped (deliverySkip only)
+	skipErrorCategory protos.AitoolsErrorCategory // error category for the skip (deliverySkip only)
+	explicit          bool                        // named via --agents (blocking it is an error)
 }
 
 // agentChoice is one row in the interactive agent picker.
@@ -218,7 +218,7 @@ Supported agents: ` + strings.Join(agents.SupportedNames(), ", "),
 			}()
 
 			outcomes, runErr = executePlan(ctx, src, plan, opts, jsonMode)
-      
+
 			if jsonMode {
 				if jerr := renderJSON(cmd.OutOrStdout(), buildInstallOutput(opts.Scope, outcomes, runErr)); jerr != nil {
 					// Rendering failed, so the JSON the caller parses is broken.
@@ -415,7 +415,7 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 		if scope == installer.ScopeProject && !a.SupportsProjectScope {
 			item.delivery = deliverySkip
 			item.reason = "does not support project-scoped skills"
-			item.skipError = protos.AitoolsErrorCategoryUnsupportedScope
+			item.skipErrorCategory = protos.AitoolsErrorCategoryUnsupportedScope
 		} else {
 			item.delivery = deliverySkills
 		}
@@ -424,7 +424,7 @@ func planItemFor(a *agents.Agent, scope string, skillsOnly, explicit bool) agent
 		if !ok {
 			item.delivery = deliverySkip
 			item.reason = reason
-			item.skipError = protos.AitoolsErrorCategoryUnsupportedScope
+			item.skipErrorCategory = protos.AitoolsErrorCategoryUnsupportedScope
 		} else {
 			item.delivery = deliveryPlugin
 			item.scope = nativeScope
@@ -579,7 +579,7 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 			agent:         it.agent,
 			delivery:      deliverySkip,
 			status:        outcomeSkipped,
-			errorCategory: it.skipError,
+			errorCategory: it.skipErrorCategory,
 			message:       it.reason,
 		})
 		if it.explicit {
@@ -630,7 +630,10 @@ func buildInstallOutput(scope string, outcomes []agentOutcome, runErr error) ins
 			Status:   string(o.status),
 			Message:  o.message,
 		}
-		if o.errorCategory != "" {
+		// Only non-successful outcomes carry a category, keyed on status to match
+		// agentResultsField in telemetry.go so the JSON and telemetry views of the
+		// same slice never disagree.
+		if o.status != outcomeInstalled {
 			entry.ErrorCategory = string(o.errorCategory)
 		}
 		out.Agents = append(out.Agents, entry)

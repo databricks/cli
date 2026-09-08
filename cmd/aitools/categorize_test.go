@@ -32,8 +32,8 @@ func TestClassifyInstallError(t *testing.T) {
 			want: protos.AitoolsErrorCategoryPluginInstallFailed,
 		},
 		{
-			name: "blocked no plugin is uncategorized",
-			err:  &installer.BlockedError{Agent: "codex", Reason: installer.ReasonNoPlugin},
+			name: "blocked error with unknown reason is uncategorized",
+			err:  &installer.BlockedError{Agent: "codex", Reason: "some-future-reason"},
 			want: protos.AitoolsErrorCategoryUncategorized,
 		},
 		{
@@ -45,6 +45,11 @@ func TestClassifyInstallError(t *testing.T) {
 			name: "version incompatible",
 			err:  &installer.SkillError{Skill: "databricks", Reason: installer.ReasonVersionIncompatible, Detail: "requires CLI version 0.5 (running 0.4)"},
 			want: protos.AitoolsErrorCategoryVersionIncompatible,
+		},
+		{
+			name: "experimental skill",
+			err:  &installer.SkillError{Skill: "test-exp", Reason: installer.ReasonExperimentalSkill, Detail: "is experimental; use --experimental to install"},
+			want: protos.AitoolsErrorCategoryExperimentalSkill,
 		},
 		{
 			name: "skill error with unknown reason is uncategorized",

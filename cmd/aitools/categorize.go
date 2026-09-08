@@ -27,6 +27,8 @@ func skillErrorCategory(e *installer.SkillError) protos.AitoolsErrorCategory {
 		return protos.AitoolsErrorCategorySkillNotFound
 	case installer.ReasonVersionIncompatible:
 		return protos.AitoolsErrorCategoryVersionIncompatible
+	case installer.ReasonExperimentalSkill:
+		return protos.AitoolsErrorCategoryExperimentalSkill
 	default:
 		return protos.AitoolsErrorCategoryUncategorized
 	}
