@@ -28,7 +28,13 @@ def generate_enum(namespace: str, schema_name: str, schema: Schema) -> Generated
     assert package
 
     for value in schema.enum:
-        values[_camel_to_upper_snake(value)] = value
+        name = _camel_to_upper_snake(value)
+        # Distinct values must not collapse to the same member (e.g. "a-b" and "a_b").
+        if name in values:
+            raise ValueError(
+                f"{schema_name}: enum values {values[name]!r} and {value!r} both map to member {name!r}"
+            )
+        values[name] = value
 
     return GeneratedEnum(
         class_name=class_name,
