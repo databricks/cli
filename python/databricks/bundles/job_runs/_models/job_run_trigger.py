@@ -20,6 +20,11 @@ class JobRunTrigger:
     If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
     """
 
+    on_file_change: VariableOrOptional[str] = None
+    """
+    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported. Incompatible with lifecycle.prevent_destroy.
+    """
+
     @classmethod
     def from_dict(cls, value: "JobRunTriggerDict") -> "Self":
         return _transform(cls, value)
@@ -34,6 +39,11 @@ class JobRunTriggerDict(TypedDict, total=False):
     on_bundle_deploy: VariableOrOptional[bool]
     """
     If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
+    """
+
+    on_file_change: VariableOrOptional[str]
+    """
+    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported. Incompatible with lifecycle.prevent_destroy.
     """
 
 
