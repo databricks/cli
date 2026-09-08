@@ -482,12 +482,12 @@ func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, 
 	// state. The service is authoritative here: a recorded bundle's local state is a tombstone,
 	// so its serial alone does not catch a deploy from another machine.
 	if isDMSPlan {
-		// The plan is stale if the deployment has recorded a version past the serial it was built
-		// against. Covers a plan from before the first deploy too: its serial is 0.
+		// The plan is stale if the deployment has recorded a version past the one the plan was
+		// built against. Covers a plan from before the first deploy too: its version is 0.
 		if dmsDeployment != nil && dmsDeployment.LastVersionId != "" {
 			last, cerr := strconv.Atoi(dmsDeployment.LastVersionId)
 			if cerr == nil && plan.Serial < last {
-				return fmt.Errorf("this plan was built against serial %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, last)
+				return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, last)
 			}
 		}
 		if plan.DeploymentId != dmsDeploymentID {

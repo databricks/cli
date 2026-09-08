@@ -13,7 +13,7 @@ trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${d
 title "The raw recorded state the service holds for this deployment"
 trace print_state.py --no-dms
 
-title "A saved plan carries the deployment id and the serial it was built against"
+title "A saved plan carries the deployment id and the version it was built against"
 trace $CLI bundle plan -o json | jq '{deployment_id, serial}'
 
 title "Replay: re-deploying the same plan is rejected - it predates the recorded version"
