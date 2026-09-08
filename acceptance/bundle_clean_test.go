@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -17,25 +18,42 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/stretchr/testify/require"
 )
 
-// setupBundleCleanup arranges for every bundle deployed by this run to be
-// destroyed once the suite finishes. The caller invokes it only on cloud: all
-// cloud tests share one real workspace, whereas local tests each get a
-// throwaway in-memory fake workspace with nothing to clean up.
+// TestCleanupLeakedBundles destroys every bundle a cloud run deployed. It is the
+// run's cleanup step: unlike a t.Cleanup — which go test skips when the suite
+// panics on -timeout or the CI job is killed at its time limit — this runs as a
+// separate, always()-invoked job after every matrix leg finishes, so leaked
+// deployments are reclaimed even when a test job times out.
 //
-// prefix is the leg-specific "ci<runID>x<legSuffix>" that ciUniqueName stamps
-// into every $UNIQUE_NAME, so the cleanup sweeps exactly the deployments this
-// leg created and nothing else. That is what makes destroying against the shared
-// workspace safe even while sibling matrix legs (which share the run id and may
-// share the workspace) deploy concurrently.
-func setupBundleCleanup(t *testing.T, execPath, prefix string) {
-	// t.Context() is canceled once the test finishes, before cleanups run, so
-	// derive a context that survives cancellation for the cleanup's API calls.
-	ctx := context.WithoutCancel(t.Context())
-	t.Cleanup(func() {
-		cleanBundles(ctx, t, execPath, prefix)
-	})
+// It sweeps the run-wide "ci<GITHUB_RUN_ID>x" prefix that ciUniqueName stamps into
+// every $UNIQUE_NAME, so it matches all legs of the run. That is safe only because
+// it runs once every leg has finished and no bundle is still live. It is gated
+// behind CLEANUP_LEAKED_BUNDLES so it never runs inline in a normal suite, where a
+// run-wide sweep would destroy sibling legs' live deployments.
+func TestCleanupLeakedBundles(t *testing.T) {
+	if os.Getenv("CLEANUP_LEAKED_BUNDLES") == "" {
+		t.Skip("set CLEANUP_LEAKED_BUNDLES=1 to run the post-run bundle sweep")
+	}
+	if os.Getenv("CLOUD_ENV") == "" {
+		t.Skip("bundle cleanup only applies to cloud runs")
+	}
+
+	prefix := ciRunPrefix()
+	require.NotEmpty(t, prefix, "GITHUB_RUN_ID must be a valid run id so the sweep knows which bundles to destroy")
+
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	// Reuse a prebuilt CLI when given (-clipath), else build from the current source.
+	execPath := CLIPath
+	if execPath == "" {
+		buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
+		execPath = BuildCLI(t, buildDir, "", runtime.GOOS, runtime.GOARCH)
+	}
+
+	cleanBundles(t.Context(), t, execPath, prefix)
 }
 
 // cleanBundles finds every bundle this run deployed under the current user's
@@ -113,12 +131,10 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 	slices.Sort(failed)
 	t.Logf("%s bundle cleanup: destroyed %d/%d deployment(s) in %s", time.Now().Format(time.RFC3339), len(roots)-len(failed), len(roots), time.Since(start))
 
-	// Do not fail the test on a cleanup failure: this runs in a t.Cleanup on the
-	// root TestAccept, so failing here marks the root test failed with no failed
-	// subtest, which makes gotestsum --rerun-fails (used by the integration task)
-	// rerun the entire cloud suite. Cleanup is best-effort housekeeping and the
-	// product tests already passed, so log loudly instead; leaked deployments are
-	// reclaimed by the periodic prefix sweep (sweep_test_resources.py).
+	// Do not fail on a cleanup failure: this is best-effort housekeeping that runs
+	// after the product tests, so a transient destroy failure should not turn the
+	// cleanup step red and mask the real test signal. Log loudly instead; leaked
+	// deployments are reclaimed by the periodic prefix sweep (sweep_test_resources.py).
 	if len(failed) > 0 {
 		t.Logf("WARNING: bundle cleanup failed to destroy %d deployment(s), leaked until swept: %s", len(failed), strings.Join(failed, ", "))
 	}
