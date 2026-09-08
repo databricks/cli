@@ -151,6 +151,19 @@ def get_recorded_state(target):
     return state
 
 
+def get_last_version_id(target):
+    """The version the service has recorded for this deployment, or None when nothing is recorded."""
+    state_path = get_remote_state_path(target)
+    if not state_path:
+        return None
+    node = run_json([CLI, "workspace", "get-status", f"{state_path}/{DEPLOYMENT_NODE_NAME}"], allow_failure=True)
+    if not node or not node.get("object_id"):
+        return None
+    # Tolerate a missing deployment: a destroy deletes the record while the state file remains.
+    deployment = run_json([CLI, "api", "get", f"/api/2.0/bundle/deployments/{node['object_id']}"], allow_failure=True)
+    return (deployment or {}).get("last_version_id")
+
+
 def print_recorded_state(filename, target):
     """Print the state file with its resources filled in from the deployment metadata service.
 
@@ -159,7 +172,26 @@ def print_recorded_state(filename, target):
     """
     data = json.loads(open(filename).read())
     data["state"] = get_recorded_state(target)
-    print(json.dumps(data, indent=1))
+
+    # The service owns the version and the file persists no serial, so take it from the deployment.
+    # Rebuilt in header order, since the file has no serial key to overwrite in place.
+    last_version_id = get_last_version_id(target)
+    serial = int(last_version_id) if last_version_id else 0
+
+    # Recording itself is not what these tests assert, so drop the feature that marks it.
+    features = {k: v for k, v in (data.get("features") or {}).items() if k != "deployment_history"}
+
+    rebuilt = {}
+    for key in ("state_version", "cli_version", "lineage"):
+        if key in data:
+            rebuilt[key] = data[key]
+    rebuilt["serial"] = serial
+    if features:
+        rebuilt["features"] = features
+    for key, value in data.items():
+        if key not in rebuilt and key != "features":
+            rebuilt[key] = value
+    print(json.dumps(rebuilt, indent=1))
 
 
 def main():
