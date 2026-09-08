@@ -147,25 +147,54 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 	}
 
 	// First pass: direct fields
+	if sf, ok := findDirectFieldByKeyType(t, key); ok {
+		return sf, t, true
+	}
+
+	// Second pass: search embedded anonymous structs breadth-first, mirroring findStructFieldByKey
+	// (get.go) so a path validates against the same field Get and Set resolve it to, which is
+	// the one encoding/json serializes: the shallower of two same-named fields.
+	level := embeddedStructTypes(t)
+	for len(level) > 0 {
+		var next []reflect.Type
+		for _, ft := range level {
+			if sf, ok := findDirectFieldByKeyType(ft, key); ok {
+				return sf, ft, true
+			}
+			next = append(next, embeddedStructTypes(ft)...)
+		}
+		level = next
+	}
+
+	return reflect.StructField{}, reflect.TypeOf(nil), false
+}
+
+// findDirectFieldByKeyType matches key against the struct's own fields, by json tag name.
+func findDirectFieldByKeyType(t reflect.Type, key string) (reflect.StructField, bool) {
 	for sf := range t.Fields() {
 		if sf.PkgPath != "" { // unexported
 			continue
 		}
 		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
 		if name == "-" || sf.Name == EmbeddedSliceFieldName {
-			name = ""
+			continue
 		}
-		if name != "" && name == key {
-			// Skip fields marked as internal/readonly
-			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-			if btag.Internal() || btag.ReadOnly() {
-				continue
-			}
-			return sf, t, true
+		if name != key {
+			continue
 		}
+		// Skip fields marked as internal/readonly
+		btag := structtag.BundleTag(sf.Tag.Get("bundle"))
+		if btag.Internal() || btag.ReadOnly() {
+			continue
+		}
+		return sf, true
 	}
+	return reflect.StructField{}, false
+}
 
-	// Second pass: search embedded anonymous structs recursively (flattening semantics)
+// embeddedStructTypes returns the anonymous struct fields of t, dereferenced.
+func embeddedStructTypes(t reflect.Type) []reflect.Type {
+	var out []reflect.Type
 	for sf := range t.Fields() {
 		if !sf.Anonymous {
 			continue
@@ -174,19 +203,9 @@ func FindStructFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 		for ft.Kind() == reflect.Pointer {
 			ft = ft.Elem()
 		}
-		if ft.Kind() != reflect.Struct {
-			continue
-		}
-		if osf, owner, ok := FindStructFieldByKeyType(ft, key); ok {
-			// Skip fields marked as internal/readonly
-			btag := structtag.BundleTag(osf.Tag.Get("bundle"))
-			if btag.Internal() || btag.ReadOnly() {
-				// Treat as not found and continue
-				continue
-			}
-			return osf, owner, true
+		if ft.Kind() == reflect.Struct {
+			out = append(out, ft)
 		}
 	}
-
-	return reflect.StructField{}, reflect.TypeOf(nil), false
+	return out
 }

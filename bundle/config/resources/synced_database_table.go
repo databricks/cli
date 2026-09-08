@@ -8,12 +8,21 @@ import (
 	"github.com/databricks/cli/libs/workspaceurls"
 
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/database"
 )
 
 type SyncedDatabaseTable struct {
 	BaseResource
 	database.SyncedDatabaseTable
+}
+
+func (s *SyncedDatabaseTable) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s SyncedDatabaseTable) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func (s *SyncedDatabaseTable) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	u2m_cache "github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
+	"github.com/databricks/cli/libs/auth/u2m"
+	u2m_cache "github.com/databricks/cli/libs/auth/u2m/cache"
 	"golang.org/x/oauth2"
 )
 
@@ -12,7 +12,7 @@ import (
 // implemented inside PersistentAuth.dualWrite in the SDK, now moved
 // caller-side per the cache-ownership split between SDK and CLI.
 //
-// Mirroring happens inside Store, so every SDK-internal write (Challenge,
+// Mirroring happens inside Store, so every U2M-internal write (Challenge,
 // refresh, discovery) dual-writes without requiring each call site to invoke
 // a helper explicitly.
 type DualWritingTokenCache struct {

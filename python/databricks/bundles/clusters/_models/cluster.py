@@ -336,7 +336,7 @@ class Cluster(Resource):
 
     total_initial_remote_disk_size: VariableOrOptional[int] = None
     """
-    If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.
+    If set, what the total initial volume size (in GB) of the remote disks should be. Supported for GCP.
     """
 
     use_ml_runtime: VariableOrOptional[bool] = None
@@ -624,7 +624,7 @@ class ClusterDict(TypedDict, total=False):
 
     total_initial_remote_disk_size: VariableOrOptional[int]
     """
-    If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.
+    If set, what the total initial volume size (in GB) of the remote disks should be. Supported for GCP.
     """
 
     use_ml_runtime: VariableOrOptional[bool]

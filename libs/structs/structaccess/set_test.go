@@ -2,6 +2,7 @@ package structaccess_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -815,4 +816,67 @@ func TestSet_StringZeroIntoOmitemptyNumberIsForced(t *testing.T) {
 	blob, err := json.Marshal(job)
 	require.NoError(t, err)
 	assert.Contains(t, string(blob), `"max_concurrent_runs":0`)
+}
+
+// encoding/json resolves a name declared at two embedding depths in favour of the shallower
+// one. Get and Set have to agree with it, so the embedded search goes level by level: a
+// depth-first search would find Deep.Value first, since its embed is declared first.
+type deepValue struct {
+	Value string `json:"value"`
+}
+
+type deepEmbed struct {
+	deepValue
+}
+
+type shallowEmbed struct {
+	Value string `json:"value"`
+}
+
+type deeperEmbed struct {
+	deepEmbed
+}
+
+type embedDepths struct {
+	deepEmbed
+	shallowEmbed
+}
+
+// The same name three levels down in the first member, against two levels down in a later
+// one. json picks the shallower, so the search has to be breadth-first across the whole tree
+// rather than depth-first per member.
+type embedDepthsAcrossMembers struct {
+	deeperEmbed
+	deepEmbed
+}
+
+func TestSet_ShallowerEmbedWinsAcrossMembers(t *testing.T) {
+	target := &embedDepthsAcrossMembers{}
+
+	require.NoError(t, structaccess.SetByString(target, "value", "set"))
+	assert.Equal(t, "set", target.Value)
+	assert.Empty(t, target.deeperEmbed.Value)
+
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeOf(target), "value"))
+
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"set"}`, string(blob))
+}
+
+func TestSet_ShallowerEmbedWins(t *testing.T) {
+	target := &embedDepths{}
+
+	require.NoError(t, structaccess.SetByString(target, "value", "set"))
+	assert.Equal(t, "set", target.Value)
+	assert.Empty(t, target.deepEmbed.Value)
+
+	got, err := structaccess.GetByString(target, "value")
+	require.NoError(t, err)
+	assert.Equal(t, "set", got)
+
+	// The same field json.Marshal picks, which is the contract being matched.
+	blob, err := json.Marshal(target)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"value":"set"}`, string(blob))
 }

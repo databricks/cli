@@ -40,6 +40,14 @@ type PostgresDatabase struct {
 	PostgresDatabaseConfig
 }
 
+func (d *PostgresDatabase) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, d)
+}
+
+func (d PostgresDatabase) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(d)
+}
+
 func (d *PostgresDatabase) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetDatabase(ctx, postgres.GetDatabaseRequest{Name: name})
 	if apierr.IsMissing(err) {
