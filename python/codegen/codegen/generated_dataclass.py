@@ -261,7 +261,12 @@ def generate_type(namespace: str, ref: str, is_param: bool) -> GeneratedType:
             parameters=[element_type],
         )
 
-    if ref == "#/$defs/map/string":
+    if ref.startswith("#/$defs/map/"):
+        # Only dict[str, str] is modelled today; anything else (e.g. map/int,
+        # map/<object>) fails loudly instead.
+        if ref != "#/$defs/map/string":
+            raise ValueError(f"Unsupported map ref: {ref}")
+
         return dict_type()
 
     class_name = packages.get_class_name(ref)
