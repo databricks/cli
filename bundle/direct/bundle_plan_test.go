@@ -522,7 +522,7 @@ func TestShouldSkipRemoteAddition(t *testing.T) {
 			reason, ok := shouldSkipRemoteAddition(cfg, path, &change, tt.state)
 			assert.Equal(t, tt.expected, ok)
 			if tt.expected {
-				assert.Equal(t, deployplan.ReasonPolicyManaged, reason)
+				assert.Equal(t, deployplan.ReasonRemoteAddition, reason)
 			}
 		})
 	}

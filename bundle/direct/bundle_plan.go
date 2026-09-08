@@ -613,7 +613,7 @@ func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *str
 		if err != nil || allEmpty(value) {
 			continue
 		}
-		return deployplan.ReasonPolicyManaged, true
+		return deployplan.ReasonRemoteAddition, true
 	}
 	return "", false
 }

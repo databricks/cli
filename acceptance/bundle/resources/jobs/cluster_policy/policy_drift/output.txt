@@ -37,7 +37,7 @@ json.plan.resources.jobs.owned_tag.new_state.value.job_clusters[0].new_cluster.c
 json.plan.resources.jobs.owned_tag.remote_state.job_clusters[0].new_cluster.custom_tags.CostCenter = "from-policy";
 json.plan.resources.jobs.owned_tag.remote_state.job_clusters[0].new_cluster.custom_tags.Mine = "changed-out-of-band";
 json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].action = "skip";
-json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].reason = "policy_managed";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].reason = "remote_addition";
 json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].remote = "from-policy";
 json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine'].action = "update";
 json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine'].old = "mine";
