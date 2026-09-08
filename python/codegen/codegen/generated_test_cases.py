@@ -157,8 +157,7 @@ def _synth_ref(
 
     schema = schemas[name]
     class_name = packages.get_class_name(ref)
-    module = packages.get_package(namespace, ref)
-    assert module
+    module = _module_of(namespace, ref)
 
     if schema.type == openapi.SchemaType.STRING:
         value = schema.enum[0]
@@ -205,7 +204,7 @@ def _synth_object(
                 continue
             if (
                 prop.deprecated
-                or _STAGE_RANK[prop.stage]
+                or _STAGE_RANK.get(prop.stage, 0)
                 > _STAGE_RANK[openapi.LaunchStage.PUBLIC_PREVIEW]
             ):
                 continue
@@ -222,7 +221,7 @@ def _module_of(namespace: str, schema_name: str) -> str:
     """Python module a (non-primitive) schema's generated class lives in; asserts it exists.
 
     :param namespace: the resource's namespace; the type is generated under databricks.bundles.<namespace>._models.
-    :param schema_name: the object/enum schema name to resolve.
+    :param schema_name: the object/enum schema name (or full ref) to resolve.
     """
     module = packages.get_package(namespace, schema_name)
     assert module
