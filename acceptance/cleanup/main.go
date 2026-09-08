@@ -1,79 +1,67 @@
-package acceptance_test
+// Package main implements a standalone bundle cleanup program. It is invoked as a
+// separate always()-triggered workflow job (see cli-isolated-tests.yml in
+// databricks-eng/eng-dev-ecosystem) so it runs even when a test job times out or
+// is cancelled — unlike a t.Cleanup, which go test skips in those cases.
+package main
 
 import (
 	"context"
 	"errors"
+	"flag"
+	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
-	"runtime"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
-	"testing"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/stretchr/testify/require"
 )
 
-// TestCleanupLeakedBundles destroys every bundle a cloud run deployed. It is the
-// run's cleanup step: unlike a t.Cleanup — which go test skips when the suite
-// panics on -timeout or the CI job is killed at its time limit — this runs as a
-// separate, always()-invoked job after every matrix leg finishes, so leaked
-// deployments are reclaimed even when a test job times out.
-//
-// It sweeps the run-wide "ci<GITHUB_RUN_ID>x" prefix that ciUniqueName stamps into
-// every $UNIQUE_NAME, so it matches all legs of the run. That is safe only because
-// it runs once every leg has finished and no bundle is still live. It is gated
-// behind CLEANUP_LEAKED_BUNDLES so it never runs inline in a normal suite, where a
-// run-wide sweep would destroy sibling legs' live deployments.
-func TestCleanupLeakedBundles(t *testing.T) {
-	if os.Getenv("CLEANUP_LEAKED_BUNDLES") == "" {
-		t.Skip("set CLEANUP_LEAKED_BUNDLES=1 to run the post-run bundle sweep")
-	}
-	if os.Getenv("CLOUD_ENV") == "" {
-		t.Skip("bundle cleanup only applies to cloud runs")
+// ciRunID matches a valid GITHUB_RUN_ID (same cap as acceptance_test.go).
+var ciRunID = regexp.MustCompile(`^[0-9]{1,11}$`)
+
+func main() {
+	var cliPath string
+	flag.StringVar(&cliPath, "cli", "", "path to databricks CLI binary (required)")
+	flag.Parse()
+
+	if cliPath == "" {
+		log.Fatal("-cli: path to databricks CLI binary is required")
 	}
 
-	prefix := ciRunPrefix()
-	require.NotEmpty(t, prefix, "GITHUB_RUN_ID must be a valid run id so the sweep knows which bundles to destroy")
-
-	cwd, err := os.Getwd()
-	require.NoError(t, err)
-
-	// Reuse a prebuilt CLI when given (-clipath), else build from the current source.
-	execPath := CLIPath
-	if execPath == "" {
-		buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
-		execPath = BuildCLI(t, buildDir, "", runtime.GOOS, runtime.GOARCH)
+	runID := os.Getenv("GITHUB_RUN_ID")
+	if !ciRunID.MatchString(runID) {
+		log.Fatalf("GITHUB_RUN_ID %q is not a valid run id (must be 1-11 digits)", runID)
 	}
+	prefix := "ci" + runID + "x"
 
-	cleanBundles(t.Context(), t, execPath, prefix)
+	if err := cleanBundles(context.Background(), cliPath, prefix); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // cleanBundles finds every bundle this run deployed under the current user's
-// ~/.bundle directory (identified by the run's prefix) and destroys each one,
-// logging each deployment and the total time taken.
-func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
+// ~/.bundle directory (identified by the run's prefix) and destroys each one.
+func cleanBundles(ctx context.Context, execPath, prefix string) error {
 	start := time.Now()
 
-	// Cleanup never fails the test (see the WARNING note below), so on any error
-	// that prevents sweeping, log loudly and return rather than require-failing.
 	w, err := databricks.NewWorkspaceClient()
 	if err != nil {
-		t.Logf("WARNING: bundle cleanup skipped, cannot create client: %s", err)
-		return
+		return fmt.Errorf("cannot create workspace client: %w", err)
 	}
 
 	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
 	if err != nil {
-		t.Logf("WARNING: bundle cleanup skipped, cannot resolve current user: %s", err)
-		return
+		return fmt.Errorf("cannot resolve current user: %w", err)
 	}
 
 	// Tests deploy under the user's home .bundle by default, but some set
@@ -91,15 +79,15 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 	// thousands of directories other runs may have leaked under .bundle.
 	var roots []string
 	for _, bundleRoot := range bundleRoots {
-		for _, child := range listChildDirs(ctx, t, w, bundleRoot) {
+		for _, child := range listChildDirs(ctx, w, bundleRoot) {
 			if strings.Contains(path.Base(child), prefix) {
-				roots = append(roots, findDeploymentRoots(ctx, t, w, child)...)
+				roots = append(roots, findDeploymentRoots(ctx, w, child)...)
 			}
 		}
 	}
 	slices.Sort(roots)
 
-	t.Logf("%s bundle cleanup: found %d deployment(s) with prefix %q", time.Now().Format(time.RFC3339), len(roots), prefix)
+	log.Printf("bundle cleanup: found %d deployment(s) with prefix %q", len(roots), prefix)
 
 	// Each destroy shells out to a separate `bundle destroy` (auth + state pull +
 	// deletes), so run them concurrently. Each is network-bound (not CPU-bound),
@@ -117,9 +105,9 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 		sem <- struct{}{}
 		wg.Go(func() {
 			defer func() { <-sem }()
-			t.Logf("%s destroying %s", time.Now().Format(time.RFC3339), root)
+			log.Printf("destroying %s", root)
 			if out, err := destroyBundle(execPath, root); err != nil {
-				t.Logf("%s destroy failed: %s\n%s", time.Now().Format(time.RFC3339), root, out)
+				log.Printf("destroy failed: %s\n%s", root, out)
 				mu.Lock()
 				failed = append(failed, root)
 				mu.Unlock()
@@ -129,15 +117,11 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 	wg.Wait()
 
 	slices.Sort(failed)
-	t.Logf("%s bundle cleanup: destroyed %d/%d deployment(s) in %s", time.Now().Format(time.RFC3339), len(roots)-len(failed), len(roots), time.Since(start))
-
-	// Do not fail on a cleanup failure: this is best-effort housekeeping that runs
-	// after the product tests, so a transient destroy failure should not turn the
-	// cleanup step red and mask the real test signal. Log loudly instead; leaked
-	// deployments are reclaimed by the periodic prefix sweep (sweep_test_resources.py).
+	log.Printf("bundle cleanup: destroyed %d/%d deployment(s) in %s", len(roots)-len(failed), len(roots), time.Since(start))
 	if len(failed) > 0 {
-		t.Logf("WARNING: bundle cleanup failed to destroy %d deployment(s), leaked until swept: %s", len(failed), strings.Join(failed, ", "))
+		return fmt.Errorf("failed to destroy %d deployment(s): %s", len(failed), strings.Join(failed, ", "))
 	}
+	return nil
 }
 
 // findDeploymentRoots walks the workspace tree under dir and returns the paths
@@ -145,9 +129,9 @@ func cleanBundles(ctx context.Context, t *testing.T, execPath, prefix string) {
 // a "state" or "files" child, which the bundle deploy writes beneath the
 // resolved workspace.root_path. This works regardless of whether the root is
 // the default ~/.bundle/<name>/<target> or a custom ~/.bundle/<...> override.
-func findDeploymentRoots(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, dir string) []string {
+func findDeploymentRoots(ctx context.Context, w *databricks.WorkspaceClient, dir string) []string {
 	var childDirs []string
-	for _, child := range listChildDirs(ctx, t, w, dir) {
+	for _, child := range listChildDirs(ctx, w, dir) {
 		if base := path.Base(child); base == "state" || base == "files" {
 			// dir is a deployment root; don't descend into its internals.
 			return []string{dir}
@@ -157,20 +141,19 @@ func findDeploymentRoots(ctx context.Context, t *testing.T, w *databricks.Worksp
 
 	var roots []string
 	for _, child := range childDirs {
-		roots = append(roots, findDeploymentRoots(ctx, t, w, child)...)
+		roots = append(roots, findDeploymentRoots(ctx, w, child)...)
 	}
 	return roots
 }
 
 // listChildDirs returns the immediate subdirectory paths of dir. A missing dir
 // (nothing was deployed under it) yields nil silently; any other listing error
-// is logged loudly (it means the sweep under dir is incomplete) but does not
-// fail the test, since cleanup runs in the root t.Cleanup.
-func listChildDirs(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, dir string) []string {
+// is logged loudly but does not stop the overall sweep.
+func listChildDirs(ctx context.Context, w *databricks.WorkspaceClient, dir string) []string {
 	objects, err := w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{Path: dir})
 	if err != nil {
 		if !errors.Is(err, apierr.ErrNotFound) {
-			t.Logf("WARNING: bundle cleanup incomplete, cannot list %s: %s", dir, err)
+			log.Printf("WARNING: bundle cleanup incomplete, cannot list %s: %s", dir, err)
 		}
 		return nil
 	}
@@ -192,7 +175,7 @@ func listChildDirs(ctx context.Context, t *testing.T, w *databricks.WorkspaceCli
 // stale deployment lock left by a test that was killed mid-deploy; these are
 // known-leaked bundles, so there is no concurrent deployment to conflict with.
 func destroyBundle(execPath, rootPath string) ([]byte, error) {
-	dir, err := os.MkdirTemp("", "bundle-clean") //nolint:usetesting // runs in a cleanup, where t.TempDir is already removed
+	dir, err := os.MkdirTemp("", "bundle-clean")
 	if err != nil {
 		return nil, err
 	}

@@ -734,11 +734,10 @@ var bundleNamePrefix string
 
 // ciRunPrefix returns the run-wide "ci<runID>x" prefix that attributes every
 // bundle a cloud run deploys to its GitHub run, so they can be swept by
-// TestCleanupLeakedBundles and tools/sweep_test_resources.py. The run id (all
-// digits) is delimited by "x" so the prefix stays collision-free between runs
-// whose ids share a leading substring. Returns "" when GITHUB_RUN_ID is unset or
-// not a valid numeric id (e.g. a local `deco env run`), where there is no shared
-// run id to key attribution on.
+// acceptance/cleanup and tools/sweep_test_resources.py. The run id (all digits)
+// is delimited by "x" so the prefix stays collision-free between runs whose ids
+// share a leading substring. Returns "" when GITHUB_RUN_ID is unset or not a
+// valid numeric id (e.g. a local `deco env run`).
 func ciRunPrefix() string {
 	runID := os.Getenv("GITHUB_RUN_ID")
 	if !ciRunID.MatchString(runID) {
@@ -749,13 +748,11 @@ func ciRunPrefix() string {
 
 // newBundleNamePrefix builds the "ci<runID>x<suffix>" prefix that ciUniqueName
 // stamps into every $UNIQUE_NAME so deployed bundles can be attributed and swept.
-// It uses the GitHub run id (via ciRunPrefix), or a random numeric id when that is
-// unavailable (e.g. a local `deco env run`) so the name is still uniquely shaped
-// and reclaimed by the periodic sweeper. See bundleLegSuffixLen for the suffix.
+// Returns "" on non-CI runs (no GITHUB_RUN_ID), where cleanup is not automatic.
 func newBundleNamePrefix() string {
 	prefix := ciRunPrefix()
 	if prefix == "" {
-		prefix = "ci" + strconv.Itoa(rand.IntN(1_000_000_000)) + "x"
+		return ""
 	}
 	const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
 	suffix := make([]byte, bundleLegSuffixLen)
