@@ -56,14 +56,14 @@ var knownMissingInRemoteType = map[string][]string{
 	"vector_search_endpoints": {
 		"usage_policy_id",
 	},
-	"job_runs": {
-		// Local-only trigger fingerprints under lifecycle.
-		"lifecycle",
-	},
 	"internal_immutable_snapshots": {
 		"bundle_id",
 		"acl",
 		"zip_path",
+	},
+	"job_runs": {
+		// Local-only trigger fingerprints under lifecycle.
+		"lifecycle",
 	},
 }
 
