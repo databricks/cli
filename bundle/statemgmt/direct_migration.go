@@ -172,7 +172,6 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 	}()
 
 	var planBundle direct.DeploymentBundle
-	// This plan check does not record deployment history, so no DMS client or deployment id.
 
 	// This plan is not created with the deployment history feature enabled,
 	// so we can safely pass false for withDeploymentHistory.
