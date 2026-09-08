@@ -150,8 +150,8 @@ type DeploymentState struct {
 	// reset - so, like operationBuffer and dmsClient, it must survive reset.
 	DeploymentID string
 
-	// versionID is the version InitializeOperationBuffer created, kept so CompleteVersion completes
-	// that exact one: the serial moves during a deploy, the created version does not.
+	// versionID is the version InitializeOperationBuffer created. CompleteVersion runs after
+	// Finalize, which resets Data, so the serial is no longer there to derive it from.
 	versionID int64
 }
 
@@ -349,11 +349,11 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		return nil
 	}
 
-	if err := appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry}); err != nil {
-		return err
+	err = appendJSONLine(db.walFile, WALEntry{Key: key, Value: &entry})
+	if err == nil {
+		db.stateIDs[key] = newID
 	}
-	db.stateIDs[key] = newID
-	return nil
+	return err
 }
 
 // DeleteState drops the resource's state entry: the resource is gone. inProgress records the
@@ -620,12 +620,6 @@ To record this bundle's history, start it over as a new deployment:
 		// state file, which no longer persists one. With no deployment yet there are no versions,
 		// hence zero - which matters for a state file written before recording was turned on, whose
 		// serial counts a history the service knows nothing about.
-		//
-		// Serial and version normally advance together, with one expected exception: a failed deploy
-		// creates a version but never writes state (see acceptance/bundle/dms/record-failure).
-		//
-		// TODO: report drift via telemetry, separating that failed-deploy case from a serial ahead
-		// of the service or behind by more than one. Those should not happen in normal operation.
 		serial := 0
 		if dmsDeployment.LastVersionID != "" {
 			serial, err = strconv.Atoi(dmsDeployment.LastVersionID)
