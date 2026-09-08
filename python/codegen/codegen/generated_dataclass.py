@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -151,58 +151,38 @@ def generate_field(
     field_type = variable_or_type(field_type, is_required=is_required)
     param_type = variable_or_type(param_type, is_required=is_required)
 
+    field = GeneratedField(
+        field_name=field_name,
+        type_name=field_type,
+        param_type_name=param_type,
+        create_func_type_name=param_type,
+        description=prop.description,
+        default=None,
+        default_factory=None,
+        create_func_default="None",
+        experimental=is_experimental_stage(prop.stage),
+        deprecated=prop.deprecated or False,
+    )
+
+    # Collections default to an empty container (via a factory, to avoid a mutable
+    # default) and are made Optional in the "create" function; required scalars have
+    # no default; optional scalars default to None.
     if field_type.name == "VariableOrDict":
-        return GeneratedField(
-            field_name=field_name,
-            type_name=field_type,
-            param_type_name=param_type,
+        return replace(
+            field,
             create_func_type_name=optional_type(param_type),
-            description=prop.description,
-            default=None,
             default_factory="dict",
-            create_func_default="None",
-            experimental=is_experimental_stage(prop.stage),
-            deprecated=prop.deprecated or False,
         )
     elif field_type.name == "VariableOrList":
-        return GeneratedField(
-            field_name=field_name,
-            type_name=field_type,
-            param_type_name=param_type,
+        return replace(
+            field,
             create_func_type_name=optional_type(param_type),
-            description=prop.description,
-            default=None,
             default_factory="list",
-            create_func_default="None",
-            experimental=is_experimental_stage(prop.stage),
-            deprecated=prop.deprecated or False,
         )
     elif is_required:
-        return GeneratedField(
-            field_name=field_name,
-            type_name=field_type,
-            param_type_name=param_type,
-            create_func_type_name=param_type,
-            description=prop.description,
-            default=None,
-            default_factory=None,
-            create_func_default=None,
-            experimental=is_experimental_stage(prop.stage),
-            deprecated=prop.deprecated or False,
-        )
+        return replace(field, create_func_default=None)
     else:
-        return GeneratedField(
-            field_name=field_name,
-            type_name=field_type,
-            param_type_name=param_type,
-            create_func_type_name=param_type,
-            description=prop.description,
-            default="None",
-            default_factory=None,
-            create_func_default="None",
-            experimental=is_experimental_stage(prop.stage),
-            deprecated=prop.deprecated or False,
-        )
+        return replace(field, default="None")
 
 
 def optional_type(generated: GeneratedType) -> GeneratedType:
