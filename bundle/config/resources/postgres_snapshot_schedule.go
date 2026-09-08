@@ -67,8 +67,9 @@ func (b *PostgresSnapshotSchedule) ResourceDescription() ResourceDescription {
 }
 
 func (b *PostgresSnapshotSchedule) GetName() string {
-	// Snapshot schedules don't have a user-visible name field.
-	return ""
+	// The schedule has no name field of its own; its resource name is its ID
+	// ("{branch}/snapshot-schedule").
+	return b.ID
 }
 
 func (b *PostgresSnapshotSchedule) GetURL() string {
