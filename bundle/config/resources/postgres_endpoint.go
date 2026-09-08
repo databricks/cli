@@ -3,8 +3,10 @@ package resources
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -71,10 +73,17 @@ func (e *PostgresEndpoint) GetName() string {
 }
 
 func (e *PostgresEndpoint) GetURL() string {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return e.URL
 }
 
-func (e *PostgresEndpoint) InitializeURL(_ url.URL) {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
+// InitializeURL points at the parent branch's computes page, where endpoints
+// surface. The branch is derived from this endpoint's resolved ID
+// ("projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}") rather
+// than from Parent, which may still hold an unresolved "${...}" reference.
+func (e *PostgresEndpoint) InitializeURL(baseURL url.URL) {
+	branch, _, ok := strings.Cut(e.ID, "/endpoints/")
+	if !ok {
+		return
+	}
+	e.URL = workspaceurls.ResourceURL(baseURL, "postgres_endpoints", branch)
 }

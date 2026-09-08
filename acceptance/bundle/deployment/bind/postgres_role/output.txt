@@ -13,7 +13,7 @@ Resources:
   Postgres roles:
     role1:
       Name: 
-      URL:  (not deployed)
+      URL:  [DATABRICKS_URL]/lakebase/projects/test-project/branches/main/roles-and-databases?w=[NUMID]
 
 >>> [CLI] bundle deployment unbind role1
 
