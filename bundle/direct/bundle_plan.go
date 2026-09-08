@@ -1034,9 +1034,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
-				if targetNode == "" {
-					continue
-				}
 
 				fullRef := "${" + targetPath + "}"
 
