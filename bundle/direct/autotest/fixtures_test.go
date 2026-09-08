@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
 
 	bundleconfig "github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,10 +30,36 @@ const dataDir = "../../../acceptance/bundle/invariant/data"
 // Permissions and grants are excluded. They are separate plan nodes whose fields describe an ACL
 // rather than the resource, they need a parent to attach to, and the suite strips them from every
 // fixture.
+// internalResourceTypes are the resource collections marked bundle:"internal" on config.Resources --
+// engine constructs like the immutable folder-upload snapshot, populated by the engine rather than
+// authored by users. They have no user-settable config, so the field catalog does not drive them, the
+// same as permissions and grants.
+func internalResourceTypes(t *testing.T) map[string]bool {
+	internal := map[string]bool{}
+	err := structwalk.WalkType(reflect.TypeFor[bundleconfig.Resources](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path.Len() > 2 {
+			return false
+		}
+		if field == nil {
+			return true
+		}
+		if structtag.BundleTag(field.Tag.Get("bundle")).Internal() {
+			internal[structtag.JSONTag(field.Tag.Get("json")).Name()] = true
+		}
+		return true
+	})
+	require.NoError(t, err)
+	return internal
+}
+
 func drivenTypes(t *testing.T) []string {
+	internal := internalResourceTypes(t)
 	var driven []string
 	for resourceType := range dresources.SupportedResources {
 		if strings.Contains(resourceType, ".") {
+			continue
+		}
+		if internal[resourceType] {
 			continue
 		}
 		path := filepath.Join(fieldsDir, resourceType+".yml")
