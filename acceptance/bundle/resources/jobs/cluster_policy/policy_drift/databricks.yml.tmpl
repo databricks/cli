@@ -8,13 +8,10 @@ resources:
   cluster_policies:
     pol:
       name: test-policy-$UNIQUE_NAME
-      definition: |-
-        {
-          "custom_tags.CostCenter": {
-            "type": "fixed",
-            "value": "from-policy"
-          }
-        }
+      definition:
+        custom_tags.CostCenter:
+          type: fixed
+          value: from-policy
 
   jobs:
     # policy attached: the tag the policy adds must not be drift.

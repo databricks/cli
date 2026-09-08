@@ -8,17 +8,13 @@ resources:
   cluster_policies:
     pol:
       name: test-policy-$UNIQUE_NAME
-      definition: |-
-        {
-          "spark_version": {
-            "type": "fixed",
-            "value": "$DEFAULT_SPARK_VERSION"
-          },
-          "custom_tags.CostCenter": {
-            "type": "fixed",
-            "value": "policy-supplied"
-          }
-        }
+      definition:
+        spark_version:
+          type: fixed
+          value: $DEFAULT_SPARK_VERSION
+        custom_tags.CostCenter:
+          type: fixed
+          value: policy-supplied
 
   jobs:
     # new_cluster deliberately omits spark_version and custom_tags: the policy is

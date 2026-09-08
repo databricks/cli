@@ -11,7 +11,4 @@ title "Every cluster-spec location converges: the policy tag is not drift anywhe
 trace $CLI bundle plan
 
 title "Confirm the tag really is present remotely and was classified, not just absent\n"
-trace $CLI bundle plan -o json | jq -S '
-  [.plan | to_entries[]
-   | {node: .key, tags: ((.value.changes // {}) | with_entries(select(.key | contains("custom_tags"))))}
-   | select(.tags | length > 0)]'
+trace $CLI bundle plan -o json | gron.py | grep custom_tags

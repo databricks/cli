@@ -12,10 +12,7 @@ read_id.py defaulted > /dev/null
 job_id=$(read_id.py j)
 
 title "Which policy elements did the backend SUPPLY into each job_cluster?\n"
-$CLI jobs get "$job_id" | jq -S '[.settings.job_clusters[]
-  | {job_cluster_key,
-     apply_policy_default_values: .new_cluster.apply_policy_default_values,
-     custom_tags: .new_cluster.custom_tags}]'
+$CLI jobs get "$job_id" | gron.py | grep -E 'job_cluster_key|apply_policy_default_values|new_cluster.custom_tags'
 
 title "Are the supplied values reported as drift?\n"
 trace $CLI bundle plan

@@ -29,7 +29,4 @@ trace $CLI bundle plan | contains.py "2 to change"
 
 title "Removing a tag from config is a change the user asked for, not an addition\n"
 trace update_file.py databricks.yml "Mine: mine" "Other: other"
-trace $CLI bundle plan -o json | jq -S '
-  [.plan | to_entries[]
-   | select(.key | endswith("owned_tag"))
-   | .value.changes | with_entries(select(.key | contains("custom_tags")))]'
+trace $CLI bundle plan -o json | gron.py | grep -E "owned_tag.*custom_tags"

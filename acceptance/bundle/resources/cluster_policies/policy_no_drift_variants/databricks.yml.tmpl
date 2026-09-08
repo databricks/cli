@@ -8,13 +8,10 @@ resources:
   cluster_policies:
     pol:
       name: test-policy-$UNIQUE_NAME
-      definition: |-
-        {
-          "custom_tags.CostCenter": {
-            "type": "fixed",
-            "value": "from-policy"
-          }
-        }
+      definition:
+        custom_tags.CostCenter:
+          type: fixed
+          value: from-policy
 
   # Every place a cluster spec can appear must be covered by a rule; a gap here is how
   # https://github.com/databricks/cli/issues/5179 stayed open after a partial fix.

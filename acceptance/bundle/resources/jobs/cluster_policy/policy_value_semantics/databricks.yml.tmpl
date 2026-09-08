@@ -11,26 +11,20 @@ resources:
     # that omits the attribute is what this test pins down.
     fixed:
       name: test-policy-fixed-$UNIQUE_NAME
-      definition: |-
-        {
-          "custom_tags.FixedTag": {
-            "type": "fixed",
-            "value": "from-fixed"
-          }
-        }
+      definition:
+        custom_tags.FixedTag:
+          type: fixed
+          value: from-fixed
 
     # A "defaultValue" element. Documented to apply only when the request sets
     # apply_policy_default_values=true.
     defaulted:
       name: test-policy-default-$UNIQUE_NAME
-      definition: |-
-        {
-          "custom_tags.DefaultTag": {
-            "type": "unlimited",
-            "defaultValue": "from-default",
-            "isOptional": true
-          }
-        }
+      definition:
+        custom_tags.DefaultTag:
+          type: unlimited
+          defaultValue: from-default
+          isOptional: true
 
   jobs:
     j:

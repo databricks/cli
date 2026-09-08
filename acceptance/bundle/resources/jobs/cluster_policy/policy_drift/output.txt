@@ -33,24 +33,17 @@ Plan: 0 to add, 2 to change, 0 to delete, 2 unchanged
 >>> update_file.py databricks.yml Mine: mine Other: other
 
 >>> [CLI] bundle plan -o json
-[
-  {
-    "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']": {
-      "action": "skip",
-      "reason": "policy_managed",
-      "remote": "from-policy"
-    },
-    "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine']": {
-      "action": "update",
-      "old": "mine",
-      "remote": "changed-out-of-band"
-    },
-    "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Other']": {
-      "action": "update",
-      "new": "other"
-    }
-  }
-]
+json.plan.resources.jobs.owned_tag.new_state.value.job_clusters[0].new_cluster.custom_tags.Other = "other";
+json.plan.resources.jobs.owned_tag.remote_state.job_clusters[0].new_cluster.custom_tags.CostCenter = "from-policy";
+json.plan.resources.jobs.owned_tag.remote_state.job_clusters[0].new_cluster.custom_tags.Mine = "changed-out-of-band";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].action = "skip";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].reason = "policy_managed";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].remote = "from-policy";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine'].action = "update";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine'].old = "mine";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine'].remote = "changed-out-of-band";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Other'].action = "update";
+json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Other'].new = "other";
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

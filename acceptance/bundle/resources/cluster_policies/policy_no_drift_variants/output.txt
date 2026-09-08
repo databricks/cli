@@ -17,44 +17,19 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 === Confirm the tag really is present remotely and was classified, not just absent
 
 >>> [CLI] bundle plan -o json
-[
-  {
-    "node": "resources.clusters.standalone",
-    "tags": {
-      "custom_tags": {
-        "action": "skip",
-        "reason": "policy_managed",
-        "remote": {
-          "CostCenter": "from-policy"
-        }
-      }
-    }
-  },
-  {
-    "node": "resources.jobs.for_each_cluster",
-    "tags": {
-      "tasks[task_key='outer'].for_each_task.task.new_cluster.custom_tags": {
-        "action": "skip",
-        "reason": "policy_managed",
-        "remote": {
-          "CostCenter": "from-policy"
-        }
-      }
-    }
-  },
-  {
-    "node": "resources.jobs.task_cluster",
-    "tags": {
-      "tasks[task_key='t'].new_cluster.custom_tags": {
-        "action": "skip",
-        "reason": "policy_managed",
-        "remote": {
-          "CostCenter": "from-policy"
-        }
-      }
-    }
-  }
-]
+json.plan.resources.cluster_policies.pol.remote_state.definition = "{\"custom_tags.CostCenter\":{\"type\":\"fixed\",\"value\":\"from-policy\"}}";
+json.plan.resources.clusters.standalone.remote_state.custom_tags.CostCenter = "from-policy";
+json.plan.resources.clusters.standalone.changes.custom_tags.action = "skip";
+json.plan.resources.clusters.standalone.changes.custom_tags.reason = "policy_managed";
+json.plan.resources.clusters.standalone.changes.custom_tags.remote.CostCenter = "from-policy";
+json.plan.resources.jobs.for_each_cluster.remote_state.tasks[0].for_each_task.task.new_cluster.custom_tags.CostCenter = "from-policy";
+json.plan.resources.jobs.for_each_cluster.changes.tasks[task_key='outer'].for_each_task.task.new_cluster.custom_tags.action = "skip";
+json.plan.resources.jobs.for_each_cluster.changes.tasks[task_key='outer'].for_each_task.task.new_cluster.custom_tags.reason = "policy_managed";
+json.plan.resources.jobs.for_each_cluster.changes.tasks[task_key='outer'].for_each_task.task.new_cluster.custom_tags.remote.CostCenter = "from-policy";
+json.plan.resources.jobs.task_cluster.remote_state.tasks[0].new_cluster.custom_tags.CostCenter = "from-policy";
+json.plan.resources.jobs.task_cluster.changes.tasks[task_key='t'].new_cluster.custom_tags.action = "skip";
+json.plan.resources.jobs.task_cluster.changes.tasks[task_key='t'].new_cluster.custom_tags.reason = "policy_managed";
+json.plan.resources.jobs.task_cluster.changes.tasks[task_key='t'].new_cluster.custom_tags.remote.CostCenter = "from-policy";
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
