@@ -157,7 +157,7 @@ func getForceSendFields(v reflect.Value) []string {
 	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
 		return nil
 	}
-	result, ok := fsField.Interface().([]string)
+	result, ok := reflect.TypeAssert[[]string](fsField)
 	if ok {
 		return result
 	}

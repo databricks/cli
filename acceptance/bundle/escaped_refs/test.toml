@@ -1,0 +1,10 @@
+RecordRequests = true
+
+# Also deploy from the saved plan, so the unescaped payload is asserted whether it
+# is built in-process or read back from a plan file.
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]

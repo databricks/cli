@@ -15,7 +15,7 @@ print_requests() {
 title "Initial deployment"
 trace $CLI bundle validate
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // . | del(.remote_state)' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" // . | del(.remote_state)' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -29,7 +29,7 @@ trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 
 title "Verify no changes"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // . | del(.remote_state)' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" // . | del(.remote_state)' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -40,7 +40,7 @@ trace update_file.py databricks.yml "autoscaling_limit_max_cu: 8" "autoscaling_l
 trace cat databricks.yml
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // . | del(.remote_state)' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" // . | del(.remote_state)' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -52,7 +52,7 @@ trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 title "Restore endpoint autoscaling to original value"
 trace update_file.py databricks.yml "autoscaling_limit_max_cu: 4" "autoscaling_limit_max_cu: 8"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // . | del(.remote_state)' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" // . | del(.remote_state)' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 

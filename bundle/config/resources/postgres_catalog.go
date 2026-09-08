@@ -32,6 +32,14 @@ type PostgresCatalog struct {
 	PostgresCatalogConfig
 }
 
+func (c *PostgresCatalog) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, c)
+}
+
+func (c PostgresCatalog) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(c)
+}
+
 func (c *PostgresCatalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetCatalog(ctx, postgres.GetCatalogRequest{Name: name})
 	if err != nil {

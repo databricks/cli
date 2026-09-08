@@ -12,7 +12,7 @@ Created jobs.foo
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -31,7 +31,7 @@ Updated jobs.foo
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -73,7 +73,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 2 deleted
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

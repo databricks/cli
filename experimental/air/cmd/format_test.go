@@ -262,6 +262,27 @@ func TestDisplayRunStatus(t *testing.T) {
 	}))
 }
 
+func TestDetailedDisplayRunStatus(t *testing.T) {
+	waiting := &jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}}},
+	}
+	assert.Equal(t, "Waiting for GPU capacity...", detailedDisplayRunStatus(waiting, "Waiting for GPU capacity..."))
+	assert.Equal(t, waitingForComputeStatus, detailedDisplayRunStatus(waiting, ""))
+
+	started := &jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}}},
+	}
+	assert.Equal(t, "RUNNING", detailedDisplayRunStatus(started, ""))
+
+	failed := &jobs.Run{
+		State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed},
+		Tasks: []jobs.RunTask{{State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}}},
+	}
+	assert.Equal(t, "FAILED", detailedDisplayRunStatus(failed, "stale status..."))
+}
+
 func TestTerminationReason(t *testing.T) {
 	reason := terminationReason(&jobs.Run{
 		State:  &jobs.RunState{ResultState: jobs.RunResultStateFailed, StateMessage: "parent reason"},

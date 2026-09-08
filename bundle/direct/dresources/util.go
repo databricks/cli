@@ -25,26 +25,20 @@ func shouldRetry(err error) bool {
 // collectUpdatePathsWithPrefix extracts field paths from Changes that have action=Update,
 // adding a prefix to each path. This is used when the state type has a flattened structure
 // but the API expects paths relative to a nested object (e.g., "spec.display_name").
-// Sorted, so the generated update_mask does not depend on map iteration order.
-func collectUpdatePathsWithPrefix(changes Changes, prefix string) []string {
-	var paths []string
-	for path, change := range changes {
-		if change.Action == deployplan.Update {
-			paths = append(paths, prefix+path)
-		}
-	}
-	slices.Sort(paths)
-	return paths
-}
-
-// collectLeafUpdatePathsWithPrefix is like collectUpdatePathsWithPrefix but drops a parent
-// path when a more specific child path is also being updated, and sorts the result.
 //
-// The Postgres Role PATCH endpoint rejects an update_mask that lists both a struct and one
-// of its sub-fields, since the parent already implies the whole subtree. E.g. {"attributes",
-// "attributes.createdb"} collapses to {"attributes.createdb"}. Sorting keeps the generated
-// update_mask stable regardless of map iteration order.
-func collectLeafUpdatePathsWithPrefix(changes Changes, prefix string) []string {
+// A parent path is dropped when a more specific child path is also being updated. Masking a
+// message asks the API to replace it wholesale, so the API then requires every field under
+// that message to be populated in the request body — verified against a real workspace on
+// 2026-08-31, where update_mask=spec.default_endpoint_settings with a body carrying only
+// the autoscaling limits was rejected with "Field
+// 'spec.default_endpoint_settings.suspension' is in update_mask but not provided in
+// request". A bundle sends only the fields it declares, so only the leaf may be masked.
+//
+// oneofGroups renames a change path to the group it belongs to, for fields the API only
+// accepts under their oneof group name; see the per-resource maps below.
+//
+// Sorted, so the generated update_mask does not depend on map iteration order.
+func collectUpdatePathsWithPrefix(changes Changes, prefix string, oneofGroups map[string]string) []string {
 	var paths []string
 	for path, change := range changes {
 		if change.Action != deployplan.Update {
@@ -61,9 +55,27 @@ func collectLeafUpdatePathsWithPrefix(changes Changes, prefix string) []string {
 			}
 		}
 		if !hasChild {
-			paths = append(paths, prefix+path)
+			masked := maskPath(path)
+			if group, ok := oneofGroups[masked]; ok {
+				masked = group
+			}
+			paths = append(paths, prefix+masked)
 		}
 	}
 	slices.Sort(paths)
-	return paths
+	// Truncating subscripts can map two changed entries of the same map onto one path, and
+	// two members of one oneof collapse onto their group.
+	return slices.Compact(paths)
+}
+
+// maskPath converts a change path into the path the API accepts in update_mask. A map or
+// repeated field is addressable only as a whole, so everything from the first subscript
+// onwards is dropped: settings.pg_settings['work_mem'] is masked as settings.pg_settings.
+// Verified against a real workspace on 2026-08-31, which answers the indexed form with
+// "Unknown field path in update_mask: 'spec.settings.pg_settings['work_mem']'".
+func maskPath(path string) string {
+	if before, _, ok := strings.Cut(path, "["); ok {
+		return before
+	}
+	return path
 }

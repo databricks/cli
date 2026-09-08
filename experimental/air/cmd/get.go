@@ -161,7 +161,8 @@ func newGetCommand() *cobra.Command {
 
 		data := buildGetData(run)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
-		ids := mlflowIDs(ctx, w, run)
+		taskOutput := aiRuntimeTaskOutput(ctx, w, run)
+		ids := mlflowIDsFromOutput(taskOutput)
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url
@@ -194,6 +195,11 @@ func newGetCommand() *cobra.Command {
 			fmt.Fprintf(out, "Job Link: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
 			return renderEnvelope(ctx, data)
 		}
+		statusMessage := ""
+		if taskOutput != nil {
+			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
+		}
+		data.DisplayStatus = detailedDisplayRunStatus(run, statusMessage)
 
 		renderRunText(ctx, out, w, run, &data, ids)
 		return nil

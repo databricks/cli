@@ -6,7 +6,7 @@ package generated
 // EnumFields maps [dyn.Pattern] to valid enum values they should have.
 var EnumFields = map[string][]string{
 	"artifacts.*.executable": {"bash", "sh", "cmd"},
-	"artifacts.*.type":       {"whl", "jar"},
+	"artifacts.*.type":       {"whl", "jar", "tgz"},
 
 	"permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 

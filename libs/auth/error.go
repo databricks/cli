@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
 // Auth type names returned by credential providers.

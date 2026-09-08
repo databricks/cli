@@ -104,16 +104,39 @@ func runStatus(state *jobs.RunState) string {
 
 func displayRunStatus(run *jobs.Run) string {
 	status := runStatus(run.State)
-	if status != string(jobs.RunLifeCycleStateRunning) || len(run.Tasks) == 0 || run.Tasks[0].State == nil {
-		return status
+	if runWaitingForCompute(run) {
+		return "PENDING"
+	}
+	return status
+}
+
+func runWaitingForCompute(run *jobs.Run) bool {
+	if run.State == nil || run.State.ResultState != "" {
+		return false
+	}
+	if run.State.LifeCycleState == jobs.RunLifeCycleStatePending {
+		return true
+	}
+	if run.State.LifeCycleState != jobs.RunLifeCycleStateRunning || len(run.Tasks) == 0 || run.Tasks[0].State == nil {
+		return false
 	}
 	switch run.Tasks[0].State.LifeCycleState {
 	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
 		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
-		return "PENDING"
+		return true
 	default:
-		return status
+		return false
 	}
+}
+
+func detailedDisplayRunStatus(run *jobs.Run, statusMessage string) string {
+	if run.State != nil && run.State.ResultState == "" && statusMessage != "" {
+		return statusMessage
+	}
+	if runWaitingForCompute(run) {
+		return waitingForComputeStatus
+	}
+	return displayRunStatus(run)
 }
 
 func terminationReason(run *jobs.Run) *string {

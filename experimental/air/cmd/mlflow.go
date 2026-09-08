@@ -30,11 +30,14 @@ type mlflowIdentifiers struct {
 // mlflowIDs fetches the MLflow IDs for a run via its latest task. Returns nil if
 // they can't be obtained.
 func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *mlflowIdentifiers {
+	return mlflowIDsFromOutput(aiRuntimeTaskOutput(ctx, w, run))
+}
+
+func aiRuntimeTaskOutput(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) *jobs.AiRuntimeTaskOutput {
 	if len(run.Tasks) == 0 {
 		return nil
 	}
-	// The MLflow output is attached to the task run, not the parent job run.
-	return mlflowIDsForTask(ctx, w, run.Tasks[len(run.Tasks)-1].RunId)
+	return aiRuntimeTaskOutputForTask(ctx, w, run.Tasks[len(run.Tasks)-1].RunId)
 }
 
 // mlflowIDsForTask fetches a task run's MLflow experiment and run IDs from
@@ -42,6 +45,10 @@ func mlflowIDs(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run
 // link, so any failure (endpoint error, run not yet started, no MLflow output)
 // is logged and treated as "no link" rather than failing the command.
 func mlflowIDsForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRunID int64) *mlflowIdentifiers {
+	return mlflowIDsFromOutput(aiRuntimeTaskOutputForTask(ctx, w, taskRunID))
+}
+
+func aiRuntimeTaskOutputForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRunID int64) *jobs.AiRuntimeTaskOutput {
 	if taskRunID == 0 {
 		return nil
 	}
@@ -52,10 +59,14 @@ func mlflowIDsForTask(ctx context.Context, w *databricks.WorkspaceClient, taskRu
 		return nil
 	}
 
-	if o := out.AiRuntimeTaskOutput; o != nil && o.MlflowExperimentId != "" && o.MlflowRunId != "" {
-		return &mlflowIdentifiers{ExperimentID: o.MlflowExperimentId, RunID: o.MlflowRunId}
+	return out.AiRuntimeTaskOutput
+}
+
+func mlflowIDsFromOutput(output *jobs.AiRuntimeTaskOutput) *mlflowIdentifiers {
+	if output == nil || output.MlflowExperimentId == "" || output.MlflowRunId == "" {
+		return nil
 	}
-	return nil
+	return &mlflowIdentifiers{ExperimentID: output.MlflowExperimentId, RunID: output.MlflowRunId}
 }
 
 // mlflowLogsURL is the deep link to a run's node-0 logs. It is the value of the

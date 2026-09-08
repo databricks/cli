@@ -1,0 +1,8 @@
+# Running config-remote-sync -o json without a prior deploy: the state snapshot
+# does not exist. In JSON mode the command exits 0 and reports the outcome as
+# skipped, but telemetry still records the STATE_NOT_FOUND error payload.
+trace errcode $CLI bundle config-remote-sync -o json
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
+
+rm out.requests.txt

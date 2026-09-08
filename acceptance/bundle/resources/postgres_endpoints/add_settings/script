@@ -1,0 +1,28 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deployment with no settings block"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Add a settings block and re-deploy"
+# Going from absent to present leaves one change path, settings, with no children,
+# so the mask names the message itself. Verified against a real endpoint on
+# 2026-08-31 that update_mask=spec.settings is accepted.
+cat >> databricks.yml <<'YAML'
+      settings:
+        pg_settings:
+          statement_timeout: 8000
+YAML
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+title "Plan again: the addition must leave no drift behind"
+trace $CLI bundle plan

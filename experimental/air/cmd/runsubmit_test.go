@@ -2,7 +2,7 @@ package aircmd
 
 import (
 	"encoding/json"
-	"io"
+	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
@@ -109,9 +109,40 @@ func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(42), runID)
+}
+
+func TestSubmitRunInjectsPriorityClass(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		tasks := body["tasks"].([]any)
+		task := tasks[0].(map[string]any)
+		airTask := task["ai_runtime_task"].(map[string]any)
+		// priority_class rides directly on the ai_runtime_task, next to
+		// provisioned_capacity_id on the deployment compute.
+		assert.Equal(t, "CRITICAL", airTask["priority_class"])
+		deployment := airTask["deployments"].([]any)[0].(map[string]any)
+		compute := deployment["compute"].(map[string]any)
+		assert.Equal(t, "capacity-1", compute["provisioned_capacity_id"])
+		return jobs.SubmitRunResponse{RunId: 7}
+	})
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
+	require.NoError(t, err)
+	payload := buildSubmitPayload(&runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+	}, "/command.sh", "4", "", snapshotResult{}, nil)
+
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL")
+	require.NoError(t, err)
+	assert.Equal(t, int64(7), runID)
 }
 
 func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
@@ -455,10 +486,10 @@ code_source:
 	assert.Len(t, uploaded, 1, "git_archive cache hit should skip the second upload")
 }
 
-// A git code_source also uploads git provenance sidecars (git_state.json, and
-// git_diff.patch when the tree is dirty) next to the run's launch dir, so the
-// submitted commit + working-tree diff are inspectable.
-func TestSubmitWorkloadUploadsGitSidecars(t *testing.T) {
+// When enabled, a code source uploads provenance sidecars (git_state.json and
+// git_diff.patch when the tree is dirty) next to the run's launch directory.
+// This path is paused to avoid dirty-state query and WSFS write latency.
+func TestSubmitWorkloadSkipsProvenanceSidecars(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
@@ -470,7 +501,7 @@ func TestSubmitWorkloadUploadsGitSidecars(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
 	require.NoError(t, err)
 
-	// Commit, then dirty the tree so both git_state.json and git_diff.patch are produced.
+	// Commit, then dirty the tree to cover the previously active sidecar path.
 	repo := newTestRepo(t)
 	writeRepoFile(t, repo, "train.py", "print()")
 	commitAll(t, repo, "init")
@@ -491,19 +522,13 @@ code_source:
 	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
-	// Both sidecars are reported under the launch dir and actually exist there.
-	assert.Equal(t, path.Join(sidecarBase, gitStateName), snap.GitStatePath)
-	assert.Equal(t, path.Join(sidecarBase, gitDiffName), snap.GitDiffPath)
+	assert.Empty(t, snap.GitStatePath)
+	assert.Empty(t, snap.GitDiffPath)
 
-	r, err := sidecarStore.Read(ctx, gitStateName)
-	require.NoError(t, err)
-	stateBytes, err := io.ReadAll(r)
-	require.NoError(t, err)
-	var state map[string]any
-	require.NoError(t, json.Unmarshal(stateBytes, &state))
-	assert.Equal(t, "plain_tar", state["packaging_mode"])
-	assert.Equal(t, true, state["dirty"])
-	assert.Equal(t, "captured", state["diff_status"])
+	_, err = sidecarStore.Read(ctx, gitStateName)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+	_, err = sidecarStore.Read(ctx, gitDiffName)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 // remote_volume uploads the snapshot to a UC Volume: DABs' artifact uploader handles
