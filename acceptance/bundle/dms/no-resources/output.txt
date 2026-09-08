@@ -26,14 +26,14 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/state/resources.deployment.json"
 }
 
-=== The plan records the record_deployment_history feature
+=== The plan records the deployment_history feature
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "deployment_id": "[NUMID]",
   "features": {
-    "record_deployment_history": {}
+    "deployment_history": {}
   }
 }
 
@@ -83,14 +83,14 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/bundle/deployments/[NUMID]/resources"
 }
 
-=== The plan records the record_deployment_history feature
+=== The plan records the deployment_history feature
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "deployment_id": "[NUMID]",
   "features": {
-    "record_deployment_history": {}
+    "deployment_history": {}
   }
 }
 

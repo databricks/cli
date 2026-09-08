@@ -57,7 +57,7 @@ const (
 	supportedStateVersion = featureStateVersion
 )
 
-// FeatureRecordDeploymentHistory marks a state whose resources are also recorded with the
+// FeatureDeploymentHistory marks a state whose resources are also recorded with the
 // deployment metadata service. Both stores are kept in step, so the marker is what tells a
 // reader the two already agree. A CLI that does not know the name refuses the state rather
 // than deploying over a deployment it would leave the service out of step with.
@@ -65,7 +65,7 @@ const (
 // The marker is sticky: once a deployment is recorded, the service holds resources that a
 // CLI which is not recording must not touch. So turning recording off does not clear it, and
 // deploying such a state without recording is refused.
-const FeatureRecordDeploymentHistory = "record_deployment_history"
+const FeatureDeploymentHistory = "deployment_history"
 
 // featuresDocURL explains the state-features mechanism in the error shown when this CLI refuses a
 // state that depends on a feature it does not recognize.
@@ -85,7 +85,7 @@ const (
 // any feature not listed here is refused (see checkStateFeatures), so a newer CLI's feature is not
 // silently clobbered by this one.
 var recognizedFeatures = map[string]struct{}{
-	FeatureRecordDeploymentHistory: {},
+	FeatureDeploymentHistory: {},
 }
 
 // assertNoUnsupportedFeatures refuses a state that depends on a feature this CLI does not recognize.
@@ -110,9 +110,9 @@ var errStaleWAL = errors.New("stale WAL")
 // ErrUnsettingRecording is returned by Open when a recorded state is opened without recording - the
 // config turned the feature off, or an operation that never records (unbind) reached it. Callers
 // present an operation-appropriate message via errors.Is.
-var ErrUnsettingRecording = errors.New(`unsetting experimental.record_deployment_history is not supported
+var ErrUnsettingRecording = errors.New(`unsetting experimental.deployment_history is not supported
 
-This deployment's resources are recorded with the deployment history feature enabled. Set experimental.record_deployment_history: true to deploy or destroy this bundle`)
+This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle`)
 
 type DeploymentState struct {
 	Path    string
@@ -556,21 +556,21 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	// the config bootstraps the marker there. On an existing deployment the state is authoritative:
 	// the config can neither start recording one that was not (its resources would be created a
 	// second time) nor stop recording one that is (the service still holds it).
-	_, recorded := db.Data.Features[FeatureRecordDeploymentHistory]
+	_, recorded := db.Data.Features[FeatureDeploymentHistory]
 	switch {
 	case recording && !recorded && len(db.Data.State) == 0:
 		if db.Data.Features == nil {
 			db.Data.Features = make(map[string]struct{}, 1)
 		}
-		db.Data.Features[FeatureRecordDeploymentHistory] = struct{}{}
+		db.Data.Features[FeatureDeploymentHistory] = struct{}{}
 		recorded = true
 	case recording && !recorded:
 		return errors.New(`this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
 
 To record this bundle's history, start it over as a new deployment:
-  1. remove experimental.record_deployment_history from your bundle configuration
+  1. remove experimental.deployment_history from your bundle configuration
   2. run "databricks bundle destroy" to delete the existing resources
-  3. add experimental.record_deployment_history back and deploy again`)
+  3. add experimental.deployment_history back and deploy again`)
 	case !recording && recorded:
 		return ErrUnsettingRecording
 	}
@@ -951,7 +951,7 @@ func (db *DeploymentState) dataForFile() Database {
 		if header.Features == nil {
 			header.Features = make(map[string]struct{})
 		}
-		header.Features[FeatureRecordDeploymentHistory] = struct{}{}
+		header.Features[FeatureDeploymentHistory] = struct{}{}
 
 		return Database{
 			Header: header,

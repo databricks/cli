@@ -20,7 +20,7 @@ trace print_requests.py --dms //api/2.0/bundle
 title "Plan again: reading state back from the service works and reports no work"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete" "!unexpected end of JSON input"
 
-title "The plan is a no-op and records the record_deployment_history feature"
+title "The plan is a no-op and records the deployment_history feature"
 dms_plan
 
 title "The grants node emptied out, so the service no longer lists it - only the schema remains"

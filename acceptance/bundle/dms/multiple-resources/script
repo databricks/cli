@@ -4,7 +4,7 @@ title "Deploy several resources: operations are uploaded from background workers
 trace $CLI bundle deploy
 trace print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
 
-title "The plan records the record_deployment_history feature"
+title "The plan records the deployment_history feature"
 dms_plan
 
 title "The service lists all five resources at version 1"
@@ -18,7 +18,7 @@ title "Redeploy with no changes: nothing is applied, so no version is created at
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --sort --oneline
 
-title "The plan records the record_deployment_history feature"
+title "The plan records the deployment_history feature"
 dms_plan
 
 title "The service still lists all five resources, now at version 2"

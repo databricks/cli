@@ -59,7 +59,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
-=== The plan records the record_deployment_history feature; the service holds the schema at version 1
+=== The plan records the deployment_history feature; the service holds the schema at version 1
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -68,7 +68,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "serial": 1,
   "deployment_id": "[NUMID]",
   "features": {
-    "record_deployment_history": {}
+    "deployment_history": {}
   }
 }
 
@@ -130,7 +130,7 @@ A common practice is to use a username or principal name in this path, i.e. use
   "serial": 1,
   "deployment_id": "[NUMID]",
   "features": {
-    "record_deployment_history": {}
+    "deployment_history": {}
   }
 }
 

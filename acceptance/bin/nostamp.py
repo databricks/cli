@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read JSON on stdin, write it back with the DMS deployment stamp removed.
 
-Deployment history recording (DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY=true; see
+Deployment history recording (DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true; see
 bundle/test.toml) adds a deployment stamp to plans, states, and resource payloads. Pipe any of
 those through this so an acceptance golden compares equal whether or not recording is on. Output
 is a 2-space indent, keys in input order, <>& left unescaped, and integers at full precision.

@@ -6,7 +6,7 @@ Created schemas.foo
 Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== The plan records the record_deployment_history feature and the schema
+=== The plan records the deployment_history feature and the schema
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -15,7 +15,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "serial": 1,
   "deployment_id": "[NUMID]",
   "features": {
-    "record_deployment_history": {}
+    "deployment_history": {}
   }
 }
 
@@ -40,7 +40,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "record_deployment_history": {}
+  "deployment_history": {}
  },
  "state": {}
 }
@@ -82,7 +82,7 @@ Files: 4 uploaded, 0 deleted
  "lineage": "[UUID]",
  "serial": 2,
  "features": {
-  "record_deployment_history": {}
+  "deployment_history": {}
  },
  "state": {}
 }

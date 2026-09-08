@@ -4,7 +4,7 @@ title "Deploy: the state write records the resource"
 trace $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle
 
-title "The plan is a no-op now and records the record_deployment_history feature"
+title "The plan is a no-op now and records the deployment_history feature"
 dms_plan
 
 title "The service lists the schema, recorded at version 1"

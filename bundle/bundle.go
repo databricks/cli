@@ -318,10 +318,10 @@ func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClien
 }
 
 // ConfiguresDeploymentHistory reports whether this bundle is configured to record deployment history with the
-// deployment metadata service, from experimental.record_deployment_history or
-// DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY.
+// deployment metadata service, from experimental.deployment_history or
+// DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY.
 func (b *Bundle) ConfiguresDeploymentHistory(ctx context.Context) bool {
-	configured := b.Config.Experimental != nil && b.Config.Experimental.RecordDeploymentHistory
+	configured := b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory
 	return env.RecordsDeploymentHistory(ctx, configured)
 }
 

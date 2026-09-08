@@ -12,7 +12,7 @@ To get started, refer to the project README.md file and the documentation at htt
 
 >>> grep -A1 ^experimental: output/default-python/my_default_python/databricks.yml
 experimental:
-  record_deployment_history: true
+  deployment_history: true
 
 Welcome to the default SQL template for Declarative Automation Bundles!
 
@@ -26,7 +26,7 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
 
 >>> grep -A1 ^experimental: output/default-sql/my_default_sql/databricks.yml
 experimental:
-  record_deployment_history: true
+  deployment_history: true
 
 Welcome to the default-scala template for Declarative Automation Bundles!
 
@@ -40,7 +40,7 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
 
 >>> grep -A1 ^experimental: output/default-scala/my_default_scala/databricks.yml
 experimental:
-  record_deployment_history: true
+  deployment_history: true
 
 Welcome to the dbt template for Declarative Automation Bundles!
 
@@ -54,7 +54,7 @@ Refer to the README.md file for full "getting started" guide and production setu
 
 >>> grep -A1 ^experimental: output/dbt-sql/my_dbt_sql/databricks.yml
 experimental:
-  record_deployment_history: true
+  deployment_history: true
 Welcome to the Lakeflow integrations template!
 
 
@@ -64,7 +64,7 @@ Please refer to the README.md file for "getting started" instructions.
 
 >>> grep -A1 ^experimental: output/lakeflow-integrations/my_lakeflow_integrations/databricks.yml
 experimental:
-  record_deployment_history: true
+  deployment_history: true
 
 >>> [CLI] bundle validate -o json
-json.experimental.record_deployment_history = true;
+json.experimental.deployment_history = true;

@@ -51,7 +51,7 @@ def main():
     parser.add_argument("--backup", action="store_true")
     args = parser.parse_args()
 
-    if os.environ.get("DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY") == "true":
+    if os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true":
         it = iter_ids_recorded(args.target)
     else:
         filename = get_state_file(args.target, args.backup)

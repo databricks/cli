@@ -6,7 +6,7 @@ trace jq '{features, deployment_id, next_version_id}' < tmp.plan.json
 
 title "Enable DMS recording and try to deploy the non-DMS plan"
 update_file.py databricks.yml 'bundle:' 'experimental:
-  record_deployment_history: true
+  deployment_history: true
 
 bundle:'
 trace musterr $CLI bundle deploy --plan tmp.plan.json

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRecordDeploymentHistoryEnv(t *testing.T) {
+func TestDeploymentHistoryEnv(t *testing.T) {
 	for _, tc := range []struct {
 		value string
 		want  bool
@@ -21,12 +21,12 @@ func TestRecordDeploymentHistoryEnv(t *testing.T) {
 		{"TRUE", false},
 		{"yes", false},
 	} {
-		ctx := env.Set(t.Context(), RecordDeploymentHistoryVariable, tc.value)
+		ctx := env.Set(t.Context(), DeploymentHistoryVariable, tc.value)
 		assert.Equal(t, tc.want, RecordsDeploymentHistory(ctx, false), "value %q", tc.value)
 	}
 }
 
-func TestRecordDeploymentHistoryEnvUnset(t *testing.T) {
+func TestDeploymentHistoryEnvUnset(t *testing.T) {
 	assert.False(t, RecordsDeploymentHistory(t.Context(), false))
 }
 
@@ -36,6 +36,6 @@ func TestRecordsDeploymentHistory(t *testing.T) {
 	assert.True(t, RecordsDeploymentHistory(t.Context(), true))
 	assert.False(t, RecordsDeploymentHistory(t.Context(), false))
 
-	ctx := env.Set(t.Context(), RecordDeploymentHistoryVariable, "true")
+	ctx := env.Set(t.Context(), DeploymentHistoryVariable, "true")
 	assert.True(t, RecordsDeploymentHistory(ctx, false))
 }

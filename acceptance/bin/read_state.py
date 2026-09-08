@@ -65,7 +65,7 @@ def print_resource_recorded(group, name, *attrs):
     print(group, name, " ".join(values))
 
 
-if os.environ.get("DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY") == "true":
+if os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true":
     print_resource_recorded(*sys.argv[1:])
 elif os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
     print_resource_direct(*sys.argv[1:])

@@ -476,7 +476,7 @@ func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, 
 	if !maps.Equal(plan.Features, b.DeploymentBundle.StateDB.StateFeatures()) {
 		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
 	}
-	_, isDMSPlan := plan.Features[dstate.FeatureRecordDeploymentHistory]
+	_, isDMSPlan := plan.Features[dstate.FeatureDeploymentHistory]
 
 	// The plan records the DMS deployment and version it targeted. Reject it if the live deployment
 	// moved on - a newer version (someone deployed since, possibly from another machine) or a

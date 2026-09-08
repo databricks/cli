@@ -27,7 +27,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "latest_version_id": "1"
 }
 
-=== The plan is a no-op now and records the record_deployment_history feature
+=== The plan is a no-op now and records the deployment_history feature
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -36,7 +36,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "serial": 1,
   "deployment_id": "[NUMID]",
   "features": {
-    "record_deployment_history": {}
+    "deployment_history": {}
   }
 }
 
@@ -51,7 +51,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
  "lineage": "[UUID]",
  "serial": 1,
  "features": {
-  "record_deployment_history": {}
+  "deployment_history": {}
  },
  "state": {}
 }
@@ -162,7 +162,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "latest_version_id": "2"
 }
 
-=== The plan shows the updated pipeline at serial 2 with the record_deployment_history feature
+=== The plan shows the updated pipeline at serial 2 with the deployment_history feature
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],
@@ -171,7 +171,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "serial": 2,
   "deployment_id": "[NUMID]",
   "features": {
-    "record_deployment_history": {}
+    "deployment_history": {}
   }
 }
 
@@ -186,7 +186,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
  "lineage": "[UUID]",
  "serial": 2,
  "features": {
-  "record_deployment_history": {}
+  "deployment_history": {}
  },
  "state": {}
 }

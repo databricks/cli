@@ -1082,7 +1082,7 @@ func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
 // matrix key ends up in the variant's test name, so a long one makes every name that carries
 // it hard to read. Tests may still name the variable itself; the alias is only shorter.
 var envAliases = map[string]string{
-	"DMS": "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY",
+	"DMS": "DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY",
 }
 
 // buildTestEnv builds the test environment from config.Env and customEnv.
