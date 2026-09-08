@@ -13,7 +13,7 @@ Resources:
   Postgres snapshot schedules:
     schedule1:
       Name: 
-      URL:  [DATABRICKS_URL]/lakebase/projects/test-project/branches/main/restore?w=[NUMID]
+      URL:  (not deployed)
 
 >>> [CLI] bundle deployment unbind schedule1
 

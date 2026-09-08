@@ -3,10 +3,8 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -74,17 +72,10 @@ func (b *PostgresSnapshotSchedule) GetName() string {
 }
 
 func (b *PostgresSnapshotSchedule) GetURL() string {
-	return b.URL
+	// The IDs in the API do not (yet) map to IDs in the web UI.
+	return ""
 }
 
-// InitializeURL points at the branch's restore page, where snapshots surface;
-// the schedule has no page of its own. The branch is derived from this
-// schedule's resolved ID ("projects/{project_id}/branches/{branch_id}/snapshot-schedule")
-// rather than from Branch, which may still hold an unresolved "${...}" reference.
-func (b *PostgresSnapshotSchedule) InitializeURL(baseURL url.URL) {
-	branch, _, ok := strings.Cut(b.ID, "/snapshot-schedule")
-	if !ok {
-		return
-	}
-	b.URL = workspaceurls.ResourceURL(baseURL, "postgres_snapshot_schedules", branch)
+func (b *PostgresSnapshotSchedule) InitializeURL(_ url.URL) {
+	// The IDs in the API do not (yet) map to IDs in the web UI.
 }

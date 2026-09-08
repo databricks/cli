@@ -128,13 +128,14 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 		// A job run does have a workspace URL, but it's addressed by two IDs
 		// (job + run) so it can't be expressed as a single-ID pattern here; it's
 		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
-		"job_runs":           true,
-		"postgres_branches":  true,
-		"postgres_databases": true,
-		"postgres_endpoints": true,
-		"postgres_projects":  true,
-		"postgres_roles":     true,
-		"secret_scopes":      true,
+		"job_runs":                    true,
+		"postgres_branches":           true,
+		"postgres_databases":          true,
+		"postgres_endpoints":          true,
+		"postgres_projects":           true,
+		"postgres_roles":              true,
+		"postgres_snapshot_schedules": true,
+		"secret_scopes":               true,
 	}
 
 	supported := SupportedResources()
