@@ -54,12 +54,6 @@ func freeFormFieldNames(paths []string) []string {
 	return out
 }
 
-// baseResourceFields returns the paths a resource gains from BaseResource, plus any extra
-// fields the resource declares alongside it. They are lost together, by one cause.
-func baseResourceFields(extra ...string) []string {
-	return append([]string{"id", "url", "modified_status", "lifecycle.prevent_destroy"}, extra...)
-}
-
 // TestResourceTypesAgreeWithJSON feeds every resource type in config.Resources through
 // structstest.Check. Driving it off the struct by reflection means a newly added resource
 // is covered without touching this test.
