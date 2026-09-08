@@ -1,36 +1,6 @@
 
->>> cat databricks.yml
-bundle:
-  name: acc-[UNIQUE_NAME]
-
-resources:
-  pipelines:
-    my:
-      name: test-pipeline-[UNIQUE_NAME]
-      storage: dbfs:/pipelines/custom
-      ingestion_definition: # TO_DELETE
-        connection_name: my_connection # TO_DELETE
-        objects: # TO_DELETE
-          - {} # TO_DELETE
-      libraries:
-        - file:
-            path: "./foo.py"
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
 Created pipelines.my
 Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> cat databricks.yml
-bundle:
-  name: acc-[UNIQUE_NAME]
-
-resources:
-  pipelines:
-    my:
-      name: test-pipeline-[UNIQUE_NAME]
-      storage: dbfs:/pipelines/custom
-      libraries:
-        - file:
-            path: "./foo.py"

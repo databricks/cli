@@ -3,18 +3,21 @@ touch foo.py
 # Phase 1: deploy with the whole ingestion_definition block (lines tagged
 # # TO_DELETE in the template).
 envsubst < databricks.yml.tmpl > databricks.yml
-trace cat databricks.yml
 trace $CLI bundle deploy
 
 # Phase 2: remove the whole ingestion_definition block by dropping the tagged
 # lines. connection_name is immutable, so removing it must recreate the pipeline.
 grep -v '# TO_DELETE' databricks.yml > databricks.yml.tmp && mv databricks.yml.tmp databricks.yml
-trace cat databricks.yml
 
-# The plan verdict diverges by engine, so route it to per-engine files: the direct
-# engine plans 'update' (the whole ingestion_definition block change misses the
-# recreate rule on the connection_name leaf), while terraform recreates.
-$CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
-$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# The plan diverges by engine. The direct engine's per-field "changes" are the
+# interesting part (the whole ingestion_definition block recorded as one 'update'
+# entry that misses the recreate rule on the connection_name leaf), so capture its
+# JSON. Terraform has no meaningful changes map, so capture its text verdict
+# ('recreate').
+if [ "$DATABRICKS_BUNDLE_ENGINE" = direct ]; then
+    $CLI bundle plan -o json | nostamp > out.plan.direct.json
+else
+    $CLI bundle plan > out.plan.terraform.txt 2>&1
+fi
 
 rm -f out.requests.txt
