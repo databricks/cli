@@ -4,3 +4,9 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # .databricks.machineA is the stashed local state; may linger if the test fails mid-run.
 Ignore = [".databricks.machineA"]
+
+# The state serial differs by backend: a recorded deployment keeps its counter in the service, so
+# the local file has none. This test is about the lineage mismatch, not the counter.
+[[Repls]]
+Old = 'serial=[0-9]+'
+New = 'serial=[SERIAL]'
