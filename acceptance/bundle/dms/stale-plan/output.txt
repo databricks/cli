@@ -49,7 +49,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Replay: re-deploying the same plan is rejected - it predates the recorded version
 >>> musterr [CLI] bundle deploy --plan tmp.plan.json
-Error: this plan predates the deployment now recorded for this bundle; run 'bundle plan' again
+Error: this plan was built against serial 0 but the deployment has recorded version 1; run 'bundle plan' again
 
 
 === Only the first deploy recorded a version; the rejected replay created none
@@ -81,5 +81,5 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Replaying the older plan is rejected: same deployment, outdated version
 >>> musterr [CLI] bundle deploy --plan tmp.plan2.json
-Error: plan serial 1 does not match state serial 2; the state has been modified since the plan was created. Please run 'bundle plan' again
+Error: this plan was built against serial 1 but the deployment has recorded version 2; run 'bundle plan' again
 

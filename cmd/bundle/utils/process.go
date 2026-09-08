@@ -293,22 +293,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
-				// A version is only created when serial bumps, so the recorded last version and
-				// the state serial must agree. If they do not, the local state and the recorded
-				// history have diverged - a deploy from elsewhere, or restored state - and going
-				// on would claim a version the service already has.
-				// A version is only created when serial bumps, so serial must never run ahead of
-				// the recorded history. It may lag: a version whose deploy failed is recorded
-				// without a state write. Ahead means state advanced with no version recorded, so
-				// the next version number is already taken.
-				if lastVersionID != "" {
-					last, cerr := strconv.Atoi(lastVersionID)
-					if cerr == nil && b.DeploymentBundle.StateDB.Data.Serial > last {
-						logdiag.LogError(ctx, fmt.Errorf("deployment state is ahead of its recorded history: state serial is %d but the deployment's last version is %s; destroy and redeploy to resync", b.DeploymentBundle.StateDB.Data.Serial, lastVersionID))
-						return b, stateDesc, root.ErrAlreadyPrinted
-					}
-				}
-
 				// StateDB owns the plan's lineage: CalculatePlan reads these, not the config tree.
 				b.DeploymentBundle.StateDB.DeploymentID = dmsDeploymentID
 				b.DeploymentBundle.StateDB.LatestVersionID = lastVersionID
@@ -494,17 +478,17 @@ func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, 
 	}
 	_, isDMSPlan := plan.Features[dstate.FeatureDeploymentHistory]
 
-	// The plan records the DMS deployment and version it targeted. Reject it if the live deployment
-	// moved on - a newer version (someone deployed since, possibly from another machine) or a
-	// different id (deleted and recreated) - so a stale plan is never applied on top of newer state.
-	// This is the authoritative stale guard for a recorded bundle, whose local state is only a
-	// tombstone (its serial does not catch a deploy from elsewhere). Gated on the plan being a DMS
-	// plan; a first-deploy plan has empty version ids that still get compared (and match) here.
+	// Reject a plan the live deployment has moved past, so it is never applied on top of newer
+	// state. The service is authoritative here: a recorded bundle's local state is a tombstone,
+	// so its serial alone does not catch a deploy from another machine.
 	if isDMSPlan {
-		// A plan built before the first deploy carries no deployment id; once one exists the plan
-		// predates it, which is staleness rather than a different target.
-		if plan.DeploymentId == "" && dmsDeploymentID != "" {
-			return errors.New("this plan predates the deployment now recorded for this bundle; run 'bundle plan' again")
+		// The plan is stale if the deployment has recorded a version past the serial it was built
+		// against. Covers a plan from before the first deploy too: its serial is 0.
+		if dmsDeployment != nil && dmsDeployment.LastVersionId != "" {
+			last, cerr := strconv.Atoi(dmsDeployment.LastVersionId)
+			if cerr == nil && plan.Serial < last {
+				return fmt.Errorf("this plan was built against serial %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, last)
+			}
 		}
 		if plan.DeploymentId != dmsDeploymentID {
 			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
