@@ -79,6 +79,15 @@ func TestSnapshotChanged(t *testing.T) {
 	assert.True(t, snapshotChanged(added, old), "addition detected")
 }
 
+// warmTarPath returns the warm tar the cache's manifest currently points at.
+func warmTarPath(t *testing.T, cacheDir string) string {
+	t.Helper()
+	m := loadSnapshotManifest(filepath.Join(cacheDir, snapshotCacheManifestName))
+	require.NotNil(t, m)
+	require.NotEmpty(t, m.TarName)
+	return filepath.Join(cacheDir, m.TarName)
+}
+
 func TestWarmSnapshotColdBuild(t *testing.T) {
 	repo := t.TempDir()
 	writeRepoFile(t, repo, "a.txt", "alpha")
@@ -86,22 +95,23 @@ func TestWarmSnapshotColdBuild(t *testing.T) {
 	dirName := filepath.Base(repo)
 
 	cacheDir := t.TempDir()
-	tarPath := filepath.Join(cacheDir, snapshotCacheTarName)
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 
 	files := statFiles(t, repo, "a.txt", "src/model.py")
-	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, tarPath, out))
+	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, cacheDir, "", out))
 
 	contents := extractTarball(t, out)
 	assert.Equal(t, "alpha", contents[dirName+"/a.txt"])
 	assert.Equal(t, "print()", contents[dirName+"/src/model.py"])
 
-	// The warm tar and manifest are persisted for the next run.
-	assert.FileExists(t, tarPath)
+	// The warm tar and manifest are persisted for the next run, and the manifest names
+	// the tar it indexes.
 	m := loadSnapshotManifest(filepath.Join(cacheDir, snapshotCacheManifestName))
 	require.NotNil(t, m)
 	assert.Equal(t, dirName, m.DirName)
 	assert.Len(t, m.Entries, 2)
+	assert.NotEmpty(t, m.TarName)
+	assert.FileExists(t, filepath.Join(cacheDir, m.TarName))
 }
 
 func TestWarmSnapshotReusesUnchangedFromCache(t *testing.T) {
@@ -111,12 +121,12 @@ func TestWarmSnapshotReusesUnchangedFromCache(t *testing.T) {
 	dirName := filepath.Base(repo)
 
 	cacheDir := t.TempDir()
-	tarPath := filepath.Join(cacheDir, snapshotCacheTarName)
 	files := statFiles(t, repo, "a.txt", "keep.py")
-	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, tarPath, filepath.Join(t.TempDir(), "cold.tar.gz")))
+	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, cacheDir, "", filepath.Join(t.TempDir(), "cold.tar.gz")))
 
 	old := loadSnapshotManifest(filepath.Join(cacheDir, snapshotCacheManifestName))
 	require.NotNil(t, old)
+	oldTarPath := filepath.Join(cacheDir, old.TarName)
 
 	// Delete keep.py from disk but keep it in the file list with its original
 	// size+mtime: a correct rebuild must copy its bytes from the warm tar, proving
@@ -124,7 +134,7 @@ func TestWarmSnapshotReusesUnchangedFromCache(t *testing.T) {
 	require.NoError(t, os.Remove(filepath.Join(repo, "keep.py")))
 
 	out := filepath.Join(t.TempDir(), "warm.tar.gz")
-	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, old, tarPath, out))
+	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, old, cacheDir, oldTarPath, out))
 
 	contents := extractTarball(t, out)
 	assert.Equal(t, "keep", contents[dirName+"/keep.py"], "unchanged member copied from warm tar")
@@ -138,11 +148,11 @@ func TestWarmSnapshotRebuildEditAddDelete(t *testing.T) {
 	dirName := filepath.Base(repo)
 
 	cacheDir := t.TempDir()
-	tarPath := filepath.Join(cacheDir, snapshotCacheTarName)
 	files := statFiles(t, repo, "a.txt", "b.txt")
-	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, tarPath, filepath.Join(t.TempDir(), "cold.tar.gz")))
+	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, cacheDir, "", filepath.Join(t.TempDir(), "cold.tar.gz")))
 	old := loadSnapshotManifest(filepath.Join(cacheDir, snapshotCacheManifestName))
 	require.NotNil(t, old)
+	oldTarPath := filepath.Join(cacheDir, old.TarName)
 
 	// Edit a.txt (changed), delete b.txt, add c.txt.
 	writeRepoFile(t, repo, "a.txt", "alpha-v2")
@@ -151,7 +161,7 @@ func TestWarmSnapshotRebuildEditAddDelete(t *testing.T) {
 
 	out := filepath.Join(t.TempDir(), "warm.tar.gz")
 	newFiles := statFiles(t, repo, "a.txt", "c.txt")
-	require.NoError(t, rebuildWarmSnapshot(repo, dirName, newFiles, old, tarPath, out))
+	require.NoError(t, rebuildWarmSnapshot(repo, dirName, newFiles, old, cacheDir, oldTarPath, out))
 
 	contents := extractTarball(t, out)
 	assert.Equal(t, "alpha-v2", contents[dirName+"/a.txt"], "edited file updated")
@@ -171,13 +181,42 @@ func TestGzipFileRoundTrip(t *testing.T) {
 	dirName := filepath.Base(repo)
 
 	cacheDir := t.TempDir()
-	tarPath := filepath.Join(cacheDir, snapshotCacheTarName)
 	files := statFiles(t, repo, "a.txt")
-	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, tarPath, filepath.Join(t.TempDir(), "cold.tar.gz")))
+	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, cacheDir, "", filepath.Join(t.TempDir(), "cold.tar.gz")))
 
 	// gzipFile recompresses the warm tar directly (the no-change hit path).
 	out := filepath.Join(t.TempDir(), "reuse.tar.gz")
-	require.NoError(t, gzipFile(tarPath, out))
+	require.NoError(t, gzipFile(warmTarPath(t, cacheDir), out))
 	contents := extractTarball(t, out)
 	assert.Equal(t, "alpha", contents[dirName+"/a.txt"])
+}
+
+func TestWarmSnapshotRebuildRotatesTar(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "a.txt", "alpha")
+	writeRepoFile(t, repo, "b.txt", "bravo")
+	dirName := filepath.Base(repo)
+	cacheDir := t.TempDir()
+
+	files := statFiles(t, repo, "a.txt", "b.txt")
+	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files, nil, cacheDir, "", filepath.Join(t.TempDir(), "1.tar.gz")))
+	m1 := loadSnapshotManifest(filepath.Join(cacheDir, snapshotCacheManifestName))
+	require.NotNil(t, m1)
+	tar1 := filepath.Join(cacheDir, m1.TarName)
+	assert.FileExists(t, tar1)
+
+	// Change a file and rebuild: a new uniquely named tar replaces the old one, and the
+	// manifest points at the survivor. This is what keeps the manifest/tar pair
+	// consistent instead of overwriting a fixed name in place.
+	writeRepoFile(t, repo, "a.txt", "alpha-2")
+	files2 := statFiles(t, repo, "a.txt", "b.txt")
+	require.NoError(t, rebuildWarmSnapshot(repo, dirName, files2, m1, cacheDir, tar1, filepath.Join(t.TempDir(), "2.tar.gz")))
+	m2 := loadSnapshotManifest(filepath.Join(cacheDir, snapshotCacheManifestName))
+	require.NotNil(t, m2)
+	assert.NotEqual(t, m1.TarName, m2.TarName, "each build gets a unique tar name")
+	assert.FileExists(t, filepath.Join(cacheDir, m2.TarName))
+	assert.NoFileExists(t, tar1, "superseded warm tar is cleaned up")
+
+	matches, _ := filepath.Glob(filepath.Join(cacheDir, snapshotTarPrefix+"*.tar"))
+	assert.Len(t, matches, 1, "exactly one warm tar remains")
 }

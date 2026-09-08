@@ -14,6 +14,7 @@ package aircmd
 import (
 	"archive/tar"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -34,7 +35,10 @@ const (
 	// snapshotCacheVersion invalidates on-disk caches when the layout below changes.
 	snapshotCacheVersion      = "v1"
 	snapshotCacheManifestName = "manifest.json"
-	snapshotCacheTarName      = "snapshot.tar"
+	// snapshotTarPrefix begins each warm tar's filename; the rest is a per-build random
+	// id (snapshot.<id>.tar). A build never overwrites another build's tar, so a manifest
+	// and the tar it names stay a consistent pair — see rebuildWarmSnapshot.
+	snapshotTarPrefix = "snapshot."
 
 	// snapshotCacheMinBytes gates the cache to trees large enough that the walk+read
 	// cost dominates. Below it a plain re-pack is cheap and the cache bookkeeping
@@ -57,9 +61,11 @@ type cacheEntry struct {
 	Length  int64 `json:"length"`
 }
 
-// snapshotManifest is the on-disk index of a warm snapshot.tar.
+// snapshotManifest is the on-disk index of a warm snapshot tar. TarName binds it to the
+// exact tar its byte offsets describe, so a stale or half-written pair is never reused.
 type snapshotManifest struct {
 	Version string                `json:"version"`
+	TarName string                `json:"tar_name"` // the snapshot.<id>.tar this manifest indexes
 	DirName string                `json:"dir_name"`
 	Entries map[string]cacheEntry `json:"entries"` // keyed by slash-separated relative path
 }
@@ -116,13 +122,16 @@ func packagePlainTarWithCache(ctx context.Context, repoPath, configPath string, 
 		return err
 	}
 	cacheDir := snapshotCacheDir(absRepo, absConfig, includePaths)
-	tarPath := filepath.Join(cacheDir, snapshotCacheTarName)
 	manifestPath := filepath.Join(cacheDir, snapshotCacheManifestName)
 
 	old := loadSnapshotManifest(manifestPath)
-	if old != nil && old.DirName == dirName && fileExists(tarPath) && !snapshotChanged(files, old) {
+	var oldTarPath string
+	if old != nil {
+		oldTarPath = filepath.Join(cacheDir, old.TarName)
+	}
+	if old != nil && old.DirName == dirName && fileExists(oldTarPath) && !snapshotChanged(files, old) {
 		mode = "hit-nochange"
-		return gzipFile(tarPath, outputTarball)
+		return gzipFile(oldTarPath, outputTarball)
 	}
 
 	if err := os.MkdirAll(cacheDir, 0o700); err != nil {
@@ -131,7 +140,7 @@ func packagePlainTarWithCache(ctx context.Context, repoPath, configPath string, 
 	if old != nil {
 		mode = "rebuild-warm"
 	}
-	return rebuildWarmSnapshot(repoPath, dirName, files, old, tarPath, outputTarball)
+	return rebuildWarmSnapshot(repoPath, dirName, files, old, cacheDir, oldTarPath, outputTarball)
 }
 
 // snapshotChanged reports whether the current file set differs from the manifest by
@@ -150,52 +159,70 @@ func snapshotChanged(files []snapshotFile, old *snapshotManifest) bool {
 	return false
 }
 
-// rebuildWarmSnapshot writes a fresh warm tar (copying unchanged members from the old
-// one when available) and its gzipped upload copy in a single pass, then atomically
-// replaces the cached tar and manifest.
-func rebuildWarmSnapshot(repoPath, dirName string, files []snapshotFile, old *snapshotManifest, tarPath, outputTarball string) (err error) {
+// rebuildWarmSnapshot writes a fresh warm tar and its gzipped upload copy in one pass
+// (copying unchanged members verbatim from the previous build's tar), then installs a
+// manifest pointing at the new tar.
+//
+// Correctness under crashes and concurrent runs rests on two properties: each build
+// names its tar uniquely (snapshot.<id>.tar) and never overwrites another's, and the
+// manifest is renamed into place atomically only after the tar it names is fully
+// written. So a manifest and the tar it indexes are always a consistent pair — there is
+// no window where the manifest's byte offsets describe a tar with a different layout
+// (which would silently corrupt a later verbatim reuse), and two concurrent rebuilds are
+// last-writer-wins on the manifest rather than interleaving into one file. No lock needed.
+func rebuildWarmSnapshot(repoPath, dirName string, files []snapshotFile, old *snapshotManifest, cacheDir, oldTarPath, outputTarball string) (err error) {
 	gz, closeGz, err := newGzFile(outputTarball)
 	if err != nil {
 		return err
 	}
 	defer func() { err = firstErr(err, closeGz()) }()
 
-	newTarPath := tarPath + ".tmp"
+	buildID, err := randomID()
+	if err != nil {
+		return err
+	}
+	newTarName := snapshotTarPrefix + buildID + ".tar"
+	newTarPath := filepath.Join(cacheDir, newTarName)
 	tarFile, err := os.Create(newTarPath)
 	if err != nil {
 		return fmt.Errorf("failed to create warm tar: %w", err)
 	}
 	defer func() {
 		if err != nil {
-			os.Remove(newTarPath)
+			tarFile.Close()
+			os.Remove(newTarPath) // unreferenced on failure; don't leave an orphan
 		}
 	}()
 
+	// Reuse unchanged members from the previous build's tar. Its offsets come from old's
+	// manifest, which indexes exactly that (immutable) tar, so the ranges stay valid.
 	var oldTar io.ReaderAt
-	if old != nil {
-		if f, e := os.Open(tarPath); e == nil {
+	if old != nil && oldTarPath != "" {
+		if f, e := os.Open(oldTarPath); e == nil {
 			defer f.Close()
 			oldTar = f
 		} else {
-			old = nil // warm tar gone; rebuild every member from disk
+			old = nil // previous tar gone; rebuild every member from disk
 		}
 	}
 
 	manifest, err := writeSnapshot(repoPath, dirName, files, old, oldTar, tarFile, gz)
 	if err != nil {
-		tarFile.Close()
 		return err
 	}
+	manifest.TarName = newTarName
 	if err = tarFile.Close(); err != nil {
 		return fmt.Errorf("failed to finalize warm tar: %w", err)
 	}
 	if err = closeGz(); err != nil {
 		return err
 	}
-	if err = os.Rename(newTarPath, tarPath); err != nil {
-		return fmt.Errorf("failed to install warm tar: %w", err)
+	// Install the manifest only now that its tar is durable; the write is atomic.
+	if err = saveSnapshotManifest(filepath.Join(cacheDir, snapshotCacheManifestName), manifest); err != nil {
+		return err
 	}
-	return saveSnapshotManifest(filepath.Join(filepath.Dir(tarPath), snapshotCacheManifestName), manifest)
+	cleanupOldTars(cacheDir, newTarName)
+	return nil
 }
 
 // writeGzOnly packs files straight to a gzipped tarball without persisting a cache,
@@ -336,8 +363,8 @@ func newGzFile(outputTarball string) (io.Writer, func() error, error) {
 	return gz, closeFn, nil
 }
 
-// gzipFile writes a BestSpeed gzip of src to outputTarball. Used on a no-change cache
-// hit to recompress the warm tar without re-reading the working tree.
+// gzipFile gzips src to outputTarball via newGzFile (parallel gzip). Used on a no-change
+// cache hit to recompress the warm tar without re-reading the working tree.
 func gzipFile(src, outputTarball string) (err error) {
 	in, err := os.Open(src)
 	if err != nil {
@@ -365,15 +392,54 @@ func loadSnapshotManifest(path string) *snapshotManifest {
 	return &m
 }
 
+// saveSnapshotManifest writes the manifest atomically (unique temp + rename) so a reader
+// or a concurrent run never sees a half-written manifest, and the pair with its tar swaps
+// in as a unit.
 func saveSnapshotManifest(path string, m snapshotManifest) error {
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, data, 0o600); err != nil {
+	tmp, err := os.CreateTemp(filepath.Dir(path), "manifest-*.json")
+	if err != nil {
 		return fmt.Errorf("failed to write snapshot manifest: %w", err)
 	}
+	tmpName := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return fmt.Errorf("failed to write snapshot manifest: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("failed to write snapshot manifest: %w", err)
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("failed to install snapshot manifest: %w", err)
+	}
 	return nil
+}
+
+// randomID returns a short random hex string used to name each warm tar uniquely.
+func randomID() (string, error) {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return "", fmt.Errorf("failed to generate cache build id: %w", err)
+	}
+	return hex.EncodeToString(b[:]), nil
+}
+
+// cleanupOldTars removes warm tars other than keep: superseded builds, and tars a
+// concurrent rebuild orphaned. Best-effort — only keep is referenced by the manifest,
+// and a wrongly removed tar costs at most a cold rebuild, never correctness.
+func cleanupOldTars(cacheDir, keep string) {
+	matches, _ := filepath.Glob(filepath.Join(cacheDir, snapshotTarPrefix+"*.tar"))
+	for _, p := range matches {
+		if filepath.Base(p) != keep {
+			os.Remove(p)
+		}
+	}
 }
 
 func fileExists(path string) bool {
