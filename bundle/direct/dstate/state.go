@@ -159,9 +159,9 @@ type DeploymentState struct {
 	VersionID int
 }
 
-// DMSDeployment identifies the recorded deployment Open reads from. The zero value means the
+// OpenDmsArgs identifies the recorded deployment Open reads from. The zero value means the
 // bundle does not record deployment history, or no deployment exists for it yet.
-type DMSDeployment struct {
+type OpenDmsArgs struct {
 	// ID is the deployment's server-minted id.
 	ID string
 
@@ -484,7 +484,7 @@ type (
 // recorded deploy); lineage and serial still come from the file, since that is what the write path
 // increments. Open only reads through the client - InitializeOperationBuffer installs the write path once a
 // version exists.
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment DMSDeployment) error {
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment OpenDmsArgs) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -515,7 +515,7 @@ func (db *DeploymentState) reset() {
 	db.openedForWrite = false
 }
 
-func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment DMSDeployment) error {
+func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment OpenDmsArgs) error {
 	db.Path = path
 
 	// The state file is the source of truth for whether this deployment records history: read it

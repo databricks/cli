@@ -14,6 +14,8 @@ import os
 import posixpath
 import subprocess
 
+from nostamp import scrub
+
 
 def print_file(filename):
     data = open(filename).read()
@@ -178,7 +180,9 @@ def print_recorded_state(filename, target):
     printing it raw would show an empty state and differ from the same test's non-recording run.
     """
     data = json.loads(open(filename).read())
-    data["state"] = get_recorded_state(target)
+    # Recording stamps each resource payload with the deployment and version; drop it here so the
+    # printed state matches a non-recording run without every caller piping through nostamp.
+    data["state"] = scrub(get_recorded_state(target))
 
     # The service owns the version and the file persists no serial, so take it from the deployment.
     # Rebuilt in header order, since the file has no serial key to overwrite in place.
