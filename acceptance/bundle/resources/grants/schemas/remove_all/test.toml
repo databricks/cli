@@ -1,3 +1,5 @@
+Badness = "Emptying a grants node cannot be deployed with deployment-history recording: apply calls DeleteState, which records a succeeded UPDATE carrying no state, and the service rejects that. This test is excluded from the recording variant until the fix records the emptied state instead of a delete."
+
 # Emptying a grants node is a known bug under DMS (deployment-history recording).
 # It records a succeeded UPDATE with no state, which the service rejects.
 # See: acceptance/bundle/dms/empty-grants
