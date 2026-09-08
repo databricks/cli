@@ -15,4 +15,4 @@ title "Deploy (migrates state)"
 trace $CLI bundle deploy
 
 title "Print state after deploy"
-trace print_state.py | nostamp --indent 1
+trace print_state.py
