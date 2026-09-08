@@ -123,11 +123,11 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	}
 	deploymentID, versionID := deploymentAndNextVersion(b)
 
-	// The version this run creates is one past the deployment's most recent, so the previous is
-	// one below it - empty for the first version.
+	// The state serial tracks the version the service last recorded, which is the one this run
+	// follows. Empty for the first version.
 	previousVersionID := ""
-	if versionID > 1 {
-		previousVersionID = strconv.FormatInt(versionID-1, 10)
+	if serial := db.StateDB.Data.Serial; serial > 0 {
+		previousVersionID = strconv.Itoa(serial)
 	}
 
 	// The server rejects this unless the version number exceeds last_version_id and

@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -289,15 +288,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				if !cmdctx.HasWorkspaceClient(ctx) {
 					ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 				}
-				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dmsDeploymentID); err != nil {
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.DMSDeployment{ID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
-				// Open sets DeploymentID from the id passed to it; the version is not passed, so
-				// set it here. CalculatePlan reads these, not the config tree.
-				b.DeploymentBundle.StateDB.LatestVersionID = lastVersionID
 			} else {
-				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), ""); err != nil {
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.DMSDeployment{}); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
@@ -468,17 +464,39 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 // validatePlan rejects a --plan file that no longer matches the target: its recording shape must
 // match the target's config, and a plan that targets an existing recorded deployment must not
 // predate the deployment the service now holds. It ends with the local lineage/serial guard.
+// validatePlan rejects a saved plan that no longer matches the state it was built against.
 func validatePlan(b *bundle.Bundle, plan *deployplan.Plan) error {
+	stateDB := &b.DeploymentBundle.StateDB
+	stateDB.AssertOpenedForReadOrWrite()
+
 	// A plan is built against a set of state features, and the stamps it carries follow from
 	// them, so applying it to a target with a different set would deploy the wrong shape.
 	// The state is the target's source of truth and carries its features even on a first
 	// recorded deploy (unlike the version ids, which are empty then).
-	if !maps.Equal(plan.Features, b.DeploymentBundle.StateDB.StateFeatures()) {
+	if !maps.Equal(plan.Features, stateDB.StateFeatures()) {
 		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
 	}
-	// The rest of the plan-vs-state checks (recorded deployment and version, then lineage and
-	// serial) live together next to the state.
-	return direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
+
+	// Under recording the serial tracks the version the service has recorded, so a plan built
+	// against an earlier one is stale. Checked ahead of the lineage guard because a plan from
+	// before the first deploy has no lineage and would otherwise exit through it.
+	if stateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService && plan.Serial < stateDB.Data.Serial {
+		return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	}
+
+	if plan.Lineage == "" {
+		return nil
+	}
+
+	if plan.Lineage != stateDB.Data.Lineage {
+		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
+	}
+
+	if plan.Serial != stateDB.Data.Serial {
+		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	}
+
+	return nil
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.

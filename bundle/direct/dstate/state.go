@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -139,13 +140,22 @@ type DeploymentState struct {
 	// completion after an explicit one does nothing.
 	versionCompleted bool
 
-	// DeploymentID and LatestVersionID are the recorded deployment's id and its most recent version,
-	// from the service at Open (InitializeOperationBuffer updates DeploymentID to the id a first
-	// deploy creates, which Open cannot know). CalculatePlan reads them to stamp the plan's lineage;
-	// CompleteVersion reads them after Finalize's reset - so, like operationBuffer and dmsClient, they
-	// must survive reset.
-	DeploymentID    string
-	LatestVersionID string
+	// DeploymentID is the recorded deployment's id, from the service at Open
+	// (InitializeOperationBuffer updates it to the id a first deploy creates, which Open cannot
+	// know). CalculatePlan reads it to stamp the plan; CompleteVersion reads it after Finalize's
+	// reset - so, like operationBuffer and dmsClient, it must survive reset.
+	DeploymentID string
+}
+
+// DMSDeployment identifies the recorded deployment Open reads from. The zero value means the
+// bundle does not record deployment history, or no deployment exists for it yet.
+type DMSDeployment struct {
+	// ID is the deployment's server-minted id.
+	ID string
+
+	// LastVersionID is the most recent version the service has recorded. The state serial is set
+	// from it at Open: the service owns the version number, and the serial only tracks it.
+	LastVersionID string
 }
 
 type Header struct {
@@ -157,7 +167,10 @@ type Header struct {
 	CLIVersion string `json:"cli_version"`
 
 	Lineage string `json:"lineage"`
-	Serial  int    `json:"serial"`
+
+	// Serial counts state writes. Omitted for recorded deployments, where the service's version is
+	// the source of truth and Open sets this from it.
+	Serial int `json:"serial,omitempty"`
 
 	// Features maps each feature flag this state depends on to a (currently empty)
 	// value. It is read to detect a state that depends on features this CLI lacks and
@@ -232,13 +245,10 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 		return false, nil
 	}
 	db.versionCompleted = true
-	deploymentID, latestVersionID, client := db.DeploymentID, db.LatestVersionID, db.dmsClient
+	// The buffer knows the version it was opened for, so complete exactly that one rather than
+	// re-deriving it: the serial moves during a deploy, the created version does not.
+	deploymentID, client, versionID := db.DeploymentID, db.dmsClient, buf.Version()
 	db.mu.Unlock()
-
-	versionID, err := dms.NextVersion(latestVersionID)
-	if err != nil {
-		return false, err
-	}
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
 	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
@@ -463,7 +473,7 @@ type (
 // recorded deploy); lineage and serial still come from the file, since that is what the write path
 // increments. Open only reads through the client - InitializeOperationBuffer installs the write path once a
 // version exists.
-func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
+func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment DMSDeployment) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -471,7 +481,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery W
 		panic(fmt.Sprintf("state already opened: %v, cannot open %v", db.Path, path))
 	}
 
-	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, withDeploymentHistory, dmsDeploymentID)
+	err := db.unlockedOpen(ctx, path, withRecovery, withWrite, withDeploymentHistory, dmsDeployment)
 	if err != nil {
 		// A failed open must leave the receiver closed. unlockedOpen assigns
 		// db.Path before every fallible step, so without this the receiver stays
@@ -493,7 +503,7 @@ func (db *DeploymentState) reset() {
 	db.stateIDs = nil
 }
 
-func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeploymentID string) error {
+func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment DMSDeployment) error {
 	db.Path = path
 
 	// The state file is the source of truth for whether this deployment records history: read it
@@ -586,10 +596,10 @@ To record this bundle's history, start it over as a new deployment:
 			return err
 		}
 		db.dmsClient = client
-		db.DeploymentID = dmsDeploymentID
+		db.DeploymentID = dmsDeployment.ID
 
-		if dmsDeploymentID != "" {
-			resources, err := db.dmsClient.ListResources(ctx, dmsDeploymentID)
+		if dmsDeployment.ID != "" {
+			resources, err := db.dmsClient.ListResources(ctx, dmsDeployment.ID)
 			if err != nil {
 				return err
 			}
@@ -597,6 +607,25 @@ To record this bundle's history, start it over as a new deployment:
 				return err
 			}
 		}
+
+		// The service owns the version number, so the serial comes from it rather than from the
+		// state file, which no longer persists one. With no deployment yet there are no versions,
+		// hence zero - which matters for a state file written before recording was turned on, whose
+		// serial counts a history the service knows nothing about.
+		//
+		// Serial and version normally advance together, with one expected exception: a failed deploy
+		// creates a version but never writes state (see acceptance/bundle/dms/record-failure).
+		//
+		// TODO: report drift via telemetry, separating that failed-deploy case from a serial ahead
+		// of the service or behind by more than one. Those should not happen in normal operation.
+		serial := 0
+		if dmsDeployment.LastVersionID != "" {
+			serial, err = strconv.Atoi(dmsDeployment.LastVersionID)
+			if err != nil {
+				return fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionID, err)
+			}
+		}
+		db.Data.Serial = serial
 	}
 
 	if withWrite {
@@ -953,6 +982,9 @@ func (db *DeploymentState) dataForFile() Database {
 			header.Features = make(map[string]struct{})
 		}
 		header.Features[FeatureDeploymentHistory] = struct{}{}
+		// Under DMS the serial is managed by the deployment's last_version_id, so it is not
+		// persisted here; Open sets it from the service.
+		header.Serial = 0
 
 		return Database{
 			Header: header,

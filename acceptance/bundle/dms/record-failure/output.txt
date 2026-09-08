@@ -15,6 +15,7 @@ Files: 6 uploaded, 0 deleted
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
+  "serial": 1,
   "features": {
     "deployment_history": {}
   }

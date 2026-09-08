@@ -8,7 +8,6 @@ import (
 	"maps"
 	"reflect"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -38,35 +37,6 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	var err error
 	b.Adapters, err = dresources.InitAll(client)
 	return err
-}
-
-// ValidatePlanAgainstState validates that a plan still matches the given state: the recorded
-// version it targeted, then its lineage and serial.
-func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
-	// Stale if the deployment recorded a version past the one the plan was built against. Covers a
-	// plan from before the first deploy too: its version is 0. Only recorded bundles set this.
-	if stateDB.LatestVersionID != "" {
-		last, err := strconv.Atoi(stateDB.LatestVersionID)
-		if err == nil && plan.Serial < last {
-			return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, last)
-		}
-	}
-
-	if plan.Lineage == "" {
-		return nil
-	}
-
-	stateDB.AssertOpenedForReadOrWrite()
-
-	if plan.Lineage != stateDB.Data.Lineage {
-		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
-	}
-
-	if plan.Serial != stateDB.Data.Serial {
-		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
-	}
-
-	return nil
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
