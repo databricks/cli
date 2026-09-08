@@ -367,7 +367,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
 
-		if err := validatePlan(ctx, b, plan, dmsDeployment, dmsDeploymentID); err != nil {
+		if err := validatePlan(b, plan); err != nil {
 			logdiag.LogError(ctx, err)
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
@@ -468,7 +468,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 // validatePlan rejects a --plan file that no longer matches the target: its recording shape must
 // match the target's config, and a plan that targets an existing recorded deployment must not
 // predate the deployment the service now holds. It ends with the local lineage/serial guard.
-func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, dmsDeployment *bundledeployments.Deployment, dmsDeploymentID string) error {
+func validatePlan(b *bundle.Bundle, plan *deployplan.Plan) error {
 	// A plan is built against a set of state features, and the stamps it carries follow from
 	// them, so applying it to a target with a different set would deploy the wrong shape.
 	// The state is the target's source of truth and carries its features even on a first
@@ -476,27 +476,8 @@ func validatePlan(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, 
 	if !maps.Equal(plan.Features, b.DeploymentBundle.StateDB.StateFeatures()) {
 		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
 	}
-	_, isDMSPlan := plan.Features[dstate.FeatureDeploymentHistory]
-
-	// Reject a plan the live deployment has moved past, so it is never applied on top of newer
-	// state. The service is authoritative here: a recorded bundle's local state is a tombstone,
-	// so its serial alone does not catch a deploy from another machine.
-	if isDMSPlan {
-		// The plan is stale if the deployment has recorded a version past the one the plan was
-		// built against. Covers a plan from before the first deploy too: its version is 0.
-		if dmsDeployment != nil && dmsDeployment.LastVersionId != "" {
-			last, cerr := strconv.Atoi(dmsDeployment.LastVersionId)
-			if cerr == nil && plan.Serial < last {
-				return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, last)
-			}
-		}
-		if plan.DeploymentId != dmsDeploymentID {
-			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
-		}
-	}
-
-	// Validate that the plan's lineage and serial match the local state. This is the stale guard for
-	// non-recorded bundles (recorded ones are covered by the version check above).
+	// The rest of the plan-vs-state checks (recorded deployment and version, then lineage and
+	// serial) live together next to the state.
 	return direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
 }
 

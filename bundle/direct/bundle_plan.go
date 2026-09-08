@@ -8,6 +8,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
@@ -39,14 +40,28 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-// ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
-// If the plan has no lineage (first deployment), validation is skipped.
+// ValidatePlanAgainstState validates that a plan still matches the given state: the recorded
+// deployment and version it targeted, then its lineage and serial.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
+	stateDB.AssertOpenedForReadOrWrite()
+
+	if stateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
+		// Stale if the deployment recorded a version past the one the plan was built against.
+		// Covers a plan from before the first deploy too: its version is 0.
+		if stateDB.LatestVersionID != "" {
+			last, err := strconv.Atoi(stateDB.LatestVersionID)
+			if err == nil && plan.Serial < last {
+				return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, last)
+			}
+		}
+		if plan.DeploymentId != stateDB.DeploymentID {
+			return errors.New("this plan targets a different deployment than the one now recorded for this bundle; run 'bundle plan' again")
+		}
+	}
+
 	if plan.Lineage == "" {
 		return nil
 	}
-
-	stateDB.AssertOpenedForReadOrWrite()
 
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
