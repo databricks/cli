@@ -101,6 +101,14 @@ func TestInitializeURLs(t *testing.T) {
 						},
 					},
 				},
+				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+					"snapshotschedule1": {
+						BaseResource: resources.BaseResource{ID: "projects/myproject/branches/main/snapshot-schedule"},
+						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+							Branch: "projects/myproject/branches/main",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -117,6 +125,7 @@ func TestInitializeURLs(t *testing.T) {
 		"schema1":            "https://mycompany.databricks.com/explore/data/catalog/schema?w=123456",
 		"cluster1":           "https://mycompany.databricks.com/compute/clusters/1017-103929-vlr7jzcf?w=123456",
 		"dashboard1":         "https://mycompany.databricks.com/dashboardsv3/01ef8d56871e1d50ae30ce7375e42478/published?w=123456",
+		"snapshotschedule1":  "https://mycompany.databricks.com/lakebase/projects/myproject/branches/main/restore?w=123456",
 	}
 
 	err := initializeForWorkspace(b, "123456", "https://mycompany.databricks.com/")

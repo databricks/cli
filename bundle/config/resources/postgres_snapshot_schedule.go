@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -72,10 +73,16 @@ func (b *PostgresSnapshotSchedule) GetName() string {
 }
 
 func (b *PostgresSnapshotSchedule) GetURL() string {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return b.URL
 }
 
-func (b *PostgresSnapshotSchedule) InitializeURL(_ url.URL) {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
+// InitializeURL points at the branch's restore page. The snapshot schedule has
+// no page of its own; the Postgres team confirmed snapshots surface under the
+// branch's restore view. Branch is "projects/{project_id}/branches/{branch_id}".
+func (b *PostgresSnapshotSchedule) InitializeURL(baseURL url.URL) {
+	if b.Branch == "" {
+		return
+	}
+	baseURL.Path = "lakebase/" + strings.TrimRight(b.Branch, "/") + "/restore"
+	b.URL = baseURL.String()
 }
