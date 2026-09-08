@@ -258,9 +258,18 @@ func TestHandoverDialFailureKeepsSessionAlive(t *testing.T) {
 
 	wsURL := "ws" + server.URL[4:]
 	var dials atomic.Int32
+	// Signalled the instant a handover dial is attempted (and made to fail). initiateHandover
+	// already holds handoverMutex by the time it dials, so a receive here proves the handover
+	// goroutine has entered the dial and taken the mutex. Buffered and sent non-blockingly so the
+	// dialer never stalls on it even if more dials than expected occur.
+	handoverDialAttempted := make(chan struct{}, 1)
 	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
 		// Let the initial connection through and fail every handover dial after it.
 		if dials.Add(1) > 1 {
+			select {
+			case handoverDialAttempted <- struct{}{}:
+			default:
+			}
 			return nil, errors.New("simulated transient dial failure")
 		}
 		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
@@ -281,6 +290,16 @@ func TestHandoverDialFailureKeepsSessionAlive(t *testing.T) {
 	require.NoError(t, client.Output.AssertWrite(beforeMsg))
 
 	handoverChan <- time.Now()
+
+	// Completing the tick send only proves the handover goroutine received the tick; it does not
+	// prove it acquired handoverMutex and reached the dial. Wait for the dial to actually be
+	// attempted before sending more traffic - otherwise the payload below can traverse the
+	// original connection before the handover even starts, which is the macOS "dials == 1" flake.
+	select {
+	case <-handoverDialAttempted:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the handover never attempted its replacement dial")
+	}
 
 	// The original connection must still be proxying both ways. sendMessage blocks on the
 	// handover mutex, so this write cannot overtake the failed handover.

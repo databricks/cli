@@ -1,1 +1,1 @@
-* Keep an `ssh connect` session alive when the periodic auth handover cannot open its replacement websocket. A transient dial failure previously ended a healthy session, even though the connection being replaced was still working.
+* Keep an `ssh connect` session alive when the periodic auth handover cannot open its replacement websocket. A transient dial failure previously ended a healthy session, even though the connection being replaced was still working. ([#6558](https://github.com/databricks/cli/pull/6558))

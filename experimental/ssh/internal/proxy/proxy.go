@@ -347,11 +347,18 @@ func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
 	}
 	conn := pc.conn.Load()
 	err := conn.WriteMessage(mt, data)
-	if err != nil && pc.resumable() && mt == websocket.BinaryMessage {
-		// The payload is buffered, so this failure costs no data. gorilla latches a permanent
-		// write error after any failed write, so this connection can never send again: close it
-		// to fail the receiving loop's read now and start the resume, rather than let the
-		// sending loop fill the whole window first.
+	if err != nil && pc.resumable() {
+		// This failure costs no data whatever the message type: a binary payload was buffered
+		// above, and control/ack messages are regenerated after the resume. gorilla latches a
+		// permanent write error after any failed write, so this connection can never send again -
+		// close it to fail the receiving loop's read now and drive the reattach, rather than let
+		// the sending loop fill the whole window first. This must cover a failed ack (a text
+		// control frame) too, not only a binary payload: when traffic is one-way from the server
+		// the receiving side never writes a binary frame, so a poisoned connection would otherwise
+		// only ever surface as a failed ack. Left as a bare log, the read loop kept running while
+		// the peer stopped getting acks, its replay buffer filled to the limit, and the session
+		// ended instead of reattaching. A failed close message reaches here only during teardown,
+		// where closing the connection is what happens next anyway.
 		conn.Close()
 		return errors.Join(errSendFailedResumable, err)
 	}

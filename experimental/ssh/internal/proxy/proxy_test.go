@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -267,4 +268,45 @@ func TestConnectionHandover(t *testing.T) {
 		err = client.Output.AssertWrite(createTestMessage("server", i))
 		require.NoError(t, err)
 	}
+}
+
+// A failed acknowledgement write on a resumable connection must be treated exactly like a failed
+// binary write: close the connection and report errSendFailedResumable, so the receiving loop's
+// next read fails and drives the reattach. When traffic is one-way from the server the receiving
+// side never writes a binary frame, so a poisoned connection surfaces only as a failed ack; left
+// as a bare log it would let the peer's replay buffer fill and end the session instead.
+func TestFailedAckWriteClosesResumableConnectionToDriveReattach(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		// A live peer to dial; drain until the client goes away.
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	conn, err := createTestWebsocketConnection(wsURL)
+	require.NoError(t, err)
+
+	pc := newResumableProxyConnection(nil)
+	pc.conn.Store(conn)
+
+	// Poison the write side the way gorilla latches it after any failed write, without disturbing
+	// reads - the one-way-from-server case where only the ack ever fails.
+	require.NoError(t, conn.SetWriteDeadline(time.Now().Add(-time.Hour)))
+
+	// sendControlMessage is the ack path (a text control frame), not a binary payload.
+	err = pc.sendControlMessage(42)
+	require.ErrorIs(t, err, errSendFailedResumable, "a failed ack write on a resumable connection must report the resumable-send failure that drives the reattach")
+
+	// It must have closed the connection: a second close returns net.ErrClosed. With the
+	// connection closed, the receiving loop's next read fails and reattaches, rather than the
+	// failure being silently swallowed.
+	require.ErrorIs(t, conn.Close(), net.ErrClosed, "sendMessage must close the poisoned connection so the receiving loop reattaches")
 }
