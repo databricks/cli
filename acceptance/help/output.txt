@@ -101,7 +101,7 @@ Unity Catalog
   volumes                                Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing, and processing files.
   workspace-bindings                     A securable in Databricks can be configured as __OPEN__ or __ISOLATED__.
 
-Delta Sharing
+Open Sharing
   providers                              A data provider is an object representing the organization in the real world who shares the data.
   recipient-activation                   The Recipient Activation API is only applicable in the open sharing model where the recipient object has the authentication type of TOKEN.
   recipient-federation-policies          *Public Preview* The Recipient Federation Policies APIs are only applicable in the open sharing model where the recipient object has the authentication type of OIDC_RECIPIENT, enabling data sharing from Databricks to non-Databricks recipients.
@@ -115,7 +115,7 @@ Settings
   token-management                       Enables administrators to get all tokens and delete tokens for other users.
   tokens                                 The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks REST APIs.
   workspace-conf                         This API allows updating known workspace settings for advanced users.
-  workspace-settings-v2                  *Public Preview* APIs to manage workspace level settings.
+  workspace-settings-v2                  APIs to manage workspace level settings.
 
 OAuth
   service-principal-secrets-proxy        These APIs enable administrators to manage service principal secrets at the workspace level.

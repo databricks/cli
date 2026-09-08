@@ -6,18 +6,20 @@ package terraform_dabs_map
 // alerts / databricks_alert_v2: 3 tf-only
 // apps / databricks_app: 6 dabs-only
 // apps / databricks_app: 1 tf-only
+// clusters / databricks_cluster: 2 dabs-only
 // clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 25 dabs-only
 // jobs / databricks_job: 259 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 6 dabs-only
+// pipelines / databricks_pipeline: 10 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
+// postgres_branches / databricks_postgres_branch: 1 dabs-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
 // postgres_databases / databricks_postgres_database: 1 unwraps
@@ -100,15 +102,46 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 	},
+	"clusters": {
+		"driver_node_type_flexibility": {
+			"aws_context_id": {}, // clusters.*.driver_node_type_flexibility.aws_context_id
+		},
+		"worker_node_type_flexibility": {
+			"aws_context_id": {}, // clusters.*.worker_node_type_flexibility.aws_context_id
+		},
+	},
 	"jobs": {
+		"continuous": {
+			"maintenance_window": {
+				"day_of_week": {}, // jobs.*.continuous.maintenance_window.day_of_week
+				"start_hour":  {}, // jobs.*.continuous.maintenance_window.start_hour
+				"timezone_id": {}, // jobs.*.continuous.maintenance_window.timezone_id
+			},
+		},
 		"job_clusters": {
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.job_clusters.new_cluster.autotermination_minutes
+				"driver_node_type_flexibility": {
+					"aws_context_id": {}, // jobs.*.job_clusters.new_cluster.driver_node_type_flexibility.aws_context_id
+				},
+				"worker_node_type_flexibility": {
+					"aws_context_id": {}, // jobs.*.job_clusters.new_cluster.worker_node_type_flexibility.aws_context_id
+				},
 			},
 		},
 		"tasks": {
+			"alert_task": {
+				"parameters": {
+					"*": {}, // jobs.*.tasks.alert_task.parameters.*
+				},
+			},
 			"for_each_task": {
 				"task": {
+					"alert_task": {
+						"parameters": {
+							"*": {}, // jobs.*.tasks.for_each_task.task.alert_task.parameters.*
+						},
+					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -116,11 +149,32 @@ var DABsOnlyFields = map[string]FieldSet{
 					},
 					"new_cluster": {
 						"autotermination_minutes": {}, // jobs.*.tasks.for_each_task.task.new_cluster.autotermination_minutes
+						"driver_node_type_flexibility": {
+							"aws_context_id": {}, // jobs.*.tasks.for_each_task.task.new_cluster.driver_node_type_flexibility.aws_context_id
+						},
+						"worker_node_type_flexibility": {
+							"aws_context_id": {}, // jobs.*.tasks.for_each_task.task.new_cluster.worker_node_type_flexibility.aws_context_id
+						},
 					},
 				},
 			},
 			"new_cluster": {
 				"autotermination_minutes": {}, // jobs.*.tasks.new_cluster.autotermination_minutes
+				"driver_node_type_flexibility": {
+					"aws_context_id": {}, // jobs.*.tasks.new_cluster.driver_node_type_flexibility.aws_context_id
+				},
+				"worker_node_type_flexibility": {
+					"aws_context_id": {}, // jobs.*.tasks.new_cluster.worker_node_type_flexibility.aws_context_id
+				},
+			},
+		},
+		"triggers": {
+			"continuous": {
+				"maintenance_window": {
+					"day_of_week": {}, // jobs.*.triggers.continuous.maintenance_window.day_of_week
+					"start_hour":  {}, // jobs.*.triggers.continuous.maintenance_window.start_hour
+					"timezone_id": {}, // jobs.*.triggers.continuous.maintenance_window.timezone_id
+				},
 			},
 		},
 	},
@@ -133,9 +187,30 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"dry_run": {},
+		"ingestion_definition": {
+			"objects": {
+				"schema": {
+					"connector_options": {
+						"rabbitmq_options": {
+							"queue": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.rabbitmq_options.queue
+						},
+					},
+				},
+				"table": {
+					"connector_options": {
+						"rabbitmq_options": {
+							"queue": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.rabbitmq_options.queue
+						},
+					},
+				},
+			},
+		},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
 		},
+	},
+	"postgres_branches": {
+		"source_snapshot": {},
 	},
 	"schemas": {
 		"custom_max_retention_hours": {},
