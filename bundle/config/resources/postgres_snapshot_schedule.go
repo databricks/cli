@@ -3,9 +3,9 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -83,6 +83,5 @@ func (b *PostgresSnapshotSchedule) InitializeURL(baseURL url.URL) {
 	if b.Branch == "" {
 		return
 	}
-	baseURL.Path = "lakebase/" + strings.TrimRight(b.Branch, "/") + "/restore"
-	b.URL = baseURL.String()
+	b.URL = workspaceurls.ResourceURL(baseURL, "postgres_snapshot_schedules", b.Branch)
 }

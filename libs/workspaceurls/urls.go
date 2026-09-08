@@ -24,18 +24,22 @@ var resourceURLPatterns = map[string]string{
 	"notebooks":               "#notebook/%s",
 	"pipelines":               "pipelines/%s",
 	"postgres_catalogs":       "explore/data/%s",
-	"postgres_synced_tables":  "explore/data/%s",
-	"quality_monitors":        "explore/data/%s",
-	"queries":                 "sql/editor/%s",
-	"registered_models":       "explore/data/models/%s",
-	"schemas":                 "explore/data/%s",
-	"secrets":                 "explore/data/%s",
-	"synced_database_tables":  "explore/data/%s",
-	"vector_search_endpoints": "compute/vector-search/%s",
-	"vector_search_indexes":   "explore/data/%s",
-	"volumes":                 "explore/data/volumes/%s",
-	"warehouses":              "sql/warehouses/%s",
-	"instance_pools":          "compute/instance-pools/%s",
+	// The snapshot schedule has no page of its own; %s is the parent branch
+	// ("projects/{project_id}/branches/{branch_id}"), whose restore view is
+	// where snapshots surface.
+	"postgres_snapshot_schedules": "lakebase/%s/restore",
+	"postgres_synced_tables":      "explore/data/%s",
+	"quality_monitors":            "explore/data/%s",
+	"queries":                     "sql/editor/%s",
+	"registered_models":           "explore/data/models/%s",
+	"schemas":                     "explore/data/%s",
+	"secrets":                     "explore/data/%s",
+	"synced_database_tables":      "explore/data/%s",
+	"vector_search_endpoints":     "compute/vector-search/%s",
+	"vector_search_indexes":       "explore/data/%s",
+	"volumes":                     "explore/data/volumes/%s",
+	"warehouses":                  "sql/warehouses/%s",
+	"instance_pools":              "compute/instance-pools/%s",
 }
 
 // resourceAliases lets callers use bundle-config plural names as synonyms for
