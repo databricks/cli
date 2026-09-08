@@ -1,0 +1,1 @@
+For apps deployed with the direct engine, `source_code_path` and `git_source` are now also sent as part of the Create/Update App request (in addition to the app Deploy API), so they are recorded on the app and drift-detected. The Terraform engine is unchanged (its `databricks_app` resource cannot manage these input-only fields).

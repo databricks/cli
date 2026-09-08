@@ -15,7 +15,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   },
   "body": {
     "description": "my_app_description",
-    "name": "[UNIQUE_NAME]"
+    "name": "[UNIQUE_NAME]",
+    "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/lifecycle-started-omitted-[UNIQUE_NAME]/default/files/app"
   }
 }
 

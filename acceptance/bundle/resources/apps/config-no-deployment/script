@@ -3,8 +3,8 @@ echo "*" > .gitignore
 title "Deploy: app created with no_compute; config is not deployed until the app starts"
 trace $CLI bundle deploy
 
-title "Plan is a no-op: config/source_code_path drift is skipped while the app has no active deployment"
+title "Plan is a no-op: config drift is skipped (no active deployment); source_code_path is input-only"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
 
-title "Both deploy-only fields are skipped with reason \"no active deployment\""
+title "config skipped with \"no active deployment\"; source_code_path skipped as input_only"
 trace $CLI bundle plan -o json | jq '.plan[].changes | {config, source_code_path}'

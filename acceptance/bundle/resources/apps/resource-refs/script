@@ -1,3 +1,5 @@
 trace $CLI bundle deploy
 trace $CLI bundle run data_app
-trace print_requests.py //apps
+# The create body diverges by engine: the direct engine sends source_code_path, the
+# Terraform provider cannot manage it (input_only), so record requests per engine.
+trace print_requests.py //apps > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
