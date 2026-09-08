@@ -1,8 +1,11 @@
+mkdir -p .databricks
+
 trace $CLI bundle validate -o json | jq .resources > out.validate.json
-trace $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-$CLI bundle deploy $(readplanarg out.plan.direct.json)
+trace $CLI bundle plan -o json > .databricks/tmp.plan.json
+nostamp < .databricks/tmp.plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle deploy $(readplanarg .databricks/tmp.plan.json)
 trace print_requests.py //jobs --nostamp
-print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json
+print_state.py | nostamp --indent 1 > out.state.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan | contains.py '0 to add, 0 to change, 0 to delete'
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //jobs --nostamp
