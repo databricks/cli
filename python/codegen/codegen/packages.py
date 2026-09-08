@@ -9,7 +9,6 @@ RESOURCE_DENYLIST = {
     "resources.ClusterPolicy",  # interface{}
     "resources.Dashboard",  # interface{}
     "resources.GenieSpace",  # interface{}
-    "resources.Secret",  # time.Time
 }
 
 # Only GA and public-preview resources are generated; later stages may still change.
@@ -63,6 +62,9 @@ RESOURCE_NAMESPACE = _load_resource_namespace()
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
 
 RENAMES = {
+    # time.Time is a scalar serialized as an RFC3339 string; the Go side models
+    # it as a string too (see libs/dyn/convert/sdk_native_types.go).
+    "time.Time": "str",
     "string": "str",
     "boolean": "bool",
     "integer": "int",
@@ -72,6 +74,8 @@ RENAMES = {
 }
 
 PRIMITIVES = [
+    # Treated as str
+    "time.Time",
     "string",
     "boolean",
     "integer",
@@ -85,6 +89,10 @@ PRIMITIVES = [
 
 def get_class_name(ref: str) -> str:
     name = ref.split("/")[-1]
+
+    if name in RENAMES:
+        return RENAMES[name]
+
     name = name.split(".")[-1]
 
     return RENAMES.get(name, name)

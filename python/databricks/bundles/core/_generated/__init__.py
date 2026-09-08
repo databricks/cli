@@ -62,6 +62,7 @@ from databricks.bundles.core._generated.secret_scopes import (
     _SecretScopeResources,
     secret_scope_mutator,
 )
+from databricks.bundles.core._generated.secrets import _SecretResources, secret_mutator
 from databricks.bundles.core._generated.sql_warehouses import (
     _SqlWarehouseResources,
     sql_warehouse_mutator,
@@ -103,6 +104,7 @@ __all__ = [
     "quality_monitor_mutator",
     "registered_model_mutator",
     "schema_mutator",
+    "secret_mutator",
     "secret_scope_mutator",
     "sql_warehouse_mutator",
     "synced_database_table_mutator",
@@ -131,6 +133,7 @@ class _GeneratedResources(
     _RegisteredModelResources,
     _SchemaResources,
     _SecretScopeResources,
+    _SecretResources,
     _SqlWarehouseResources,
     _SyncedDatabaseTableResources,
     _VectorSearchEndpointResources,
@@ -160,6 +163,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         registered_models,
         schemas,
         secret_scopes,
+        secrets,
         sql_warehouses,
         synced_database_tables,
         vector_search_endpoints,
@@ -186,6 +190,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         registered_models._resource_type(),
         schemas._resource_type(),
         secret_scopes._resource_type(),
+        secrets._resource_type(),
         sql_warehouses._resource_type(),
         synced_database_tables._resource_type(),
         vector_search_endpoints._resource_type(),
