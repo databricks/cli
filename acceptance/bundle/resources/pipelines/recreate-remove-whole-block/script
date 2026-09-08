@@ -1,43 +1,14 @@
 touch foo.py
 
-# Phase 1: deploy a pipeline WITH the whole ingestion_definition block.
-envsubst > databricks.yml <<'EOF'
-bundle:
-  name: acc-$UNIQUE_NAME
-
-resources:
-  pipelines:
-    my:
-      name: test-pipeline-$UNIQUE_NAME
-      storage: dbfs:/pipelines/custom
-      ingestion_definition:
-        connection_name: my_connection
-        objects:
-          - {}
-      libraries:
-        - file:
-            path: "./foo.py"
-EOF
-
+# Phase 1: deploy with the whole ingestion_definition block (lines tagged
+# # TO_DELETE in the template).
+envsubst < databricks.yml.tmpl > databricks.yml
 trace cat databricks.yml
 trace $CLI bundle deploy
 
-# Phase 2: remove the whole ingestion_definition block. connection_name is
-# immutable, so removing it must recreate the pipeline.
-envsubst > databricks.yml <<'EOF'
-bundle:
-  name: acc-$UNIQUE_NAME
-
-resources:
-  pipelines:
-    my:
-      name: test-pipeline-$UNIQUE_NAME
-      storage: dbfs:/pipelines/custom
-      libraries:
-        - file:
-            path: "./foo.py"
-EOF
-
+# Phase 2: remove the whole ingestion_definition block by dropping the tagged
+# lines. connection_name is immutable, so removing it must recreate the pipeline.
+grep -v '# TO_DELETE' databricks.yml > databricks.yml.tmp && mv databricks.yml.tmp databricks.yml
 trace cat databricks.yml
 
 # BUG: prints "update pipelines.my"; should print "recreate pipelines.my".

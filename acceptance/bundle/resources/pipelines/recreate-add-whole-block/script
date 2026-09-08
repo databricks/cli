@@ -1,43 +1,14 @@
 touch foo.py
 
-# Phase 1: deploy a pipeline WITHOUT ingestion_definition.
-envsubst > databricks.yml <<'EOF'
-bundle:
-  name: acc-$UNIQUE_NAME
-
-resources:
-  pipelines:
-    my:
-      name: test-pipeline-$UNIQUE_NAME
-      storage: dbfs:/pipelines/custom
-      libraries:
-        - file:
-            path: "./foo.py"
-EOF
-
+# The ingestion_definition block is commented out in the template with #TO_ADD:
+# markers, so phase 1 deploys a pipeline without it.
+envsubst < databricks.yml.tmpl > databricks.yml
 trace cat databricks.yml
 trace $CLI bundle deploy
 
-# Phase 2: add the whole ingestion_definition block. connection_name is
-# immutable, so adding it must recreate the pipeline.
-envsubst > databricks.yml <<'EOF'
-bundle:
-  name: acc-$UNIQUE_NAME
-
-resources:
-  pipelines:
-    my:
-      name: test-pipeline-$UNIQUE_NAME
-      storage: dbfs:/pipelines/custom
-      ingestion_definition:
-        connection_name: my_connection
-        objects:
-          - {}
-      libraries:
-        - file:
-            path: "./foo.py"
-EOF
-
+# Phase 2: add the whole ingestion_definition block by dropping the #TO_ADD:
+# markers. connection_name is immutable, so adding it must recreate the pipeline.
+trace update_file.py databricks.yml "#TO_ADD: " ""
 trace cat databricks.yml
 
 # BUG: prints "update pipelines.my"; should print "recreate pipelines.my".

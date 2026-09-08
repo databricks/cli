@@ -8,6 +8,10 @@ resources:
     my:
       name: test-pipeline-[UNIQUE_NAME]
       storage: dbfs:/pipelines/custom
+#TO_ADD:       ingestion_definition:
+#TO_ADD:         connection_name: my_connection
+#TO_ADD:         objects:
+#TO_ADD:           - {}
       libraries:
         - file:
             path: "./foo.py"
@@ -15,8 +19,10 @@ resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
 Created pipelines.my
-Files: 6 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml #TO_ADD:  
 
 >>> cat databricks.yml
 bundle:
