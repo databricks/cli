@@ -7,12 +7,21 @@
     0.241.0
 {{- end }}
 
+{{/* dbr_version selects the Databricks Connect client and DBR image.
+   */}}
 {{ define `dbr_version` -}}
     17.3
 {{- end }}
 
 {{ define `scala_major_minor_version` -}}
     2.13
+{{- end }}
+
+{{/* DBR publishes version-specific Scala variants. Keep dbr_version and
+   * scala_major_minor_version compatible with the same DBR release.
+   */}}
+{{ define `spark_version` -}}
+    {{template `dbr_version` .}}.x-scala{{template `scala_major_minor_version` .}}
 {{- end }}
 
 {{ define `scala_version` -}}
