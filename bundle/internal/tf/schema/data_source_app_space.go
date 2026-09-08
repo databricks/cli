@@ -83,6 +83,7 @@ type DataSourceAppSpaceStatus struct {
 }
 
 type DataSourceAppSpace struct {
+	AssumeGroupId            string                            `json:"assume_group_id,omitempty"`
 	CreateTime               string                            `json:"create_time,omitempty"`
 	Creator                  string                            `json:"creator,omitempty"`
 	Description              string                            `json:"description,omitempty"`

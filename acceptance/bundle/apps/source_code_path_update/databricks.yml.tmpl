@@ -1,0 +1,14 @@
+bundle:
+  name: app-scp-update-$UNIQUE_NAME
+
+workspace:
+  root_path: "~/.bundle/app-scp-update-$UNIQUE_NAME"
+
+resources:
+  apps:
+    my_app:
+      name: app-$UNIQUE_NAME
+      description: "first description"
+      source_code_path: ./app
+      lifecycle:
+        started: true

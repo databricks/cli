@@ -1,0 +1,7 @@
+# Removing history_retention_duration is rejected. The engine names the field in
+# update_mask and omits it from the body, and the API requires every masked field to
+# carry a value: 400 "Field 'spec.history_retention_duration' is in update_mask but
+# not provided in request" (verified against a real workspace on 2026-08-28). The old
+# value therefore stays in state, so out.plan.drift.direct.json shows the same
+# removal pending again, and every later deploy fails the same way.
+Badness = "Removing history_retention_duration fails: the field is named in update_mask but omitted from the body, which the API rejects, so the removal can never be applied and every later deploy retries and fails"

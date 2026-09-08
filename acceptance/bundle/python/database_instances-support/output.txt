@@ -1,0 +1,26 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_database_instance"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "database_instances": {
+      "my_database_instance_1": {
+        "capacity": "CU_1",
+        "name": "my_database_instance_1 (updated)"
+      },
+      "my_database_instance_2": {
+        "capacity": "CU_1",
+        "name": "my_database_instance_2 (updated)"
+      }
+    }
+  }
+}

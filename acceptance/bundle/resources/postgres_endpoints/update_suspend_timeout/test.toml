@@ -1,1 +1,0 @@
-Badness = "Direct engine ignores suspend_timeout_duration updates: structdiff compares duration.Duration field by field and that type holds a single unexported protobuf pointer, so any two values look equal"

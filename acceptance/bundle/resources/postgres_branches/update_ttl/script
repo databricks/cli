@@ -1,0 +1,30 @@
+# ttl, expire_time and no_expiry are three sides of one oneof, and the API accepts them in
+# update_mask only under the group name spec.expiration. This is the cloud-covered case of
+# that oneof; update_expire_time is local only.
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Change ttl and re-deploy"
+trace update_file.py databricks.yml "ttl: 604800s" "ttl: 259200s"
+
+# Only terraform applies it: ttl is a member of the
+# expiration oneof, and the direct engine masks it under its own name.
+#
+# There is no read-back assertion: the API derives expire_time from
+# creation_time + ttl and never echoes ttl, which the testserver does not model.
+# The update_mask each engine sends is what this test is about.
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

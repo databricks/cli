@@ -88,6 +88,7 @@ type DataSourceClusterClusterInfoDriver struct {
 
 type DataSourceClusterClusterInfoDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoExecutorsNodeAwsAttributes struct {
@@ -237,6 +238,7 @@ type DataSourceClusterClusterInfoSpecDockerImage struct {
 
 type DataSourceClusterClusterInfoSpecDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecGcpAttributes struct {
@@ -331,6 +333,7 @@ type DataSourceClusterClusterInfoSpecProviderConfig struct {
 
 type DataSourceClusterClusterInfoSpecWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecWorkloadTypeClients struct {
@@ -392,6 +395,7 @@ type DataSourceClusterClusterInfoTerminationReason struct {
 
 type DataSourceClusterClusterInfoWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoWorkloadTypeClients struct {

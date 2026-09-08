@@ -91,18 +91,23 @@ Usage:
   databricks apps update NAME [flags]
 
 Flags:
-      --budget-policy-id string     
-      --compute-max-instances int   Maximum number of app instances.
-      --compute-min-instances int   Minimum number of app instances.
-      --compute-size ComputeSize    Supported values: [LARGE, MEDIUM, XLARGE]
-      --description string          The description of the app.
-      --forward-user-access-token   Forward the user's access token to the app.
-      --git-provider string         Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud, bitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.
-      --git-url string              URL of the Git repository the app deploys from.
-  -h, --help                        help for update
-      --json JSON                   either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
-      --source-code-path string     
-      --space string                Name of the space this app belongs to.
+      --budget-policy-id string       
+      --compute-max-instances int     Maximum number of app instances.
+      --compute-min-instances int     Minimum number of app instances.
+      --compute-size ComputeSize      Supported values: [LARGE, MEDIUM, XLARGE]
+      --description string            The description of the app.
+      --forward-user-access-token     Forward the user's access token to the app.
+      --git-auto-deploy               Automatically redeploy the app on pushes to the configured Git branch. Requires --git-url and --git-provider.
+      --git-branch string             Git branch to deploy from.
+      --git-commit string             Git commit SHA to deploy from.
+      --git-provider string           Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud, bitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.
+      --git-source-code-path string   Relative path to the app source code within the Git repository. Defaults to the repository root.
+      --git-tag string                Git tag to deploy from.
+      --git-url string                URL of the Git repository the app deploys from.
+  -h, --help                          help for update
+      --json JSON                     either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --source-code-path string       
+      --space string                  Name of the space this app belongs to.
       --usage-policy-id string
 
 Global Flags:

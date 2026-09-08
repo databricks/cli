@@ -1,0 +1,15 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/my-endpoint",
+  "q": {
+    "update_mask": "spec.suspension"
+  },
+  "body": {
+    "spec": {
+      "autoscaling_limit_max_cu": 8,
+      "autoscaling_limit_min_cu": 0.5,
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
+      "suspend_timeout_duration": "600s"
+    }
+  }
+}

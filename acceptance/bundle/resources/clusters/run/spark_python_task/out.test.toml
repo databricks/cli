@@ -2,3 +2,4 @@ Cloud = true
 CloudSlow = true
 RunsOnDbr = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DMS = ["", "true"]

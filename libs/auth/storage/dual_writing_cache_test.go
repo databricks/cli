@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
-	u2m_cache "github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
+	"github.com/databricks/cli/libs/auth/u2m"
+	u2m_cache "github.com/databricks/cli/libs/auth/u2m/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"

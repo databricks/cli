@@ -31,13 +31,21 @@ func (c *PostgresDatabaseConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresDatabaseConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresDatabaseConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
 type PostgresDatabase struct {
 	BaseResource
 	PostgresDatabaseConfig
+}
+
+func (d *PostgresDatabase) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, d)
+}
+
+func (d PostgresDatabase) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(d)
 }
 
 func (d *PostgresDatabase) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

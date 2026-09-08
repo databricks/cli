@@ -118,6 +118,9 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 		accelerators: data.AcceleratorsDisplay,
 		environment:  data.EnvironmentDisplay,
 	}
+	if data.DisplayStatus != "" {
+		view.status = data.DisplayStatus
+	}
 
 	if ids != nil {
 		view.mlflowLabel = mlflowRunLabel(fetchMLflowRunName(ctx, w, ids.RunID), ids.RunID)
@@ -129,6 +132,9 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 		sections = append(sections, renderBox(p, configBoxTitle, body))
 	}
 	sections = append(sections, renderBox(p, metadataBoxTitle, renderFields(p, colorOn, view)))
+	if data.TerminationReason != nil {
+		sections = append(sections, p.red.Render("Failure reason: ")+p.n12.Render(*data.TerminationReason))
+	}
 
 	// A single write: a blank line before the first box and after the last, and
 	// one between each box.

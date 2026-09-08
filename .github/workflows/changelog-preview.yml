@@ -16,7 +16,6 @@ on:
       - ".nextchanges/**"
       - "internal/genkit/**"
       - "tools/validate_nextchanges.py"
-      - "tools/update_github_links.py"
   push:
     branches:
       - main
@@ -32,15 +31,26 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history so the validator can infer each fragment's PR from the
+          # squash-merge commit that added it (see tools/validate_nextchanges.py).
+          fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.8.9"
 
       # Fail the check on a misplaced/unexpected file under .nextchanges/ so it
-      # can't slip through as a silently-skipped (unrendered) fragment.
+      # can't slip through as a silently-skipped (unrendered) fragment. Running in
+      # CI (GITHUB_ACTIONS) makes the trailing PR link mandatory and checks it
+      # names the right PR. PR_NUMBER is the authoritative event PR (empty on push
+      # to main, where each fragment's PR is inferred from its squash-merge
+      # commit); it must have full history to attribute fragments, hence the
+      # fetch-depth: 0 checkout above.
       - name: Validate .nextchanges placement
+        env:
+          PR_NUMBER: ${{ github.event.number }}
         run: uv run tools/validate_nextchanges.py
 
       - name: Render changelog preview

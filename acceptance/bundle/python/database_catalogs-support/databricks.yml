@@ -1,0 +1,17 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_database_catalog"
+
+resources:
+  database_catalogs:
+    my_database_catalog_1:
+      database_instance_name: "test_instance"
+      database_name: "test_db"
+      name: "my_database_catalog_1"

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -196,6 +197,10 @@ func (s *FakeWorkspace) PostgresProjectList() Response {
 
 // PostgresProjectUpdate updates a postgres project.
 func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, projectUpdateMaskPaths, projectOneofGroups); resp != nil {
+		return *resp
+	}
+
 	defer s.LockUnlock()()
 
 	project, exists := s.PostgresProjects[name]
@@ -221,6 +226,12 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		if updateProject.Spec.DisplayName != "" {
 			project.Status.DisplayName = updateProject.Spec.DisplayName
 		}
+		// Verified against a real workspace: dropping the field from config sends a
+		// mask naming it with no value in the body, and the API keeps the previous
+		// value rather than clearing it. So a removal never takes effect.
+		if updateProject.Spec.HistoryRetentionDuration != nil {
+			project.Status.HistoryRetentionDuration = updateProject.Spec.HistoryRetentionDuration
+		}
 		if updateProject.Spec.DefaultEndpointSettings != nil {
 			if project.Status.DefaultEndpointSettings == nil {
 				project.Status.DefaultEndpointSettings = &postgres.ProjectDefaultEndpointSettings{}
@@ -230,6 +241,9 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 			}
 			if updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu != 0 {
 				project.Status.DefaultEndpointSettings.AutoscalingLimitMaxCu = updateProject.Spec.DefaultEndpointSettings.AutoscalingLimitMaxCu
+			}
+			if updateProject.Spec.DefaultEndpointSettings.SuspendTimeoutDuration != nil {
+				project.Status.DefaultEndpointSettings.SuspendTimeoutDuration = updateProject.Spec.DefaultEndpointSettings.SuspendTimeoutDuration
 			}
 		}
 	}
@@ -352,6 +366,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 	// Apply user-provided spec fields to status (where input fields are surfaced).
 	if branch.Spec != nil {
 		branch.Status.IsProtected = branch.Spec.IsProtected
+		branch.Status.ExpireTime = branch.Spec.ExpireTime
 	}
 
 	// Clear spec - API only returns status
@@ -419,6 +434,10 @@ func (s *FakeWorkspace) PostgresBranchList(parent string) Response {
 
 // PostgresBranchUpdate updates a postgres branch.
 func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, branchUpdateMaskPaths, branchOneofGroups); resp != nil {
+		return *resp
+	}
+
 	defer s.LockUnlock()()
 
 	branch, exists := s.PostgresBranches[name]
@@ -442,6 +461,9 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 			branch.Status = &postgres.BranchStatus{}
 		}
 		branch.Status.IsProtected = updateBranch.Spec.IsProtected
+		if updateBranch.Spec.ExpireTime != nil {
+			branch.Status.ExpireTime = updateBranch.Spec.ExpireTime
+		}
 	}
 
 	branch.UpdateTime = nowTime()
@@ -654,7 +676,229 @@ func (s *FakeWorkspace) PostgresEndpointList(parent string) Response {
 }
 
 // PostgresEndpointUpdate updates a postgres endpoint.
+// The update_mask paths each postgres Update accepts, as probed against the real
+// API. The backend rejects anything else with 400, most notably the members of a
+// oneof: it masks them together under the group name and refuses the individual
+// field names. Without these lists the fake accepts any mask and hides that class
+// of bug until a cloud run.
+var endpointUpdateMaskPaths = []string{
+	// The Terraform provider masks the whole spec and sends every field in the
+	// body; the API accepts that.
+	"spec",
+
+	"spec.autoscaling_limit_max_cu",
+	"spec.autoscaling_limit_min_cu",
+	"spec.disabled",
+	"spec.group.enable_readable_secondaries",
+	"spec.group.max",
+	"spec.group.min",
+
+	// A message is maskable on its own, which is how a bundle that adds a whole
+	// settings block reaches the API. Probed on a real endpoint 2026-08-31: both
+	// spec.settings and spec.settings.pg_settings get past mask validation.
+	"spec.settings",
+	"spec.settings.pg_settings",
+
+	"spec.suspension",
+}
+
+var branchUpdateMaskPaths = []string{
+	// The Terraform provider masks the whole spec.
+	"spec",
+
+	"spec.is_protected",
+
+	// expire_time, no_expiry and ttl are three sides of one oneof.
+	"spec.expiration",
+}
+
+var projectUpdateMaskPaths = []string{
+	// The Terraform provider masks the whole spec plus both initial_* specs.
+	"spec",
+	"initial_branch_spec",
+	"initial_endpoint_spec",
+
+	"spec.budget_policy_id",
+	"spec.custom_tags",
+	"spec.default_branch",
+	"spec.default_endpoint_settings",
+	"spec.default_endpoint_settings.autoscaling_limit_max_cu",
+	"spec.default_endpoint_settings.autoscaling_limit_min_cu",
+	"spec.default_endpoint_settings.pg_settings",
+	"spec.display_name",
+	"spec.enable_pg_native_login",
+	"spec.history_retention_duration",
+
+	// default_endpoint_settings.no_suspension and .suspend_timeout_duration are
+	// two sides of one oneof.
+	"spec.default_endpoint_settings.suspension",
+}
+
+// The oneof groups under each spec, mapped to the body fields that can populate them.
+// A mask that names a message expands to the oneof groups beneath it, and each of those
+// must be populated in the request body, even though a plain optional field beneath the
+// same message may be omitted. Probed against a real workspace on 2026-08-31:
+// update_mask=spec.default_endpoint_settings with a body carrying only the autoscaling
+// limits is rejected with "Field 'spec.default_endpoint_settings.suspension' is in
+// update_mask but not provided in request", while the equally absent pg_settings under
+// the same message is tolerated.
+var endpointOneofGroups = map[string][]string{
+	"spec.suspension": {"spec.no_suspension", "spec.suspend_timeout_duration"},
+}
+
+var branchOneofGroups = map[string][]string{
+	"spec.expiration": {"spec.expire_time", "spec.no_expiry", "spec.ttl"},
+}
+
+var projectOneofGroups = map[string][]string{
+	"spec.default_endpoint_settings.suspension": {
+		"spec.default_endpoint_settings.no_suspension",
+		"spec.default_endpoint_settings.suspend_timeout_duration",
+	},
+}
+
+// unpopulatedOneofGroup returns the first oneof group the mask covers but the body does
+// not populate.
+//
+// Only two mask shapes are known to require a group: the group itself, and the nested
+// message directly enclosing it. Masking the top-level spec does not, at either depth.
+// All three were probed against a real workspace on 2026-08-31:
+//
+//	spec.default_endpoint_settings           rejects a body without a suspension field
+//	spec (project, one level above that)     accepts it
+//	spec (endpoint, suspension right below)  accepts it
+//
+// So the rule is not "every group under the mask" and not "every group one level under
+// the mask" either. Rather than guess at the real shape, this only reproduces what was
+// measured; widen it when there is a probe to back the wider rule.
+func unpopulatedOneofGroup(mask string, body map[string]any, groups map[string][]string) string {
+	for group, members := range groups {
+		if !maskCovers(mask, group) {
+			continue
+		}
+		populated := false
+		for _, member := range members {
+			if bodyHasPath(body, strings.Split(member, ".")) {
+				populated = true
+				break
+			}
+		}
+		if !populated {
+			return group
+		}
+	}
+	return ""
+}
+
+func maskCovers(mask, path string) bool {
+	for entry := range strings.SplitSeq(mask, ",") {
+		entry = strings.TrimSpace(entry)
+		// A nested message only: masking the top-level spec does not pull in groups.
+		if entry == path || (entry == parentPath(path) && strings.Contains(entry, ".")) {
+			return true
+		}
+	}
+	return false
+}
+
+// parentPath returns path with its last segment removed, or "" when it has only one.
+func parentPath(path string) string {
+	i := strings.LastIndex(path, ".")
+	if i < 0 {
+		return ""
+	}
+	return path[:i]
+}
+
+// missingMaskedField returns the first update_mask path the API would reject
+// because the mask names it but the request body carries no value for it, which is
+// how a removal from bundle config reaches the API. Verified against a real
+// workspace: "Field 'spec.history_retention_duration' is in update_mask but not
+// provided in request".
+func missingMaskedField(req Request, oneofGroups map[string][]string) string {
+	mask := req.URL.Query().Get("update_mask")
+	if mask == "" || len(req.Body) == 0 {
+		return ""
+	}
+	var body map[string]any
+	if err := json.Unmarshal(req.Body, &body); err != nil {
+		return ""
+	}
+	for path := range strings.SplitSeq(mask, ",") {
+		path = strings.TrimSpace(path)
+		if _, ok := oneofGroups[path]; ok {
+			// A group is not a body field of its own; a member populates it instead, which
+			// unpopulatedOneofGroup checks.
+			continue
+		}
+		parts := strings.Split(path, ".")
+		if path == "" || path == "*" || len(parts) < 2 {
+			// A whole message the request omits is tolerated: the Terraform provider
+			// masks initial_branch_spec and initial_endpoint_spec without sending
+			// either, and the API accepts that.
+			continue
+		}
+		// Only a field whose parent the request does carry must itself be present.
+		if bodyHasPath(body, parts[:len(parts)-1]) && !bodyHasPath(body, parts) {
+			return path
+		}
+	}
+	return ""
+}
+
+func bodyHasPath(node any, parts []string) bool {
+	for _, part := range parts {
+		m, ok := node.(map[string]any)
+		if !ok {
+			return false
+		}
+		node, ok = m[part]
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func missingMaskedFieldResponse(path string) Response {
+	return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", fmt.Sprintf("Field '%s' is in update_mask but not provided in request", path))
+}
+
+// validateUpdateMask mirrors the API's rejection of unknown update_mask paths.
+// Returns nil when every path is accepted.
+func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]string) *Response {
+	mask := req.URL.Query().Get("update_mask")
+	if mask == "" {
+		return nil
+	}
+	for path := range strings.SplitSeq(mask, ",") {
+		path = strings.TrimSpace(path)
+		if path == "" || slices.Contains(allowed, path) {
+			continue
+		}
+		resp := postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", fmt.Sprintf("Unknown field path in update_mask: '%s'", path))
+		return &resp
+	}
+	// An unknown path is reported ahead of a missing one, matching the API.
+	if path := missingMaskedField(req, oneofGroups); path != "" {
+		resp := missingMaskedFieldResponse(path)
+		return &resp
+	}
+	var body map[string]any
+	if err := json.Unmarshal(req.Body, &body); err == nil {
+		if group := unpopulatedOneofGroup(mask, body, oneofGroups); group != "" {
+			resp := missingMaskedFieldResponse(group)
+			return &resp
+		}
+	}
+	return nil
+}
+
 func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, endpointUpdateMaskPaths, endpointOneofGroups); resp != nil {
+		return *resp
+	}
+
 	defer s.LockUnlock()()
 
 	endpoint, exists := s.PostgresEndpoints[name]

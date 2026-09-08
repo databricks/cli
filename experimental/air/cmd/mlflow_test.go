@@ -78,6 +78,17 @@ func TestMLflowIDs(t *testing.T) {
 	})
 }
 
+func TestAiRuntimeTaskOutput(t *testing.T) {
+	var hit bool
+	srv := runOutputServer(t, `{"ai_runtime_task_output":{"status_message":"STATUS: Waiting for GPU capacity"}}`, &hit)
+	run := &jobs.Run{Tasks: []jobs.RunTask{{RunId: 99}}}
+
+	got := aiRuntimeTaskOutput(t.Context(), newTestWorkspaceClient(t, srv.URL), run)
+	require.NotNil(t, got)
+	assert.True(t, hit)
+	assert.Equal(t, "STATUS: Waiting for GPU capacity", got.StatusMessage)
+}
+
 func TestMLflowIDsForTask(t *testing.T) {
 	ctx := t.Context()
 

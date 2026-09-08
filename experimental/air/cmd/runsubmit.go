@@ -1,16 +1,22 @@
 package aircmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
@@ -67,6 +73,10 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	if cfg.MLflowExperimentDirectory != nil {
 		task.MlflowExperimentDirectory = *cfg.MLflowExperimentDirectory
 	}
+	if cfg.MLflowArtifactLocation != nil {
+		task.MlflowArtifactLocation = *cfg.MLflowArtifactLocation
+	}
+	task.DockerImageUrl = cfg.dockerImageURL()
 
 	maxRetries := cfg.maxRetries()
 	st := jobs.SubmitTask{
@@ -102,6 +112,93 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 			Spec:           envSpec,
 		}},
 	}
+}
+
+func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, provisionedCapacityID, priorityClass string) (int64, error) {
+	// Neither reservation field is modeled by the SDK's AiRuntimeTask, so a run
+	// that sets either has to go through the raw /api/2.2 body. priority_class only
+	// ever appears alongside a reservation (validation enforces it), but route on
+	// both so it can never be silently dropped.
+	if provisionedCapacityID == "" && priorityClass == "" {
+		wait, err := w.Jobs.Submit(ctx, payload)
+		if err != nil {
+			return 0, err
+		}
+		return wait.RunId, nil
+	}
+
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal AIR submit payload: %w", err)
+	}
+	var body map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&body); err != nil {
+		return 0, fmt.Errorf("failed to decode AIR submit payload: %w", err)
+	}
+	if err := injectReservationFields(body, provisionedCapacityID, priorityClass); err != nil {
+		return 0, err
+	}
+
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create API client: %w", err)
+	}
+	var response jobs.SubmitRunResponse
+	err = apiClient.Do(ctx, http.MethodPost, "/api/2.2/jobs/runs/submit", auth.WorkspaceIDHeaders(w.Config), nil, body, &response)
+	if err != nil {
+		return 0, err
+	}
+	return response.RunId, nil
+}
+
+// injectReservationFields sets the reservation-only fields the SDK does not
+// model onto the decoded submit body: priority_class rides directly on the
+// ai_runtime_task, while provisioned_capacity_id rides on the deployment's
+// compute spec. Each is set only when non-empty.
+func injectReservationFields(body map[string]any, provisionedCapacityID, priorityClass string) error {
+	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
+	if err != nil {
+		return err
+	}
+	if priorityClass != "" {
+		aiRuntimeTask["priority_class"] = priorityClass
+	}
+	if provisionedCapacityID != "" {
+		deployments, ok := aiRuntimeTask["deployments"].([]any)
+		if !ok || len(deployments) != 1 {
+			return errors.New("AIR submit payload must contain exactly one deployment")
+		}
+		deployment, ok := deployments[0].(map[string]any)
+		if !ok {
+			return errors.New("AIR submit payload deployment has an invalid shape")
+		}
+		computeSpec, ok := deployment["compute"].(map[string]any)
+		if !ok {
+			return errors.New("AIR submit payload is missing deployment compute")
+		}
+		computeSpec["provisioned_capacity_id"] = provisionedCapacityID
+	}
+	return nil
+}
+
+// aiRuntimeTaskFromSubmitBody navigates a decoded runs/submit body to its single
+// ai_runtime_task map, erroring if the payload isn't the expected single-task shape.
+func aiRuntimeTaskFromSubmitBody(body map[string]any) (map[string]any, error) {
+	tasks, ok := body["tasks"].([]any)
+	if !ok || len(tasks) != 1 {
+		return nil, errors.New("AIR submit payload must contain exactly one task")
+	}
+	task, ok := tasks[0].(map[string]any)
+	if !ok {
+		return nil, errors.New("AIR submit payload task has an invalid shape")
+	}
+	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
+	if !ok {
+		return nil, errors.New("AIR submit payload is missing ai_runtime_task")
+	}
+	return aiRuntimeTask, nil
 }
 
 // submitToken resolves the idempotency token: the --idempotency-key flag wins,
@@ -235,12 +332,19 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
+	provisionedCapacityID := ""
+	if cfg.Compute.ProvisionedCapacityID != nil {
+		provisionedCapacityID = *cfg.Compute.ProvisionedCapacityID
+	}
+	priorityClass := ""
+	if cfg.Compute.PriorityClass != nil {
+		priorityClass = *cfg.Compute.PriorityClass
+	}
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
-	wait, err := w.Jobs.Submit(ctx, payload)
+	runID, err := submitRun(ctx, w, payload, provisionedCapacityID, priorityClass)
 	if err != nil {
 		return 0, "", err
 	}
-	runID := wait.RunId
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil

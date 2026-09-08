@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"

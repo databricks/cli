@@ -34,7 +34,7 @@ func (c *PostgresProjectConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresProjectConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresProjectConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
@@ -43,6 +43,14 @@ type PostgresProject struct {
 	PostgresProjectConfig
 
 	Permissions []Permission `json:"permissions,omitempty"`
+}
+
+func (p *PostgresProject) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, p)
+}
+
+func (p PostgresProject) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(p)
 }
 
 func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

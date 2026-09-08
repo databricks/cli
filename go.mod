@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.26.0
 
-toolchain go1.26.7
+toolchain go1.26.8
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -12,14 +12,14 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
-	github.com/charmbracelet/x/ansi v0.11.7 // MIT
-	github.com/databricks/databricks-sdk-go v0.175.0 // Apache-2.0
+	github.com/charmbracelet/x/ansi v0.11.8 // MIT
+	github.com/databricks/databricks-sdk-go v0.177.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hashicorp/go-version v1.9.0 // MPL-2.0
 	github.com/hashicorp/hc-install v0.9.5 // MPL-2.0
-	github.com/hashicorp/terraform-exec v0.25.2 // MPL-2.0
+	github.com/hashicorp/terraform-exec v0.25.3 // MPL-2.0
 	github.com/hashicorp/terraform-json v0.28.0 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.10.0 // MIT
@@ -31,27 +31,27 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.10.2 // Apache-2.0
 	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
-	github.com/stretchr/testify v1.12.0 // MIT
+	github.com/stretchr/testify v1.12.1 // MIT
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
 	go.yaml.in/yaml/v3 v3.0.5 // MIT AND Apache-2.0
-	golang.org/x/crypto v0.54.0 // BSD-3-Clause
+	golang.org/x/crypto v0.55.0 // BSD-3-Clause
 	golang.org/x/mod v0.40.0 // BSD-3-Clause
-	golang.org/x/net v0.57.0 // BSD-3-Clause
+	golang.org/x/net v0.58.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.22.0 // BSD-3-Clause
 	golang.org/x/sys v0.47.0 // BSD-3-Clause
 	golang.org/x/term v0.45.0 // BSD-3-Clause
-	golang.org/x/text v0.40.0 // BSD-3-Clause
+	golang.org/x/text v0.41.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
-require github.com/databricks/sdk-go/core v0.0.1-dev // Apache-2.0
+require github.com/databricks/sdk-go/core v0.0.1-dev.1 // Apache-2.0
 
 require (
-	github.com/databricks/sdk-go/auth v0.0.0-dev // Apache-2.0
-	github.com/databricks/sdk-go/files v0.0.0-dev.1 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.0.0-dev // Apache-2.0
+	github.com/databricks/sdk-go/auth v0.0.1-dev.1 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.0.1-dev.1 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.0.1-dev.1 // Apache-2.0
 )
 
 require (
@@ -90,7 +90,7 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.23 // indirect
+	github.com/mattn/go-runewidth v0.0.24 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect

@@ -167,6 +167,12 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 
 	jobSettings.ForceSendFields = append(jobSettings.ForceSendFields, "TimeoutSeconds")
 
+	// The real Jobs API accepts trigger.table_update.condition on create/update but
+	// does not return it in GET responses; clear it so testserver matches cloud.
+	if jobSettings.Trigger != nil && jobSettings.Trigger.TableUpdate != nil {
+		jobSettings.Trigger.TableUpdate.Condition = ""
+	}
+
 	// Add task-level defaults that match AWS cloud behavior
 	for i := range jobSettings.Tasks {
 		task := &jobSettings.Tasks[i]

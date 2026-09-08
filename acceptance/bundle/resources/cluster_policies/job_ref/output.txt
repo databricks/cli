@@ -7,7 +7,7 @@ Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Deploy requests in dependency order: policy create precedes job create, job carries resolved policy id
->>> print_requests.py //policies/clusters //jobs
+>>> print_requests.py //policies/clusters //jobs --nostamp
 {
   "method": "POST",
   "path": "/api/2.0/policies/clusters/create",
@@ -56,7 +56,7 @@ Updated jobs.j
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 2 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //policies/clusters //jobs
+>>> print_requests.py //policies/clusters //jobs --nostamp
 {
   "method": "POST",
   "path": "/api/2.0/policies/clusters/edit",
@@ -107,7 +107,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 2 deleted
 
->>> print_requests.py //policies/clusters //jobs
+>>> print_requests.py //policies/clusters //jobs --nostamp
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

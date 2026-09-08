@@ -39,17 +39,6 @@ func (w wrap) MarshalJSON() ([]byte, error) {
 
 // marshalValue recursively writes JSON for a [dyn.Value] to the buffer.
 func marshalValue(buf *bytes.Buffer, v dyn.Value) error {
-	if v.IsSensitive() {
-		out, err := marshalNoEscape(dyn.SensitiveValueRedacted)
-		if err != nil {
-			return err
-		}
-		// The encoder writes a trailing newline, so we need to remove it.
-		out = out[:len(out)-1]
-		buf.Write(out)
-		return nil
-	}
-
 	switch v.Kind() {
 	case dyn.KindString, dyn.KindBool, dyn.KindInt, dyn.KindFloat, dyn.KindTime, dyn.KindNil:
 		out, err := marshalNoEscape(v.AsAny())

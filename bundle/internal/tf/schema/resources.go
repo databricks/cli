@@ -123,6 +123,7 @@ type Resources struct {
 	PostgresEndpoint                             map[string]any `json:"databricks_postgres_endpoint,omitempty"`
 	PostgresProject                              map[string]any `json:"databricks_postgres_project,omitempty"`
 	PostgresRole                                 map[string]any `json:"databricks_postgres_role,omitempty"`
+	PostgresSnapshotSchedule                     map[string]any `json:"databricks_postgres_snapshot_schedule,omitempty"`
 	PostgresSyncedTable                          map[string]any `json:"databricks_postgres_synced_table,omitempty"`
 	Provider                                     map[string]any `json:"databricks_provider,omitempty"`
 	QualityMonitor                               map[string]any `json:"databricks_quality_monitor,omitempty"`
@@ -302,6 +303,7 @@ func NewResources() *Resources {
 		PostgresEndpoint:                            make(map[string]any),
 		PostgresProject:                             make(map[string]any),
 		PostgresRole:                                make(map[string]any),
+		PostgresSnapshotSchedule:                    make(map[string]any),
 		PostgresSyncedTable:                         make(map[string]any),
 		Provider:                                    make(map[string]any),
 		QualityMonitor:                              make(map[string]any),

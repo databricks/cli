@@ -1,0 +1,32 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "Inject GET failure so the plan check blocks the migration"
+# The plan check calls GET /api/2.2/jobs/get for each resource to compare
+# local config against remote state. A 403 (non-retryable) causes the plan
+# to fail → the migration is abandoned and the bundle stays on terraform.
+# OFFSET=1: terraform reads the job once during its plan phase; skip that
+# call and fail the 2nd one, which is the plan check's DoRead.
+fault.py "GET /api/2.2/jobs/get*" 403 1 1
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "Local state was NOT rewritten (still terraform)"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+title "Retry: plan check passes this time, migration succeeds"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "Local state is now direct"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+rm -f out.requests.txt

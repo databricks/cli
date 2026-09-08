@@ -1226,6 +1226,14 @@ func AssertFullResourceCoverage(t *testing.T, config *config.Root) {
 	resources := reflect.ValueOf(config.Resources)
 	for i := range resources.NumField() {
 		field := resources.Field(i)
+		// Get Tag field from reflect.Value
+		tag := resources.Type().Field(i).Tag.Get("bundle")
+		// Internal resources (e.g. internal_immutable_snapshots) are created by the
+		// deploy pipeline, never declared in user config, so this fixture doesn't
+		// populate them and StateToBundle isn't expected to cover them.
+		if tag == "internal" {
+			continue
+		}
 		if field.Kind() == reflect.Map {
 			assert.True(
 				t,

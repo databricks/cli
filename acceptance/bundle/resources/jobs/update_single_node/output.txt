@@ -10,7 +10,7 @@ Created jobs.foo
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py //jobs --nostamp
 
 === Update trigger.periodic.unit and re-deploy
 >>> update_file.py databricks.yml DAYS HOURS
@@ -26,7 +26,7 @@ Updated jobs.foo
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py //jobs --nostamp
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -88,7 +88,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> print_requests.py //jobs
+>>> print_requests.py //jobs --nostamp
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

@@ -1,6 +1,7 @@
 # Databricks CLI
 
 [![build](https://github.com/databricks/cli/actions/workflows/push.yml/badge.svg?branch=main)](https://github.com/databricks/cli/actions?query=workflow%3Abuild+branch%3Amain)
+![downloads](https://img.shields.io/github/downloads/databricks/cli/total.svg)
 
 Documentation is available at https://docs.databricks.com/dev-tools/cli/databricks-cli.html.
 

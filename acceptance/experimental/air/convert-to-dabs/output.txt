@@ -9,7 +9,7 @@ Wrote a Databricks Asset Bundle to .:
 To deploy and run this workload as a bundle:
   1. [CLI] bundle validate
   2. [CLI] bundle deploy
-  3. [CLI] bundle run torchrun-a10-smoke-test
+  3. [CLI] bundle run torchrun-a10-smoke-test --no-wait
 
 bundle deploy uploads the code source and launch scripts automatically.
 To see what it deployed and where: [CLI] bundle summary
@@ -19,13 +19,21 @@ persistent job that is not garbage-collected. When you are done, remove the
 job and its uploaded files with:
   [CLI] bundle destroy
 
-=== emitted databricks.yml (code_source_path points at ./src; no code is copied)
+=== emitted databricks.yml (code_source packaged as a tgz artifact; no code is copied)
 >>> cat databricks.yml
 bundle:
   name: torchrun-a10-smoke-test
 sync:
   paths:
     - generated_artifacts
+artifacts:
+  code_source:
+    type: tgz
+    path: .
+    include:
+      - src
+    files:
+      - source: ./dist/code_source.tgz
 targets:
   dev:
     mode: development
@@ -45,7 +53,7 @@ resources:
                 compute:
                   accelerator_type: GPU_1xA10
                   accelerator_count: 1
-            code_source_path: ./src
+            code_source_path: ./dist/code_source.tgz
       environments:
         - environment_key: default
           spec:
@@ -55,7 +63,9 @@ resources:
 
 === the generated command.sh carries the run command
 >>> cat generated_artifacts/command.sh
+cd $CODE_SOURCE_PATH
 torchrun --nproc_per_node=1 train.py
+
 === the emitted bundle validates
 >>> [CLI] bundle validate
 Name: torchrun-a10-smoke-test
@@ -82,7 +92,7 @@ Wrote a Databricks Asset Bundle to .:
 To deploy and run this workload as a bundle:
   1. [CLI] bundle validate
   2. [CLI] bundle deploy
-  3. [CLI] bundle run torchrun-a10-smoke-test
+  3. [CLI] bundle run torchrun-a10-smoke-test --no-wait
 
 bundle deploy uploads the code source and launch scripts automatically.
 To see what it deployed and where: [CLI] bundle summary

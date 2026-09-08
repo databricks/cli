@@ -1,0 +1,33 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+endpoint_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/my-endpoint"
+
+title "Initial deployment with pg_settings.statement_timeout: 8000"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Change the value of one pg_settings key"
+trace update_file.py databricks.yml "statement_timeout: 8000" "statement_timeout: 16000"
+
+# pg_settings is a map, and the plan diffs maps entry by entry, so the changed path
+# is settings.pg_settings['statement_timeout']. A map or repeated field is
+# addressable only as a whole, so it has to be masked as spec.settings.pg_settings.
+# Verified against a real workspace on 2026-08-31: spec.settings and
+# spec.settings.pg_settings are both accepted, while an indexed path is answered with
+# 400 "Unknown field path in update_mask".
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# The mask each engine sends: direct names the map, terraform replaces the whole spec.
+trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+title "Plan again: the change must leave no drift behind"
+trace $CLI bundle plan

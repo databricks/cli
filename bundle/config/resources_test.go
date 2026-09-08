@@ -15,6 +15,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/serving"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -128,13 +131,14 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 		// A job run does have a workspace URL, but it's addressed by two IDs
 		// (job + run) so it can't be expressed as a single-ID pattern here; it's
 		// built in JobRun.InitializeURL via workspaceurls.JobRunURL instead.
-		"job_runs":           true,
-		"postgres_branches":  true,
-		"postgres_databases": true,
-		"postgres_endpoints": true,
-		"postgres_projects":  true,
-		"postgres_roles":     true,
-		"secret_scopes":      true,
+		"job_runs":                     true,
+		"postgres_branches":            true,
+		"postgres_databases":           true,
+		"postgres_endpoints":           true,
+		"postgres_projects":            true,
+		"postgres_roles":               true,
+		"secret_scopes":                true,
+		"internal_immutable_snapshots": true,
 	}
 
 	supported := SupportedResources()
@@ -354,7 +358,8 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 	}
 	unbindableResources := map[string]bool{
-		"model": true,
+		"model":                       true,
+		"internal_immutable_snapshot": true,
 	}
 
 	ctx := t.Context()
@@ -411,5 +416,37 @@ func TestResourcesBindSupport(t *testing.T) {
 			assert.NoError(t, err)
 			assert.True(t, exists)
 		}
+	}
+}
+
+func TestAllInteralResourcesAreMarkedAsInternal(t *testing.T) {
+	internalResourceKeys := map[string]reflect.Type{}
+	err := structwalk.WalkType(reflect.TypeFor[Resources](), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path.Len() > 2 {
+			return false
+		}
+		if field == nil {
+			return true
+		}
+		tag := field.Tag.Get("bundle")
+		if structtag.BundleTag(tag).Internal() {
+			internalResourceKeys[field.Name] = typ
+		}
+		return true
+	})
+	assert.NoError(t, err)
+
+	for key, typ := range internalResourceKeys {
+		r := reflect.MakeMap(typ)
+		r.SetMapIndex(reflect.ValueOf("my_resources"), reflect.New(typ.Elem()).Elem())
+
+		resources := &Resources{}
+		res := reflect.ValueOf(resources).Elem()
+		field := res.FieldByName(key)
+		if !field.IsValid() && !field.CanSet() {
+			t.Fatalf("Field %s is not valid", key)
+		}
+		field.Set(r)
+		assert.True(t, resources.HasInternalResources())
 	}
 }

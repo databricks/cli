@@ -31,7 +31,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            environment_version: "4"
+            environment_version: "5"
             java_dependencies:
               - ${workspace.artifact_path}/.internal/{{.project_name}}-assembly-{{template `version` .}}.jar
 {{- else}}

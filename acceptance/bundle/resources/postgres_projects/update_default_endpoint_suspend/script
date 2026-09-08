@@ -1,0 +1,32 @@
+# default_endpoint_settings.no_suspension and .suspend_timeout_duration are two sides of one
+# oneof, and the API accepts them in update_mask only under the group name
+# spec.default_endpoint_settings.suspension. Same oneof as
+# postgres_endpoints/update_suspend_timeout, one level of nesting down.
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+trace $CLI postgres get-project "${project_name}" | project_fields
+
+title "Change default_endpoint_settings.suspend_timeout_duration and re-deploy"
+trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
+
+# Only terraform applies it: suspend_timeout_duration is a
+# member of the suspension oneof, nested under default_endpoint_settings, and the
+# direct engine masks it under its own name. See test.toml.
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI postgres get-project "${project_name}" | project_fields

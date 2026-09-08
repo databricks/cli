@@ -82,7 +82,7 @@ func TestProjectRunStatus(t *testing.T) {
 			StateMessage:   "done",
 		},
 		Tasks: []jobs.RunTask{
-			{AttemptNumber: 0},
+			{AttemptNumber: 0, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}},
 			{AttemptNumber: 2},
 			{AttemptNumber: 1},
 		},
@@ -92,6 +92,7 @@ func TestProjectRunStatus(t *testing.T) {
 	assert.Equal(t, "TERMINATED", s.lifeCycleState)
 	assert.Equal(t, "SUCCESS", s.resultState)
 	assert.Equal(t, "done", s.stateMessage)
+	assert.Equal(t, "QUEUED", s.firstTaskLifeCycleState)
 	assert.Equal(t, int64(1000), s.startTimeMs)
 	assert.Equal(t, int64(2000), s.endTimeMs)
 	assert.Equal(t, 2, s.latestAttempt)
@@ -112,6 +113,7 @@ func TestLogRunStatusTerminal(t *testing.T) {
 		{"terminated lifecycle", "TERMINATED", "", true},
 		{"internal error lifecycle", "INTERNAL_ERROR", "", true},
 		{"failed result", "TERMINATING", "FAILED", true},
+		{"timed out result", "RUNNING", "TIMEDOUT", true},
 		{"canceled result", "RUNNING", "CANCELED", true},
 	}
 	for _, tt := range tests {
@@ -212,6 +214,7 @@ func TestNormalizeStatusMessage(t *testing.T) {
 	}{
 		{"STATUS: Waiting for GPU capacity.", "Waiting for GPU capacity..."},
 		{"STATUS:Waiting for GPU capacity", "Waiting for GPU capacity..."},
+		{"STATUS: Waiting for GPU compute capacity to become available", waitingForComputeStatus},
 		{"status: provisioning", "provisioning..."}, // type match is case-insensitive
 		{"STATUS: done...", "done..."},              // trailing dots collapse to one "..."
 		{"INFO: not a status", ""},                  // other type ignored
@@ -227,7 +230,7 @@ func TestNormalizeStatusMessage(t *testing.T) {
 
 func TestWaitingSpinnerText(t *testing.T) {
 	// A server that returns the run (with a task) and a STATUS-typed status_message.
-	newStreamer := func(t *testing.T, statusMessage, lifeCycle string) *bricklensStreamer {
+	newStreamer := func(t *testing.T, statusMessage, lifeCycle, firstTaskLifeCycle string) *bricklensStreamer {
 		t.Helper()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
@@ -244,21 +247,30 @@ func TestWaitingSpinnerText(t *testing.T) {
 			ctx:    t.Context(),
 			w:      newTestWorkspaceClient(t, srv.URL),
 			req:    logRequest{runID: 1, node: 0},
-			status: logRunStatus{lifeCycleState: lifeCycle},
+			status: logRunStatus{lifeCycleState: lifeCycle, firstTaskLifeCycleState: firstTaskLifeCycle},
 		}
 	}
 
 	// Server STATUS message wins.
 	assert.Equal(t, "Waiting for GPU capacity...",
-		newStreamer(t, "STATUS: Waiting for GPU capacity", "PENDING").waitingSpinnerText())
+		newStreamer(t, "STATUS: Waiting for GPU capacity", "PENDING", "").waitingSpinnerText())
 
 	// No status message + PENDING -> compute-capacity fallback.
 	assert.Equal(t, waitingForComputeStatus,
-		newStreamer(t, "", "PENDING").waitingSpinnerText())
+		newStreamer(t, "", "PENDING", "").waitingSpinnerText())
+
+	for _, state := range []string{"PENDING", "QUEUED", "WAITING_FOR_RETRY", "BLOCKED"} {
+		assert.Equal(t, waitingForComputeStatus,
+			newStreamer(t, "", "RUNNING", state).waitingSpinnerText(), state)
+	}
 
 	// No status message + non-PENDING -> default "waiting for run to start".
 	assert.Equal(t, "Waiting for run to start (node 0)...",
-		newStreamer(t, "", "RUNNING").waitingSpinnerText())
+		newStreamer(t, "", "RUNNING", "RUNNING").waitingSpinnerText())
+	assert.Equal(t, "Waiting for run to start (node 0)...",
+		newStreamer(t, "", "RUNNING", "").waitingSpinnerText())
+	assert.Equal(t, "Waiting for run to start (node 0)...",
+		newStreamer(t, "", "TERMINATED", "PENDING").waitingSpinnerText())
 }
 
 func TestEmitLogLineJSON(t *testing.T) {
@@ -496,6 +508,41 @@ func TestStreamBricklensTerminalWithRecordsDoesNotFallBack(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, ok)
 	assert.Contains(t, buf.String(), `"line":"hello"`)
+}
+
+func TestStreamBricklensActiveEmptyProbesMLflow(t *testing.T) {
+	oldInterval := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = oldInterval })
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			_, _ = w.Write([]byte(`{"log_records":[]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id":123,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":456,"attempt_number":0}]}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"E1","mlflow_run_id":"R1"}}`))
+		case r.URL.Path == "/api/2.0/mlflow/runs/get":
+			_, _ = w.Write([]byte(`{}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/list":
+			if r.URL.Query().Get("path") == "logs" {
+				_, _ = w.Write([]byte(`{"files":[{"path":"logs/node_0","is_dir":true}]}`))
+			} else {
+				_, _ = w.Write([]byte(`{"files":[{"path":"logs/node_0/logs-0.chunk.txt"}]}`))
+			}
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var out bytes.Buffer
+	_, err := streamBricklensLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &out,
+		logRequest{runID: 123, attempt: -1, tailLines: -1, jsonOutput: true},
+		logRunStatus{lifeCycleState: "RUNNING"})
+	require.ErrorIs(t, err, errBricklensFeatureDisabled)
+	assert.Empty(t, out.String())
 }
 
 func TestFetchLogsFallsBackToMLflowWhenBricklensEmpty(t *testing.T) {

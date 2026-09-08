@@ -114,7 +114,7 @@
           "dependencies": [
             "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/artifacts/.internal/my_default_python-0.0.1-py3-none-any.whl"
           ],
-          "environment_version": "4"
+          "environment_version": "5"
         }
       }
     ],

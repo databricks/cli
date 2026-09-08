@@ -132,6 +132,17 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 		return nil
 	}
 
+	if IsOpaqueStruct(v1Type) {
+		equal, err := equalJSON(v1, v2)
+		if err != nil {
+			return err
+		}
+		if !equal {
+			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+		}
+		return nil
+	}
+
 	kind := v1.Kind()
 
 	// Perform nil checks for nilable types.
@@ -207,13 +218,10 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 		}
 
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-		bundleTag := structtag.BundleTag(sf.Tag.Get("bundle"))
 
 		// Resolve field name from JSON tag or fall back to Go field name
-		// Sensitive fields are marked as "json:-" so they are not accidentally stored in the state file.
-		// But we still want to diff them to detect changes based on in-memory values (comes from config and remote)
 		fieldName := jsonTag.Name()
-		if fieldName == "-" && !bundleTag.Sensitive() {
+		if fieldName == "-" {
 			continue
 		}
 
@@ -293,7 +301,7 @@ func getForceSendFields(v reflect.Value) []string {
 	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
 		return nil
 	}
-	result, ok := fsField.Interface().([]string)
+	result, ok := reflect.TypeAssert[[]string](fsField)
 	if ok {
 		return result
 	}

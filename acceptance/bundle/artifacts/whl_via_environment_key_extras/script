@@ -3,7 +3,7 @@ trace $CLI bundle deploy
 trace find.py --expect 1 whl
 
 title "Expecting the environments dependency to keep its [train] extras suffix"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body' out.requests.txt | nostamp
 
 title "Expecting 1 wheel to be uploaded under its bare filename (no extras)"
 trace jq .path < out.requests.txt | grep import | grep whl | sort

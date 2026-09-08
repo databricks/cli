@@ -37,12 +37,13 @@ type listData struct {
 // machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable table.
 type listRow struct {
-	RunID     string  `json:"run_id"`
-	RunName   string  `json:"run_name"`
-	User      string  `json:"user"`
-	Status    string  `json:"status"`
-	StartedAt *string `json:"started_at"`
-	IsSweep   bool    `json:"is_sweep"`
+	RunID         string  `json:"run_id"`
+	RunName       string  `json:"run_name"`
+	User          string  `json:"user"`
+	Status        string  `json:"status"`
+	DisplayStatus string  `json:"-"`
+	StartedAt     *string `json:"started_at"`
+	IsSweep       bool    `json:"is_sweep"`
 
 	// Experiment, Duration, Progress, MLflowURL and Accelerators are table-only
 	// columns, omitted from JSON to match `air list --json`.
