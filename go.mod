@@ -46,7 +46,7 @@ require (
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
-require github.com/databricks/sdk-go/core v0.0.1-dev // Apache-2.0
+require github.com/databricks/sdk-go/core v0.0.1-dev.1 // Apache-2.0
 
 require (
 	github.com/databricks/sdk-go/auth v0.0.0-dev // Apache-2.0
