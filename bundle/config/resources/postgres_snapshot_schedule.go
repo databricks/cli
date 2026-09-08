@@ -40,6 +40,14 @@ type PostgresSnapshotSchedule struct {
 	PostgresSnapshotScheduleConfig
 }
 
+func (b *PostgresSnapshotSchedule) UnmarshalJSON(data []byte) error {
+	return marshal.Unmarshal(data, b)
+}
+
+func (b PostgresSnapshotSchedule) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(b)
+}
+
 func (b *PostgresSnapshotSchedule) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
 	_, err := w.Postgres.GetSnapshotSchedule(ctx, postgres.GetSnapshotScheduleRequest{Name: name})
 	if err != nil {
