@@ -22,6 +22,11 @@ const (
 // be attributed without logging the error text, which carries cluster names, paths and user
 // names.
 //
+// It also classifies how an established session ended, for the ends the CLI can attribute
+// (the WEBSOCKET_* and HANDOVER_* categories). Those rows carry is_success = true, because
+// the tunnel was established: use is_success to separate a failed connection attempt from a
+// session that connected and was later cut short, and this field for the cause of either.
+//
 // IDE_SSH_EXTENSION_MISSING was retired in favour of the four IDE_SSH_EXTENSION_* categories
 // below: it reported all four outcomes as one, and they call for different fixes. Rows written
 // before the split still carry it, so a query spanning that release has to accept both.
@@ -80,6 +85,21 @@ const (
 	// out to the IDE and see only a killed child process.
 	SshTunnelErrorCategoryUserAborted SshTunnelErrorCategory = "USER_ABORTED"
 
+	// The proxy could not establish its websocket to the SSH server at all. Distinguished
+	// from WEBSOCKET_DROPPED so "never connected" is not counted as a mid-session drop.
+	SshTunnelErrorCategoryWebsocketConnectFailed SshTunnelErrorCategory = "WEBSOCKET_CONNECT_FAILED"
+
+	// An established proxy websocket stopped carrying traffic mid-session, ending the SSH
+	// session with it. Typically a TCP reset from somewhere on the path between the client
+	// and the workspace; the CLI cannot yet resume from it, so every occurrence is a
+	// user-visible dropped session.
+	SshTunnelErrorCategoryWebsocketDropped SshTunnelErrorCategory = "WEBSOCKET_DROPPED"
+
+	// The periodic auth handover failed in a way that ended the session. A handover that
+	// only failed to dial its replacement is not reported here: the session continues on
+	// its existing connection.
+	SshTunnelErrorCategoryHandoverFailed SshTunnelErrorCategory = "HANDOVER_FAILED"
+
 	// A failure that does not correspond to any of the categories above. The connect path
 	// attributes every per-environment blocker, so a rise here points at a CLI bug (or a new
 	// failure mode that needs its own category) rather than a user's setup.
@@ -130,9 +150,12 @@ type SshTunnelEvent struct {
 	// Only the presence is recorded, not the policy ID itself.
 	HasUsagePolicy bool `json:"has_usage_policy"`
 
-	// Why the connection attempt failed, or TYPE_UNSPECIFIED on success. Deliberately
-	// without omitempty: the field is what identifies a failure's cause, so an empty value
-	// must not be silently dropped into an indistinguishable NULL. Every failure path sets
-	// a category, falling back to UNKNOWN.
+	// Why the connection attempt failed, how an established session ended, or
+	// TYPE_UNSPECIFIED when neither applies. Deliberately without omitempty: the field is
+	// what identifies a failure's cause, so an empty value must not be silently dropped into
+	// an indistinguishable NULL. Every failed connection attempt sets a category, falling
+	// back to UNKNOWN; an established session sets one only for the ends the CLI can
+	// attribute, since the ssh client and the user's own remote command also exit non-zero
+	// here and neither is a tunnel failure.
 	ErrorCategory SshTunnelErrorCategory `json:"error_category"`
 }
