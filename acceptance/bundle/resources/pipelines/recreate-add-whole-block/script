@@ -9,15 +9,9 @@ trace $CLI bundle deploy
 # markers. connection_name is immutable, so adding it must recreate the pipeline.
 trace update_file.py databricks.yml "#TO_ADD: " ""
 
-# The plan diverges by engine. The direct engine's per-field "changes" are the
-# interesting part (the whole ingestion_definition block recorded as one 'update'
-# entry that misses the recreate rule on the connection_name leaf), so capture its
-# JSON. Terraform has no meaningful changes map, so capture its text verdict
-# ('recreate').
-if [ "$DATABRICKS_BUNDLE_ENGINE" = direct ]; then
-    $CLI bundle plan -o json | nostamp > out.plan.direct.json
-else
-    $CLI bundle plan > out.plan.terraform.txt 2>&1
-fi
+# The direct engine records the whole ingestion_definition block as one 'update'
+# entry (missing the recreate rule on the connection_name leaf); terraform records
+# 'recreate'. See the per-engine "changes" / "action" in the plan JSON.
+$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm -f out.requests.txt
