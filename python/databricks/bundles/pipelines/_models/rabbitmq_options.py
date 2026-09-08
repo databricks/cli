@@ -22,6 +22,8 @@ class RabbitmqOptions:
 
     queue: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Required) RabbitMQ queue name to consume from.
     """
 
@@ -38,6 +40,8 @@ class RabbitmqOptionsDict(TypedDict, total=False):
 
     queue: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Required) RabbitMQ queue name to consume from.
     """
 
