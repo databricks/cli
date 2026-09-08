@@ -150,9 +150,12 @@ type DeploymentState struct {
 	// reset - so, like operationBuffer and dmsClient, it must survive reset.
 	DeploymentID string
 
-	// VersionID is the recorded version this run is anchored to: the deployment's last version at
-	// Open, then the version startVersion created. It lives outside Data because CompleteVersion
-	// runs after Finalize, which resets Data. Under recording this is the version, not the serial.
+	// VersionID is the source of truth for the deployment version: every version operation reads it
+	// - which version to create next, which one it follows, what the plan stamps, and what a saved
+	// plan is validated against. It holds the last version the service recorded, and once this run
+	// creates one, that new version.
+	//
+	// It sits outside Data because Finalize resets Data and CompleteVersion runs after that.
 	VersionID int
 }
 
@@ -221,14 +224,6 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.operationBuffer = buf
 	db.DeploymentID = deploymentID
 	db.VersionID = versionID
-}
-
-// SetDeploymentID publishes the id of a deployment created after Open, which could not know it.
-// Readers take the deployment from here rather than from the config tree.
-func (db *DeploymentState) SetDeploymentID(id string) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	db.DeploymentID = id
 }
 
 // RecordingError reports whether recording state writes to the service has failed, so the apply

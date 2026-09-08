@@ -47,7 +47,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Replay: re-deploying the same plan is rejected - it predates the recorded version
 >>> musterr [CLI] bundle deploy --plan tmp.plan.json
-Error: this plan was built against version 0 but the deployment has recorded version 1; run 'bundle plan' again
+Error: plan lineage "" does not match state lineage "[UUID]"; the state may have been modified by another process
 
 
 === Only the first deploy recorded a version; the rejected replay created none

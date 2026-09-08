@@ -79,7 +79,7 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 			return
 		}
 		deploymentID = id
-		db.StateDB.SetDeploymentID(deploymentID)
+		db.StateDB.DeploymentID = deploymentID
 	} else if mask := metadata.StaleFields(current); mask != "" {
 		if err := dmsClient.UpdateDeployment(ctx, deploymentID, metadata, mask); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))

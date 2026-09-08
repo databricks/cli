@@ -477,10 +477,15 @@ func validatePlan(b *bundle.Bundle, plan *deployplan.Plan) error {
 		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
 	}
 
+	// A plan taken before the first deploy carries no lineage, so both sides are empty then and this
+	// passes. If a deployment has happened since, the lineage no longer matches.
+	if plan.Lineage != stateDB.Data.Lineage {
+		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
+	}
+
 	// Recorded deployments keep this counter in VersionID, everything else in the state serial; the
-	// two agree after the same sequence of deploys. A recorded plan built against an earlier version
-	// gets the clearer message, and is checked before the lineage comparison because a plan taken
-	// before the first deploy carries no lineage to compare.
+	// two agree after the same sequence of deploys. A plan built against an earlier
+	// recorded version gets the clearer message; anything else falls through to the serial check.
 	expected := stateDB.Data.Serial
 	if stateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
 		expected = stateDB.VersionID
@@ -490,12 +495,6 @@ func validatePlan(b *bundle.Bundle, plan *deployplan.Plan) error {
 	}
 	if plan.Serial != expected {
 		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)
-	}
-
-	// A plan taken before the first deploy carries no lineage, so both sides are empty then and this
-	// passes. If a deployment has happened since, the counter above has already caught it.
-	if plan.Lineage != stateDB.Data.Lineage {
-		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
 
 	return nil
