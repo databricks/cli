@@ -63,22 +63,6 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 	}
 }
 
-// deploymentAndNextVersion reads, from the history the recording set, the deployment id and the version
-// this run will create (one past the deployment's most recent). Both zero when nothing is recorded
-// - the bundle records no history, so version 0 marks "no version" for logDeploymentVersion.
-func deploymentAndNextVersion(b *bundle.Bundle) (string, int64) {
-	h := b.Config.Bundle.Deployment.History
-	if h == nil {
-		return "", 0
-	}
-	// LatestVersionID comes from the service as an integer, so this does not fail in practice.
-	version, err := dms.NextVersion(h.LatestVersionID)
-	if err != nil {
-		version = 1
-	}
-	return h.DeploymentID, version
-}
-
 // createOrUpdateDeployment creates the deployment on a first deploy, or updates the metadata this
 // run changed. current is the record the service holds (nil before the first recorded deploy),
 // diffed to mask the update down to what changed. Runs after approval, so a declined deploy leaves
@@ -87,7 +71,7 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	db := &b.DeploymentBundle
 	dmsClient := db.StateDB.DmsClient()
 	metadata := deploymentMetadata(b)
-	deploymentID, _ := deploymentAndNextVersion(b)
+	deploymentID := db.StateDB.DeploymentID
 	if deploymentID == "" {
 		id, err := dmsClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
 		if err != nil {
@@ -95,6 +79,7 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 			return
 		}
 		deploymentID = id
+		db.StateDB.SetDeploymentID(deploymentID)
 	} else if mask := metadata.StaleFields(current); mask != "" {
 		if err := dmsClient.UpdateDeployment(ctx, deploymentID, metadata, mask); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to update deployment: %w", err))
@@ -120,7 +105,8 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	if dmsClient == nil {
 		return nil
 	}
-	deploymentID, versionID := deploymentAndNextVersion(b)
+	deploymentID := db.StateDB.DeploymentID
+	versionID := int64(db.StateDB.Data.Serial) + 1
 
 	// The state serial tracks the version the service last recorded, which is the one this run
 	// follows. Empty for the first version.

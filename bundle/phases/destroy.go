@@ -169,7 +169,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		}
 		// A completed destroy's resources are gone, so its deployment record is deleted too.
 		if completed {
-			deploymentID, _ := deploymentAndNextVersion(b)
+			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 			if err := b.DeploymentBundle.StateDB.DmsClient().DeleteDeployment(ctx, deploymentID); err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
 				return
@@ -224,7 +224,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			if err != nil {
 				logdiag.LogError(ctx, err)
 			} else if completed {
-				deploymentID, _ := deploymentAndNextVersion(b)
+				deploymentID := b.DeploymentBundle.StateDB.DeploymentID
 				if err := b.DeploymentBundle.StateDB.DmsClient().DeleteDeployment(ctx, deploymentID); err != nil {
 					logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
 				}

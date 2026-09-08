@@ -222,6 +222,14 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.versionID = versionID
 }
 
+// SetDeploymentID publishes the id of a deployment created after Open, which could not know it.
+// Readers take the deployment from here rather than from the config tree.
+func (db *DeploymentState) SetDeploymentID(id string) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.DeploymentID = id
+}
+
 // RecordingError reports whether recording state writes to the service has failed, so the apply
 // stops touching resources once the service is no longer keeping up. Nil when the bundle does not
 // record deployment history or recording is healthy.
