@@ -340,8 +340,11 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 		DependsOn: dependsOn,
 	}
 
-	// A recorded deployment persists through the service, everything else through the WAL.
+	// A recorded deployment persists through the service, everything else through the WAL. The
+	// entry is still kept in memory: Finalize exports it for metadata.json and the deploy summary,
+	// and dataForFile empties State again before the tombstone is written.
 	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
+		db.Data.State[key] = entry
 		db.stateIDs[key] = newID
 		if buf := db.operationBuffer; buf != nil {
 			recorded, err := json.Marshal(RecordedState{State: entry.State, DependsOn: dependsOn})
@@ -374,6 +377,7 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	// Read before the delete: DMS needs the id to say which resource went away.
 	deletedID := db.stateIDs[key]
 	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
+		delete(db.Data.State, key)
 		delete(db.stateIDs, key)
 		if buf := db.operationBuffer; buf != nil {
 			buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
