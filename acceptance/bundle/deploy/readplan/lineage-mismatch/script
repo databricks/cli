@@ -1,2 +1,7 @@
+# Generate a plan, then tamper only with its lineage. Generated rather than committed so the plan
+# carries whatever headers the variant produces, which lets this run with recording on too.
+trace $CLI bundle plan -o json | jq '.lineage = "different-lineage"' > plan.json
+
 # Try to deploy with mismatched lineage (should fail)
-$CLI bundle deploy --plan plan.json
+trace musterr $CLI bundle deploy --plan plan.json
+rm plan.json

@@ -1,6 +1,4 @@
-trace $CLI bundle plan -o json > tmp.plan.json
-
-jq '.cli_version = "1.2.3"' tmp.plan.json > plan.json
+trace $CLI bundle plan -o json | jq '.cli_version = "1.2.3"' > plan.json
 
 trace $CLI bundle deploy --plan plan.json
 rm plan.json
