@@ -100,22 +100,33 @@ def get_remote_state_path(target):
 
 
 @functools.cache
+def get_deployment_id(target):
+    """The recorded deployment's id, or None when nothing is recorded.
+
+    Cached and shared: both the resource listing and the version lookup need it, and resolving it
+    costs a workspace round trip. No node means nothing has been recorded, the conclusion
+    dms.resolveDeploymentID also draws from a 404 - the deployment is gone once the bundle is
+    destroyed.
+    """
+    state_path = get_remote_state_path(target)
+    if not state_path:
+        return None
+    node = run_json([CLI, "workspace", "get-status", f"{state_path}/{DEPLOYMENT_NODE_NAME}"], allow_failure=True)
+    if not node or not node.get("object_id"):
+        return None
+    return node["object_id"]
+
+
+@functools.cache
 def get_resources(target):
     """Map every recorded resource key ("jobs.foo") to its {"id", "state"}.
 
     Empty when the bundle has no deployment recorded yet. Cached because a lookup costs three
     round trips and a script asks for one resource at a time.
     """
-    state_path = get_remote_state_path(target)
-    if not state_path:
+    deployment_id = get_deployment_id(target)
+    if not deployment_id:
         return {}
-
-    # No node means nothing has been recorded, the conclusion dms.resolveDeploymentID also draws
-    # from a 404 - the deployment is gone once the bundle is destroyed.
-    node = run_json([CLI, "workspace", "get-status", f"{state_path}/{DEPLOYMENT_NODE_NAME}"], allow_failure=True)
-    if not node or not node.get("object_id"):
-        return {}
-    deployment_id = node["object_id"]
 
     result = {}
     # The service pages at 50 resources; the local fake returns everything at once.
@@ -153,14 +164,10 @@ def get_recorded_state(target):
 
 def get_last_version_id(target):
     """The version the service has recorded for this deployment, or None when nothing is recorded."""
-    state_path = get_remote_state_path(target)
-    if not state_path:
+    deployment_id = get_deployment_id(target)
+    if not deployment_id:
         return None
-    node = run_json([CLI, "workspace", "get-status", f"{state_path}/{DEPLOYMENT_NODE_NAME}"], allow_failure=True)
-    if not node or not node.get("object_id"):
-        return None
-    # Tolerate a missing deployment: a destroy deletes the record while the state file remains.
-    deployment = run_json([CLI, "api", "get", f"/api/2.0/bundle/deployments/{node['object_id']}"], allow_failure=True)
+    deployment = run_json([CLI, "api", "get", f"/api/2.0/bundle/deployments/{deployment_id}"])
     return (deployment or {}).get("last_version_id")
 
 
@@ -209,7 +216,10 @@ def main():
     for filename in get_state_files(args.target, args.backup):
         if not os.path.exists(filename):
             continue
-        if os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true" and not args.no_dms:
+        # Recording only applies to the direct engine, so a terraform run prints the file as-is.
+        recording = os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true"
+        terraform = os.environ.get("DATABRICKS_BUNDLE_ENGINE") == "terraform"
+        if recording and not terraform and not args.no_dms:
             print_recorded_state(filename, args.target)
         else:
             print_file(filename)
