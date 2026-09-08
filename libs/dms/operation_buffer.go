@@ -49,12 +49,6 @@ type OperationBuffer struct {
 	err error
 }
 
-// Version reports the deployment version this buffer records operations for. Set once when the
-// buffer opens, so it is the version that was actually created rather than one re-derived later.
-func (b *OperationBuffer) Version() int64 {
-	return b.versionNum
-}
-
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
 func StartOperationBuffer(ctx context.Context, client *Client, deploymentID string, versionNum int64) *OperationBuffer {

@@ -145,6 +145,10 @@ type DeploymentState struct {
 	// know). CalculatePlan reads it to stamp the plan; CompleteVersion reads it after Finalize's
 	// reset - so, like operationBuffer and dmsClient, it must survive reset.
 	DeploymentID string
+
+	// versionID is the version InitializeOperationBuffer created, kept so CompleteVersion completes
+	// that exact one: the serial moves during a deploy, the created version does not.
+	versionID int64
 }
 
 // DMSDeployment identifies the recorded deployment Open reads from. The zero value means the
@@ -211,6 +215,7 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	defer db.mu.Unlock()
 	db.operationBuffer = buf
 	db.DeploymentID = deploymentID
+	db.versionID = versionID
 }
 
 // RecordingError reports whether recording state writes to the service has failed, so the apply
@@ -245,9 +250,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 		return false, nil
 	}
 	db.versionCompleted = true
-	// The buffer knows the version it was opened for, so complete exactly that one rather than
-	// re-deriving it: the serial moves during a deploy, the created version does not.
-	deploymentID, client, versionID := db.DeploymentID, db.dmsClient, buf.Version()
+	deploymentID, client, versionID := db.DeploymentID, db.dmsClient, db.versionID
 	db.mu.Unlock()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
