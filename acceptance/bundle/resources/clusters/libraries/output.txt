@@ -23,9 +23,7 @@ OK: cluster created with libraries
 }
 
 === Removing the wheel and redeploying uninstalls it and restarts the running cluster
-OK: wheel uninstalled, cluster restarted
-
->>> print_requests.py //libraries/uninstall
+>>> print_requests.py //libraries/uninstall //clusters/restart
 {
   "method": "POST",
   "path": "/api/2.0/libraries/uninstall",
@@ -36,6 +34,13 @@ OK: wheel uninstalled, cluster restarted
         "whl": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
       }
     ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[UUID]"
   }
 }
 

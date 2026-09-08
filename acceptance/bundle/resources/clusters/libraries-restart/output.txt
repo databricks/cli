@@ -1,12 +1,26 @@
 
 === Install (create): libraries install on the fresh cluster with no restart
-OK: libraries installed on create, no restart
+>>> print_requests.py //clusters/restart
 
 === Update: adding a library restarts the running cluster
-OK: library added, cluster restarted
+>>> print_requests.py //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[UUID]"
+  }
+}
 
 === Delete: removing all libraries restarts the running cluster
-OK: libraries removed, cluster restarted
+>>> print_requests.py //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[UUID]"
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
