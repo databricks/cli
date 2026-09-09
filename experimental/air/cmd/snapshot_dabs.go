@@ -264,8 +264,8 @@ func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, r
 }
 
 // snapshotExists reports whether name already exists in the artifact store, used to
-// short-circuit a cacheable git_archive upload. A not-found is a clean miss (false,
-// nil); any other error is surfaced.
+// short-circuit a content-addressed upload (either mode). A not-found is a clean miss
+// (false, nil); any other error is surfaced.
 func snapshotExists(ctx context.Context, store filer.Filer, name string) (bool, error) {
 	_, err := store.Stat(ctx, name)
 	if err == nil {

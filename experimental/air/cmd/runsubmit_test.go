@@ -401,14 +401,16 @@ func TestSubmitWorkloadPlainTarContentAddressed(t *testing.T) {
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
 	})
-	// Track snapshot uploads, preserving fake-workspace persistence so the second
-	// submit's existence Stat sees the first upload. Dedupe by path: the DABs uploader
-	// mkdirs-and-retries the import, so one logical upload can hit this route twice.
-	uploaded := map[string]bool{}
+	// Count snapshot import-file calls, preserving fake-workspace persistence so the
+	// second submit's existence Stat sees the first upload. A count (not a set keyed by
+	// path) is what proves the skip: both submits resolve to the same content-addressed
+	// name, so a set could not tell a skipped second submit from one that re-uploaded to
+	// that same path.
+	snapshotUploads := 0
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
 		p := req.Vars["path"]
 		if strings.Contains(p, "/.air/repo_snapshots/") {
-			uploaded[p] = true
+			snapshotUploads++
 		}
 		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
@@ -436,6 +438,8 @@ code_source:
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
 	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
+	require.NotZero(t, snapshotUploads, "first submit should upload the tarball")
+	afterFirst := snapshotUploads
 	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
@@ -444,9 +448,10 @@ code_source:
 	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be content-addressed, not the bare dir name")
 	assert.Regexp(t, `^src_[0-9a-f]{16}\.tar\.gz$`, base)
 
-	// Same unchanged tree → identical remote path, uploaded once (second submit is a hit).
+	// Same unchanged tree → identical remote path, and the second submit moved no bytes:
+	// zero new import-file calls (a real skip), not a re-upload to the same name.
 	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
-	assert.Len(t, uploaded, 1, "unchanged plain_tar should skip the second upload")
+	assert.Equal(t, afterFirst, snapshotUploads, "unchanged plain_tar should skip the second upload")
 }
 
 // A git_archive snapshot is content-addressed by (commit, include_paths): submitting
