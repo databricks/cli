@@ -990,8 +990,6 @@ func TestGetStructDiffWholeBlock(t *testing.T) {
 		},
 		{
 			// Intermediate nil on the new side (a whole sub-block is removed).
-			// BUG: one change at "field.a" carrying the whole struct.
-			// should be: field.a.b ("old"->nil) and field.a.c ("newc"->nil).
 			name: "intermediate nil, block removed",
 			a:    wbOuter{Field: &wbMid{A: &wbInner{B: "old", C: "newc"}}},
 			b:    wbOuter{Field: &wbMid{A: nil}},

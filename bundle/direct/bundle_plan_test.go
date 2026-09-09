@@ -451,8 +451,8 @@ func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
 	}
 	slices.Sort(keys)
 
-	// BUG: a coarse "field.a" entry overlaps the fine "field.a.c" entry.
-	// should be: []string{"field.a.b", "field.a.c"}.
+	// Unexpected: a coarse "field.a" entry overlaps the fine "field.a.c" entry.
+	// Probably should be: []string{"field.a.b", "field.a.c"}.
 	assert.Equal(t, []string{"field.a", "field.a.c"}, keys)
 
 	// The coarse parent entry carries the whole sub-block rather than a leaf value.
