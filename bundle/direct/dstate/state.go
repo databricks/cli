@@ -72,16 +72,6 @@ const FeatureDeploymentHistory = "deployment_history"
 // state that depends on a feature it does not recognize.
 const featuresDocURL = "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features"
 
-// StorageBackend identifies where a deployment's resource state lives: the workspace filesystem
-// (the state file) or the deployment metadata service. It is the source of truth for gating DMS
-// behavior after Open; the plan carries its string form to check against the target's config.
-type StorageBackend string
-
-const (
-	StorageBackendWorkspaceFilesystem       StorageBackend = "WORKSPACE_FILESYSTEM"
-	StorageBackendDeploymentMetadataService StorageBackend = "DEPLOYMENT_METADATA_SERVICE"
-)
-
 // recognizedFeatures is the set of state feature flags this CLI understands. A state depending on
 // any feature not listed here is refused (see checkStateFeatures), so a newer CLI's feature is not
 // silently clobbered by this one.
@@ -135,10 +125,6 @@ type DeploymentState struct {
 	// dmsClient talks to the deployment metadata service. Open builds it from the workspace
 	// client when the deployment records history; nil otherwise.
 	dmsClient *dms.Client
-
-	// storageBackend is where this deployment's state lives, set by Open from the feature marker.
-	// It is the source of truth for gating DMS behavior after Open.
-	storageBackend StorageBackend
 
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
@@ -231,9 +217,6 @@ func (db *DeploymentState) getOperationBuffer() *dms.OperationBuffer {
 // stops touching resources once the service is no longer keeping up. Nil when the bundle does not
 // record deployment history or recording is healthy.
 func (db *DeploymentState) RecordingError() error {
-	if db.StorageBackend() != StorageBackendDeploymentMetadataService {
-		return nil
-	}
 	buf := db.getOperationBuffer()
 	if buf == nil {
 		return nil
@@ -247,10 +230,8 @@ func (db *DeploymentState) RecordingError() error {
 // one does nothing. Finalize has already drained the buffered operations. It reads only fields that
 // survive Finalize's reset and asserts nothing, so it is safe to call after the state is closed.
 func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (bool, error) {
-	if db.StorageBackend() != StorageBackendDeploymentMetadataService {
-		return false, nil
-	}
-
+	// Gated on the buffer below rather than on the state's features: this runs after Finalize, which
+	// resets Data, so the features are gone by now. A buffer exists only for a recorded deployment.
 	db.mu.Lock()
 	buf := db.operationBuffer
 	if buf == nil || db.versionCompleted {
@@ -284,7 +265,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 // RecordFailure records that a resource did not apply, so the history says why rather than
 // leaving the resource out. resourceID is the id it had before the failure.
 func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause error) {
-	if db.StorageBackend() != StorageBackendDeploymentMetadataService {
+	if !db.IsDeploymentMetadataService() {
 		return
 	}
 
@@ -343,7 +324,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	// A recorded deployment persists through the service, everything else through the WAL. The
 	// entry is still kept in memory: Finalize exports it for metadata.json and the deploy summary,
 	// and dataForFile empties State again before the tombstone is written.
-	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
+	if db.isDeploymentMetadataService() {
 		db.Data.State[key] = entry
 		db.stateIDs[key] = newID
 		if buf := db.operationBuffer; buf != nil {
@@ -378,7 +359,7 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	deletedID := db.stateIDs[key]
 
 	// A recorded deployment persists through the service, everything else through the WAL.
-	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
+	if db.isDeploymentMetadataService() {
 		if buf := db.operationBuffer; buf != nil {
 			buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
 		}
@@ -440,16 +421,25 @@ func (db *DeploymentState) StateFeatures() map[string]struct{} {
 func (db *DeploymentState) GetSerial() int {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
+	if db.isDeploymentMetadataService() {
 		return db.VersionID
 	}
 	return db.Data.Serial
 }
 
-// StorageBackend reports where this deployment's state lives - the source of truth for whether the
-// bundle records deployment history. Set by Open; valid only after the state is opened.
-func (db *DeploymentState) StorageBackend() StorageBackend {
-	return db.storageBackend
+// isDeploymentMetadataService is IsDeploymentMetadataService for callers already holding db.mu.
+func (db *DeploymentState) isDeploymentMetadataService() bool {
+	_, ok := db.Data.Features[FeatureDeploymentHistory]
+	return ok
+}
+
+// IsDeploymentMetadataService reports whether this deployment's resource state lives in the
+// deployment metadata service rather than the state file. The state's features are the source of
+// truth; valid only after Open.
+func (db *DeploymentState) IsDeploymentMetadataService() bool {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.isDeploymentMetadataService()
 }
 
 // DmsClient returns the deployment metadata service client Open built from the workspace client,
@@ -611,10 +601,7 @@ To record this bundle's history, start it over as a new deployment:
 		return ErrUnsettingRecording
 	}
 
-	db.storageBackend = StorageBackendWorkspaceFilesystem
 	if recorded {
-		db.storageBackend = StorageBackendDeploymentMetadataService
-
 		// The service is the source of truth for a recorded deployment; the file is a tombstone
 		// carrying only the marker, and applyDMSState loads the resources the service holds.
 		client, err := dms.NewClient(cmdctx.WorkspaceClient(ctx))
@@ -646,7 +633,7 @@ To record this bundle's history, start it over as a new deployment:
 		// and Open recovers from there rather than replaying a log. Stamp the header fields the
 		// replay would have carried over, then skip the file. The serial is left alone: under
 		// recording it comes from the deployment's last_version_id.
-		if db.storageBackend == StorageBackendDeploymentMetadataService {
+		if db.isDeploymentMetadataService() {
 			db.Data.Lineage = db.GetOrInitLineage()
 			db.Data.StateVersion = currentStateVersion
 			db.Data.CLIVersion = build.GetInfo().Version
@@ -833,7 +820,7 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		}
 		db.walFile = nil
 		err = db.replayWAL(ctx)
-	} else if db.openedForWrite && db.storageBackend == StorageBackendDeploymentMetadataService {
+	} else if db.openedForWrite && db.isDeploymentMetadataService() {
 		// replayWAL is what normally persists the file. Without one, write the tombstone here so
 		// the header (lineage, state version, CLI version) still lands on disk - even when no
 		// operations were recorded, since the deployment and any version this run created exist
@@ -842,7 +829,7 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 	}
 
 	// Wait until all operations are recorded in the service.
-	if db.StorageBackend() == StorageBackendDeploymentMetadataService && db.operationBuffer != nil {
+	if db.isDeploymentMetadataService() && db.operationBuffer != nil {
 		if drainErr := db.operationBuffer.Drain(); drainErr != nil {
 			err = errors.Join(err, drainErr)
 		}
@@ -870,7 +857,7 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	db.openedForWrite = true
 
 	// As in Open: a recorded deployment writes no WAL, so stamp the header and skip the file.
-	if db.storageBackend == StorageBackendDeploymentMetadataService {
+	if db.isDeploymentMetadataService() {
 		db.Data.Lineage = db.GetOrInitLineage()
 		db.Data.StateVersion = currentStateVersion
 		db.Data.CLIVersion = build.GetInfo().Version
@@ -1022,7 +1009,7 @@ func (db *DeploymentState) unlockedSave() error {
 
 // Data to persist in the remote resources.json file.
 func (db *DeploymentState) dataForFile() Database {
-	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
+	if db.isDeploymentMetadataService() {
 		header := db.Data.Header
 		if header.Features == nil {
 			header.Features = make(map[string]struct{})

@@ -18,7 +18,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -204,11 +203,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
 	defer func() {
-		// Close the version when backend type is deployment metadata service.
-		if b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
-			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
-				logdiag.LogError(ctx, err)
-			}
+		// Unguarded: CompleteVersion no-ops when no version was created. It runs after Finalize has
+		// reset the state, so the state's features are no longer there to gate on.
+		if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			logdiag.LogError(ctx, err)
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
@@ -320,8 +318,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
-	// IsDirect first: StorageBackend asserts the state is open, and only the direct engine opens it.
-	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
+	// IsDirect first: the state must be open to read its features, and only the direct engine opens it.
+	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {

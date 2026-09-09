@@ -14,7 +14,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
@@ -160,7 +159,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	if engine.IsDirect() && b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
+	if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		// Complete version before deleting remote files; the deployment node is under statePath.
 		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
 		if err != nil {
@@ -219,7 +218,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	// destroy records nothing. Deferred before lock.Release to hold the lock; a no-op once
 	// destroyCore has completed the version.
 	defer func() {
-		if engine.IsDirect() && b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
+		// Unguarded: CompleteVersion no-ops when no version was created. It runs after Finalize has
+		// reset the state, so the state's features are no longer there to gate on.
+		if engine.IsDirect() {
 			completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
 			if err != nil {
 				logdiag.LogError(ctx, err)
@@ -292,7 +293,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		// destroy's recording: it opens the operation buffer that destroyCore drains and completes,
 		// so the drain and the deployment delete follow only when a version was started here.
 		// Destroy never creates or updates the deployment - it is about to be deleted.
-		if engine.IsDirect() && b.DeploymentBundle.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
+		if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 			staged, err := stagedOperations(plan)
 			if err != nil {
 				logdiag.LogError(ctx, err)
