@@ -10,6 +10,6 @@ EnvMatrixExclude.dms_state_too_large = ["DMS=true", "INPUT_CONFIG=job_pydabs_100
 EnvMatrixExclude.no_secret_with_readplan = ["READPLAN=1", "INPUT_CONFIG=secret.yml.tmpl"]
 
 # Emptying a grants node records the operation as a delete with no state, which the deployment
-# metadata service rejects on a succeeded UPDATE that leaves the schema (a live resource). This
+# metadata service rejects on a succeeded UPDATE action that leaves the grants (a live resource). This
 # is a known bug tracked by bundle/dms/empty-grants (Cloud=false); skip it under recording here.
 EnvMatrixExclude.dms_empty_grants_bug = ["DMS=true", "INPUT_CONFIG=schema_empty_grants.yml.tmpl"]

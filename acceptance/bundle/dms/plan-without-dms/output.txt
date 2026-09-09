@@ -1,10 +1,8 @@
 
 === Generate and save plan WITHOUT DMS recording
->>> jq {features, deployment_id, next_version_id}
+>>> jq {features}
 {
-  "features": null,
-  "deployment_id": null,
-  "next_version_id": null
+  "features": null
 }
 
 === Enable DMS recording and try to deploy the non-DMS plan

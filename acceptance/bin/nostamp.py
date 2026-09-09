@@ -13,7 +13,7 @@ Removed in three shapes plus the plan header:
      == "" is kept (a Terraform state dump carries that for an unstamped job).
   2. changes entries keyed "deployment.deployment_id" / "deployment.version_id".
   3. a changes object emptied by (2), or already empty.
-  4. the recorded plan header fields deployment_id, next_version_id, last_version_id, features.
+  4. the recorded plan header field features.
 """
 
 import argparse

@@ -1,7 +1,4 @@
 # Test that --plan with mismatched lineage produces an error
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-# The committed plan.json carries no features, while a recorded target has deployment_history, so
-# under DMS the feature check fires before the lineage one this test asserts. nostamp cannot help:
-# it normalizes output, not the plan being fed in.
-EnvMatrixExclude.plan_no_dms = ["DMS=true"]
+Ignore = ["plan.json"]
