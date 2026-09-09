@@ -945,6 +945,7 @@ func TestGetStructDiffNamedStringMapKey(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []ResolvedChange{{Field: "m['pre']", Old: "a", New: "b"}}, resolveChanges(got))
 }
+
 // Types for the "whole block" tests below: two levels of nesting under an
 // optional pointer, mirroring a schema like Outer{Field *Mid{A *Inner{b,c}}}.
 type wbInner struct {
