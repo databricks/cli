@@ -2,10 +2,19 @@
 setup_test_profile
 setup_test_token_cache
 
-# Make the refresh endpoint reject the otherwise valid cached grant.
-DATABRICKS_HOST="$DATABRICKS_HOST_ORIG" fault.py \
-    --body '{"error":"invalid_request","error_description":"Refresh token is invalid"}' \
-    "POST /oidc/v1/token" 401 0 2
+# Register the OAuth rejection after login so the initial token exchange succeeds.
+curl --silent --show-error --fail \
+    --request POST \
+    --header "Content-Type: application/json" \
+    --data '{
+        "pattern": "POST /oidc/v1/token",
+        "status_code": 401,
+        "body": "{\"error\":\"invalid_grant\",\"error_description\":\"Refresh token is invalid\"}",
+        "offset": 0,
+        "times": 2
+    }' \
+    "$DATABRICKS_HOST_ORIG/__testserver/fault" \
+    --output /dev/null
 
 # The CLI must report that the user needs to log in again.
 musterr $CLI auth token --profile test-profile --force-refresh

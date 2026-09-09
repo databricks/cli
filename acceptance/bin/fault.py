@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Set up a fault rule on the testserver for the current test token.
 
-Usage: fault.py [--after-handler] [--body BODY] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
+Usage: fault.py [--after-handler] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]
 
   --after-handler  run the handler first; keep its effect and replace only the response
-  --body        use BODY as the complete response body
   PATTERN     HTTP method and path, supports trailing * wildcard,
               e.g. "PUT /api/2.0/permissions/pipelines/*"
   STATUS_CODE HTTP status code to return, e.g. 504
@@ -34,28 +33,13 @@ after_handler = "--after-handler" in args
 if after_handler:
     args.remove("--after-handler")
 
-body_override = None
-if "--body" in args:
-    body_index = args.index("--body")
-    if body_index + 1 >= len(args):
-        print("--body requires a value", file=sys.stderr)
-        sys.exit(1)
-    body_override = args[body_index + 1]
-    del args[body_index : body_index + 2]
-
 if len(args) not in (4, 5):
-    print(
-        f"usage: {sys.argv[0]} [--after-handler] [--body BODY] "
-        "PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]",
-        file=sys.stderr,
-    )
+    print(f"usage: {sys.argv[0]} [--after-handler] PATTERN STATUS_CODE OFFSET TIMES [ERROR_CODE]", file=sys.stderr)
     sys.exit(1)
 
 pattern, status_code, offset, times = args[0], int(args[1]), int(args[2]), int(args[3])
 error_code = args[4] if len(args) == 5 else "INJECTED"
-body = body_override or json.dumps(
-    {"error_code": error_code, "message": "Fault injected by test."}
-)
+body = json.dumps({"error_code": error_code, "message": "Fault injected by test."})
 
 data = json.dumps(
     {
