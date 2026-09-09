@@ -62,6 +62,9 @@ RESOURCE_NAMESPACE = _load_resource_namespace()
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
 
 RENAMES = {
+    # interface{} carries no schema, so it is modelled as Any: JSON/YAML values
+    # pass through untyped. The Go config mutators validate the value.
+    "interface": "Any",
     # time.Time is a scalar serialized as an RFC3339 string; the Go side models
     # it as a string too (see libs/dyn/convert/sdk_native_types.go).
     "time.Time": "str",
@@ -87,6 +90,8 @@ PRIMITIVES = [
     "int",
     "int64",
     "float64",
+    # Treated as Any (see RENAMES); terminal, like a scalar, so it never recurses.
+    "interface",
 ]
 
 
