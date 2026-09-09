@@ -973,3 +973,64 @@ func TestGetStructDiffNamedStringMapKey(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []ResolvedChange{{Field: "m['pre']", Old: "a", New: "b"}}, resolveChanges(got))
 }
+
+// Types for the "whole block" tests below: two levels of nesting under an
+// optional pointer, mirroring a schema like Outer{Field *Mid{A *Inner{b,c}}}.
+type wbInner struct {
+	B string `json:"b,omitempty"`
+	C string `json:"c,omitempty"`
+}
+
+type wbMid struct {
+	A *wbInner `json:"a,omitempty"`
+}
+
+type wbOuter struct {
+	Field *wbMid `json:"field,omitempty"`
+}
+
+// TestGetStructDiffWholeBlock documents the "whole block" bug: when a nested
+// struct is nil on one side, the diff records a single change at the level where
+// the nil appears instead of descending to the differing leaves. The want values
+// below are the CURRENT (buggy) output; the commented "should be" lines are what
+// leaf-level decomposition must produce, and this test is expected to change when
+// the bug is fixed.
+func TestGetStructDiffWholeBlock(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b any
+		want []ResolvedChange
+	}{
+		{
+			// Both sides populated: the diff descends to the leaf correctly.
+			name: "leaf change, both populated",
+			a:    wbOuter{Field: &wbMid{A: &wbInner{B: "old"}}},
+			b:    wbOuter{Field: &wbMid{A: &wbInner{B: "new"}}},
+			want: []ResolvedChange{{Field: "field.a.b", Old: "old", New: "new"}},
+		},
+		{
+			// Intermediate nil on the old side (a whole sub-block is added).
+			// BUG: one change at "field.a" carrying the whole struct.
+			// should be: field.a.b (nil->"old") and field.a.c (nil->"newc").
+			name: "intermediate nil, block added",
+			a:    wbOuter{Field: &wbMid{A: nil}},
+			b:    wbOuter{Field: &wbMid{A: &wbInner{B: "old", C: "newc"}}},
+			want: []ResolvedChange{{Field: "field.a", Old: nil, New: wbInner{B: "old", C: "newc"}}},
+		},
+		{
+			// Intermediate nil on the new side (a whole sub-block is removed).
+			name: "intermediate nil, block removed",
+			a:    wbOuter{Field: &wbMid{A: &wbInner{B: "old", C: "newc"}}},
+			b:    wbOuter{Field: &wbMid{A: nil}},
+			want: []ResolvedChange{{Field: "field.a", Old: wbInner{B: "old", C: "newc"}, New: nil}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
+		})
+	}
+}
