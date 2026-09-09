@@ -9,7 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -20,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -30,22 +31,23 @@ import (
 var ciRunID = regexp.MustCompile(`^[0-9]{1,11}$`)
 
 func main() {
+	ctx := context.Background()
 	var cliPath string
 	flag.StringVar(&cliPath, "cli", "", "path to databricks CLI binary (required)")
 	flag.Parse()
 
 	if cliPath == "" {
-		log.Fatal("-cli: path to databricks CLI binary is required")
+		log.Errorf(ctx, "-cli: path to databricks CLI binary is required")
 	}
 
-	runID := os.Getenv("GITHUB_RUN_ID")
+	runID := env.Get(ctx, "GITHUB_RUN_ID")
 	if !ciRunID.MatchString(runID) {
-		log.Fatalf("GITHUB_RUN_ID %q is not a valid run id (must be 1-11 digits)", runID)
+		log.Errorf(ctx, "GITHUB_RUN_ID %q is not a valid run id (must be 1-11 digits)", runID)
 	}
 	prefix := "ci" + runID + "x"
 
-	if err := cleanBundles(context.Background(), cliPath, prefix); err != nil {
-		log.Fatal(err)
+	if err := cleanBundles(ctx, cliPath, prefix); err != nil {
+		log.Errorf(ctx, "failed to clean bundles: %s", err)
 	}
 }
 
@@ -87,7 +89,7 @@ func cleanBundles(ctx context.Context, execPath, prefix string) error {
 	}
 	slices.Sort(roots)
 
-	log.Printf("bundle cleanup: found %d deployment(s) with prefix %q", len(roots), prefix)
+	log.Infof(ctx, "bundle cleanup: found %d deployment(s) with prefix %q", len(roots), prefix)
 
 	// Each destroy shells out to a separate `bundle destroy` (auth + state pull +
 	// deletes), so run them concurrently. Each is network-bound (not CPU-bound),
@@ -105,9 +107,9 @@ func cleanBundles(ctx context.Context, execPath, prefix string) error {
 		sem <- struct{}{}
 		wg.Go(func() {
 			defer func() { <-sem }()
-			log.Printf("destroying %s", root)
+			log.Infof(ctx, "destroying %s", root)
 			if out, err := destroyBundle(execPath, root); err != nil {
-				log.Printf("destroy failed: %s\n%s", root, out)
+				log.Infof(ctx, "destroy failed: %s\n%s", root, out)
 				mu.Lock()
 				failed = append(failed, root)
 				mu.Unlock()
@@ -117,7 +119,7 @@ func cleanBundles(ctx context.Context, execPath, prefix string) error {
 	wg.Wait()
 
 	slices.Sort(failed)
-	log.Printf("bundle cleanup: destroyed %d/%d deployment(s) in %s", len(roots)-len(failed), len(roots), time.Since(start))
+	log.Infof(ctx, "bundle cleanup: destroyed %d/%d deployment(s) in %s", len(roots)-len(failed), len(roots), time.Since(start))
 	if len(failed) > 0 {
 		return fmt.Errorf("failed to destroy %d deployment(s): %s", len(failed), strings.Join(failed, ", "))
 	}
@@ -153,7 +155,7 @@ func listChildDirs(ctx context.Context, w *databricks.WorkspaceClient, dir strin
 	objects, err := w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{Path: dir})
 	if err != nil {
 		if !errors.Is(err, apierr.ErrNotFound) {
-			log.Printf("WARNING: bundle cleanup incomplete, cannot list %s: %s", dir, err)
+			log.Infof(ctx, "WARNING: bundle cleanup incomplete, cannot list %s: %s", dir, err)
 		}
 		return nil
 	}
