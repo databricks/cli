@@ -93,6 +93,12 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 - Use `./task test-update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
 
+**If `task lint` reports issues in files from a *different* worktree — paths under another `*.worktrees/*` directory, often one that no longer exists, typically alongside `no such file or directory` warnings — it is stale-cache contamination, not a real problem with your code. Clear the cache and re-run; do not investigate the reported issues.** golangci-lint's results cache is machine-global (`~/.cache/golangci-lint` on Linux, `~/Library/Caches/golangci-lint` on macOS) and shared across every worktree. It keys entries on file *contents* but stores each cached issue's *absolute* path, so a worktree whose packages are byte-identical to another's (usually the near-static `tools/` module) gets a cross-worktree cache hit and inherits the other worktree's paths. When that worktree was deleted, the `//nolint` post-processor can't reopen those paths to apply suppressions, so suppressed issues (e.g. `dupword`) leak through as phantom failures. This is [golangci/golangci-lint#6656](https://github.com/golangci/golangci-lint/issues/6656), closed as an accepted trade-off (won't-fix) of the shared-cache work in #6445. To unblock yourself:
+
+```sh
+go tool -modfile=tools/go.mod golangci-lint cache clean
+```
+
 # Common Mistakes
 
 **RULE: When adding a direct Go dependency, annotate its license in `go.mod` and update `NOTICE`.** Before picking the SPDX identifier, read `internal/build/license_test.go` to see the current allowlist (the `spdxLicenses` map). That test is the source of truth and will fail CI if a direct `require` line lacks a matching SPDX suffix comment (e.g. `// MIT`). Also add a corresponding entry to `NOTICE` under the matching license section. If a dep's license isn't on the allowlist, discuss before adding.
