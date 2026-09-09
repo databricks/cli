@@ -79,29 +79,13 @@ func TestValidateJobRunTriggers(t *testing.T) {
 			summary: "lifecycle.triggers.on_file_change must be non-empty when set",
 		},
 		{
-			name: "on_bundle_deploy with prevent_destroy",
-			triggers: []resources.JobRunTrigger{
-				{OnBundleDeploy: &trueVal},
-			},
-			preventDestroy: true,
-			summary:        "lifecycle.triggers.on_bundle_deploy is incompatible with lifecycle.prevent_destroy",
-		},
-		{
-			name: "on_file_change with prevent_destroy",
+			// A trigger with prevent_destroy is valid at this stage; the recreate a
+			// fired trigger plans is rejected generically by checkForPreventDestroy.
+			name: "trigger with prevent_destroy is allowed here",
 			triggers: []resources.JobRunTrigger{
 				{OnFileChange: &fileChange},
 			},
 			preventDestroy: true,
-			summary:        "lifecycle.triggers.on_file_change is incompatible with lifecycle.prevent_destroy",
-		},
-		{
-			name: "both triggers with prevent_destroy",
-			triggers: []resources.JobRunTrigger{
-				{OnFileChange: &fileChange},
-				{OnBundleDeploy: &trueVal},
-			},
-			preventDestroy: true,
-			summary:        "lifecycle.triggers.on_bundle_deploy and on_file_change are incompatible with lifecycle.prevent_destroy",
 		},
 		{
 			name:           "prevent_destroy alone",
