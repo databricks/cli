@@ -40,7 +40,9 @@ const resourcesTemplate = `Resources:
   {{- range .Resources }}
     {{ .Key | bold }}:
       Name: {{ .Name }}
-      URL:  {{ if .URL }}{{ .URL | cyan }}{{ else if .SupportsURL }}{{ "(not deployed)" | cyan }}{{ else }}{{ "(not supported)" | cyan }}{{ end }}
+    {{- if .SupportsURL }}
+      URL:  {{ if .URL }}{{ .URL | cyan }}{{ else }}{{ "(not deployed)" | cyan }}{{ end }}
+    {{- end }}
   {{- end }}
 {{- end }}
 `

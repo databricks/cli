@@ -379,7 +379,6 @@ Resources:
   Secret Scopes:
     scope1:
       Name: my_scope
-      URL:  (not supported)
 `
 	assert.Equal(t, expectedSummary, writer.String())
 }

@@ -13,7 +13,6 @@ Resources:
   Postgres roles:
     role1:
       Name: 
-      URL:  (not supported)
 
 >>> [CLI] bundle deployment unbind role1
 
@@ -27,4 +26,3 @@ Resources:
   Postgres roles:
     role1:
       Name: 
-      URL:  (not supported)

@@ -13,7 +13,6 @@ Resources:
   Postgres snapshot schedules:
     schedule1:
       Name: projects/test-project/branches/main/snapshot-schedule
-      URL:  (not supported)
 
 >>> [CLI] bundle deployment unbind schedule1
 
@@ -27,4 +26,3 @@ Resources:
   Postgres snapshot schedules:
     schedule1:
       Name: 
-      URL:  (not supported)
