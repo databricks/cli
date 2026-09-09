@@ -145,14 +145,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
 
-	// The plan records the state features it was built against so deploy --plan can reject a plan
-	// built for a target of a different shape.
-	if b.StateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
-		plan.Features = b.StateDB.StateFeatures()
-		// The state file persists no serial under recording; the version the service recorded is
-		// what a saved plan is validated against, so carry that instead.
-		plan.Serial = b.StateDB.VersionID
-	}
+	// The plan records the state it was built against so deploy --plan can reject a plan built for a
+	// target of a different shape or a state that has moved on since.
+	plan.Features = b.StateDB.StateFeatures()
+	plan.Serial = b.StateDB.GetSerial()
 
 	b.Plan = plan
 

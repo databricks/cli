@@ -481,15 +481,11 @@ func validatePlan(b *bundle.Bundle, plan *deployplan.Plan) error {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
 
-	// Recorded deployments keep this counter in VersionID, everything else in the state serial; the
-	// two agree after the same sequence of deploys. A plan built against an earlier
-	// recorded version gets the clearer message; anything else falls through to the serial check.
-	expected := stateDB.Data.Serial
-	if stateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService {
-		expected = stateDB.VersionID
-		if plan.Serial < expected {
-			return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, expected)
-		}
+	// A plan built against an earlier recorded version gets the clearer message; anything else falls
+	// through to the serial comparison.
+	expected := stateDB.GetSerial()
+	if stateDB.StorageBackend() == dstate.StorageBackendDeploymentMetadataService && plan.Serial < expected {
+		return fmt.Errorf("this plan was built against version %d but the deployment has recorded version %d; run 'bundle plan' again", plan.Serial, expected)
 	}
 	if plan.Serial != expected {
 		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)

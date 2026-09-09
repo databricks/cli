@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -432,7 +433,21 @@ func (db *DeploymentState) StateCLIVersion() string {
 func (db *DeploymentState) StateFeatures() map[string]struct{} {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	return db.Data.Features
+	// Copied: the caller stamps this into a plan that outlives the lock, so handing out the live map
+	// would let it be mutated behind the state's back.
+	return maps.Clone(db.Data.Features)
+}
+
+// GetSerial reports the counter a saved plan is validated against: the recorded version for a
+// deployment that records history, since its state file persists no serial of its own, and the
+// state serial otherwise. The two mean the same thing and advance together.
+func (db *DeploymentState) GetSerial() int {
+	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
+		return db.VersionID
+	}
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.Data.Serial
 }
 
 // StorageBackend reports where this deployment's state lives - the source of truth for whether the
