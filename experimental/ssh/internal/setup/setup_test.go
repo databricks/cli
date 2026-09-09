@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/client"
+	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -103,13 +104,24 @@ func TestGenerateHostConfig_Valid(t *testing.T) {
 
 	assert.Contains(t, result, "Host test-host")
 	assert.Contains(t, result, "User root")
-	assert.Contains(t, result, "StrictHostKeyChecking accept-new")
 	assert.Contains(t, result, "--cluster=cluster-123")
 	assert.Contains(t, result, "--shutdown-delay=30s")
 	assert.Contains(t, result, "--profile=test-profile")
 
 	expectedKeyPath := filepath.Join(tmpDir, "cluster-123")
 	assert.Contains(t, result, fmt.Sprintf(`IdentityFile %q`, expectedKeyPath))
+
+	// `ssh <name>` reaches ssh through this block and nothing else, so the host key the
+	// ProxyCommand pins has to be the one it verifies against (DECO-27882).
+	assert.Contains(t, result, "StrictHostKeyChecking yes")
+	expectedKnownHostsPath, err := sshconfig.GetKnownHostsPath(t.Context(), "cluster-123", "")
+	require.NoError(t, err)
+	assert.Contains(t, result, fmt.Sprintf(`UserKnownHostsFile %q`, expectedKnownHostsPath))
+
+	// The host name (test-host) differs from the cluster ID the key is pinned under, so the
+	// block has to carry HostKeyAlias cluster-123 or strict checking looks the key up under
+	// test-host and fails (DECO-27882).
+	assert.Contains(t, result, "\n    HostKeyAlias cluster-123\n")
 }
 
 func TestGenerateHostConfig_WithoutProfile(t *testing.T) {
@@ -207,6 +219,9 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 	assert.Contains(t, hostConfigStr, "Host test-host")
 	assert.Contains(t, hostConfigStr, "--cluster=cluster-123")
 	assert.Contains(t, hostConfigStr, "--profile=test-profile")
+	// The written block pins the key lookup to the cluster ID, which differs from the host
+	// name test-host (DECO-27882).
+	assert.Contains(t, hostConfigStr, "HostKeyAlias cluster-123")
 }
 
 func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
