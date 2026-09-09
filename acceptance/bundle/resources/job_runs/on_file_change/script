@@ -9,8 +9,11 @@ plan_no_changes() {
 }
 
 title "first deploy triggers a run"
-trace $CLI bundle plan -o json > out.plan.create.json
-$CLI bundle deploy $(readplanarg out.plan.create.json)
+# Deploy reads the raw plan so it keeps the DMS version_id it needs; the committed
+# golden is that plan with the DMS stamp stripped, so it matches across DMS variants.
+trace $CLI bundle plan -o json > tmp.plan.create.json
+nostamp < tmp.plan.create.json > out.plan.create.json
+$CLI bundle deploy $(readplanarg tmp.plan.create.json)
 trace read_id.py my_job
 # Name the first run so the recreated one becomes [MY_RUN_ID_2].
 read_id.py my_run > /dev/null
