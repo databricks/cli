@@ -798,6 +798,15 @@ func AddDefaultHandlers(server *Server) {
 		return Response{Body: ""}
 	})
 
+	// /capabilities reports which optional parts of the tunnel protocol the server speaks.
+	// This fake drives sshd directly over the websocket rather than running the CLI's own
+	// proxy server, so it has none of the session bookkeeping a resume needs and says so.
+	// The resume protocol itself is covered by the proxy package's tests, which run the
+	// real server implementation.
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/capabilities", func(req Request) any {
+		return Response{Body: map[string]bool{"resume": false}}
+	})
+
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
 
 	// Secrets ACLs:
@@ -1096,6 +1105,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	// Postgres Projects:
 	server.Handle("POST", "/api/2.0/postgres/projects", func(req Request) any {
 		projectID := req.URL.Query().Get("project_id")
@@ -1147,6 +1161,17 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		return req.Workspace.PostgresBranchDelete(name)
+	})
+
+	// Postgres Snapshot Schedules (a per-branch singleton; no create/delete):
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule"
+		return req.Workspace.PostgresSnapshotScheduleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule"
+		return req.Workspace.PostgresSnapshotScheduleUpdate(req, name)
 	})
 
 	// Postgres Endpoints:

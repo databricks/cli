@@ -229,14 +229,15 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
-	PostgresProjects     map[string]postgres.Project
-	PostgresBranches     map[string]postgres.Branch
-	PostgresCatalogs     map[string]postgres.Catalog
-	PostgresDatabases    map[string]postgres.Database
-	PostgresEndpoints    map[string]postgres.Endpoint
-	PostgresRoles        map[string]postgres.Role
-	PostgresSyncedTables map[string]postgres.SyncedTable
-	PostgresOperations   map[string]postgres.Operation
+	PostgresProjects          map[string]postgres.Project
+	PostgresBranches          map[string]postgres.Branch
+	PostgresCatalogs          map[string]postgres.Catalog
+	PostgresDatabases         map[string]postgres.Database
+	PostgresEndpoints         map[string]postgres.Endpoint
+	PostgresRoles             map[string]postgres.Role
+	PostgresSyncedTables      map[string]postgres.SyncedTable
+	PostgresSnapshotSchedules map[string]postgres.SnapshotSchedule
+	PostgresOperations        map[string]postgres.Operation
 
 	// Branches and endpoints that the server provisioned implicitly together
 	// with their parent (e.g. the production branch on a new project, or the
@@ -248,6 +249,13 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
+	// serves, generated on first use. See sshTunnelHostKey.
+	sshTunnelHostKeyPEM []byte
+	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
+	// to the tunnel's secret scope so a client can pin it.
+	sshTunnelHostPublicKey []byte
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -492,6 +500,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresRoles:             map[string]postgres.Role{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
+		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},

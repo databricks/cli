@@ -120,6 +120,9 @@ def _synth_scalar(name: str, hint: str) -> _Scalar:
     # time.Time is generated as a str (see packages.RENAMES); serialized as RFC3339.
     if name == "time.Time":
         return _Scalar('"2020-01-01T00:00:00Z"', '"2020-01-01T00:00:00Z"')
+    # duration.Duration is generated as a str; serialized as a seconds string.
+    if name == "duration.Duration":
+        return _Scalar('"3600s"', '"3600s"')
 
     raise ValueError(f"Unknown primitive: {name}")
 

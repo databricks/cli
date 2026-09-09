@@ -305,6 +305,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+					"postgres_snapshot_schedule1": {
+						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+							Branch: "projects/project1/branches/branch1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{

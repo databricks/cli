@@ -137,6 +137,7 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 		"postgres_endpoints":           true,
 		"postgres_projects":            true,
 		"postgres_roles":               true,
+		"postgres_snapshot_schedules":  true,
 		"secret_scopes":                true,
 		"internal_immutable_snapshots": true,
 	}
@@ -338,6 +339,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+			"my_postgres_snapshot_schedule": {
+				PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+					Branch: "projects/my-postgres-project/branches/my-postgres-branch",
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -396,6 +404,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetDatabase(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetSnapshotSchedule(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)
