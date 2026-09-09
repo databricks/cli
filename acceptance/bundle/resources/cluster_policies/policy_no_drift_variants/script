@@ -7,8 +7,8 @@ trap cleanup EXIT
 
 trace $CLI bundle deploy
 
-title "Every cluster-spec location converges: the policy tag is not drift anywhere\n"
+title "Every cluster-spec location converges: nothing to change on a second plan\n"
 trace $CLI bundle plan
 
-title "Confirm the tag really is present remotely and was classified, not just absent\n"
-trace $CLI bundle plan -o json | gron.py | grep custom_tags
+title "The full plan: each cluster's policy-supplied fields are skipped as remote_addition\n"
+trace $CLI bundle plan -o json

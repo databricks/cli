@@ -1,7 +1,9 @@
-# Creating a real cluster made this the slowest test in the cloud suite (~8 min per env), and
-# the per-location classification it checks is fully covered locally. The cheap job-based
-# tests in this directory keep the core behaviour in every cloud run.
-CloudSlow = true
+# Local-only (overrides the inherited Cloud = true). This records the whole `bundle plan
+# -o json` so the suppression is legible at every cluster-spec location; the plan's
+# remote_state and *_attributes are cloud- and region-specific, so it cannot be recorded
+# portably across the aws/azure/gcp sweep. The suppression behavior itself is cloud-verified
+# by the projected jobs/cluster_policy tests.
+Cloud = false
 
 RecordRequests = false
 
