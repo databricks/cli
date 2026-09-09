@@ -32,7 +32,28 @@ def load_events(path):
 
 
 def last_action_by_key(events, key):
-    """Map each key to the Action of its last event."""
+    """Map each key to the Action of its last event.
+
+    >>> events = [
+    ...     {"Action": "run", "id": 1},
+    ...     {"Action": "pass", "id": 1},
+    ...     {"Action": "fail", "id": 2},
+    ... ]
+    >>> last_action_by_key(events, lambda e: e["id"])
+    {1: 'pass', 2: 'fail'}
+
+    Empty events returns empty dict:
+    >>> last_action_by_key([], lambda e: e["id"])
+    {}
+
+    Later occurrences override earlier ones:
+    >>> events = [
+    ...     {"Action": "pass", "test": "A"},
+    ...     {"Action": "fail", "test": "A"},
+    ... ]
+    >>> last_action_by_key(events, lambda e: e["test"])
+    {'A': 'fail'}
+    """
     last = {}
     for event in events:
         last[key(event)] = event["Action"]
@@ -45,6 +66,37 @@ def failed_tests(events):
     A test can appear more than once because of --rerun-fails, so we group by
     package+test and keep only those whose last result was a failure (recovered
     flakes end on "pass").
+
+    >>> events = [
+    ...     {"Package": "pkg1", "Test": "TestA", "Action": "fail"},
+    ...     {"Package": "pkg1", "Test": "TestB", "Action": "pass"},
+    ... ]
+    >>> failed_tests(events)
+    [('pkg1', 'TestA')]
+
+    Flakes that recover are not reported:
+    >>> events = [
+    ...     {"Package": "pkg1", "Test": "TestFlake", "Action": "fail"},
+    ...     {"Package": "pkg1", "Test": "TestFlake", "Action": "pass"},
+    ... ]
+    >>> failed_tests(events)
+    []
+
+    Multiple failures sorted by package, then test:
+    >>> events = [
+    ...     {"Package": "pkg2", "Test": "B", "Action": "fail"},
+    ...     {"Package": "pkg1", "Test": "A", "Action": "fail"},
+    ... ]
+    >>> failed_tests(events)
+    [('pkg1', 'A'), ('pkg2', 'B')]
+
+    Package-level events (Test=None) are ignored:
+    >>> events = [
+    ...     {"Package": "pkg1", "Test": None, "Action": "fail"},
+    ...     {"Package": "pkg1", "Test": "TestX", "Action": "fail"},
+    ... ]
+    >>> failed_tests(events)
+    [('pkg1', 'TestX')]
     """
     test_events = [e for e in events if e.get("Test") is not None]
     last = last_action_by_key(test_events, lambda e: (e["Package"], e["Test"]))
@@ -59,6 +111,32 @@ def failed_packages_without_test(events, failed_test_packages):
     "fail" for every package that merely has a failing test, so exclude packages
     already reported via failed_tests; otherwise those get double-reported here as
     spurious build errors.
+
+    >>> events = [
+    ...     {"Package": "pkg1", "Test": None, "Action": "fail"},
+    ...     {"Package": "pkg2", "Test": None, "Action": "fail"},
+    ... ]
+    >>> failed_packages_without_test(events, set())
+    ['pkg1', 'pkg2']
+
+    Packages with failing tests are excluded:
+    >>> events = [
+    ...     {"Package": "pkg1", "Test": None, "Action": "fail"},
+    ... ]
+    >>> failed_packages_without_test(events, {"pkg1"})
+    []
+
+    Passed packages are ignored:
+    >>> events = [
+    ...     {"Package": "pkg1", "Test": None, "Action": "pass"},
+    ...     {"Package": "pkg2", "Test": None, "Action": "fail"},
+    ... ]
+    >>> failed_packages_without_test(events, set())
+    ['pkg2']
+
+    Empty events returns empty:
+    >>> failed_packages_without_test([], set())
+    []
     """
     package_events = [e for e in events if e.get("Test") is None]
     last = last_action_by_key(package_events, lambda e: e["Package"])
@@ -68,6 +146,46 @@ def failed_packages_without_test(events, failed_test_packages):
 
 
 def render(tests, packages):
+    """Render failed tests and build-error packages as markdown.
+
+    >>> print(render([("pkg1", "TestA")], []))
+    ## Failed tests
+    <BLANKLINE>
+    | Package | Test |
+    | --- | --- |
+    | pkg1 | `TestA` |
+
+    Build errors without tests:
+    >>> print(render([], ["pkg1", "pkg2"]))
+    ## Failed tests
+    <BLANKLINE>
+    ### Packages that failed without a test (build error / panic)
+    <BLANKLINE>
+    ```
+    pkg1
+    pkg2
+    ```
+
+    Both tests and build errors:
+    >>> print(render([("pkg1", "T1")], ["pkg2"]))
+    ## Failed tests
+    <BLANKLINE>
+    | Package | Test |
+    | --- | --- |
+    | pkg1 | `T1` |
+    <BLANKLINE>
+    ### Packages that failed without a test (build error / panic)
+    <BLANKLINE>
+    ```
+    pkg2
+    ```
+
+    No failures:
+    >>> print(render([], []))
+    ## Failed tests
+    <BLANKLINE>
+    No failed tests found in test-output.json (the failure may be outside the test run).
+    """
     lines = ["## Failed tests"]
     if tests:
         lines += ["", "| Package | Test |", "| --- | --- |"]
