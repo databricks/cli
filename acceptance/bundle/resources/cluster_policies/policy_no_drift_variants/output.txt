@@ -14,72 +14,25 @@ Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
-=== The full plan: each cluster's policy-supplied fields are skipped as remote_addition
+=== The plan, minus cloud-dependent remote_state and managed *_attributes
 
 >>> [CLI] bundle plan -o json
 {
-  "plan_version": 2,
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
-  "serial": 1,
   "plan": {
     "resources.cluster_policies.pol": {
-      "action": "skip",
-      "remote_state": {
-        "definition": "{\"custom_tags.CostCenter\":{\"type\":\"fixed\",\"value\":\"from-policy\"}}",
-        "name": "test-policy-[UNIQUE_NAME]",
-        "policy_id": "[UUID]"
-      }
+      "action": "skip"
     },
     "resources.clusters.standalone": {
-      "depends_on": [
-        {
-          "node": "resources.cluster_policies.pol",
-          "label": "${resources.cluster_policies.pol.id}"
-        }
-      ],
       "action": "skip",
-      "remote_state": {
-        "autotermination_minutes": 60,
-        "aws_attributes": {
-          "availability": "SPOT_WITH_FALLBACK",
-          "zone_id": "us-east-1c"
-        },
-        "cluster_id": "[UUID]",
-        "cluster_name": "test-cluster-[UNIQUE_NAME]",
-        "custom_tags": {
-          "CostCenter": "from-policy"
-        },
-        "enable_elastic_disk": false,
-        "instance_pool_id": "[TEST_INSTANCE_POOL_ID]",
-        "lifecycle": {
-          "started": true
-        },
-        "num_workers": 1,
-        "policy_id": "[UUID]",
-        "spark_version": "13.3.x-snapshot-scala2.12",
-        "state": "RUNNING"
-      },
       "changes": {
-        "aws_attributes": {
-          "action": "skip",
-          "reason": "managed",
-          "remote": {
-            "availability": "SPOT_WITH_FALLBACK",
-            "zone_id": "us-east-1c"
-          }
-        },
         "custom_tags": {
           "action": "skip",
           "reason": "remote_addition",
           "remote": {
             "CostCenter": "from-policy"
           }
-        },
-        "enable_elastic_disk": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": false
         },
         "lifecycle": {
           "action": "skip",
@@ -88,263 +41,63 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
             "started": true
           }
         }
-      }
-    },
-    "resources.jobs.for_each_cluster": {
+      },
       "depends_on": [
         {
-          "node": "resources.cluster_policies.pol",
-          "label": "${resources.cluster_policies.pol.id}"
+          "label": "${resources.cluster_policies.pol.id}",
+          "node": "resources.cluster_policies.pol"
         }
-      ],
+      ]
+    },
+    "resources.jobs.for_each_cluster": {
       "action": "skip",
-      "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][0],
-        "creator_user_name": "[USERNAME]",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
-        },
-        "edit_mode": "UI_LOCKED",
-        "email_notifications": {},
-        "format": "MULTI_TASK",
-        "job_id": [NUMID],
-        "max_concurrent_runs": 1,
-        "name": "test-for-each-cluster-[UNIQUE_NAME]",
-        "queue": {
-          "enabled": true
-        },
-        "run_as_user_name": "[USERNAME]",
-        "tasks": [
-          {
-            "email_notifications": {},
-            "for_each_task": {
-              "inputs": "[1,2]",
-              "task": {
-                "new_cluster": {
-                  "custom_tags": {
-                    "CostCenter": "from-policy"
-                  },
-                  "node_type_id": "[NODE_TYPE_ID]",
-                  "num_workers": 1,
-                  "policy_id": "[UUID]",
-                  "spark_version": "13.3.x-snapshot-scala2.12"
-                },
-                "spark_python_task": {
-                  "python_file": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/hello_world.py"
-                },
-                "task_key": "inner"
-              }
-            },
-            "run_if": "ALL_SUCCESS",
-            "task_key": "outer",
-            "timeout_seconds": 0
-          }
-        ],
-        "timeout_seconds": 0,
-        "webhook_notifications": {}
-      },
       "changes": {
-        "email_notifications": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": {}
-        },
-        "tasks[task_key='outer'].email_notifications": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": {}
-        },
         "tasks[task_key='outer'].for_each_task.task.new_cluster.custom_tags": {
           "action": "skip",
           "reason": "remote_addition",
           "remote": {
             "CostCenter": "from-policy"
           }
-        },
-        "tasks[task_key='outer'].run_if": {
-          "action": "skip",
-          "reason": "backend_default",
-          "remote": "ALL_SUCCESS"
-        },
-        "tasks[task_key='outer'].timeout_seconds": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": 0
-        },
-        "timeout_seconds": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": 0
-        },
-        "webhook_notifications": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": {}
         }
-      }
-    },
-    "resources.jobs.task_cluster": {
+      },
       "depends_on": [
         {
-          "node": "resources.cluster_policies.pol",
-          "label": "${resources.cluster_policies.pol.id}"
+          "label": "${resources.cluster_policies.pol.id}",
+          "node": "resources.cluster_policies.pol"
         }
-      ],
+      ]
+    },
+    "resources.jobs.task_cluster": {
       "action": "skip",
-      "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS][1],
-        "creator_user_name": "[USERNAME]",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
-        },
-        "edit_mode": "UI_LOCKED",
-        "email_notifications": {},
-        "format": "MULTI_TASK",
-        "job_id": [NUMID],
-        "max_concurrent_runs": 1,
-        "name": "test-task-cluster-[UNIQUE_NAME]",
-        "queue": {
-          "enabled": true
-        },
-        "run_as_user_name": "[USERNAME]",
-        "tasks": [
-          {
-            "email_notifications": {},
-            "new_cluster": {
-              "aws_attributes": {
-                "availability": "SPOT_WITH_FALLBACK",
-                "zone_id": "us-east-1c"
-              },
-              "custom_tags": {
-                "CostCenter": "from-policy"
-              },
-              "data_security_mode": "SINGLE_USER",
-              "enable_elastic_disk": false,
-              "node_type_id": "[NODE_TYPE_ID]",
-              "num_workers": 1,
-              "policy_id": "[UUID]",
-              "spark_version": "13.3.x-snapshot-scala2.12"
-            },
-            "run_if": "ALL_SUCCESS",
-            "spark_python_task": {
-              "python_file": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/hello_world.py"
-            },
-            "task_key": "t",
-            "timeout_seconds": 0
-          }
-        ],
-        "timeout_seconds": 0,
-        "webhook_notifications": {}
-      },
       "changes": {
-        "email_notifications": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": {}
-        },
-        "tasks[task_key='t'].email_notifications": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": {}
-        },
-        "tasks[task_key='t'].new_cluster.aws_attributes": {
-          "action": "skip",
-          "reason": "managed",
-          "remote": {
-            "availability": "SPOT_WITH_FALLBACK",
-            "zone_id": "us-east-1c"
-          }
-        },
         "tasks[task_key='t'].new_cluster.custom_tags": {
           "action": "skip",
           "reason": "remote_addition",
           "remote": {
             "CostCenter": "from-policy"
           }
-        },
-        "tasks[task_key='t'].new_cluster.data_security_mode": {
-          "action": "skip",
-          "reason": "remote_addition",
-          "remote": "SINGLE_USER"
-        },
-        "tasks[task_key='t'].new_cluster.enable_elastic_disk": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": false
-        },
-        "tasks[task_key='t'].run_if": {
-          "action": "skip",
-          "reason": "backend_default",
-          "remote": "ALL_SUCCESS"
-        },
-        "tasks[task_key='t'].timeout_seconds": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": 0
-        },
-        "timeout_seconds": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": 0
-        },
-        "webhook_notifications": {
-          "action": "skip",
-          "reason": "empty",
-          "remote": {}
         }
-      }
-    },
-    "resources.pipelines.pipe": {
+      },
       "depends_on": [
         {
-          "node": "resources.cluster_policies.pol",
-          "label": "${resources.cluster_policies.pol.id}"
+          "label": "${resources.cluster_policies.pol.id}",
+          "node": "resources.cluster_policies.pol"
         }
-      ],
+      ]
+    },
+    "resources.pipelines.pipe": {
       "action": "skip",
-      "remote_state": {
-        "channel": "CURRENT",
-        "clusters": [
-          {
-            "label": "default",
-            "node_type_id": "[NODE_TYPE_ID]",
-            "num_workers": 1,
-            "policy_id": "[UUID]"
-          }
-        ],
-        "creator_user_name": "[USERNAME]",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-        "id": "[UUID]",
-        "last_modified": [UNIX_TIME_MILLIS][2],
-        "libraries": [
-          {
-            "file": {
-              "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/hello_world.py"
-            }
-          }
-        ],
-        "name": "test-pipeline-[UNIQUE_NAME]",
-        "pipeline_id": "[UUID]",
-        "run_as_user_name": "[USERNAME]",
-        "state": "IDLE",
-        "storage": "dbfs:/pipelines/[UUID]"
-      },
-      "changes": {
-        "storage": {
-          "action": "skip",
-          "reason": "backend_default",
-          "remote": "dbfs:/pipelines/[UUID]"
+      "changes": {},
+      "depends_on": [
+        {
+          "label": "${resources.cluster_policies.pol.id}",
+          "node": "resources.cluster_policies.pol"
         }
-      }
+      ]
     }
-  }
+  },
+  "plan_version": 2,
+  "serial": 1
 }
 
 >>> [CLI] bundle destroy --auto-approve

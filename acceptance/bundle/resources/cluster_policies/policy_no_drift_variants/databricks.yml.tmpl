@@ -13,8 +13,11 @@ resources:
           type: fixed
           value: from-policy
 
-  # Every place a cluster spec can appear must be covered by a rule; a gap here is how
-  # https://github.com/databricks/cli/issues/5179 stayed open after a partial fix.
+  # A cluster spec can appear in several places, each with its own ignore_remote_additions
+  # rule. This fixture puts a policy-attached cluster in each place -- a standalone cluster, a
+  # task's new_cluster, a for_each task's new_cluster, and a pipeline cluster -- so the rule is
+  # exercised at every location in one plan. (job_clusters is covered by the sibling
+  # jobs/cluster_policy tests.) The pipeline cluster is the deliberate no-rule case; see below.
   clusters:
     standalone:
       cluster_name: test-cluster-$UNIQUE_NAME

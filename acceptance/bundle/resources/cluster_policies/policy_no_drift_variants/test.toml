@@ -1,9 +1,10 @@
-# Local-only (overrides the inherited Cloud = true). This records the whole `bundle plan
-# -o json` so the suppression is legible at every cluster-spec location; the plan's
-# remote_state and *_attributes are cloud- and region-specific, so it cannot be recorded
-# portably across the aws/azure/gcp sweep. The suppression behavior itself is cloud-verified
-# by the projected jobs/cluster_policy tests.
-Cloud = false
+# Records a jq projection of the plan -- the policy-supplied custom_tags at each cluster-spec
+# location -- rather than the whole plan: the full remote_state is the per-run cluster/job GET
+# (driver IPs, instance ids, spark_context_id) which no testserver can reproduce. The
+# projection is identical on every cloud because the tag is policy-set, so all clouds run.
+# CloudSlow keeps the real cluster boot out of the per-PR short run.
+Cloud = true
+CloudSlow = true
 
 RecordRequests = false
 
