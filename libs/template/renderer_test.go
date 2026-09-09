@@ -631,3 +631,29 @@ func TestRendererSubTemplateInPath(t *testing.T) {
 		assert.Equal(t, "my_directory/my_file", f.RelPath())
 	}
 }
+
+// A {{skip}} directive can name a directory that the BFS walk has already
+// visited, because the directive lives in a file processed later. The
+// directory must still not be created: the walk records visited directories
+// before any later file can skip them, so the skip patterns have to be applied
+// again when directories are materialized.
+func TestRendererSkipDirectoryVisitedBeforeSkipDirective(t *testing.T) {
+	ctx := t.Context()
+	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
+	tmpDir := t.TempDir()
+
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, os.DirFS("."), "./testdata/skip-dir-after-visit/template", "./testdata/skip-dir-after-visit/library")
+	require.NoError(t, err)
+
+	err = r.walk()
+	require.NoError(t, err)
+
+	out, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = r.persistToDisk(ctx, out)
+	require.NoError(t, err)
+
+	assert.NoDirExists(t, filepath.Join(tmpDir, "dir1"))
+	assert.FileExists(t, filepath.Join(tmpDir, "dir2", "file2"))
+}
