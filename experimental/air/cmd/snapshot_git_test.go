@@ -83,6 +83,11 @@ func TestGitRepo_RepositoryLayout(t *testing.T) {
 	root, err := g.repositoryRoot(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, repo, root)
+
+	writeRepoFile(t, repo, " leading-space/train.py", "print()")
+	prefix, err = newGitRepo(filepath.Join(repo, " leading-space")).repoRelativePrefix(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, " leading-space", prefix)
 }
 
 func TestGitRepo_RepoRelativePrefixFailure(t *testing.T) {

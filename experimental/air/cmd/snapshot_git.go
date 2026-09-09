@@ -69,7 +69,9 @@ func (g gitRepo) repoRelativePrefix(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve repository-relative path for %s: %w", g.path, err)
 	}
-	return strings.TrimRight(strings.TrimSpace(out), "/"), nil
+	out = strings.TrimSuffix(out, "\n")
+	out = strings.TrimSuffix(out, "\r")
+	return strings.TrimSuffix(out, "/"), nil
 }
 
 // repositoryRoot returns the top-level directory of the work tree containing
