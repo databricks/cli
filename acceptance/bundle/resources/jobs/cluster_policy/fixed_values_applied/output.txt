@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Created cluster_policies.my_pol
+Created cluster_policies.my_policy
 Created jobs.j
 Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
@@ -19,7 +19,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 === spark_version is not covered by any backend_defaults rule, so show its verdict
 
 >>> [CLI] bundle plan -o json
-json.plan.resources.cluster_policies.my_pol.remote_state.definition = "{\"custom_tags.CostCenter\":{\"type\":\"fixed\",\"value\":\"policy-supplied\"},\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-snapshot-scala2.12\"}}";
+json.plan.resources.cluster_policies.my_policy.remote_state.definition = "{\"custom_tags.CostCenter\":{\"type\":\"fixed\",\"value\":\"policy-supplied\"},\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-snapshot-scala2.12\"}}";
 json.plan.resources.jobs.j.remote_state.job_clusters[0].new_cluster.custom_tags.CostCenter = "policy-supplied";
 json.plan.resources.jobs.j.remote_state.job_clusters[0].new_cluster.spark_version = "13.3.x-snapshot-scala2.12";
 json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags.action = "skip";
@@ -31,7 +31,7 @@ json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_clu
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.cluster_policies.my_pol
+  delete resources.cluster_policies.my_policy
   delete resources.jobs.j
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]

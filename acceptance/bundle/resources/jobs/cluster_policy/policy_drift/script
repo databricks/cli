@@ -6,7 +6,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-read_id.py my_pol > /dev/null
+read_id.py my_policy > /dev/null
 no_policy_id="$(read_id.py no_policy)"
 owned_tag_id="$(read_id.py owned_tag)"
 

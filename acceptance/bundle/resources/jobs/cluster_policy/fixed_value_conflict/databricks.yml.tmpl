@@ -6,7 +6,7 @@ workspace:
 
 resources:
   cluster_policies:
-    my_pol:
+    my_policy:
       name: test-policy-$UNIQUE_NAME
       definition:
         custom_tags.CostCenter:
@@ -20,7 +20,7 @@ resources:
       job_clusters:
         - job_cluster_key: small
           new_cluster:
-            policy_id: ${resources.cluster_policies.my_pol.id}
+            policy_id: ${resources.cluster_policies.my_policy.id}
             spark_version: $DEFAULT_SPARK_VERSION
             node_type_id: $NODE_TYPE_ID
             num_workers: 1

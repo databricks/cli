@@ -6,7 +6,7 @@ workspace:
 
 resources:
   cluster_policies:
-    my_pol:
+    my_policy:
       name: test-policy-$UNIQUE_NAME
       definition:
         spark_version:
@@ -24,7 +24,7 @@ resources:
       job_clusters:
         - job_cluster_key: small
           new_cluster:
-            policy_id: ${resources.cluster_policies.my_pol.id}
+            policy_id: ${resources.cluster_policies.my_policy.id}
             node_type_id: $NODE_TYPE_ID
             num_workers: 1
       tasks:
