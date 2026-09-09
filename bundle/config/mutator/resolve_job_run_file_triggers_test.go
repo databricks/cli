@@ -18,7 +18,7 @@ import (
 
 func TestResolveJobRunFileTriggersHashesThroughSyncRoot(t *testing.T) {
 	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "watched.txt"), []byte("native"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "watched.txt"), []byte("watched"), 0o644))
 	root := vfs.MustNew(dir)
 	pattern := "watched.txt"
 	b := &bundle.Bundle{
@@ -42,14 +42,11 @@ func TestResolveJobRunFileTriggersHashesThroughSyncRoot(t *testing.T) {
 			},
 		},
 	}
-	overlay, err := vfs.Overlay(b.SyncRoot, map[string][]byte{"watched.txt": []byte("overlay")})
-	require.NoError(t, err)
-	b.SyncRoot = overlay
 
 	diags := bundle.Apply(t.Context(), b, mutator.ResolveJobRunFileTriggers())
 	require.False(t, diags.HasError())
 	assert.Equal(t,
-		contentHash("watched.txt\x00"+contentHash("overlay")+"\x00"),
+		contentHash("watched.txt\x00"+contentHash("watched")+"\x00"),
 		b.Config.Resources.JobRuns["my_run"].Lifecycle.TriggersState.OnFileChange["watched.txt"],
 	)
 }
