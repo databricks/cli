@@ -12,12 +12,12 @@ from databricks.bundles.registered_models._models.registered_model import (
 from databricks.bundles.registered_models._models.registered_model_alias import (
     RegisteredModelAlias,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_registered_model,
             dict_example={"aliases": [{}], "grants": [{}], "lifecycle": {}},
             dataclass_example=RegisteredModel(

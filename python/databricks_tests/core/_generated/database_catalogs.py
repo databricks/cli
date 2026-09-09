@@ -6,12 +6,12 @@ from databricks.bundles.database_catalogs._models.database_catalog import (
     DatabaseCatalog,
 )
 from databricks.bundles.database_catalogs._models.lifecycle import Lifecycle
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_database_catalog,
             dict_example={
                 "database_instance_name": "database_instance_name",

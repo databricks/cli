@@ -25,12 +25,12 @@ from databricks.bundles.model_serving_endpoints._models.serving_endpoint_permiss
 from databricks.bundles.model_serving_endpoints._models.telemetry_config import (
     TelemetryConfig,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_model_serving_endpoint,
             dict_example={
                 "ai_gateway": {},

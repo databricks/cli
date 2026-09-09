@@ -1,8 +1,8 @@
 """
-Generates the per-resource TestCase data driving databricks_tests/core/test_resources.py.
+Generates the per-resource ResourceTestCase data driving databricks_tests/core/test_resources.py.
 
 For every wired resource a file _generated/<plural>.py is written (rendered from
-test_case.py.tmpl) exposing _test_case() -> (TestCase, _ResourceType). The generated
+test_case.py.tmpl) exposing _test_case() -> (ResourceTestCase, _ResourceType). The generated
 _generated/__init__.py collects them into `test_cases`, which test_resources.py imports
 and parametrizes its per-resource tests off.
 
@@ -160,8 +160,7 @@ def _synth_ref(
 
     schema = schemas[name]
     class_name = packages.get_class_name(ref)
-    module = packages.get_package(namespace, ref)
-    assert module
+    module = _module_of(namespace, ref)
 
     if schema.type == openapi.SchemaType.STRING:
         value = schema.enum[0]
@@ -208,7 +207,7 @@ def _synth_object(
                 continue
             if (
                 prop.deprecated
-                or _STAGE_RANK[prop.stage]
+                or _STAGE_RANK.get(prop.stage, 0)
                 > _STAGE_RANK[openapi.LaunchStage.PUBLIC_PREVIEW]
             ):
                 continue

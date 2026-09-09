@@ -25,12 +25,12 @@ from databricks.bundles.clusters._models.runtime_engine import RuntimeEngine
 from databricks.bundles.clusters._models.workload_type import WorkloadType
 from databricks.bundles.core import Resources, cluster_mutator
 from databricks.bundles.core._generated.clusters import _resource_type
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_cluster,
             dict_example={
                 "autoscale": {},
