@@ -2,7 +2,7 @@ sethome "./home"
 export BROWSER="browser.py"
 export DATABRICKS_AUTH_STORAGE=plaintext
 
-# Configure the workspace profile that logout will operate on.
+# Setup: create a normal workspace profile and log in.
 cat > "./home/.databrickscfg" <<EOF
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
@@ -15,27 +15,26 @@ auth_type  = databricks-cli
 default_profile = logfood
 EOF
 
-# Login creates the profile-bound token cache entries used by this test.
 $CLI auth login --host "$DATABRICKS_HOST" --profile logfood >/dev/null 2>&1
 
-# Confirm that the profile and its cached entries are initially valid.
+# Confirm that login created a valid profile and both cached token entries.
 title "Profiles before logout — logfood should be valid"
 trace $CLI auth profiles
 
 title "Token cache keys before logout\n"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
-# Simulate manually adding stale account routing to the workspace profile.
+# Finish setup by adding the stale account routing that caused the regression.
 sed -i.bak '/^host/a\
 account_id = stale-account
 ' "./home/.databrickscfg"
 sed -i.bak '/workspace_id/d' "./home/.databrickscfg"
 
-# Logout must still find and remove the cached tokens for the changed profile.
+# Test: logout must still find the tokens using the workspace host.
 title "Logout without --delete"
 trace $CLI auth logout --profile logfood --auto-approve
 
-# Verify that logout preserved the config while removing both cache entries.
+# Validation: logout preserves the profile and removes both cached entries.
 title "Config after logout — profile should still exist\n"
 cat "./home/.databrickscfg"
 
