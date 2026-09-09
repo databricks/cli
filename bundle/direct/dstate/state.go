@@ -147,6 +147,8 @@ type OpenDmsArgs struct {
 
 	// LastVersionID is the most recent version the service has recorded, zero when it has none.
 	// Open takes the state's version from it: the service owns the number.
+	//
+	// Equivalent to serial for a file based deployment that uses resources.json to track state,
 	LastVersionID int
 }
 
