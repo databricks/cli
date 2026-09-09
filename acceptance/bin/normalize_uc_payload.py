@@ -40,10 +40,13 @@ def is_managed_change(key, value):
 
     >>> is_managed_change("properties['unity.catalog.managed.a.defaults.b']", {"action": "skip"})
     True
+
     >>> is_managed_change("properties", {"action": "skip", "reason": "backend_default", "remote": {"unity.catalog.managed.a.defaults.b": "1"}})
     True
+
     >>> is_managed_change("properties", {"action": "update", "remote": {"custom": "v"}})
     False
+
     >>> is_managed_change("name", {"action": "update"})
     False
     """
@@ -60,12 +63,16 @@ def prune(node, drop_fields):
 
     >>> prune({"created_at": 1, "name": "c"}, {"created_at"})
     {'name': 'c'}
+
     >>> prune({"properties": {"unity.catalog.managed.delta.defaults.x": "true"}}, set())
     {}
+
     >>> prune({"properties": {"unity.catalog.managed.delta.defaults.x": "1", "k": "v"}}, set())
     {'properties': {'k': 'v'}}
+
     >>> prune({"changes": {"properties": {"action": "skip", "remote": {"unity.catalog.managed.a.defaults.b": "1"}}, "name": {"action": "update"}}}, set())
     {'changes': {'name': {'action': 'update'}}}
+
     >>> prune([{"metastore_id": "m", "full_name": "c.s"}], {"metastore_id"})
     [{'full_name': 'c.s'}]
     """
