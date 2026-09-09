@@ -25,7 +25,7 @@ trace update_file.py databricks.yml "catalog_name: main" "catalog_name: ${other_
 trace $CLI bundle deploy --auto-approve
 trace print_requests.py --dms //api/2.0/bundle
 
-title "The plan now shows the recreate action"
+title "The recreate is done: nothing left to plan, and the serial moved to 2"
 dms_plan
 
 title "The service lists the schema at version 2 with recreate action"
