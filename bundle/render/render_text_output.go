@@ -150,11 +150,12 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 	for _, group := range b.Config.Resources.AllResources() {
 		resources := make([]ResourceInfo, 0, len(group.Resources))
 		for key, resource := range group.Resources {
+			url, supportsURL := resource.GetURL()
 			resources = append(resources, ResourceInfo{
 				Key:         key,
 				Name:        resource.GetName(),
-				URL:         resource.GetURL(),
-				SupportsURL: resource.SupportsURL(),
+				URL:         url,
+				SupportsURL: supportsURL,
 			})
 		}
 

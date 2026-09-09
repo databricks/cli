@@ -75,14 +75,9 @@ func (r *PostgresRole) GetName() string {
 	return ""
 }
 
-func (r *PostgresRole) GetURL() string {
+func (r *PostgresRole) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
-}
-
-func (r *PostgresRole) SupportsURL() bool {
-	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return false
+	return "", false
 }
 
 func (r *PostgresRole) InitializeURL(_ url.URL) {

@@ -1,0 +1,1 @@
+* Resources that do not support a workspace URL now report that in CLI commands, instead of misleading the user into thinking the resource is not deployed. ([#6583](https://github.com/databricks/cli/pull/6583))

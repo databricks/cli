@@ -72,10 +72,6 @@ func (s *PostgresSyncedTable) GetName() string {
 	return s.SyncedTableId
 }
 
-func (s *PostgresSyncedTable) GetURL() string {
-	return s.URL
-}
-
 func (s *PostgresSyncedTable) InitializeURL(baseURL url.URL) {
 	// UC explore expects /{catalog}/{schema}/{table}, so bail if the name isn't
 	// a fully resolved three-part identifier; an unresolved ${...} reference

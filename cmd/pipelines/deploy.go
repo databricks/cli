@@ -76,10 +76,11 @@ func deployCommand() *cobra.Command {
 				resource := group.Resources[resourceKey]
 				// Skip resource types that never have a URL; otherwise we'd print
 				// "View your <resource> here:" with a blank URL.
-				if !resource.SupportsURL() {
+				url, supported := resource.GetURL()
+				if !supported {
 					continue
 				}
-				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, resource.GetURL()))
+				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, url))
 			}
 		}
 

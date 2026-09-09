@@ -63,13 +63,10 @@ type ConfigResource interface {
 	// GetName returns the in-product name of the resource.
 	GetName() string
 
-	// GetURL returns the URL of the resource.
-	GetURL() string
-
-	// SupportsURL reports whether this resource type can have a workspace URL.
-	// It distinguishes an empty GetURL() that means "not deployed yet" from one
-	// that means the type never has a URL.
-	SupportsURL() bool
+	// GetURL returns the resource's workspace URL and whether this resource type
+	// has one at all. A supported type that is not deployed yet returns ("", true);
+	// a type that never has a URL returns ("", false).
+	GetURL() (string, bool)
 
 	// InitializeURL initializes the URL field of the resource.
 	InitializeURL(baseURL url.URL)
