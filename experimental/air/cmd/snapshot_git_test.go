@@ -85,6 +85,12 @@ func TestGitRepo_RepositoryLayout(t *testing.T) {
 	assert.Equal(t, repo, root)
 }
 
+func TestGitRepo_RepoRelativePrefixFailure(t *testing.T) {
+	_, err := newGitRepo(t.TempDir()).repoRelativePrefix(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to resolve repository-relative path")
+}
+
 func TestGitRepo_HeadSHA(t *testing.T) {
 	ctx := t.Context()
 	repo := newTestRepo(t)
@@ -213,6 +219,22 @@ func TestGitRepo_ValidateIncludePathsExist(t *testing.T) {
 	err := g.validateIncludePathsExist(ctx, sha, []string{"src", "missing"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing")
+	assert.Contains(t, err.Error(), sha[:8])
+}
+
+func TestGitRepo_ValidateSubtreeExists(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "subpkg/train.py", "print()")
+	sha := commitAll(t, repo, "init")
+	g := newGitRepo(filepath.Join(repo, "subpkg"))
+
+	require.NoError(t, g.validateSubtreeExists(ctx, sha, "subpkg"))
+	require.NoError(t, g.validateSubtreeExists(ctx, sha, ""))
+
+	err := g.validateSubtreeExists(ctx, sha, "missing")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `root_path "missing" does not exist`)
 	assert.Contains(t, err.Error(), sha[:8])
 }
 

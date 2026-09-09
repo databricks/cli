@@ -115,6 +115,9 @@ func resolveSnapshotPlan(ctx context.Context, git gitRepo, ref *gitRef, includeP
 		return snapshotPlan{}, err
 	}
 	plan.subtreePrefix = subtreePrefix
+	if err := git.validateSubtreeExists(ctx, plan.commitSHA, subtreePrefix); err != nil {
+		return snapshotPlan{}, err
+	}
 
 	// For git_archive with include_paths, verify each path exists at the resolved
 	// commit so a typo fails fast rather than producing an empty subtree.

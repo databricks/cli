@@ -184,6 +184,23 @@ func (g gitRepo) mergeBaseWithUpstream(ctx context.Context, remoteName string) s
 	return ""
 }
 
+// validateSubtreeExists checks that subtreePrefix is a directory at commitSHA.
+func (g gitRepo) validateSubtreeExists(ctx context.Context, commitSHA, subtreePrefix string) error {
+	if subtreePrefix == "" {
+		return nil
+	}
+
+	treeish := commitSHA + ":" + subtreePrefix
+	out, err := g.run(ctx, "cat-file", "-t", treeish)
+	if err != nil {
+		return fmt.Errorf("root_path %q does not exist at commit %s: %w", subtreePrefix, shortSHA(commitSHA), err)
+	}
+	if strings.TrimSpace(out) != "tree" {
+		return fmt.Errorf("root_path %q is not a directory at commit %s", subtreePrefix, shortSHA(commitSHA))
+	}
+	return nil
+}
+
 // validateIncludePathsExist checks that every include path exists at commitSHA.
 // `git ls-tree` (without -d, so both blobs and trees count) reports an entry when the
 // path exists; empty output means missing.

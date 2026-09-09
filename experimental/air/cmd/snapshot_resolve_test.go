@@ -126,3 +126,17 @@ func TestResolveSnapshotPlan_SubdirectoryRootPath(t *testing.T) {
 	assert.Equal(t, modeGitArchive, plan.mode)
 	assert.Equal(t, "subpkg", plan.subtreePrefix)
 }
+
+func TestResolveSnapshotPlan_SubdirectoryMissingAtCommit(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "README.md", "root")
+	sha := commitAll(t, repo, "before subpkg")
+	writeRepoFile(t, repo, "subpkg/train.py", "print()")
+
+	rootPath := filepath.Join(repo, "subpkg")
+	_, err := resolveSnapshotPlan(ctx, newGitRepo(rootPath), &gitRef{Commit: new(sha)}, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `root_path "subpkg" does not exist`)
+	assert.Contains(t, err.Error(), sha[:8])
+}
