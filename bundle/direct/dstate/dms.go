@@ -16,17 +16,10 @@ type RecordedState struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-// applyDMSState fills in the resource state from what DMS recorded. A recorded deployment's file is
-// an empty shell - the service owns the resource set outright - so there is nothing to merge with:
-// an empty set means the service tracks nothing, whether because the deploy created nothing or
-// because the deployment is gone. The caller holds db.mu.
+// applyDMSState fills in the resource state from what DMS recorded. For a deployment that uses DMS
+// resources.json does not track state. The service is queried for state for resources and then they
+// are filled in-place in DeploymentState.Data.State:
 func (db *DeploymentState) applyDMSState(recorded []dms.Resource) error {
-	if len(db.Data.State) > 0 {
-		return fmt.Errorf("internal error: state file for a recorded deployment carries %d resources, expected none", len(db.Data.State))
-	}
-
-	// Built first and assigned together, so a malformed envelope leaves the state as it was
-	// rather than half replaced.
 	resources := make(map[string]ResourceEntry, len(recorded))
 	stateIDs := make(map[string]string, len(recorded))
 	for _, res := range recorded {
