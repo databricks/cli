@@ -34,14 +34,6 @@ type Metadata struct {
 // among them: the service derives the deployment's from the version that carried it.
 var deploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
 
-// sameWorkspaceInfo reports whether two workspace infos carry the same paths.
-func sameWorkspaceInfo(want, current *bundledeployments.WorkspaceInfo) bool {
-	if want == nil || current == nil {
-		return want == nil && current == nil
-	}
-	return structdiff.IsEqual(*want, *current)
-}
-
 // deployment renders the metadata the deployment owns.
 func (m Metadata) deployment() bundledeployments.Deployment {
 	return bundledeployments.Deployment{
@@ -70,7 +62,7 @@ func (m Metadata) StaleFields(current *bundledeployments.Deployment) string {
 	if want.DeploymentMode != current.DeploymentMode {
 		stale = append(stale, "deployment_mode")
 	}
-	if !sameWorkspaceInfo(want.WorkspaceInfo, current.WorkspaceInfo) {
+	if !structdiff.IsEqual(want.WorkspaceInfo, current.WorkspaceInfo) {
 		stale = append(stale, "workspace_info")
 	}
 	return strings.Join(stale, ",")

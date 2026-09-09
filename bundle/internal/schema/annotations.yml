@@ -99,9 +99,15 @@ bundle:
       "markdown_description": |-
         The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
       "$fields":
+        "deployment_id":
+          "description": |-
+            The ID the deployment metadata service assigned to this bundle's deployment. Output only.
         "fail_on_active_runs":
           "description": |-
             Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
+        "latest_version_id":
+          "description": |-
+            The most recent version the deployment metadata service recorded for this deployment. Output only.
         "lock":
           "description": |-
             The deployment lock attributes.

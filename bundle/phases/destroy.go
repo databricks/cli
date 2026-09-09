@@ -159,7 +159,9 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+	// Unguarded beyond the engine: this runs after Finalize reset the state, so its features are no
+	// longer there to gate on, and CompleteVersion no-ops when no version was created.
+	if engine.IsDirect() {
 		// Complete version before deleting remote files; the deployment node is under statePath.
 		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
 		if err != nil {
