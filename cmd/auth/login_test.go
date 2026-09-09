@@ -458,6 +458,35 @@ func TestSplitScopes(t *testing.T) {
 	}
 }
 
+func TestU2MClientIDFromProfile(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile *profile.Profile
+		want    string
+	}{
+		{name: "no profile"},
+		{
+			name:    "implicit auth type",
+			profile: &profile.Profile{ClientID: "custom-client-id"},
+		},
+		{
+			name:    "M2M auth type",
+			profile: &profile.Profile{AuthType: "oauth-m2m", ClientID: "custom-client-id"},
+		},
+		{
+			name:    "U2M auth type",
+			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, ClientID: "custom-client-id"},
+			want:    "custom-client-id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, u2mClientIDFromProfile(tt.profile))
+		})
+	}
+}
+
 func TestRunHostDiscovery_NoHost(t *testing.T) {
 	ctx := t.Context()
 	args := &auth.AuthArguments{}
@@ -952,9 +981,11 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 	}
 
 	existingProfile := &profile.Profile{
-		Name:   "DISCOVERY",
-		Host:   "https://old-workspace.example.com",
-		Scopes: "sql,clusters",
+		Name:     "DISCOVERY",
+		Host:     "https://old-workspace.example.com",
+		Scopes:   "sql,clusters",
+		AuthType: authTypeDatabricksCLI,
+		ClientID: "custom-client-id",
 	}
 
 	// No --scopes flag (empty string), should fall back to existing profile scopes.
@@ -974,6 +1005,7 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 	require.NotNil(t, savedProfile)
 	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
 	assert.Equal(t, "sql,clusters", savedProfile.Scopes)
+	assert.Equal(t, "custom-client-id", savedProfile.ClientID)
 }
 
 func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {

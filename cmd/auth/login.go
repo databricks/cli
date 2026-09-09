@@ -302,6 +302,9 @@ a new profile is created.
 			u2m.WithBrowser(getBrowserFunc(cmd)),
 			u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 		}
+		if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
+			persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
+		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
 		}
@@ -393,6 +396,7 @@ a new profile is created.
 				ConfigFile:          env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID: serverlessComputeID,
 				Scopes:              scopesList,
+				ClientID:            u2mClientIDFromProfile(existingProfile),
 			}, clearKeys...)
 			if err != nil {
 				return err
@@ -660,6 +664,9 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithDiscoveryLogin(),
 		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, in.tokenStore, in.mode, arg)),
 	}
+	if clientID := u2mClientIDFromProfile(in.existingProfile); clientID != "" {
+		opts = append(opts, u2m.WithClientID(clientID))
+	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
 	}
@@ -750,6 +757,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
 		ConfigFile:  configFile,
+		ClientID:    u2mClientIDFromProfile(in.existingProfile),
 	}, clearKeys...)
 	if err != nil {
 		if configFile != "" {
@@ -783,6 +791,14 @@ func splitScopes(scopes string) []string {
 // from the SDK's ConfigAttributes to stay in sync as new auth methods are added.
 func oauthLoginClearKeys() []string {
 	return databrickscfg.AuthCredentialKeys()
+}
+
+// u2mClientIDFromProfile excludes client IDs belonging to other auth types.
+func u2mClientIDFromProfile(p *profile.Profile) string {
+	if p == nil || p.AuthType != authTypeDatabricksCLI {
+		return ""
+	}
+	return p.ClientID
 }
 
 // promptForWorkspaceSelection lists workspaces for a SPOG account and lets the
