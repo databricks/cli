@@ -34,7 +34,7 @@ type LogDiagData struct {
 	// Summary of the first error diagnostic logged, if any.
 	FirstErrorSummary string
 
-	// Safe (PII-free) description of that same first error, if it carried one.
+	// PII-free description of the first logged error that carried one.
 	FirstErrorSafe string
 }
 
@@ -159,7 +159,6 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 		val.Errors += 1
 		if val.FirstErrorSummary == "" {
 			val.FirstErrorSummary = d.Summary
-			val.FirstErrorSafe = d.Safe
 		}
 	case diag.Warning:
 		val.Warnings += 1
@@ -198,7 +197,21 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 
 func LogError(ctx context.Context, err error) {
 	diags := diag.FromErr(err)
-	if len(diags) > 0 {
-		LogDiag(ctx, diags[0])
+	if len(diags) == 0 {
+		return
 	}
+
+	// Capture the first error's PII-free form here, where the error still exists;
+	// LogDiag sees only the interpolated summary. Telemetry reads it back via
+	// GetFirstErrorSafe.
+	if safe := diag.SafeError(err); safe != "" {
+		val := read(ctx)
+		val.mu.Lock()
+		if val.FirstErrorSafe == "" {
+			val.FirstErrorSafe = safe
+		}
+		val.mu.Unlock()
+	}
+
+	LogDiag(ctx, diags[0])
 }

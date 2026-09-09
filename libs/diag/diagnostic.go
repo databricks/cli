@@ -29,10 +29,6 @@ type Diagnostic struct {
 
 	// A diagnostic ID. Only used for select diagnostic messages.
 	ID ID
-
-	// Safe is a PII-free description of this diagnostic, suitable for telemetry.
-	// Only set for diagnostics built from an error via FromErr; empty otherwise.
-	Safe string
 }
 
 // Errorf creates a new error diagnostic.
@@ -55,7 +51,6 @@ func FromErr(err error) Diagnostics {
 			Severity: Error,
 			Summary:  FormatAPIErrorSummary(err),
 			Detail:   FormatAPIErrorDetails(err),
-			Safe:     SafeError(err),
 		},
 	}
 }
