@@ -21,6 +21,9 @@ const maxErrorMessageSize = 16 * 1024
 // is where a recreate sits between deleting the old resource and creating the new one. Not in
 // the SDK: the enum ships server-first while it is staged DEVELOPMENT, so the generated client
 // carries only the terminal two.
+//
+// TODO: use IN_PROGRESS here once the service supports it - it describes a half-applied recreate
+// better than "recorded but not applied".
 const StatusPending bundledeployments.OperationStatus = "OPERATION_STATUS_PENDING"
 
 // OperationUpdate is one write to an operation the version staged: the fields it claims
