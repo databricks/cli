@@ -205,6 +205,8 @@ func newGetCommand() *cobra.Command {
 		return nil
 	}
 
+	cmd.AddCommand(newGetProvisionedCapacityCommand())
+
 	return cmd
 }
 

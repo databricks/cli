@@ -1,0 +1,49 @@
+
+=== list provisioned capacity (text)
+>>> [CLI] experimental air list provisioned_capacity
+ID                                       ACCELERATOR    RESERVED
+cap-8xh100-alpha                         GPU_8xH100     64
+cap-1xh100-beta                          GPU_1xH100     8
+
+=== list provisioned capacity (json)
+>>> [CLI] experimental air list provisioned_capacity -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "provisioned_capacities": [
+      {
+        "provisioned_capacity_id": "cap-8xh100-alpha",
+        "accelerator_type": "GPU_8xH100",
+        "reserved_accelerators": 64
+      },
+      {
+        "provisioned_capacity_id": "cap-1xh100-beta",
+        "accelerator_type": "GPU_1xH100",
+        "reserved_accelerators": 8
+      }
+    ]
+  }
+}
+
+=== get provisioned capacity (text)
+>>> [CLI] experimental air get provisioned_capacity cap-8xh100-alpha
+Provisioned Capacity ID: cap-8xh100-alpha
+Accelerator Type:        GPU_8xH100
+Reserved Accelerators:   64
+Used Accelerators:       40
+Idle Accelerators:       24
+
+=== get provisioned capacity (json)
+>>> [CLI] experimental air get provisioned_capacity cap-8xh100-alpha -o json
+{
+  "v": 1,
+  "ts": "[TIMESTAMP]",
+  "data": {
+    "provisioned_capacity_id": "cap-8xh100-alpha",
+    "accelerator_type": "GPU_8xH100",
+    "reserved_accelerators": 64,
+    "used_accelerators": 40,
+    "idle_accelerators": 24
+  }
+}
