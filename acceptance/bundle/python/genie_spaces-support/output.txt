@@ -1,0 +1,32 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_genie_space"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "genie_spaces": {
+      "my_genie_space_1": {
+        "description": "My genie space (updated)",
+        "parent_path": "/Workspace/Users/me",
+        "serialized_space": "{\"instructions\":[\"Answer questions about sales data\"]}",
+        "title": "my_genie_space_1",
+        "warehouse_id": "abc123"
+      },
+      "my_genie_space_2": {
+        "description": "My genie space (2) (updated)",
+        "parent_path": "/Workspace/Users/me",
+        "serialized_space": "{\"instructions\": [\"Answer questions about sales data\"]}",
+        "title": "my_genie_space_2",
+        "warehouse_id": "abc123"
+      }
+    }
+  }
+}
