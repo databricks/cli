@@ -1,4 +1,3 @@
-RequiresUnityCatalog = true
 
 Ignore = [
     ".databricks",

@@ -28,10 +28,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "postgres",
-		Short: `*Beta* Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
-		Long: `This command is in Beta and may change without notice.
-
-Use the Postgres API to create and manage Lakebase Autoscaling Postgres
+		Short: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.`,
+		Long: `Use the Postgres API to create and manage Lakebase Autoscaling Postgres
   infrastructure, including projects, branches, compute endpoints, and roles.
 
   This API manages database infrastructure only. To query or modify data, use
@@ -48,8 +46,8 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateBranch())
@@ -60,6 +58,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newCreateEndpoint())
 	cmd.AddCommand(newCreateProject())
 	cmd.AddCommand(newCreateRole())
+	cmd.AddCommand(newCreateSnapshot())
 	cmd.AddCommand(newCreateSyncedTable())
 	cmd.AddCommand(newDeleteBranch())
 	cmd.AddCommand(newDeleteCatalog())
@@ -69,6 +68,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newDeleteEndpoint())
 	cmd.AddCommand(newDeleteProject())
 	cmd.AddCommand(newDeleteRole())
+	cmd.AddCommand(newDeleteSnapshot())
 	cmd.AddCommand(newDeleteSyncedTable())
 	cmd.AddCommand(newGenerateDatabaseCredential())
 	cmd.AddCommand(newGetBranch())
@@ -81,6 +81,8 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newGetOperation())
 	cmd.AddCommand(newGetProject())
 	cmd.AddCommand(newGetRole())
+	cmd.AddCommand(newGetSnapshot())
+	cmd.AddCommand(newGetSnapshotSchedule())
 	cmd.AddCommand(newGetSyncedTable())
 	cmd.AddCommand(newListBranches())
 	cmd.AddCommand(newListCdfConfigs())
@@ -89,6 +91,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newListEndpoints())
 	cmd.AddCommand(newListProjects())
 	cmd.AddCommand(newListRoles())
+	cmd.AddCommand(newListSnapshots())
 	cmd.AddCommand(newUndeleteBranch())
 	cmd.AddCommand(newUndeleteProject())
 	cmd.AddCommand(newUpdateBranch())
@@ -97,6 +100,7 @@ Use the Postgres API to create and manage Lakebase Autoscaling Postgres
 	cmd.AddCommand(newUpdateEndpoint())
 	cmd.AddCommand(newUpdateProject())
 	cmd.AddCommand(newUpdateRole())
+	cmd.AddCommand(newUpdateSnapshotSchedule())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -136,10 +140,8 @@ func newCreateBranch() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-branch PARENT BRANCH_ID"
-	cmd.Short = `*Beta* Create a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a Branch.
+	cmd.Short = `Create a Branch.`
+	cmd.Long = `Create a Branch.
 
   Creates a new database branch in the project.
 
@@ -158,8 +160,8 @@ Create a Branch.
       projects/my-app/branches/development.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -265,10 +267,8 @@ func newCreateCatalog() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-catalog CATALOG_ID"
-	cmd.Short = `*Beta* Register a Database in UC.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Register a Database in UC.
+	cmd.Short = `Register a Database in UC.`
+	cmd.Long = `Register a Database in UC.
 
   Register a Postgres database in the Unity Catalog.
 
@@ -282,8 +282,8 @@ Register a Database in UC.
       example "my_catalog" becomes "catalogs/my_catalog".`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -659,10 +659,8 @@ func newCreateDatabase() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-database PARENT"
-	cmd.Short = `*Beta* Create a Database.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a Database.
+	cmd.Short = `Create a Database.`
+	cmd.Long = `Create a Database.
 
   Create a Database.
 
@@ -679,8 +677,8 @@ Create a Database.
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -786,10 +784,8 @@ func newCreateEndpoint() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-endpoint PARENT ENDPOINT_ID"
-	cmd.Short = `*Beta* Create an Endpoint.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create an Endpoint.
+	cmd.Short = `Create an Endpoint.`
+	cmd.Long = `Create an Endpoint.
 
   Creates a new compute endpoint in the branch.
 
@@ -808,8 +804,8 @@ Create an Endpoint.
       projects/my-app/branches/development/endpoints/primary.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -917,10 +913,8 @@ func newCreateProject() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-project PROJECT_ID"
-	cmd.Short = `*Beta* Create a Project.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a Project.
+	cmd.Short = `Create a Project.`
+	cmd.Long = `Create a Project.
 
   Creates a new Lakebase Autoscaling Postgres database project, which contains
   branches and compute endpoints.
@@ -937,8 +931,8 @@ Create a Project.
       numbers, and hyphens. For example, my-app becomes projects/my-app.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1045,10 +1039,8 @@ func newCreateRole() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-role PARENT"
-	cmd.Short = `*Beta* Create a Postgres Role for a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a Postgres Role for a Branch.
+	cmd.Short = `Create a Postgres Role for a Branch.`
+	cmd.Long = `Create a Postgres Role for a Branch.
 
   Creates a new Postgres role in the branch.
 
@@ -1062,8 +1054,8 @@ Create a Postgres Role for a Branch.
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1139,6 +1131,133 @@ Create a Postgres Role for a Branch.
 	return cmd
 }
 
+// start create-snapshot command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSnapshotOverrides []func(
+	*cobra.Command,
+	*postgres.CreateSnapshotRequest,
+)
+
+func newCreateSnapshot() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSnapshotReq postgres.CreateSnapshotRequest
+	createSnapshotReq.Snapshot = postgres.Snapshot{}
+	var createSnapshotJson flags.JsonFlag
+
+	var createSnapshotSkipWait bool
+	var createSnapshotTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createSnapshotSkipWait, "no-wait", createSnapshotSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createSnapshotTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createSnapshotJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createSnapshotReq.Snapshot.Name, "name", createSnapshotReq.Snapshot.Name, `The resource name of the snapshot.`)
+	// TODO: complex arg: spec
+	// TODO: complex arg: status
+
+	cmd.Use = "create-snapshot PARENT SNAPSHOT_ID"
+	cmd.Short = `Create a Snapshot.`
+	cmd.Long = `Create a Snapshot.
+
+  Creates a snapshot, an immutable point-in-time copy of a branch's data, within
+  the project.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    PARENT: The project in which to create the snapshot. Format: projects/{project_id}
+    SNAPSHOT_ID: Client-chosen ID for the snapshot. It becomes the final segment of the
+      snapshot resource name and cannot be changed after creation.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createSnapshotJson.Unmarshal(&createSnapshotReq.Snapshot)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createSnapshotReq.Parent = args[0]
+		createSnapshotReq.SnapshotId = args[1]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createSnapshotSkipWait:
+			wait, err := w.Postgres.CreateSnapshot(ctx, createSnapshotReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.CreateSnapshot(ctx, createSnapshotReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for create-snapshot to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(createSnapshotTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSnapshotOverrides {
+		fn(cmd, &createSnapshotReq)
+	}
+
+	return cmd
+}
+
 // start create-synced-table command
 
 // Slice with functions to override default command behavior.
@@ -1168,10 +1287,8 @@ func newCreateSyncedTable() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-synced-table SYNCED_TABLE_ID"
-	cmd.Short = `*Beta* Create a Synced Database Table.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a Synced Database Table.
+	cmd.Short = `Create a Synced Database Table.`
+	cmd.Long = `Create a Synced Database Table.
 
   Create a Synced Table.
 
@@ -1195,8 +1312,8 @@ Create a Synced Database Table.
       "{schema}" in the connected Postgres database`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1295,10 +1412,8 @@ func newDeleteBranch() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteBranchReq.Purge, "purge", deleteBranchReq.Purge, `If true, permanently delete the branch; if false, soft delete.`)
 
 	cmd.Use = "delete-branch NAME"
-	cmd.Short = `*Beta* Delete a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a Branch.
+	cmd.Short = `Delete a Branch.`
+	cmd.Long = `Delete a Branch.
 
   Deletes the specified database branch.
 
@@ -1312,8 +1427,8 @@ Delete a Branch.
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1399,10 +1514,8 @@ func newDeleteCatalog() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteCatalogTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-catalog NAME"
-	cmd.Short = `*Beta* Delete a Database Catalog.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a Database Catalog.
+	cmd.Short = `Delete a Database Catalog.`
+	cmd.Long = `Delete a Database Catalog.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1415,8 +1528,8 @@ Delete a Database Catalog.
       Format: "catalogs/{catalog_id}".`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1713,10 +1826,8 @@ func newDeleteDatabase() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteDatabaseTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-database NAME"
-	cmd.Short = `*Beta* Delete a Database.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a Database.
+	cmd.Short = `Delete a Database.`
+	cmd.Long = `Delete a Database.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -1728,8 +1839,8 @@ Delete a Database.
       projects/{project_id}/branches/{branch_id}/databases/{database_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1815,10 +1926,8 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteEndpointTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-endpoint NAME"
-	cmd.Short = `*Beta* Delete an Endpoint.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete an Endpoint.
+	cmd.Short = `Delete an Endpoint.`
+	cmd.Long = `Delete an Endpoint.
 
   Deletes the specified compute endpoint.
 
@@ -1832,8 +1941,8 @@ Delete an Endpoint.
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -1921,10 +2030,8 @@ func newDeleteProject() *cobra.Command {
 	cmd.Flags().BoolVar(&deleteProjectReq.Purge, "purge", deleteProjectReq.Purge, `If true, permanently deletes the project (hard delete).`)
 
 	cmd.Use = "delete-project NAME"
-	cmd.Short = `*Beta* Delete a Project.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a Project.
+	cmd.Short = `Delete a Project.`
+	cmd.Long = `Delete a Project.
 
   Deletes the specified database project.
 
@@ -1938,8 +2045,8 @@ Delete a Project.
       projects/{project_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2027,10 +2134,8 @@ func newDeleteRole() *cobra.Command {
 	cmd.Flags().StringVar(&deleteRoleReq.ReassignOwnedTo, "reassign-owned-to", deleteRoleReq.ReassignOwnedTo, `Reassign objects.`)
 
 	cmd.Use = "delete-role NAME"
-	cmd.Short = `*Beta* Delete a Postgres Role from a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a Postgres Role from a Branch.
+	cmd.Short = `Delete a Postgres Role from a Branch.`
+	cmd.Long = `Delete a Postgres Role from a Branch.
 
   Deletes the specified Postgres role.
 
@@ -2044,8 +2149,8 @@ Delete a Postgres Role from a Branch.
       projects/{project_id}/branches/{branch_id}/roles/{role_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2110,6 +2215,111 @@ Delete a Postgres Role from a Branch.
 	return cmd
 }
 
+// start delete-snapshot command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteSnapshotOverrides []func(
+	*cobra.Command,
+	*postgres.DeleteSnapshotRequest,
+)
+
+func newDeleteSnapshot() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteSnapshotReq postgres.DeleteSnapshotRequest
+
+	var deleteSnapshotSkipWait bool
+	var deleteSnapshotTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteSnapshotSkipWait, "no-wait", deleteSnapshotSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteSnapshotTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "delete-snapshot NAME"
+	cmd.Short = `Delete a Snapshot.`
+	cmd.Long = `Delete a Snapshot.
+
+  Deletes the specified snapshot.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The resource name of the snapshot to delete. Format:
+      projects/{project_id}/snapshots/{snapshot_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteSnapshotReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteSnapshotSkipWait:
+			wait, err := w.Postgres.DeleteSnapshot(ctx, deleteSnapshotReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.DeleteSnapshot(ctx, deleteSnapshotReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for delete-snapshot to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteSnapshotTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteSnapshotOverrides {
+		fn(cmd, &deleteSnapshotReq)
+	}
+
+	return cmd
+}
+
 // start delete-synced-table command
 
 // Slice with functions to override default command behavior.
@@ -2131,10 +2341,8 @@ func newDeleteSyncedTable() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteSyncedTableTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-synced-table NAME"
-	cmd.Short = `*Beta* Delete a Synced Database Table.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a Synced Database Table.
+	cmd.Short = `Delete a Synced Database Table.`
+	cmd.Long = `Delete a Synced Database Table.
 
   Delete a Synced Table.
 
@@ -2149,8 +2357,8 @@ Delete a Synced Database Table.
       are the UC entity names.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2239,18 +2447,16 @@ func newGenerateDatabaseCredential() *cobra.Command {
 	cmd.Flags().StringVar(&ttlParam, "ttl", ttlParam, `The requested time-to-live for the generated credential token.`)
 
 	cmd.Use = "generate-database-credential ENDPOINT"
-	cmd.Short = `*Beta* Generate OAuth credentials for a Postgres database.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Generate OAuth credentials for a Postgres database.
+	cmd.Short = `Generate OAuth credentials for a Postgres database.`
+	cmd.Long = `Generate OAuth credentials for a Postgres database.
 
   Arguments:
     ENDPOINT: The endpoint resource name for which this credential will be generated.
       Format: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
@@ -2340,10 +2546,8 @@ func newGetBranch() *cobra.Command {
 	var getBranchReq postgres.GetBranchRequest
 
 	cmd.Use = "get-branch NAME"
-	cmd.Short = `*Beta* Get a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Branch.
+	cmd.Short = `Get a Branch.`
+	cmd.Long = `Get a Branch.
 
   Retrieves information about the specified database branch.
 
@@ -2352,8 +2556,8 @@ Get a Branch.
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2402,10 +2606,8 @@ func newGetCatalog() *cobra.Command {
 	var getCatalogReq postgres.GetCatalogRequest
 
 	cmd.Use = "get-catalog NAME"
-	cmd.Short = `*Beta* Get a Database Catalog.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Database Catalog.
+	cmd.Short = `Get a Database Catalog.`
+	cmd.Long = `Get a Database Catalog.
 
   Arguments:
     NAME: The full resource path of the catalog to retrieve.
@@ -2413,8 +2615,8 @@ Get a Database Catalog.
       Format: "catalogs/{catalog_id}".`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2653,18 +2855,16 @@ func newGetDatabase() *cobra.Command {
 	var getDatabaseReq postgres.GetDatabaseRequest
 
 	cmd.Use = "get-database NAME"
-	cmd.Short = `*Beta* Get a Database.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Database.
+	cmd.Short = `Get a Database.`
+	cmd.Long = `Get a Database.
 
   Arguments:
     NAME: The name of the Database to retrieve. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2713,10 +2913,8 @@ func newGetEndpoint() *cobra.Command {
 	var getEndpointReq postgres.GetEndpointRequest
 
 	cmd.Use = "get-endpoint NAME"
-	cmd.Short = `*Beta* Get an Endpoint.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get an Endpoint.
+	cmd.Short = `Get an Endpoint.`
+	cmd.Long = `Get an Endpoint.
 
   Retrieves information about the specified compute endpoint, including its
   connection details and operational state.
@@ -2726,8 +2924,8 @@ Get an Endpoint.
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2776,10 +2974,8 @@ func newGetOperation() *cobra.Command {
 	var getOperationReq postgres.GetOperationRequest
 
 	cmd.Use = "get-operation NAME"
-	cmd.Short = `*Beta* Get an Operation.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get an Operation.
+	cmd.Short = `Get an Operation.`
+	cmd.Long = `Get an Operation.
 
   Retrieves the status of a long-running operation.
 
@@ -2787,8 +2983,8 @@ Get an Operation.
     NAME: The name of the operation resource.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2837,10 +3033,8 @@ func newGetProject() *cobra.Command {
 	var getProjectReq postgres.GetProjectRequest
 
 	cmd.Use = "get-project NAME"
-	cmd.Short = `*Beta* Get a Project.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Project.
+	cmd.Short = `Get a Project.`
+	cmd.Long = `Get a Project.
 
   Retrieves information about the specified database project.
 
@@ -2849,8 +3043,8 @@ Get a Project.
       projects/{project_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2899,10 +3093,8 @@ func newGetRole() *cobra.Command {
 	var getRoleReq postgres.GetRoleRequest
 
 	cmd.Use = "get-role NAME"
-	cmd.Short = `*Beta* Get a Postgres Role for a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Postgres Role for a Branch.
+	cmd.Short = `Get a Postgres Role for a Branch.`
+	cmd.Long = `Get a Postgres Role for a Branch.
 
   Retrieves information about the specified Postgres role, including its
   authentication method and permissions.
@@ -2912,8 +3104,8 @@ Get a Postgres Role for a Branch.
       projects/{project_id}/branches/{branch_id}/roles/{role_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -2947,6 +3139,133 @@ Get a Postgres Role for a Branch.
 	return cmd
 }
 
+// start get-snapshot command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSnapshotOverrides []func(
+	*cobra.Command,
+	*postgres.GetSnapshotRequest,
+)
+
+func newGetSnapshot() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSnapshotReq postgres.GetSnapshotRequest
+
+	cmd.Use = "get-snapshot NAME"
+	cmd.Short = `Get a Snapshot.`
+	cmd.Long = `Get a Snapshot.
+
+  Retrieves information about the specified snapshot.
+
+  Arguments:
+    NAME: The resource name of the snapshot to retrieve. Format:
+      projects/{project_id}/snapshots/{snapshot_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getSnapshotReq.Name = args[0]
+
+		response, err := w.Postgres.GetSnapshot(ctx, getSnapshotReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSnapshotOverrides {
+		fn(cmd, &getSnapshotReq)
+	}
+
+	return cmd
+}
+
+// start get-snapshot-schedule command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSnapshotScheduleOverrides []func(
+	*cobra.Command,
+	*postgres.GetSnapshotScheduleRequest,
+)
+
+func newGetSnapshotSchedule() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSnapshotScheduleReq postgres.GetSnapshotScheduleRequest
+
+	cmd.Use = "get-snapshot-schedule NAME"
+	cmd.Short = `Get a Snapshot Schedule.`
+	cmd.Long = `Get a Snapshot Schedule.
+
+  Retrieves the snapshot schedule for a branch. A branch with no configured
+  schedule returns an empty schedule (not NOT_FOUND).
+
+  Arguments:
+    NAME: The resource name of the branch's snapshot schedule. Format:
+      projects/{project_id}/branches/{branch_id}/snapshot-schedule`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getSnapshotScheduleReq.Name = args[0]
+
+		response, err := w.Postgres.GetSnapshotSchedule(ctx, getSnapshotScheduleReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSnapshotScheduleOverrides {
+		fn(cmd, &getSnapshotScheduleReq)
+	}
+
+	return cmd
+}
+
 // start get-synced-table command
 
 // Slice with functions to override default command behavior.
@@ -2962,10 +3281,8 @@ func newGetSyncedTable() *cobra.Command {
 	var getSyncedTableReq postgres.GetSyncedTableRequest
 
 	cmd.Use = "get-synced-table NAME"
-	cmd.Short = `*Beta* Get a Synced Database Table.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a Synced Database Table.
+	cmd.Short = `Get a Synced Database Table.`
+	cmd.Long = `Get a Synced Database Table.
 
   Get a Synced Table.
 
@@ -2975,8 +3292,8 @@ Get a Synced Database Table.
       are the entity names in the Unity Catalog.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3039,10 +3356,8 @@ func newListBranches() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-branches PARENT"
-	cmd.Short = `*Beta* List Branches.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List Branches.
+	cmd.Short = `List Branches.`
+	cmd.Long = `List Branches.
 
   Returns a paginated list of database branches in the project.
 
@@ -3051,8 +3366,8 @@ List Branches.
       projects/{project_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3277,10 +3592,8 @@ func newListDatabases() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-databases PARENT"
-	cmd.Short = `*Beta* List postgres databases in a branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List postgres databases in a branch.
+	cmd.Short = `List postgres databases in a branch.`
+	cmd.Long = `List postgres databases in a branch.
 
   List Databases.
 
@@ -3289,8 +3602,8 @@ List postgres databases in a branch.
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3355,10 +3668,8 @@ func newListEndpoints() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-endpoints PARENT"
-	cmd.Short = `*Beta* List Endpoints.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List Endpoints.
+	cmd.Short = `List Endpoints.`
+	cmd.Long = `List Endpoints.
 
   Returns a paginated list of compute endpoints in the branch.
 
@@ -3367,8 +3678,8 @@ List Endpoints.
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3434,17 +3745,15 @@ func newListProjects() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-projects"
-	cmd.Short = `*Beta* List Projects.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List Projects.
+	cmd.Short = `List Projects.`
+	cmd.Long = `List Projects.
 
   Returns a paginated list of database projects in the workspace that the user
   has permission to access.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -3507,10 +3816,8 @@ func newListRoles() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-roles PARENT"
-	cmd.Short = `*Beta* List Postgres Roles for a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List Postgres Roles for a Branch.
+	cmd.Short = `List Postgres Roles for a Branch.`
+	cmd.Long = `List Postgres Roles for a Branch.
 
   Returns a paginated list of Postgres roles in the branch.
 
@@ -3519,8 +3826,8 @@ List Postgres Roles for a Branch.
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3552,6 +3859,84 @@ List Postgres Roles for a Branch.
 	// Apply optional overrides to this command.
 	for _, fn := range listRolesOverrides {
 		fn(cmd, &listRolesReq)
+	}
+
+	return cmd
+}
+
+// start list-snapshots command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSnapshotsOverrides []func(
+	*cobra.Command,
+	*postgres.ListSnapshotsRequest,
+)
+
+func newListSnapshots() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSnapshotsReq postgres.ListSnapshotsRequest
+	// Registered for all paginated methods. Validated at call time in the
+	// method-call template. Paginated list methods never have Wait or LRO
+	// branches, so the method-call path is always reached.
+	var listSnapshotsLimit int
+
+	cmd.Flags().IntVar(&listSnapshotsReq.PageSize, "page-size", listSnapshotsReq.PageSize, `Maximum number of snapshots to return per page.`)
+
+	// Limit flag for total result capping.
+	cmd.Flags().IntVar(&listSnapshotsLimit, "limit", 0, `Maximum number of results to return.`)
+
+	// Hidden pagination flags (internal API parameters).
+	cmd.Flags().StringVar(&listSnapshotsReq.PageToken, "page-token", listSnapshotsReq.PageToken, `Pagination token.`)
+	cmd.Flags().Lookup("page-token").Hidden = true
+
+	cmd.Use = "list-snapshots PARENT"
+	cmd.Short = `List Snapshots.`
+	cmd.Long = `List Snapshots.
+
+  Returns a paginated list of snapshots in the project.
+
+  Arguments:
+    PARENT: The project that owns the snapshots. Format: projects/{project_id}`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		listSnapshotsReq.Parent = args[0]
+
+		response := w.Postgres.ListSnapshots(ctx, listSnapshotsReq)
+		if listSnapshotsLimit < 0 {
+			return fmt.Errorf("--limit must be a non-negative integer, got %d", listSnapshotsLimit)
+		}
+		if listSnapshotsLimit > 0 {
+			ctx = cmdio.WithLimit(ctx, listSnapshotsLimit)
+		}
+
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSnapshotsOverrides {
+		fn(cmd, &listSnapshotsReq)
 	}
 
 	return cmd
@@ -3795,10 +4180,8 @@ func newUpdateBranch() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "update-branch NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a Branch.
+	cmd.Short = `Update a Branch.`
+	cmd.Long = `Update a Branch.
 
   Updates the specified database branch. You can set this branch as the
   project's default branch, or protect/unprotect it.
@@ -3811,12 +4194,11 @@ Update a Branch.
   Arguments:
     NAME: Output only. The full resource path of the branch. Format:
       projects/{project_id}/branches/{branch_id}
-    UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
-      when possible.`
+    UPDATE_MASK: The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -3938,8 +4320,7 @@ func newUpdateDataApi() *cobra.Command {
   Arguments:
     NAME: Resource name:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api
-    UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
-      when possible.`
+    UPDATE_MASK: The list of fields to update.`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -4055,10 +4436,8 @@ func newUpdateDatabase() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "update-database NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a Database.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a Database.
+	cmd.Short = `Update a Database.`
+	cmd.Long = `Update a Database.
 
   This is a long-running operation. By default, the command waits for the
   operation to complete. Use --no-wait to return immediately with the raw
@@ -4068,12 +4447,11 @@ Update a Database.
   Arguments:
     NAME: The resource name of the database. Format:
       projects/{project_id}/branches/{branch_id}/databases/{database_id}
-    UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
-      when possible.`
+    UPDATE_MASK: The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -4182,10 +4560,8 @@ func newUpdateEndpoint() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "update-endpoint NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update an Endpoint.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update an Endpoint.
+	cmd.Short = `Update an Endpoint.`
+	cmd.Long = `Update an Endpoint.
 
   Updates the specified compute endpoint. You can update autoscaling limits,
   suspend timeout, or enable/disable the compute endpoint.
@@ -4198,12 +4574,11 @@ Update an Endpoint.
   Arguments:
     NAME: Output only. The full resource path of the endpoint. Format:
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-    UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
-      when possible.`
+    UPDATE_MASK: The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -4314,10 +4689,8 @@ func newUpdateProject() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "update-project NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a Project.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a Project.
+	cmd.Short = `Update a Project.`
+	cmd.Long = `Update a Project.
 
   Updates the specified database project.
 
@@ -4329,12 +4702,11 @@ Update a Project.
   Arguments:
     NAME: Output only. The full resource path of the project. Format:
       projects/{project_id}
-    UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
-      when possible.`
+    UPDATE_MASK: The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -4443,10 +4815,8 @@ func newUpdateRole() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "update-role NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a Postgres Role for a Branch.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a Postgres Role for a Branch.
+	cmd.Short = `Update a Postgres Role for a Branch.`
+	cmd.Long = `Update a Postgres Role for a Branch.
 
   Update a role for a branch.
 
@@ -4458,12 +4828,11 @@ Update a Postgres Role for a Branch.
   Arguments:
     NAME: Output only. The full resource path of the role. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}
-    UPDATE_MASK: The list of fields to update in Postgres Role. If unspecified, all fields
-      will be updated when possible.`
+    UPDATE_MASK: The list of fields to update.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -4538,6 +4907,136 @@ Update a Postgres Role for a Branch.
 	// Apply optional overrides to this command.
 	for _, fn := range updateRoleOverrides {
 		fn(cmd, &updateRoleReq)
+	}
+
+	return cmd
+}
+
+// start update-snapshot-schedule command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateSnapshotScheduleOverrides []func(
+	*cobra.Command,
+	*postgres.UpdateSnapshotScheduleRequest,
+)
+
+func newUpdateSnapshotSchedule() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateSnapshotScheduleReq postgres.UpdateSnapshotScheduleRequest
+	updateSnapshotScheduleReq.SnapshotSchedule = postgres.SnapshotSchedule{}
+	var updateSnapshotScheduleJson flags.JsonFlag
+
+	var updateSnapshotScheduleSkipWait bool
+	var updateSnapshotScheduleTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateSnapshotScheduleSkipWait, "no-wait", updateSnapshotScheduleSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&updateSnapshotScheduleTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&updateSnapshotScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateSnapshotScheduleReq.SnapshotSchedule.Name, "name", updateSnapshotScheduleReq.SnapshotSchedule.Name, `The resource name of the branch's snapshot schedule.`)
+	// TODO: array: schedule
+
+	cmd.Use = "update-snapshot-schedule NAME UPDATE_MASK"
+	cmd.Short = `Update a Snapshot Schedule.`
+	cmd.Long = `Update a Snapshot Schedule.
+
+  Sets the snapshot schedule for a branch. The schedule field is replaced
+  wholesale; an empty schedule disables automatic snapshots.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.
+
+  Arguments:
+    NAME: The resource name of the branch's snapshot schedule. Format:
+      projects/{project_id}/branches/{branch_id}/snapshot-schedule
+    UPDATE_MASK: Fields to update. The only updatable path is schedule, which replaces
+      the entire set of cadences.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateSnapshotScheduleJson.Unmarshal(&updateSnapshotScheduleReq.SnapshotSchedule)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateSnapshotScheduleReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateSnapshotScheduleReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case updateSnapshotScheduleSkipWait:
+			wait, err := w.Postgres.UpdateSnapshotSchedule(ctx, updateSnapshotScheduleReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Postgres.GetOperation(ctx, postgres.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Postgres.UpdateSnapshotSchedule(ctx, updateSnapshotScheduleReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for update-snapshot-schedule to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(updateSnapshotScheduleTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateSnapshotScheduleOverrides {
+		fn(cmd, &updateSnapshotScheduleReq)
 	}
 
 	return cmd

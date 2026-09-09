@@ -24,13 +24,13 @@ type DataSourceFeatureEngineeringMaterializedFeatureProviderConfig struct {
 }
 
 type DataSourceFeatureEngineeringMaterializedFeatureStreamingMode struct {
-	Mode string `json:"mode,omitempty"`
+	FreshnessTarget string `json:"freshness_target,omitempty"`
+	Mode            string `json:"mode,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeatureTableTrigger struct{}
 
 type DataSourceFeatureEngineeringMaterializedFeature struct {
-	CronSchedule            string                                                              `json:"cron_schedule,omitempty"`
 	CronScheduleTrigger     *DataSourceFeatureEngineeringMaterializedFeatureCronScheduleTrigger `json:"cron_schedule_trigger,omitempty"`
 	FeatureName             string                                                              `json:"feature_name,omitempty"`
 	IsOnline                bool                                                                `json:"is_online,omitempty"`

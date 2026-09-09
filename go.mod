@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.26.0
 
-toolchain go1.26.6
+toolchain go1.26.8
 
 require (
 	dario.cat/mergo v1.0.2 // BSD-3-Clause
@@ -12,14 +12,14 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
-	github.com/charmbracelet/x/ansi v0.11.7 // MIT
-	github.com/databricks/databricks-sdk-go v0.170.0 // Apache-2.0
+	github.com/charmbracelet/x/ansi v0.11.8 // MIT
+	github.com/databricks/databricks-sdk-go v0.177.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
 	github.com/hashicorp/go-version v1.9.0 // MPL-2.0
 	github.com/hashicorp/hc-install v0.9.5 // MPL-2.0
-	github.com/hashicorp/terraform-exec v0.25.2 // MPL-2.0
+	github.com/hashicorp/terraform-exec v0.25.3 // MPL-2.0
 	github.com/hashicorp/terraform-json v0.28.0 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.10.0 // MIT
@@ -31,27 +31,27 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.10.2 // Apache-2.0
 	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
-	github.com/stretchr/testify v1.11.1 // MIT
+	github.com/stretchr/testify v1.12.1 // MIT
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
-	go.yaml.in/yaml/v3 v3.0.4 // MIT AND Apache-2.0
-	golang.org/x/crypto v0.54.0 // BSD-3-Clause
-	golang.org/x/mod v0.38.0 // BSD-3-Clause
-	golang.org/x/net v0.57.0 // BSD-3-Clause
+	go.yaml.in/yaml/v3 v3.0.5 // MIT AND Apache-2.0
+	golang.org/x/crypto v0.56.0 // BSD-3-Clause
+	golang.org/x/mod v0.40.0 // BSD-3-Clause
+	golang.org/x/net v0.58.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
 	golang.org/x/sync v0.22.0 // BSD-3-Clause
 	golang.org/x/sys v0.47.0 // BSD-3-Clause
 	golang.org/x/term v0.45.0 // BSD-3-Clause
-	golang.org/x/text v0.40.0 // BSD-3-Clause
+	golang.org/x/text v0.41.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
-require github.com/databricks/sdk-go/core v0.0.1-dev // Apache-2.0
+require github.com/databricks/sdk-go/core v0.0.1-dev.1 // Apache-2.0
 
 require (
-	github.com/databricks/sdk-go/auth v0.0.0-dev // Apache-2.0
-	github.com/databricks/sdk-go/files v0.0.0-dev.1 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.0.0-dev // Apache-2.0
+	github.com/databricks/sdk-go/auth v0.0.1-dev.1 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.0.1-dev.1 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.0.1-dev.1 // Apache-2.0
 )
 
 require (
@@ -72,7 +72,6 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/danieljoos/wincred v1.2.3 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -91,14 +90,13 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
-	github.com/mattn/go-runewidth v0.0.23 // indirect
+	github.com/mattn/go-runewidth v0.0.24 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/zclconf/go-cty v1.18.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

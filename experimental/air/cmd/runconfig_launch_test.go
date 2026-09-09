@@ -39,32 +39,17 @@ func TestRunConfigDockerImageURL(t *testing.T) {
 func TestRunConfigDependencies(t *testing.T) {
 	t.Run("unset", func(t *testing.T) {
 		c := &runConfig{}
-		_, ok := c.requirementsFile()
-		assert.False(t, ok)
-		_, ok = c.inlineDependencies()
-		assert.False(t, ok)
-	})
-
-	t.Run("file path", func(t *testing.T) {
-		c := &runConfig{Environment: &environmentConfig{
-			Dependencies: dependencies{set: true, isList: false, path: "req.yaml"},
-		}}
-		path, ok := c.requirementsFile()
-		assert.True(t, ok)
-		assert.Equal(t, "req.yaml", path)
-		_, ok = c.inlineDependencies()
+		_, ok := c.inlineDependencies()
 		assert.False(t, ok)
 	})
 
 	t.Run("inline list", func(t *testing.T) {
 		c := &runConfig{Environment: &environmentConfig{
-			Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
+			Dependencies: dependencies{set: true, list: []string{"torch", "numpy"}},
 		}}
 		list, ok := c.inlineDependencies()
 		assert.True(t, ok)
 		assert.Equal(t, []string{"torch", "numpy"}, list)
-		_, ok = c.requirementsFile()
-		assert.False(t, ok)
 	})
 }
 

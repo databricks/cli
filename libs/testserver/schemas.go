@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"dario.cat/mergo"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -80,6 +79,11 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateSchema")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var schemaUpdate catalog.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schemaUpdate); err != nil {
@@ -89,13 +93,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
-	err := mergo.Merge(&existing, schemaUpdate, mergo.WithOverride)
-	if err != nil {
-		return Response{
-			Body:       fmt.Sprintf("mergo error: %s", err),
-			StatusCode: http.StatusInternalServerError,
-		}
-	}
+	applyUpdatedFields(&existing, schemaUpdate, fields)
 
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName

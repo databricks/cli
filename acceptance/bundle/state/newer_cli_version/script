@@ -1,0 +1,11 @@
+title "State written by a newer CLI: warn, but proceed\n"
+mkdir -p .databricks/bundle/default
+cp resources.newer.json .databricks/bundle/default/resources.json
+trace $CLI bundle plan
+
+title "State written by this CLI: no warning\n"
+# The running version is only known at test time, so derive the state's
+# cli_version from the binary itself rather than committing it as a fixture.
+version=$($CLI version | sed 's/^Databricks CLI v//')
+jq --arg v "$version" '.cli_version = $v' resources.newer.json > .databricks/bundle/default/resources.json
+trace $CLI bundle plan

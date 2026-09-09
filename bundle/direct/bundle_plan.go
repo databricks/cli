@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -692,6 +691,13 @@ func isEmptyStruct(rv reflect.Value) bool {
 	}
 
 	rt := rv.Type()
+
+	// Opaque structs (duration.Duration, types/time.Time) have no exported
+	// fields to inspect, so the loop below would call every value empty.
+	if structdiff.IsOpaqueStruct(rt) {
+		return false
+	}
+
 	for i := range rt.NumField() {
 		field := rt.Field(i)
 
@@ -722,12 +728,6 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
-	// template string is preserved in the plan output rather than causing an error.
-	if path.String() == "workspace.snapshot_path" {
-		return nil, errDelayed
-	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -785,9 +785,9 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	localConfig := sv.Value
 
-	adapter := b.Adapters[targetGroup]
-	if adapter == nil {
-		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
+	adapter, err := b.getAdapterForKey(targetResourceKey)
+	if err != nil {
+		return nil, fmt.Errorf("internal error: %s: %w", targetResourceKey, err)
 	}
 
 	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
@@ -961,7 +961,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	slices.Sort(nodes)
-
 	for _, node := range nodes {
 		delete(existingKeys, node)
 
@@ -976,38 +975,24 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		baseRefs := map[string]string{}
-
-		if strings.HasSuffix(node, ".permissions") {
-			var inputConfigStructVar *structvar.StructVar
-			var err error
-
-			if strings.HasPrefix(node, "resources.secret_scopes.") {
-				typedConfig, ok := inputConfig.(*[]resources.SecretScopePermission)
-				if !ok {
-					return nil, fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", prefix, inputConfig)
-				}
-				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(*typedConfig, node)
-			} else {
-				inputConfigStructVar, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
-			}
-
-			if err != nil {
-				return nil, err
-			}
-			inputConfig = inputConfigStructVar.Value
-			baseRefs = inputConfigStructVar.Refs
-		} else if strings.HasSuffix(node, ".grants") {
-			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
-			if err != nil {
-				return nil, err
-			}
-			inputConfig = inputConfigStructVar.Value
-			baseRefs = inputConfigStructVar.Refs
+		inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		newStateConfig, err := adapter.PrepareState(inputConfig)
+		newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
 		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		// Unescape "$${...}" to a literal "${...}" in the typed state, which is what
+		// gets deployed and saved. The terraform engine leaves the escape in place for
+		// Terraform itself to unescape; the direct engine has to do it here.
+		//
+		// This runs on the typed state rather than the dynamic config so that
+		// extractReferences below still sees the escaped form and does not mistake
+		// these placeholders for bundle references.
+		if err := unescapeRefs(newStateConfig); err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
@@ -1032,7 +1017,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
 
-		maps.Copy(refs, baseRefs)
+		maps.Copy(refs, inputStructVar.Refs)
 
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {
@@ -1049,11 +1034,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
-				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-				// snapshot.Upload(), not by the direct engine — skip it here.
-				if targetPath == "workspace.snapshot_path" {
-					continue
-				}
 
 				fullRef := "${" + targetPath + "}"
 

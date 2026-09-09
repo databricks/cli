@@ -26,12 +26,27 @@ import (
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
 
+// JobRunTriggersState is the persisted fingerprint of lifecycle.triggers.
+type JobRunTriggersState struct {
+	// Fresh UUID each plan while armed so Old!=New forces recreate.
+	OnBundleDeploy string `json:"on_bundle_deploy,omitempty"`
+}
+
+// JobRunLifecycleState holds local-only lifecycle fields persisted in state.
+type JobRunLifecycleState struct {
+	Triggers *JobRunTriggersState `json:"triggers,omitempty"`
+}
+
 // JobRunState is the RunNow request plus the outcome required for planning.
 type JobRunState struct {
 	jobs.RunNow
 
 	// Always SUCCESS during planning and cleared before persistence.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
+
+	// Local-only; listed in knownMissingInRemoteType. Nested under lifecycle to
+	// mirror config and avoid colliding with a future Jobs API field.
+	Lifecycle *JobRunLifecycleState `json:"lifecycle,omitempty"`
 }
 
 func (s *JobRunState) UnmarshalJSON(b []byte) error {
@@ -79,10 +94,17 @@ func (*ResourceJobRun) New(client *databricks.WorkspaceClient) *ResourceJobRun {
 }
 
 func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
-	return &JobRunState{
+	state := &JobRunState{
 		RunNow:      input.RunNow,
 		ResultState: jobs.RunResultStateSuccess,
+		Lifecycle:   nil,
 	}
+	if input.HasOnBundleDeploy() {
+		state.Lifecycle = &JobRunLifecycleState{
+			Triggers: &JobRunTriggersState{OnBundleDeploy: uuid.NewString()},
+		}
+	}
+	return state
 }
 
 // makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
@@ -158,7 +180,12 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 // RemapState extracts the fields used for diffing: the RunNow request and the
 // outcome the run reached.
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
-	return &JobRunState{RunNow: remote.RunNow, ResultState: remote.ResultState}
+	return &JobRunState{
+		RunNow:      remote.RunNow,
+		ResultState: remote.ResultState,
+		// Local-only lifecycle fingerprints stay unset on the remapped remote.
+		Lifecycle: nil,
+	}
 }
 
 func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (string, *JobRunRemote, error) {
@@ -329,32 +356,41 @@ func runIsTerminal(state jobs.RunLifeCycleState) bool {
 		state == jobs.RunLifeCycleStateInternalError
 }
 
-// reportRunLine names the run, since resources deploy concurrently onto one stream.
+// reportRunLine names the resource and run id so concurrent deploys stay readable.
+// Deploy attaches the key via [WithResourceKey].
 func reportRunLine(ctx context.Context, runID int64, msg string) {
-	if cmdio.HasIO(ctx) {
-		cmdio.LogString(ctx, fmt.Sprintf("job run %d: %s", runID, msg))
+	if !cmdio.HasIO(ctx) {
+		return
 	}
+	cmdio.LogString(ctx, fmt.Sprintf("Output from %s: id=%d: %s", ResourceKey(ctx), runID, msg))
 }
 
-// DoUpdate finishes the wait an interrupted deploy abandoned.
-func (r *ResourceJobRun) DoUpdate(ctx context.Context, id string, config *JobRunState, _ *PlanEntry) (*JobRunRemote, error) {
-	remote, err := r.waitForRun(ctx, id)
-	config.ResultState = ""
-	return remote, err
-}
-
-// OverrideChangeDesc downgrades result_state drift to an update while the run is
-// still going, so a run that may yet succeed is adopted and waited on. A run that
+// OverrideChangeDesc downgrades result_state drift to skip while the run is
+// still going, so a run that may yet succeed is not recreated. A run that
 // stopped without succeeding keeps its recreate. A SKIPPED run reports no
 // result_state either, so the lifecycle state is what tells the two apart.
+// Clearing a trigger skips its local-only fingerprint without re-firing the run.
 func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *JobRunRemote) error {
-	// The planner passes no remote state when the run could not be read.
-	if path.String() != "result_state" || remote == nil || runIsTerminal(remote.State.LifeCycleState) {
+	switch path.String() {
+	case "lifecycle", "lifecycle.triggers", "lifecycle.triggers.on_bundle_deploy":
+		// A cleared trigger sets New empty; structdiff may report it at lifecycle,
+		// lifecycle.triggers, or the leaf.
+		if change.New == nil || change.New == "" {
+			change.Action = deployplan.Skip
+			change.Reason = "trigger removed"
+		}
+		return nil
+	case "result_state":
+		// The planner passes no remote state when the run could not be read.
+		if remote == nil || runIsTerminal(remote.State.LifeCycleState) {
+			return nil
+		}
+		change.Action = deployplan.Skip
+		change.Reason = "run in progress"
+		return nil
+	default:
 		return nil
 	}
-	change.Action = deployplan.Update
-	change.Reason = "run in progress"
-	return nil
 }
 
 // DoDelete deletes the run via jobs/runs/delete, on both destroy and the

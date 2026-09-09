@@ -16,4 +16,4 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle destroy --auto-approve
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-gone-genie-space-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted
+Destroy: 0 deleted

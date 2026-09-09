@@ -1,0 +1,23 @@
+
+=== Initial deploy — lifecycle.started starts compute and creates active deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-scp-update-[UNIQUE_NAME]/files...
+Created apps.my_app
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Run app to redeploy (reproduces the issue precondition of having an active deployment)
+=== Redeploy from saved plan after description change
+>>> [CLI] bundle deploy --plan plan.json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-scp-update-[UNIQUE_NAME]/files...
+Updated apps.my_app
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.my_app
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/app-scp-update-[UNIQUE_NAME]
+
+Destroy: 1 deleted

@@ -17,15 +17,15 @@ trace read_id.py my_job
 trace read_id.py my_run
 trace print_requests.py //jobs/run-now
 
-title "a run that is still going is an update"
+title "a run that is still going is skipped"
 $CLI bundle plan -o json > tmp.plan.json
 trace jq '.plan["resources.job_runs.my_run"]' tmp.plan.json
 
-# The testserver settles a run on its first poll, so the plan above is replayed
-# here: the second read of the run reports it finished.
-title "the deploy adopts that run and waits for it to finish"
+# Replay the plan captured while the run was still going: a fresh plan would
+# re-read it, and the testserver would settle it on that GET.
+title "Badness: the next deploy does not wait for that run"
 trace $CLI bundle deploy --plan tmp.plan.json
 
-title "the same run finished, and nothing was cancelled, deleted or triggered"
+title "the same run is still tracked, and nothing was cancelled, deleted or triggered"
 trace read_state.py job_runs my_run id result_state
 trace print_requests.py //jobs

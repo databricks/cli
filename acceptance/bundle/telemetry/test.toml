@@ -1,8 +1,11 @@
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
-[Env]
-DATABRICKS_CACHE_ENABLED = 'false'
+# Telemetry reports the byte size of the serialized state, which the deployment stamp
+# legitimately grows. The number is the assertion here, so there is nothing to normalize.
+EnvMatrix.DMS = [""]
+
+Env.DATABRICKS_CACHE_ENABLED = 'false'
 
 [[Repls]]
 Old = '"execution_time_ms": \d{1,5},'

@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/patchwheel"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -165,6 +166,12 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 	}
 
 	jobSettings.ForceSendFields = append(jobSettings.ForceSendFields, "TimeoutSeconds")
+
+	// The real Jobs API accepts trigger.table_update.condition on create/update but
+	// does not return it in GET responses; clear it so testserver matches cloud.
+	if jobSettings.Trigger != nil && jobSettings.Trigger.TableUpdate != nil {
+		jobSettings.Trigger.TableUpdate.Condition = ""
+	}
 
 	// Add task-level defaults that match AWS cloud behavior
 	for i := range jobSettings.Tasks {
@@ -586,7 +593,8 @@ const (
 )
 
 // writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
-// write next to the bootstrap notebook. Callers must hold the workspace lock.
+// write next to the bootstrap notebook, and the host key it would publish to the
+// session's secret scope. Callers must hold the workspace lock.
 func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 	for _, t := range request.Tasks {
 		if t.NotebookTask == nil {
@@ -604,7 +612,24 @@ func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 			Info: workspace.ObjectInfo{ObjectType: "FILE", Path: metadataPath},
 			Data: metadata,
 		}
+		s.publishSSHTunnelHostKey(t.NotebookTask.BaseParameters["secretScopeName"])
 	}
+}
+
+// publishSSHTunnelHostKey stores the tunnel host key's public half in the session's
+// secret scope, the way the real server does at startup, so the client can pin it.
+// Callers must hold the workspace lock.
+func (s *FakeWorkspace) publishSSHTunnelHostKey(scope string) {
+	if scope == "" {
+		return
+	}
+	if _, err := s.ensureSSHTunnelHostKey(); err != nil {
+		return
+	}
+	if s.Secrets[scope] == nil {
+		s.Secrets[scope] = make(map[string]string)
+	}
+	s.Secrets[scope][sshServerPublicKeySecretKey] = string(s.sshTunnelHostPublicKey)
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.
@@ -643,19 +668,24 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	// matching cloud behavior where same library path is not reinstalled.
 	var newWhlPaths []string
 	for _, whlPath := range whlPaths {
-		if env.installedLibs[whlPath] {
+		// A dependency may carry a pip extras suffix (e.g. "foo.whl[train]").
+		// The uploaded file is stored under the bare name, so strip the suffix to
+		// locate it. We install the bare wheel; extras only affect which transitive
+		// deps cloud pulls, which this offline install does not model.
+		filePath, _ := patchwheel.SplitWheelExtras(whlPath)
+		if env.installedLibs[filePath] {
 			continue
 		}
-		data := s.files[whlPath].Data
+		data := s.files[filePath].Data
 		if len(data) == 0 {
-			return "", fmt.Errorf("%w: wheel file not found in workspace: %s", errNoCodeInWorkspace, whlPath)
+			return "", fmt.Errorf("%w: wheel file not found in workspace: %s", errNoCodeInWorkspace, filePath)
 		}
-		localPath := filepath.Join(env.dir, filepath.Base(whlPath))
+		localPath := filepath.Join(env.dir, filepath.Base(filePath))
 		if err := os.WriteFile(localPath, data, 0o644); err != nil {
 			return "", fmt.Errorf("failed to write wheel file: %w", err)
 		}
 		newWhlPaths = append(newWhlPaths, localPath)
-		env.installedLibs[whlPath] = true
+		env.installedLibs[filePath] = true
 	}
 
 	if len(newWhlPaths) > 0 {

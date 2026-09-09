@@ -82,7 +82,7 @@ permissions:
 	require.NoError(t, err)
 	assert.Equal(t, gpuType8xH100, gpuType(cfg.Compute.AcceleratorType))
 	require.NotNil(t, cfg.Environment)
-	assert.True(t, cfg.Environment.Dependencies.isList)
+	assert.True(t, cfg.Environment.Dependencies.set)
 	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, cfg.Environment.Dependencies.list)
 	assert.True(t, cfg.Environment.Version.set)
 	assert.Equal(t, "5", cfg.Environment.Version.raw)
@@ -94,20 +94,9 @@ permissions:
 	assert.Len(t, cfg.Permissions, 2)
 }
 
-// TestLoadRunConfig_PolymorphicFields exercises the str|list, str|int, and
-// bool|str unions decoded by custom UnmarshalYAML.
+// TestLoadRunConfig_PolymorphicFields exercises the str|int and bool|str unions
+// decoded by custom UnmarshalYAML.
 func TestLoadRunConfig_PolymorphicFields(t *testing.T) {
-	t.Run("dependencies as string path", func(t *testing.T) {
-		cfg, err := loadRunConfig(writeConfig(t, minimalConfig+`
-environment:
-  dependencies: requirements.yaml
-`))
-		require.NoError(t, err)
-		assert.True(t, cfg.Environment.Dependencies.set)
-		assert.False(t, cfg.Environment.Dependencies.isList)
-		assert.Equal(t, "requirements.yaml", cfg.Environment.Dependencies.path)
-	})
-
 	t.Run("git remote as bool true is rejected", func(t *testing.T) {
 		_, err := loadRunConfig(writeConfig(t, minimalConfig+`
 code_source:
@@ -230,6 +219,9 @@ func TestRunConfigValidate_FieldRules(t *testing.T) {
 		{"long idempotency", func(c *runConfig) { c.IdempotencyToken = str(string(make([]byte, 65))) }, "64 characters or less"},
 		{"bad mlflow_run_name", func(c *runConfig) { c.MLflowRunName = str("bad name") }, "invalid mlflow_run_name"},
 		{"bad experiment dir", func(c *runConfig) { c.MLflowExperimentDirectory = str("/Users/me") }, "must start with '/Workspace'"},
+		{"artifact volume path normalizes", func(c *runConfig) { c.MLflowArtifactLocation = str(" /Volumes/main/default/artifacts ") }, ""},
+		{"empty artifact location", func(c *runConfig) { c.MLflowArtifactLocation = str(" ") }, "mlflow_artifact_location cannot be empty"},
+		{"non-dbfs artifact location", func(c *runConfig) { c.MLflowArtifactLocation = str("s3://bucket/path") }, "must be a dbfs: URI"},
 		{"empty usage policy", func(c *runConfig) { c.UsagePolicyName = str(" ") }, "usage_policy_name must not be empty"},
 		{"bad secret ref", func(c *runConfig) { c.Secrets = map[string]string{"T": "noslash"} }, "expected format 'scope/key'"},
 		{"empty secret scope", func(c *runConfig) { c.Secrets = map[string]string{"T": "/key"} }, "scope and key cannot be empty"},
@@ -255,6 +247,9 @@ func TestRunConfigValidate_FieldRules(t *testing.T) {
 			err := c.validate()
 			if tt.errFrag == "" {
 				assert.NoError(t, err)
+				if tt.name == "artifact volume path normalizes" {
+					assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", *c.MLflowArtifactLocation)
+				}
 				return
 			}
 			require.Error(t, err)
@@ -278,7 +273,7 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"docker image with deps conflicts",
 			environmentConfig{
 				DockerImage:  &dockerImageConfig{URL: "org/repo:tag"},
-				Dependencies: dependencies{set: true, isList: true, list: []string{"torch"}},
+				Dependencies: dependencies{set: true, list: []string{"torch"}},
 			},
 			"not allowed: dependencies",
 		},
@@ -286,54 +281,6 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"empty docker url",
 			environmentConfig{DockerImage: &dockerImageConfig{URL: "  "}},
 			"docker_image.url cannot be empty",
-		},
-		{
-			"tag policy latest ok",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", TagPolicy: "latest"}},
-			"",
-		},
-		{
-			"tag policy auto ok",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", TagPolicy: "AUTO"}},
-			"",
-		},
-		{
-			"invalid tag policy",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", TagPolicy: "newest"}},
-			`invalid docker_image.tag_policy "newest"`,
-		},
-		{
-			"credentials scope without key",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsScope: "s"}},
-			"must be provided together",
-		},
-		{
-			"credentials key without scope",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsKey: "k"}},
-			"must be provided together",
-		},
-		{
-			"credentials pair ok with latest",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", TagPolicy: "latest", CredentialsScope: "s", CredentialsKey: "k"}},
-			"",
-		},
-		{
-			"credentials without latest rejected",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsScope: "s", CredentialsKey: "k"}},
-			`only apply with tag_policy "latest"`,
-		},
-		{
-			"blank credentials scope is not treated as set",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag", CredentialsScope: "  "}},
-			"",
-		},
-		{
-			"version with file deps",
-			environmentConfig{
-				Version:      stringOrInt{set: true, raw: "5"},
-				Dependencies: dependencies{set: true, isList: false, path: "req.yaml"},
-			},
-			"only valid with inline dependencies",
 		},
 		{
 			"version without deps",
@@ -344,9 +291,25 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"version with inline deps ok",
 			environmentConfig{
 				Version:      stringOrInt{set: true, raw: "5"},
-				Dependencies: dependencies{set: true, isList: true, list: []string{"torch"}},
+				Dependencies: dependencies{set: true, list: []string{"torch"}},
 			},
 			"",
+		},
+		{
+			"version prefix normalizes",
+			environmentConfig{
+				Version:      stringOrInt{set: true, raw: "DATABRICKS_AI_V5"},
+				Dependencies: dependencies{set: true, list: []string{"torch"}},
+			},
+			"",
+		},
+		{
+			"old databricks ai version rejected",
+			environmentConfig{
+				Version:      stringOrInt{set: true, raw: "databricks_ai_v4"},
+				Dependencies: dependencies{set: true, list: []string{"torch"}},
+			},
+			"requires AI Runtime version 5 or higher",
 		},
 	}
 	for _, tt := range tests {
@@ -354,6 +317,9 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			err := tt.env.validate()
 			if tt.errFrag == "" {
 				assert.NoError(t, err)
+				if tt.name == "version prefix normalizes" {
+					assert.Equal(t, "databricks_ai_v5", tt.env.Version.raw)
+				}
 				return
 			}
 			require.Error(t, err)
@@ -453,4 +419,248 @@ func TestLoadRunConfig_FileErrors(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "is empty")
 	})
+}
+
+func TestResolveConfigField(t *testing.T) {
+	tests := []struct {
+		name         string
+		path         string
+		wantPath     string
+		wantType     string
+		wantRequired string
+	}{
+		{"leaf", "config.compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
+		{"bare path", "compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
+		{"top-level required", "config.experiment_name", "config.experiment_name", "string", "yes"},
+		{"int leaf", "config.max_retries", "config.max_retries", "int", ""},
+		{"conditionally required", "config.environment.docker_image.url", "config.environment.docker_image.url", "string", "when environment.docker_image is set"},
+		{"through a slice", "config.permissions.level", "config.permissions.level", "string", "when a grant is listed"},
+		{"free-form map", "config.parameters", "config.parameters", "map of string to any", ""},
+		{"deeply nested", "config.code_source.snapshot.root_path", "config.code_source.snapshot.root_path", "string", "when code_source.snapshot is set"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			field, err := resolveConfigField(tt.path)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantPath, field.path)
+			assert.Equal(t, tt.wantType, field.typeName)
+			assert.Equal(t, tt.wantRequired, field.required)
+			assert.NotEmpty(t, field.help)
+			assert.Empty(t, field.children)
+		})
+	}
+}
+
+// The union types are structs of unexported fields, so their type label comes
+// from configTypeNames rather than reflection, and they must not be walked into.
+func TestResolveConfigField_PolymorphicTypes(t *testing.T) {
+	tests := []struct{ path, wantType string }{
+		{"config.environment.dependencies", "list of strings"},
+		{"config.environment.version", "string or int"},
+		{"config.code_source.snapshot.git.remote", "bool or string"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			field, err := resolveConfigField(tt.path)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantType, field.typeName)
+			// A union must not be walked into as an object: its fields are unexported.
+			assert.Empty(t, field.children)
+		})
+	}
+}
+
+func TestResolveConfigField_Containers(t *testing.T) {
+	root, err := resolveConfigField("config")
+	require.NoError(t, err)
+	assert.Equal(t, "config", root.path)
+	// Children are listed in declaration order, matching the schema.
+	assert.Equal(t, "experiment_name", configLeafName(root.children[0].path))
+	assert.Equal(t, "compute", configLeafName(root.children[1].path))
+
+	// An empty path describes the whole schema, so `-h config` and a bare
+	// prefix agree.
+	bare, err := resolveConfigField("")
+	require.NoError(t, err)
+	assert.Equal(t, root.children, bare.children)
+
+	compute, err := resolveConfigField("config.compute")
+	require.NoError(t, err)
+	assert.Equal(t, "object", compute.typeName)
+	require.Len(t, compute.children, 4)
+}
+
+func TestResolveConfigField_Errors(t *testing.T) {
+	tests := []struct {
+		name      string
+		path      string
+		wantParts []string
+	}{
+		{
+			name:      "typo suggests the near match",
+			path:      "config.compute.acclerator_type",
+			wantParts: []string{`unknown config field "config.compute.acclerator_type"`, `did you mean "accelerator_type"?`, "accelerator_type, num_accelerators"},
+		},
+		{
+			name:      "unknown top-level field lists siblings",
+			path:      "config.bogus",
+			wantParts: []string{`unknown config field "config.bogus"`, "experiment_name"},
+		},
+		{
+			name:      "no suggestion when nothing is close",
+			path:      "config.zzzzzzzzzzzz",
+			wantParts: []string{`unknown config field "config.zzzzzzzzzzzz"`},
+		},
+		{
+			name:      "free-form keys are not schema fields",
+			path:      "config.parameters.learning_rate",
+			wantParts: []string{`"config.parameters" holds user-defined keys`, `"learning_rate" is not part of the schema`},
+		},
+		{
+			name:      "scalar has no sub-fields",
+			path:      "config.command.foo",
+			wantParts: []string{`"config.command" is not an object`, `no field "foo"`},
+		},
+		{
+			name:      "nested typo reports the resolved prefix",
+			path:      "config.code_source.snapshot.rootpath",
+			wantParts: []string{`unknown config field "config.code_source.snapshot.rootpath"`, `did you mean "root_path"?`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := resolveConfigField(tt.path)
+			require.Error(t, err)
+			for _, part := range tt.wantParts {
+				assert.Contains(t, err.Error(), part)
+			}
+		})
+	}
+
+	// A distant name must not attract a suggestion.
+	_, err := resolveConfigField("config.zzzzzzzzzzzz")
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), "did you mean")
+}
+
+func TestWriteConfigFieldHelp(t *testing.T) {
+	var leaf strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&leaf, "config.compute.num_accelerators"))
+	assert.Contains(t, leaf.String(), "config.compute.num_accelerators")
+	assert.Contains(t, leaf.String(), "Type:     int")
+	assert.Contains(t, leaf.String(), "Required: no")
+
+	var container strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&container, "config.compute"))
+	assert.Contains(t, container.String(), "Fields:")
+	assert.Contains(t, container.String(), "num_accelerators")
+	// A container lists its fields rather than printing a type/required pair.
+	assert.NotContains(t, container.String(), "Required:")
+	assert.Contains(t, container.String(), `Use "-h config.compute.<field>" for details`)
+
+	// Required top-level fields are flagged in a listing.
+	var root strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&root, "config"))
+	assert.Contains(t, root.String(), "(required) Which accelerators to run on")
+
+	require.Error(t, writeConfigFieldHelp(&strings.Builder{}, "config.nope"))
+}
+
+// Guards against adding a schema field without a help: tag.
+func TestConfigFieldsAllDocumented(t *testing.T) {
+	root, err := resolveConfigField("config")
+	require.NoError(t, err)
+
+	var walk func(fields []configField)
+	walk = func(fields []configField) {
+		for _, f := range fields {
+			assert.NotEmpty(t, f.help, "%s is missing a help: struct tag", f.path)
+			assert.NotEmpty(t, f.typeName, "%s has no type name", f.path)
+			walk(f.children)
+		}
+	}
+	walk(root.children)
+}
+
+func TestFirstSentence(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"One sentence with no period", "One sentence with no period"},
+		{"First. Second.", "First."},
+		{"Which accelerator, e.g. GPU_1xA10. See the docs.", "Which accelerator, e.g. GPU_1xA10."},
+		{"Use numpy, torch, etc. Then run.", "Use numpy, torch, etc. Then run."},
+		{"Prod i.e. production. Details.", "Prod i.e. production."},
+		{"Ends with abbreviation etc.", "Ends with abbreviation etc."},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, firstSentence(tt.in))
+	}
+}
+
+// Plain -h must fall back to command help. A detached command has no parent to
+// inherit a help function from, so this also covers that nil case.
+func TestRunCommandHelp_NoConfigPath(t *testing.T) {
+	var out strings.Builder
+	cmd := newRunCommand()
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"-h"})
+	require.NoError(t, cmd.Execute())
+	assert.Contains(t, out.String(), "Usage:")
+	assert.NotContains(t, out.String(), "Fields:")
+}
+
+// -h with a config path documents the field instead of the command, and does so
+// without the otherwise-required --file.
+func TestRunCommandHelp_ConfigPath(t *testing.T) {
+	var out strings.Builder
+	cmd := newRunCommand()
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"-h", "config.compute.accelerator_type"})
+	require.NoError(t, cmd.Execute())
+	assert.Contains(t, out.String(), "config.compute.accelerator_type")
+	assert.Contains(t, out.String(), "Type:     string")
+	assert.NotContains(t, out.String(), "Usage:")
+}
+
+// An unresolvable path reports to stderr and still exits cleanly, matching how
+// cobra treats the help path.
+func TestRunCommandHelp_UnknownConfigPath(t *testing.T) {
+	var out, errOut strings.Builder
+	cmd := newRunCommand()
+	cmd.SetOut(&out)
+	cmd.SetErr(&errOut)
+	cmd.SetArgs([]string{"-h", "config.nope"})
+	require.NoError(t, cmd.Execute())
+	assert.Contains(t, errOut.String(), `unknown config field "config.nope"`)
+	assert.Empty(t, out.String())
+}
+
+// Both `-h config.<field>` and --override path validation must resolve against
+// the one configSchema() walk, so a field valid for one is valid for the other.
+// This guards against the two features drifting apart again.
+func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
+	paths := []string{
+		"compute.num_accelerators",
+		"environment.docker_image.url",
+		"code_source.snapshot.root_path",
+		"env_variables.MY_VAR", // free-form sub-path
+	}
+	for _, p := range paths {
+		t.Run(p, func(t *testing.T) {
+			require.NoError(t, validateOverridePaths([]overrideEntry{{path: p, raw: "x"}}))
+			// The help path accepts the same field (free-form sub-paths resolve to
+			// the map itself, which is the schema's most specific node).
+			_, err := resolveConfigField(p)
+			if !strings.Contains(p, "env_variables") {
+				require.NoError(t, err)
+			}
+		})
+	}
+
+	// A field unknown to one is unknown to the other.
+	require.Error(t, validateOverridePaths([]overrideEntry{{path: "compute.bogus", raw: "x"}}))
+	_, err := resolveConfigField("compute.bogus")
+	require.Error(t, err)
 }

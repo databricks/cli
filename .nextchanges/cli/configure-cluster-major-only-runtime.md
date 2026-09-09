@@ -1,0 +1,1 @@
+* Support major-only DBR runtime versions such as `19.x-scala2.13` in the cluster picker used by `databricks auth login --configure-cluster` and `databricks labs`. ([#6574](https://github.com/databricks/cli/pull/6574))

@@ -31,7 +31,9 @@ type fakePM struct{ py, dbc, pyspark, dbcImportErr string }
 
 func (fakePM) Name() string                                    { return "fake" }
 func (fakePM) EnsureAvailable(context.Context) (string, error) { return "fake 1.0", nil }
-func (fakePM) EnsurePython(context.Context, string) error      { return nil }
+func (fakePM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
+	return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
+}
 func (fakePM) Provision(context.Context, string, string) error { return nil }
 func (fakePM) PostProvision(context.Context, string) error     { return nil }
 func (f fakePM) Validate(context.Context, string) (VenvInfo, error) {
@@ -48,8 +50,8 @@ func (noProvisionPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("EnsureAvailable must not be called under --dry-run")
 }
 
-func (noProvisionPM) EnsurePython(context.Context, string) error {
-	return errors.New("EnsurePython must not be called under --dry-run")
+func (noProvisionPM) EnsurePython(context.Context, string) (PythonSelection, error) {
+	return PythonSelection{}, errors.New("EnsurePython must not be called under --dry-run")
 }
 
 func (noProvisionPM) Provision(context.Context, string, string) error {
@@ -71,6 +73,26 @@ type uvMissingPM struct{ fakePM }
 
 func (uvMissingPM) EnsureAvailable(context.Context) (string, error) {
 	return "", errors.New("uv not found and install failed")
+}
+
+type recordingPM struct {
+	fakePM
+	minor           string
+	provisionPython string
+	provisionErr    error
+}
+
+func (p *recordingPM) EnsurePython(_ context.Context, minor string) (PythonSelection, error) {
+	p.minor = minor
+	return PythonSelection{
+		Executable: "/installed/python3.12",
+		Resolution: PythonResolutionInstalledFallback,
+	}, nil
+}
+
+func (p *recordingPM) Provision(_ context.Context, _, python string) error {
+	p.provisionPython = python
+	return p.provisionErr
 }
 
 // cancelPM simulates uv being interrupted: Provision closes entered (so the test
@@ -107,6 +129,48 @@ requires-python = ">=3.10"
 dev = ["databricks-connect~=16.0.0"]
 `), 0o644))
 	return dir
+}
+
+func TestPipelineProvisionsWithSelectedPython(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{}, PM: pm,
+	}
+
+	res, err := p.Run(t.Context())
+
+	require.NoError(t, err)
+	assert.Equal(t, "3.12", pm.minor)
+	assert.Equal(t, "/installed/python3.12", pm.provisionPython)
+	assert.Equal(t, PythonResolutionInstalledFallback, res.PythonResolution)
+	assert.Equal(t, "/installed/python3.12", res.PythonInterpreter)
+}
+
+func TestPipelineRetainsFallbackResolutionWhenProvisioningFails(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+	pm := &recordingPM{
+		fakePM:       fakePM{py: "3.12", dbc: "17.2.0"},
+		provisionErr: errors.New("sync failed"),
+	}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags: ComputeFlags{Serverless: "v4"}, Compute: stubCompute{}, PM: pm,
+	}
+
+	res, err := p.Run(t.Context())
+
+	require.Error(t, err)
+	assert.Equal(t, PythonResolutionInstalledFallback, res.PythonResolution)
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrProvision, res.Error.Code)
 }
 
 func newTestServer(t *testing.T) *httptest.Server {
@@ -432,6 +496,103 @@ func TestPipelineProvisionsAndValidatesExisting(t *testing.T) {
 	assert.FileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
 }
 
+func TestPipelineFailsFastOnConstraintConflict(t *testing.T) {
+	// The user pins pip==24.0 while the environment's constraint-dependencies pin
+	// pip<24 — a provably disjoint range — so the merge records
+	// W_USER_CONSTRAINT_CONFLICT. uv sync would deterministically fail to resolve
+	// that, so the run reports E_PROVISION_CONFLICT right after the merge, at the
+	// provision phase, with disk already mutated — and never spends a Python install
+	// or sync (recordingPM records neither call).
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
+name = "demo"
+requires-python = ">=3.12"
+dependencies = ["pip==24.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`), 0o644))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`[project]
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+
+[tool.uv]
+constraint-dependencies = ["pip<24"]
+`))
+	}))
+	defer srv.Close()
+
+	pm := &recordingPM{fakePM: fakePM{py: "3.12", dbc: "17.2.0"}}
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: pm,
+	}
+	res, err := p.Run(t.Context())
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrProvisionConflict, pe.Code)
+	assert.Equal(t, PhaseProvision, pe.FailurePhase)
+	assert.True(t, pe.DiskMutated, "the merge wrote the pins before the conflict was reported")
+	require.NotNil(t, res.Error)
+	assert.Equal(t, ErrProvisionConflict, res.Error.Code)
+	// The merge conflict warning that gates the code must be present.
+	assert.Contains(t, codes(res.Warnings), WarnUserConstraintConflict)
+	// Fail-fast: neither Python install nor sync was attempted.
+	assert.Empty(t, pm.minor, "EnsurePython must not run when the conflict is already proven")
+	assert.Empty(t, pm.provisionPython, "uv sync must not run when the conflict is already proven")
+}
+
+func TestPipelineCheckReportsConflictAsWarningNotError(t *testing.T) {
+	// --dry-run computes a plan and never evaluates provisioning, so the same
+	// provably-disjoint pins surface only as the W_USER_CONSTRAINT_CONFLICT warning
+	// with ok=true and no error — the conflict becomes E_PROVISION_CONFLICT only on a
+	// real run, which is the phase that attempts (and here would fail) provisioning.
+	// This pins that intended divergence so it cannot regress silently.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
+name = "demo"
+requires-python = ">=3.12"
+dependencies = ["pip==24.0"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`), 0o644))
+	before, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`[project]
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+
+[tool.uv]
+constraint-dependencies = ["pip<24"]
+`))
+	}))
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	assert.Nil(t, res.Error, "a dry run reports the conflict as a warning, not an error")
+	assert.Contains(t, codes(res.Warnings), WarnUserConstraintConflict)
+	// A dry run mutates nothing.
+	after, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	assert.Equal(t, string(before), string(after))
+	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"))
+}
+
 func TestPipelineDryRunOmitsFabricatedDBConnectVersion(t *testing.T) {
 	// A major-only pin like ~=17.0 (serverless, environments#15) is not a concrete
 	// version. Under --dry-run validate never corrects the reported value, so it
@@ -577,7 +738,24 @@ func TestPipelineReRunDoesNotRewriteUnchangedPyproject(t *testing.T) {
 	assert.Equal(t, firstInfo.ModTime(), secondInfo.ModTime(), "unchanged pyproject.toml must not be rewritten")
 }
 
-func TestCopyFilePreservesMode(t *testing.T) {
+func TestWriteNewRefusesToOverwrite(t *testing.T) {
+	// writeNew is the no-clobber primitive backups rely on: it creates a file but
+	// must fail rather than overwrite an existing one, so an earlier backup is never
+	// destroyed (invariant 2) even if two runs pick the same name.
+	dir := t.TempDir()
+	dst := filepath.Join(dir, "pyproject.toml.bak")
+
+	require.NoError(t, writeNew(dst, []byte("first\n"), 0o644))
+	got, _ := os.ReadFile(dst)
+	require.Equal(t, "first\n", string(got))
+
+	err := writeNew(dst, []byte("second\n"), 0o644)
+	require.ErrorIs(t, err, os.ErrExist)
+	got, _ = os.ReadFile(dst)
+	assert.Equal(t, "first\n", string(got), "writeNew must never overwrite an existing file")
+}
+
+func TestWriteNewPreservesMode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		// Windows does not honor Unix permission bits.
 		t.Skip("permission-bit preservation is Unix-only")
@@ -585,10 +763,8 @@ func TestCopyFilePreservesMode(t *testing.T) {
 	// A locked-down pyproject.toml (e.g. 0o600 because it carries a private index
 	// URL) must not be widened when copied to the backup.
 	dir := t.TempDir()
-	src := filepath.Join(dir, "pyproject.toml")
-	require.NoError(t, os.WriteFile(src, []byte("[project]\n"), 0o600))
 	dst := filepath.Join(dir, "pyproject.toml.bak")
-	require.NoError(t, copyFile(src, dst))
+	require.NoError(t, writeNew(dst, []byte("[project]\n"), 0o600))
 	info, err := os.Stat(dst)
 	require.NoError(t, err)
 	assert.Equal(t, os.FileMode(0o600), info.Mode().Perm())
@@ -646,15 +822,15 @@ func TestPipelineUvMissingFailsAtPreflight(t *testing.T) {
 	assertPreflightFailure(t, res, err, ErrUvMissing)
 }
 
-func TestApplyMergeFailsOnUnstattableBackupWithoutOverwrite(t *testing.T) {
+func TestApplyMergeFailsOnUnreadableDirWithoutOverwritingBackup(t *testing.T) {
 	if runtime.GOOS == "windows" || os.Getuid() == 0 {
 		// chmod-based stat blocking does not apply for root or on Windows.
 		t.Skip("stat-permission enforcement not available")
 	}
-	// Both pyproject.toml and its .bak live in a project dir that is made
-	// unsearchable, so os.Stat of the backup fails with a permission error rather
-	// than not-exist — isolating applyMerge's "can't stat" branch. applyMerge is
-	// called directly, bypassing the writability preflight.
+	// The project dir is made unsearchable, so applyMerge's up-front stat of
+	// pyproject.toml fails with a permission error: the run must abort before any
+	// write, no disk mutation claimed, and the existing backup left untouched.
+	// applyMerge is called directly, bypassing the writability preflight.
 	dir := filepath.Join(t.TempDir(), "proj")
 	require.NoError(t, os.Mkdir(dir, 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte("[project]\n"), 0o644))
@@ -669,7 +845,7 @@ func TestApplyMergeFailsOnUnstattableBackupWithoutOverwrite(t *testing.T) {
 	var pe *PipelineError
 	require.ErrorAs(t, err, &pe)
 	assert.Equal(t, PhaseMerge, pe.FailurePhase)
-	assert.False(t, pe.DiskMutated, "no write should have happened before the stat check")
+	assert.False(t, pe.DiskMutated, "no write should have happened before the up-front stat")
 
 	// The original backup must be intact.
 	require.NoError(t, os.Chmod(dir, 0o755))
@@ -777,6 +953,162 @@ dev = ["databricks-connect~=17.2.0"]
 	// The .bak is left as the one-time original safety copy, not overwritten.
 	bak, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml.bak"))
 	assert.Equal(t, string(original), string(bak))
+}
+
+// listBackups returns the basenames of every pyproject.toml backup in dir — the
+// canonical .bak plus any timestamped ones — for count/identity assertions.
+func listBackups(t *testing.T, dir string) []string {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(dir, "pyproject.toml.*.bak"))
+	require.NoError(t, err)
+	// The canonical pyproject.toml.bak does not match the ".*." glob, so add it
+	// explicitly when present.
+	if _, statErr := os.Stat(filepath.Join(dir, "pyproject.toml.bak")); statErr == nil {
+		matches = append(matches, filepath.Join(dir, "pyproject.toml.bak"))
+	}
+	names := make([]string, 0, len(matches))
+	for _, m := range matches {
+		names = append(names, filepath.Base(m))
+	}
+	return names
+}
+
+func TestPipelineReRunWritesTimestampedBackupKeepingOriginal(t *testing.T) {
+	dir := t.TempDir()
+	// The canonical .bak already holds the pristine pre-first-sync original.
+	original := []byte(`[project]
+name = "demo"
+requires-python = ">=3.10"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml.bak"), original, 0o644))
+	// The live file is a prior sync's output the developer then edited: they reset a
+	// managed region (requires-python), so the coming merge will rewrite it —
+	// making this a real change, not a no-op.
+	live := []byte(`[project]
+name = "demo"
+requires-python = ">=3.9"
+dependencies = ["rich"]
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+`)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), live, 0o644))
+
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	fixed := time.Date(2024, 1, 1, 15, 30, 0, 0, time.UTC)
+	p := &Pipeline{
+		Mode: ModeDefault, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		nowFn: func() time.Time { return fixed },
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	require.True(t, res.OK)
+
+	// The canonical .bak is untouched — still the pristine original.
+	bak, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml.bak"))
+	assert.Equal(t, string(original), string(bak), "the pristine .bak must not be overwritten on a re-run")
+
+	// A timestamped backup captured the pre-run live content the merge overwrote.
+	wantName := "pyproject.toml." + fixed.Format(backupTimestampLayout) + ".bak"
+	assert.Equal(t, wantName, filepath.Base(res.BackupPath))
+	tsContent, err := os.ReadFile(res.BackupPath)
+	require.NoError(t, err)
+	assert.Equal(t, string(live), string(tsContent), "the timestamped backup must hold the pre-run content")
+
+	// Both backups coexist; the managed region was applied to the live file.
+	assert.ElementsMatch(t, []string{"pyproject.toml.bak", wantName}, listBackups(t, dir))
+	merged, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	assert.Contains(t, string(merged), `requires-python = "==3.12.*"`)
+}
+
+func TestPipelineNoOpReRunWritesNoNewBackup(t *testing.T) {
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	newPipe := func() *Pipeline {
+		return &Pipeline{
+			Mode: ModeDefault, ProjectDir: dir,
+			ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+			Flags:   ComputeFlags{Serverless: "v4"},
+			Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+		}
+	}
+
+	// First sync creates exactly the canonical .bak.
+	_, err := newPipe().Run(t.Context())
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pyproject.toml.bak"}, listBackups(t, dir))
+
+	// A second, idempotent run changes nothing, so it must not write another backup.
+	res, err := newPipe().Run(t.Context())
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"pyproject.toml.bak"}, listBackups(t, dir), "a no-op re-run must not write a new backup")
+	assert.Empty(t, res.BackupPath, "a no-op re-run created no backup")
+}
+
+func TestApplyMergeSameInstantBackupsGetUniqueNames(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml.bak"), []byte("ORIGINAL\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte("current-1\n"), 0o644))
+
+	fixed := time.Date(2024, 1, 1, 15, 30, 0, 0, time.UTC)
+	p := &Pipeline{
+		ProjectDir: dir,
+		nowFn:      func() time.Time { return fixed },
+		res:        &Result{Phases: initialPhases()},
+	}
+
+	// First modifying apply: backs up "current-1" under a timestamped name.
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-1\n"), false))
+	first := p.res.BackupPath
+	require.NotEmpty(t, first)
+
+	// Second modifying apply at the SAME instant: backs up "merged-1" but must not
+	// collide with or overwrite the first timestamped backup.
+	require.NoError(t, p.applyMerge(t.Context(), []byte("merged-2\n"), false))
+	second := p.res.BackupPath
+	require.NotEmpty(t, second)
+
+	assert.NotEqual(t, first, second, "same-instant backups must get distinct names")
+	c1, _ := os.ReadFile(first)
+	assert.Equal(t, "current-1\n", string(c1))
+	c2, _ := os.ReadFile(second)
+	assert.Equal(t, "merged-1\n", string(c2))
+	// The pristine .bak is still untouched.
+	bak, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml.bak"))
+	assert.Equal(t, "ORIGINAL\n", string(bak))
+	// Three backups now coexist: the original plus two timestamped.
+	assert.Len(t, listBackups(t, dir), 3)
+}
+
+func TestPipelineCheckFirstRunPlansCanonicalBackup(t *testing.T) {
+	// A --dry-run on an existing project that has never been synced (no .bak yet)
+	// must plan the canonical pyproject.toml.bak — the first backup a real run
+	// would create — and must not actually write it.
+	dir := writeProject(t)
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, Check: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	require.NotNil(t, res.Plan)
+	assert.Equal(t, "pyproject.toml.bak", filepath.Base(res.Plan.WouldBackup))
+	assert.NoFileExists(t, filepath.Join(dir, "pyproject.toml.bak"), "--dry-run must not create the backup")
 }
 
 func TestPipelineUnreadableExistingIsNotTreatedAsGreenfield(t *testing.T) {
@@ -1029,4 +1361,62 @@ func TestPipelineReportsPhaseStarts(t *testing.T) {
 	require.NoError(t, err)
 	// A full successful run enters every phase exactly once in canonical order.
 	assert.Equal(t, allPhases, rep.started)
+}
+
+func TestPipelineNoConstraintsLeavesExistingPinsUntouched(t *testing.T) {
+	dir := t.TempDir()
+	// An existing project with the user's own requires-python and no managed
+	// [tool.uv] constraint block.
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pyproject.toml"), []byte(`[project]
+name = "demo"
+requires-python = ">=3.9"
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0.0"]
+`), 0o644))
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, SkipConstraints: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	s := string(data)
+	// requires-python keeps the user's value; the artifact's ==3.12.* is not written.
+	assert.Contains(t, s, `requires-python = ">=3.9"`)
+	assert.NotContains(t, s, "==3.12.*")
+	// No managed [tool.uv] constraint-dependencies block is written.
+	assert.NotContains(t, s, "constraint-dependencies")
+	// databricks-connect is still managed: --no-constraints is orthogonal to it.
+	assert.Contains(t, s, "databricks-connect~=17.2.0")
+}
+
+func TestPipelineNoConstraintsGreenfieldOmitsPins(t *testing.T) {
+	dir := t.TempDir()
+	srv := newTestServer(t)
+	defer srv.Close()
+
+	p := &Pipeline{
+		Mode: ModeDefault, SkipConstraints: true, ProjectDir: dir,
+		ConstraintBaseURL: srv.URL, CacheDir: t.TempDir(),
+		Flags:   ComputeFlags{Serverless: "v4"},
+		Compute: stubCompute{}, PM: fakePM{py: "3.12", dbc: "17.2.0"},
+	}
+	res, err := p.Run(t.Context())
+	require.NoError(t, err)
+	assert.True(t, res.OK)
+	assert.True(t, res.Greenfield)
+	data, _ := os.ReadFile(filepath.Join(dir, "pyproject.toml"))
+	s := string(data)
+	// The artifact's Python pin and constraint-dependencies are not written.
+	assert.NotContains(t, s, "==3.12.*")
+	assert.NotContains(t, s, "constraint-dependencies")
+	// databricks-connect (orthogonal) is still added.
+	assert.Contains(t, s, "databricks-connect~=17.2.0")
 }

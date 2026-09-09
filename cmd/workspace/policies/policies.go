@@ -86,7 +86,11 @@ func newCreatePolicy() *cobra.Command {
   EXTERNAL_LOCATION,
   EXTERNAL_METADATA,
   FUNCTION,
+  MCP_SERVICE,
   METASTORE,
+  MODEL,
+  MODEL_PROVIDER_SERVICE,
+  MODEL_SERVICE,
   PIPELINE,
   PROVIDER,
   RECIPIENT,
@@ -110,8 +114,8 @@ func newCreatePolicy() *cobra.Command {
   Arguments:
     TO_PRINCIPALS: List of user or group names that the policy applies to. Required on create
       and optional on update.
-    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only TABLE is
-      supported at this moment. Required on create and optional on update.
+    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Required on
+      create and optional on update.
       Supported values: [
         CATALOG,
         CLEAN_ROOM,
@@ -120,7 +124,11 @@ func newCreatePolicy() *cobra.Command {
         EXTERNAL_LOCATION,
         EXTERNAL_METADATA,
         FUNCTION,
+        MCP_SERVICE,
         METASTORE,
+        MODEL,
+        MODEL_PROVIDER_SERVICE,
+        MODEL_SERVICE,
         PIPELINE,
         PROVIDER,
         RECIPIENT,
@@ -454,7 +462,11 @@ func newUpdatePolicy() *cobra.Command {
   EXTERNAL_LOCATION,
   EXTERNAL_METADATA,
   FUNCTION,
+  MCP_SERVICE,
   METASTORE,
+  MODEL,
+  MODEL_PROVIDER_SERVICE,
+  MODEL_SERVICE,
   PIPELINE,
   PROVIDER,
   RECIPIENT,
@@ -481,8 +493,8 @@ func newUpdatePolicy() *cobra.Command {
     NAME: Required. The name of the policy to update.
     TO_PRINCIPALS: List of user or group names that the policy applies to. Required on create
       and optional on update.
-    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only TABLE is
-      supported at this moment. Required on create and optional on update.
+    FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Required on
+      create and optional on update.
       Supported values: [
         CATALOG,
         CLEAN_ROOM,
@@ -491,7 +503,11 @@ func newUpdatePolicy() *cobra.Command {
         EXTERNAL_LOCATION,
         EXTERNAL_METADATA,
         FUNCTION,
+        MCP_SERVICE,
         METASTORE,
+        MODEL,
+        MODEL_PROVIDER_SERVICE,
+        MODEL_SERVICE,
         PIPELINE,
         PROVIDER,
         RECIPIENT,

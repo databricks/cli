@@ -7,7 +7,7 @@ cleanup() {
 trap cleanup EXIT
 
 print_app_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps"))) | del(.body.url)' < out.requests.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps")) and (.path | contains("/api/2.0/bundle") | not)) | del(.body.url)' < out.requests.txt
     rm out.requests.txt
 }
 

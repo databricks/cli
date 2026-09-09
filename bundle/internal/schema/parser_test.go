@@ -88,6 +88,7 @@ func TestPostgresResourcesHaveLaunchStageOverride(t *testing.T) {
 		reflect.TypeFor[resources.PostgresEndpoint](),
 		reflect.TypeFor[resources.PostgresProject](),
 		reflect.TypeFor[resources.PostgresRole](),
+		reflect.TypeFor[resources.PostgresSnapshotSchedule](),
 		reflect.TypeFor[resources.PostgresSyncedTable](),
 	}
 
@@ -144,6 +145,22 @@ func TestExtractAnnotationsOverridesLaunchStage(t *testing.T) {
 
 	got := annotations[getPath(reflect.TypeFor[resources.PostgresRole]())].Fields["auth_method"]
 	assert.Equal(t, clijson.LaunchStagePublicBeta, got.LaunchStage)
+}
+
+// TestExtractAnnotationsStampsTypeLaunchStage asserts a resource type in the
+// override map carries the override stage on its own (self) descriptor, so the
+// type-level x-databricks-launch-stage is emitted, not just its fields'. The
+// contract carries no type-level stage, so the override map is the only source.
+func TestExtractAnnotationsStampsTypeLaunchStage(t *testing.T) {
+	p := newParser(map[string]*clijson.SchemaJSON{
+		"postgres.RoleRoleSpec": {Fields: map[string]*clijson.SchemaFieldJSON{}},
+	})
+
+	annotations, err := p.extractAnnotations(reflect.TypeFor[resources.PostgresRole]())
+	require.NoError(t, err)
+
+	self := annotations[getPath(reflect.TypeFor[resources.PostgresRole]())].Self
+	assert.Equal(t, clijson.LaunchStagePublicBeta, self.LaunchStage)
 }
 
 func TestNormalizeLaunchStage(t *testing.T) {

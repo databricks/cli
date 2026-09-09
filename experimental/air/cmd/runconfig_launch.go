@@ -27,13 +27,13 @@ func (c *runConfig) maxRetries() int {
 
 // dockerImageURL returns the custom docker image URL, or "" when none is set.
 func (c *runConfig) dockerImageURL() string {
-	if img := c.dockerImage(); img != nil {
-		return img.URL
+	if c.Environment != nil && c.Environment.DockerImage != nil {
+		return c.Environment.DockerImage.URL
 	}
 	return ""
 }
 
-// dockerImage returns the environment.docker_image block, or nil when none is set.
+// dockerImage returns the environment.docker_image block, or nil when unset.
 func (c *runConfig) dockerImage() *dockerImageConfig {
 	if c.Environment == nil {
 		return nil
@@ -41,29 +41,22 @@ func (c *runConfig) dockerImage() *dockerImageConfig {
 	return c.Environment.DockerImage
 }
 
-// requirementsFile returns the path to a requirements file when
-// environment.dependencies is a string, and whether it was set.
-func (c *runConfig) requirementsFile() (string, bool) {
-	if c.Environment == nil || !c.Environment.Dependencies.set || c.Environment.Dependencies.isList {
-		return "", false
-	}
-	return c.Environment.Dependencies.path, true
-}
-
-// inlineDependencies returns the inline package list when
-// environment.dependencies is a list, and whether it was set.
+// inlineDependencies returns the inline package list from
+// environment.dependencies, and whether it was set.
 func (c *runConfig) inlineDependencies() ([]string, bool) {
-	if c.Environment == nil || !c.Environment.Dependencies.set || !c.Environment.Dependencies.isList {
+	if c.Environment == nil || !c.Environment.Dependencies.set {
 		return nil, false
 	}
 	return c.Environment.Dependencies.list, true
 }
 
 // runtimeVersion returns the client image version from environment.version when
-// set. For a requirements-file dependency set, the version lives in that file and
-// is resolved at launch, not here.
+// set.
 func (c *runConfig) runtimeVersion() (string, bool) {
-	if c.Environment == nil || !c.Environment.Version.set {
+	if c.Environment == nil {
+		return "", false
+	}
+	if !c.Environment.Version.set {
 		return "", false
 	}
 	return c.Environment.Version.raw, true

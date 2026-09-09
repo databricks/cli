@@ -1,0 +1,1 @@
+* `databricks bundle sync` now prints sync progress (`Action: PUT`, `Uploaded ...`) by default, matching `databricks sync`. Previously it was silent unless `--output` was passed. Use `--output json` for machine-readable output. ([#6568](https://github.com/databricks/cli/pull/6568))

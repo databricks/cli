@@ -103,6 +103,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			p.Development = true
 		}
 		if t.TriggerPauseStatus == config.Paused {
+			//nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 			p.Continuous = false
 		}
 
@@ -319,6 +320,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				}
 			}
 		}
+	}
+
+	// Cluster Policies: Prefix. The policy name is a user-facing display name
+	// (unique, 1-100 chars), not the API id (policy_id), so prefixing it in dev
+	// mode avoids collisions between developers without changing identity.
+	for _, cp := range r.ClusterPolicies {
+		if cp == nil {
+			continue
+		}
+		cp.Name = prefix + cp.Name
 	}
 
 	// Vector Search Endpoints: no prefix. The endpoint name is the primary key

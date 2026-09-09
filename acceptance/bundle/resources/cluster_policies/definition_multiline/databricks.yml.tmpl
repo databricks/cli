@@ -1,0 +1,17 @@
+bundle:
+  name: cluster_policy_definition_multiline
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    pol:
+      name: my_policy-$UNIQUE_NAME
+      definition: |-
+        {
+          "spark_version": {
+            "type": "fixed",
+            "value": "13.3.x-scala2.12"
+          }
+        }

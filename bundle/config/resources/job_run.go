@@ -14,16 +14,32 @@ import (
 )
 
 // JobRun is the bundle config for a triggered job run, described by the same
-// fields as the Jobs RunNow request (embedded). It re-triggers only when its own
-// config changes, not when the targeted job (stable job_id) changes.
+// fields as the Jobs RunNow request (embedded). By default it re-fires when its
+// own configuration changes; lifecycle.triggers can add further conditions.
 type JobRun struct {
 	BaseResource
 	jobs.RunNow
+
+	// Lifecycle shadows BaseResource.Lifecycle so job_runs can set triggers.
+	Lifecycle *JobRunLifecycle `json:"lifecycle,omitempty"`
 
 	// ResolvedJobID holds the run's job_id loaded from state, used only to build
 	// the run URL. Keeping it separate from RunNow.JobId (a ${resources.jobs.*.id}
 	// reference) lets state loading preserve that reference and its plan dependency.
 	ResolvedJobID int64 `json:"resolved_job_id,omitempty" bundle:"internal"`
+}
+
+// HasOnBundleDeploy reports whether any trigger re-fires on every deploy.
+func (r *JobRun) HasOnBundleDeploy() bool {
+	if r.Lifecycle == nil {
+		return false
+	}
+	for _, t := range r.Lifecycle.Triggers {
+		if t.OnBundleDeploy != nil && *t.OnBundleDeploy {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *JobRun) UnmarshalJSON(b []byte) error {

@@ -62,7 +62,7 @@ func Groups() []cobra.Group {
 		},
 		{
 			ID:    "sharing",
-			Title: "Delta Sharing",
+			Title: "Open Sharing",
 		},
 		{
 			ID:    "settings",

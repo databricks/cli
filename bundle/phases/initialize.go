@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/config/mutator/aicode"
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
@@ -27,6 +26,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
 
 	bundle.ApplySeqContext(ctx, b,
+		// Reads (dynamic): resources.internal_immutable_snapshots (and other internal keys)
+		// Warns and removes any internal resource fields set by the user.
+		mutator.RejectInternalResources(),
+
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -188,6 +191,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
 
+		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
+		mutator.ValidateJobRunTriggers(),
+
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference
 		// points to a Terraform-only field with no DABs equivalent.
@@ -199,12 +205,6 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		permissions.PermissionDiagnostics(),
 
 		mutator.TranslatePaths(),
-
-		// Reads (typed): resources.jobs.*.tasks[*].ai_runtime_task.code_source_path, job git_source
-		// Validates that AI Runtime tasks referencing a local code_source_path point at an existing
-		// directory and are not combined with git_source or immutable-folder deployments, so these
-		// misconfigurations are caught at validate time rather than mid-deploy.
-		aicode.Validate(),
 
 		// Reads (typed): b.Config.Experimental.PythonWheelWrapper, b.Config.Presets.SourceLinkedDeployment (checks Python wheel wrapper and deployment mode settings)
 		// Reads (dynamic): resources.jobs.*.tasks (checks for tasks with local libraries and incompatible DBR versions)

@@ -1,0 +1,50 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created cluster_policies.test_cluster_policy
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan is a no-op immediately after deploy
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Edit the policy definition out of band
+>>> [CLI] cluster-policies edit --json {"policy_id":"[TEST_CLUSTER_POLICY_ID]","name":"my_cluster_policy_oob-[UNIQUE_NAME]","definition":"{\"spark_version\":{\"type\":\"fixed\",\"value\":\"14.3.x-scala2.12\"}}"}
+
+=== Plan detects the drift
+>>> [CLI] bundle plan
+update cluster_policies.test_cluster_policy
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Redeploy reconciles the policy back to the configured definition
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Updated cluster_policies.test_cluster_policy
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== Verify the edit request restored the configured definition
+>>> print_requests.py //policies/clusters/edit
+{
+  "method": "POST",
+  "path": "/api/2.0/policies/clusters/edit",
+  "body": {
+    "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+    "name": "my_cluster_policy_oob-[UNIQUE_NAME]",
+    "policy_id": "[TEST_CLUSTER_POLICY_ID]"
+  }
+}
+
+=== Plan is a no-op again
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.test_cluster_policy
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

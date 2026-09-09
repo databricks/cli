@@ -6,7 +6,7 @@ Created jobs.foo
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/create",
@@ -59,7 +59,7 @@ Deleted jobs.foo
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
@@ -76,7 +76,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

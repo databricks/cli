@@ -172,6 +172,15 @@ Example usage:
 				return nil
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+				// Resolve ${resources.*} references so runners see concrete values (e.g. an
+				// app's env vars referencing another resource, or its source_code_path
+				// pointing at the immutable snapshot's full_path, which lives only in the
+				// deployed state). Safe for both engines: with terraform the state DB is
+				// closed and references resolve from config alone.
+				if err := b.DeploymentBundle.ResolveConfigAgainstState(&b.Config); err != nil {
+					return err
+				}
+
 				runner, err := keyToRunner(b, key)
 				if err != nil {
 					return err

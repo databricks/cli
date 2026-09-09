@@ -41,7 +41,7 @@ and proxies them to local SSH daemon processes.`,
 	cmd.MarkFlagRequired("authorized-key-secret-name")
 
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
-	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down after no pings from clients")
+	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server when there are no active connections")
 	cmd.Flags().StringVar(&version, "version", "", "Client version of the Databricks CLI")
 	cmd.Flags().BoolVar(&serverless, "serverless", false, "Enable serverless mode for Jupyter initialization")
 	cmd.Flags().StringVar(&usagePolicyID, "usage-policy-id", "", "Usage policy ID the job was submitted with")

@@ -1,7 +1,6 @@
 Timeout = '30m'
 Cloud = true
 CloudSlow = true
-RequiresUnityCatalog = true
 
 # GCP test envs lack foundation-model / GPU serving capacity, so deploying this
 # real llama endpoint fails with UPDATE_FAILED after ~29 min. Skip on GCP.

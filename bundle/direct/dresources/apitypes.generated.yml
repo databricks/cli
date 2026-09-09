@@ -6,6 +6,8 @@ apps: apps.App
 
 catalogs: catalog.CreateCatalog
 
+cluster_policies: compute.CreatePolicy
+
 clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard
@@ -43,6 +45,8 @@ postgres_endpoints: postgres.EndpointSpec
 postgres_projects: postgres.ProjectStatus
 
 postgres_roles: postgres.RoleRoleStatus
+
+postgres_snapshot_schedules: postgres.UpdateBranchRequest
 
 postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
 

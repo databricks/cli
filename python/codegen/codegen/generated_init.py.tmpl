@@ -1,0 +1,26 @@
+from typing import TYPE_CHECKING
+
+${imports}
+
+if TYPE_CHECKING:
+    from databricks.bundles.core._resource_type import _ResourceType
+
+__all__ = [
+${all_block}
+]
+
+
+class _GeneratedResources(
+${mixins}
+):
+    pass
+
+
+def _all_resource_types() -> "tuple[_ResourceType, ...]":
+    from databricks.bundles.core._generated import (
+${module_imports}
+    )
+
+    return (
+${type_entries}
+    )

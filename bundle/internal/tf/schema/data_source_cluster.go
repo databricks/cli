@@ -88,6 +88,7 @@ type DataSourceClusterClusterInfoDriver struct {
 
 type DataSourceClusterClusterInfoDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoExecutorsNodeAwsAttributes struct {
@@ -237,6 +238,7 @@ type DataSourceClusterClusterInfoSpecDockerImage struct {
 
 type DataSourceClusterClusterInfoSpecDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecGcpAttributes struct {
@@ -331,6 +333,7 @@ type DataSourceClusterClusterInfoSpecProviderConfig struct {
 
 type DataSourceClusterClusterInfoSpecWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoSpecWorkloadTypeClients struct {
@@ -348,6 +351,7 @@ type DataSourceClusterClusterInfoSpec struct {
 	ClusterName                string                                                     `json:"cluster_name,omitempty"`
 	CustomTags                 map[string]string                                          `json:"custom_tags,omitempty"`
 	DataSecurityMode           string                                                     `json:"data_security_mode,omitempty"`
+	DependencyMode             string                                                     `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId       string                                                     `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId           string                                                     `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk          bool                                                       `json:"enable_elastic_disk,omitempty"`
@@ -391,6 +395,7 @@ type DataSourceClusterClusterInfoTerminationReason struct {
 
 type DataSourceClusterClusterInfoWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type DataSourceClusterClusterInfoWorkloadTypeClients struct {
@@ -413,6 +418,7 @@ type DataSourceClusterClusterInfo struct {
 	CustomTags                 map[string]string                                      `json:"custom_tags,omitempty"`
 	DataSecurityMode           string                                                 `json:"data_security_mode,omitempty"`
 	DefaultTags                map[string]string                                      `json:"default_tags,omitempty"`
+	DependencyMode             string                                                 `json:"dependency_mode,omitempty"`
 	DriverInstancePoolId       string                                                 `json:"driver_instance_pool_id,omitempty"`
 	DriverNodeTypeId           string                                                 `json:"driver_node_type_id,omitempty"`
 	EnableElasticDisk          bool                                                   `json:"enable_elastic_disk,omitempty"`

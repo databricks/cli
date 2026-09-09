@@ -1,0 +1,36 @@
+
+>>> [CLI] bundle init default-sql --config-file ./input.json --output-dir output
+
+Welcome to the default SQL template for Declarative Automation Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_default_sql' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> diff.py [TESTROOT]/bundle/templates/default-sql-catalog-dash/../default-sql/output/my_default_sql/databricks.yml output/my_default_sql/databricks.yml
+--- [TESTROOT]/bundle/templates/default-sql-catalog-dash/../default-sql/output/my_default_sql/databricks.yml
++++ output/my_default_sql/databricks.yml
+@@ -29,6 +29,6 @@
+     variables:
+       warehouse_id: f00dcafe
+-      catalog: main
+-      schema: ${workspace.current_user.short_name}
++      catalog: my-catalog
++      schema: my-schema
+
+   prod:
+@@ -40,6 +40,6 @@
+     variables:
+       warehouse_id: f00dcafe
+-      catalog: main
+-      schema: default
++      catalog: my-catalog
++      schema: my-schema
+     permissions:
+       - user_name: [USERNAME]
+Error: failed to load config from file ./input-invalid-catalog.json: invalid value for default_catalog: "-bad". Invalid catalog name.
+Error: failed to load config from file ./input-invalid-schema.json: invalid value for shared_schema: "-bad". Invalid schema name.

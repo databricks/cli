@@ -4,7 +4,7 @@ touch bar.py
 trace $CLI bundle deploy
 
 print_requests() {
-    print_requests.py //pipelines
+    print_requests.py //pipelines --nostamp
     read_state.py pipelines my id name
 }
 
@@ -21,7 +21,7 @@ rm out.requests.txt
 title "Fetch pipeline ID and verify remote state"
 
 ppid=`read_id.py my`
-trace $CLI pipelines get $ppid
+trace $CLI pipelines get $ppid | nostamp
 rm out.requests.txt
 
 title "Destroy the pipeline and verify that it's removed from the state and from remote"

@@ -156,10 +156,10 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
-		// A direct opt-in against a terraform state is the auto-migration
-		// path; the deploy caller (process.go) prints a dedicated pre-deploy
-		// hint for that case, so stay quiet here to avoid printing the same
-		// event twice.
+		// Direct (whether selected explicitly or by default) against a terraform
+		// state is the auto-migration path; the deploy caller (process.go) prints
+		// a dedicated pre-deploy hint for that case, so stay quiet here to avoid
+		// printing the same event twice.
 		autoMigratePath := requiredEngine.Type == engine.EngineDirect && !winner.Engine.IsDirect()
 		if !autoMigratePath {
 			msg := fmt.Sprintf("Deployment engine %q configured in %s does not match the existing state (engine %q). Using %q engine from the existing state.", requiredEngine.Type, requiredEngine.Source, winner.Engine, winner.Engine)

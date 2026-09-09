@@ -36,7 +36,7 @@ Updated apps.myapp
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //deployments
+>>> print_requests.py //deployments ^//api/2.0/bundle
 {
   "method": "POST",
   "path": "/api/2.0/apps/[UNIQUE_NAME]/deployments",

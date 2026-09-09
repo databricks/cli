@@ -27,18 +27,7 @@ var TestMetastore = catalog.MetastoreAssignment{
 
 func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req Request) any {
-		return compute.ListPoliciesResponse{
-			Policies: []compute.Policy{
-				{
-					PolicyId: "5678",
-					Name:     "wrong-cluster-policy",
-				},
-				{
-					PolicyId: "9876",
-					Name:     "some-test-cluster-policy",
-				},
-			},
-		}
+		return req.Workspace.ClusterPoliciesList(req)
 	})
 
 	server.Handle("GET", "/api/2.0/instance-pools/list", func(req Request) any {
@@ -60,6 +49,13 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/instance-pools/delete", func(req Request) any { return req.Workspace.InstancePoolsDelete(req) })
 	server.Handle("GET", "/api/2.0/instance-pools/get", func(req Request) any {
 		return req.Workspace.InstancePoolsGet(req, req.URL.Query().Get("instance_pool_id"))
+	})
+
+	server.Handle("POST", "/api/2.0/policies/clusters/create", func(req Request) any { return req.Workspace.ClusterPoliciesCreate(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/edit", func(req Request) any { return req.Workspace.ClusterPoliciesEdit(req) })
+	server.Handle("POST", "/api/2.0/policies/clusters/delete", func(req Request) any { return req.Workspace.ClusterPoliciesDelete(req) })
+	server.Handle("GET", "/api/2.0/policies/clusters/get", func(req Request) any {
+		return req.Workspace.ClusterPoliciesGet(req, req.URL.Query().Get("policy_id"))
 	})
 
 	server.Handle("GET", "/api/2.1/clusters/list", func(req Request) any {
@@ -86,7 +82,8 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.0/workspace/get-status", func(req Request) any {
 		path := req.URL.Query().Get("path")
-		return req.Workspace.WorkspaceGetStatus(path)
+		returnGitInfo := req.URL.Query().Get("return_git_info") == "true"
+		return req.Workspace.WorkspaceGetStatus(path, returnGitInfo)
 	})
 
 	server.Handle("GET", "/api/2.0/workspace/list", func(req Request) any {
@@ -142,8 +139,7 @@ func AddDefaultHandlers(server *Server) {
 				StatusCode: 500,
 			}
 		}
-		req.Workspace.WorkspaceDelete(request.Path, request.Recursive)
-		return ""
+		return req.Workspace.WorkspaceDelete(request.Path, request.Recursive)
 	})
 
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req Request) any {
@@ -638,6 +634,12 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.ReposDelete(req)
 	})
 
+	server.Handle("GET", "/api/2.0/repos/snapshots/rootpath", func(req Request) any {
+		return map[string]any{
+			"path": "/Workspace/Users/" + TestUserSP.UserName + "/.snapshots/",
+		}
+	})
+
 	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
 		contentType := req.Headers.Get("Content-Type")
 		mediaType, params, err := mime.ParseMediaType(contentType)
@@ -670,6 +672,7 @@ func AddDefaultHandlers(server *Server) {
 		// The real API uses the workspace user UUID (not email) in the snapshot path,
 		// matching service-principal identities used in cloud acceptance tests.
 		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
+		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: snapshotPath})
 		return map[string]any{
 			"snapshot": map[string]any{
 				"path": snapshotPath,
@@ -793,6 +796,15 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/logs", func(req Request) any {
 		return Response{Body: ""}
+	})
+
+	// /capabilities reports which optional parts of the tunnel protocol the server speaks.
+	// This fake drives sshd directly over the websocket rather than running the CLI's own
+	// proxy server, so it has none of the session bookkeeping a resume needs and says so.
+	// The resume protocol itself is covered by the proxy package's tests, which run the
+	// real server implementation.
+	server.Handle("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/capabilities", func(req Request) any {
+		return Response{Body: map[string]bool{"resume": false}}
 	})
 
 	server.HandleRaw("GET", "/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/ssh", server.sshTunnelHandler)
@@ -1093,6 +1105,11 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.PostgresOperationGet(name)
 	})
 
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
 	// Postgres Projects:
 	server.Handle("POST", "/api/2.0/postgres/projects", func(req Request) any {
 		projectID := req.URL.Query().Get("project_id")
@@ -1144,6 +1161,17 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
 		return req.Workspace.PostgresBranchDelete(name)
+	})
+
+	// Postgres Snapshot Schedules (a per-branch singleton; no create/delete):
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule"
+		return req.Workspace.PostgresSnapshotScheduleGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/snapshot-schedule", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/snapshot-schedule"
+		return req.Workspace.PostgresSnapshotScheduleUpdate(req, name)
 	})
 
 	// Postgres Endpoints:

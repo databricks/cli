@@ -1,0 +1,29 @@
+DASHBOARD_NAME="export-dir-dashboard-$UNIQUE_NAME"
+DASHBOARD_DIR="/Workspace/Users/$CURRENT_USER_NAME/export-dir-dashboard-$UNIQUE_NAME"
+dashboard_id=""
+
+cleanup() {
+    if [ -n "$dashboard_id" ]; then
+        $CLI lakeview trash "$dashboard_id" >> LOG.cleanup 2>&1 || true
+    fi
+    $CLI workspace delete "$DASHBOARD_DIR" --recursive >> LOG.cleanup 2>&1 || true
+}
+trap cleanup EXIT
+
+trace $CLI workspace mkdirs "$DASHBOARD_DIR"
+
+dashboard_id=$($CLI lakeview create \
+    --display-name "$DASHBOARD_NAME" \
+    --warehouse-id "$TEST_DEFAULT_WAREHOUSE_ID" \
+    --serialized-dashboard "$(cat dashboard.lvdash.json)" \
+    --json "{\"parent_path\": \"$DASHBOARD_DIR\"}" \
+    -o json | jq -r '.dashboard_id')
+add_repl "$dashboard_id" DASHBOARD_ID
+
+mkdir -p "$TEST_TMP_DIR/export"
+trace $CLI workspace export-dir "$DASHBOARD_DIR" "$TEST_TMP_DIR/export"
+
+# The Lakeview backend normalizes the serialized dashboard on create (e.g. it
+# drops an empty "layout": []), so the exported content is not byte-identical to
+# the input. Assert the dashboard was exported rather than diffing the content.
+trace assert_exists.py "$TEST_TMP_DIR/export/$DASHBOARD_NAME.lvdash.json"

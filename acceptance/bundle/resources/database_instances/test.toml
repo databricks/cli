@@ -1,3 +1,2 @@
-RequiresUnityCatalog = true
 RecordRequests = false
 CloudEnvs.gcp = false # lakebase is not available in GCP as of August 2025

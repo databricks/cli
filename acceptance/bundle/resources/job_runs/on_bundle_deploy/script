@@ -1,0 +1,41 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "first deploy triggers a run"
+trace $CLI bundle deploy
+trace read_id.py my_job
+# Name the first run so the second becomes [MY_RUN_ID_2].
+read_id.py my_run > /dev/null
+trace print_requests.py //jobs/run-now
+
+title "redeploy re-fires with unchanged config"
+trace $CLI bundle plan
+# Save the plan so the READPLAN=1 variant deploys the fingerprint minted here.
+# The deploys are not traced: readplanarg makes the command line differ per variant.
+$CLI bundle plan -o json > tmp.plan.json
+trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
+title "bundle deploy\n"
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+read_id.py my_run > /dev/null
+trace $CLI bundle summary
+
+title "second run-now after recreate"
+trace print_requests.py --keep //jobs/runs/delete
+trace print_requests.py //jobs/run-now
+
+title "removing on_bundle_deploy is unchanged and does not run"
+# Drop the lifecycle block so the next plan compares a nil fingerprint against
+# the UUID left in state. The removed trigger is skipped, never recreated.
+update_file.py databricks.yml "      lifecycle:
+        triggers:
+          - on_bundle_deploy: true
+" ""
+trace $CLI bundle plan
+$CLI bundle plan -o json > tmp.plan.json
+trace jq '.plan["resources.job_runs.my_run"].changes' tmp.plan.json
+title "bundle deploy\n"
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+trace print_requests.py //jobs/run-now

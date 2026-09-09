@@ -29,12 +29,14 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
+	"github.com/databricks/cli/acceptance/internal/selection"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 var (
@@ -88,7 +90,7 @@ func init() {
 }
 
 const (
-	EntryPointScript = "script"
+	EntryPointScript = selection.EntryPointScript
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 1_000_000
@@ -131,7 +133,7 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, InprocessMode, nil, false)
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -141,13 +143,23 @@ func TestInprocessMode(t *testing.T) {
 	if os.Getenv("CLOUD_ENV") != "" {
 		t.Skip("No need to run this as integration test.")
 	}
+	if os.Getenv(selection.EnvVar) != "" {
+		// The two selftests below only run if this branch changed them, so the
+		// assertions on the returned count do not hold under test selection.
+		t.Skip("Disabled via " + selection.EnvVar)
+	}
 
 	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
 	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 	// Run the "deco env flip workspace" command to configure a workspace.
 
-	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
-	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
+	// Keep this to a single cheap test: it only needs to catch in-process mode
+	// rotting, and every testAccept call redoes the whole setup. This used to run
+	// selftest/server too, which meant a second setup after StartDefaultServer had
+	// pointed HOME at an empty temp dir, so building yamlfmt there re-downloaded the
+	// entire module cache: 44s on Linux CI, 140s on Windows. Tool builds are skipped
+	// for the same reason - selftest/basic uses neither terraform, the wheel, nor yamlfmt.
+	require.Equal(t, 1, testAccept(t, true, []string{"selftest/basic"}, true))
 }
 
 // Configure replacements for environment variables we read from test environments.
@@ -218,7 +230,11 @@ func requirePrerequisites(t *testing.T) bool {
 	})
 }
 
-func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+// selectedTests, when non-empty, limits the run to those test directories.
+// skipToolBuilds skips building the tools that the selected tests do not use
+// (terraform, the databricks-bundles wheel, yamlfmt); it must stay false for a
+// full run.
+func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipToolBuilds bool) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
 	}
@@ -273,7 +289,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
-	if !WorkspaceTmpDir {
+	if !WorkspaceTmpDir && !skipToolBuilds {
 		setupTerraform(t, cwd, buildDir, &repls)
 	}
 
@@ -286,7 +302,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("UV_FIND_LINKS", vendoredPyPackages)
 	t.Setenv("UV_OFFLINE", "true")
 
-	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
+	wheelPath := ""
+	if !skipToolBuilds {
+		wheelPath = buildDatabricksBundlesWheel(t, buildDir)
+	}
 	if wheelPath != "" {
 		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
@@ -300,6 +319,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		require.NoError(t, err)
 		t.Logf("Writing coverage to %s", coverDir)
 	}
+
+	// Build the CLI with the FIPS toolchain so a plain `go test` produces the
+	// same FIPS binary as `task` (which sets GOFIPS140 in its env) and the
+	// release pipeline; without it acceptance/fips fails outside `task`. The
+	// build below inherits os.Environ(), so setting it here is enough.
+	t.Setenv("GOFIPS140", readGOFIPS140(t, cwd))
 
 	execPath := ""
 	cliVersion := ""
@@ -339,12 +364,18 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Skip building yamlfmt when running on workspace filesystem (DBR).
 	// This fails today on DBR. Can be looked into and fixed as a follow-up
 	// as and when needed.
-	if !WorkspaceTmpDir {
+	if !WorkspaceTmpDir && !skipToolBuilds {
 		BuildYamlfmt(t)
 	}
 
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
+
+	// Built here rather than run with "go run" from a test: tests run with a sandboxed
+	// HOME, which has no module cache, so building inside one fails to resolve imports.
+	selectionPath := buildSelectionCmd(t, buildDir)
+	t.Setenv("SELECTION", selectionPath)
+	repls.SetPath(selectionPath, "[SELECTION]")
 
 	if !inprocessMode {
 		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
@@ -445,30 +476,44 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		testDirsSet[d] = true
 	}
 
-	skipLocalMode := os.Getenv(SkipLocalEnvVar)
 	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
 
-	switch skipLocalMode {
-	case "", SkipLocalWithChanged:
-	default:
-		t.Fatalf("Unsupported %s=%q, expected %q", SkipLocalEnvVar, skipLocalMode, SkipLocalWithChanged)
+	changedLimit, err := selection.ParseLimit(os.Getenv(selection.EnvVar))
+	require.NoError(t, err)
+	selectChanged := changedLimit > 0
+	if !selectChanged && subset.enabled {
+		changedLimit = subsetChangedLimit
 	}
-	skipLocalWithChanged := skipLocalMode == SkipLocalWithChanged
 
-	// changedTests maps test dir to extra env filters for added/modified tests; nil
-	// filters means all variants of that dir changed. Both SkipLocalWithChanged and the
-	// subset selector keep these tests, so detect them at most once here.
+	// changedTests maps test dir to extra env filters for changed tests; nil filters
+	// means all variants of that dir changed. Both selection.EnvVar and the subset
+	// selector keep these tests, so detect them at most once here.
 	var changedTests map[string][]string
-	if skipLocalWithChanged || subset.enabled {
-		changedTests = selectChangedLocalTests(t, testDirsSet)
+	if changedLimit > 0 {
+		// A failed selection (e.g. no origin/main in a shallow checkout) must fail the
+		// run: treating it as "nothing changed" would silently skip new tests.
+		result, err := selection.FromGit(".", testDirsSet, changedLimit)
+		require.NoError(t, err)
+		t.Log(result.Summary())
+		changedTests = result.Tests()
 	}
 	subset.changed = changedTests
 
-	if singleTest != "" {
-		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
-			return n != singleTest
+	// Drop the tests that were not selected instead of skipping them per dir: a skip
+	// per dir buries the run in a thousand SKIP lines and hides the selection summary.
+	// Their out.test.toml is left alone, which is what a partial run should do.
+	if selectChanged {
+		testDirs = slices.DeleteFunc(testDirs, func(dir string) bool {
+			_, ok := changedTests[dir]
+			return !ok
 		})
-		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+	}
+
+	if len(selectedTests) > 0 {
+		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
+			return !slices.Contains(selectedTests, n)
+		})
+		require.Len(t, testDirs, len(selectedTests), "selectedTests=%#v did not match all tests\n%#v", selectedTests, testDirs)
 	}
 
 	skippedDirs := 0
@@ -499,12 +544,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Fatalf("Invalid config %s: %s", configPath, err)
 			}
 
-			// Apply default: CloudSlow implies Cloud. Do this before generating
-			// the materialized config so the implication is visible in out.test.toml.
-			if isTruePtr(config.CloudSlow) {
-				config.Cloud = config.CloudSlow
-			}
-
 			// Generate materialized config for this test.
 			// We do this before skipping the test, so the configs are generated for all tests.
 			materializedConfig := internal.GenerateMaterializedConfig(&config)
@@ -518,7 +557,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, dir, skipLocalMode, changedTests)
+			skipReason := getSkipReason(&config, configPath)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -572,9 +611,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if runParallel {
 							t.Parallel()
 						}
-						// Under SkipLocalWithChanged, an invariant dir re-enabled by a
+						// Under selection.EnvVar, an invariant dir re-enabled by a
 						// specific config change runs only its matching variants.
-						if skipLocalWithChanged {
+						if selectChanged {
 							if variantFilters := changedTests[dir]; variantFilters != nil {
 								checkEnvFilters(t, envset, variantFilters)
 							}
@@ -625,23 +664,9 @@ func getEnvFilters(t *testing.T) []string {
 }
 
 func getTests(t *testing.T) []string {
-	testDirs := make([]string, 0, 128)
-
-	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		name := filepath.Base(path)
-		if name == EntryPointScript {
-			// Presence of 'script' marks a test case in this directory
-			testName := filepath.ToSlash(filepath.Dir(path))
-			testDirs = append(testDirs, testName)
-		}
-		return nil
-	})
+	// Tests are discovered relative to the acceptance dir, which is the working directory.
+	testDirs, err := selection.FindTestDirs(".")
 	require.NoError(t, err)
-
-	slices.Sort(testDirs)
 	return testDirs
 }
 
@@ -654,15 +679,7 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-// skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
-// changedTests maps test dirs to extra env filters; nil map means feature is off.
-func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
-	if skipLocalMode == SkipLocalWithChanged {
-		if _, ok := changedTests[dir]; !ok {
-			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
-		}
-	}
-
+func getSkipReason(config *internal.TestConfig, configPath string) string {
 	if Forcerun {
 		return ""
 	}
@@ -686,34 +703,14 @@ func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode s
 			return fmt.Sprintf("Disabled via CloudEnvs.%s setting in %s (CLOUD_ENV=%s)", cloudEnvBase, configPath, cloudEnv)
 		}
 
-		if isTruePtr(config.CloudSlow) {
-			if testing.Short() {
-				return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
-			}
+		if !isTruePtr(config.Cloud) {
+			return fmt.Sprintf("Disabled via Cloud setting in %s (CLOUD_ENV=%s)", configPath, cloudEnv)
 		}
 
-		isCloudEnabled := isTruePtr(config.Cloud) || isTruePtr(config.CloudSlow)
-		if !isCloudEnabled {
-			return fmt.Sprintf("Disabled via Cloud/CloudSlow setting in %s (CLOUD_ENV=%s, Cloud=%v, CloudSlow=%v)",
-				configPath,
-				cloudEnv,
-				isTruePtr(config.Cloud),
-				isTruePtr(config.CloudSlow),
-			)
+		// CloudSlow only narrows an already-enabled cloud run: skip it under -short.
+		if isTruePtr(config.CloudSlow) && testing.Short() {
+			return fmt.Sprintf("Disabled via CloudSlow setting in %s (CLOUD_ENV=%s, Short=%v)", configPath, cloudEnv, testing.Short())
 		}
-
-		if isTruePtr(config.RequiresUnityCatalog) && os.Getenv("TEST_METASTORE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresUnityCatalog setting in %s (TEST_METASTORE_ID is empty)", configPath)
-		}
-
-		if isTruePtr(config.RequiresWarehouse) && os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresWarehouse setting in %s (TEST_DEFAULT_WAREHOUSE_ID is empty)", configPath)
-		}
-
-		if isTruePtr(config.RequiresCluster) && os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
-			return fmt.Sprintf("Disabled via RequiresCluster setting in %s (TEST_DEFAULT_CLUSTER_ID is empty)", configPath)
-		}
-
 	}
 
 	return ""
@@ -935,7 +932,7 @@ func runTest(t *testing.T,
 	// Disable the passive update notice explicitly. It is already suppressed
 	// implicitly (dev builds, non-TTY stderr, CI), but tests that run released
 	// binaries (e.g. -useversion) must never reach GitHub or print the notice
-	// into compared output. Tests can override this via [Env] in test.toml.
+	// into compared output. Tests can override this via Env.* in test.toml.
 	cmd.Env = append(cmd.Env, "DATABRICKS_CLI_DISABLE_UPDATE_CHECK=true")
 
 	// Neutralize Databricks-internal development-environment interference so
@@ -963,7 +960,9 @@ func runTest(t *testing.T,
 
 	absDir, err := filepath.Abs(dir)
 	require.NoError(t, err)
-	cmd.Env = append(cmd.Env, "TESTDIR="+absDir)
+	// Use forward slashes so paths built from $TESTDIR (e.g. echoed in trace
+	// output) are stable across OSes and don't need per-test slash replacements.
+	cmd.Env = append(cmd.Env, "TESTDIR="+filepath.ToSlash(absDir))
 	cmd.Env = append(cmd.Env, "CLOUD_ENV="+cloudEnv)
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	if !isRunningOnCloud {
@@ -1065,19 +1064,21 @@ func runTest(t *testing.T,
 	}
 }
 
-// checkEnvFilters skips the test if any env filter doesn't match testEnv.
+// checkEnvFilters skips the test if any env filter doesn't match testEnv. Filters that
+// share a key are alternatives, so INPUT_CONFIG=a together with INPUT_CONFIG=b runs both
+// variants rather than neither (see selection.MatchesFilters).
 func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
-	envMap := make(map[string]string, len(testEnv))
-	for _, kv := range testEnv {
-		key, value, _ := strings.Cut(kv, "=")
-		envMap[key] = value
+	if !selection.MatchesFilters(testEnv, envFilters) {
+		t.Skipf("Skipping because test environment (%s) does not match filters (%s)",
+			strings.Join(testEnv, " "), strings.Join(envFilters, " "))
 	}
-	for i, filter := range envFilters {
-		key, expected, _ := strings.Cut(filter, "=")
-		if actual, ok := envMap[key]; ok && actual != expected {
-			t.Skipf("Skipping because test environment %s=%s does not match ENVFILTER#%d: %s", key, actual, i, filter)
-		}
-	}
+}
+
+// envAliases are short EnvMatrix keys, expanded here into the variable the CLI reads. Every
+// matrix key ends up in the variant's test name, so a long one makes every name that carries
+// it hard to read. Tests may still name the variable itself; the alias is only shorter.
+var envAliases = map[string]string{
+	"DMS": "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY",
 }
 
 // buildTestEnv builds the test environment from config.Env and customEnv.
@@ -1095,6 +1096,16 @@ func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
 
 	// Add customEnv second (takes precedence)
 	env = append(env, customEnv...)
+
+	// An alias sets the variable it stands for, unless the test set that itself.
+	for _, kv := range customEnv {
+		key, value, _ := strings.Cut(kv, "=")
+		full, ok := envAliases[key]
+		if !ok || hasKey(env, full) {
+			continue
+		}
+		env = append(env, full+"="+value)
+	}
 
 	return env
 }
@@ -1298,6 +1309,41 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 
 	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
 	return execPath
+}
+
+// buildSelectionCmd builds the test selection command, so a test can run it the way a
+// developer does.
+func buildSelectionCmd(t *testing.T, buildDir string) string {
+	execPath := filepath.Join(buildDir, "selection"+exeSuffix)
+
+	args := []string{"go", "build", "-o", execPath}
+	if runtime.GOOS == "windows" {
+		// See BuildCLI: VCS stamping fails on Windows.
+		args = append(args, "-buildvcs=false")
+	}
+	// The package path goes last: go build reads anything after it as another package.
+	args = append(args, "./internal/selection/cmd")
+	RunCommand(t, args, ".", nil)
+
+	return execPath
+}
+
+// readGOFIPS140 returns the GOFIPS140 version the Taskfile pins for `task`
+// builds; the release pipeline pins the same value independently in
+// .goreleaser.yaml.
+func readGOFIPS140(t *testing.T, cwd string) string {
+	path := filepath.Join(cwd, "..", "Taskfile.yml")
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+
+	var taskfile struct {
+		Env struct {
+			GOFIPS140 string `yaml:"GOFIPS140"`
+		} `yaml:"env"`
+	}
+	require.NoError(t, yaml.Unmarshal(data, &taskfile))
+	require.NotEmpty(t, taskfile.Env.GOFIPS140, "GOFIPS140 not set in Taskfile.yml")
+	return taskfile.Env.GOFIPS140
 }
 
 // CreateReleaseArtifacts builds release artifacts for the given OS using amd64 and arm64 architectures,

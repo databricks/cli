@@ -24,6 +24,11 @@ const (
 	venvDir    = ".venv"
 )
 
+// backupTimestampLayout is the local-time, second-resolution stamp in a
+// timestamped backup name (pyproject.toml.<stamp>.bak); local so a reader can
+// tell at a glance when each backup was made. Shared with tests that pin the name.
+const backupTimestampLayout = "20060102T150405"
+
 // artifactSource values reported in --json resolved.artifactSource (spec §6).
 const (
 	artifactNetwork = "network"
@@ -54,12 +59,30 @@ type Pipeline struct {
 	Compute           ComputeClient
 	PM                PackageManager
 
+	// SkipConstraints (--no-constraints) leaves the remote Python version and
+	// dependency pins unmanaged: the merge writes neither requires-python nor the
+	// [tool.uv] constraint block, and any existing values are left untouched. It is
+	// orthogonal to Mode (the databricks-connect axis).
+	SkipConstraints bool
+
 	// Progress, when non-nil, receives a PhaseStarted call as each phase begins.
 	// Left nil by callers that don't render progress (e.g. --output json).
 	Progress Reporter
 
 	// res accumulates phase statuses and result fields as the run progresses.
 	res *Result
+
+	// nowFn supplies the time for backup filenames; nil means time.Now. Injected
+	// in tests so backup names are deterministic.
+	nowFn func() time.Time
+}
+
+// clock returns the current time, using nowFn when injected.
+func (p *Pipeline) clock() time.Time {
+	if p.nowFn != nil {
+		return p.nowFn()
+	}
+	return time.Now()
 }
 
 // Run executes all pipeline phases in order and returns a fully populated Result.
@@ -83,6 +106,7 @@ func (p *Pipeline) Run(ctx context.Context) (*Result, error) {
 	p.res.Command = CommandName
 	p.res.Mode = p.Mode.String()
 	p.res.DryRun = p.Check
+	p.res.SkipConstraints = p.SkipConstraints
 	// Phases start as pending and flip to ok/error as the run progresses.
 	p.res.Phases = initialPhases()
 
@@ -189,18 +213,22 @@ func (p *Pipeline) run(ctx context.Context) error {
 		return p.fail(PhaseFetch, false, NewError(ErrFetch, err, "cannot parse python version from constraints %q", c.RequiresPython))
 	}
 
-	dbcPin := c.DatabricksConnect
-	if p.Mode == ModeConstraintsOnly {
-		// constraints-only stops *managing* the databricks-connect pin rather than
-		// removing it. Clearing dbcPin means the merge neither injects nor asserts a
-		// pin: greenfield renders dev = [] (no databricks-connect), while an existing
-		// project that already pins databricks-connect keeps its pin untouched (see
-		// mergeDatabricksConnect — an empty value is a no-op, not a deletion).
-		dbcPin = ""
+	// The skip axes are threaded explicitly rather than encoded by clearing c's
+	// values, so c keeps the real artifact values throughout. --constraints-only maps
+	// to --no-dbconnect: it stops managing the pin (not reported here, not asserted in
+	// validate) but keeps the resolved value on c.
+	opts := MergeOptions{
+		SkipConstraints: p.SkipConstraints,
+		SkipDBConnect:   p.Mode == ModeConstraintsOnly,
+	}
+
+	dbcVersion := dbcVersionFromPin(c.DatabricksConnect)
+	if opts.SkipDBConnect {
+		dbcVersion = ""
 	}
 	p.res.Resolved = &ResolvedInfo{
 		PythonVersion:    pyMinor,
-		DBConnectVersion: dbcVersionFromPin(dbcPin),
+		DBConnectVersion: dbcVersion,
 		ArtifactSource:   artifactSource(c.FromCache),
 	}
 
@@ -208,7 +236,7 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// The serverless environment version (empty for cluster targets) is written
 	// into [tool.databricks.environment] so the project also runs in serverless Jobs.
 	p.report(ctx, PhaseMerge)
-	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, dbcPin, compute.ServerlessEnvironmentVersion())
+	mergedBytes, greenfield, err := p.mergePlan(ctx, pyMinor, c, compute.ServerlessEnvironmentVersion(), opts)
 	if err != nil {
 		return err
 	}
@@ -228,15 +256,28 @@ func (p *Pipeline) run(ctx context.Context) error {
 	}
 	p.markOK(PhaseMerge, "")
 
-	// Phase: provision — ensure Python, run uv sync, seed pip.
+	// The merge proved the written pins conflict with the user's dependencies
+	// (W_USER_CONSTRAINT_CONFLICT): uv sync would deterministically fail to resolve
+	// them, so report the conflict now — with a distinct E_PROVISION_CONFLICT code —
+	// instead of spending a doomed Python install and sync. The constraints are
+	// already on disk (diskMutated=true), which the extension's recovery flow relies
+	// on, and the failure is attributed to the provision phase it stands in for.
+	// Gating on the CLI's own merge detection keeps the code precise (no stderr
+	// matching, and no false positive on an unrelated sync failure).
 	p.report(ctx, PhaseProvision)
+	if p.hasConstraintConflictWarning() {
+		return p.fail(PhaseProvision, true, NewError(ErrProvisionConflict, nil,
+			"dependency pins conflict with the environment constraints; relax the conflicting pins and re-run (see warnings)"))
+	}
+
+	// Phase: provision — ensure Python, run uv sync, seed pip.
 	if err := p.provision(ctx, pyMinor); err != nil {
 		return err
 	}
 
 	// Phase: validate — assert the venv matches the target.
 	p.report(ctx, PhaseValidate)
-	return p.validate(ctx, pyMinor, dbcPin)
+	return p.validate(ctx, pyMinor, c.DatabricksConnect, opts)
 }
 
 // resolve runs ResolveCompute and records the resolve phase.
@@ -271,19 +312,67 @@ func (p *Pipeline) pyprojectPath() string {
 	return filepath.Join(p.ProjectDir, pyprojectFile)
 }
 
-// backupPath returns the path to the pyproject.toml backup file.
+// backupPath returns the path to the canonical pyproject.toml backup file.
 func (p *Pipeline) backupPath() string {
 	return filepath.Join(p.ProjectDir, backupFile)
 }
 
+// timestampedBackupBase is the <projectDir>/pyproject.toml.<local timestamp> stem
+// a non-first backup name is built from.
+func (p *Pipeline) timestampedBackupBase() string {
+	return filepath.Join(p.ProjectDir, pyprojectFile+"."+p.clock().Format(backupTimestampLayout))
+}
+
+// backupCurrent writes content to a backup of pyproject.toml and returns its
+// path, never overwriting an existing backup (invariant 2). The canonical
+// pyproject.toml.bak is written once and kept as the pristine original; later
+// backups are pyproject.toml.<timestamp>.bak. mode is preserved onto the file.
+func (p *Pipeline) backupCurrent(content []byte, mode os.FileMode) (string, error) {
+	canonical := p.backupPath()
+	switch err := writeNew(canonical, content, mode); {
+	case err == nil:
+		return canonical, nil
+	case !errors.Is(err, os.ErrExist):
+		return "", err
+	}
+
+	base := p.timestampedBackupBase()
+	candidate := base + ".bak"
+	for i := 1; ; i++ {
+		// Only a name collision advances the suffix, so the loop terminates.
+		switch err := writeNew(candidate, content, mode); {
+		case err == nil:
+			return candidate, nil
+		case !errors.Is(err, os.ErrExist):
+			return "", err
+		}
+		candidate = fmt.Sprintf("%s-%d.bak", base, i)
+	}
+}
+
+// plannedBackupName previews the backup name a real run would create — canonical
+// .bak if none exists yet, else a timestamped name — for --dry-run only. Best-effort:
+// an unstattable .bak returns an error the caller treats as "nothing to report".
+func (p *Pipeline) plannedBackupName() (string, error) {
+	canonical := p.backupPath()
+	_, statErr := os.Stat(canonical)
+	switch {
+	case errors.Is(statErr, os.ErrNotExist):
+		return canonical, nil
+	case statErr == nil:
+		return p.timestampedBackupBase() + ".bak", nil
+	default:
+		return "", statErr
+	}
+}
+
 // mergePlan computes the merged pyproject.toml bytes (without writing to disk),
 // decides greenfield vs. existing, and builds the Plan (populated only under
-// --dry-run). dbcPin is the databricks-connect pin to inject, or "" in
-// constraints-only mode. envVersion is the serverless environment version to
-// write into [tool.databricks.environment], or "" for a cluster target.
-func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, dbcPin, envVersion string) (merged []byte, greenfield bool, err error) {
+// --dry-run). opts selects which managed axes are written. envVersion is the
+// serverless environment version to write into [tool.databricks.environment], or
+// "" for a cluster target.
+func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, envVersion string, opts MergeOptions) (merged []byte, greenfield bool, err error) {
 	pyproject := p.pyprojectPath()
-	backup := p.backupPath()
 
 	// The merge base is the live pyproject.toml, not the backup. MergeManaged
 	// rewrites only the three managed regions and preserves every other byte, and
@@ -307,33 +396,35 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	}
 	greenfield = baseBytes == nil
 
-	// The artifact drives the merge; in constraints-only mode we clear the
-	// databricks-connect pin so it is neither written nor asserted. envVersion is
-	// the resolved serverless version (empty for cluster targets).
+	// envVersion (empty for cluster targets) is deliberately NOT gated by
+	// SkipDBConnect: unlike the databricks-connect pin (a managed *dependency* the
+	// mode opts out of), it records the resolved compute *target*, kept so VS Code
+	// and serverless Jobs can still discover it.
 	//
-	// envVersion is deliberately NOT cleared in constraints-only mode: unlike the
-	// databricks-connect pin (a managed *dependency* the mode opts out of), the
-	// environment version records the resolved compute *target*, which the mode
-	// still resolves. Recording it keeps the target discoverable for VS Code and
-	// serverless Jobs even when dependency management is turned off.
+	// The skip axes govern only what is *written*: provisioning still installs and
+	// validates the resolved Python (pyMinor), so a kept requires-python disjoint
+	// from the target surfaces as a normal E_PROVISION, not a guessed alternative.
 	effective := *c
-	effective.DatabricksConnect = dbcPin
 	effective.EnvironmentVersion = envVersion
 
 	var changedRegions []string
 	if greenfield {
 		// No existing pyproject.toml — render a fresh one. The project name comes
-		// from the directory name as a reasonable default.
-		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective)
-		changedRegions = []string{regionRequiresPython, regionToolUv}
-		if dbcPin != "" {
+		// from the directory name as a reasonable default. Only the regions actually
+		// rendered are reported (requires-python and tool.uv omitted under
+		// --no-constraints; databricks-connect omitted under --no-dbconnect).
+		merged = RenderFreshPyproject(projectName(p.ProjectDir), effective, opts)
+		if !opts.SkipConstraints {
+			changedRegions = append(changedRegions, regionRequiresPython, regionToolUv)
+		}
+		if !opts.SkipDBConnect && c.DatabricksConnect != "" {
 			changedRegions = append(changedRegions, regionDatabricksConnect)
 		}
 		if envVersion != "" {
 			changedRegions = append(changedRegions, regionDatabricksEnvironment)
 		}
 	} else {
-		merged, changedRegions, err = MergeManaged(baseBytes, effective)
+		merged, changedRegions, err = MergeManaged(baseBytes, effective, opts)
 		if err != nil {
 			return nil, greenfield, p.fail(PhaseMerge, false, NewError(ErrMerge, err, "merge managed regions failed"))
 		}
@@ -344,7 +435,7 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 		// edits come from the merge itself (planDBConnect), so a warning can never claim a
 		// rewrite or removal that did not happen.
 		p.res.Warnings = append(p.res.Warnings,
-			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective))...)
+			detectMergeWarnings(baseBytes, effective, planDBConnect(baseBytes, effective, opts), opts)...)
 	}
 
 	// Under --dry-run, build the plan (with a diff) for reporting. A real run does
@@ -367,13 +458,11 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 			ChangedRegions:     changedRegions,
 			WouldInstallPython: pyMinor,
 		}
-		// Report a backup only when a real run would actually write one: for an
-		// existing project with no .bak yet. On a re-run the .bak already exists and
-		// applyMerge keeps it (does not re-write), so claiming a backup here would
-		// describe a write that won't happen.
-		if !greenfield {
-			if _, statErr := os.Stat(backup); errors.Is(statErr, os.ErrNotExist) {
-				plan.WouldBackup = filepath.ToSlash(backup)
+		// Report a backup only when the run would actually write one (i.e. it changes
+		// the file); a no-op re-run writes none.
+		if !greenfield && !bytes.Equal(merged, baseBytes) {
+			if backupName, statErr := p.plannedBackupName(); statErr == nil {
+				plan.WouldBackup = filepath.ToSlash(backupName)
 			}
 		}
 		p.res.Plan = plan
@@ -381,44 +470,40 @@ func (p *Pipeline) mergePlan(_ context.Context, pyMinor string, c *Constraints, 
 	return merged, greenfield, nil
 }
 
-// applyMerge writes the merged bytes to disk, backing up an existing
-// pyproject.toml first. From this point on, disk has been mutated.
+// applyMerge writes the merged bytes to disk, backing up the current
+// pyproject.toml first. From the backup copy onward, disk has been mutated.
 func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield bool) error {
 	pyproject := p.pyprojectPath()
-	backup := p.backupPath()
 
 	if !greenfield {
-		// Back up before modifying so the user's original is recoverable
-		// (invariant 2). Only create the backup when one does not already exist:
-		// on a re-run the existing .bak is the canonical original unmanaged state
-		// (mergePlan used it as the base), so overwriting it with the already-merged
-		// pyproject.toml would destroy that baseline.
-		_, statErr := os.Stat(backup)
-		switch {
-		case statErr == nil:
-			// Backup already exists — keep it as the canonical baseline.
-		case errors.Is(statErr, os.ErrNotExist):
-			// copyFile creates/truncates the backup path, so a failure mid-copy may
-			// leave a partial .bak: report disk as mutated.
-			if err := copyFile(pyproject, backup); err != nil {
-				return p.fail(PhaseMerge, true, NewError(ErrMerge, err, "backup pyproject.toml failed"))
-			}
-		default:
-			// An existing-but-unstattable backup must not be overwritten (that would
-			// destroy the recoverable original); fail before any write instead.
-			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "cannot stat backup %s", filepath.ToSlash(backup)))
+		// Stat+read up front: mode is preserved onto the backup, content is the
+		// no-op base and the backup source. Fail before any write (no mutation yet)
+		// rather than swallow a stat/read error on an existing pyproject.toml.
+		info, statErr := os.Stat(pyproject)
+		if statErr != nil {
+			return p.fail(PhaseMerge, false, NewError(ErrMerge, statErr, "stat pyproject.toml %s failed", filepath.ToSlash(pyproject)))
 		}
-		p.res.BackupPath = filepath.ToSlash(backup)
+		current, readErr := os.ReadFile(pyproject)
+		if readErr != nil {
+			return p.fail(PhaseMerge, false, NewError(ErrMerge, readErr, "read pyproject.toml %s failed", filepath.ToSlash(pyproject)))
+		}
 
-		// Skip the write when the merged output already matches what is on disk.
-		// On an idempotent re-run mergePlan reproduces the current file byte for
-		// byte, so rewriting it would only advance the mtime — spuriously
-		// invalidating file watchers and uv.lock freshness checks — without
-		// changing content. The backup above is untouched (the existing .bak is
-		// kept), so this leaves disk exactly as it was.
-		if current, readErr := os.ReadFile(pyproject); readErr == nil && bytes.Equal(current, mergedBytes) {
+		// No-op: the merged output already matches disk. On an idempotent re-run
+		// mergePlan reproduces the current file byte for byte, so rewriting it would
+		// only advance the mtime — spuriously invalidating file watchers and uv.lock
+		// freshness checks — without changing content. Skip both the backup and the
+		// write, leaving disk (and every existing backup) exactly as it was.
+		if bytes.Equal(current, mergedBytes) {
 			return nil
 		}
+
+		// Back up before overwriting (invariant 2). A partial backup is possible
+		// mid-write, so report disk as mutated on error.
+		backup, backupErr := p.backupCurrent(current, info.Mode().Perm())
+		if backupErr != nil {
+			return p.fail(PhaseMerge, true, NewError(ErrMerge, backupErr, "backup pyproject.toml failed"))
+		}
+		p.res.BackupPath = filepath.ToSlash(backup)
 	}
 
 	if err := os.WriteFile(pyproject, mergedBytes, 0o644); err != nil {
@@ -434,10 +519,20 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 // provision ensures the required Python version is installed, runs uv sync, and
 // seeds pip. All three are reported under the provision phase.
 func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
-	if err := p.PM.EnsurePython(ctx, pyMinor); err != nil {
+	selection, err := p.PM.EnsurePython(ctx, pyMinor)
+	if err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrPythonInstall, "ensure python %s failed", pyMinor))
 	}
-	if err := p.PM.Provision(ctx, p.ProjectDir, pyMinor); err != nil {
+	// Record how Python was resolved before sync: if provisioning fails after an
+	// installed fallback was selected, IDE consumers still need that categorical
+	// fact to offer the correct manual recovery without receiving the path.
+	p.res.PythonResolution = selection.Resolution
+	if selection.Resolution == PythonResolutionInstalledFallback {
+		// Only the fallback yields a concrete interpreter path; the normal path's
+		// Executable is just the minor request. The text summary names it (json:"-").
+		p.res.PythonInterpreter = selection.Executable
+	}
+	if err := p.PM.Provision(ctx, p.ProjectDir, selection.Executable); err != nil {
 		return p.fail(PhaseProvision, true, asPipelineError(err, ErrProvision, "provision failed"))
 	}
 	if err := p.PM.PostProvision(ctx, p.ProjectDir); err != nil {
@@ -447,10 +542,24 @@ func (p *Pipeline) provision(ctx context.Context, pyMinor string) error {
 	return nil
 }
 
+// hasConstraintConflictWarning reports whether the merge phase recorded a provable
+// user/environment version conflict (W_USER_CONSTRAINT_CONFLICT). It reads the
+// warnings already accumulated on the Result, which the merge phase populates
+// before provision runs, so it is only meaningful once merge has completed.
+func (p *Pipeline) hasConstraintConflictWarning() bool {
+	for _, w := range p.res.Warnings {
+		if w.Code == WarnUserConstraintConflict {
+			return true
+		}
+	}
+	return false
+}
+
 // validate reads the Python and databricks-connect versions from the venv and
-// populates the venv path. dbcPin is "" in constraints-only mode, where the DB
-// Connect assertion is skipped.
-func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string) error {
+// populates the venv path. dbcPin is the resolved databricks-connect pin; when it
+// is not managed (opts.SkipDBConnect) the databricks-connect assertion and version
+// reporting are skipped.
+func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string, opts MergeOptions) error {
 	info, err := p.PM.Validate(ctx, p.ProjectDir)
 	if err != nil {
 		return p.fail(PhaseValidate, true, asPipelineError(err, ErrValidate, "validation failed"))
@@ -478,9 +587,9 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 			"python version mismatch: want %s, got %s", expectedPyMinor, pyVer))
 	}
 
-	// In default mode, assert the installed databricks-connect major matches the
+	// When databricks-connect is managed, assert the installed major matches the
 	// pin's major. dbcPin is e.g. "databricks-connect~=17.2.0"; dbcVer is "17.2.0".
-	if dbcPin != "" {
+	if !opts.SkipDBConnect && dbcPin != "" {
 		pinMajor := dbcMajorFromPin(dbcPin)
 		if pinMajor == "" {
 			return p.fail(PhaseValidate, true, NewError(ErrValidate, nil,
@@ -497,13 +606,13 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 		}
 	}
 
-	// Report the installed databricks-connect version only in default mode. In
-	// constraints-only mode databricks-connect is not a managed dependency, so the
-	// spec omits dbconnectVersion even if the package is present transitively.
-	defaultMode := dbcPin != ""
+	// Report the installed databricks-connect version only when it is a managed
+	// dependency, so the spec omits dbconnectVersion even if the package is present
+	// transitively.
+	managed := !opts.SkipDBConnect && dbcPin != ""
 
 	detail := "python=" + pyVer
-	if defaultMode && dbcVer != "" {
+	if managed && dbcVer != "" {
 		detail += " databricks-connect=" + dbcVer
 	}
 	p.markOK(PhaseValidate, detail)
@@ -514,7 +623,7 @@ func (p *Pipeline) validate(ctx context.Context, expectedPyMinor, dbcPin string)
 	// sets the working directory when it shells out). venvDir is already ".venv".
 	p.res.VenvPath = venvDir
 	if p.res.Resolved != nil {
-		if defaultMode {
+		if managed {
 			p.res.Resolved.DBConnectVersion = dbcVer
 		} else {
 			p.res.Resolved.DBConnectVersion = ""
@@ -723,22 +832,21 @@ func sanitizeProjectName(name string) string {
 	return out
 }
 
-// copyFile copies src to dst, creating or overwriting dst. dst is created with
-// src's permission bits: the backup preserves a locked-down pyproject.toml
-// (e.g. 0o600 because it carries a private index URL) rather than widening it to
-// a hardcoded 0o644. os.WriteFile only applies the mode when it creates the
-// file, which is always the case for the freshly-created .bak.
-func copyFile(src, dst string) error {
-	info, err := os.Stat(src)
+// writeNew creates path with content, failing (os.ErrExist) rather than
+// overwriting an existing file. This no-clobber guarantee (O_EXCL) is why a
+// backup can never destroy an earlier one. mode sets the new file's permission
+// bits, so a backup keeps a locked-down pyproject.toml's permissions.
+func writeNew(path string, content []byte, mode os.FileMode) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, mode)
 	if err != nil {
-		return fmt.Errorf("stat %s: %w", src, err)
+		return err
 	}
-	data, err := os.ReadFile(src)
-	if err != nil {
-		return fmt.Errorf("read %s: %w", src, err)
-	}
-	if err := os.WriteFile(dst, data, info.Mode().Perm()); err != nil {
-		return fmt.Errorf("write %s: %w", dst, err)
+	_, werr := f.Write(content)
+	if err := errors.Join(werr, f.Close()); err != nil {
+		// Drop the partial file so it can't pose as a complete backup and, being
+		// O_EXCL-occupied, block a later run from reclaiming the name. Best-effort.
+		_ = os.Remove(path)
+		return err
 	}
 	return nil
 }

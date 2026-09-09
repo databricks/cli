@@ -44,4 +44,4 @@
   }
 }
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs

@@ -1,8 +1,4 @@
-# job_runs is a direct-engine-only resource; the Terraform provider has no
-# equivalent, so restrict the matrix to direct.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
 # The interruption is staged by injecting a fault into the testserver, so this
 # stays off cloud.
-RecordRequests = true
+Badness = "An in-progress run is planned as skip, so a deploy after an interrupted wait does not resume waiting for it to finish."
 Ignore = ["tmp.plan.json"]

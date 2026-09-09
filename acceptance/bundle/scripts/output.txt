@@ -43,11 +43,11 @@ Executing 'predeploy' script
 from myscript.py 0 predeploy: hello stdout!
 from myscript.py 0 predeploy: hello stderr!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts/default/files...
+Files: 11 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 Executing 'postdeploy' script
 from myscript.py 0 postdeploy: hello stdout!
 from myscript.py 0 postdeploy: hello stderr!
-Files: 11 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> EXITCODE=0 POSTDEPLOY_EXITCODE=1 errcode [CLI] bundle deploy
 Executing 'preinit' script
@@ -66,12 +66,12 @@ Executing 'predeploy' script
 from myscript.py 0 predeploy: hello stdout!
 from myscript.py 0 predeploy: hello stderr!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 Executing 'postdeploy' script
 from myscript.py 1 postdeploy: hello stdout!
 from myscript.py 1 postdeploy: hello stderr!
 Error: failed to execute script: exit status 1
 
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 Exit code: 1

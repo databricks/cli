@@ -1,11 +1,10 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-[Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
-
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 # A serverless task binds an environment_key to one of the job's environments;
 # that environment pins the version, so --job-task <id>.<task-key> resolves to
 # the matching serverless-vN (here v3) directly — no default fallback.
+
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
 Response.Body = '''

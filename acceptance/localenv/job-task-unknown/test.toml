@@ -1,10 +1,9 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-[Env]
-DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
-
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
 # A --job-task naming a task key that the job does not define fails at resolve
 # (E_RESOLVE); the message lists the job's actual task keys.
+
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
 Response.Body = '''

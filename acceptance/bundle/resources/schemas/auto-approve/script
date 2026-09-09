@@ -20,8 +20,8 @@ title "Assert the schema is created"
 trace $CLI schemas get "${CATALOG_NAME}.${SCHEMA_NAME}" | jq "{full_name, comment}"
 
 title "Assert the pipeline is created and uses the schema"
-PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
-trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
+PIPELINE_ID=$($CLI bundle summary -o json | nostamp | jq -r '.resources.pipelines.foo.id')
+trace $CLI pipelines get "${PIPELINE_ID}" | nostamp| jq "{spec}"
 
 title "Create a volume in the schema, and add a file to it. This ensures that the
      schema has some data in it and deletion will fail unless the generated

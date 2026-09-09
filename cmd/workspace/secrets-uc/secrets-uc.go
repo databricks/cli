@@ -252,6 +252,8 @@ func newGetSecret() *cobra.Command {
 
 	var getSecretReq catalog.GetSecretRequest
 
+	cmd.Flags().BoolVar(&getSecretReq.IncludeValue, "include-value", getSecretReq.IncludeValue, `Whether to include the secret value in the response.`)
+
 	cmd.Use = "get-secret FULL_NAME"
 	cmd.Short = `Get a secret.`
 	cmd.Long = `Get a secret.

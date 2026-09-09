@@ -1,10 +1,10 @@
-trace $CLI bundle validate -o json | jq .resources.$RESOURCE.foo.permissions
+trace $CLI bundle validate -o json | nostamp | jq .resources.$RESOURCE.foo.permissions
 rm out.requests.txt
 
-$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 print_requests() {
-    jq -c < out.requests.txt | jq 'select(.method != "GET" and (.path | contains("permissions")))'
+    jq -c < out.requests.txt | jq 'select(.method != "GET" and (.path | contains("permissions")) and (.path | contains("/api/2.0/bundle") | not))'
     rm out.requests.txt
 }
 

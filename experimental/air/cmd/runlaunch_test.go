@@ -1,6 +1,8 @@
 package aircmd
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -31,6 +33,7 @@ func newFakeWorkspaceClient(t *testing.T) *databricks.WorkspaceClient {
 
 func TestUserWorkspaceDir(t *testing.T) {
 	w := newFakeWorkspaceClient(t)
+	t.Setenv(userWorkspaceDirEnv, "")
 	dir, err := userWorkspaceDir(t.Context(), w)
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(dir, "/Workspace/Users/"), dir)
@@ -40,6 +43,52 @@ func TestUserWorkspaceDir(t *testing.T) {
 	dir, err = userWorkspaceDir(t.Context(), w)
 	require.NoError(t, err)
 	assert.Equal(t, "/Workspace/custom", dir)
+}
+
+func TestUserWorkspaceDirProfilePrecedence(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	require.NoError(t, os.WriteFile(configPath, []byte(`
+[__settings__]
+default_profile = second
+
+[first]
+host = https://first.test
+databricks_internal_user_workspace_dir = /Workspace/first
+
+[second]
+host = https://second.test
+databricks_internal_user_workspace_dir = /Workspace/second
+`), 0o600))
+
+	t.Run("explicit profile", func(t *testing.T) {
+		w := newFakeWorkspaceClient(t)
+		w.Config.ConfigFile = configPath
+		w.Config.Profile = "first"
+		t.Setenv(userWorkspaceDirEnv, "")
+		dir, err := userWorkspaceDir(t.Context(), w)
+		require.NoError(t, err)
+		assert.Equal(t, "/Workspace/first", dir)
+	})
+
+	t.Run("default profile", func(t *testing.T) {
+		w := newFakeWorkspaceClient(t)
+		w.Config.ConfigFile = configPath
+		w.Config.Profile = ""
+		t.Setenv(userWorkspaceDirEnv, "")
+		dir, err := userWorkspaceDir(t.Context(), w)
+		require.NoError(t, err)
+		assert.Equal(t, "/Workspace/second", dir)
+	})
+
+	t.Run("environment wins", func(t *testing.T) {
+		w := newFakeWorkspaceClient(t)
+		w.Config.ConfigFile = configPath
+		w.Config.Profile = "first"
+		t.Setenv(userWorkspaceDirEnv, "/Workspace/env")
+		dir, err := userWorkspaceDir(t.Context(), w)
+		require.NoError(t, err)
+		assert.Equal(t, "/Workspace/env", dir)
+	})
 }
 
 func TestEnsureExperimentDirectory(t *testing.T) {

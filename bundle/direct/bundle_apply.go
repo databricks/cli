@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -18,6 +19,14 @@ import (
 func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) {
 	if plan == nil {
 		panic("Planning is not done")
+	}
+
+	// Read before the early return below so a malformed value is reported even when there is
+	// nothing to deploy.
+	maxWait, err := resourceMaxWait(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if len(plan.Plan) == 0 {
@@ -70,10 +79,24 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
+		// Deletes are capped even with dependents: state is dropped before the wait, so a
+		// cut-short delete leaves the resource untracked while it tears down, and a dependency
+		// deleted after it may be rejected for still having a child. Accepted deliberately.
+		// Recreate's internal delete-wait is never routed through the cap at all, because it
+		// releases the name for the create that follows.
+		unitWait := maxWait
+		if action != deployplan.Delete && hasBlockingDependents(g, resourceKey) {
+			unitWait = maxWaitUnset
+			if maxWait != maxWaitUnset {
+				log.Debugf(ctx, "Not capping wait for %s: other resources depend on it", resourceKey)
+			}
+		}
+
 		d := &DeploymentUnit{
 			ResourceKey: resourceKey,
 			Adapter:     adapter,
 			DependsOn:   entry.DependsOn,
+			MaxWait:     unitWait,
 		}
 
 		if action == deployplan.Delete {

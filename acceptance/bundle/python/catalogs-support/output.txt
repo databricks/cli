@@ -1,0 +1,26 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_catalog"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "catalogs": {
+      "my_catalog_1": {
+        "comment": "My catalog (updated)",
+        "name": "my_catalog_1"
+      },
+      "my_catalog_2": {
+        "comment": "My catalog (2) (updated)",
+        "name": "my_catalog_2"
+      }
+    }
+  }
+}

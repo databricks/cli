@@ -1,0 +1,27 @@
+echo "*" > .gitignore
+envsubst < databricks.yml.tmpl > databricks.yml
+
+VOLUME="main.test-schema-${UNIQUE_NAME}.vol_one"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+
+    # Consume the destroy's requests so none are left recorded.
+    print_requests.py --method PATCH //unity-catalog/volumes &> LOG.destroy_requests
+}
+trap cleanup EXIT
+
+title "Deploy a volume that does not declare a comment"
+trace $CLI bundle deploy
+
+title "Set the comment out of band, then rename the volume in the same deploy"
+MSYS_NO_PATHCONV=1 $CLI api patch "/api/2.1/unity-catalog/volumes/$VOLUME" --json '{"comment":"set outside the bundle"}' > /dev/null
+update_file.py databricks.yml 'name: vol_one' 'name: vol_two'
+trace $CLI bundle deploy
+
+title "The rename and the clear both landed, so it converges in one pass"
+MSYS_NO_PATHCONV=1 trace $CLI api get "/api/2.1/unity-catalog/volumes/main.test-schema-${UNIQUE_NAME}.vol_two" | jq '.comment'
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
+
+title "The rename carried the cleared comment alongside new_name"
+trace print_requests.py --method PATCH //unity-catalog/volumes

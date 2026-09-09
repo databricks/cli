@@ -10,8 +10,6 @@ Ignore = [
     "bundle2"
 ]
 
-[Env]
-DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]

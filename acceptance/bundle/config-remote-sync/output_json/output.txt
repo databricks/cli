@@ -4,6 +4,7 @@ Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === JSON output format{
+  "status": "success",
   "files": [
     {
       "path": "[TEST_TMP_DIR]/databricks.yml",

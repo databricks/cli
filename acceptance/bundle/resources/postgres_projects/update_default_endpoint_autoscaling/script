@@ -1,0 +1,28 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Change one field inside default_endpoint_settings"
+# The bundle declares no suspension field, which is what makes this a regression test:
+# masking the enclosing message asks the API to replace it wholesale, and the API then
+# requires the suspension oneof to be populated in the body. Only the leaf may be masked.
+trace update_file.py databricks.yml "autoscaling_limit_max_cu: 4" "autoscaling_limit_max_cu: 8"
+
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI postgres get-project "${project_name}" | jq '.status.default_endpoint_settings'
+
+title "Plan again: the change must leave no drift behind"
+trace $CLI bundle plan

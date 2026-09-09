@@ -42,13 +42,13 @@ jobs:
           ref: ${{ inputs.tag }}
 
       - name: Set up QEMU for cross-platform builds
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
 
       - name: Create a buildx builder with multi-platform support
         run: docker buildx create --use --driver docker-container
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

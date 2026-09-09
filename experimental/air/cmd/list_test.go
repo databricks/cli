@@ -167,7 +167,7 @@ func TestBuildListRowFromRun(t *testing.T) {
 	assert.Equal(t, "GPU_1xA10", gpu)
 	assert.Equal(t, 1, count)
 
-	row := buildListRow(&run)
+	row := buildListRow(&run, "https://example.test", 0)
 	assert.Equal(t, "842552489592352", row.RunID)
 	assert.Equal(t, "SUCCESS", row.Status)
 	assert.Equal(t, "my-first-air-run", row.Experiment)
@@ -181,7 +181,7 @@ func TestBuildListRow(t *testing.T) {
 	run.EndTime = 1700000012000
 	run.State = &jobs.RunState{ResultState: jobs.RunResultStateSuccess}
 
-	row := buildListRow(&run)
+	row := buildListRow(&run, "https://example.test", 0)
 	assert.Equal(t, "123", row.RunID)
 	assert.Equal(t, "me@example.com", row.User)
 	assert.Equal(t, "SUCCESS", row.Status)
@@ -195,7 +195,7 @@ func TestBuildListRow(t *testing.T) {
 
 func TestBuildListRowDashFallbacks(t *testing.T) {
 	// A run with no task, compute, or start time falls back to dashes and UNKNOWN.
-	row := buildListRow(&jobs.Run{RunId: 7})
+	row := buildListRow(&jobs.Run{RunId: 7}, "https://example.test", 0)
 	assert.Equal(t, "-", row.Experiment)
 	assert.Equal(t, "-", row.Duration)
 	assert.Equal(t, "-", row.Accelerators)
@@ -208,8 +208,8 @@ func TestBuildListRowSweep(t *testing.T) {
 	run := jobs.Run{RunId: 9, Tasks: []jobs.RunTask{{
 		ForEachTask: &jobs.RunForEachTask{Task: jobs.Task{AiRuntimeTask: &jobs.AiRuntimeTask{Experiment: "sweep"}}},
 	}}}
-	assert.True(t, buildListRow(&run).IsSweep)
-	assert.Equal(t, "sweep", buildListRow(&run).Experiment)
+	assert.True(t, buildListRow(&run, "https://example.test", 0).IsSweep)
+	assert.Equal(t, "sweep", buildListRow(&run, "https://example.test", 0).Experiment)
 }
 
 func TestListInvalidLimit(t *testing.T) {
