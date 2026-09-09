@@ -1,1 +1,1 @@
-* Added PyDABs (Python) support for cluster policies, dashboards, and Genie spaces: `Resources.add_cluster_policy`, `Resources.add_dashboard`, `Resources.add_genie_space` and the matching `cluster_policy_mutator`, `dashboard_mutator`, and `genie_space_mutator` decorators. ([#6585](https://github.com/databricks/cli/pull/6585))
+* Added PyDABs (Python) support for cluster policies, dashboards, and Genie spaces. ([#6585](https://github.com/databricks/cli/pull/6585))
