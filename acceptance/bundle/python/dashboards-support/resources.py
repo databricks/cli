@@ -22,7 +22,14 @@ def load_resources() -> Resources:
             "display_name": "my_dashboard_3",
             "warehouse_id": "abc123",
             "parent_path": "/Workspace/Users/me",
-            "serialized_dashboard": {"pages": [{"name": "main", "displayName": "Main"}]},
+            "serialized_dashboard": {
+                "pages": [
+                    {
+                        "name": "main",
+                        "displayName": "Main",
+                    },
+                ],
+            },
         },
     )
 

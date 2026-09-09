@@ -24,7 +24,11 @@ def load_resources() -> Resources:
             "description": "My genie space (3)",
             "warehouse_id": "abc123",
             "parent_path": "/Workspace/Users/me",
-            "serialized_space": {"instructions": ["Answer questions about sales data"]},
+            "serialized_space": {
+                "instructions": [
+                    "Answer questions about sales data",
+                ],
+            },
         },
     )
 

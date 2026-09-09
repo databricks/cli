@@ -21,7 +21,10 @@ def load_resources() -> Resources:
             "name": "my_cluster_policy_3",
             "description": "My cluster policy (3)",
             "definition": {
-                "spark_version": {"type": "fixed", "value": "13.3.x-scala2.12"}
+                "spark_version": {
+                    "type": "fixed",
+                    "value": "13.3.x-scala2.12",
+                },
             },
         },
     )
