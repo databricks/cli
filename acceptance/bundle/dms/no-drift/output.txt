@@ -24,7 +24,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle summary -o json
 {
   "deployment_id": "[NUMID]",
-  "latest_version_id": "1"
+  "latest_version_id": 1
 }
 
 === The plan is a no-op now and records the deployment_history feature
@@ -157,7 +157,7 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 >>> [CLI] bundle summary -o json
 {
   "deployment_id": "[NUMID]",
-  "latest_version_id": "2"
+  "latest_version_id": 2
 }
 
 === The plan shows the updated pipeline at serial 2 with the deployment_history feature

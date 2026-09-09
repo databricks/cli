@@ -21,6 +21,6 @@ type DeploymentHistory struct {
 	DeploymentID string `json:"deployment_id,omitempty"`
 
 	// LatestVersionID is the most recent version recorded for the deployment. It is
-	// unset when the deployment exists but has no version yet.
-	LatestVersionID string `json:"latest_version_id,omitempty"`
+	// zero when the deployment exists but has no version yet.
+	LatestVersionID int `json:"latest_version_id,omitempty"`
 }

@@ -259,15 +259,17 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				// the plan carries them. version_id is always known (last recorded + 1); deployment_id
 				// does not exist until a first deploy creates it, so it is left off here and the deploy
 				// phase stamps the created id.
-				lastVersionID := ""
-				if dmsDeployment != nil {
-					lastVersionID = dmsDeployment.LastVersionId
+				// The service reports the version as a string; parse it here so everything below
+				// carries a number.
+				lastVersionID := 0
+				if dmsDeployment != nil && dmsDeployment.LastVersionId != "" {
+					lastVersionID, err = strconv.Atoi(dmsDeployment.LastVersionId)
+					if err != nil {
+						logdiag.LogError(ctx, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err))
+						return b, stateDesc, root.ErrAlreadyPrinted
+					}
 				}
-				nextVersion, verr := dms.NextVersion(lastVersionID)
-				if verr != nil {
-					logdiag.LogError(ctx, verr)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
+				nextVersion := lastVersionID + 1
 				muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 				if dmsDeploymentID != "" {
 					bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
@@ -286,7 +288,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				if !cmdctx.HasWorkspaceClient(ctx) {
 					ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 				}
-				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{ID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}

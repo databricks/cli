@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -145,30 +144,24 @@ type DeploymentState struct {
 	// completion after an explicit one does nothing.
 	versionCompleted bool
 
-	// DeploymentID is the recorded deployment's id, from the service at Open
-	// (InitializeOperationBuffer updates it to the id a first deploy creates, which Open cannot
-	// know). CalculatePlan reads it to stamp the plan; CompleteVersion reads it after Finalize's
-	// reset - so, like operationBuffer and dmsClient, it must survive reset.
+	// DeploymentID is the recorded deployment's id. Set at Open, or by the first deploy that creates
+	// the deployment, which Open cannot know about.
 	DeploymentID string
 
-	// VersionID is the source of truth for the deployment version: every version operation reads it
-	// - which version to create next, which one it follows, what the plan stamps, and what a saved
-	// plan is validated against. It holds the last version the service recorded, and once this run
-	// creates one, that new version.
-	//
-	// It sits outside Data because Finalize resets Data and CompleteVersion runs after that.
+	// VersionID is the DMS counterpart of Data.Serial - same meaning, but owned by the service
+	// rather than the file, so it lives outside Data and is never written to resources.json.
 	VersionID int
 }
 
 // OpenDmsArgs identifies the recorded deployment Open reads from. The zero value means the
 // bundle does not record deployment history, or no deployment exists for it yet.
 type OpenDmsArgs struct {
-	// ID is the deployment's server-minted id.
-	ID string
+	// DeploymentID is the deployment's server-minted id.
+	DeploymentID string
 
-	// LastVersionID is the most recent version the service has recorded. The state serial is set
-	// from it at Open: the service owns the version number, and the serial only tracks it.
-	LastVersionID string
+	// LastVersionID is the most recent version the service has recorded, zero when it has none.
+	// Open takes the state's version from it: the service owns the number.
+	LastVersionID int
 }
 
 type Header struct {
@@ -227,6 +220,13 @@ func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploy
 	db.VersionID = versionID
 }
 
+// getOperationBuffer returns the buffer for the open version, nil when no version is open.
+func (db *DeploymentState) getOperationBuffer() *dms.OperationBuffer {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.operationBuffer
+}
+
 // RecordingError reports whether recording state writes to the service has failed, so the apply
 // stops touching resources once the service is no longer keeping up. Nil when the bundle does not
 // record deployment history or recording is healthy.
@@ -234,12 +234,11 @@ func (db *DeploymentState) RecordingError() error {
 	if db.StorageBackend() != StorageBackendDeploymentMetadataService {
 		return nil
 	}
-	db.mu.Lock()
-	defer db.mu.Unlock()
-	if db.operationBuffer == nil {
+	buf := db.getOperationBuffer()
+	if buf == nil {
 		return nil
 	}
-	return db.operationBuffer.Err()
+	return buf.Err()
 }
 
 // CompleteVersion marks the recorded version done, reporting whether it completed here. A no-op
@@ -302,11 +301,11 @@ func (db *DeploymentState) RecordFailure(resourceKey, resourceID string, cause e
 		}
 	}
 
-	// A failure is recorded only while a version is open (after InitializeOperationBuffer), so the buffer is set.
-	db.mu.Lock()
-	buf := db.operationBuffer
-	db.mu.Unlock()
-	buf.RecordFailure(resourceKey, resourceID, recorded, cause)
+	// A failure is normally recorded only while a version is open, so the buffer is set; nil means
+	// no version was created, and there is nothing to record against.
+	if buf := db.getOperationBuffer(); buf != nil {
+		buf.RecordFailure(resourceKey, resourceID, recorded, cause)
+	}
 }
 
 func NewDatabase(lineage string, serial int) Database {
@@ -623,10 +622,10 @@ To record this bundle's history, start it over as a new deployment:
 			return err
 		}
 		db.dmsClient = client
-		db.DeploymentID = dmsDeployment.ID
+		db.DeploymentID = dmsDeployment.DeploymentID
 
-		if dmsDeployment.ID != "" {
-			resources, err := db.dmsClient.ListResources(ctx, dmsDeployment.ID)
+		if dmsDeployment.DeploymentID != "" {
+			resources, err := db.dmsClient.ListResources(ctx, dmsDeployment.DeploymentID)
 			if err != nil {
 				return err
 			}
@@ -637,13 +636,7 @@ To record this bundle's history, start it over as a new deployment:
 
 		// The service owns the version number, so it is read from the deployment rather than from
 		// the state file, which persists none. No deployment yet means no versions, hence zero.
-		if dmsDeployment.LastVersionID != "" {
-			last, err := strconv.Atoi(dmsDeployment.LastVersionID)
-			if err != nil {
-				return fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionID, err)
-			}
-			db.VersionID = last
-		}
+		db.VersionID = dmsDeployment.LastVersionID
 	}
 
 	if withWrite {

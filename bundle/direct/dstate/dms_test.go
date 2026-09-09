@@ -45,29 +45,30 @@ func TestApplyDMSState(t *testing.T) {
 			},
 		},
 		{
-			name:     "what DMS holds replaces what the file loaded",
-			existing: fileState,
-			recorded: []dms.Resource{{Key: "resources.jobs.foo", ID: "dms-id", State: `{"state":{"name":"from-dms"}}`}},
-			want:     map[string]ResourceEntry{"resources.jobs.foo": {ID: "dms-id", State: json.RawMessage(`{"name":"from-dms"}`)}},
-		},
-		{
 			// Nil is what a list holding nothing returns, and it means a successful deploy of
 			// nothing rather than missing data.
-			name:     "nothing recorded empties the state",
-			existing: fileState,
-			want:     map[string]ResourceEntry{},
+			name: "nothing recorded leaves the state empty",
+			want: map[string]ResourceEntry{},
 		},
 		{
-			// The good resource comes first, so the error lands mid-way: what the file loaded
-			// has to survive whole rather than end up half replaced.
-			name:     "a malformed envelope leaves the state as it was",
-			existing: fileState,
+			// The good resource comes first, so the error lands mid-way: the state has to be left
+			// alone rather than end up half filled.
+			name: "a malformed envelope leaves the state alone",
 			recorded: []dms.Resource{
 				{Key: "resources.jobs.ok", ID: "999", State: `{"state":{"name":"ok"}}`},
 				{Key: "resources.jobs.foo", ID: "123", State: "not json"},
 			},
 			wantErr: "interpreting state recorded for resources.jobs.foo",
-			want:    fileState,
+			want:    nil,
+		},
+		{
+			// A recorded deployment's file is an empty shell, so resources in it mean the state was
+			// not the one recording wrote.
+			name:     "resources loaded from the file are refused",
+			existing: fileState,
+			recorded: []dms.Resource{{Key: "resources.jobs.foo", ID: "dms-id", State: `{"state":{"name":"from-dms"}}`}},
+			wantErr:  "carries 1 resources, expected none",
+			want:     fileState,
 		},
 	}
 
