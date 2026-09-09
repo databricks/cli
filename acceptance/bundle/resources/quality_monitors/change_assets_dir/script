@@ -1,3 +1,5 @@
+mkdir -p .databricks
+
 SCHEMA_NAME="main.qm_test_${UNIQUE_NAME}"
 TABLE_NAME="${SCHEMA_NAME}.test_table"
 
@@ -22,7 +24,10 @@ trace $CLI bundle plan | contains.py "1 unchanged"
 update_file.py databricks.yml "assets_dir: /Workspace/Users/$CURRENT_USER_NAME/monitor_assets_$UNIQUE_NAME" "assets_dir: /Workspace/Users/$CURRENT_USER_NAME/monitor_assets2_$UNIQUE_NAME"
 
 trace errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-trace errcode $CLI bundle plan -o json &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# Untraced: with &> the trace header lands in the file, leaving it unfilterable. Capture the raw
+# plan aside and stamp it out into the golden instead.
+errcode $CLI bundle plan -o json &> .databricks/tmp.plan.json
+nostamp < .databricks/tmp.plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

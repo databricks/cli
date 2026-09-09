@@ -1,5 +1,8 @@
 # Genie spaces are only deployed via the direct deployment engine.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# bundle generate reading recorded state from DMS is a fast followup; until then this
+# deploy-then-generate flow can't run under recording (local state is a tombstone).
+EnvMatrix.DMS = [""]
 
 [[Repls]]
 Old = "[0-9a-f]{32}"

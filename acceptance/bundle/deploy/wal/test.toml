@@ -1,10 +1,13 @@
 # WAL (Write-Ahead Log) tests verify crash recovery during bundle deployment.
 # These tests simulate process crashes using KillCaller and verify state recovery.
 # Only runs with direct engine since WAL is a direct-engine feature.
+#
+# There is no WAL to recover from when DMS is enabled, so these do not run under it.
 
 Env.DATABRICKS_CLI_TEST_PID = "1"
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DMS = [""]
 
 [[Repls]]
 Old = 'script: line \d+:\s+\d+ Killed(: 9)?\s+"\$@"'

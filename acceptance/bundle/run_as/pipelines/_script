@@ -1,5 +1,5 @@
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")) and (.path | contains("/api/2.0/bundle") | not))' < out.requests.txt | nostamp
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")) and (.path | contains("/api/2.0/bundle") | not))' < out.requests.txt | nostamp.py
     rm out.requests.txt
 }
 
@@ -15,7 +15,7 @@ for target in "${targets[@]}"; do
     trace $CLI bundle plan -t $target
 
     # Debug plan
-    $CLI bundle plan -o json -t $target | nostamp > out.plan_$target.$DATABRICKS_BUNDLE_ENGINE.json
+    $CLI bundle plan -o json -t $target | nostamp.py > out.plan_$target.$DATABRICKS_BUNDLE_ENGINE.json
 
     # Deploy
     rm -f out.requests.txt

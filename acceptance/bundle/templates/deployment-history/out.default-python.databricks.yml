@@ -5,7 +5,7 @@ bundle:
   uuid: [BUNDLE_UUID]
 
 experimental:
-  record_deployment_history: true
+  deployment_history: true
 
 include:
   - resources/*.yml

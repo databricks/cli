@@ -1,2 +1,6 @@
+# This test deploys on terraform and migrates to direct. Terraform deployments are not supported
+# with deployment-history recording, so it only runs without it.
+EnvMatrix.DMS = [""]
+
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
