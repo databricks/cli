@@ -19,7 +19,8 @@ const (
 	// deterministic, so the tarball is cacheable by (commit, include_paths).
 	modeGitArchive snapshotMode = iota
 	// modePlainTar packages the working tree (including uncommitted changes) via
-	// `tar`. Not cacheable — working-tree content isn't pinned to a SHA.
+	// `tar`. Content-addressed by the working-tree fingerprint (path+size+mtime), so an
+	// unchanged tree reuses the uploaded tarball; a same-size, same-mtime edit is missed.
 	modePlainTar
 )
 

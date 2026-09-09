@@ -60,3 +60,26 @@ func TestComputeSnapshotCacheKeyProperties(t *testing.T) {
 	// The version constant participates: a different version is a different key.
 	assert.NotEqual(t, snapshotPackagingVersion, "")
 }
+
+// TestComputePlainTarKeyProperties pins the working-tree fingerprint behavior: it is
+// order-independent and reacts to any change in a file's path, size, or mtime.
+func TestComputePlainTarKeyProperties(t *testing.T) {
+	base := []snapshotFile{
+		{rel: "a.txt", size: 10, modTime: 100},
+		{rel: "src/b.py", size: 20, modTime: 200},
+	}
+
+	// Order-independent: the files are sorted by path before hashing.
+	assert.Equal(t,
+		computePlainTarKey(base),
+		computePlainTarKey([]snapshotFile{base[1], base[0]}),
+	)
+
+	// A changed size, mtime, or path each yields a different key.
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "a.txt", size: 11, modTime: 100}, base[1]}))
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "a.txt", size: 10, modTime: 101}, base[1]}))
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "renamed.txt", size: 10, modTime: 100}, base[1]}))
+
+	// Adding or dropping a file changes the key.
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey(base[:1]))
+}
