@@ -554,6 +554,17 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 
 	recording := bool(withDeploymentHistory)
 
+	// When recording (DMS configured), the service is the source of truth, not the local
+	// state file. Nullify the local state so it acts as a tombstone (carrying only the
+	// feature marker and header). This allows a stale local state from a destroyed DMS
+	// deployment to bootstrap a fresh one, rather than erroring on the guard below.
+	// The service is queried via ListResources (if dmsDeploymentID is non-empty) or
+	// is assumed empty (if dmsDeploymentID is empty).
+	if recording {
+		db.Data.State = make(map[string]ResourceEntry)
+		db.stateIDs = make(map[string]string)
+	}
+
 	walPath := db.Path + walSuffix
 	_, err = os.Stat(walPath)
 	switch {
