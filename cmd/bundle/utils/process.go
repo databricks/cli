@@ -212,6 +212,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 		cmd.SetContext(ctx)
 
+		// Record the engine the resolved state uses now, so deploy telemetry reports
+		// it even when the deploy fails or is cancelled before deployCore runs.
+		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
+
 		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
 
 		// Announce the auto-migration path here (only on deploy) so the user
