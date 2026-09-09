@@ -1,3 +1,0 @@
-# Deploy runs as the service principal, later commands as the user - who resolves no deployment of
-# its own, so bundle summary reads the job id back null. Recording needs state staged for the reader.
-EnvMatrix.DMS = [""]
