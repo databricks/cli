@@ -119,6 +119,30 @@ func TestLoadTokenRejectsChangedProfile(t *testing.T) {
 	}
 }
 
+// TestLoadTokenRejectsMissingNamedProfile verifies that an orphaned cached
+// token cannot be loaded after its profile is removed.
+func TestLoadTokenRejectsMissingNamedProfile(t *testing.T) {
+	args := loadTokenArgs{
+		authArguments: &auth.AuthArguments{
+			Host: "https://workspace.example.test",
+		},
+		profileName:  "TEST",
+		tokenTimeout: time.Minute,
+		profiler:     profile.InMemoryProfiler{},
+		tokenStore: &inMemoryStore{Tokens: map[string]*oauth2.Token{
+			"TEST": {
+				AccessToken: "orphaned-token",
+				Expiry:      time.Now().Add(time.Hour),
+			},
+		}},
+	}
+
+	_, err := loadToken(cmdio.MockDiscard(t.Context()), args)
+
+	assert.ErrorIs(t, err, errNoProfileFound)
+	assert.ErrorContains(t, err, `"TEST"`)
+}
+
 var _ storage.Store = upgradeHintStore{}
 
 type failOnCallTransport struct{}

@@ -172,6 +172,9 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
+	if args.profileName != "" && existingProfile == nil {
+		return nil, fmt.Errorf("%w: %q", errNoProfileFound, args.profileName)
+	}
 
 	// When no explicit profile, host, or positional args are provided, attempt to
 	// resolve the target through environment variables or interactive profile selection.
