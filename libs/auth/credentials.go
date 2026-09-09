@@ -111,6 +111,12 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 		return nil, err
 	}
 
+	// Fingerprints bind profile-keyed OAuth tokens to the profile that created
+	// them. Without a profile name, there is no saved profile to validate and no
+	// profile-keyed cache entry to wrap. Leave the store unchanged so existing
+	// profile-less databricks-cli authentication can still look up a legacy
+	// host-keyed token. PAT and M2M authentication do not reach this strategy;
+	// they are handled earlier in the credential chain.
 	if cfg.Profile != "" {
 		fingerprint, err := profilehash.Compute(profile.FromConfig(cfg))
 		if err != nil {

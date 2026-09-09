@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -20,6 +21,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)
@@ -275,25 +277,23 @@ func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testi
 
 	// Expired cached token (keyed by profile name) so the command triggers a
 	// refresh, which the server rejects.
-	profiles, err := profile.DefaultProfiler.LoadProfiles(t.Context(), profile.WithName("only-workspace"))
+	fingerprint, err := profilehash.Compute(profile.Profile{
+		Name:     "only-workspace",
+		Host:     server.URL,
+		AuthType: "databricks-cli",
+	})
 	require.NoError(t, err)
-	require.Len(t, profiles, 1)
-	fingerprint, err := profilehash.Compute(profiles[0])
+	tokenStore, err := storage.NewFileStore(t.Context())
 	require.NoError(t, err)
-	require.NoError(t, os.MkdirAll(filepath.Join(home, ".databricks"), 0o700))
-	tokenCache := fmt.Sprintf(`{
-  "version": 1,
-  "tokens": {
-    "only-workspace": {
-      "access_token": "x",
-      "token_type": "Bearer",
-      "refresh_token": "rt",
-      "expiry": "2020-01-01T00:00:00Z",
-      "profile_fingerprint": %q
-    }
-  }
-}`, fingerprint)
-	require.NoError(t, os.WriteFile(filepath.Join(home, ".databricks", "token-cache.json"), []byte(tokenCache), 0o600))
+	require.NoError(t, tokenStore.Put("only-workspace", storage.Entry{
+		Token: &oauth2.Token{
+			AccessToken:  "x",
+			TokenType:    "Bearer",
+			RefreshToken: "rt",
+			Expiry:       time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		},
+		ProfileFingerprint: fingerprint,
+	}))
 
 	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)

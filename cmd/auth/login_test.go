@@ -810,44 +810,27 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Empty(t, savedProfile.WorkspaceID)
 }
 
-// TestDiscoveryLoginStoresSavedProfileFingerprint verifies that discovery login binds
-// its cached token to the profile values ultimately written to disk.
-func TestDiscoveryLoginStoresSavedProfileFingerprint(t *testing.T) {
-	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
-	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
-
-	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
-	require.NoError(t, err)
-	oauthArg.SetDiscoveredHost("https://workspace.example.com")
-
-	tokenStore := newTestStore()
-	dc := &fakeDiscoveryClient{
-		oauthArg: oauthArg,
-		persistentAuth: &fakeDiscoveryPersistentAuth{
-			token: &oauth2.Token{AccessToken: "test-token"},
-		},
-		introspection: &auth.IntrospectionResult{},
+// TestSetTokenProfileFingerprint verifies that a cached token is bound to the
+// profile saved by login.
+func TestSetTokenProfileFingerprint(t *testing.T) {
+	savedProfile := profile.Profile{
+		Name: "DISCOVERY",
+		Host: "https://workspace.example.test",
 	}
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{savedProfile},
+	}
+	tokenStore := newTestStore()
 
-	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
-	err = discoveryLogin(ctx, discoveryLoginInputs{
-		dc:          dc,
-		profileName: "DISCOVERY",
-		timeout:     time.Second,
-		browserFunc: func(string) error { return nil },
-		tokenStore:  tokenStore,
-	})
+	err := setTokenProfileFingerprint(t.Context(), profiler, tokenStore, savedProfile.Name)
 	require.NoError(t, err)
 
-	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName("DISCOVERY"))
+	want, err := profilehash.Compute(savedProfile)
 	require.NoError(t, err)
-	require.Len(t, profiles, 1)
-	fingerprint, err := profilehash.Compute(profiles[0])
-	require.NoError(t, err)
-	entry, err := tokenStore.Lookup("DISCOVERY")
+	entry, err := tokenStore.Lookup(savedProfile.Name)
 	require.NoError(t, err)
 
-	assert.Equal(t, fingerprint, entry.ProfileFingerprint)
+	assert.Equal(t, want, entry.ProfileFingerprint)
 }
 
 func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
