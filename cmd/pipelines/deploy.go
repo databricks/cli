@@ -74,6 +74,11 @@ func deployCommand() *cobra.Command {
 		for _, group := range b.Config.Resources.AllResources() {
 			for _, resourceKey := range slices.Sorted(maps.Keys(group.Resources)) {
 				resource := group.Resources[resourceKey]
+				// Skip resource types that never have a URL; otherwise we'd print
+				// "View your <resource> here:" with a blank URL.
+				if !resource.SupportsURL() {
+					continue
+				}
 				cmdio.LogString(ctx, fmt.Sprintf("View your %s %s here: %s", resource.ResourceDescription().SingularName, resourceKey, resource.GetURL()))
 			}
 		}

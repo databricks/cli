@@ -54,6 +54,9 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
+>>> musterr [CLI] bundle open my_role
+Error: this resource type does not have a URL
+
 >>> [CLI] bundle summary
 Name: deploy-postgres-role-[UNIQUE_NAME]
 Target: default

@@ -88,6 +88,9 @@ Use after deployment to quickly navigate to your resources in the workspace.`,
 		}
 
 		// Confirm that the resource has a URL.
+		if !ref.Resource.SupportsURL() {
+			return errors.New("this resource type does not have a URL")
+		}
 		url := ref.Resource.GetURL()
 		if url == "" {
 			return errors.New("resource does not have a URL associated with it (has it been deployed?)")
