@@ -8,9 +8,17 @@ from databricks.bundles.core._generated.catalogs import (
     _CatalogResources,
     catalog_mutator,
 )
+from databricks.bundles.core._generated.cluster_policies import (
+    _ClusterPolicyResources,
+    cluster_policy_mutator,
+)
 from databricks.bundles.core._generated.clusters import (
     _ClusterResources,
     cluster_mutator,
+)
+from databricks.bundles.core._generated.dashboards import (
+    _DashboardResources,
+    dashboard_mutator,
 )
 from databricks.bundles.core._generated.database_catalogs import (
     _DatabaseCatalogResources,
@@ -27,6 +35,10 @@ from databricks.bundles.core._generated.experiments import (
 from databricks.bundles.core._generated.external_locations import (
     _ExternalLocationResources,
     external_location_mutator,
+)
+from databricks.bundles.core._generated.genie_spaces import (
+    _GenieSpaceResources,
+    genie_space_mutator,
 )
 from databricks.bundles.core._generated.instance_pools import (
     _InstancePoolResources,
@@ -95,9 +107,12 @@ __all__ = [
     "app_mutator",
     "catalog_mutator",
     "cluster_mutator",
+    "cluster_policy_mutator",
+    "dashboard_mutator",
     "database_catalog_mutator",
     "database_instance_mutator",
     "external_location_mutator",
+    "genie_space_mutator",
     "instance_pool_mutator",
     "job_mutator",
     "job_run_mutator",
@@ -123,11 +138,14 @@ class _GeneratedResources(
     _AlertResources,
     _AppResources,
     _CatalogResources,
+    _ClusterPolicyResources,
     _ClusterResources,
+    _DashboardResources,
     _DatabaseCatalogResources,
     _DatabaseInstanceResources,
     _MlflowExperimentResources,
     _ExternalLocationResources,
+    _GenieSpaceResources,
     _InstancePoolResources,
     _JobRunResources,
     _JobResources,
@@ -154,11 +172,14 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         alerts,
         apps,
         catalogs,
+        cluster_policies,
         clusters,
+        dashboards,
         database_catalogs,
         database_instances,
         experiments,
         external_locations,
+        genie_spaces,
         instance_pools,
         job_runs,
         jobs,
@@ -182,11 +203,14 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         alerts._resource_type(),
         apps._resource_type(),
         catalogs._resource_type(),
+        cluster_policies._resource_type(),
         clusters._resource_type(),
+        dashboards._resource_type(),
         database_catalogs._resource_type(),
         database_instances._resource_type(),
         experiments._resource_type(),
         external_locations._resource_type(),
+        genie_spaces._resource_type(),
         instance_pools._resource_type(),
         job_runs._resource_type(),
         jobs._resource_type(),
