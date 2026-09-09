@@ -34,9 +34,7 @@ type Metadata struct {
 // among them: the service derives the deployment's from the version that carried it.
 var deploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
 
-// sameWorkspaceInfo compares the paths alone. structdiff.IsEqual rather than reflect.DeepEqual: the
-// SDK records which fields a response carried in ForceSendFields, so a record read back never
-// deep-equals one built here, and every run would report a change.
+// sameWorkspaceInfo reports whether two workspace infos carry the same paths.
 func sameWorkspaceInfo(want, current *bundledeployments.WorkspaceInfo) bool {
 	if want == nil || current == nil {
 		return want == nil && current == nil
