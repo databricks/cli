@@ -1,0 +1,39 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+cp databricks.yml databricks.yml.saved
+
+cleanup() {
+    errcode $CLI bundle destroy --auto-approve &> LOG.cleanup
+    rm -f out.requests.txt databricks.yml.saved
+}
+trap cleanup EXIT
+
+# A cluster policy has no owner, so an emptied list revokes to nothing at all - unlike a job,
+# which keeps one IS_OWNER (see ../../../permissions/jobs/revoke_semantics). FixPermissions skips
+# cluster policies, so the deploying user is never added either.
+acl() {
+    $CLI permissions get cluster-policies "$POLICY_ID" |
+        jq -S '[(.access_control_list // [])[]
+                | select(any(.all_permissions[]; .inherited == false))
+                | {name: (.user_name // .service_principal_name // .group_name),
+                   levels: [.all_permissions[] | select(.inherited == false) | .permission_level]}]'
+}
+
+title "Deploy with one grant"
+trace $CLI bundle deploy -qq
+POLICY_ID=$(read_id.py test_cluster_policy)
+trace acl
+
+title "Empty the list: everything is revoked, there is no owner to keep"
+update_file.py databricks.yml 'permissions: # PERMISSIONS' 'permissions: []'
+sed -i '/# PERMISSIONS/d' databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy -qq
+trace acl
+
+title "Put the grant back, then remove the block entirely: same outcome"
+cp databricks.yml.saved databricks.yml
+trace $CLI bundle deploy -qq
+sed -i '/# PERMISSIONS/d' databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy -qq
+trace acl

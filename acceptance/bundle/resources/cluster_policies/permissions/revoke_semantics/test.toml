@@ -1,0 +1,3 @@
+# A cluster policy has no owner, so the revoke floor is an empty ACL rather than owner-only.
+# The testserver enforces neither rule, so this only means anything against a real workspace.
+Ignore = [".databricks", "databricks.yml", "databricks.yml.saved"]

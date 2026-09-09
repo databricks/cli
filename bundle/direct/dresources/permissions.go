@@ -264,29 +264,15 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 	return nil, err
 }
 
-// DoDelete is activated in 2 distinct cases:
-// 1) 'permissions' field is deleted in DABs config. In that case terraform would restore the default permissions (IS_OWNER for current user).
-// 2) the parent resource is deleted; in that case there is no need to do anything; parent resource deletion is enough.
-// Let's do nothing in both cases. If user no longer wishes to manage permissions with DABs they can go ahead and manage
-// it themselves. Trying to fix permissions back requires
-// - making assumptions on what it should look like
-// - storing current user somewhere or storing original permissions somewhere
-// IsEmptyState reports an empty permissions list as no resource at all, so emptying it is
-// planned as a delete: the same request as removing the block, and the same outcome - every
-// permission but the owner revoked.
+// IsEmptyState treats an empty list as no resource, so emptying it is planned as a delete - the
+// same request as removing the block.
 func (*ResourcePermissions) IsEmptyState(state *PermissionsState) bool {
 	return len(state.EmbeddedSlice) == 0
 }
 
-// DoDelete revokes every permission the object carries except its owner, which the API
-// requires: a Set without exactly one IS_OWNER is rejected. Apply only reaches this when the
-// object itself stays - when the parent is deleted too, deleting it takes the permissions with
-// it and the node is a state-only cleanup.
-//
-// The owner comes from the current permissions rather than the persisted state, which only
-// holds what the bundle set and never the owner. Reading it also keeps the owner as it is now,
-// which is not always the caller: an object can be owned by a service principal, or have been
-// handed over since it was deployed.
+// DoDelete revokes everything but the owner, and is only reached while the object itself stays.
+// Jobs, pipelines and SQL warehouses reject a Set without exactly one IS_OWNER; other types have
+// no owner and take an empty list. The owner is read live: persisted state never holds it.
 func (r *ResourcePermissions) DoDelete(ctx context.Context, id string, _ *PermissionsState) error {
 	current, err := r.DoRead(ctx, id)
 	if err != nil {
@@ -300,9 +286,8 @@ func (r *ResourcePermissions) DoDelete(ctx context.Context, id string, _ *Permis
 		}
 	}
 
-	// Nothing to revoke down to: an object with no owner takes no Set, and one with only its
-	// owner is already there.
-	if len(ownerOnly.EmbeddedSlice) == 0 || len(current.EmbeddedSlice) == len(ownerOnly.EmbeddedSlice) {
+	// Every permission the object carries is an owner permission, so there is nothing to revoke.
+	if len(current.EmbeddedSlice) == len(ownerOnly.EmbeddedSlice) {
 		return nil
 	}
 

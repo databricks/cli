@@ -28,7 +28,7 @@ grep -v PERMISSIONS databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace cat databricks.yml
 trace $CLI bundle plan -o json | nostamp > out.plan_delete_all.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py --nostamp //pipeline '^//api/2.0/bundle' --sort > out.requests_delete_all.json
+trace print_requests.py --nostamp //pipeline '^//api/2.0/bundle' --sort > out.requests_delete_all.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan
 
 title "Restore original config\n"

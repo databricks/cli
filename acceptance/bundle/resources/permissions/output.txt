@@ -239,43 +239,9 @@ DIFF  jobs/other_is_owner/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
 +  }
 +]
-DIFF  jobs/update/out.requests_delete_all.direct.json
---- jobs/update/out.requests_delete_all.direct.json
-+++ jobs/update/out.requests_delete_all.terraform.json
-@@ -1 +1,14 @@
--[]+[
-+  {
-+    "body": {
-+      "access_control_list": [
-+        {
-+          "permission_level": "IS_OWNER",
-+          "user_name": "[USERNAME]"
-+        }
-+      ]
-+    },
-+    "method": "PUT",
-+    "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]"
-+  }
-+]
+EXACT jobs/update/out.requests_delete_all.direct.json
 EXACT jobs/update/out.requests_destroy.direct.json
-DIFF  jobs/update/out.requests_set_empty.direct.json
---- jobs/update/out.requests_set_empty.direct.json
-+++ jobs/update/out.requests_set_empty.terraform.json
-@@ -1 +1,14 @@
--[]+[
-+  {
-+    "body": {
-+      "access_control_list": [
-+        {
-+          "permission_level": "IS_OWNER",
-+          "user_name": "[USERNAME]"
-+        }
-+      ]
-+    },
-+    "method": "PUT",
-+    "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]"
-+  }
-+]
+EXACT jobs/update/out.requests_set_empty.direct.json
 MATCH jobs/viewers/out.requests.deploy.direct.json
 DIFF  jobs/viewers/out.requests.destroy.direct.json
 --- jobs/viewers/out.requests.destroy.direct.json
@@ -324,6 +290,24 @@ MATCH pipelines/other_can_manage/out.requests.deploy.direct.json
 EXACT pipelines/other_can_manage/out.requests.destroy.direct.json
 EXACT pipelines/other_is_owner/out.requests.deploy.direct.json
 EXACT pipelines/other_is_owner/out.requests.destroy.direct.json
+DIFF  pipelines/update/out.requests_delete_all.direct.json
+--- pipelines/update/out.requests_delete_all.direct.json
++++ pipelines/update/out.requests_delete_all.terraform.json
+@@ -1,14 +1 @@
+-[
+-  {
+-    "body": {
+-      "access_control_list": [
+-        {
+-          "permission_level": "IS_OWNER",
+-          "user_name": "[USERNAME]"
+-        }
+-      ]
+-    },
+-    "method": "PUT",
+-    "path": "/api/2.0/permissions/pipelines/[FOO_ID]"
+-  }
+-]+[]
 MATCH postgres_projects/current_can_manage/out.requests.deploy.direct.json
 DIFF  postgres_projects/current_can_manage/out.requests.destroy.direct.json
 --- postgres_projects/current_can_manage/out.requests.destroy.direct.json

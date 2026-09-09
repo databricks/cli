@@ -3,10 +3,10 @@ granted. Both were previously ignored: the grant or permission stayed in place, 
 anything added outside the bundle. An empty list and a removed block are the same request,
 and both are now applied as a delete ([#6474](https://github.com/databricks/cli/pull/6474)).
 
-`grants: []` revokes everything. `permissions: []` revokes everything but the object owner,
-which the API requires on every update. The owner is read from the object rather than assumed
-to be whoever deploys, so an object owned by a service principal, or handed over since it was
-deployed, keeps the owner it has.
+`grants: []` revokes everything, and so does `permissions: []` - except on jobs, pipelines and
+SQL warehouses, where the API requires exactly one owner on every update, so the owner is kept.
+That owner is read from the object rather than assumed to be whoever deploys, so an object
+owned by a service principal, or handed over since it was deployed, keeps the owner it has.
 
-Nothing changes for a bundle that has always had an empty list, and deleting the resource a
-block belongs to is unaffected.
+Unaffected: a bundle that has always had an empty list, deleting the resource a block belongs
+to, and `secret_scopes` permissions, which already revoked down to the deploying user.

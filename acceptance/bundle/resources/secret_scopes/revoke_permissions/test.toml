@@ -1,0 +1,10 @@
+# SecretScopeFixups always appends the deploying user's MANAGE, so a scope's ACL list is never
+# empty: emptying or removing the block is an update down to that one entry, not a delete. The
+# testserver models the creator ACL, but only a real workspace proves the revoke.
+Cloud = true
+RunsOnDbr = true
+RecordRequests = false
+
+# SecretScopeFixups only runs on the direct engine, so these are direct-engine semantics.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Ignore = [".databricks", "databricks.yml", "databricks.yml.saved"]

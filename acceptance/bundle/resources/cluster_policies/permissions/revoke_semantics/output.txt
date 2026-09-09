@@ -1,0 +1,37 @@
+
+=== Deploy with one grant
+>>> [CLI] bundle deploy -qq
+
+>>> acl
+[
+  {
+    "levels": [
+      "CAN_USE"
+    ],
+    "name": "users"
+  }
+]
+
+=== Empty the list: everything is revoked, there is no owner to keep
+>>> [CLI] bundle plan
+delete cluster_policies.test_cluster_policy.permissions
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy -qq
+
+>>> acl
+[]
+
+=== Put the grant back, then remove the block entirely: same outcome
+>>> [CLI] bundle deploy -qq
+
+>>> [CLI] bundle plan
+delete cluster_policies.test_cluster_policy.permissions
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy -qq
+
+>>> acl
+[]

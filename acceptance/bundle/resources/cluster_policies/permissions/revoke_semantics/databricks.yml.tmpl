@@ -1,0 +1,11 @@
+bundle:
+  name: cluster-policy-permissions-revoke-$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    test_cluster_policy:
+      name: my_cluster_policy-$UNIQUE_NAME
+      definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
+      permissions: # PERMISSIONS
+        - level: CAN_USE # PERMISSIONS
+          group_name: users # PERMISSIONS

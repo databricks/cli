@@ -114,7 +114,9 @@ func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state
 	return nil, err
 }
 
-// Removing ACLs is a no-op, to match the behavior for permissions and grants.
+// DoDelete is a no-op: this node is only deleted along with its scope. Emptying or removing the
+// block never reaches here - SecretScopeFixups always appends the current user's MANAGE, so the
+// list is never empty and the node is planned as an update that revokes everyone else.
 func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string, _ *SecretScopeAclsState) error {
 	return nil
 }

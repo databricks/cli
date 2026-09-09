@@ -1,0 +1,13 @@
+bundle:
+  name: secret-scope-revoke-$UNIQUE_NAME
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: test-scope-revoke-$UNIQUE_NAME
+      backend_type: DATABRICKS
+      permissions: # PERMISSIONS
+        - user_name: deco-test-user@databricks.com # PERMISSIONS
+          level: READ # PERMISSIONS
+        - group_name: users # PERMISSIONS
+          level: WRITE # PERMISSIONS

@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+cp databricks.yml databricks.yml.saved
+
+cleanup() {
+    errcode $CLI bundle destroy --auto-approve &> LOG.cleanup
+    rm -f databricks.yml.saved
+}
+trap cleanup EXIT
+
+# Sort after replacement: the deploying principal is a service principal id on cloud and a
+# username locally, so sorting on the raw value orders the lines differently.
+acls() {
+    $CLI secrets list-acls "$SCOPE" | jq -Sc '(. // [])[]' | sort_lines.py --repl
+}
+
+title "Deploy with two ACLs"
+trace $CLI bundle deploy -qq
+SCOPE=$($CLI bundle summary --output json | jq -r .resources.secret_scopes.my_scope.name)
+trace acls
+
+title "Empty the list: an update down to the deploying user, not a delete"
+update_file.py databricks.yml 'permissions: # PERMISSIONS' 'permissions: []'
+sed -i '/# PERMISSIONS/d' databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy -qq
+trace acls
+
+title "Put them back, then remove the block entirely: same outcome"
+cp databricks.yml.saved databricks.yml
+trace $CLI bundle deploy -qq
+sed -i '/# PERMISSIONS/d' databricks.yml
+trace $CLI bundle plan
+trace $CLI bundle deploy -qq
+trace acls
