@@ -224,7 +224,7 @@ def _module_of(namespace: str, schema_name: str) -> str:
     """Python module a (non-primitive) schema's generated class lives in; asserts it exists.
 
     :param namespace: the resource's namespace; the type is generated under databricks.bundles.<namespace>._models.
-    :param schema_name: the object/enum schema name (or full ref) to resolve.
+    :param schema_name: the object/enum schema name to resolve.
     """
     module = packages.get_package(namespace, schema_name)
     assert module
