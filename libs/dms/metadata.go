@@ -2,10 +2,10 @@ package dms
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
@@ -34,17 +34,14 @@ type Metadata struct {
 // among them: the service derives the deployment's from the version that carried it.
 var deploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
 
-// sameWorkspaceInfo compares the paths alone. The SDK records which fields a response carried in
-// ForceSendFields, so a record read back never deep-equals one built here, and comparing the
-// structs whole would report every run as a change.
+// sameWorkspaceInfo compares the paths alone. structdiff.IsEqual rather than reflect.DeepEqual: the
+// SDK records which fields a response carried in ForceSendFields, so a record read back never
+// deep-equals one built here, and every run would report a change.
 func sameWorkspaceInfo(want, current *bundledeployments.WorkspaceInfo) bool {
 	if want == nil || current == nil {
 		return want == nil && current == nil
 	}
-
-	a, b := *want, *current
-	a.ForceSendFields, b.ForceSendFields = nil, nil
-	return reflect.DeepEqual(a, b)
+	return structdiff.IsEqual(*want, *current)
 }
 
 // deployment renders the metadata the deployment owns.

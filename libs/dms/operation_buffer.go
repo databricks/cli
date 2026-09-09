@@ -32,6 +32,11 @@ type OperationBuffer struct {
 	// sequenceIDs holds the token the last update for a resource returned. A resource absent
 	// from it has only what staging left, so its first update sends that. Unguarded: run is the
 	// only goroutine that writes, one update at a time.
+	//
+	// TODO: revisit and possibly deprecate. Sequence ids guard against an earlier update
+	// overwriting a later one, which cannot happen here - updates for a resource are sent one at a
+	// time from a single goroutine. UpdateOperation requires them today, so the client cannot
+	// simply stop sending them.
 	sequenceIDs map[string]string
 
 	// mu guards the fields below.
