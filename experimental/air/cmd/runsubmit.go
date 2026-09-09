@@ -2,15 +2,19 @@ package aircmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
@@ -20,6 +24,8 @@ import (
 const dlRuntimeImageEnv = "DATABRICKS_DL_RUNTIME_IMAGE"
 
 const defaultDlRuntimeImage = "CLIENT-GPU-4"
+
+const jobsRunsSubmitPath = "/api/2.2/jobs/runs/submit"
 
 // aiRuntimeEnvironmentKey ties the task to the serverless environment that
 // carries the runtime channel.
@@ -124,6 +130,63 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	}
 }
 
+// submitRunRequestBody injects fields that the current SDK model does not yet
+// expose. Once databricks-sdk-go includes unity_catalog_image_path on
+// jobs.AiRuntimeTask, this helper can be removed and buildSubmitPayload can be
+// submitted directly again.
+func submitRunRequestBody(payload jobs.SubmitRun, unityCatalogImagePath string) (any, error) {
+	if strings.TrimSpace(unityCatalogImagePath) == "" {
+		return payload, nil
+	}
+
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode submit payload: %w", err)
+	}
+
+	var body map[string]any
+	if err := json.Unmarshal(raw, &body); err != nil {
+		return nil, fmt.Errorf("failed to decode submit payload: %w", err)
+	}
+
+	tasks, ok := body["tasks"].([]any)
+	if !ok || len(tasks) == 0 {
+		return nil, fmt.Errorf("encoded submit payload has unexpected tasks shape")
+	}
+	task, ok := tasks[0].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("encoded submit payload has unexpected task shape")
+	}
+	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("encoded submit payload has unexpected ai_runtime_task shape")
+	}
+	aiRuntimeTask["unity_catalog_image_path"] = unityCatalogImagePath
+	return body, nil
+}
+
+func submitRun(ctx context.Context, w *databricks.WorkspaceClient, request any) (*jobs.SubmitRunResponse, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	headers := map[string]string{
+		"Accept":       "application/json",
+		"Content-Type": "application/json",
+	}
+	for key, value := range auth.WorkspaceIDHeaders(w.Config) {
+		headers[key] = value
+	}
+
+	var resp jobs.SubmitRunResponse
+	err = apiClient.Do(ctx, http.MethodPost, jobsRunsSubmitPath, headers, nil, request, &resp)
+	if err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // submitToken resolves the idempotency token: the --idempotency-key flag wins,
 // then the config's token, else a generated one. Over-long tokens error rather
 // than truncate, since truncation could make two distinct tokens collide.
@@ -224,13 +287,17 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	}
 	payload := buildSubmitPayload(cfg, path.Join(funcDir, commandScriptName), dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
-
-	// Submit returns as soon as the run is created; we don't wait for it to finish.
-	wait, err := w.Jobs.Submit(ctx, payload)
+	request, err := submitRunRequestBody(payload, cfg.unityCatalogImagePath())
 	if err != nil {
 		return 0, "", err
 	}
-	runID := wait.RunId
+
+	// Submit returns as soon as the run is created; we don't wait for it to finish.
+	submitResp, err := submitRun(ctx, w, request)
+	if err != nil {
+		return 0, "", err
+	}
+	runID := submitResp.RunId
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil

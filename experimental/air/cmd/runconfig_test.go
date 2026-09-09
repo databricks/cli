@@ -53,6 +53,7 @@ environment:
     - torch==2.3.0
     - numpy
   version: 5
+  unity_catalog_image: main.air.training:prod
 env_variables:
   FOO: bar
 secrets:
@@ -86,6 +87,7 @@ permissions:
 	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, cfg.Environment.Dependencies.list)
 	assert.True(t, cfg.Environment.Version.set)
 	assert.Equal(t, "5", cfg.Environment.Version.raw)
+	assert.Equal(t, "main.air.training:prod", cfg.Environment.UnityCatalogImage)
 	require.NotNil(t, cfg.CodeSource)
 	require.NotNil(t, cfg.CodeSource.Snapshot)
 	require.NotNil(t, cfg.CodeSource.Snapshot.Git)
@@ -275,6 +277,11 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"",
 		},
 		{
+			"unity catalog image alone ok",
+			environmentConfig{UnityCatalogImage: "main.air.training:prod"},
+			"",
+		},
+		{
 			"docker image with deps conflicts",
 			environmentConfig{
 				DockerImage:  &dockerImageConfig{URL: "org/repo:tag"},
@@ -286,6 +293,24 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"empty docker url",
 			environmentConfig{DockerImage: &dockerImageConfig{URL: "  "}},
 			"docker_image.url cannot be empty",
+		},
+		{
+			"unity catalog image bad format",
+			environmentConfig{UnityCatalogImage: "main.air.training"},
+			"environment.unity_catalog_image must be in the format",
+		},
+		{
+			"unity catalog image rejects surrounding whitespace",
+			environmentConfig{UnityCatalogImage: " main.air.training:prod "},
+			"environment.unity_catalog_image must be in the format",
+		},
+		{
+			"docker image with unity catalog image conflicts",
+			environmentConfig{
+				DockerImage:       &dockerImageConfig{URL: "org/repo:tag"},
+				UnityCatalogImage: "main.air.training:prod",
+			},
+			"not allowed: unity_catalog_image",
 		},
 		{
 			"version with file deps",

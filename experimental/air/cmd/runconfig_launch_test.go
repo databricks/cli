@@ -36,6 +36,17 @@ func TestRunConfigDockerImageURL(t *testing.T) {
 	assert.Equal(t, "org/repo:tag", c.dockerImageURL())
 }
 
+func TestRunConfigUnityCatalogImagePath(t *testing.T) {
+	c := &runConfig{}
+	assert.Empty(t, c.unityCatalogImagePath())
+
+	c.Environment = &environmentConfig{}
+	assert.Empty(t, c.unityCatalogImagePath())
+
+	c.Environment.UnityCatalogImage = "main.air.training:prod"
+	assert.Equal(t, "main.air.training:prod", c.unityCatalogImagePath())
+}
+
 func TestRunConfigDependencies(t *testing.T) {
 	t.Run("unset", func(t *testing.T) {
 		c := &runConfig{}

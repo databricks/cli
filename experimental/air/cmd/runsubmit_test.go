@@ -128,6 +128,30 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 	}
 }
 
+func TestSubmitRunRequestBodyInjectsUnityCatalogImagePath(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+		Environment:    &environmentConfig{UnityCatalogImage: "main.air.training:prod"},
+	}
+
+	payload := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
+	request, err := submitRunRequestBody(payload, cfg.unityCatalogImagePath())
+	require.NoError(t, err)
+
+	body, ok := request.(map[string]any)
+	require.True(t, ok)
+	tasks, ok := body["tasks"].([]any)
+	require.True(t, ok)
+	require.Len(t, tasks, 1)
+	task, ok := tasks[0].(map[string]any)
+	require.True(t, ok)
+	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
+}
+
 // TestEnvironmentDependencies covers how declared deps are resolved to a flat list:
 // an inline list (no file version), a requirements file (path resolved against the
 // config dir, version read from the file), none, and a missing file.
@@ -276,6 +300,39 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	require.NotNil(t, at)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, 4, at.Deployments[0].Compute.AcceleratorCount)
+}
+
+func TestSubmitWorkloadSendsUnityCatalogImagePath(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var got map[string]any
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+`
+environment:
+  unity_catalog_image: main.air.training:prod
+`)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key")
+	require.NoError(t, err)
+
+	tasks, ok := got["tasks"].([]any)
+	require.True(t, ok)
+	require.Len(t, tasks, 1)
+	task, ok := tasks[0].(map[string]any)
+	require.True(t, ok)
+	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
 }
 
 // A working-tree code_source is packaged into a tarball, uploaded via DABs' artifact

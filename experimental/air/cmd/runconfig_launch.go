@@ -36,6 +36,15 @@ func (c *runConfig) dockerImageURL() string {
 	return ""
 }
 
+// unityCatalogImagePath returns the configured Unity Catalog image reference,
+// or "" when none is set.
+func (c *runConfig) unityCatalogImagePath() string {
+	if c.Environment == nil {
+		return ""
+	}
+	return c.Environment.UnityCatalogImage
+}
+
 // requirementsFile returns the path to a requirements file when
 // environment.dependencies is a string, and whether it was set.
 func (c *runConfig) requirementsFile() (string, bool) {
