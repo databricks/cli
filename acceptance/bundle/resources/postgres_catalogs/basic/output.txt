@@ -22,7 +22,7 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Project for Catalog
-      URL:  (not deployed)
+      URL:  (not supported)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default/files...
@@ -56,7 +56,7 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Project for Catalog
-      URL:  (not deployed)
+      URL:  (not supported)
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

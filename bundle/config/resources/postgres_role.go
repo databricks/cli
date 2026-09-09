@@ -80,6 +80,11 @@ func (r *PostgresRole) GetURL() string {
 	return ""
 }
 
+func (r *PostgresRole) SupportsURL() bool {
+	// The IDs in the API do not (yet) map to IDs in the web UI.
+	return false
+}
+
 func (r *PostgresRole) InitializeURL(_ url.URL) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
 }

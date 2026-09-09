@@ -40,7 +40,7 @@ const resourcesTemplate = `Resources:
   {{- range .Resources }}
     {{ .Key | bold }}:
       Name: {{ .Name }}
-      URL:  {{ if .URL }}{{ .URL | cyan }}{{ else }}{{ "(not deployed)" | cyan }}{{ end }}
+      URL:  {{ if .URL }}{{ .URL | cyan }}{{ else if .SupportsURL }}{{ "(not deployed)" | cyan }}{{ else }}{{ "(not supported)" | cyan }}{{ end }}
   {{- end }}
 {{- end }}
 `
@@ -51,9 +51,10 @@ type ResourceGroup struct {
 }
 
 type ResourceInfo struct {
-	Key  string
-	Name string
-	URL  string
+	Key         string
+	Name        string
+	URL         string
+	SupportsURL bool
 }
 
 func pluralize(n int, singular, plural string) string {
@@ -150,9 +151,10 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 		resources := make([]ResourceInfo, 0, len(group.Resources))
 		for key, resource := range group.Resources {
 			resources = append(resources, ResourceInfo{
-				Key:  key,
-				Name: resource.GetName(),
-				URL:  resource.GetURL(),
+				Key:         key,
+				Name:        resource.GetName(),
+				URL:         resource.GetURL(),
+				SupportsURL: resource.SupportsURL(),
 			})
 		}
 

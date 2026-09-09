@@ -79,6 +79,11 @@ func (d *PostgresDatabase) GetURL() string {
 	return ""
 }
 
+func (d *PostgresDatabase) SupportsURL() bool {
+	// The IDs in the API do not (yet) map to IDs in the web UI.
+	return false
+}
+
 func (d *PostgresDatabase) InitializeURL(_ url.URL) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
 }

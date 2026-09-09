@@ -109,6 +109,11 @@ func (s SecretScope) GetURL() string {
 	return ""
 }
 
+func (s SecretScope) SupportsURL() bool {
+	// Secret scopes do not have a URL
+	return false
+}
+
 func (s SecretScope) InitializeURL(_ url.URL) {
 	// Secret scopes do not have a URL
 }

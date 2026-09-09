@@ -106,6 +106,11 @@ func (s *Snapshot) GetURL() string {
 	return ""
 }
 
+func (s *Snapshot) SupportsURL() bool {
+	// See GetURL: no browser URL is surfaced for the snapshot folder yet.
+	return false
+}
+
 func (s *Snapshot) InitializeURL(_ url.URL) {
 	// See GetURL: no browser URL is surfaced for the snapshot folder yet.
 }

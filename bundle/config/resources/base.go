@@ -12,3 +12,9 @@ type BaseResource struct {
 func (b *BaseResource) GetLifecycle() LifecycleConfig {
 	return b.Lifecycle
 }
+
+// SupportsURL reports whether this resource type can have a workspace URL.
+// Types whose IDs don't map to a web UI page override this to return false.
+func (b *BaseResource) SupportsURL() bool {
+	return true
+}

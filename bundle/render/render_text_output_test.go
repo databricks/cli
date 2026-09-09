@@ -335,6 +335,12 @@ func TestRenderSummary(t *testing.T) {
 						},
 					},
 				},
+				SecretScopes: map[string]*resources.SecretScope{
+					// Secret scopes never have a URL, regardless of deployment.
+					"scope1": {
+						Name: "my_scope",
+					},
+				},
 			},
 		},
 	}
@@ -370,6 +376,10 @@ Resources:
     schema1:
       Name: schema
       URL:  (not deployed)
+  Secret Scopes:
+    scope1:
+      Name: my_scope
+      URL:  (not supported)
 `
 	assert.Equal(t, expectedSummary, writer.String())
 }

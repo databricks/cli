@@ -58,6 +58,11 @@ func (e *ExternalLocation) GetURL() string {
 	return ""
 }
 
+func (e *ExternalLocation) SupportsURL() bool {
+	// External locations don't have a workspace URL
+	return false
+}
+
 func (e *ExternalLocation) GetName() string {
 	return e.Name
 }

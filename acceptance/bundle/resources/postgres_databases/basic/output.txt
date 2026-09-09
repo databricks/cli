@@ -18,19 +18,19 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
+      URL:  (not supported)
   Postgres databases:
     my_database:
       Name: 
-      URL:  (not deployed)
+      URL:  (not supported)
   Postgres projects:
     my_project:
       Name: Test Project for Database
-      URL:  (not deployed)
+      URL:  (not supported)
   Postgres roles:
     owner:
       Name: 
-      URL:  (not deployed)
+      URL:  (not supported)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-[UNIQUE_NAME]/default/files...
@@ -63,19 +63,19 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
+      URL:  (not supported)
   Postgres databases:
     my_database:
       Name: 
-      URL:  (not deployed)
+      URL:  (not supported)
   Postgres projects:
     my_project:
       Name: Test Project for Database
-      URL:  (not deployed)
+      URL:  (not supported)
   Postgres roles:
     owner:
       Name: 
-      URL:  (not deployed)
+      URL:  (not supported)
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

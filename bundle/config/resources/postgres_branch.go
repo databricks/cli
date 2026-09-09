@@ -87,6 +87,11 @@ func (b *PostgresBranch) GetURL() string {
 	return ""
 }
 
+func (b *PostgresBranch) SupportsURL() bool {
+	// The IDs in the API do not (yet) map to IDs in the web UI.
+	return false
+}
+
 func (b *PostgresBranch) InitializeURL(_ url.URL) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
 }

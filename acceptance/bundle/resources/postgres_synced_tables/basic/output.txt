@@ -26,7 +26,7 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Project for Synced Table
-      URL:  (not deployed)
+      URL:  (not supported)
   Postgres synced tables:
     my_table:
       Name: ${resources.postgres_catalogs.my_catalog.catalog_id}.public.trips_synced
@@ -65,7 +65,7 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Project for Synced Table
-      URL:  (not deployed)
+      URL:  (not supported)
   Postgres synced tables:
     my_table:
       Name: lakebase_test_[UNIQUE_NAME].public.trips_synced

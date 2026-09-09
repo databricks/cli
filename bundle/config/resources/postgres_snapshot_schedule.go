@@ -77,6 +77,11 @@ func (b *PostgresSnapshotSchedule) GetURL() string {
 	return ""
 }
 
+func (b *PostgresSnapshotSchedule) SupportsURL() bool {
+	// The IDs in the API do not (yet) map to IDs in the web UI.
+	return false
+}
+
 func (b *PostgresSnapshotSchedule) InitializeURL(_ url.URL) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
 }
