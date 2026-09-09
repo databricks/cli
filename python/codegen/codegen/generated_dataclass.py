@@ -65,14 +65,6 @@ class GeneratedField:
     The type of the field in TypedDict, e.g., GeneratedType(name="TaskParam", ...)
     """
 
-    create_func_type_name: GeneratedType
-    """
-    Type type of the field in static "create" function, e.g., GeneratedType(name="TaskParam", ...)
-
-    It can be different from param_type_name because lists are made optional in "create" function
-    to avoid problems with mutable default arguments.
-    """
-
     description: Optional[str]
     """
     The description of the field to be included into a docstring.
@@ -81,14 +73,6 @@ class GeneratedField:
     default: Optional[str]
     """
     The default value of the field, e.g., "None"
-    """
-
-    create_func_default: Optional[str]
-    """
-    The default value of the field in "create" function.
-
-    It can be different from default because lists are made optional in "create" function
-    to avoid problems with mutable default arguments.
     """
 
     default_factory: Optional[str]
@@ -151,46 +135,27 @@ def generate_field(
     field_type = variable_or_type(field_type, is_required=is_required)
     param_type = variable_or_type(param_type, is_required=is_required)
 
+    # Base is the optional-scalar shape (default None). Collections instead use an
+    # empty-container factory, and required fields carry no default.
     field = GeneratedField(
         field_name=field_name,
         type_name=field_type,
         param_type_name=param_type,
-        create_func_type_name=param_type,
         description=prop.description,
-        default=None,
+        default="None",
         default_factory=None,
-        create_func_default="None",
         experimental=is_experimental_stage(prop.stage),
         deprecated=prop.deprecated or False,
     )
 
-    # Collections default to an empty container (via a factory, to avoid a mutable
-    # default) and are made Optional in the "create" function; required scalars have
-    # no default; optional scalars default to None.
     if field_type.name == "VariableOrDict":
-        return replace(
-            field,
-            create_func_type_name=optional_type(param_type),
-            default_factory="dict",
-        )
+        return replace(field, default=None, default_factory="dict")
     elif field_type.name == "VariableOrList":
-        return replace(
-            field,
-            create_func_type_name=optional_type(param_type),
-            default_factory="list",
-        )
+        return replace(field, default=None, default_factory="list")
     elif is_required:
-        return replace(field, create_func_default=None)
-    else:
-        return replace(field, default="None")
+        return replace(field, default=None)
 
-
-def optional_type(generated: GeneratedType) -> GeneratedType:
-    return GeneratedType(
-        name="Optional",
-        package="typing",
-        parameters=[generated],
-    )
+    return field
 
 
 def str_type() -> GeneratedType:
