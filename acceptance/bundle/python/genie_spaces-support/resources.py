@@ -16,4 +16,16 @@ def load_resources() -> Resources:
         },
     )
 
+    # interface{} field authored as an inline dict
+    resources.add_genie_space(
+        "my_genie_space_3",
+        {
+            "title": "my_genie_space_3",
+            "description": "My genie space (3)",
+            "warehouse_id": "abc123",
+            "parent_path": "/Workspace/Users/me",
+            "serialized_space": {"instructions": ["Answer questions about sales data"]},
+        },
+    )
+
     return resources

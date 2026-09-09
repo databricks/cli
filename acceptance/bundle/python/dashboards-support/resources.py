@@ -15,4 +15,15 @@ def load_resources() -> Resources:
         },
     )
 
+    # interface{} field authored as an inline dict
+    resources.add_dashboard(
+        "my_dashboard_3",
+        {
+            "display_name": "my_dashboard_3",
+            "warehouse_id": "abc123",
+            "parent_path": "/Workspace/Users/me",
+            "serialized_dashboard": {"pages": [{"name": "main", "displayName": "Main"}]},
+        },
+    )
+
     return resources

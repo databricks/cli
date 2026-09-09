@@ -22,6 +22,11 @@
         "definition": "{\"spark_version\": {\"type\": \"fixed\", \"value\": \"13.3.x-scala2.12\"}}",
         "description": "My cluster policy (2) (updated)",
         "name": "my_cluster_policy_2"
+      },
+      "my_cluster_policy_3": {
+        "definition": "{\"spark_version\":{\"type\":\"fixed\",\"value\":\"13.3.x-scala2.12\"}}",
+        "description": "My cluster policy (3) (updated)",
+        "name": "my_cluster_policy_3"
       }
     }
   }
