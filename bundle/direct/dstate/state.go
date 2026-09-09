@@ -130,6 +130,11 @@ type DeploymentState struct {
 	// completion after an explicit one does nothing.
 	versionCompleted bool
 
+	// recordsHistory is whether this deployment records history, decided by Open from the state's
+	// features. Cached because it outlives the features themselves: Finalize resets Data, and
+	// CompleteVersion runs after that.
+	recordsHistory bool
+
 	// DeploymentID is the recorded deployment's id. Set at Open, or by the first deploy that creates
 	// the deployment, which Open cannot know about.
 	DeploymentID string
@@ -232,8 +237,10 @@ func (db *DeploymentState) RecordingError() error {
 // one does nothing. Finalize has already drained the buffered operations. It reads only fields that
 // survive Finalize's reset and asserts nothing, so it is safe to call after the state is closed.
 func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (bool, error) {
-	// Gated on the buffer below rather than on the state's features: this runs after Finalize, which
-	// resets Data, so the features are gone by now. A buffer exists only for a recorded deployment.
+	if !db.IsDeploymentMetadataService() {
+		return false, nil
+	}
+
 	db.mu.Lock()
 	buf := db.operationBuffer
 	if buf == nil || db.versionCompleted {
@@ -431,8 +438,7 @@ func (db *DeploymentState) GetSerial() int {
 
 // isDeploymentMetadataService is IsDeploymentMetadataService for callers already holding db.mu.
 func (db *DeploymentState) isDeploymentMetadataService() bool {
-	_, ok := db.Data.Features[FeatureDeploymentHistory]
-	return ok
+	return db.recordsHistory
 }
 
 // IsDeploymentMetadataService reports whether this deployment's resource state lives in the
@@ -524,6 +530,9 @@ func (db *DeploymentState) reset() {
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment OpenDmsArgs) error {
 	db.Path = path
+	// Cleared here rather than in reset, which CompleteVersion needs it to survive: the same state
+	// is reopened (see bind.go), and a stale value would misroute a non-recording open.
+	db.recordsHistory = false
 
 	// The state file is the source of truth for whether this deployment records history: read it
 	// first.
@@ -602,6 +611,8 @@ To record this bundle's history, start it over as a new deployment:
 	case !recording && recorded:
 		return ErrUnsettingRecording
 	}
+
+	db.recordsHistory = recorded
 
 	if recorded {
 		// The service is the source of truth for a recorded deployment; the file is a tombstone

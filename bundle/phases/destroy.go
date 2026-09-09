@@ -159,9 +159,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	// Unguarded beyond the engine: this runs after Finalize reset the state, so its features are no
-	// longer there to gate on, and CompleteVersion no-ops when no version was created.
-	if engine.IsDirect() {
+	if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		// Complete version before deleting remote files; the deployment node is under statePath.
 		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
 		if err != nil {
@@ -220,9 +218,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	// destroy records nothing. Deferred before lock.Release to hold the lock; a no-op once
 	// destroyCore has completed the version.
 	defer func() {
-		// Unguarded: CompleteVersion no-ops when no version was created. It runs after Finalize has
-		// reset the state, so the state's features are no longer there to gate on.
-		if engine.IsDirect() {
+		if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 			completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
 			if err != nil {
 				logdiag.LogError(ctx, err)
@@ -290,11 +286,8 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
-		// Record a destroy version now that it is approved and the state WAL is open, but only when
-		// the state is recorded with DMS (its marker is set). This is the single gate on the
-		// destroy's recording: it opens the operation buffer that destroyCore drains and completes,
-		// so the drain and the deployment delete follow only when a version was started here.
-		// Destroy never creates or updates the deployment - it is about to be deleted.
+		// Start the version for this destroy, now that it is approved. Everything else recording
+		// does follows from the buffer this opens.
 		if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 			staged, err := stagedOperations(plan)
 			if err != nil {

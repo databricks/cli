@@ -203,10 +203,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
 	defer func() {
-		// Unguarded: CompleteVersion no-ops when no version was created. It runs after Finalize has
-		// reset the state, so the state's features are no longer there to gate on.
-		if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
-			logdiag.LogError(ctx, err)
+		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+				logdiag.LogError(ctx, err)
+			}
 		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
