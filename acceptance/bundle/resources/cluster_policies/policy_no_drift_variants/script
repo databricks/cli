@@ -6,7 +6,6 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-read_id.py pol > /dev/null
 
 title "Every cluster-spec location converges: nothing to change on a second plan\n"
 trace $CLI bundle plan
