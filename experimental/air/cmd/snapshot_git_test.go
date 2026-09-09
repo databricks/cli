@@ -65,6 +65,26 @@ func TestGitRepo_IsRepository(t *testing.T) {
 	assert.False(t, newGitRepo(t.TempDir()).isRepository(ctx))
 }
 
+func TestGitRepo_RepositoryLayout(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a/b/train.py", "print()")
+
+	prefix, err := newGitRepo(repo).repoRelativePrefix(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, prefix)
+
+	subdir := filepath.Join(repo, "a", "b")
+	g := newGitRepo(subdir)
+	prefix, err = g.repoRelativePrefix(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "a/b", prefix)
+
+	root, err := g.repositoryRoot(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, repo, root)
+}
+
 func TestGitRepo_HeadSHA(t *testing.T) {
 	ctx := t.Context()
 	repo := newTestRepo(t)

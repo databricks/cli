@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -111,4 +112,17 @@ func TestResolveSnapshotPlan_IncludePaths(t *testing.T) {
 	_, err = resolveSnapshotPlan(ctx, newGitRepo(repo), &gitRef{Commit: new(sha)}, []string{"src", "missing"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing")
+}
+
+func TestResolveSnapshotPlan_SubdirectoryRootPath(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "subpkg/src/model.py", "1")
+	sha := commitAll(t, repo, "init")
+
+	rootPath := filepath.Join(repo, "subpkg")
+	plan, err := resolveSnapshotPlan(ctx, newGitRepo(rootPath), &gitRef{Commit: new(sha)}, []string{"src"})
+	require.NoError(t, err)
+	assert.Equal(t, modeGitArchive, plan.mode)
+	assert.Equal(t, "subpkg", plan.subtreePrefix)
 }

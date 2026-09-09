@@ -62,6 +62,26 @@ func (g gitRepo) isRepository(ctx context.Context) bool {
 	return strings.TrimSpace(out) == "true"
 }
 
+// repoRelativePrefix returns the path from the repository root to g.path. Git
+// emits a trailing slash for subdirectories and an empty string at the root.
+func (g gitRepo) repoRelativePrefix(ctx context.Context) (string, error) {
+	out, err := g.run(ctx, "rev-parse", "--show-prefix")
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve repository-relative path for %s: %w", g.path, err)
+	}
+	return strings.TrimRight(strings.TrimSpace(out), "/"), nil
+}
+
+// repositoryRoot returns the top-level directory of the work tree containing
+// g.path.
+func (g gitRepo) repositoryRoot(ctx context.Context) (string, error) {
+	out, err := g.run(ctx, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve repository root for %s: %w", g.path, err)
+	}
+	return strings.TrimSpace(out), nil
+}
+
 // headSHA returns the current HEAD commit SHA.
 func (g gitRepo) headSHA(ctx context.Context) (string, error) {
 	out, err := g.run(ctx, "rev-parse", "HEAD")
