@@ -2,19 +2,10 @@
 setup_test_profile
 setup_test_token_cache
 
-# Register the OAuth rejection after login so the initial token exchange succeeds.
-curl --silent --show-error --fail \
-    --request POST \
-    --header "Content-Type: application/json" \
-    --data '{
-        "pattern": "POST /oidc/v1/token",
-        "status_code": 401,
-        "body": "{\"error\":\"invalid_grant\",\"error_description\":\"Refresh token is invalid\"}",
-        "offset": 0,
-        "times": 2
-    }' \
-    "$DATABRICKS_HOST_ORIG/__testserver/fault" \
-    --output /dev/null
+# Replace the valid refresh token with one the fake OIDC server rejects.
+jq '.tokens["test-profile"].refresh_token = "invalid-refresh-token"' \
+    "./home/.databricks/token-cache.json" > "./token-cache.json"
+mv "./token-cache.json" "./home/.databricks/token-cache.json"
 
 # The CLI must report that the user needs to log in again.
 musterr $CLI auth token --profile test-profile --force-refresh

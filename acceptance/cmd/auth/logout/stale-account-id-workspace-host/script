@@ -26,8 +26,9 @@ title "Token cache keys before logout\n"
 jq -S '.tokens | keys' "./home/.databricks/token-cache.json"
 
 # Simulate manually adding stale account routing to the workspace profile.
-sed -i.bak '/^host/a account_id = stale-account' "./home/.databrickscfg"
-sed -i.bak '/scopes/d' "./home/.databrickscfg"
+sed -i.bak '/^host/a\
+account_id = stale-account
+' "./home/.databrickscfg"
 sed -i.bak '/workspace_id/d' "./home/.databrickscfg"
 
 # Logout must still find and remove the cached tokens for the changed profile.
