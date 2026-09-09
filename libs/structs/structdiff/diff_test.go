@@ -923,3 +923,25 @@ func TestGetStructDiffSliceKeysDuplicates(t *testing.T) {
 		})
 	}
 }
+
+// namedMapKey is a defined string type used as a map key, like config's
+// ScriptHook (`type ScriptHook string`). Its kind is String but its dynamic
+// type is not string.
+type namedMapKey string
+
+type namedKeyMapHolder struct {
+	M map[namedMapKey]string `json:"m"`
+}
+
+// TestGetStructDiffNamedStringMapKey guards against a regression where
+// diffMapStringKey extracted keys with a `k.Interface().(string)` assertion,
+// which panics for a defined string key type (routing only checks the key's
+// Kind is String). Value.String() handles both string and named-string keys.
+func TestGetStructDiffNamedStringMapKey(t *testing.T) {
+	a := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "a", "post": "x"}}
+	b := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "b", "post": "x"}}
+
+	got, err := GetStructDiff(&a, &b, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, []ResolvedChange{{Field: "m['pre']", Old: "a", New: "b"}}, resolveChanges(got))
+}
