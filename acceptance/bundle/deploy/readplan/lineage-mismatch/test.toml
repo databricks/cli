@@ -1,4 +1,2 @@
 # Test that --plan with mismatched lineage produces an error
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
-Ignore = ["plan.json"]
