@@ -2,21 +2,9 @@
 # Create the profile that the legacy cached token belongs to.
 setup_test_profile
 
-# Represent a cache written by an older CLI by omitting profile_fingerprint.
+# Install a cache written by an older CLI that omits profile_fingerprint.
 mkdir -p "./home/.databricks"
-cat > "./home/.databricks/token-cache.json" <<EOF
-{
-  "version": 1,
-  "tokens": {
-    "test-profile": {
-      "access_token": "cached-access-token",
-      "token_type": "Bearer",
-      "refresh_token": "test-refresh-token",
-      "expiry": "2099-01-01T00:00:00Z"
-    }
-  }
-}
-EOF
+cp "./token-cache.json" "./home/.databricks/token-cache.json"
 
 # The CLI must reject a cached token whose profile binding cannot be verified.
 trace musterr $CLI auth token --profile test-profile

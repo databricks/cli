@@ -470,7 +470,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	clearKeys := oauthLoginClearKeys()
 	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
 
-	profileConfig := &config.Config{
+	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     profileName,
 		Host:        loginArgs.Host,
 		AuthType:    authTypeDatabricksCLI,
@@ -478,8 +478,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		WorkspaceID: loginArgs.WorkspaceID,
 		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		Scopes:      scopesList,
-	}
-	err = databrickscfg.SaveToProfile(ctx, profileConfig, clearKeys...)
+	}, clearKeys...)
 	if err != nil {
 		return "", nil, err
 	}

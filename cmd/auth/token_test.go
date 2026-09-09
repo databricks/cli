@@ -38,28 +38,27 @@ func (upgradeHintStore) Lookup(string) (storage.Entry, error) {
 	)
 }
 
-func newProfileFingerprintTokenArgs(t *testing.T, currentProfile profile.Profile, forceRefresh bool) loadTokenArgs {
+func newProfileFingerprintTokenArgs(t *testing.T, loggedInProfile, currentProfile profile.Profile, forceRefresh bool) loadTokenArgs {
 	t.Helper()
 
-	loggedInProfile := currentProfile
-	loggedInProfile.Scopes = "jobs"
 	fingerprint, err := profilehash.Compute(loggedInProfile)
 	require.NoError(t, err)
+	profileName := currentProfile.Name
 
 	tokenStore := &inMemoryStore{
 		Tokens: map[string]*oauth2.Token{
-			"TEST": {
+			profileName: {
 				AccessToken:  "jobs-token",
 				RefreshToken: "jobs-refresh-token",
 				Expiry:       time.Now().Add(time.Hour),
 			},
 		},
-		Fingerprints: map[string]string{"TEST": fingerprint},
+		Fingerprints: map[string]string{profileName: fingerprint},
 	}
 
 	return loadTokenArgs{
 		authArguments: &auth.AuthArguments{},
-		profileName:   "TEST",
+		profileName:   profileName,
 		tokenTimeout:  time.Minute,
 		profiler: profile.InMemoryProfiler{Profiles: profile.Profiles{
 			currentProfile,
@@ -72,13 +71,14 @@ func newProfileFingerprintTokenArgs(t *testing.T, currentProfile profile.Profile
 // TestLoadTokenAcceptsMatchingProfileFingerprint verifies that a cached token
 // remains usable while its profile is unchanged.
 func TestLoadTokenAcceptsMatchingProfileFingerprint(t *testing.T) {
-	currentProfile := profile.Profile{
+	loggedInProfile := profile.Profile{
 		Name:     "TEST",
 		Host:     "https://workspace.example.test",
 		Scopes:   "jobs",
 		AuthType: "databricks-cli",
 	}
-	args := newProfileFingerprintTokenArgs(t, currentProfile, false)
+	currentProfile := loggedInProfile
+	args := newProfileFingerprintTokenArgs(t, loggedInProfile, currentProfile, false)
 
 	got, err := loadToken(cmdio.MockDiscard(t.Context()), args)
 	require.NoError(t, err)
@@ -103,13 +103,19 @@ func TestLoadTokenRejectsChangedProfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			loggedInProfile := profile.Profile{
+				Name:     "TEST",
+				Host:     "https://workspace.example.test",
+				Scopes:   "jobs",
+				AuthType: "databricks-cli",
+			}
 			currentProfile := profile.Profile{
 				Name:     "TEST",
 				Host:     "https://workspace.example.test",
 				Scopes:   "all-apis,sql",
 				AuthType: "databricks-cli",
 			}
-			args := newProfileFingerprintTokenArgs(t, currentProfile, tt.forceRefresh)
+			args := newProfileFingerprintTokenArgs(t, loggedInProfile, currentProfile, tt.forceRefresh)
 
 			_, err := loadToken(cmdio.MockDiscard(t.Context()), args)
 

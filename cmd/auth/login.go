@@ -407,7 +407,7 @@ a new profile is created.
 			// experimental_is_unified_host is no longer written to new profiles.
 			// Routing now comes from .well-known discovery; stale keys on existing
 			// profiles are cleaned up via clearKeys above.
-			profileConfig := &config.Config{
+			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:             profileName,
 				Host:                authArguments.Host,
 				AuthType:            authTypeDatabricksCLI,
@@ -417,8 +417,7 @@ a new profile is created.
 				ConfigFile:          env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID: serverlessComputeID,
 				Scopes:              scopesList,
-			}
-			err := databrickscfg.SaveToProfile(ctx, profileConfig, clearKeys...)
+			}, clearKeys...)
 			if err != nil {
 				return err
 			}
@@ -771,7 +770,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		"cluster_id",
 		"serverless_compute_id",
 	)
-	profileConfig := &config.Config{
+	err = databrickscfg.SaveToProfile(ctx, &config.Config{
 		Profile:     in.profileName,
 		Host:        discoveredHost,
 		AuthType:    authTypeDatabricksCLI,
@@ -779,9 +778,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
 		ConfigFile:  configFile,
-	}
-
-	err = databrickscfg.SaveToProfile(ctx, profileConfig, clearKeys...)
+	}, clearKeys...)
 	if err != nil {
 		if configFile != "" {
 			return fmt.Errorf("saving profile %q to %s: %w", in.profileName, configFile, err)

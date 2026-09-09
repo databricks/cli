@@ -32,7 +32,7 @@ type Entry struct {
 	// Token is the cached OAuth token. Always set for stored entries.
 	Token *oauth2.Token
 
-	// ProfileFingerprint binds the OAuth grant to the complete profile that
+	// ProfileFingerprint binds the OAuth grant to the simplified profile that
 	// was present when the token was minted.
 	ProfileFingerprint string
 }
