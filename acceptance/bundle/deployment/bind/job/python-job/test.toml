@@ -1,2 +1,7 @@
 Cloud = false # test leaves deployed job
 Timeout = '40s' # python can be slow in CI likely due to caching problems
+
+# `jobs get` shows the job's deployment block, which under DMS also carries the
+# deployment_id/version_id stamp - an engine-level difference, not a bind one. DMS bind is covered
+# by bundle/dms/bind-unbind, so skip the DMS variant here.
+EnvMatrix.DMS = [""]

@@ -1,0 +1,12 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Bind an existing job to the bundle, recorded with the deployment history service"
+job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$job_id" JOB_ID
+trace $CLI bundle deployment bind foo "$job_id" --auto-approve
+
+title "Unbind it again, dropping it from what the service records"
+trace $CLI bundle deployment unbind foo
+
+title "Each recorded a version whose operation carries the bind / unbind action type"
+trace print_requests.py --dms --method POST //versions --nostamp

@@ -1,0 +1,5 @@
+# This dumps the state file after bind, whose serial counts local state writes; under DMS the
+# service owns the version number instead, so the dumped serial differs. That is an engine-level
+# difference, not a bind one, and DMS bind is covered by bundle/dms/bind-unbind, so skip the DMS
+# variant here.
+EnvMatrix.DMS = [""]

@@ -2,13 +2,16 @@ package dms
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
@@ -65,6 +68,33 @@ func (c *Client) CreateDeployment(ctx context.Context, parentPath string, metada
 		return "", err
 	}
 	return deploymentIDFromName(created.Name)
+}
+
+// FetchDeployment looks up the deployment recorded under statePath, returning its id and record.
+// It returns "", nil, nil when none exists yet: the deployment node is the workspace node the
+// service creates on the first recorded deploy, and its id is that node's object id.
+//
+// TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
+// workspace lookup to turn the node into an id, then a get by that id.
+func FetchDeployment(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
+	nodePath := path.Join(statePath, DeploymentNodeName)
+
+	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
+	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+	}
+
+	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
+	deployment, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+		Name: DeploymentName(deploymentID),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return deploymentID, deployment, nil
 }
 
 // UpdateDeployment writes the fields mask names onto the deployment. The service ignores every
@@ -142,6 +172,14 @@ type CreateVersionRequest struct {
 	// only - the response never carries it back.
 	Operations []StagedOperation `json:"operations,omitempty"`
 }
+
+// ActionBind and ActionUnbind are the operation action types recorded for `bundle deployment
+// bind` and `unbind`. They have no deployplan action, so they are staged directly. Bind reuses
+// the SDK's constant; the SDK has none for unbind yet, so it is the string the service expects.
+const (
+	ActionBind   = bundledeployments.OperationActionTypeOperationActionTypeBind
+	ActionUnbind = bundledeployments.OperationActionType("OPERATION_ACTION_TYPE_UNBIND")
+)
 
 // StagedOperation is one resource the version will record an operation for. The service
 // creates it in OPERATION_STATUS_PENDING at sequence id 0, and the CLI fills in the outcome
