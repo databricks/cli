@@ -68,8 +68,8 @@ def test_transform_any_passthrough():
     # interface{} fields are generated as Any and pass through untransformed.
     value = {"a": 1, "b": ["c", "d"]}
 
-    assert _transform(Any, value) is value
-    assert _transform(Any, "raw string") == "raw string"
+    assert _transform(Any, value) is value  # type: ignore
+    assert _transform(Any, "raw string") == "raw string"  # type: ignore
 
 
 def test_transform_any_field():
@@ -90,7 +90,7 @@ def test_transform_any_field_variable():
 
     out = _transform(Fake, {"field": "${var.x}"})
 
-    assert out == Fake(field=Variable(path="var.x", type=Any))
+    assert out == Fake(field=Variable(path="var.x", type=Any))  # type: ignore
 
 
 def test_transform_str_list():
