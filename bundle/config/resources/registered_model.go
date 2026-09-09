@@ -60,7 +60,3 @@ func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 func (s *RegisteredModel) GetName() string {
 	return s.Name
 }
-
-func (s *RegisteredModel) GetURL() string {
-	return s.URL
-}

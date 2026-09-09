@@ -63,10 +63,6 @@ func (s *Secret) InitializeURL(baseURL url.URL) {
 	s.URL = workspaceurls.ResourceURL(baseURL, "secrets", s.ID)
 }
 
-func (s *Secret) GetURL() string {
-	return s.URL
-}
-
 func (s *Secret) GetName() string {
 	if s.ID != "" {
 		return s.ID
