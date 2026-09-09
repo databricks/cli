@@ -54,6 +54,7 @@ func TestParseLastVersionID(t *testing.T) {
 	}{
 		{"nil deployment", nil, 0, false},
 		{"empty version", &bundledeployments.Deployment{}, 0, false},
+		{"version zero", &bundledeployments.Deployment{LastVersionId: "0"}, 0, false},
 		{"valid version", &bundledeployments.Deployment{LastVersionId: "7"}, 7, false},
 		{"invalid version", &bundledeployments.Deployment{LastVersionId: "abc"}, 0, true},
 	}

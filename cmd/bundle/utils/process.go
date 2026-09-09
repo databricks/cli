@@ -539,7 +539,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
-	// StateDB.Open builds the DMS client from the workspace client on the context.
+	// StateDB.Open builds the DMS client from the workspace client on the context, so ensure one is set.
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 	}
