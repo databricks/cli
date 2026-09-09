@@ -99,6 +99,36 @@ func TestComputeIncludesAllProfileFields(t *testing.T) {
 	}
 }
 
+// TestComputeCanonicalizesHost verifies that equivalent host representations
+// produce the same profile fingerprint.
+func TestComputeCanonicalizesHost(t *testing.T) {
+	want, err := Compute(profile.Profile{Host: "https://workspace.example.test"})
+	require.NoError(t, err)
+
+	tests := []struct {
+		name string
+		host string
+	}{
+		{
+			name: "without scheme",
+			host: "workspace.example.test",
+		},
+		{
+			name: "with trailing slash",
+			host: "https://workspace.example.test/",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Compute(profile.Profile{Host: tt.host})
+			require.NoError(t, err)
+
+			assert.Equal(t, want, got)
+		})
+	}
+}
+
 // TestComputeCanonicalizesScopes verifies that semantically equivalent scope
 // lists produce the same profile fingerprint.
 func TestComputeCanonicalizesScopes(t *testing.T) {

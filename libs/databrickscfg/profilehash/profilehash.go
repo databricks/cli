@@ -8,11 +8,13 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/databricks-sdk-go/config"
 )
 
 // Compute hashes every field in the simplified profile representation.
 func Compute(p profile.Profile) (string, error) {
 	normalized := p
+	normalized.Host = normalizeHost(normalized.Host)
 	normalized.Scopes = normalizeScopes(normalized.Scopes)
 
 	// Marshal the whole simplified profile so newly added profile fields are
@@ -26,6 +28,13 @@ func Compute(p profile.Profile) (string, error) {
 	sum := sha256.Sum256(serialized)
 
 	return hex.EncodeToString(sum[:]), nil
+}
+
+// A stored profile can contain a host without a scheme, while resolving a
+// configuration adds the default HTTPS scheme. Normalize the stored value in
+// the same way so both forms produce the same fingerprint.
+func normalizeHost(value string) string {
+	return (&config.Config{Host: value}).CanonicalHostName()
 }
 
 // A stored profile preserves the order in which its scopes were written, while
