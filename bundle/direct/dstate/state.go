@@ -375,20 +375,18 @@ func (db *DeploymentState) DeleteState(ctx context.Context, key string, inProgre
 	if db.Data.State == nil {
 		return nil
 	}
-	// Read before the delete: DMS needs the id to say which resource went away.
+	// Read before the delete below: DMS needs the id to say which resource went away.
 	deletedID := db.stateIDs[key]
+
+	// A recorded deployment persists through the service, everything else through the WAL.
 	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
-		delete(db.Data.State, key)
-		delete(db.stateIDs, key)
 		if buf := db.operationBuffer; buf != nil {
 			buf.RecordOperation(ctx, key, inProgress, deletedID, nil)
 		}
-		return nil
-	}
-
-	if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
+	} else if err := appendJSONLine(db.walFile, WALEntry{Key: key}); err != nil {
 		return err
 	}
+
 	delete(db.stateIDs, key)
 	return nil
 }
@@ -433,8 +431,7 @@ func (db *DeploymentState) StateCLIVersion() string {
 func (db *DeploymentState) StateFeatures() map[string]struct{} {
 	db.mu.Lock()
 	defer db.mu.Unlock()
-	// Copied: the caller stamps this into a plan that outlives the lock, so handing out the live map
-	// would let it be mutated behind the state's back.
+	// Copied so callers cannot modify the state's set of features.
 	return maps.Clone(db.Data.Features)
 }
 
@@ -442,11 +439,11 @@ func (db *DeploymentState) StateFeatures() map[string]struct{} {
 // deployment that records history, since its state file persists no serial of its own, and the
 // state serial otherwise. The two mean the same thing and advance together.
 func (db *DeploymentState) GetSerial() int {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	if db.StorageBackend() == StorageBackendDeploymentMetadataService {
 		return db.VersionID
 	}
-	db.mu.Lock()
-	defer db.mu.Unlock()
 	return db.Data.Serial
 }
 
@@ -579,11 +576,10 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	default: // WAL exists
 		switch {
 		case recording:
-			// A recording open discards a leftover WAL - the service owns the resources, so a local
-			// log from a crash or a declined deploy is irrelevant, even when recording is refused below.
-			if err := os.Remove(walPath); err != nil {
-				return fmt.Errorf("removing WAL file %s: %w", walPath, err)
-			}
+			// A recorded deployment writes no WAL, so finding one means this state was written by a
+			// deployment that did not record history. Refuse rather than discard it: the file is the
+			// only record of that deploy's writes, and recording is refused below anyway.
+			return fmt.Errorf("unexpected WAL file found at %s: this deployment records deployment history, which does not write one", walPath)
 		case bool(withRecovery):
 			if err := db.replayWAL(ctx); err != nil {
 				return fmt.Errorf("reading state from %s: %w", path, err)

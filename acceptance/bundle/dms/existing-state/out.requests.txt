@@ -1,0 +1,108 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.deployment.json"
+  }
+}
+{
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS][0],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[CLI_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"darwin\",\"execution_time_ms\":8,\"exit_code\":1},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"error_message\":\"this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources\\n\\nTo record this bundle's history, start it over as a new deployment:\\n  1. remove experimental.deployment_history from your bundle configuration\\n  2. run \\\"databricks bundle destroy\\\" to delete the existing resources\\n  3. add experimental.deployment_history back and deploy again\",\"resource_count\":1,\"resource_job_count\":1,\"resource_pipeline_count\":0,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":0,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"resources_metadata\":{\"resources\":[{\"resource_type\":\"jobs\",\"count\":1}]},\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":1,\"bool_values\":[{\"key\":\"local.cache.attempt\",\"value\":true},{\"key\":\"local.cache.hit\",\"value\":true},{\"key\":\"experimental.use_legacy_run_as\",\"value\":false},{\"key\":\"run_as_set\",\"value\":false},{\"key\":\"presets_name_prefix_is_set\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\",\"bundle_mutator_execution_time_ms\":[{\"key\":\"phases.Initialize\",\"value\":4},{\"key\":\"resourcemutator.(processStaticResources)\",\"value\":1}],\"upload_file_count\":0}}}}}"
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.deployment.json"
+  }
+}
+{
+  "method": "POST",
+  "path": "/telemetry-ext",
+  "body": {
+    "uploadTime": [UNIX_TIME_MILLIS][1],
+    "items": [],
+    "protoLogs": [
+      "{\"frontend_log_event_id\":\"[UUID]\",\"entry\":{\"databricks_cli_log\":{\"execution_context\":{\"cmd_exec_id\":\"[UUID]\",\"version\":\"[CLI_VERSION]\",\"command\":\"bundle_deploy\",\"operating_system\":\"darwin\",\"execution_time_ms\":7,\"exit_code\":1},\"bundle_deploy_event\":{\"bundle_uuid\":\"[UUID]\",\"deployment_id\":\"[UUID]\",\"error_message\":\"unexpected WAL file found at [REDACTED_PATH]: this deployment records deployment history, which does not write one\",\"resource_count\":1,\"resource_job_count\":1,\"resource_pipeline_count\":0,\"resource_model_count\":0,\"resource_experiment_count\":0,\"resource_model_serving_endpoint_count\":0,\"resource_registered_model_count\":0,\"resource_quality_monitor_count\":0,\"resource_schema_count\":0,\"resource_volume_count\":0,\"resource_cluster_count\":0,\"resource_dashboard_count\":0,\"resource_app_count\":0,\"resources_metadata\":{\"resources\":[{\"resource_type\":\"jobs\",\"count\":1}]},\"experimental\":{\"configuration_file_count\":1,\"variable_count\":0,\"complex_variable_count\":0,\"lookup_variable_count\":0,\"target_count\":1,\"bool_values\":[{\"key\":\"local.cache.attempt\",\"value\":true},{\"key\":\"local.cache.hit\",\"value\":true},{\"key\":\"experimental.use_legacy_run_as\",\"value\":false},{\"key\":\"run_as_set\",\"value\":false},{\"key\":\"presets_name_prefix_is_set\",\"value\":false}],\"bundle_mode\":\"TYPE_UNSPECIFIED\",\"workspace_artifact_path_type\":\"WORKSPACE_FILE_SYSTEM\",\"bundle_mutator_execution_time_ms\":[{\"key\":\"phases.Initialize\",\"value\":4},{\"key\":\"resourcemutator.(processStaticResources)\",\"value\":1}],\"upload_file_count\":0}}}}}"
+    ]
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/terraform.tfstate",
+    "return_export_info": "true"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/export",
+  "q": {
+    "direct_download": "true",
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/state/resources.json"
+  }
+}

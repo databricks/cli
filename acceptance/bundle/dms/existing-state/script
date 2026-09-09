@@ -14,16 +14,14 @@ title "The check is against the remote state, not the local cache: wiping .datab
 rm -rf .databricks
 musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 
-title "A leftover local WAL is irrelevant too: under recording it is discarded rather than replayed, so the refusal stands"
-# The WAL header carries the deployment_history feature: if it were replayed, the
-# feature would merge into the state. The refusal below proves it is discarded, not read.
+title "A leftover local WAL is refused: a recorded deployment writes none, so one can only have come from a deploy that did not record"
 mkdir -p .databricks/bundle/default
 printf '{"lineage":"stale","serial":99,"state_version":2,"features":{"deployment_history":{}}}\n' > .databricks/bundle/default/resources.json.wal
 musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 
-title "Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled - and a leftover WAL is still discarded, not replayed"
+title "Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone"
 trace $CLI bundle destroy --auto-approve
-printf '{"lineage":"stale","serial":99,"state_version":2,"features":{"deployment_history":{}}}\n' > .databricks/bundle/default/resources.json.wal
+rm -f .databricks/bundle/default/resources.json.wal
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --oneline
 trace find.py 'resources[.]json[.]wal' --expect 0
