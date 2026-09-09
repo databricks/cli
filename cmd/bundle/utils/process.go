@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -17,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -360,7 +360,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
 
-		if err := validatePlan(b, plan); err != nil {
+		if err := direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan); err != nil {
 			logdiag.LogError(ctx, err)
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
@@ -456,36 +456,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	return b, stateDesc, nil
-}
-
-// validatePlan rejects a --plan file that no longer matches the target: its recording shape must
-// match the target's config, and a plan that targets an existing recorded deployment must not
-// predate the deployment the service now holds. It ends with the local lineage/serial guard.
-// validatePlan rejects a saved plan that no longer matches the state it was built against.
-func validatePlan(b *bundle.Bundle, plan *deployplan.Plan) error {
-	stateDB := &b.DeploymentBundle.StateDB
-	stateDB.AssertOpenedForReadOrWrite()
-
-	// A plan is built against a set of state features, and the stamps it carries follow from
-	// them, so applying it to a target with a different set would deploy the wrong shape.
-	// The state is the target's source of truth and carries its features even on a first
-	// recorded deploy (unlike the version ids, which are empty then).
-	if !maps.Equal(plan.Features, stateDB.StateFeatures()) {
-		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
-	}
-
-	// A plan taken before the first deploy carries no lineage, so both sides are empty then and this
-	// passes. If a deployment has happened since, the lineage no longer matches.
-	if plan.Lineage != stateDB.Data.Lineage {
-		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
-	}
-
-	expected := stateDB.GetSerial()
-	if plan.Serial != expected {
-		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)
-	}
-
-	return nil
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
