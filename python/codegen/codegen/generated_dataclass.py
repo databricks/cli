@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
@@ -65,14 +65,6 @@ class GeneratedField:
     The type of the field in TypedDict, e.g., GeneratedType(name="TaskParam", ...)
     """
 
-    create_func_type_name: GeneratedType
-    """
-    Type type of the field in static "create" function, e.g., GeneratedType(name="TaskParam", ...)
-
-    It can be different from param_type_name because lists are made optional in "create" function
-    to avoid problems with mutable default arguments.
-    """
-
     description: Optional[str]
     """
     The description of the field to be included into a docstring.
@@ -81,14 +73,6 @@ class GeneratedField:
     default: Optional[str]
     """
     The default value of the field, e.g., "None"
-    """
-
-    create_func_default: Optional[str]
-    """
-    The default value of the field in "create" function.
-
-    It can be different from default because lists are made optional in "create" function
-    to avoid problems with mutable default arguments.
     """
 
     default_factory: Optional[str]
@@ -151,66 +135,27 @@ def generate_field(
     field_type = variable_or_type(field_type, is_required=is_required)
     param_type = variable_or_type(param_type, is_required=is_required)
 
-    if field_type.name == "VariableOrDict":
-        return GeneratedField(
-            field_name=field_name,
-            type_name=field_type,
-            param_type_name=param_type,
-            create_func_type_name=optional_type(param_type),
-            description=prop.description,
-            default=None,
-            default_factory="dict",
-            create_func_default="None",
-            experimental=is_experimental_stage(prop.stage),
-            deprecated=prop.deprecated or False,
-        )
-    elif field_type.name == "VariableOrList":
-        return GeneratedField(
-            field_name=field_name,
-            type_name=field_type,
-            param_type_name=param_type,
-            create_func_type_name=optional_type(param_type),
-            description=prop.description,
-            default=None,
-            default_factory="list",
-            create_func_default="None",
-            experimental=is_experimental_stage(prop.stage),
-            deprecated=prop.deprecated or False,
-        )
-    elif is_required:
-        return GeneratedField(
-            field_name=field_name,
-            type_name=field_type,
-            param_type_name=param_type,
-            create_func_type_name=param_type,
-            description=prop.description,
-            default=None,
-            default_factory=None,
-            create_func_default=None,
-            experimental=is_experimental_stage(prop.stage),
-            deprecated=prop.deprecated or False,
-        )
-    else:
-        return GeneratedField(
-            field_name=field_name,
-            type_name=field_type,
-            param_type_name=param_type,
-            create_func_type_name=param_type,
-            description=prop.description,
-            default="None",
-            default_factory=None,
-            create_func_default="None",
-            experimental=is_experimental_stage(prop.stage),
-            deprecated=prop.deprecated or False,
-        )
-
-
-def optional_type(generated: GeneratedType) -> GeneratedType:
-    return GeneratedType(
-        name="Optional",
-        package="typing",
-        parameters=[generated],
+    # Base is the optional-scalar shape (default None). Collections instead use an
+    # empty-container factory, and required fields carry no default.
+    field = GeneratedField(
+        field_name=field_name,
+        type_name=field_type,
+        param_type_name=param_type,
+        description=prop.description,
+        default="None",
+        default_factory=None,
+        experimental=is_experimental_stage(prop.stage),
+        deprecated=prop.deprecated or False,
     )
+
+    if field_type.name == "VariableOrDict":
+        return replace(field, default=None, default_factory="dict")
+    elif field_type.name == "VariableOrList":
+        return replace(field, default=None, default_factory="list")
+    elif is_required:
+        return replace(field, default=None)
+
+    return field
 
 
 def str_type() -> GeneratedType:
@@ -281,7 +226,12 @@ def generate_type(namespace: str, ref: str, is_param: bool) -> GeneratedType:
             parameters=[element_type],
         )
 
-    if ref == "#/$defs/map/string":
+    if ref.startswith("#/$defs/map/"):
+        # Only dict[str, str] is modelled today; anything else (e.g. map/int,
+        # map/<object>) fails loudly instead.
+        if ref != "#/$defs/map/string":
+            raise ValueError(f"Unsupported map ref: {ref}")
+
         return dict_type()
 
     class_name = packages.get_class_name(ref)

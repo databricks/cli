@@ -123,6 +123,14 @@ config.code_source.snapshot.git.remote
   Type:     bool or string
   Required: no
 
+=== git-pinned subdirectory snapshots document root_path scoping
+>>> [CLI] experimental air run -h config.code_source.snapshot.root_path
+config.code_source.snapshot.root_path
+  Root of the code source to archive. A git-pinned subdirectory packages only that subtree.
+
+  Type:     string
+  Required: when code_source.snapshot is set
+
 === the config. prefix is optional
 >>> [CLI] experimental air run -h compute.num_accelerators
 config.compute.num_accelerators

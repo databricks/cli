@@ -3,3 +3,6 @@ RecordRequests = false
 RunsOnDbr = true
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+
+# bundle generate reading recorded state from DMS is a fast followup; opt out of recording.
+EnvMatrix.DMS = [""]

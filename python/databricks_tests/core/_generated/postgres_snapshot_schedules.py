@@ -11,12 +11,12 @@ from databricks.bundles.postgres_snapshot_schedules._models.postgres_snapshot_sc
 from databricks.bundles.postgres_snapshot_schedules._models.schedule_cadence import (
     ScheduleCadence,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_postgres_snapshot_schedule,
             dict_example={
                 "branch": "branch",

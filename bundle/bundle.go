@@ -80,8 +80,10 @@ type Metrics struct {
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
 
-	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
-	// telemetry is emitted without a deploy having run.
+	// StateEngine is the engine that ran (or would have run) the deploy, set once
+	// the deployment state is pulled so deploy telemetry reports it even when the
+	// deploy fails or is cancelled before applying resources. Empty only when the
+	// deploy fails before the state is read.
 	StateEngine engine.EngineType
 
 	// ResourceState is the direct engine's per-resource deployment state
@@ -315,6 +317,14 @@ func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClien
 	}
 
 	return client
+}
+
+// ConfiguresDeploymentHistory reports whether this bundle is configured to record deployment history with the
+// deployment metadata service, from experimental.deployment_history or
+// DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY.
+func (b *Bundle) ConfiguresDeploymentHistory(ctx context.Context) bool {
+	configured := b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory
+	return env.RecordsDeploymentHistory(ctx, configured)
 }
 
 // SetWorkpaceClient sets the workspace client for this bundle.

@@ -1,0 +1,7 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/catalogs/dms_other_[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
+}

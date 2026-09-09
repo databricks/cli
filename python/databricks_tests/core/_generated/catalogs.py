@@ -6,12 +6,12 @@ from databricks.bundles.catalogs._models.lifecycle import Lifecycle
 from databricks.bundles.catalogs._models.privilege_assignment import PrivilegeAssignment
 from databricks.bundles.core import Resources, catalog_mutator
 from databricks.bundles.core._generated.catalogs import _resource_type
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_catalog,
             dict_example={
                 "grants": [{}],

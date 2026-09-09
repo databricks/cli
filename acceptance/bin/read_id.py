@@ -10,12 +10,13 @@ Usage: <group> <name> [attr...]
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from add_repl import add_repl
-from print_state import get_state_file
+from print_state import get_resources, get_state_file
 
 
 def get_id_terraform(filename, name):
@@ -32,6 +33,23 @@ def get_id_terraform(filename, name):
                 return attribute_values.get("id") or attribute_values.get("name")
 
     print(f"Cannot find resource with {name=}. Available: {available}", file=sys.stderr)
+
+
+def get_id_recorded(target, name):
+    """Find a recorded resource's id by its bare name ("foo"), scanning the resource list.
+
+    The GET resource API would be the direct lookup, but it needs the full resource key
+    ("jobs.foo"), and callers pass only the leaf name - matching how user-visible commands
+    take a bare name ("bundle run my_job"), which DABs allows because it enforces name
+    uniqueness across types. So list and match on the leaf instead. Switching to GET is a
+    reasonable follow-up; it likely needs the service to key resources by name as well.
+    """
+    resources = get_resources(target)
+    for key, value in resources.items():
+        if key.split(".")[1] == name:
+            return value["id"]
+
+    print(f"Cannot find recorded resource with {name=}. Available: {list(resources)}", file=sys.stderr)
 
 
 def get_id_direct(filename, name):
@@ -53,11 +71,14 @@ def main():
     parser.add_argument("name")
     args = parser.parse_args()
 
-    filename = get_state_file(args.target, args.backup)
-    if filename.endswith(".tfstate"):
-        id = get_id_terraform(filename, args.name)
+    if os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true":
+        id = get_id_recorded(args.target, args.name)
     else:
-        id = get_id_direct(filename, args.name)
+        filename = get_state_file(args.target, args.backup)
+        if filename.endswith(".tfstate"):
+            id = get_id_terraform(filename, args.name)
+        else:
+            id = get_id_direct(filename, args.name)
 
     if id:
         print(id)

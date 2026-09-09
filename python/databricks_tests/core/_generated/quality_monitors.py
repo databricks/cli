@@ -24,12 +24,12 @@ from databricks.bundles.quality_monitors._models.monitor_time_series import (
     MonitorTimeSeries,
 )
 from databricks.bundles.quality_monitors._models.quality_monitor import QualityMonitor
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_quality_monitor,
             dict_example={
                 "assets_dir": "assets_dir",
