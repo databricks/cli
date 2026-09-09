@@ -21,7 +21,7 @@ import (
 func newLogsCommand() *cobra.Command {
 	var (
 		node       int
-		lines      int
+		tail       int
 		minutes    int
 		retry      int
 		downloadTo string
@@ -36,7 +36,7 @@ func newLogsCommand() *cobra.Command {
 	}
 
 	cmd.Flags().IntVar(&node, "node", 0, "Fetch logs from this node")
-	cmd.Flags().IntVar(&lines, "lines", 0, "For completed runs, print the last N lines (default 10000)")
+	cmd.Flags().IntVar(&tail, "tail", 0, "For completed runs, print the last N log lines (default 10000)")
 	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
 	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing")
@@ -64,20 +64,20 @@ func newLogsCommand() *cobra.Command {
 
 		// A download always writes the full log, so a tail or time window would be
 		// silently dropped.
-		if downloadTo != "" && (cmd.Flags().Changed("lines") || minutes > 0) {
+		if downloadTo != "" && (cmd.Flags().Changed("tail") || minutes > 0) {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("--download-to writes complete logs, so it cannot be combined with --lines or --minutes"))
+				errors.New("--download-to writes complete logs, so it cannot be combined with --tail or --minutes"))
 		}
 
-		// --lines (line tail) and --minutes (time window) answer the same question
+		// --tail (line tail) and --minutes (time window) answer the same question
 		// two ways, so reject both together rather than silently honoring one.
-		if lines > 0 && minutes > 0 {
+		if tail > 0 && minutes > 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window"))
+				errors.New("cannot combine --tail with --minutes: --tail selects by line count, --minutes by time window"))
 		}
-		if lines < 0 {
+		if tail < 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				fmt.Errorf("invalid --lines %d: must be positive", lines))
+				fmt.Errorf("invalid --tail %d: must be positive", tail))
 		}
 		if minutes < 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
@@ -98,11 +98,11 @@ func newLogsCommand() *cobra.Command {
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
-		// -1 signals "unset" (use the default cap); an explicit --lines 0 stays 0
+		// -1 signals "unset" (use the default cap); an explicit --tail 0 stays 0
 		// and prints nothing.
 		tailLines := -1
-		if cmd.Flags().Changed("lines") {
-			tailLines = lines
+		if cmd.Flags().Changed("tail") {
+			tailLines = tail
 		}
 
 		// Only the streaming path prints resume guidance, so only it catches the
