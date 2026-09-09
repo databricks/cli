@@ -4,9 +4,8 @@ from pathlib import Path
 from typing import Optional
 
 # Resources with a field type the generator can't model yet are parked here and
-# excluded from generation until support for that type is added. Empty now that
-# interface{} is supported, but kept as the escape hatch for future resources
-# that hit an unmodellable type.
+# excluded from generation until support for that type is added. Empty now, but
+# kept as the escape hatch for future resources that hit an unmodellable type.
 RESOURCE_DENYLIST: set[str] = set()
 
 # Only GA and public-preview resources are generated; later stages may still change.
