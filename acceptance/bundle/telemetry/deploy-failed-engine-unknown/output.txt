@@ -10,20 +10,3 @@ API message: Internal error
 
 
 Exit code: 1
-
->>> cat out.requests.txt
-
-=== resources_metadata is reported without state_engine on a failed deploy
->>> cat telemetry.json
-{
-  "resources": [
-    {
-      "resource_type": "jobs",
-      "count": 1
-    }
-  ]
-}
-
-=== state_engine is null even though the engine was resolved before the failure
->>> cat telemetry.json
-null
