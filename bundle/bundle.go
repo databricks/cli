@@ -86,6 +86,7 @@ type Metrics struct {
 	DirectMigrateSafeErr        string
 	DirectMigrateWarningSafeErr string
 	DirectMigrateCommitSafeErr  string
+	DirectMigratePlanSafeErr    string
 
 	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
 	// telemetry is emitted without a deploy having run.

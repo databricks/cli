@@ -33,6 +33,9 @@ type LogDiagData struct {
 
 	// Summary of the first error diagnostic logged, if any.
 	FirstErrorSummary string
+
+	// Safe (PII-free) description of that same first error, if it carried one.
+	FirstErrorSafe string
 }
 
 // IsSetup returns whether InitContext() was already called.
@@ -136,6 +139,16 @@ func GetFirstErrorSummary(ctx context.Context) string {
 	return val.FirstErrorSummary
 }
 
+// GetFirstErrorSafe returns the PII-free description of the first error logged,
+// or "" when none was logged or it carried no safe description.
+func GetFirstErrorSafe(ctx context.Context) string {
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+
+	return val.FirstErrorSafe
+}
+
 func LogDiag(ctx context.Context, d diag.Diagnostic) {
 	val := read(ctx)
 	val.mu.Lock()
@@ -146,6 +159,7 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 		val.Errors += 1
 		if val.FirstErrorSummary == "" {
 			val.FirstErrorSummary = d.Summary
+			val.FirstErrorSafe = d.Safe
 		}
 	case diag.Warning:
 		val.Warnings += 1

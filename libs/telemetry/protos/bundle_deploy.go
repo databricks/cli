@@ -141,6 +141,11 @@ type BundleDeployExperimental struct {
 	// carries no error to describe it. Set alongside direct_migrate_warnings, or
 	// direct_drymigrate_warnings on the dry run.
 	DirectMigrateWarningSafeErr string `json:"direct_migrate_warning_safe_error,omitempty"`
+
+	// DirectMigratePlanSafeErr describes why the post-convert plan check failed.
+	// The state converted cleanly but a plan against it did not succeed, so the
+	// migration was abandoned. Set alongside direct_migrate_plan_error.
+	DirectMigratePlanSafeErr string `json:"direct_migrate_plan_safe_error,omitempty"`
 }
 
 // BundleResourcesMetadata mirrors the universe proto. Per-resource-type counts

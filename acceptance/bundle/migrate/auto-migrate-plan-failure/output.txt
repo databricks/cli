@@ -28,6 +28,7 @@ Warn: Direct engine was selected but the migration reported issues; automatic mi
 
 >>> print_migration_telemetry
 direct_migrate_plan_error true
+direct_migrate_plan_safe_error 403 INJECTED
 
 === Local state was NOT rewritten (still terraform)
 >>> find .databricks/bundle -name resources.json -type f

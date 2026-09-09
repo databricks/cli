@@ -101,6 +101,14 @@ func TestFromErrNil(t *testing.T) {
 	assert.Nil(t, FromErr(nil))
 }
 
+// TestFromErrSetsSafe records that FromErr carries a diagnostic's PII-free
+// description, so a collector can report it without the summary's user data.
+func TestFromErrSetsSafe(t *testing.T) {
+	d := FromErr(standInErr{})
+	assert.Equal(t, "access denied", d[0].Safe)
+	assert.Contains(t, d[0].Summary, "a@b.com") // the summary still has the PII
+}
+
 // TestSafeErrorMatchesFromErr keeps the exported helper and the field in
 // step, since callers holding an error use one and callers holding a diagnostic
 // use the other.

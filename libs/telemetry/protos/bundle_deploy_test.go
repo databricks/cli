@@ -17,6 +17,7 @@ func TestBundleDeployExperimentalSafeErrFields(t *testing.T) {
 		DirectMigrateSafeErr:        "a",
 		DirectMigrateCommitSafeErr:  "b",
 		DirectMigrateWarningSafeErr: "c",
+		DirectMigratePlanSafeErr:    "d",
 	})
 	require.NoError(t, err)
 
@@ -26,6 +27,7 @@ func TestBundleDeployExperimentalSafeErrFields(t *testing.T) {
 	assert.Equal(t, "a", got["direct_migrate_safe_error"])
 	assert.Equal(t, "b", got["direct_migrate_commit_safe_error"])
 	assert.Equal(t, "c", got["direct_migrate_warning_safe_error"])
+	assert.Equal(t, "d", got["direct_migrate_plan_safe_error"])
 }
 
 // TestBundleDeployExperimentalSafeErrOmitted keeps a successful deploy from

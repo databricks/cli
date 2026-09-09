@@ -139,10 +139,11 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		return
 	}
 
-	if planErr := checkPlanOnTempState(ctx, b, tempStatePath, cfg); planErr != nil {
+	if planSafeErr, planErr := checkPlanOnTempState(ctx, b, tempStatePath, cfg); planErr != nil {
 		log.Warnf(ctx, "%s%v", warnPrefix, planErr)
 		log.Warnf(ctx, "%s", feedbackNotice)
 		b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
+		b.Metrics.DirectMigratePlanSafeErr = planSafeErr
 		log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
 		return
 	}
@@ -164,7 +165,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 // Individual planning errors are emitted as warnings with warnPrefix so they
 // are visible without failing the deploy. The plan is run in an isolated
 // context so its diagnostics do not affect the deploy's own error state.
-func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath string, cfg *config.Root) error {
+func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath string, cfg *config.Root) (string, error) {
 	planCtx := logdiag.IsolatedContext(ctx)
 	logdiag.SetCollect(planCtx, true)
 	defer func() {
@@ -182,11 +183,21 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 	// This plan is not created with the deployment history feature enabled,
 	// so we can safely pass false for withDeploymentHistory.
 	if err := planBundle.StateDB.Open(planCtx, tempStatePath, false, false, dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-		return fmt.Errorf("opening migrated state for plan check: %w", err)
+		return "", safeerr.Errorf("opening migrated state for plan check: %w", err)
 	}
 
+	// The plan reports individual failures through logdiag rather than the
+	// returned error, so the first one's safe form comes from the isolated
+	// context. Fall back to the returned error for failures raised directly.
 	_, err := planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg)
-	return err
+	if err == nil {
+		return "", nil
+	}
+	safe := logdiag.GetFirstErrorSafe(planCtx)
+	if safe == "" {
+		safe = diag.SafeError(err)
+	}
+	return safe, err
 }
 
 // recordSafeErr stores a PII-free description of err in target, which is
