@@ -5,3 +5,7 @@ bundle:
 experimental:
   scripts:
     postdeploy: "python3 ./myscript.py $POSTDEPLOY_EXITCODE postdeploy"
+
+sync:
+  exclude:
+    - empty-tfstate.json
