@@ -4,9 +4,7 @@
 
 seed_empty_tfstate() {
     mkdir -p .databricks/bundle/default/terraform
-    cat > .databricks/bundle/default/terraform/terraform.tfstate <<'JSON'
-{"version": 4, "serial": 1, "lineage": "test-lineage", "resources": []}
-JSON
+    cp empty-tfstate.json .databricks/bundle/default/terraform/terraform.tfstate
 }
 
 seed_empty_tfstate
