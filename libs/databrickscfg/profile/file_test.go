@@ -5,9 +5,39 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestFromConfig verifies that fingerprint-relevant resolved configuration is
+// represented by the simplified profile.
+func TestFromConfig(t *testing.T) {
+	cfg := &config.Config{
+		Profile:             "TEST",
+		Host:                "https://workspace.example.test",
+		AccountID:           "account-id",
+		WorkspaceID:         "workspace-id",
+		ClusterID:           "cluster-id",
+		ServerlessComputeID: "serverless-compute-id",
+		ClientID:            "client-id",
+		ClientSecret:        "client-secret",
+		Scopes:              []string{"all-apis", "sql"},
+		AuthType:            "databricks-cli",
+	}
+
+	assert.Equal(t, Profile{
+		Name:                 "TEST",
+		Host:                 "https://workspace.example.test",
+		AccountID:            "account-id",
+		WorkspaceID:          "workspace-id",
+		ClusterID:            "cluster-id",
+		ServerlessComputeID:  "serverless-compute-id",
+		HasClientCredentials: true,
+		Scopes:               "all-apis,sql",
+		AuthType:             "databricks-cli",
+	}, FromConfig(cfg))
+}
 
 func TestProfileCloud(t *testing.T) {
 	assert.Equal(t, "AWS", Profile{Host: "https://dbc-XXXXXXXX-YYYY.cloud.databricks.com"}.Cloud())

@@ -21,6 +21,21 @@ type Profile struct {
 	AuthType             string
 }
 
+// FromConfig returns the simplified profile represented by a resolved config.
+func FromConfig(cfg *config.Config) Profile {
+	return Profile{
+		Name:                 cfg.Profile,
+		Host:                 cfg.Host,
+		AccountID:            cfg.AccountID,
+		WorkspaceID:          cfg.WorkspaceID,
+		ClusterID:            cfg.ClusterID,
+		ServerlessComputeID:  cfg.ServerlessComputeID,
+		HasClientCredentials: cfg.ClientID != "" && cfg.ClientSecret != "",
+		Scopes:               strings.Join(cfg.Scopes, ","),
+		AuthType:             cfg.AuthType,
+	}
+}
+
 func (p Profile) Cloud() string {
 	cfg := config.Config{Host: p.Host}
 	switch {

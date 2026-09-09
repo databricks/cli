@@ -112,15 +112,7 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	}
 
 	if cfg.Profile != "" {
-		profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.WithName(cfg.Profile))
-		if err != nil {
-			return nil, fmt.Errorf("load profile %q for fingerprint: %w", cfg.Profile, err)
-		}
-		if len(profiles) == 0 {
-			return nil, fmt.Errorf("load profile %q for fingerprint: profile not found", cfg.Profile)
-		}
-
-		fingerprint, err := profilehash.Compute(profiles[0])
+		fingerprint, err := profilehash.Compute(profile.FromConfig(cfg))
 		if err != nil {
 			return nil, fmt.Errorf("compute profile fingerprint: %w", err)
 		}
