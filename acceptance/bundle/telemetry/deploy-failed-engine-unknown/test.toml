@@ -1,0 +1,23 @@
+# Reproduces the "unknown engine" deploy telemetry.
+#
+# A deploy that fails before it starts applying resources (here it fails while
+# acquiring the deployment lock) still emits a bundle_deploy_event via the deferred
+# LogDeployTelemetry in cmd/bundle/utils/process.go. But b.Metrics.StateEngine is
+# assigned only inside deployCore (bundle/phases/deploy.go), which never runs on this
+# path, so it is still the zero value. resources_metadata is therefore reported with
+# per-type counts (which come from the config) but with no state_engine field, and
+# the dashboard surfaces that null as engine="unknown" - even though the engine was
+# fully resolved (ResolveEngineSetting) long before the deploy failed.
+#
+# The output is engine-agnostic: the lock is acquired in the shared deploy phase
+# before any engine-specific plan/apply, and a failed deploy records no per-resource
+# state sizes for either engine.
+#
+# The stubbed endpoint is the one the workspace filer writes through, so the first
+# write - the deploy.lock file in lock.Acquire - is what fails here.
+Cloud = false
+
+[[Server]]
+Pattern = "POST /api/2.0/workspace-files/import-file/{path...}"
+Response.StatusCode = 500
+Response.Body = '''{"error_code": "INTERNAL_ERROR", "message": "Internal error"}'''

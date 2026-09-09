@@ -1,0 +1,29 @@
+
+>>> [CLI] bundle deploy
+Error: Failed to acquire deployment lock: Internal error
+Error: Internal error (500 INTERNAL_ERROR)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Fstate%2Fdeploy.lock?overwrite=false
+HTTP Status: 500 Internal Server Error
+API error_code: INTERNAL_ERROR
+API message: Internal error
+
+
+Exit code: 1
+
+>>> cat out.requests.txt
+
+=== resources_metadata is reported without state_engine on a failed deploy
+>>> cat telemetry.json
+{
+  "resources": [
+    {
+      "resource_type": "jobs",
+      "count": 1
+    }
+  ]
+}
+
+=== state_engine is null even though the engine was resolved before the failure
+>>> cat telemetry.json
+null
