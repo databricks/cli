@@ -49,6 +49,10 @@ from databricks.bundles.core._generated.pipelines import (
     _PipelineResources,
     pipeline_mutator,
 )
+from databricks.bundles.core._generated.postgres_snapshot_schedules import (
+    _PostgresSnapshotScheduleResources,
+    postgres_snapshot_schedule_mutator,
+)
 from databricks.bundles.core._generated.quality_monitors import (
     _QualityMonitorResources,
     quality_monitor_mutator,
@@ -101,6 +105,7 @@ __all__ = [
     "mlflow_model_mutator",
     "model_serving_endpoint_mutator",
     "pipeline_mutator",
+    "postgres_snapshot_schedule_mutator",
     "quality_monitor_mutator",
     "registered_model_mutator",
     "schema_mutator",
@@ -129,6 +134,7 @@ class _GeneratedResources(
     _ModelServingEndpointResources,
     _MlflowModelResources,
     _PipelineResources,
+    _PostgresSnapshotScheduleResources,
     _QualityMonitorResources,
     _RegisteredModelResources,
     _SchemaResources,
@@ -159,6 +165,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         model_serving_endpoints,
         models,
         pipelines,
+        postgres_snapshot_schedules,
         quality_monitors,
         registered_models,
         schemas,
@@ -186,6 +193,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         model_serving_endpoints._resource_type(),
         models._resource_type(),
         pipelines._resource_type(),
+        postgres_snapshot_schedules._resource_type(),
         quality_monitors._resource_type(),
         registered_models._resource_type(),
         schemas._resource_type(),
