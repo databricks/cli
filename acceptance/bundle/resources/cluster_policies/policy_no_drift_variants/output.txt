@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Created cluster_policies.my_policy
+Created cluster_policies.my_pol
 Created clusters.standalone
 Created jobs.for_each_cluster
 Created jobs.task_cluster
@@ -21,7 +21,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "plan": {
-    "resources.cluster_policies.my_policy": {
+    "resources.cluster_policies.my_pol": {
       "action": "skip"
     },
     "resources.clusters.standalone": {
@@ -49,8 +49,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
       },
       "depends_on": [
         {
-          "label": "${resources.cluster_policies.my_policy.id}",
-          "node": "resources.cluster_policies.my_policy"
+          "label": "${resources.cluster_policies.my_pol.id}",
+          "node": "resources.cluster_policies.my_pol"
         }
       ]
     },
@@ -92,8 +92,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
       },
       "depends_on": [
         {
-          "label": "${resources.cluster_policies.my_policy.id}",
-          "node": "resources.cluster_policies.my_policy"
+          "label": "${resources.cluster_policies.my_pol.id}",
+          "node": "resources.cluster_policies.my_pol"
         }
       ]
     },
@@ -145,8 +145,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
       },
       "depends_on": [
         {
-          "label": "${resources.cluster_policies.my_policy.id}",
-          "node": "resources.cluster_policies.my_policy"
+          "label": "${resources.cluster_policies.my_pol.id}",
+          "node": "resources.cluster_policies.my_pol"
         }
       ]
     },
@@ -155,8 +155,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
       "changes": {},
       "depends_on": [
         {
-          "label": "${resources.cluster_policies.my_policy.id}",
-          "node": "resources.cluster_policies.my_policy"
+          "label": "${resources.cluster_policies.my_pol.id}",
+          "node": "resources.cluster_policies.my_pol"
         }
       ]
     }
@@ -167,7 +167,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.cluster_policies.my_policy
+  delete resources.cluster_policies.my_pol
   delete resources.clusters.standalone
   delete resources.jobs.for_each_cluster
   delete resources.jobs.task_cluster

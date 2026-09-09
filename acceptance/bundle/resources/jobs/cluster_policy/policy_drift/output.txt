@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Created cluster_policies.pol
+Created cluster_policies.my_pol
 Created jobs.no_policy
 Created jobs.owned_tag
 Created jobs.with_policy
@@ -47,7 +47,7 @@ json.plan.resources.jobs.owned_tag.changes.job_clusters[job_cluster_key='small']
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.cluster_policies.pol
+  delete resources.cluster_policies.my_pol
   delete resources.jobs.no_policy
   delete resources.jobs.owned_tag
   delete resources.jobs.with_policy
