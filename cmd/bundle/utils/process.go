@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/databricks/cli/bundle"
@@ -245,7 +244,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 			if b.ConfiguresDeploymentHistory(ctx) {
 				var err error
-				dmsDeploymentID, dmsDeployment, err = dms.FetchDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+				var lastVersionID int
+				dmsDeploymentID, dmsDeployment, lastVersionID, err = dms.FetchDeployment(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 				if err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
@@ -255,16 +255,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				// the plan carries them. version_id is always known (last recorded + 1); deployment_id
 				// does not exist until a first deploy creates it, so it is left off here and the deploy
 				// phase stamps the created id.
-				// The service reports the version as a string; parse it here so everything below
-				// carries a number.
-				lastVersionID := 0
-				if dmsDeployment != nil && dmsDeployment.LastVersionId != "" {
-					lastVersionID, err = strconv.Atoi(dmsDeployment.LastVersionId)
-					if err != nil {
-						logdiag.LogError(ctx, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err))
-						return b, stateDesc, root.ErrAlreadyPrinted
-					}
-				}
 				nextVersion := lastVersionID + 1
 				muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 				if dmsDeploymentID != "" {

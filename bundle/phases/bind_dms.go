@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -18,18 +17,13 @@ import (
 )
 
 // bindWithHistory records a bind for a deployment that tracks history with the metadata service.
-// The engine's bind computes the plan preview and resolved state against a throwaway copy of what
-// the service holds, then the bind is recorded as an operation carrying that state, so the next
-// deploy sees the resource as managed rather than new.
+// It reuses the engine's file-based bind against a throwaway copy of what the service holds to get
+// the plan preview and resolved state, then records that state as a bind operation so the next
+// deploy sees the resource as managed.
 func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourceID string, autoApprove bool) {
 	wsc := b.WorkspaceClient(ctx)
 
-	deploymentID, deployment, err := dms.FetchDeployment(ctx, wsc, b.Config.Workspace.StatePath)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	lastVersionID, err := deploymentVersion(deployment)
+	deploymentID, deployment, lastVersionID, err := dms.FetchDeployment(ctx, wsc, b.Config.Workspace.StatePath)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -53,9 +47,8 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 	// The seed's temp state is discarded; the bind is recorded with the service instead.
 	defer result.Cancel()
 
-	// Record exactly what the engine resolved for the resource - the same state, id and
-	// dependencies a file-based bind would persist (etags and all) - read straight back out of the
-	// throwaway state it wrote rather than the state cache, which the plan step overwrites.
+	// Read the resolved state from the throwaway state the engine wrote, not the state cache, which
+	// the plan step overwrites (dropping the etag for dashboards/genie_spaces).
 	entry, ok, err := resolvedEntry(ctx, result.TempStatePath, resourceKey)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -74,7 +67,7 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 func recordBind(ctx context.Context, b *bundle.Bundle, deploymentID string, deployment *bundledeployments.Deployment, lastVersionID int, resourceKey string, entry dstate.ResourceEntry) {
 	ctx = withWorkspaceClient(ctx, b)
 	db := &b.DeploymentBundle.StateDB
-	if err := db.Open(ctx, localStatePath(ctx, b), dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: deploymentID, LastVersionID: lastVersionID}); err != nil {
+	if err := openRecordedState(ctx, db, localStatePath(ctx, b), deploymentID, lastVersionID); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -95,17 +88,11 @@ func recordBind(ctx context.Context, b *bundle.Bundle, deploymentID string, depl
 		logdiag.LogError(ctx, err)
 		return
 	}
+	// The version exists now, so close it out on every path; otherwise a failure recording the
+	// operation leaks its lease, as deploy and destroy also guard against.
+	defer completeRecordedVersion(ctx, b)
 
 	if err := db.SaveState(ctx, resourceKey, entry.ID, entry.State, entry.DependsOn); err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
-	if _, err := db.Finalize(ctx); err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	if _, err := db.CompleteVersion(ctx, true); err != nil {
 		logdiag.LogError(ctx, err)
 	}
 }
@@ -116,7 +103,7 @@ func recordBind(ctx context.Context, b *bundle.Bundle, deploymentID string, depl
 func unbindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey string) {
 	wsc := b.WorkspaceClient(ctx)
 
-	deploymentID, deployment, err := dms.FetchDeployment(ctx, wsc, b.Config.Workspace.StatePath)
+	deploymentID, _, lastVersionID, err := dms.FetchDeployment(ctx, wsc, b.Config.Workspace.StatePath)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -125,15 +112,10 @@ func unbindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		// Nothing is recorded, so there is nothing to unbind.
 		return
 	}
-	lastVersionID, err := deploymentVersion(deployment)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	ctx = withWorkspaceClient(ctx, b)
 	db := &b.DeploymentBundle.StateDB
-	if err := db.Open(ctx, localStatePath(ctx, b), dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: deploymentID, LastVersionID: lastVersionID}); err != nil {
+	if err := openRecordedState(ctx, db, localStatePath(ctx, b), deploymentID, lastVersionID); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
@@ -160,6 +142,8 @@ func unbindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		logdiag.LogError(ctx, err)
 		return
 	}
+	// The version exists now, so close it out on every path (see recordBind).
+	defer completeRecordedVersion(ctx, b)
 
 	for _, k := range keys {
 		if err := db.DeleteState(ctx, k, false); err != nil {
@@ -168,20 +152,24 @@ func unbindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		}
 		log.Infof(ctx, "Unbound %s", k)
 	}
+}
 
+// completeRecordedVersion drains the buffered operations and closes the version out, completing
+// with failure if anything went wrong. Deferred once a version exists so every path completes it.
+func completeRecordedVersion(ctx context.Context, b *bundle.Bundle) {
+	db := &b.DeploymentBundle.StateDB
 	if _, err := db.Finalize(ctx); err != nil {
 		logdiag.LogError(ctx, err)
-		return
 	}
-	if _, err := db.CompleteVersion(ctx, true); err != nil {
+	if _, err := db.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
 		logdiag.LogError(ctx, err)
 	}
 }
 
 // seedStateFromService writes a throwaway local state holding what the service currently records,
-// so the engine's file-based bind can compute its plan and resolved state against it. Returns a
-// path that does not exist yet when no deployment has been recorded, which the engine reads as an
-// empty state. cleanup removes the seed and any temporary files the engine leaves beside it.
+// so the engine's file-based bind can compute its plan and resolved state against it. The returned
+// path does not exist yet when no deployment has been recorded, which the engine reads as empty
+// state. cleanup removes the seed and any temporary files the engine leaves beside it.
 func seedStateFromService(ctx context.Context, b *bundle.Bundle, deploymentID string, lastVersionID int) (string, func(), error) {
 	seedPath := localStatePath(ctx, b) + ".bind-seed"
 	cleanup := func() {
@@ -196,7 +184,7 @@ func seedStateFromService(ctx context.Context, b *bundle.Bundle, deploymentID st
 
 	ctx = withWorkspaceClient(ctx, b)
 	var src dstate.DeploymentState
-	if err := src.Open(ctx, localStatePath(ctx, b), dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: deploymentID, LastVersionID: lastVersionID}); err != nil {
+	if err := openRecordedState(ctx, &src, localStatePath(ctx, b), deploymentID, lastVersionID); err != nil {
 		cleanup()
 		return "", nil, err
 	}
@@ -238,15 +226,10 @@ func recordedKeys(db *dstate.DeploymentState, resourceKey string) []string {
 	return keys
 }
 
-func deploymentVersion(deployment *bundledeployments.Deployment) (int, error) {
-	if deployment == nil || deployment.LastVersionId == "" {
-		return 0, nil
-	}
-	v, err := strconv.Atoi(deployment.LastVersionId)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", deployment.LastVersionId, err)
-	}
-	return v, nil
+// openRecordedState opens the deployment's recorded state for read, reading its resources from the
+// metadata service.
+func openRecordedState(ctx context.Context, db *dstate.DeploymentState, path, deploymentID string, lastVersionID int) error {
+	return db.Open(ctx, path, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: deploymentID, LastVersionID: lastVersionID})
 }
 
 func localStatePath(ctx context.Context, b *bundle.Bundle) string {

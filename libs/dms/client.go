@@ -70,21 +70,27 @@ func (c *Client) CreateDeployment(ctx context.Context, parentPath string, metada
 	return deploymentIDFromName(created.Name)
 }
 
-// FetchDeployment looks up the deployment recorded under statePath, returning its id and record.
-// It returns "", nil, nil when none exists yet: the deployment node is the workspace node the
-// service creates on the first recorded deploy, and its id is that node's object id.
+// FetchDeployment looks up the deployment recorded under statePath, returning its id, record, and
+// last recorded version number. It returns "", nil, 0, nil when none exists yet: the deployment
+// node is the workspace node the service creates on the first recorded deploy, and its id is that
+// node's object id.
+//
+// TODO: a deployment is usable only when both the node and the service's record exist; a
+// half-created one (node present, record missing) errors here even though CreateDeployment can
+// recover from it. A dms.ReadDeployment returning empty unless both halves are present would let
+// the caller create or finalize it instead.
 //
 // TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
 // workspace lookup to turn the node into an id, then a get by that id.
-func FetchDeployment(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
+func FetchDeployment(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, int, error) {
 	nodePath := path.Join(statePath, DeploymentNodeName)
 
 	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
 	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
-		return "", nil, nil
+		return "", nil, 0, nil
 	}
 	if err != nil {
-		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+		return "", nil, 0, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
 	}
 
 	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
@@ -92,9 +98,17 @@ func FetchDeployment(ctx context.Context, w *databricks.WorkspaceClient, statePa
 		Name: DeploymentName(deploymentID),
 	})
 	if err != nil {
-		return "", nil, err
+		return "", nil, 0, err
 	}
-	return deploymentID, deployment, nil
+
+	lastVersionID := 0
+	if deployment.LastVersionId != "" {
+		lastVersionID, err = strconv.Atoi(deployment.LastVersionId)
+		if err != nil {
+			return "", nil, 0, fmt.Errorf("failed to parse last_version_id %q: %w", deployment.LastVersionId, err)
+		}
+	}
+	return deploymentID, deployment, lastVersionID, nil
 }
 
 // UpdateDeployment writes the fields mask names onto the deployment. The service ignores every

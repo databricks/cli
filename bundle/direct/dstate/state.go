@@ -1020,10 +1020,9 @@ func (db *DeploymentState) unlockedSave() error {
 	return nil
 }
 
-// SnapshotToPlainState writes what this deployment-history state currently holds to path as an
-// ordinary state file with no history marker, so the file-based bind flow can compute its plan and
-// resolved state against a copy of what the service records without touching it. The state must be
-// open for read.
+// SnapshotToPlainState writes what this deployment-history state holds to path as an ordinary
+// state file (no history marker), so a file-based flow can run against a copy of what the service
+// records. The state must be open for read.
 func (db *DeploymentState) SnapshotToPlainState(path string) error {
 	db.AssertOpenedForRead()
 	db.mu.Lock()

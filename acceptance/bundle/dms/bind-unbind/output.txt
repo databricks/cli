@@ -4,8 +4,20 @@
 Successfully bound job with an id '[JOB_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
+=== The service now records the job as managed, so it plans as a change not a create
+>>> [CLI] bundle plan
+update jobs.foo
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
 === Unbind it again, dropping it from what the service records
 >>> [CLI] bundle deployment unbind foo
+
+=== No longer managed, so it plans as a fresh create
+>>> [CLI] bundle plan
+create jobs.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 === Each recorded a version whose operation carries the bind / unbind action type
 >>> print_requests.py --dms --method POST //versions --nostamp
@@ -58,3 +70,11 @@ Run 'bundle deploy' to deploy changes to your workspace
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
+
+=== Test cleanup
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-bind-unbind-[UNIQUE_NAME]/default
+
+Destroy: 0 deleted
+
+>>> [CLI] jobs delete [JOB_ID]

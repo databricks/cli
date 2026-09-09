@@ -1,12 +1,27 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-title "Bind an existing job to the bundle, recorded with the deployment history service"
 job_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
 add_repl "$job_id" JOB_ID
+
+cleanup() {
+    title "Test cleanup"
+    trace $CLI bundle destroy --auto-approve
+    trace $CLI jobs delete "$job_id"
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Bind an existing job to the bundle, recorded with the deployment history service"
 trace $CLI bundle deployment bind foo "$job_id" --auto-approve
+
+title "The service now records the job as managed, so it plans as a change not a create"
+trace $CLI bundle plan
 
 title "Unbind it again, dropping it from what the service records"
 trace $CLI bundle deployment unbind foo
+
+title "No longer managed, so it plans as a fresh create"
+trace $CLI bundle plan
 
 title "Each recorded a version whose operation carries the bind / unbind action type"
 trace print_requests.py --dms --method POST //versions --nostamp
