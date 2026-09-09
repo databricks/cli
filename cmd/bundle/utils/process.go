@@ -516,9 +516,13 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 
 // Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
 //
-// TODO: ask the service for a new API that looks a deployment up by state path directly
-// (GetDeployment(state_path)). That would replace the two round trips here: a workspace lookup to
-// turn the node into an id, then a get by that id.
+// TODO: a deployment is only usable when both the node and the service's record exist, and a
+// half-created one - node present, record missing - blocks the bundle here even though
+// CreateDeployment already recovers from it. Move this behind a dms.ReadDeployment(ctx, statePath)
+// that returns an empty id and version unless both halves are there, leaving the caller to call
+// CreateDeployment to create or finalize it. That call would also replace the two round trips here
+// (a workspace lookup to turn the node into an id, then a get by that id) with one, if the service
+// grows a lookup by state path.
 func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
 	nodePath := path.Join(statePath, dms.DeploymentNodeName)
 
