@@ -444,10 +444,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	// Fingerprint on_file_change triggers once, after every step that can produce
-	// a watched file: build, generated overlays and the predeploy script. Reads
-	// the sync root that phases.Initialize resolves, so it is skipped along with
-	// it; `bundle deploy --plan` recomputes fingerprints that the loaded plan then
-	// overrides with the ones it recorded.
+	// a watched file: build and the predeploy script. Reads the sync root that
+	// phases.Initialize resolves, so it is skipped along with it; `bundle deploy
+	// --plan` recomputes fingerprints that the loaded plan then overrides with the
+	// ones it recorded.
 	if !opts.SkipInitialize {
 		bundle.ApplyContext(ctx, b, mutator.ResolveJobRunFileTriggers())
 		if logdiag.HasError(ctx) {
