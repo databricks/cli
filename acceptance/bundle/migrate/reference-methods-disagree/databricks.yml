@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+# Enabled by the script before the second deploy, so the first one leaves a state
+# the two resolution methods agree on.
+#experimental: {scripts: {postdeploy: "python3 drift_stored_name.py"}}
+
+resources:
+  jobs:
+    src:
+      name: source
+    dst:
+      # Method A reads dst's own stored name; Method B evaluates this template
+      # against src's. The post-deploy script makes those two differ.
+      name: ${resources.jobs.src.name}

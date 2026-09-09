@@ -20,10 +20,12 @@ import (
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/safeerr"
 )
 
 // warnPrefix labels warnings emitted by the post-deploy dry-run so they are not
@@ -56,6 +58,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		log.Warnf(ctx, "%sfailed to parse terraform state: %v", warnPrefix, err)
+		recordSafeErr(&b.Metrics.DirectMigrateSafeErr, err)
 		if requestedEngine.Type == engine.EngineDirect {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
 			log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
@@ -85,6 +88,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (selected via "+requestedEngine.Source+")...")
 		if err := backupTerraformState(ctx, b); err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
+			recordSafeErr(&b.Metrics.DirectMigrateCommitSafeErr, err)
 			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 			return
 		}
@@ -107,6 +111,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if err != nil {
 		log.Warnf(ctx, "%s%v", warnPrefix, err)
+		recordSafeErr(&b.Metrics.DirectMigrateSafeErr, err)
 	}
 	if hasWarnings || err != nil {
 		log.Warnf(ctx, "%s", feedbackNotice)
@@ -134,10 +139,11 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 		return
 	}
 
-	if planErr := checkPlanOnTempState(ctx, b, tempStatePath, cfg); planErr != nil {
+	if planSafeErr, planErr := checkPlanOnTempState(ctx, b, tempStatePath, cfg); planErr != nil {
 		log.Warnf(ctx, "%s%v", warnPrefix, planErr)
 		log.Warnf(ctx, "%s", feedbackNotice)
 		b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
+		b.Metrics.DirectMigratePlanSafeErr = planSafeErr
 		log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
 		return
 	}
@@ -146,6 +152,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
+		recordSafeErr(&b.Metrics.DirectMigrateCommitSafeErr, err)
 		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
 		return
 	}
@@ -158,7 +165,7 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 // Individual planning errors are emitted as warnings with warnPrefix so they
 // are visible without failing the deploy. The plan is run in an isolated
 // context so its diagnostics do not affect the deploy's own error state.
-func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath string, cfg *config.Root) error {
+func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath string, cfg *config.Root) (string, error) {
 	planCtx := logdiag.IsolatedContext(ctx)
 	logdiag.SetCollect(planCtx, true)
 	defer func() {
@@ -176,11 +183,32 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 	// This plan is not created with the deployment history feature enabled,
 	// so we can safely pass false for withDeploymentHistory.
 	if err := planBundle.StateDB.Open(planCtx, tempStatePath, false, false, dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-		return fmt.Errorf("opening migrated state for plan check: %w", err)
+		return "", safeerr.Errorf("opening migrated state for plan check: %w", err)
 	}
 
+	// The plan reports individual failures through logdiag rather than the
+	// returned error, so the first one's safe form comes from the isolated
+	// context. Fall back to the returned error for failures raised directly.
 	_, err := planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg)
-	return err
+	if err == nil {
+		return "", nil
+	}
+	safe := logdiag.GetFirstErrorSafe(planCtx)
+	if safe == "" {
+		safe = diag.SafeError(err)
+	}
+	return safe, err
+}
+
+// recordSafeErr stores a PII-free description of err in target, which is
+// the metric for the same failure class as the boolean recorded alongside it —
+// so a query tells a conversion failure from a commit failure by field, without
+// joining against the booleans. Recorded for both populations, the opt-in one
+// and the dry run, since the booleans only say that a migration failed.
+func recordSafeErr(target *string, err error) {
+	if safe := diag.SafeError(err); safe != "" {
+		*target = safe
+	}
 }
 
 // recordDryRunNoop records dry-run telemetry for a no-op case (no state, or
@@ -228,20 +256,20 @@ func backupTerraformState(ctx context.Context, b *bundle.Bundle) error {
 	remoteTerraformPath, localTerraformPath := b.StateFilenameTerraform(ctx)
 	reader, err := f.Read(ctx, remoteTerraformPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("reading remote terraform state %s: %w", remoteTerraformPath, err)
+		return safeerr.Errorf("reading remote terraform state %s: %w", remoteTerraformPath, err)
 	}
 	if err == nil {
 		defer reader.Close()
 		if err := f.Write(ctx, remoteTerraformPath+".backup", reader, filer.OverwriteIfExists); err != nil {
-			return fmt.Errorf("writing remote terraform backup: %w", err)
+			return safeerr.Errorf("writing remote terraform backup: %w", err)
 		}
 		if err := f.Delete(ctx, remoteTerraformPath); err != nil {
-			return fmt.Errorf("deleting remote terraform state: %w", err)
+			return safeerr.Errorf("deleting remote terraform state: %w", err)
 		}
 	}
 
 	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("renaming local terraform state to %s.backup: %w", localTerraformPath, err)
+		return safeerr.Errorf("renaming local terraform state to %s.backup: %w", localTerraformPath, err)
 	}
 	return nil
 }
@@ -300,12 +328,19 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	var stateDB dstate.DeploymentState
 	stateDB.OpenWithData(tempStatePath, migratedDB)
 
-	// Apply SecretScopeFixups so the config matches what the direct engine expects.
-	// This adds MANAGE ACL for the current user to all secret scopes, ensuring
-	// the migrated state and config agree on .permissions entries.
-	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
-	if logdiag.HasError(ctx) {
-		return tempStatePath, resourceCount, false, nil, errors.New("failed to apply secret scope fixups")
+	// Apply the secret scope fixups so the config matches what the direct engine
+	// expects. This adds MANAGE ACL for the current user to all secret scopes,
+	// ensuring the migrated state and config agree on .permissions entries.
+	//
+	// ApplyFuncErr rather than a mutator, so the failure stays an error: a
+	// diagnostic's summary reaches telemetry as a generic "failed to apply secret
+	// scope fixups". The mutator machinery is still needed, because the fixups
+	// mutate typed config and reverseInterpolate below reads the dynamic tree.
+	if err := bundle.ApplyFuncErr(ctx, b, func(_ context.Context, b *bundle.Bundle) error {
+		_, err := resourcemutator.ApplySecretScopeFixups(b, engine.EngineDirect)
+		return err
+	}); err != nil {
+		return tempStatePath, resourceCount, false, nil, err
 	}
 
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
@@ -313,7 +348,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// BuildStateFromTF expects ${resources.*} references, so reverse the interpolation first.
 	uninterpolatedRoot, err := reverseInterpolate(b.Config.Value())
 	if err != nil {
-		return tempStatePath, resourceCount, false, nil, fmt.Errorf("failed to reverse interpolation: %w", err)
+		return tempStatePath, resourceCount, false, nil, safeerr.Errorf("failed to reverse interpolation: %w", err)
 	}
 
 	var uninterpolatedConfig config.Root
@@ -321,7 +356,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return uninterpolatedRoot, nil
 	})
 	if err != nil {
-		return tempStatePath, resourceCount, false, nil, fmt.Errorf("failed to create uninterpolated config: %w", err)
+		return tempStatePath, resourceCount, false, nil, safeerr.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
 	adapters, err := dresources.InitAll(nil)
@@ -330,11 +365,14 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	}
 
 	if err := stateDB.UpgradeToWrite(); err != nil {
-		return tempStatePath, resourceCount, false, nil, fmt.Errorf("upgrading state for apply: %w", err)
+		return tempStatePath, resourceCount, false, nil, safeerr.Errorf("upgrading state for apply: %w", err)
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
-	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
+	hasWarnings, warnSafeErr, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
+	// Recorded even when the conversion goes on to fail: a warning is enough to
+	// stop an automatic migration on its own, and nothing else describes it.
+	b.Metrics.DirectMigrateWarningSafeErr = warnSafeErr
 	if err != nil {
 		return tempStatePath, resourceCount, hasWarnings, nil, err
 	}
@@ -345,7 +383,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 
 	// BuildStateFromTF reports some failures via logdiag instead of returning an error.
 	if logdiag.HasError(ctx) {
-		return tempStatePath, resourceCount, hasWarnings, nil, errors.New("state conversion failed")
+		return tempStatePath, resourceCount, hasWarnings, nil, safeerr.New("state conversion failed")
 	}
 
 	return tempStatePath, resourceCount, hasWarnings, &uninterpolatedConfig, nil
@@ -364,13 +402,13 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 	// "file is missing"; treat it as a hard failure to avoid renaming over
 	// something we couldn't read.
 	if _, err := os.Stat(localDirectPath); err == nil {
-		return fmt.Errorf("state file %s already exists", localDirectPath)
+		return safeerr.Errorf("state file %s already exists", localDirectPath)
 	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("stat %s: %w", localDirectPath, err)
+		return safeerr.Errorf("stat %s: %w", localDirectPath, err)
 	}
 
 	if err := pushDirectState(ctx, b, tempStatePath); err != nil {
-		return fmt.Errorf("pushing direct state to workspace: %w", err)
+		return safeerr.Errorf("pushing direct state to workspace: %w", err)
 	}
 
 	// Remote is now authoritative for direct engine; make local match. Local
@@ -380,13 +418,13 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 	// on failure so telemetry reflects what actually happened here (the
 	// migration is complete on the workspace but not on this checkout).
 	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
-		return fmt.Errorf("workspace migrated but creating local state directory failed: %w", err)
+		return safeerr.Errorf("workspace migrated but creating local state directory failed: %w", err)
 	}
 	if err := os.Rename(tempStatePath, localDirectPath); err != nil {
-		return fmt.Errorf("workspace migrated but writing local direct state failed: %w", err)
+		return safeerr.Errorf("workspace migrated but writing local direct state failed: %w", err)
 	}
 	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("workspace migrated but backing up local terraform state failed: %w", err)
+		return safeerr.Errorf("workspace migrated but backing up local terraform state failed: %w", err)
 	}
 
 	suffix := "s"
@@ -432,16 +470,16 @@ func pushDirectState(ctx context.Context, b *bundle.Bundle, localPath string) er
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("reading remote terraform state %s: %w", remoteTerraformPath, err)
+		return safeerr.Errorf("reading remote terraform state %s: %w", remoteTerraformPath, err)
 	}
 	defer reader.Close()
 
 	if err := f.Write(ctx, remoteTerraformPath+".backup", reader, filer.OverwriteIfExists); err != nil {
-		return fmt.Errorf("writing remote terraform backup: %w", err)
+		return safeerr.Errorf("writing remote terraform backup: %w", err)
 	}
 
 	if err := f.Delete(ctx, remoteTerraformPath); err != nil {
-		return fmt.Errorf("deleting remote terraform state: %w", err)
+		return safeerr.Errorf("deleting remote terraform state: %w", err)
 	}
 
 	return nil

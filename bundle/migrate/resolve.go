@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/safeerr"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -23,16 +24,16 @@ func evaluateTemplate(state TFStateAttrs, template string) (string, error) {
 	for _, pathString := range ref.References() {
 		path, err := structpath.ParsePath(pathString)
 		if err != nil {
-			return "", fmt.Errorf("cannot parse reference path %q: %w", pathString, err)
+			return "", safeerr.Errorf("cannot parse reference path %q: %w", pathString, err)
 		}
 		// Expect resources.<group>.<name>.<field...>
 		if path.Len() < 4 {
-			return "", fmt.Errorf("unexpected reference format (too short): %q", pathString)
+			return "", safeerr.Errorf("unexpected reference format (too short): %q", pathString)
 		}
 		// Check first component is "resources"
 		firstNode := path.Prefix(1)
 		if firstNode.String() != "resources" {
-			return "", fmt.Errorf("unexpected reference format (expected resources.*): %q", pathString)
+			return "", safeerr.Errorf("unexpected reference format (expected resources.*): %q", pathString)
 		}
 
 		group := path.SkipPrefix(1).Prefix(1).String()
@@ -41,7 +42,7 @@ func evaluateTemplate(state TFStateAttrs, template string) (string, error) {
 
 		value, err := LookupTFField(state, group, name, fieldPath)
 		if err != nil {
-			return "", fmt.Errorf("cannot look up %q: %w", pathString, err)
+			return "", safeerr.Errorf("cannot look up %q: %w", pathString, err)
 		}
 
 		result = strings.ReplaceAll(result, "${"+pathString+"}", fmt.Sprintf("%v", value))
@@ -88,7 +89,9 @@ func ResolveFieldRef(ctx context.Context, state TFStateAttrs, srcGroup, srcName 
 	case errB == nil:
 		return valueB, false, nil
 	default:
-		return nil, false, fmt.Errorf("%s.%s field %s: method A: %w; method B: %w",
-			srcGroup, srcName, fieldPath, errA, errB)
+		// srcGroup is a resource type the CLI defines, so it is safe to report;
+		// the resource name and field path are not.
+		return nil, false, safeerr.Errorf("%s.%s field %s: method A: %w; method B: %w",
+			safeerr.Safe(srcGroup), srcName, fieldPath, errA, errB)
 	}
 }

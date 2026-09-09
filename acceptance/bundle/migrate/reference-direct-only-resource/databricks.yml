@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  #catalogs: {my_catalog: {name: my-catalog}}
+  apps:
+    my_app:
+      name: my-app
+      source_code_path: ./app
+      config:
+        env:
+          - name: CATALOG
+            value: plain

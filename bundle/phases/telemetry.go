@@ -305,6 +305,11 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
 				BundleMutatorExecutionTimeMs: getExecutionTimes(b),
+
+				DirectMigrateSafeErr:        b.Metrics.DirectMigrateSafeErr,
+				DirectMigrateCommitSafeErr:  b.Metrics.DirectMigrateCommitSafeErr,
+				DirectMigrateWarningSafeErr: b.Metrics.DirectMigrateWarningSafeErr,
+				DirectMigratePlanSafeErr:    b.Metrics.DirectMigratePlanSafeErr,
 			},
 		},
 	})

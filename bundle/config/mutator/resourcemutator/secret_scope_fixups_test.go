@@ -3,9 +3,13 @@ package resourcemutator
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCollapsePermissions(t *testing.T) {
@@ -251,4 +255,23 @@ func TestAddManageForCurrentUser(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestApplySecretScopeFixupsReportsLowestKey pins which scope is reported when
+// more than one is invalid: map order would otherwise decide, and the key
+// reaches both a diagnostic and migration telemetry.
+func TestApplySecretScopeFixupsReportsLowestKey(t *testing.T) {
+	b := &bundle.Bundle{Config: config.Root{Resources: config.Resources{
+		SecretScopes: map[string]*resources.SecretScope{
+			"zebra": {Name: "zebra", Permissions: []resources.SecretScopePermission{{Level: "BOGUS", UserName: "u"}}},
+			"apple": {Name: "apple", Permissions: []resources.SecretScopePermission{{Level: "BOGUS", UserName: "u"}}},
+		},
+	}}}
+	b.Config.Workspace.CurrentUser = &config.User{User: &iam.User{UserName: "u"}}
+
+	// The keys are sorted, so this is deterministic. Dropping the sort would make
+	// it fail about half the time, which is enough to notice.
+	key, err := ApplySecretScopeFixups(b, engine.EngineDirect)
+	require.Error(t, err)
+	assert.Equal(t, "apple", key)
 }

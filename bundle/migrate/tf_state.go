@@ -5,11 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
+	"github.com/databricks/cli/libs/safeerr"
 	"github.com/databricks/cli/libs/structs/structpath"
 	tfjson "github.com/hashicorp/terraform-json"
 )
@@ -94,7 +94,7 @@ func parseTFStateAttrsFromRaw(s *rawTFState) TFStateAttrs {
 func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath.PathNode) (any, error) {
 	tfType, ok := terraform.GroupToTerraformName[group]
 	if !ok {
-		return nil, fmt.Errorf("unknown resource group %q", group)
+		return nil, safeerr.Errorf("unknown resource group %q", safeerr.Safe(group))
 	}
 
 	// Translate field path to TF naming.
@@ -107,7 +107,7 @@ func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath
 
 	attrsJSON, ok := state[tfType][name]
 	if !ok {
-		return nil, fmt.Errorf("%s.%s not found in TF state", tfType, name)
+		return nil, safeerr.Errorf("%s.%s not found in TF state", safeerr.Safe(tfType), name)
 	}
 
 	// Unmarshal into map[string]any to handle TF list-blocks: in TF state, single-block
@@ -120,7 +120,7 @@ func LookupTFField(state TFStateAttrs, group, name string, fieldPath *structpath
 	dec := json.NewDecoder(bytes.NewReader(attrsJSON))
 	dec.UseNumber()
 	if err := dec.Decode(&attrs); err != nil {
-		return nil, fmt.Errorf("cannot parse TF state for %s.%s: %w", tfType, name, err)
+		return nil, safeerr.Errorf("cannot parse TF state for %s.%s: %w", safeerr.Safe(tfType), name, err)
 	}
 
 	return navigateTFState(attrs, tfFieldPath)
@@ -148,18 +148,18 @@ func navigateTFState(data map[string]any, path *structpath.PathNode) (any, error
 			}
 			m, ok := current.(map[string]any)
 			if !ok {
-				return nil, fmt.Errorf("expected map at %q, got %T", key, current)
+				return nil, safeerr.Errorf("expected map at %q, got %T", key, current)
 			}
 			val, ok := m[key]
 			if !ok {
-				return nil, fmt.Errorf("%q: key not found", key)
+				return nil, safeerr.Errorf("%q: key not found", key)
 			}
 			current = val
 		} else if idx, ok := node.Index(); ok {
 			switch v := current.(type) {
 			case []any:
 				if idx < 0 || idx >= len(v) {
-					return nil, fmt.Errorf("index %d out of range (len %d)", idx, len(v))
+					return nil, safeerr.Errorf("index %d out of range (len %d)", safeerr.Safe(idx), safeerr.Safe(len(v)))
 				}
 				current = v[idx]
 			default:
@@ -167,7 +167,7 @@ func navigateTFState(data map[string]any, path *structpath.PathNode) (any, error
 				if idx == 0 {
 					continue
 				}
-				return nil, fmt.Errorf("index %d: not a slice (%T)", idx, current)
+				return nil, safeerr.Errorf("index %d: not a slice (%T)", safeerr.Safe(idx), current)
 			}
 		}
 	}
