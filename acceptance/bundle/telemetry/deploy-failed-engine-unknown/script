@@ -1,0 +1,16 @@
+errcode trace $CLI bundle deploy
+
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
+
+# resources_metadata is present (per-type counts come from the config), but there is
+# no state_engine key: the deploy failed before deployCore ran, so b.Metrics.StateEngine
+# is still the zero value and its omitempty drops it. This absence is the "unknown
+# engine" the dashboard reports for failed/cancelled deploys.
+title "resources_metadata is reported without state_engine on a failed deploy"
+trace cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata'
+
+title "state_engine is null even though the engine was resolved before the failure"
+trace cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata.state_engine'
+
+rm out.requests.txt
+rm telemetry.json
