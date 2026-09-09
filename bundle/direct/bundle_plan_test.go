@@ -451,10 +451,9 @@ func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
 	}
 	slices.Sort(keys)
 
-	// Unexpected: a coarse "field.a" entry overlaps the fine "field.a.c" entry.
-	// Probably should be: []string{"field.a.b", "field.a.c"}.
-	assert.Equal(t, []string{"field.a", "field.a.c"}, keys)
-
-	// The coarse parent entry carries the whole sub-block rather than a leaf value.
+	// One level per subtree: the local diff produced the field.a.c leaf and the remote
+	// diff the whole field.a block; the block-level entry wins and the inner leaf is
+	// dropped, so the merged change set is just the block.
+	assert.Equal(t, []string{"field.a"}, keys)
 	assert.Equal(t, threeWayInner{B: "old", C: "newc"}, changes["field.a"].New)
 }

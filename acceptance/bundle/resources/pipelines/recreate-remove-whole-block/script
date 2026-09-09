@@ -9,9 +9,9 @@ trace $CLI bundle deploy
 # lines. connection_name is immutable, so removing it must recreate the pipeline.
 grep -v '# TO_DELETE' databricks.yml > databricks.yml.tmp && mv databricks.yml.tmp databricks.yml
 
-# The direct engine records the whole ingestion_definition block as one 'update'
-# entry (missing the recreate rule on the connection_name leaf); terraform records
-# 'recreate'. See the per-engine "changes" / "action" in the plan JSON.
+# Both engines recreate. structdiff records the removed block as one change at
+# "ingestion_definition"; bidirectional rule matching relates that to the recreate
+# rule on the connection_name leaf. See the per-engine "changes"/"action" in the JSON.
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm -f out.requests.txt

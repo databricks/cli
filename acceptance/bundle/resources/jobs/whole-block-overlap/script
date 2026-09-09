@@ -13,9 +13,8 @@ r["schedule"] = None
 EOF
 
 # The local diff is at the leaf (schedule.timezone_id) while the remote diff is at
-# the block (schedule = nil vs the configured block). structdiff records the remote
-# side as one block-level change instead of descending, so the plan's "changes"
-# carries BOTH the whole "schedule" block and the "schedule.timezone_id" leaf
-# instead of merging them into leaves.
+# the block (schedule = nil vs the configured block). The block-level change wins:
+# the plan's "changes" keeps one level per subtree (the whole "schedule" block), not
+# an overlapping block + "schedule.timezone_id" leaf pair.
 trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan.direct.json

@@ -428,6 +428,30 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 		}
 	}
 
+	// Keep one level per subtree. A whole block added or removed shows up as a single
+	// block-level change, while the other diff (local vs remote) may have descended to
+	// inner fields of the same subtree. The block-level change already describes them,
+	// so drop any entry that has an ancestor entry in the map.
+	for pathStr := range m {
+		node, err := structpath.ParsePath(pathStr)
+		if err != nil {
+			continue
+		}
+		for other := range m {
+			if other == pathStr {
+				continue
+			}
+			ancestor, err := structpath.ParsePath(other)
+			if err != nil {
+				continue
+			}
+			if node.HasPrefix(ancestor) {
+				delete(m, pathStr)
+				break
+			}
+		}
+	}
+
 	return m, nil
 }
 
@@ -550,11 +574,29 @@ func isFieldMissingInRemote(adapter *dresources.Adapter, path *structpath.PathNo
 
 func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
 	for _, r := range rules {
-		if path.HasPatternPrefix(r.Field) {
+		if matchesFieldRule(path, r.Field) {
 			return r.Reason, true
 		}
 	}
 	return "", false
+}
+
+// matchesFieldRule reports whether a rule targeting the pattern matches a change at
+// path, in either direction:
+//   - path at or below the rule: the field the rule names changed (the usual case).
+//   - path above the rule: a whole block was added or removed, recorded as one
+//     block-level change, so the field the rule names is part of it.
+//
+// The second direction is what lets a rule on ingestion_definition.connection_name
+// match a whole-block change recorded at ingestion_definition.
+func matchesFieldRule(path *structpath.PathNode, pattern *structpath.PatternNode) bool {
+	if path.HasPatternPrefix(pattern) {
+		return true
+	}
+	if path.Len() < pattern.Len() {
+		return path.HasPatternPrefix(pattern.Prefix(path.Len()))
+	}
+	return false
 }
 
 func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
