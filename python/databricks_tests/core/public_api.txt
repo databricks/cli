@@ -31,6 +31,7 @@ __all__ = [
     mlflow_model_mutator,
     model_serving_endpoint_mutator,
     pipeline_mutator,
+    postgres_snapshot_schedule_mutator,
     quality_monitor_mutator,
     registered_model_mutator,
     schema_mutator,
@@ -101,6 +102,7 @@ class Resources:
     def add_mlflow_model(self, resource_name: str, mlflow_model: MlflowModelParam, *, location: Union[Location, None] = None) -> None
     def add_model_serving_endpoint(self, resource_name: str, model_serving_endpoint: ModelServingEndpointParam, *, location: Union[Location, None] = None) -> None
     def add_pipeline(self, resource_name: str, pipeline: PipelineParam, *, location: Union[Location, None] = None) -> None
+    def add_postgres_snapshot_schedule(self, resource_name: str, postgres_snapshot_schedule: PostgresSnapshotScheduleParam, *, location: Union[Location, None] = None) -> None
     def add_quality_monitor(self, resource_name: str, quality_monitor: QualityMonitorParam, *, location: Union[Location, None] = None) -> None
     def add_registered_model(self, resource_name: str, registered_model: RegisteredModelParam, *, location: Union[Location, None] = None) -> None
     def add_resource(self, resource_name: str, resource: Resource, *, location: Union[Location, None] = None) -> None
@@ -128,6 +130,7 @@ class Resources:
     @property model_serving_endpoints -> dict[str, ModelServingEndpoint]
     @property models -> dict[str, MlflowModel]
     @property pipelines -> dict[str, Pipeline]
+    @property postgres_snapshot_schedules -> dict[str, PostgresSnapshotSchedule]
     @property quality_monitors -> dict[str, QualityMonitor]
     @property registered_models -> dict[str, RegisteredModel]
     @property schemas -> dict[str, Schema]
@@ -220,6 +223,10 @@ def model_serving_endpoint_mutator(function: Callable) -> ResourceMutator[ModelS
 @overload def pipeline_mutator(function: Callable[[Pipeline], Pipeline]) -> ResourceMutator[Pipeline]
 def pipeline_mutator(function: Callable) -> ResourceMutator[Pipeline]
 
+@overload def postgres_snapshot_schedule_mutator(function: Callable[[Bundle, PostgresSnapshotSchedule], PostgresSnapshotSchedule]) -> ResourceMutator[PostgresSnapshotSchedule]
+@overload def postgres_snapshot_schedule_mutator(function: Callable[[PostgresSnapshotSchedule], PostgresSnapshotSchedule]) -> ResourceMutator[PostgresSnapshotSchedule]
+def postgres_snapshot_schedule_mutator(function: Callable) -> ResourceMutator[PostgresSnapshotSchedule]
+
 @overload def quality_monitor_mutator(function: Callable[[Bundle, QualityMonitor], QualityMonitor]) -> ResourceMutator[QualityMonitor]
 @overload def quality_monitor_mutator(function: Callable[[QualityMonitor], QualityMonitor]) -> ResourceMutator[QualityMonitor]
 def quality_monitor_mutator(function: Callable) -> ResourceMutator[QualityMonitor]
@@ -277,6 +284,7 @@ singular_name=mlflow_experiment plural_name=experiments resource_type=MlflowExpe
 singular_name=mlflow_model plural_name=models resource_type=MlflowModel
 singular_name=model_serving_endpoint plural_name=model_serving_endpoints resource_type=ModelServingEndpoint
 singular_name=pipeline plural_name=pipelines resource_type=Pipeline
+singular_name=postgres_snapshot_schedule plural_name=postgres_snapshot_schedules resource_type=PostgresSnapshotSchedule
 singular_name=quality_monitor plural_name=quality_monitors resource_type=QualityMonitor
 singular_name=registered_model plural_name=registered_models resource_type=RegisteredModel
 singular_name=schema plural_name=schemas resource_type=Schema

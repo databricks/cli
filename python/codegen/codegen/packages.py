@@ -65,6 +65,8 @@ RENAMES = {
     # time.Time is a scalar serialized as an RFC3339 string; the Go side models
     # it as a string too (see libs/dyn/convert/sdk_native_types.go).
     "time.Time": "str",
+    # duration.Duration is a scalar serialized as a seconds string (e.g. "3600s").
+    "duration.Duration": "str",
     "string": "str",
     "boolean": "bool",
     "integer": "int",
@@ -76,6 +78,7 @@ RENAMES = {
 PRIMITIVES = [
     # Treated as str
     "time.Time",
+    "duration.Duration",
     "string",
     "boolean",
     "integer",

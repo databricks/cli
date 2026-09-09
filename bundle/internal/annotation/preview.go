@@ -27,13 +27,14 @@ func PreviewTag(stage clijson.LaunchStage) string {
 // fully-qualified Go type paths (PkgPath + "." + Name), matching getPath in
 // bundle/internal/schema.
 var launchStageOverrides = map[string]clijson.LaunchStage{
-	"github.com/databricks/cli/bundle/config/resources.PostgresBranch":      clijson.LaunchStagePublicBeta,
-	"github.com/databricks/cli/bundle/config/resources.PostgresCatalog":     clijson.LaunchStagePublicBeta,
-	"github.com/databricks/cli/bundle/config/resources.PostgresDatabase":    clijson.LaunchStagePublicBeta,
-	"github.com/databricks/cli/bundle/config/resources.PostgresEndpoint":    clijson.LaunchStagePublicBeta,
-	"github.com/databricks/cli/bundle/config/resources.PostgresProject":     clijson.LaunchStagePublicBeta,
-	"github.com/databricks/cli/bundle/config/resources.PostgresRole":        clijson.LaunchStagePublicBeta,
-	"github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable": clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresBranch":           clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresCatalog":          clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresDatabase":         clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresEndpoint":         clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresProject":          clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresRole":             clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresSnapshotSchedule": clijson.LaunchStagePublicBeta,
+	"github.com/databricks/cli/bundle/config/resources.PostgresSyncedTable":      clijson.LaunchStagePublicBeta,
 }
 
 // OverrideLaunchStage raises a field's launch stage to the type's configured

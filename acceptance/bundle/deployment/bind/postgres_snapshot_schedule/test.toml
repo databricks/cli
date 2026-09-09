@@ -1,0 +1,26 @@
+Cloud = false
+
+# The snapshot schedule was added to the Postgres API in databricks-sdk-go
+# v0.177.0, which the pinned Terraform provider does not yet include, so there is
+# no databricks_..._snapshot_schedule resource. Run the direct engine only.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    ".databricks"
+]
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/test-project/branches/main/snapshot-schedule"
+Response.Body = '''
+{
+  "name": "projects/test-project/branches/main/snapshot-schedule",
+  "schedule": [
+    {
+      "daily_schedule": {
+        "hour": 3
+      },
+      "retention": "604800s"
+    }
+  ]
+}
+'''
