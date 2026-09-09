@@ -20,6 +20,12 @@ type RecordedState struct {
 // resources.json does not track state. The service is queried for state for resources and then they
 // are filled in-place in DeploymentState.Data.State:
 func (db *DeploymentState) applyDMSState(recorded []dms.Resource) error {
+	if len(db.Data.State) > 0 {
+		return fmt.Errorf("internal error: state file for a recorded deployment carries %d resources, expected none", len(db.Data.State))
+	}
+
+	// Built first and assigned together, so a malformed envelope leaves the state alone rather than
+	// half filled.
 	resources := make(map[string]ResourceEntry, len(recorded))
 	stateIDs := make(map[string]string, len(recorded))
 	for _, res := range recorded {
