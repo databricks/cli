@@ -11,7 +11,5 @@ read_id.py pol > /dev/null
 title "Every cluster-spec location converges: nothing to change on a second plan\n"
 trace $CLI bundle plan
 
-title "The plan, minus cloud-dependent remote_state and managed *_attributes\n"
-trace $CLI bundle plan -o json | prune_plan.py \
-  --ignore-reasons managed,backend_default,empty \
-  --ignore-keys instance_pool_id,node_type_id,enable_local_disk_encryption,data_security_mode
+title "The plan, minus remote_state and backend-chosen changes (managed, backend_default)\n"
+trace $CLI bundle plan -o json | prune_plan.py

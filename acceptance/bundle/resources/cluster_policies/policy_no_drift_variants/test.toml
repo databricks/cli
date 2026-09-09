@@ -1,10 +1,9 @@
-# Records a jq projection of the plan -- the policy-supplied custom_tags at each cluster-spec
-# location -- rather than the whole plan: the full remote_state is the per-run cluster/job GET
-# (driver IPs, instance ids, spark_context_id) which no testserver can reproduce. The
-# projection is identical on every cloud because the tag is policy-set, so all clouds run.
-# CloudSlow keeps the real cluster boot out of the per-PR short run.
-Cloud = true
-CloudSlow = true
+# Local-only. This test creates a standalone cluster, which only the local testserver can do
+# reliably: on a real workspace it boots at deploy and repeatedly hit capacity limits, and the
+# full remote_state is a per-run cluster GET no testserver reproduces. The suppression behavior
+# is verified against a real workspace by the jobs/cluster_policy tests; here we cover every
+# cluster-spec location (standalone cluster, task new_cluster, for_each new_cluster, pipeline).
+Cloud = false
 
 RecordRequests = false
 
