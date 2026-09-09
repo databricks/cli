@@ -11,12 +11,12 @@ from databricks.bundles.cluster_policies._models.library import Library
 from databricks.bundles.cluster_policies._models.lifecycle import Lifecycle
 from databricks.bundles.core import Resources, cluster_policy_mutator
 from databricks.bundles.core._generated.cluster_policies import _resource_type
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_cluster_policy,
             dict_example={
                 "libraries": [{}],

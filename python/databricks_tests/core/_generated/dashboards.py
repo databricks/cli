@@ -7,12 +7,12 @@ from databricks.bundles.dashboards._models.lifecycle import Lifecycle
 from databricks.bundles.dashboards._models.lifecycle_state import LifecycleState
 from databricks.bundles.dashboards._models.permission import Permission
 from databricks.bundles.dashboards._models.permission_level import PermissionLevel
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_dashboard,
             dict_example={
                 "lifecycle": {},
