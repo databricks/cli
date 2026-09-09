@@ -32,3 +32,23 @@ func TestFingerprintStability(t *testing.T) {
 	assert.Equal(t, hash1ToCompare, hash1)
 	assert.NotEqual(t, hash1, hash2)
 }
+
+// TestFingerprintMapKeyOrder tests that maps hash independently of key insertion order,
+// which is what makes a map usable as a cache key (json.Marshal sorts map keys).
+func TestFingerprintMapKeyOrder(t *testing.T) {
+	hash1, err := fingerprintToHash(map[string]int{"a": 1, "b": 2})
+	require.NoError(t, err)
+
+	hash2, err := fingerprintToHash(map[string]int{"b": 2, "a": 1})
+	require.NoError(t, err)
+
+	assert.Equal(t, hash1, hash2)
+}
+
+// TestFingerprintUnmarshallable tests that a value json.Marshal rejects is reported as an
+// error rather than silently hashing to a constant.
+func TestFingerprintUnmarshallable(t *testing.T) {
+	hash, err := fingerprintToHash(func() {})
+	assert.Error(t, err)
+	assert.Empty(t, hash)
+}

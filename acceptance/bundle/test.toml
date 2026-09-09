@@ -49,3 +49,13 @@ New = 'os/[OS]'
 [[Repls]]
 Old = ' cicd/github'
 New = ''
+
+# Mask the serialized_dashboard content hash before the generic numeric/id rules can
+# nibble digit-runs out of the hex (Order below their default). Distinct numbers the
+# hashes, so old==new stays one token and a differing remote gets another
+# (e.g. [HASH][0] vs [HASH][1]).
+[[Repls]]
+Old = "sha256:[0-9a-f]{64}"
+New = "sha256:[HASH]"
+Order = -1
+Distinct = true
