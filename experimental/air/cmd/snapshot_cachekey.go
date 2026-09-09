@@ -18,6 +18,8 @@ const snapshotPackagingVersion = "v1"
 
 // plainTarKeyVersion namespaces the plain_tar working-tree key (so it can never collide
 // with a git_archive key) and lets us invalidate it if the fingerprint scheme changes.
+// computePlainTarKey also folds in the shared snapshotPackagingVersion, so a
+// packaging-logic bump invalidates both modes' keys.
 const plainTarKeyVersion = "plaintar-v1"
 
 // computePlainTarKey returns a content-addressed key for a working-tree snapshot: the
@@ -35,7 +37,7 @@ func computePlainTarKey(files []snapshotFile) string {
 	for _, f := range sorted {
 		fmt.Fprintf(h, "%s\x00%d\x00%d\n", filepath.ToSlash(f.rel), f.size, f.modTime)
 	}
-	fmt.Fprint(h, plainTarKeyVersion)
+	fmt.Fprintf(h, "%s\x00%s", plainTarKeyVersion, snapshotPackagingVersion)
 	return hex.EncodeToString(h.Sum(nil))
 }
 
