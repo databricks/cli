@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -273,10 +272,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
 				if dmsDeploymentID != "" {
 					bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
-						b.Config.Bundle.Deployment.History = &config.DeploymentHistory{
-							DeploymentID:    dmsDeploymentID,
-							LatestVersionID: lastVersionID,
-						}
+						b.Config.Bundle.Deployment.DeploymentID = dmsDeploymentID
+						b.Config.Bundle.Deployment.LatestVersionID = lastVersionID
 					})
 					muts = append(muts, metadata.AnnotateDeployment(dmsDeploymentID))
 				}

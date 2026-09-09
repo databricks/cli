@@ -8,15 +8,6 @@ type Deployment struct {
 	// Lock configures locking behavior on deployment.
 	Lock Lock `json:"lock,omitempty"`
 
-	// History reports what the deployment metadata service has recorded for this
-	// bundle. Output only: it is read from the service for 'bundle summary' and is
-	// unset when the bundle does not record deployment history.
-	History *DeploymentHistory `json:"history,omitempty" bundle:"readonly"`
-}
-
-// DeploymentHistory identifies the bundle's deployment in the deployment
-// metadata service.
-type DeploymentHistory struct {
 	// DeploymentID is the ID the service assigned to this bundle's deployment.
 	DeploymentID string `json:"deployment_id,omitempty"`
 

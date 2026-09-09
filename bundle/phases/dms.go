@@ -89,10 +89,7 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 
 	// A first deploy had no deployment to read at startup, so its id enters the history here.
 	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
-		if b.Config.Bundle.Deployment.History == nil {
-			b.Config.Bundle.Deployment.History = &config.DeploymentHistory{}
-		}
-		b.Config.Bundle.Deployment.History.DeploymentID = deploymentID
+		b.Config.Bundle.Deployment.DeploymentID = deploymentID
 	})
 }
 
