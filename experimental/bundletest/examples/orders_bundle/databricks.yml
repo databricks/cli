@@ -1,11 +1,11 @@
-# Minimal illustrative bundle. The local backend runs the job's real sql_task artifact
-# (src/transform_orders.sql) against DuckDB; the cloud backend (follow-up PR) deploys and
-# runs it on a real workspace.
+# Minimal illustrative bundle. The local backend runs a job's real sql_task artifact
+# against DuckDB; the cloud backend (follow-up PR) deploys and runs it on a real workspace.
 bundle:
   name: orders
 
 resources:
   jobs:
+    # SQL job — runnable on the local backend.
     transform_orders:
       name: transform_orders
       tasks:
@@ -14,6 +14,14 @@ resources:
             warehouse_id: ${var.warehouse_id}
             file:
               path: src/transform_orders.sql
+
+    # Notebook job — NOT runnable locally; used to demonstrate the loud skip.
+    score_model:
+      name: score_model
+      tasks:
+        - task_key: score
+          notebook_task:
+            notebook_path: src/score_model
 
 variables:
   warehouse_id:
