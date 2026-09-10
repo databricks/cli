@@ -107,10 +107,14 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
-	ts, err := c.persistentAuth(ctx,
+	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArg),
 		u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenStore, mode)),
-	)
+	}
+	if cfg.AuthType == c.Name() && cfg.ClientID != "" {
+		opts = append(opts, u2m.WithClientID(cfg.ClientID))
+	}
+	ts, err := c.persistentAuth(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

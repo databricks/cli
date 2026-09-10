@@ -123,6 +123,48 @@ func (m MockOAuthEndpointSupplier) GetEndpointsFromURL(_ context.Context, _ stri
 	return nil, ErrOAuthNotSupported
 }
 
+func TestPersistentAuthClientID(t *testing.T) {
+	tests := []struct {
+		name string
+		opts []PersistentAuthOption
+		want string
+	}{
+		{
+			name: "default",
+			want: appClientID,
+		},
+		{
+			name: "custom",
+			opts: []PersistentAuthOption{WithClientID("custom-client-id")},
+			want: "custom-client-id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			arg, err := NewBasicWorkspaceOAuthArgument("https://workspace.test")
+			if err != nil {
+				t.Fatalf("NewBasicWorkspaceOAuthArgument(): %v", err)
+			}
+			opts := append([]PersistentAuthOption{
+				WithOAuthArgument(arg),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+			}, tt.opts...)
+			p, err := NewPersistentAuth(t.Context(), opts...)
+			if err != nil {
+				t.Fatalf("NewPersistentAuth(): %v", err)
+			}
+			cfg, err := p.oauth2Config()
+			if err != nil {
+				t.Fatalf("oauth2Config(): %v", err)
+			}
+			if cfg.ClientID != tt.want {
+				t.Errorf("client ID = %q, want %q", cfg.ClientID, tt.want)
+			}
+		})
+	}
+}
+
 func TestToken_RefreshesExpiredAccessToken(t *testing.T) {
 	ctx := t.Context()
 	expectedKey := "https://accounts.cloud.databricks.test/oidc/accounts/xyz"
@@ -157,9 +199,10 @@ func TestToken_RefreshesExpiredAccessToken(t *testing.T) {
 		WithHttpClient(&http.Client{
 			Transport: fixtures.SliceTransport{
 				{
-					Method:   "POST",
-					Resource: "/oidc/accounts/xyz/v1/token",
-					Response: `access_token=refreshed&refresh_token=def`,
+					Method:          "POST",
+					Resource:        "/oidc/accounts/xyz/v1/token",
+					ExpectedRequest: url.Values{"client_id": {"custom-client-id"}, "grant_type": {"refresh_token"}, "refresh_token": {"cde"}},
+					Response:        `access_token=refreshed&refresh_token=def`,
 					ResponseHeaders: map[string][]string{
 						"Content-Type": {"application/x-www-form-urlencoded"},
 					},
@@ -168,6 +211,7 @@ func TestToken_RefreshesExpiredAccessToken(t *testing.T) {
 		}),
 		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
 		WithOAuthArgument(arg),
+		WithClientID("custom-client-id"),
 	)
 	if err != nil {
 		t.Errorf("NewPersistentAuth(): want no error, got %v", err)
@@ -967,8 +1011,10 @@ func TestChallenge(t *testing.T) {
 		if u.Path != "/oidc/accounts/xyz/v1/authorize" {
 			t.Fatalf("browser(): want path '/oidc/accounts/xyz/v1/authorize', got %s", u.Path)
 		}
-		// for now we're ignoring asserting the fields of the redirect
 		query := u.Query()
+		if query.Get("client_id") != "custom-client-id" {
+			t.Fatalf("browser(): client_id = %q, want %q", query.Get("client_id"), "custom-client-id")
+		}
 		browserOpened <- query.Get("state")
 		return nil
 	}
@@ -1009,6 +1055,7 @@ func TestChallenge(t *testing.T) {
 		}),
 		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
 		WithOAuthArgument(arg),
+		WithClientID("custom-client-id"),
 	)
 	if err != nil {
 		t.Errorf("NewPersistentAuth(): want no error, got %v", err)
