@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Iterator
 
 from bundletest.backend import Backend, RunResult
-from bundletest.table import TableHandle
+from bundletest.table import FileHandle, TableHandle
 
 if TYPE_CHECKING:
     pass
@@ -54,6 +54,9 @@ class VolumeHandle:
     def upload(self, src: str, dst: str | None = None) -> None:
         self._backend.put_file(dst or f"/Volumes/{self.name}/{os.path.basename(src)}", src)
 
+    def file(self, filename: str) -> FileHandle:
+        return FileHandle(self._backend, self.name, filename)
+
 
 class BundleEnv:
     """A deployed bundle under test, backed by a single ``Backend``."""
@@ -93,9 +96,7 @@ def make_backend(kind: str, **kwargs: Any) -> Backend:
 
         return DuckDBBackend(**kwargs)
     if kind == "cloud":
-        raise NotImplementedError(
-            "the cloud backend arrives in a follow-up PR on top of this base branch"
-        )
+        raise NotImplementedError("the cloud backend arrives in a follow-up PR on top of this base branch")
     raise ValueError(f"unknown backend {kind!r} (expected 'local' or 'cloud')")
 
 

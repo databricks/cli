@@ -8,7 +8,7 @@ Supported now (local DuckDB backend):
 - `test_job_sql.py` — SQL job: run the real `.sql`, assert on output tables
 - `test_job_config.py` — read a resource's declared wiring (no execution)
 - `test_job_nonsql.py` — non-SQL job: skips loudly (boundary demo)
-- `test_volume.py` — volume upload (stub: call path only)
+- `test_volume.py` — volume upload + read the file back (row count, columns)
 
 Not yet (need the cloud backend or new handles):
 - pipelines (Lakeflow/DLT) — run + assert on output tables

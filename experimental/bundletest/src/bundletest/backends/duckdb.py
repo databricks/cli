@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
+import tempfile
 import time
 from pathlib import Path
 from typing import Any
@@ -30,6 +32,9 @@ import duckdb
 import yaml
 
 from bundletest.backend import LocalUnsupported, RunResult
+
+# DuckDB reader function per file extension, for reading files uploaded to a volume.
+_FILE_READERS = {".csv": "read_csv", ".json": "read_json", ".parquet": "read_parquet"}
 
 # DuckDB cannot ATTACH a catalog under these names, so a job referencing e.g. `main.*`
 # can't bind at the environment level. Per invariant 2 we route it to cloud, never rewrite.
@@ -81,7 +86,7 @@ class DuckDBBackend:
         self._bundle_path = ""
         self._config: dict[str, Any] = {}
         self._jobs: dict[str, list[_Task]] = {}
-        self._uploads: list[tuple[str, str]] = []
+        self._volume_root = tempfile.mkdtemp(prefix="bundletest-vol-")
 
     # --- lifecycle ---
     def deploy(self, bundle_path: str) -> None:
@@ -92,6 +97,7 @@ class DuckDBBackend:
 
     def teardown(self) -> None:
         self._con.close()
+        shutil.rmtree(self._volume_root, ignore_errors=True)
 
     # --- scaffolding ---
     def seed_table(self, fqn: str, rows: list[dict[str, Any]]) -> None:
@@ -99,13 +105,11 @@ class DuckDBBackend:
             raise ValueError(f"cannot seed {fqn!r} with no rows")
         self._prepare_namespaces(fqn)
         columns = list(rows[0].keys())
-        coldefs = ", ".join(
-            f'"{c}" {_duckdb_type([r.get(c) for r in rows])}' for c in columns
-        )
+        coldefs = ", ".join(f'"{c}" {_duckdb_type([r.get(c) for r in rows])}' for c in columns)
         self._con.execute(f"CREATE OR REPLACE TABLE {fqn} ({coldefs})")
         placeholders = ", ".join("?" for _ in columns)
         self._con.executemany(
-            f'INSERT INTO {fqn} ({", ".join(columns)}) VALUES ({placeholders})',
+            f"INSERT INTO {fqn} ({', '.join(columns)}) VALUES ({placeholders})",
             [tuple(r.get(c) for c in columns) for r in rows],
         )
 
@@ -113,9 +117,7 @@ class DuckDBBackend:
     def run_job(self, name: str, params: dict[str, Any] | None = None) -> RunResult:
         tasks = self._jobs.get(name)
         if tasks is None:
-            raise KeyError(
-                f"no job named {name!r} in the bundle (known: {sorted(self._jobs)})"
-            )
+            raise KeyError(f"no job named {name!r} in the bundle (known: {sorted(self._jobs)})")
         start = time.perf_counter()
         try:
             for task in tasks:
@@ -133,12 +135,8 @@ class DuckDBBackend:
             raise
         except duckdb.Error as e:
             if _MISSING_FUNCTION.search(str(e)):
-                raise LocalUnsupported(
-                    f"job {name!r} uses SQL not available locally: {_first_line(e)}"
-                ) from e
-            return RunResult(
-                "FAILED", time.perf_counter() - start, error=_first_line(e)
-            )
+                raise LocalUnsupported(f"job {name!r} uses SQL not available locally: {_first_line(e)}") from e
+            return RunResult("FAILED", time.perf_counter() - start, error=_first_line(e))
 
     # --- data plane ---
     def execute_sql(self, query: str) -> list[tuple]:
@@ -146,9 +144,7 @@ class DuckDBBackend:
             return self._con.execute(query).fetchall()
         except duckdb.Error as e:
             if _MISSING_FUNCTION.search(str(e)):
-                raise LocalUnsupported(
-                    f"assertion uses SQL not available locally: {_first_line(e)}"
-                ) from e
+                raise LocalUnsupported(f"assertion uses SQL not available locally: {_first_line(e)}") from e
             raise
 
     def table_schema(self, fqn: str) -> dict[str, str]:
@@ -161,7 +157,22 @@ class DuckDBBackend:
         return self._config.get("resources", {}).get(kind, {})[name]
 
     def put_file(self, dst: str, src: str) -> None:
-        self._uploads.append((dst, src))
+        if not os.path.exists(src):
+            raise FileNotFoundError(f"upload source not found: {src}")
+        target = Path(self._volume_root) / dst.lstrip("/")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(src, target)
+
+    def read_volume_file(self, volume: str, filename: str) -> list[dict[str, Any]]:
+        path = Path(self._volume_root) / "Volumes" / volume / filename
+        if not path.exists():
+            raise FileNotFoundError(f"no file {filename!r} uploaded to volume {volume!r}")
+        reader = _FILE_READERS.get(path.suffix)
+        if reader is None:
+            raise LocalUnsupported(f"cannot read {path.suffix!r} files locally")
+        cur = self._con.execute(f"SELECT * FROM {reader}('{path.as_posix()}')")
+        columns = [d[0] for d in cur.description]
+        return [dict(zip(columns, row, strict=True)) for row in cur.fetchall()]
 
     # --- internals ---
     @staticmethod

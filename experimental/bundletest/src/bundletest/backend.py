@@ -69,3 +69,6 @@ class Backend(Protocol):
 
     def put_file(self, dst: str, src: str) -> None:
         """Upload a local file to a volume path."""
+
+    def read_volume_file(self, volume: str, filename: str) -> list[dict[str, Any]]:
+        """Read a file previously uploaded to a volume, as a list of row dicts."""

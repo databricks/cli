@@ -102,3 +102,20 @@ def test_databricks_only_function_skips(tmp_path):
 def test_reserved_catalog_skips(env):
     with pytest.raises(LocalUnsupported):
         env.seed("main.bronze.raw", [{"id": 1}])
+
+
+def test_volume_upload_and_read(env, tmp_path):
+    csv = tmp_path / "in.csv"
+    csv.write_text("a,b\n1,x\n2,y\n")
+    env.volume("raw").upload(str(csv))
+
+    f = env.volume("raw").file("in.csv")
+    assert f.exists()
+    assert f.row_count() == 2
+    assert f.columns == ["a", "b"]
+    assert not env.volume("raw").file("missing.csv").exists()
+
+
+def test_upload_missing_source_raises(env):
+    with pytest.raises(FileNotFoundError):
+        env.volume("raw").upload("/does/not/exist.csv")

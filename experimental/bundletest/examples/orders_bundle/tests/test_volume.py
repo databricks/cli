@@ -1,18 +1,26 @@
-"""Volumes — file upload.
+"""Volumes — upload a file and read it back.
 
-The local backend records the upload but has no file store to read back yet, so this is a
-stub-level capability.
+The local backend copies the uploaded file into a temp volume filesystem and reads it with
+DuckDB, so you can assert on the file you're seeding.
 
 CAN test locally:
-- an upload call is wired and does not error
+- an upload lands and the file exists in the volume
+- the uploaded file's row count and columns (CSV / JSON / Parquet)
 
 CANNOT test locally — needs the cloud backend:
-- that the file actually landed in the volume
-- reading a table loaded FROM the uploaded file (row count, schema)
-- file listing / overwrite / permissions
+- that a deployed job reading the volume produced the right table
+- listing many files, overwrite semantics, permissions
+- formats DuckDB can't read locally -> skips
 """
 
 
-def test_upload_is_wired(env):
-    # No public read-back locally; this only exercises the call path.
-    env.volume("raw_data").upload("fixtures/orders.csv")
+def test_uploaded_csv_is_readable(env, tmp_path):
+    csv = tmp_path / "orders.csv"
+    csv.write_text("order_id,total_price\n1,10.0\n2,5.0\n")
+
+    env.volume("raw_data").upload(str(csv))
+
+    orders = env.volume("raw_data").file("orders.csv")
+    assert orders.exists()
+    assert orders.row_count() == 2
+    assert "order_id" in orders.columns
