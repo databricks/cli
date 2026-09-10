@@ -26,40 +26,41 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	}
 
 	state := ExportedResourcesMap{
-		"resources.jobs.test_job":                                       {ID: "1"},
-		"resources.job_runs.test_job_run":                               {ID: "1"},
-		"resources.pipelines.test_pipeline":                             {ID: "1"},
-		"resources.models.test_mlflow_model":                            {ID: "1"},
-		"resources.experiments.test_mlflow_experiment":                  {ID: "1"},
-		"resources.model_serving_endpoints.test_model_serving":          {ID: "1"},
-		"resources.registered_models.test_registered_model":             {ID: "1"},
-		"resources.quality_monitors.test_monitor":                       {ID: "1"},
-		"resources.catalogs.test_catalog":                               {ID: "1"},
-		"resources.schemas.test_schema":                                 {ID: "1"},
-		"resources.external_locations.test_external_location":           {ID: "1"},
-		"resources.volumes.test_volume":                                 {ID: "1"},
-		"resources.clusters.test_cluster":                               {ID: "1"},
-		"resources.dashboards.test_dashboard":                           {ID: "1"},
-		"resources.genie_spaces.test_genie_space":                       {ID: "1"},
-		"resources.apps.test_app":                                       {ID: "app1"},
-		"resources.secret_scopes.test_secret_scope":                     {ID: "secret_scope1"},
-		"resources.sql_warehouses.test_sql_warehouse":                   {ID: "1"},
-		"resources.database_instances.test_database_instance":           {ID: "1"},
-		"resources.database_catalogs.test_database_catalog":             {ID: "1"},
-		"resources.synced_database_tables.test_synced_database_table":   {ID: "1"},
-		"resources.alerts.test_alert":                                   {ID: "1"},
-		"resources.postgres_projects.test_postgres_project":             {ID: "projects/test-project"},
-		"resources.postgres_branches.test_postgres_branch":              {ID: "projects/test-project/branches/main"},
-		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
-		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
-		"resources.postgres_databases.test_postgres_database":           {ID: "projects/test-project/branches/main/databases/test-db"},
-		"resources.postgres_roles.test_postgres_role":                   {ID: "projects/test-project/branches/main/roles/test-role"},
-		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
-		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
-		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
-		"resources.instance_pools.test_instance_pool":                   {ID: "1"},
-		"resources.secrets.test_secret":                                 {ID: "main.default.test_secret"},
-		"resources.cluster_policies.test_cluster_policy":                {ID: "cp-1"},
+		"resources.jobs.test_job":                                               {ID: "1"},
+		"resources.job_runs.test_job_run":                                       {ID: "1"},
+		"resources.pipelines.test_pipeline":                                     {ID: "1"},
+		"resources.models.test_mlflow_model":                                    {ID: "1"},
+		"resources.experiments.test_mlflow_experiment":                          {ID: "1"},
+		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
+		"resources.registered_models.test_registered_model":                     {ID: "1"},
+		"resources.quality_monitors.test_monitor":                               {ID: "1"},
+		"resources.catalogs.test_catalog":                                       {ID: "1"},
+		"resources.schemas.test_schema":                                         {ID: "1"},
+		"resources.external_locations.test_external_location":                   {ID: "1"},
+		"resources.volumes.test_volume":                                         {ID: "1"},
+		"resources.clusters.test_cluster":                                       {ID: "1"},
+		"resources.dashboards.test_dashboard":                                   {ID: "1"},
+		"resources.genie_spaces.test_genie_space":                               {ID: "1"},
+		"resources.apps.test_app":                                               {ID: "app1"},
+		"resources.secret_scopes.test_secret_scope":                             {ID: "secret_scope1"},
+		"resources.sql_warehouses.test_sql_warehouse":                           {ID: "1"},
+		"resources.database_instances.test_database_instance":                   {ID: "1"},
+		"resources.database_catalogs.test_database_catalog":                     {ID: "1"},
+		"resources.synced_database_tables.test_synced_database_table":           {ID: "1"},
+		"resources.alerts.test_alert":                                           {ID: "1"},
+		"resources.postgres_projects.test_postgres_project":                     {ID: "projects/test-project"},
+		"resources.postgres_branches.test_postgres_branch":                      {ID: "projects/test-project/branches/main"},
+		"resources.postgres_endpoints.test_postgres_endpoint":                   {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.postgres_catalogs.test_postgres_catalog":                     {ID: "catalogs/test_catalog"},
+		"resources.postgres_databases.test_postgres_database":                   {ID: "projects/test-project/branches/main/databases/test-db"},
+		"resources.postgres_roles.test_postgres_role":                           {ID: "projects/test-project/branches/main/roles/test-role"},
+		"resources.postgres_synced_tables.test_postgres_synced_table":           {ID: "synced_tables/main.public.test_synced_table"},
+		"resources.postgres_snapshot_schedules.test_postgres_snapshot_schedule": {ID: "projects/test-project/branches/main/snapshot-schedule"},
+		"resources.vector_search_endpoints.test_vector_search_endpoint":         {ID: "vs-endpoint-1"},
+		"resources.vector_search_indexes.test_vector_search_index":              {ID: "vs-index-1"},
+		"resources.instance_pools.test_instance_pool":                           {ID: "1"},
+		"resources.secrets.test_secret":                                         {ID: "main.default.test_secret"},
+		"resources.cluster_policies.test_cluster_policy":                        {ID: "cp-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -145,6 +146,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "synced_tables/main.public.test_synced_table", config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/snapshot-schedule", config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
 
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -385,6 +389,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+				"test_postgres_snapshot_schedule": {
+					PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+						Branch: "projects/test-project/branches/main",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -508,6 +519,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
 
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
@@ -892,6 +906,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+				"test_postgres_snapshot_schedule": {
+					PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+						Branch: "projects/test-project/branches/main",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -1226,6 +1247,14 @@ func AssertFullResourceCoverage(t *testing.T, config *config.Root) {
 	resources := reflect.ValueOf(config.Resources)
 	for i := range resources.NumField() {
 		field := resources.Field(i)
+		// Get Tag field from reflect.Value
+		tag := resources.Type().Field(i).Tag.Get("bundle")
+		// Internal resources (e.g. internal_immutable_snapshots) are created by the
+		// deploy pipeline, never declared in user config, so this fixture doesn't
+		// populate them and StateToBundle isn't expected to cover them.
+		if tag == "internal" {
+			continue
+		}
 		if field.Kind() == reflect.Map {
 			assert.True(
 				t,

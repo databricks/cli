@@ -21,9 +21,14 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 		"genie_spaces",
 		"instance_pools",
 		"job_runs",
+		// The Terraform provider has no resource that maps to a snapshot schedule,
+		// so it is deployed through the direct engine only (see the resource's
+		// acceptance test.toml).
+		"postgres_snapshot_schedules",
 		"secrets",
 		"vector_search_endpoints",
 		"vector_search_indexes",
+		"internal_immutable_snapshots",
 	}
 
 	for resourceType := range supportedResources {

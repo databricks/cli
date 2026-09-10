@@ -23,7 +23,7 @@ func (c *PostgresCatalogConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresCatalogConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresCatalogConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
@@ -60,10 +60,6 @@ func (c *PostgresCatalog) ResourceDescription() ResourceDescription {
 
 func (c *PostgresCatalog) GetName() string {
 	return c.CatalogId
-}
-
-func (c *PostgresCatalog) GetURL() string {
-	return c.URL
 }
 
 func (c *PostgresCatalog) InitializeURL(baseURL url.URL) {

@@ -5,6 +5,8 @@ Cloud = false
 
 Ignore = [
     "databricks.yml",
+    "plan_raw.terraform.json",
+    "plan_raw.direct.json",
 ]
 
 EnvMatrix.READPLAN = ["", "1"]

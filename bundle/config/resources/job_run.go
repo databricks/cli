@@ -84,10 +84,6 @@ func (r *JobRun) GetName() string {
 	return ""
 }
 
-func (r *JobRun) GetURL() string {
-	return r.URL
-}
-
 // InitializeURL sets the run's workspace URL. The job id comes from RunNow.JobId
 // when resolved (deploy) or ResolvedJobID from state (read-only commands); if
 // either id is missing we skip rather than emit a broken jobs/0 URL.

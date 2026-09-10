@@ -46,7 +46,7 @@ func TestCreateGitArchiveSnapshot(t *testing.T) {
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	dirName := filepath.Base(repo)
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, nil))
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, nil, ""))
 
 	entries := tarballEntries(t, out)
 	// Every real entry is prefixed with the directory name. git archive also emits a
@@ -70,11 +70,56 @@ func TestCreateGitArchiveSnapshot_IncludePaths(t *testing.T) {
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	dirName := filepath.Base(repo)
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, []string{"src"}))
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, []string{"src"}, ""))
 
 	entries := tarballEntries(t, out)
 	assert.Contains(t, entries, dirName+"/src/model.py")
 	assert.NotContains(t, entries, dirName+"/a.txt")
+}
+
+func TestCreateGitArchiveSnapshot_SubdirectoryRootPath(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "README.md", "repo root")
+	writeRepoFile(t, repo, "subpkg/train.py", "print()")
+	writeRepoFile(t, repo, "subpkg/nested/util.py", "pass")
+	sha := commitAll(t, repo, "init")
+
+	rootPath := filepath.Join(repo, "subpkg")
+	prefix, err := newGitRepo(rootPath).repoRelativePrefix(ctx)
+	require.NoError(t, err)
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(rootPath), sha, out, "subpkg", nil, prefix))
+
+	entries := tarballEntries(t, out)
+	assert.Contains(t, entries, "subpkg/train.py")
+	assert.Contains(t, entries, "subpkg/nested/util.py")
+	assert.NotContains(t, entries, "subpkg/README.md")
+	for _, entry := range entries {
+		assert.False(t, strings.HasPrefix(entry, "subpkg/subpkg/"), "entry %q is double nested", entry)
+	}
+}
+
+func TestCreateGitArchiveSnapshot_SubdirectoryRootPathWithIncludePaths(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "subpkg/train.py", "print()")
+	writeRepoFile(t, repo, "subpkg/src/model.py", "pass")
+	writeRepoFile(t, repo, "subpkg/configs/train.yaml", "x")
+	sha := commitAll(t, repo, "init")
+
+	rootPath := filepath.Join(repo, "subpkg")
+	prefix, err := newGitRepo(rootPath).repoRelativePrefix(ctx)
+	require.NoError(t, err)
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(rootPath), sha, out, "subpkg", []string{"src"}, prefix))
+
+	entries := tarballEntries(t, out)
+	assert.Contains(t, entries, "subpkg/src/model.py")
+	assert.NotContains(t, entries, "subpkg/train.py")
+	assert.NotContains(t, entries, "subpkg/configs/train.yaml")
 }
 
 func TestCreatePlainTarball(t *testing.T) {

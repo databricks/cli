@@ -34,7 +34,7 @@ func (c *PostgresProjectConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresProjectConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresProjectConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
@@ -75,9 +75,9 @@ func (p *PostgresProject) GetName() string {
 	return p.DisplayName
 }
 
-func (p *PostgresProject) GetURL() string {
+func (p *PostgresProject) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (p *PostgresProject) InitializeURL(_ url.URL) {

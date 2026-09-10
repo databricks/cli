@@ -229,14 +229,15 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
-	PostgresProjects     map[string]postgres.Project
-	PostgresBranches     map[string]postgres.Branch
-	PostgresCatalogs     map[string]postgres.Catalog
-	PostgresDatabases    map[string]postgres.Database
-	PostgresEndpoints    map[string]postgres.Endpoint
-	PostgresRoles        map[string]postgres.Role
-	PostgresSyncedTables map[string]postgres.SyncedTable
-	PostgresOperations   map[string]postgres.Operation
+	PostgresProjects          map[string]postgres.Project
+	PostgresBranches          map[string]postgres.Branch
+	PostgresCatalogs          map[string]postgres.Catalog
+	PostgresDatabases         map[string]postgres.Database
+	PostgresEndpoints         map[string]postgres.Endpoint
+	PostgresRoles             map[string]postgres.Role
+	PostgresSyncedTables      map[string]postgres.SyncedTable
+	PostgresSnapshotSchedules map[string]postgres.SnapshotSchedule
+	PostgresOperations        map[string]postgres.Operation
 
 	// Branches and endpoints that the server provisioned implicitly together
 	// with their parent (e.g. the production branch on a new project, or the
@@ -248,6 +249,22 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	// DmsDeployments holds Deployment Metadata Service (DMS) records, keyed by
+	// deployment ID. Each record carries its versions and latest resource state.
+	DmsDeployments map[string]*DmsDeployment
+
+	// DmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment made for
+	// it. An ID appears here before DmsDeployments has a record, which its first version
+	// creates, so the node is what makes the ID valid in between.
+	DmsDeploymentNodes map[string]string
+
+	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
+	// serves, generated on first use. See sshTunnelHostKey.
+	sshTunnelHostKeyPEM []byte
+	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
+	// to the tunnel's secret scope so a client can pin it.
+	sshTunnelHostPublicKey []byte
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -492,10 +509,13 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresRoles:             map[string]postgres.Role{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
+		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
+		DmsDeployments:            map[string]*DmsDeployment{},
+		DmsDeploymentNodes:        map[string]string{},
 		Alerts:                    map[string]sql.AlertV2{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},

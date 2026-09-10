@@ -27,7 +27,7 @@ func TestBundleSyncShorthandFlags(t *testing.T) {
 	assert.Equal(t, "myprofile", cmd.Flag("profile").Value.String())
 }
 
-func TestBundleSyncOutputHandlerOnlyWhenOutputSet(t *testing.T) {
+func TestBundleSyncInstallsOutputHandler(t *testing.T) {
 	tempDir := t.TempDir()
 	b := &bundle.Bundle{
 		BundleRootPath: tempDir,
@@ -46,12 +46,14 @@ func TestBundleSyncOutputHandlerOnlyWhenOutputSet(t *testing.T) {
 
 	f := syncFlags{}
 
+	// bundle sync defaults to text output, matching the standalone sync command:
+	// the root --output flag resolves to text when unset, so a handler is installed.
 	cmd := newTestSyncCommand(t)
 	cmd.SetContext(t.Context())
 	require.NoError(t, cmd.ParseFlags(nil))
 	opts, err := f.syncOptionsFromBundle(cmd, b)
 	require.NoError(t, err)
-	assert.Nil(t, opts.OutputHandler)
+	assert.NotNil(t, opts.OutputHandler)
 
 	cmd = newTestSyncCommand(t)
 	cmd.SetContext(t.Context())

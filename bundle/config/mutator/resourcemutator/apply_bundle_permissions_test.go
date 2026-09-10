@@ -32,9 +32,11 @@ var unsupportedResources = []string{
 	"postgres_endpoints",
 	"postgres_catalogs",
 	"postgres_roles",
+	"postgres_snapshot_schedules",
 	"postgres_synced_tables",
 	"vector_search_indexes",
 	"job_runs",
+	"internal_immutable_snapshots",
 	"secrets",
 	"cluster_policies",
 }

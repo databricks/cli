@@ -370,6 +370,8 @@ resources:
       - field: postgres_role
         reason: spec:input_only
 
+  # postgres_snapshot_schedules: no api field behaviors
+
   postgres_synced_tables:
 
     ignore_remote_changes:

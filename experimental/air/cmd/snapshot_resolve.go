@@ -16,7 +16,8 @@ type snapshotMode int
 
 const (
 	// modeGitArchive packages a pinned commit via `git archive`. The commit is
-	// deterministic, so the tarball is cacheable by (commit, include_paths).
+	// deterministic, so the tarball is cacheable by (commit, include_paths,
+	// root_path subtree).
 	modeGitArchive snapshotMode = iota
 	// modePlainTar packages the working tree (including uncommitted changes) via
 	// `tar`. Not cacheable — working-tree content isn't pinned to a SHA.
@@ -27,11 +28,12 @@ const (
 // the commit SHA to archive (git_archive only; empty for plain_tar), and whether
 // the working tree under the snapshot root has uncommitted changes.
 type snapshotPlan struct {
-	mode         snapshotMode
-	commitSHA    string
-	hasUncommit  bool
-	isGitRepo    bool
-	includePaths []string
+	mode          snapshotMode
+	commitSHA     string
+	hasUncommit   bool
+	isGitRepo     bool
+	includePaths  []string
+	subtreePrefix string
 }
 
 // resolveSnapshotPlan decides how to package the snapshot (local-only):
@@ -106,6 +108,15 @@ func resolveSnapshotPlan(ctx context.Context, git gitRepo, ref *gitRef, includeP
 	default:
 		// gitRef.validate guarantees exactly one of branch/commit is set.
 		return snapshotPlan{}, errors.New("git: must specify either 'branch' or 'commit'")
+	}
+
+	subtreePrefix, err := git.repoRelativePrefix(ctx)
+	if err != nil {
+		return snapshotPlan{}, err
+	}
+	plan.subtreePrefix = subtreePrefix
+	if err := git.validateSubtreeExists(ctx, plan.commitSHA, subtreePrefix); err != nil {
+		return snapshotPlan{}, err
 	}
 
 	// For git_archive with include_paths, verify each path exists at the resolved

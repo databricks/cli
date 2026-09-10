@@ -443,6 +443,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	if base, _, found := strings.Cut(cliVersion, "+"); found {
 		repls.Set(base, "[CLI_VERSION]")
 	}
+	// A dev build may embed a +<git-sha> that the base-version replacement above leaves
+	// behind (e.g. "[CLI_VERSION]+abc123def456"), which would otherwise bake into a
+	// regenerated golden. Strip any such trailing suffix so goldens stay sha-independent.
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile(`\[CLI_VERSION\]\+[0-9a-f]{7,40}`), New: "[CLI_VERSION]"})
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementTfProviderVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
@@ -1078,7 +1082,7 @@ func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
 // matrix key ends up in the variant's test name, so a long one makes every name that carries
 // it hard to read. Tests may still name the variable itself; the alias is only shorter.
 var envAliases = map[string]string{
-	"DMS": "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY",
+	"DMS": "DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY",
 }
 
 // buildTestEnv builds the test environment from config.Env and customEnv.

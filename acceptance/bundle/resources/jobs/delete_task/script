@@ -1,6 +1,11 @@
-$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
-$CLI bundle deploy $(readplanarg out.plan_create.direct.json)
+# The raw plans the replays read go under .databricks, which sync skips.
+mkdir -p .databricks
+
+$CLI bundle plan -o json > .databricks/tmp.plan_create.json
+nostamp < .databricks/tmp.plan_create.json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle deploy $(readplanarg .databricks/tmp.plan_create.json)
 grep -v TO_DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
 trace cat databricks.yml
-$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
-$CLI bundle deploy $(readplanarg out.plan_update.direct.json)
+$CLI bundle plan -o json > .databricks/tmp.plan_update.json
+nostamp < .databricks/tmp.plan_update.json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle deploy $(readplanarg .databricks/tmp.plan_update.json)

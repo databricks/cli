@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Initial deployment with no default_endpoint_settings block"
+trace $CLI bundle deploy
+rm -f out.requests.txt
+
+title "Add the whole default_endpoint_settings block and re-deploy"
+trace update_file.py databricks.yml "#TO_ADD: " ""
+
+# The direct plan's "changes" map is the structdiff artifact: it records one
+# change at path default_endpoint_settings (the whole block) instead of descending
+# to its leaves. (The top-level plan verdict is 'update' on both engines.)
+$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+# The consequence shows up at deploy time, which diverges by engine, so route it to
+# per-engine files. Masking the whole message means the API requires the suspension
+# oneof in the body (see dresources/util.go), so the direct deploy FAILS with a 400;
+# terraform masks the leaf spec.default_endpoint_settings.autoscaling_limit_max_cu
+# and succeeds.
+errcode $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1

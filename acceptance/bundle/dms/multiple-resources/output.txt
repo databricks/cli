@@ -1,0 +1,140 @@
+
+=== Deploy several resources: operations are uploaded from background workers, so exactly one is recorded per resource no matter what order the uploads finish in. The serialized state is dropped from the output here; other bundle/dms tests cover it.
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
+Created jobs.five
+Created jobs.four
+Created jobs.one
+Created jobs.three
+Created jobs.two
+Files: 5 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.five", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.four", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.one", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.three", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.two", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "status": "OPERATION_STATUS_SUCCEEDED"}}
+
+=== The plan records the deployment_history feature
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "features": {
+    "deployment_history": {}
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
+
+=== The service lists all five resources at version 1
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.five"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.four"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.one"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.three"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.two"
+  }
+]
+
+=== The raw recorded state the service holds for this deployment
+>>> print_state.py --no-dms
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "features": {
+  "deployment_history": {}
+ },
+ "state": {}
+}
+
+=== Redeploy with no changes: nothing is applied, so no version is created at all - the deployment's version tracks state changes, like serial
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
+
+>>> print_requests.py --dms //api/2.0/bundle --sort --oneline
+
+=== The plan records the deployment_history feature
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "features": {
+    "deployment_history": {}
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
+
+=== The service still lists all five resources, now at version 2
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.five"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.four"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.one"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.three"
+  },
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.two"
+  }
+]
+
+=== The raw recorded state after redeploy
+>>> print_state.py --no-dms
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "features": {
+  "deployment_history": {}
+ },
+ "state": {}
+}

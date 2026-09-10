@@ -66,10 +66,6 @@ func (v *Volume) InitializeURL(baseURL url.URL) {
 	v.URL = workspaceurls.ResourceURL(baseURL, "volumes", v.ID)
 }
 
-func (v *Volume) GetURL() string {
-	return v.URL
-}
-
 func (v *Volume) GetName() string {
 	return v.Name
 }
