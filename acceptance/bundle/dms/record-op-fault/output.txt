@@ -25,7 +25,7 @@ API message: Fault injected by test.
     "operations": [
       {
         "resource_key": "jobs.foo",
-        "action_type": "OPERATION_ACTION_TYPE_BIND"
+        "action_type": "OPERATION_ACTION_TYPE_BIND_AND_UPDATE"
       }
     ]
   }

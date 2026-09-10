@@ -1,0 +1,4 @@
+# These tests cover the file-based bind, which stages a change for the next deploy. Under the
+# deployment metadata service (DMS) bind is a distinct operation - it plans and applies the change
+# immediately - so it cannot share these goldens and is covered by bundle/dms/bind-unbind instead.
+EnvMatrix.DMS = [""]

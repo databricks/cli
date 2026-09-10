@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
@@ -58,7 +57,8 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 				return
 			}
 
-			if !confirmBindPlan(ctx, resourceKey, result, opts.AutoApprove) {
+			if !confirmBindPlan(ctx, resourceKey, result.Plan, opts.AutoApprove) {
+				result.Cancel()
 				return
 			}
 
@@ -93,43 +93,43 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-// confirmBindPlan shows the plan for the bound resource and, unless autoApprove, asks the user to
-// confirm. It reports whether the bind should proceed; on decline or an unpromptable console it
-// cancels result, logs the reason, and returns false so the caller returns.
-func confirmBindPlan(ctx context.Context, resourceKey string, result *direct.BindResult, autoApprove bool) bool {
-	if !result.HasChanges || autoApprove {
+// confirmBindPlan shows the bound resource's planned action and, unless autoApprove, asks the user
+// to confirm. It reports whether the bind should proceed; on decline or an unpromptable console it
+// logs the reason and returns false. A plain bind or skip changes nothing, so it proceeds without a
+// prompt. The caller owns any cleanup on a false return.
+func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove bool) bool {
+	var entry *deployplan.PlanEntry
+	if plan != nil {
+		entry = plan.Plan[resourceKey]
+	}
+	changesWorkspace := entry != nil && entry.Action != deployplan.Skip && entry.Action != deployplan.Bind && entry.Action != deployplan.Undefined
+	if !changesWorkspace || autoApprove {
 		return true
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", result.Action, resourceKey))
-
-	if result.Plan != nil {
-		if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
-			cmdio.LogString(ctx, "\nChanges detected:")
-			for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
-				change := entry.Changes[field]
-				if change.Action != deployplan.Skip {
-					cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
-				}
+	cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", entry.Action, resourceKey))
+	if len(entry.Changes) > 0 {
+		cmdio.LogString(ctx, "\nChanges detected:")
+		for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
+			change := entry.Changes[field]
+			if change.Action != deployplan.Skip {
+				cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
 			}
-			cmdio.LogString(ctx, "")
 		}
+		cmdio.LogString(ctx, "")
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {
-		result.Cancel()
 		logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
 		return false
 	}
 
 	ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 	if err != nil {
-		result.Cancel()
 		logdiag.LogError(ctx, err)
 		return false
 	}
 	if !ans {
-		result.Cancel()
 		logdiag.LogError(ctx, errors.New("import aborted"))
 		return false
 	}

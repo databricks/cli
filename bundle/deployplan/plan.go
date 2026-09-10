@@ -54,7 +54,7 @@ func (p *Plan) CountActions() ActionCounts {
 		switch entry.Action {
 		case Create:
 			c.Create++
-		case Update, UpdateWithID, Resize:
+		case Update, UpdateWithID, Resize, BindAndUpdate:
 			c.Change++
 		case Delete:
 			c.Delete++
@@ -62,7 +62,8 @@ func (p *Plan) CountActions() ActionCounts {
 			// A recreate counts as both a delete and a create.
 			c.Delete++
 			c.Create++
-		case Skip, Undefined:
+		case Skip, Undefined, Bind:
+			// Bind adopts an existing resource without changing it.
 			c.Unchanged++
 		}
 	}

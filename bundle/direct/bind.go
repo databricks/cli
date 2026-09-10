@@ -49,6 +49,25 @@ type BindResult struct {
 	StatePath string
 }
 
+// copyRemoteEtag copies the remote etag into newState for resources that use etag-based drift
+// detection (dashboards, genie_spaces). The etag comes from remote, not the user; without it the
+// next plan reports a bogus update. A no-op for other resources or when there is no remote state.
+func copyRemoteEtag(resourceKey string, remoteState, newState any) {
+	if remoteState == nil {
+		return
+	}
+	if !strings.Contains(resourceKey, ".dashboards.") && !strings.Contains(resourceKey, ".genie_spaces.") {
+		return
+	}
+	etag, err := structaccess.Get(remoteState, structpath.NewStringKey(nil, "etag"))
+	if err != nil || etag == nil {
+		return
+	}
+	if etagStr, ok := etag.(string); ok && etagStr != "" {
+		_ = structaccess.Set(newState, structpath.NewStringKey(nil, "etag"), etagStr)
+	}
+}
+
 // Bind adds an existing workspace resource to a temporary state and calculates
 // if there will be any changes when deploying.
 //
@@ -135,18 +154,11 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			dependsOn = entry.DependsOn
 		}
 
-		// Copy etag from remote state for resources that use etag-based drift
-		// detection (dashboards and genie spaces). The etag is not provided by the
-		// user; it comes from remote. If we don't store it in state, we won't
-		// detect remote drift correctly and the next plan shows a bogus update.
-		if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && entry != nil && entry.RemoteState != nil {
-			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
-			if err == nil && etag != nil {
-				if etagStr, ok := etag.(string); ok && etagStr != "" {
-					_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
-				}
-			}
+		var remoteState any
+		if entry != nil {
+			remoteState = entry.RemoteState
 		}
+		copyRemoteEtag(resourceKey, remoteState, sv.Value)
 
 		err = b.StateDB.Open(ctx, tmpStatePath, dstate.WithRecovery(true), dstate.WithWrite(true), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
 		if err != nil {

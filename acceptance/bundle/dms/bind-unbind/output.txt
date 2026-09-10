@@ -4,11 +4,9 @@
 Successfully bound job with an id '[JOB_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
-=== The service now records the job as managed, so it plans as a change not a create
+=== The bind applied the config and recorded the resource, so a re-plan is a no-op
 >>> [CLI] bundle plan
-update jobs.foo
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Unbind it again, dropping it from what the service records
 >>> [CLI] bundle deployment unbind foo
@@ -33,7 +31,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
     "operations": [
       {
         "resource_key": "jobs.foo",
-        "action_type": "OPERATION_ACTION_TYPE_BIND"
+        "action_type": "OPERATION_ACTION_TYPE_BIND_AND_UPDATE"
       }
     ]
   }

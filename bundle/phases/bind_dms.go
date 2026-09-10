@@ -2,24 +2,25 @@ package phases
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// bindWithHistory records a bind for a deployment that tracks history with the metadata service.
-// It reuses the engine's file-based bind against a throwaway copy of what the service holds to get
-// the plan preview and resolved state, then records that state as a bind operation so the next
-// deploy sees the resource as managed.
+// bindWithHistory adopts an existing workspace resource for a deployment that tracks history with
+// the metadata service. Unlike the file-based bind, which stages the change for the next deploy,
+// DMS is the source of truth, so the bind is planned and applied here and now: the resource is
+// recorded as a Bind (config already matches) or BindAndUpdate (config differs) operation in its
+// own version.
 func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourceID string, autoApprove bool) {
 	wsc := b.WorkspaceClient(ctx)
 
@@ -29,42 +30,6 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 		return
 	}
 
-	seedPath, cleanup, err := seedStateFromService(ctx, b, deploymentID, lastVersionID)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	defer cleanup()
-
-	result, err := b.DeploymentBundle.Bind(ctx, wsc, &b.Config, seedPath, resourceKey, resourceID)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	if !confirmBindPlan(ctx, resourceKey, result, autoApprove) {
-		return
-	}
-	// The seed's temp state is discarded; the bind is recorded with the service instead.
-	defer result.Cancel()
-
-	// Read the resolved state from the throwaway state the engine wrote, not the state cache, which
-	// the plan step overwrites (dropping the etag for dashboards/genie_spaces).
-	entry, ok, err := resolvedEntry(ctx, result.TempStatePath, resourceKey)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	if !ok {
-		logdiag.LogError(ctx, fmt.Errorf("internal error: no resolved state for %q after bind", resourceKey))
-		return
-	}
-
-	recordBind(ctx, b, deploymentID, deployment, lastVersionID, resourceKey, entry)
-}
-
-// recordBind creates the deployment on a first bind, then records a single bind operation carrying
-// the resolved state, so the deployment lists the resource as managed.
-func recordBind(ctx context.Context, b *bundle.Bundle, deploymentID string, deployment *bundledeployments.Deployment, lastVersionID int, resourceKey string, entry dstate.ResourceEntry) {
 	ctx = withWorkspaceClient(ctx, b)
 	db := &b.DeploymentBundle.StateDB
 	if err := openRecordedState(ctx, db, localStatePath(ctx, b), deploymentID, lastVersionID); err != nil {
@@ -72,28 +37,79 @@ func recordBind(ctx context.Context, b *bundle.Bundle, deploymentID string, depl
 		return
 	}
 
-	// Creates the deployment on a first bind, or refreshes stale metadata.
-	createOrUpdateDeployment(ctx, b, deployment)
+	if existingID := db.GetResourceID(resourceKey); existingID != "" {
+		finalizeState(ctx, db)
+		logdiag.LogError(ctx, direct.ErrResourceAlreadyBound{ResourceKey: resourceKey, ExistingID: existingID, NewID: resourceID})
+		return
+	}
+
+	// Stamp the deployment metadata into config so the adopted resource records the same state a
+	// deploy would, and a later plan sees no drift. Mirrors the DMS setup in
+	// cmd/bundle/utils.ProcessBundleRet; deployment_id is unknown until a first bind creates it, so
+	// it is stamped into the plan afterwards (StampDeploymentIdForFirstVersion).
+	firstBind := deploymentID == ""
+	muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(lastVersionID + 1)}
+	if !firstBind {
+		muts = append(muts, metadata.AnnotateDeployment(deploymentID))
+	}
+	bundle.ApplySeqContext(ctx, b, muts...)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
+	// Plan the resource as an adoption of the existing id, then keep only that resource so the bind
+	// leaves the rest of the deployment untouched.
+	b.DeploymentBundle.BindKey = resourceKey
+	b.DeploymentBundle.BindID = resourceID
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, wsc, &b.Config)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	scopeToResource(plan, resourceKey)
+
+	if !confirmBindPlan(ctx, resourceKey, plan, autoApprove) {
+		finalizeState(ctx, db)
+		return
+	}
+
+	// Commit now: claim a version, apply the adoption, and complete it.
 	if err := db.UpgradeToWrite(); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-
-	staged := []dms.StagedOperation{{ResourceKey: resourceKey, ActionType: dms.ActionBind}}
+	createOrUpdateDeployment(ctx, b, deployment)
+	if logdiag.HasError(ctx) {
+		return
+	}
+	if firstBind {
+		if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(db.DeploymentID); err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+	staged, err := stagedOperations(plan)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 	if err := startVersion(ctx, b, dms.VersionTypeDeploy, staged); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-	// The version exists now, so close it out on every path; otherwise a failure recording the
-	// operation leaks its lease, as deploy and destroy also guard against.
+	// The version exists now, so complete it on every path (see completeRecordedVersion).
 	defer completeRecordedVersion(ctx, b)
 
-	if err := db.SaveState(ctx, resourceKey, entry.ID, entry.State, entry.DependsOn); err != nil {
-		logdiag.LogError(ctx, err)
+	b.DeploymentBundle.Apply(ctx, wsc, plan)
+}
+
+// scopeToResource sets every resource other than resourceKey to Skip, so an apply touches only that
+// resource. The others stay in the plan so references from the adopted resource still resolve.
+func scopeToResource(plan *deployplan.Plan, resourceKey string) {
+	for key, entry := range plan.Plan {
+		if key != resourceKey {
+			entry.Action = deployplan.Skip
+		}
 	}
 }
 
@@ -123,9 +139,7 @@ func unbindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 	keys := recordedKeys(db, resourceKey)
 	if len(keys) == 0 {
 		// The resource is not recorded, so unbind is a no-op, matching a file-based deployment.
-		if _, err := db.Finalize(ctx); err != nil {
-			logdiag.LogError(ctx, err)
-		}
+		finalizeState(ctx, db)
 		return
 	}
 
@@ -142,7 +156,7 @@ func unbindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey string
 		logdiag.LogError(ctx, err)
 		return
 	}
-	// The version exists now, so close it out on every path (see recordBind).
+	// The version exists now, so complete it on every path (see recordBind's completeRecordedVersion).
 	defer completeRecordedVersion(ctx, b)
 
 	for _, k := range keys {
@@ -166,53 +180,6 @@ func completeRecordedVersion(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
-// seedStateFromService writes a throwaway local state holding what the service currently records,
-// so the engine's file-based bind can compute its plan and resolved state against it. The returned
-// path does not exist yet when no deployment has been recorded, which the engine reads as empty
-// state. cleanup removes the seed and any temporary files the engine leaves beside it.
-func seedStateFromService(ctx context.Context, b *bundle.Bundle, deploymentID string, lastVersionID int) (string, func(), error) {
-	seedPath := localStatePath(ctx, b) + ".bind-seed"
-	cleanup := func() {
-		for _, p := range []string{seedPath, seedPath + ".temp-bind", seedPath + ".wal"} {
-			_ = os.Remove(p)
-		}
-	}
-
-	if deploymentID == "" {
-		return seedPath, cleanup, nil
-	}
-
-	ctx = withWorkspaceClient(ctx, b)
-	var src dstate.DeploymentState
-	if err := openRecordedState(ctx, &src, localStatePath(ctx, b), deploymentID, lastVersionID); err != nil {
-		cleanup()
-		return "", nil, err
-	}
-	err := src.SnapshotToPlainState(seedPath)
-	if _, ferr := src.Finalize(ctx); ferr != nil {
-		log.Warnf(ctx, "failed to finalize state: %v", ferr)
-	}
-	if err != nil {
-		cleanup()
-		return "", nil, err
-	}
-	return seedPath, cleanup, nil
-}
-
-// resolvedEntry reads back the state the engine's bind resolved for resourceKey from the throwaway
-// state file it wrote, which is what a file-based bind would have persisted.
-func resolvedEntry(ctx context.Context, tempStatePath, resourceKey string) (dstate.ResourceEntry, bool, error) {
-	var src dstate.DeploymentState
-	if err := src.Open(ctx, tempStatePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-		return dstate.ResourceEntry{}, false, err
-	}
-	entry, ok := src.GetResourceEntry(resourceKey)
-	if _, err := src.Finalize(ctx); err != nil {
-		log.Warnf(ctx, "failed to finalize state: %v", err)
-	}
-	return entry, ok, nil
-}
-
 // recordedKeys returns resourceKey and its sub-resource keys (permissions, grants, ...) that the
 // service holds, sorted so the staged operations and their requests are deterministic.
 func recordedKeys(db *dstate.DeploymentState, resourceKey string) []string {
@@ -230,6 +197,14 @@ func recordedKeys(db *dstate.DeploymentState, resourceKey string) []string {
 // metadata service.
 func openRecordedState(ctx context.Context, db *dstate.DeploymentState, path, deploymentID string, lastVersionID int) error {
 	return db.Open(ctx, path, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: deploymentID, LastVersionID: lastVersionID})
+}
+
+// finalizeState drains and closes the state without recording a version, for the paths that open it
+// but do not commit (a no-op or a declined bind).
+func finalizeState(ctx context.Context, db *dstate.DeploymentState) {
+	if _, err := db.Finalize(ctx); err != nil {
+		logdiag.LogError(ctx, err)
+	}
 }
 
 func localStatePath(ctx context.Context, b *bundle.Bundle) string {

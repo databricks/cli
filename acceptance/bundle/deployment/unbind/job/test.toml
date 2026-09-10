@@ -1,7 +1,2 @@
 Cloud = false # test leaves deployed job
 Ignore = [".databricks"]
-
-# The final `jobs get` shows the job's deployment block, which under DMS also carries the
-# deployment_id/version_id stamp; that is an engine-level difference, not an unbind one, and DMS
-# unbind is covered by bundle/dms/bind-unbind. So skip the DMS variant here.
-EnvMatrix.DMS = [""]

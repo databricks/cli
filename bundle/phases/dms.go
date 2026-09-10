@@ -48,6 +48,10 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 	switch a {
 	case deployplan.Create:
 		return bundledeployments.OperationActionTypeOperationActionTypeCreate, nil
+	case deployplan.Bind:
+		return bundledeployments.OperationActionTypeOperationActionTypeBind, nil
+	case deployplan.BindAndUpdate:
+		return bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate, nil
 	case deployplan.Update:
 		return bundledeployments.OperationActionTypeOperationActionTypeUpdate, nil
 	case deployplan.UpdateWithID:
