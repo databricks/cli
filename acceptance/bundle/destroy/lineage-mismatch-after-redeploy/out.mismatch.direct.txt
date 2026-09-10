@@ -1,0 +1,24 @@
+
+>>> musterr [CLI] bundle plan
+Error: lineage mismatch in state files
+
+Available state files:
+- resources.json: remote direct state serial=[SERIAL] lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=[SERIAL] lineage="[LINEAGE_A]"
+
+
+>>> musterr [CLI] bundle deploy
+Error: lineage mismatch in state files
+
+Available state files:
+- resources.json: remote direct state serial=[SERIAL] lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=[SERIAL] lineage="[LINEAGE_A]"
+
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: lineage mismatch in state files
+
+Available state files:
+- resources.json: remote direct state serial=[SERIAL] lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=[SERIAL] lineage="[LINEAGE_A]"
+

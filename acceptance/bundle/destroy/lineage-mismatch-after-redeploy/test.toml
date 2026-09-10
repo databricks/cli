@@ -1,5 +1,12 @@
-# Both engines keep a lineage-bearing local state file, so the destroy scenario
-# and its fix apply to both.
+# Both engines keep a lineage-bearing local state file, so the destroy scenario and its
+# fix (and the lingering-state failure) apply to both. The mismatch error names the
+# engine-specific state file, so it is recorded per engine in out.mismatch.<engine>.txt.
 
 # .databricks.machineA is the stashed local state; may linger if the test fails mid-run.
 Ignore = [".databricks.machineA"]
+
+# Needed because the serial is not set under DMS: the state file persists none, so the candidate
+# list the CLI prints shows serial=0 where a non-recording run shows the file's counter.
+[[Repls]]
+Old = 'serial=[0-9]+'
+New = 'serial=[SERIAL]'

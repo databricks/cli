@@ -84,7 +84,7 @@ Destroy: 1 deleted
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[MY_ID]"
 }
-State not found for pipelines.my
+State not found for pipelines.my in .databricks/bundle/default/[STATE_FILE]
 
 >>> musterr [CLI] pipelines get [MY_ID]
 Error: The specified pipeline [MY_ID] was not found.

@@ -3,33 +3,45 @@
 # only (.databricks/bundle/<target>), while remote state lives under
 # ~/.bundle/<bundle name>/<target>/state, so the two can diverge.
 #
-# Destroy removes the local state file, so no stale lineage is left behind: when
-# machine A comes back after machine B's fresh deploy, it cleanly adopts the
-# remote state instead of failing with a lineage mismatch.
+# Destroy removes the local state file, so a clean destroy leaves no stale lineage
+# behind. But if that cleanup does not happen (e.g. the process dies after the remote
+# state is deleted), the lingering local lineage no longer matches the new one a fresh
+# redeploy mints, and every command that pulls remote state fails. Cover both cases.
 
 title "Machine A: deploy, then destroy\n"
 trace $CLI bundle deploy
+
+# Snapshot machine A's local state (lineage L1) while it exists, so the lingering-state
+# case below can replay a destroy whose local cleanup did not happen.
+LINEAGE_A=$(print_state.py | jq -r .lineage)
+add_repl "$LINEAGE_A" LINEAGE_A
+cp -r .databricks .databricks.machineA
+
 trace $CLI bundle destroy --auto-approve
 
-title "Destroy removed the local state file:\n"
+title "A clean destroy removes the local state file, so no stale lineage is left behind:\n"
 trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$' --expect 0
 
-# Stash machine A's post-destroy local state and wipe it so the next deploy
-# behaves like a fresh machine with no local state.
-cp -r .databricks .databricks.machineA
+# Wipe whatever remains so the next deploy behaves like a fresh machine.
 rm -rf .databricks
 
-title "Machine B: fresh deploy of the same bundle (mints a new lineage remotely)\n"
+title "Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)\n"
 trace $CLI bundle deploy
 
-# Mask machine B's (remote) lineage so the golden output is stable.
+# Mask machine B's (remote) lineage.
 LINEAGE_B=$(print_state.py | jq -r .lineage)
 add_repl "$LINEAGE_B" LINEAGE_B
 
-# Back on machine A: restore the stashed local state.
+# Back on machine A, but this time destroy's local cleanup did not happen: restore the
+# stale local state that still carries L1.
 rm -rf .databricks
 mv .databricks.machineA .databricks
 
-title "Machine A: commands succeed, adopting machine B's remote state\n"
-trace $CLI bundle plan
-trace $CLI bundle deploy
+# The mismatch error names the engine-specific state file (resources.json vs
+# terraform.tfstate), so record it per engine and keep the shared output.txt identical.
+title "Machine A with a lingering local state: any command that pulls remote state now fails\n"
+{
+    trace musterr $CLI bundle plan
+    trace musterr $CLI bundle deploy
+    trace musterr $CLI bundle destroy --auto-approve
+} &>out.mismatch.$DATABRICKS_BUNDLE_ENGINE.txt

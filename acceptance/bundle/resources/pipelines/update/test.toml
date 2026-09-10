@@ -1,3 +1,9 @@
 Timeout = '30s'
 Cloud = true
 Ignore = ["bar.py", "foo.py"]
+
+# read_state.py names the engine-specific state file it consulted; normalize the path so
+# the terraform and direct matrix variants produce identical output.
+[[Repls]]
+Old = '\.databricks/bundle/default/(resources\.json|terraform/terraform\.tfstate)'
+New = '.databricks/bundle/default/[STATE_FILE]'
