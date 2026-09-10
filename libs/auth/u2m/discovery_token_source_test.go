@@ -294,7 +294,7 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 	}
 
 	storedTokens := map[string]*oauth2.Token{}
-	cacheMock := &tokenCacheMock{
+	cacheMock := &tokenStoreMock{
 		store: func(key string, tok *oauth2.Token) error {
 			storedTokens[key] = tok
 			return nil
@@ -308,7 +308,7 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 
 	p, err := NewPersistentAuth(
 		t.Context(),
-		WithTokenCache(cacheMock),
+		WithTokenStore(cacheMock),
 		WithBrowser(browserMock),
 		WithHttpClient(tokenServer.Client()),
 		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),

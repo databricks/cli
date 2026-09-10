@@ -307,7 +307,7 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-			u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
+			u2m.WithTokenStore(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 		}
 		if clientID != "" {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
@@ -670,7 +670,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, in.tokenStore, in.mode, arg)),
+		u2m.WithTokenStore(storage.WrapForOAuthArgument(ctx, in.tokenStore, in.mode, arg)),
 	}
 	if in.clientID != "" {
 		opts = append(opts, u2m.WithClientID(in.clientID))

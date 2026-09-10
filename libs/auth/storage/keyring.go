@@ -14,7 +14,7 @@ import (
 
 // keyringServiceName is the service name used for every entry the CLI writes
 // to the OS-native secure store. The account field carries the per-entry
-// cache key the U2M manager passes through TokenCache.Store / Lookup.
+// cache key the U2M manager passes through Store.Put / Lookup.
 const keyringServiceName = "databricks-cli"
 
 // keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form

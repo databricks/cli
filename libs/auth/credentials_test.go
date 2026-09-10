@@ -205,12 +205,11 @@ func TestCLICredentialsConfigure(t *testing.T) {
 	}
 }
 
-// TestCLICredentialsConfigure_ThreadsResolvedTokenCache guards against a
-// regression where Configure forgot to pass u2m.WithTokenCache. Without it,
-// the SDK's NewPersistentAuth silently defaulted to the file cache, so users
-// who opted into secure storage saw "cache: token not found" on every command
-// other than auth login/token/logout.
-func TestCLICredentialsConfigure_ThreadsResolvedTokenCache(t *testing.T) {
+// TestCLICredentialsConfigure_ThreadsResolvedTokenStore guards against a
+// regression where Configure forgot to pass u2m.WithTokenStore. Without it,
+// NewPersistentAuth defaults to an in-memory store, so it cannot see the token
+// persisted by auth login.
+func TestCLICredentialsConfigure_ThreadsResolvedTokenStore(t *testing.T) {
 	hermeticAuthStorage(t)
 
 	var receivedOpts []u2m.PersistentAuthOption
@@ -226,7 +225,7 @@ func TestCLICredentialsConfigure_ThreadsResolvedTokenCache(t *testing.T) {
 	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
 	require.NoError(t, err)
 
-	// Two opts expected: WithOAuthArgument and WithTokenCache. The length
+	// Two opts expected: WithOAuthArgument and WithTokenStore. The length
 	// check is the most resilient way to assert both were passed without
 	// poking at u2m's unexported state.
 	assert.Len(t, receivedOpts, 2)

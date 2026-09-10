@@ -98,18 +98,16 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
-	// Without WithTokenCache, u2m.NewPersistentAuth falls back to the SDK's
-	// default file cache. For secure-storage users that would split tokens
-	// across two backends: login writes to the keyring, but every workspace
-	// client built through this strategy would read an empty file cache and
-	// fail with "cache: token not found".
+	// Without WithTokenStore, u2m.NewPersistentAuth falls back to an in-memory
+	// store. Every workspace client built through this strategy would then miss
+	// the token persisted by login and fail with "cache: token not found".
 	tokenStore, mode, err := storage.ResolveStore(ctx, "")
 	if err != nil {
 		return nil, err
 	}
 	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArg),
-		u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenStore, mode)),
+		u2m.WithTokenStore(storage.OAuthTokenStore(ctx, tokenStore, mode)),
 	}
 	if cfg.AuthType == c.Name() && cfg.ClientID != "" {
 		opts = append(opts, u2m.WithClientID(cfg.ClientID))
@@ -127,7 +125,7 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 // persistentAuth returns a token source. It is a convenience function that
 // overrides the default implementation of the persistent auth client if
 // an alternative implementation is provided for testing. The caller is
-// responsible for supplying the token cache via u2m.WithTokenCache; Configure
+// responsible for supplying the token store via u2m.WithTokenStore; Configure
 // does this via storage.ResolveStore so login, refresh, and all workspace
 // clients share the same backend.
 func (c CLICredentials) persistentAuth(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"golang.org/x/oauth2"
 )
 
@@ -184,7 +185,7 @@ func (d *discoveryTokenSource) challenge() error {
 	}
 	discoveryArg.SetDiscoveredHost(discoveredHost)
 
-	if err := d.pa.cache.Store(d.pa.oAuthArgument.GetCacheKey(), token); err != nil {
+	if err := d.pa.store.Put(d.pa.oAuthArgument.GetCacheKey(), storage.Entry{Token: token}); err != nil {
 		return fmt.Errorf("storing token: %w", err)
 	}
 	return nil
