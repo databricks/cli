@@ -1,0 +1,19 @@
+# Minimal illustrative bundle. The in-memory backend runs job logic from
+# transforms.py; the cloud backend (follow-up PR) will deploy and run this.
+bundle:
+  name: orders
+
+resources:
+  jobs:
+    transform_orders:
+      name: transform_orders
+      tasks:
+        - task_key: transform
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: src/transform_orders.sql
+
+variables:
+  warehouse_id:
+    description: SQL warehouse the transform runs on
