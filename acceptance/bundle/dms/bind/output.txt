@@ -1,0 +1,110 @@
+
+>>> [CLI] schemas create dms_bind_[UNIQUE_NAME] main
+{
+  "browse_only": false,
+  "catalog_name": "main",
+  "catalog_type": "MANAGED_CATALOG",
+  "created_at": [UNIX_TIME_MILLIS][0],
+  "created_by": "[USERNAME]",
+  "effective_predictive_optimization_flag": {
+    "inherited_from_name": "[METASTORE_NAME]",
+    "inherited_from_type": "METASTORE",
+    "value": "ENABLE"
+  },
+  "enable_predictive_optimization": "INHERIT",
+  "full_name": "main.dms_bind_[UNIQUE_NAME]",
+  "metastore_id": "[UUID]",
+  "name": "dms_bind_[UNIQUE_NAME]",
+  "owner": "[USERNAME]",
+  "schema_id": "[UUID]",
+  "updated_at": [UNIX_TIME_MILLIS][0],
+  "updated_by": "[USERNAME]"
+}
+
+=== Bind sc, the first bind: it creates the deployment. The config already matches, so this is a plain bind that records the resource without touching it
+>>> [CLI] bundle deployment bind sc main.dms_bind_[UNIQUE_NAME] --auto-approve
+Successfully bound schema with an id 'main.dms_bind_[UNIQUE_NAME]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Version 1 records only sc, with the plain bind action type; the jobs are left untouched
+>>> print_requests.py --dms --method POST //versions --nostamp
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "operations": [
+      {
+        "resource_key": "schemas.sc",
+        "action_type": "OPERATION_ACTION_TYPE_BIND"
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== Bind foo into the existing deployment: its config differs, so this is a bind-and-update that applies the config now
+>>> [CLI] bundle deployment bind foo [FOO_ID] --auto-approve
+Successfully bound job with an id '[FOO_ID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Version 2 records only foo and its permissions (bar is untouched) and chains to version 1
+>>> print_requests.py --dms --method POST //versions --nostamp
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "2"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "previous_version_id": "1",
+    "operations": [
+      {
+        "resource_key": "jobs.foo",
+        "action_type": "OPERATION_ACTION_TYPE_BIND_AND_UPDATE"
+      },
+      {
+        "resource_key": "jobs.foo.permissions",
+        "action_type": "OPERATION_ACTION_TYPE_CREATE"
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/2/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_SUCCESS"
+  }
+}
+
+=== sc and foo are now managed; bar is still an unmanaged create
+>>> [CLI] bundle plan
+create jobs.bar
+
+Plan: 1 to add, 0 to change, 0 to delete, 3 unchanged
+
+=== Test cleanup: the bound resources are now bundle-managed, so destroy removes them
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+  delete resources.schemas.sc
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.sc
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-bind-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

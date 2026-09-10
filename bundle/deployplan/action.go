@@ -31,25 +31,32 @@ type ActionType string
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	Undefined    ActionType = ""
-	Skip         ActionType = "skip"
-	Resize       ActionType = "resize"
-	Update       ActionType = "update"
-	UpdateWithID ActionType = "update_id"
-	Create       ActionType = "create"
-	Recreate     ActionType = "recreate"
-	Delete       ActionType = "delete"
+	Undefined ActionType = ""
+	Skip      ActionType = "skip"
+	Resize    ActionType = "resize"
+	Update    ActionType = "update"
+	// Bind adopts an existing workspace resource whose config already matches it: record it in
+	// state without touching the resource. BindAndUpdate adopts it and applies the config in one
+	// step. Both are set only for the resource named by `bundle deployment bind`.
+	Bind          ActionType = "bind"
+	BindAndUpdate ActionType = "bind_and_update"
+	UpdateWithID  ActionType = "update_id"
+	Create        ActionType = "create"
+	Recreate      ActionType = "recreate"
+	Delete        ActionType = "delete"
 )
 
 var actionOrder = map[ActionType]int{
-	Undefined:    0,
-	Skip:         1,
-	Resize:       2,
-	Update:       3,
-	UpdateWithID: 4,
-	Create:       5,
-	Recreate:     6,
-	Delete:       7,
+	Undefined:     0,
+	Skip:          1,
+	Bind:          2,
+	Resize:        3,
+	Update:        4,
+	BindAndUpdate: 5,
+	UpdateWithID:  6,
+	Create:        7,
+	Recreate:      8,
+	Delete:        9,
 }
 
 func (a ActionType) KeepsID() bool {

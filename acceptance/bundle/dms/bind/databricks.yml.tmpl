@@ -1,0 +1,18 @@
+bundle:
+  name: dms-bind-$UNIQUE_NAME
+experimental:
+  deployment_history: true
+
+resources:
+  schemas:
+    sc:
+      name: dms_bind_$UNIQUE_NAME
+      catalog_name: main
+  jobs:
+    foo:
+      name: foo
+      permissions:
+        - group_name: users
+          level: CAN_MANAGE
+    bar:
+      name: bar

@@ -54,7 +54,7 @@ func (p *Plan) CountActions() ActionCounts {
 		switch entry.Action {
 		case Create:
 			c.Create++
-		case Update, UpdateWithID, Resize:
+		case Update, UpdateWithID, Resize, BindAndUpdate:
 			c.Change++
 		case Delete:
 			c.Delete++
@@ -62,7 +62,8 @@ func (p *Plan) CountActions() ActionCounts {
 			// A recreate counts as both a delete and a create.
 			c.Delete++
 			c.Create++
-		case Skip, Undefined:
+		case Skip, Undefined, Bind:
+			// Bind adopts an existing resource without changing it.
 			c.Unchanged++
 		}
 	}
@@ -116,6 +117,8 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 }
 
 type PlanEntry struct {
+	// ID carries the workspace id for a Bind/BindAndUpdate action, whose resource is not yet in
+	// state; every other action reads the id from state instead, so it is empty for them.
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`

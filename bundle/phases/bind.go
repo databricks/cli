@@ -33,11 +33,6 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 	}()
 
 	if engine.IsDirect() {
-		if b.ConfiguresDeploymentHistory(ctx) {
-			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
-			return
-		}
-
 		// Direct engine: import into temp state, run plan, check for changes
 		// This follows the same pattern as terraform import
 		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
@@ -45,57 +40,33 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 			groupName = opts.ResourceType
 		}
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
-		_, statePath := b.StateFilenameDirect(ctx)
 
-		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-
-		// If there are changes and auto-approve is not set, show plan and ask for confirmation
-		if result.HasChanges && !opts.AutoApprove {
-			// Display the planned changes for the bound resource
-			cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", result.Action, resourceKey))
-
-			// Show details of what will change
-			if result.Plan != nil {
-				if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
-					cmdio.LogString(ctx, "\nChanges detected:")
-					for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
-						change := entry.Changes[field]
-						if change.Action != deployplan.Skip {
-							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
-						}
-					}
-					cmdio.LogString(ctx, "")
-				}
-			}
-
-			if !cmdio.IsPromptSupported(ctx) {
-				result.Cancel()
-				logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
+		if b.ConfiguresDeploymentHistory(ctx) {
+			// A recorded deployment keeps its resources in the metadata service, so the bind is
+			// recorded there rather than written to the state file.
+			bindWithHistory(ctx, b, resourceKey, opts.ResourceId, opts.AutoApprove)
+			if logdiag.HasError(ctx) {
 				return
 			}
+		} else {
+			_, statePath := b.StateFilenameDirect(ctx)
 
-			ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
+			result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
 			if err != nil {
-				result.Cancel()
 				logdiag.LogError(ctx, err)
 				return
 			}
-			if !ans {
+
+			if !confirmBindPlan(ctx, resourceKey, result.Plan, opts.AutoApprove, false) {
 				result.Cancel()
-				logdiag.LogError(ctx, errors.New("import aborted"))
 				return
 			}
-		}
 
-		// Finalize: rename temp state to final location
-		err = result.Finalize()
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			// Finalize: rename temp state to final location
+			if err := result.Finalize(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
 		}
 	} else {
 		// Terraform engine: use terraform import
@@ -122,6 +93,56 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
+// confirmBindPlan shows the bound resource's planned action and, unless autoApprove, asks the user
+// to confirm. It reports whether the bind should proceed; on decline or an unpromptable console it
+// logs the reason and returns false. A plain bind or skip changes nothing, so it proceeds without a
+// prompt. immediate is true when the caller applies the change now (the DMS path) rather than
+// deferring it to the next deploy, so the prompt describes the right timing. The caller owns any
+// cleanup on a false return.
+func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove, immediate bool) bool {
+	var entry *deployplan.PlanEntry
+	if plan != nil {
+		entry = plan.Plan[resourceKey]
+	}
+	changesWorkspace := entry != nil && entry.Action != deployplan.Skip && entry.Action != deployplan.Bind && entry.Action != deployplan.Undefined
+	if !changesWorkspace || autoApprove {
+		return true
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", entry.Action, resourceKey))
+	if len(entry.Changes) > 0 {
+		cmdio.LogString(ctx, "\nChanges detected:")
+		for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
+			change := entry.Changes[field]
+			if change.Action != deployplan.Skip {
+				cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
+			}
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	if !cmdio.IsPromptSupported(ctx) {
+		logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
+		return false
+	}
+
+	prompt := "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'."
+	if immediate {
+		prompt = "Confirm bind? The change will be applied to the workspace now."
+	}
+	ans, err := cmdio.AskYesOrNo(ctx, prompt)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return false
+	}
+	if !ans {
+		logdiag.LogError(ctx, errors.New("import aborted"))
+		return false
+	}
+
+	return true
+}
+
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {
 	log.Info(ctx, "Phase: unbind")
 
@@ -140,9 +161,10 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 			groupName = tfResourceType
 		}
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
+		// Unbind under the deployment metadata service is not supported yet (no unbind operation
+		// action type exists); DeploymentBundle.Unbind errors for a recorded deployment.
 		_, statePath := b.StateFilenameDirect(ctx)
-		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
-		if err != nil {
+		if err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}
