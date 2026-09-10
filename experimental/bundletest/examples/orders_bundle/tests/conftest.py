@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-
 from bundletest import bundle_env
 
 BUNDLE = str(Path(__file__).resolve().parent.parent)

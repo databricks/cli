@@ -5,7 +5,6 @@ routing: real bug -> red, dialect gap / notebook task / reserved catalog -> Loca
 """
 
 import pytest
-
 from bundletest import BundleEnv, DuckDBBackend, LocalUnsupported, bundle_env
 
 

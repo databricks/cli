@@ -6,9 +6,9 @@ from bundletest.env import BundleEnv, bundle_env
 
 __all__ = [
     "Backend",
-    "RunResult",
-    "LocalUnsupported",
     "BundleEnv",
-    "bundle_env",
     "DuckDBBackend",
+    "LocalUnsupported",
+    "RunResult",
+    "bundle_env",
 ]
