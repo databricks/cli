@@ -265,6 +265,9 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenCache(storage.OAuthTokenCache(ctx, args.tokenStore, args.mode))}, args.persistentAuthOpts...)
+	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
+		allArgs = append(allArgs, u2m.WithClientID(clientID))
+	}
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
@@ -430,6 +433,9 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
 		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 	}
+	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
+		persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
+	}
 	if len(scopesList) > 0 {
 		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
 	}
@@ -458,6 +464,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		WorkspaceID: loginArgs.WorkspaceID,
 		ConfigFile:  env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 		Scopes:      scopesList,
+		ClientID:    u2mClientIDFromProfile(existingProfile),
 	}, clearKeys...)
 	if err != nil {
 		return "", nil, err

@@ -69,6 +69,8 @@ var (
 // The PersistentAuth is safe for concurrent use. The token cache is locked
 // during token retrieval, refresh and storage.
 type PersistentAuth struct {
+	clientID string
+
 	// cache is the token cache to store and lookup tokens.
 	cache cache.TokenCache
 
@@ -162,6 +164,13 @@ func WithOAuthArgument(arg OAuthArgument) PersistentAuthOption {
 	}
 }
 
+// WithClientID sets the OAuth client ID for the PersistentAuth.
+func WithClientID(clientID string) PersistentAuthOption {
+	return func(a *PersistentAuth) {
+		a.clientID = clientID
+	}
+}
+
 // WithBrowser sets the browser function for the PersistentAuth.
 func WithBrowser(b func(url string) error) PersistentAuthOption {
 	return func(a *PersistentAuth) {
@@ -234,7 +243,9 @@ func WithDiscoveryAccountTarget() PersistentAuthOption {
 
 // NewPersistentAuth creates a new PersistentAuth with the provided options.
 func NewPersistentAuth(ctx context.Context, opts ...PersistentAuthOption) (*PersistentAuth, error) {
-	p := &PersistentAuth{}
+	p := &PersistentAuth{
+		clientID: appClientID, // defaults to databricks-cli
+	}
 	for _, opt := range opts {
 		opt(p)
 	}
@@ -603,7 +614,8 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 		endpoints, err = a.endpointSupplier.GetWorkspaceOAuthEndpoints(a.ctx, argg.GetWorkspaceHost())
 	case AccountOAuthArgument:
 		endpoints, err = a.endpointSupplier.GetAccountOAuthEndpoints(
-			a.ctx, argg.GetAccountHost(), argg.GetAccountId())
+			a.ctx, argg.GetAccountHost(), argg.GetAccountId(),
+		)
 	case UnifiedOAuthArgument:
 		endpoints, err = a.endpointSupplier.GetUnifiedOAuthEndpoints(a.ctx, argg.GetHost(), argg.GetAccountId())
 	case DiscoveryOAuthArgument:
@@ -615,7 +627,7 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 		return nil, fmt.Errorf("fetching OAuth endpoints: %w", err)
 	}
 	return &oauth2.Config{
-		ClientID: appClientID,
+		ClientID: a.clientID,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   endpoints.AuthorizationEndpoint,
 			TokenURL:  endpoints.TokenEndpoint,
