@@ -5,3 +5,6 @@ __pycache__/
 .pytest_cache/
 build/
 dist/
+
+# Generated behind the internal PyPI proxy; committing it trips check-lockfiles
+uv.lock
