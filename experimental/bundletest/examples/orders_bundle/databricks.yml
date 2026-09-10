@@ -1,5 +1,6 @@
-# Minimal illustrative bundle. The in-memory backend runs job logic from
-# transforms.py; the cloud backend (follow-up PR) will deploy and run this.
+# Minimal illustrative bundle. The local backend runs the job's real sql_task artifact
+# (src/transform_orders.sql) against DuckDB; the cloud backend (follow-up PR) deploys and
+# runs it on a real workspace.
 bundle:
   name: orders
 
