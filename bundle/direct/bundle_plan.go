@@ -482,10 +482,10 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
-		} else if reason, ok := findRecreateRule(path, cfg.RecreateOnChanges); ok {
+		} else if reason, ok := findMatchingRuleBidirectional(path, cfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
-		} else if reason, ok := findRecreateRule(path, generatedCfg.RecreateOnChanges); ok {
+		} else if reason, ok := findMatchingRuleBidirectional(path, generatedCfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
 		} else {
@@ -557,14 +557,14 @@ func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (
 	return "", false
 }
 
-// findRecreateRule matches recreate rules bidirectionally: in addition to the usual
-// descendant match, a rule on foo.bar matches a change recorded at foo, because a
-// whole block added or removed is one block-level change and the field the rule
-// names is part of it. This is only sound for an escalating action like recreate.
-// Suppressing rules (ignore_remote/ignore_local, backend_default, normalize) stay
-// descendant-only via findMatchingRule: a whole block that merely contains an
-// ignored/defaulted leaf is still a real change and must not be skipped.
-func findRecreateRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
+// findMatchingRuleBidirectional matches rules in both directions: the usual
+// descendant match, plus a rule on foo.bar matching a change recorded at foo,
+// because a whole block added or removed is one block-level change and the field
+// the rule names is part of it. Callers must only use this for escalating actions
+// (currently recreate): a whole block that merely contains a leaf named by a
+// suppressing rule (ignore_remote/ignore_local, backend_default, normalize) is
+// still a real change, so those keep the descendant-only findMatchingRule.
+func findMatchingRuleBidirectional(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
 	for _, r := range rules {
 		if matchesFieldRuleBidirectional(path, r.Field) {
 			return r.Reason, true
