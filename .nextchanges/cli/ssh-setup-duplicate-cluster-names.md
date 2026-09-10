@@ -1,0 +1,1 @@
+`databricks ssh setup` no longer fails to list clusters when a workspace has several clusters sharing the same name. The picker now shows the cluster ID alongside the name so duplicates can be told apart.
