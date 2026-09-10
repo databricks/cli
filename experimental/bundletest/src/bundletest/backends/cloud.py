@@ -1,0 +1,317 @@
+"""Cloud backend: runs the same tests against a real Databricks workspace.
+
+The fidelity tier behind the ``Backend`` seam. Where the local DuckDB backend simulates,
+this deploys the bundle for real and drives the workspace, so the ``cloud_only`` assertions
+(Databricks type names, SLA timing, notebook/Python jobs, permissions) actually run instead
+of skipping.
+
+Design invariants — the cloud analogues of the DuckDB backend's:
+
+1. **Same source of truth.** ``run_job`` runs the *deployed* job (``jobs.run_now`` on the
+   real cluster/warehouse), not a reimplementation — the whole point of the fidelity tier.
+
+2. **Real names, no rewriting.** Seeded tables and job targets use their real
+   ``catalog.schema.table`` names. Missing schemas are created (``CREATE SCHEMA IF NOT
+   EXISTS``) — the UC equivalent of the local backend's ATTACH; there is no reserved-catalog
+   restriction here (``main`` is a fine UC catalog), so this backend never raises
+   ``LocalUnsupported``.
+
+3. **Fail loud.** A failed statement raises; a failed job run comes back as a FAILED
+   ``RunResult``. Nothing is silently coerced to green.
+
+Config comes from the environment: ``BUNDLETEST_PROFILE`` (CLI/SDK auth profile),
+``BUNDLETEST_WAREHOUSE_ID`` (the SQL warehouse for seeding/queries; required for any SQL),
+``BUNDLETEST_TARGET`` (bundle target). Bundle variables are supplied the normal DABs way
+(``BUNDLE_VAR_<name>`` env vars or the target), so ``deploy`` stays bundle-agnostic.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import subprocess
+import tempfile
+import time
+from pathlib import Path
+from typing import Any
+
+import duckdb
+import yaml
+
+from bundletest.backend import RunResult
+
+# DuckDB reader per file extension, reused to parse a volume file downloaded from the
+# workspace (duckdb is already a base dependency, so no extra parser is pulled in).
+_FILE_READERS = {".csv": "read_csv", ".json": "read_json", ".parquet": "read_parquet"}
+
+# A three-part UC name catalog.schema.table. Anchored to an identifier start so numeric
+# literals never match. Only used to discover which schemas a job's SQL writes to, so
+# over-matching (e.g. a column ref) is harmless — CREATE SCHEMA IF NOT EXISTS is idempotent.
+_QUALIFIED = re.compile(r"\b([A-Za-z_]\w*)\.([A-Za-z_]\w*)\.[A-Za-z_]\w*")
+
+# Statement Execution API column type_name -> value caster. Every value arrives as a string
+# in data_array; the assertion layer needs native types (row_count() == 2, not "2").
+_INT_TYPES = {"BYTE", "SHORT", "INT", "LONG"}
+_FLOAT_TYPES = {"FLOAT", "DOUBLE", "DECIMAL"}
+
+
+def _sql_type(values: list[Any]) -> str:
+    for v in values:
+        if v is None:
+            continue
+        if isinstance(v, bool):
+            return "BOOLEAN"
+        if isinstance(v, int):
+            return "BIGINT"
+        if isinstance(v, float):
+            return "DOUBLE"
+        return "STRING"
+    return "STRING"
+
+
+def _sql_literal(v: Any) -> str:
+    if v is None:
+        return "NULL"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return repr(v)
+    # Spark SQL string literals honor backslash escapes, so escape the backslash before
+    # doubling the quote — otherwise a literal '\' or "'" in seed data breaks the INSERT.
+    return "'" + str(v).replace("\\", "\\\\").replace("'", "''") + "'"
+
+
+def _cast_value(raw: str | None, type_name: str) -> Any:
+    """Cast one string cell from data_array to the native type its column declares."""
+    if raw is None:
+        return None
+    if type_name == "BOOLEAN":
+        return raw.lower() == "true"
+    if type_name in _INT_TYPES:
+        return int(raw)
+    if type_name in _FLOAT_TYPES:
+        return float(raw)
+    return raw
+
+
+def _schemas_in(sql: str) -> list[str]:
+    """The distinct ``catalog.schema`` prefixes of the three-part names in ``sql``."""
+    out: list[str] = []
+    for m in _QUALIFIED.finditer(sql):
+        ns = f"{m.group(1)}.{m.group(2)}"
+        if ns not in out:
+            out.append(ns)
+    return out
+
+
+class CloudBackend:
+    """Cloud ``Backend`` implementation. Deploys the bundle and drives a real workspace."""
+
+    def __init__(
+        self,
+        profile: str | None = None,
+        warehouse_id: str | None = None,
+        target: str | None = None,
+    ) -> None:
+        self._profile = profile or os.environ.get("BUNDLETEST_PROFILE")
+        self._warehouse_id = warehouse_id or os.environ.get("BUNDLETEST_WAREHOUSE_ID")
+        self._target = target or os.environ.get("BUNDLETEST_TARGET")
+        self._client: Any = None  # lazy WorkspaceClient; constructing it resolves auth
+        self._bundle_path = ""
+        self._config: dict[str, Any] = {}
+        self._summary: dict[str, Any] | None = None
+        self._seeded: set[str] = set()
+
+    # --- lifecycle ---
+    def deploy(self, bundle_path: str) -> None:
+        self._bundle_path = bundle_path
+        self._summary = None
+        path = Path(bundle_path, "databricks.yml")
+        self._config = yaml.safe_load(path.read_text()) if path.exists() else {}
+        self._bundle("deploy")
+
+    def teardown(self) -> None:
+        # Drop what we seeded, then destroy the bundle. Best-effort: teardown must not raise.
+        for fqn in self._seeded:
+            try:
+                self.execute_sql(f"DROP TABLE IF EXISTS {fqn}")
+            except Exception:
+                pass
+        try:
+            self._bundle("destroy", "--auto-approve")
+        except Exception:
+            pass
+
+    # --- scaffolding ---
+    def seed_table(self, fqn: str, rows: list[dict[str, Any]]) -> None:
+        if not rows:
+            raise ValueError(f"cannot seed {fqn!r} with no rows")
+        self._ensure_schema(fqn)
+        columns = list(rows[0].keys())
+        coldefs = ", ".join(f"{c} {_sql_type([r.get(c) for r in rows])}" for c in columns)
+        self.execute_sql(f"CREATE OR REPLACE TABLE {fqn} ({coldefs})")
+        values = ", ".join("(" + ", ".join(_sql_literal(r.get(c)) for c in columns) + ")" for r in rows)
+        self.execute_sql(f"INSERT INTO {fqn} ({', '.join(columns)}) VALUES {values}")
+        self._seeded.add(fqn)
+
+    # --- execution ---
+    def run_job(self, name: str, params: dict[str, Any] | None = None) -> RunResult:
+        from databricks.sdk.service.jobs import RunResultState
+
+        job_id = int(self.get_resource("jobs", name)["id"])
+        self._ensure_job_schemas(name)
+        job_params = {k: str(v) for k, v in (params or {}).items()}
+        run = self._ws().jobs.run_now(job_id, job_parameters=job_params or None).result()
+        succeeded = run.state.result_state == RunResultState.SUCCESS
+        return RunResult(
+            "SUCCESS" if succeeded else "FAILED",
+            (run.run_duration or 0) / 1000,
+            str(run.run_id),
+            error="" if succeeded else (run.state.state_message or ""),
+        )
+
+    # --- data plane ---
+    def execute_sql(self, query: str) -> list[tuple]:
+        from databricks.sdk.service.sql import Disposition, Format, StatementState
+
+        warehouse_id = self._require_warehouse()
+        se = self._ws().statement_execution
+        resp = se.execute_statement(
+            statement=query,
+            warehouse_id=warehouse_id,
+            wait_timeout="30s",
+            disposition=Disposition.INLINE,
+            format=Format.JSON_ARRAY,
+        )
+        while resp.status.state in (StatementState.PENDING, StatementState.RUNNING):
+            time.sleep(1)
+            resp = se.get_statement(resp.statement_id)
+        if resp.status.state != StatementState.SUCCEEDED:
+            err = resp.status.error
+            detail = err.message if err else resp.status.state.value
+            raise RuntimeError(f"statement failed: {detail}")
+
+        columns = resp.manifest.schema.columns or []
+        types = [c.type_name.value for c in columns]
+        rows = list(resp.result.data_array or [])
+        # Inline results past the first chunk are fetched by index.
+        nxt = resp.result.next_chunk_index
+        while nxt is not None:
+            chunk = se.get_statement_result_chunk_n(resp.statement_id, nxt)
+            rows += chunk.data_array or []
+            nxt = chunk.next_chunk_index
+        return [tuple(_cast_value(v, types[i]) for i, v in enumerate(row)) for row in rows]
+
+    def table_schema(self, fqn: str) -> dict[str, str]:
+        # DESCRIBE emits (col_name, data_type, comment); trailing partition/detail rows have a
+        # blank or '#'-prefixed col_name. data_type is already the Databricks spelling
+        # (e.g. "decimal(10,2)"), which is exactly what the cloud_only type test wants.
+        schema: dict[str, str] = {}
+        for name, dtype, *_ in self.execute_sql(f"DESCRIBE TABLE {fqn}"):
+            if not name or name.startswith("#"):
+                break
+            schema[name] = dtype
+        return schema
+
+    # --- control plane ---
+    def get_resource(self, kind: str, name: str) -> dict[str, Any]:
+        # `...[kind][name]` raises KeyError for an undeclared resource, which exists() expects.
+        cfg = self._resources()[kind][name]
+        # source_tables() needs the rendered serialized definition. A resource inlined in
+        # databricks.yml already carries it; a file_path-only one does not, so read it back
+        # from the deployed resource.
+        if kind == "dashboards" and "serialized_dashboard" not in cfg:
+            dashboard = self._ws().lakeview.get(self._deployed_id(cfg, name))
+            return {**cfg, "serialized_dashboard": dashboard.serialized_dashboard}
+        if kind == "genie_spaces" and "serialized_space" not in cfg:
+            space = self._ws().genie.get_space(self._deployed_id(cfg, name), include_serialized_space=True)
+            return {**cfg, "serialized_space": space.serialized_space}
+        return cfg
+
+    def put_file(self, dst: str, src: str) -> None:
+        if not os.path.exists(src):
+            raise FileNotFoundError(f"upload source not found: {src}")
+        with open(src, "rb") as f:
+            self._ws().files.upload(self._volume_path(dst), f, overwrite=True)
+
+    def read_volume_file(self, volume: str, filename: str) -> list[dict[str, Any]]:
+        path = self._volume_path(f"/Volumes/{volume}/{filename}")
+        suffix = Path(filename).suffix
+        reader = _FILE_READERS.get(suffix)
+        if reader is None:
+            raise ValueError(f"cannot read {suffix!r} files")
+        try:
+            resp = self._ws().files.download(path)
+        except Exception as e:
+            raise FileNotFoundError(f"no file {filename!r} in volume {volume!r}: {e}") from e
+        with tempfile.NamedTemporaryFile(suffix=suffix) as tmp:
+            tmp.write(resp.contents.read())
+            tmp.flush()
+            cur = duckdb.connect().execute(f"SELECT * FROM {reader}('{tmp.name}')")
+            cols = [d[0] for d in cur.description]
+            return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
+
+    # --- internals ---
+    def _ws(self) -> Any:
+        if self._client is None:
+            from databricks.sdk import WorkspaceClient
+
+            self._client = WorkspaceClient(profile=self._profile)
+        return self._client
+
+    def _require_warehouse(self) -> str:
+        if not self._warehouse_id:
+            raise RuntimeError("cloud SQL needs a warehouse — set BUNDLETEST_WAREHOUSE_ID")
+        return self._warehouse_id
+
+    def _bundle(self, *args: str) -> str:
+        cmd = ["databricks", "bundle", *args]
+        if self._target:
+            cmd += ["-t", self._target]
+        env = dict(os.environ)
+        if self._profile:
+            env["DATABRICKS_CONFIG_PROFILE"] = self._profile
+        out = subprocess.run(cmd, cwd=self._bundle_path, env=env, capture_output=True, text=True)
+        if out.returncode != 0:
+            raise RuntimeError(f"`{' '.join(cmd)}` failed: {out.stderr.strip()}")
+        return out.stdout
+
+    def _resources(self) -> dict[str, Any]:
+        if self._summary is None:
+            self._summary = json.loads(self._bundle("summary", "-o", "json"))
+        return self._summary.get("resources", {})
+
+    @staticmethod
+    def _deployed_id(cfg: dict[str, Any], name: str) -> str:
+        # A RuntimeError (not KeyError) so exists() doesn't mistake a hydration miss for absence.
+        rid = cfg.get("id")
+        if not rid:
+            raise RuntimeError(f"resource {name!r} has no deployed id yet — deploy first")
+        return str(rid)
+
+    def _ensure_schema(self, fqn: str) -> None:
+        parts = fqn.split(".")
+        if len(parts) == 3:
+            self.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {parts[0]}.{parts[1]}")
+
+    def _ensure_job_schemas(self, name: str) -> None:
+        """Create the schemas a job's SQL writes to, so its unmodified statements resolve —
+        the cloud analogue of the local backend's namespace preparation."""
+        for task in self._config.get("resources", {}).get("jobs", {}).get(name, {}).get("tasks", []):
+            sql_task = task.get("sql_task")
+            if not sql_task:
+                continue
+            sql = Path(self._bundle_path, sql_task["file"]["path"]).read_text()
+            for ns in _schemas_in(sql):
+                self.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {ns}")
+
+    def _volume_path(self, dst: str) -> str:
+        """Resolve ``/Volumes/<resource_name>/<path...>`` to a real UC volume path.
+
+        The first segment after ``/Volumes/`` is the volume *resource* name — the same
+        contract the local backend uses on both put_file and read_volume_file — which we
+        expand to ``/Volumes/<catalog>/<schema>/<volume>/<path...>`` via the deployed config."""
+        _, resource, *rest = dst.strip("/").split("/")
+        vol = self.get_resource("volumes", resource)
+        return "/".join(["/Volumes", vol["catalog_name"], vol["schema_name"], vol["name"], *rest])
