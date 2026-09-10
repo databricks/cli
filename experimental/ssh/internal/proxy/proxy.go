@@ -237,10 +237,17 @@ func newResumableProxyConnection(createConn createWebsocketConnectionFunc, buffe
 // Once the replay buffer fills, the connection is degraded to non-resumable and this returns false.
 //
 // Degrade-during-reattach safety: degraded is set inside sendMessage while holding handoverMutex.
-// reattach (dialReattach/awaitReattach) also acquires handoverMutex for its entire lifetime, so the
-// two operations are serialized. Once degraded is true, resumable() returns false, so:
-// - runReceivingLoop stops attempting reattaches (line ~475: if pc.resumable() check)
-// - replayTo will never be called by a new reattach, so sendBuf won't be accessed
+// resumable checks whether the connection is still resumable. Race-safe: degraded is atomic.Bool
+// and write-once (set true, never cleared), so concurrent reads from multiple goroutines
+// (sendMessage, runReceivingLoop, runSendingLoop) are safe.
+//
+// On the client side, dialReattach holds handoverMutex for its entire lifetime, serializing
+// degradation with any in-flight reattach. On the server side, acceptReattach holds handoverMutex
+// around replayTo, and sendGate blocks the sending loop before sendMessage can degrade, so
+// degradation cannot interleave with replay.
+// Once degraded is true, resumable() returns false, preventing:
+// - runReceivingLoop from attempting reattaches (the if pc.resumable() check stops it)
+// - replayTo from being called by a new reattach, so sendBuf won't be accessed
 // This prevents silent data corruption from an inconsistent replay offset.
 func (pc *proxyConnection) resumable() bool {
 	if pc.resume == nil {
@@ -310,11 +317,6 @@ func (pc *proxyConnection) acceptWebsocketConnection(w http.ResponseWriter, r *h
 }
 
 func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) error {
-	var wasResumable bool
-	if pc.resume != nil {
-		wasResumable = true
-	}
-
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -322,12 +324,6 @@ func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) er
 		b := make([]byte, proxyBufferSize)
 		n, readErr := src.Read(b)
 		if n > 0 {
-			// Detect if we've transitioned from resumable to degraded
-			if wasResumable && !pc.resumable() {
-				log.Warnf(ctx, "SSH tunnel replay buffer filled: downgrading to non-resumable to keep the session alive")
-				wasResumable = false
-			}
-
 			// Wait out any reattach in progress, so a connection that is down does not fill the
 			// whole replay window before it comes back. src stays blocked on the OS side
 			// meanwhile, which is the backpressure we want.

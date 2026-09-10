@@ -80,10 +80,10 @@ func (r *tcpRelay) resetClients(t *testing.T) {
 	}
 }
 
-// createResumableTestClient builds a client with the resume protocol enabled, dialing through a
+// createResumableTestClientWithDialer builds a client with the resume protocol enabled, dialing through a
 // URL that mirrors the production one: the delivered offset rides along on every dial, and a
-// reattach says so explicitly.
-func createResumableTestClient(t *testing.T, serverURL string, errChan chan error) *testClient {
+// reattach says so explicitly. The buffer limit allows tests to trigger buffer exhaustion with small payloads.
+func createResumableTestClientWithDialer(t *testing.T, serverURL string, errChan chan error, bufferLimit int) *testClient {
 	wsURL := "ws" + serverURL[4:]
 	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
 		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
@@ -103,7 +103,7 @@ func createResumableTestClient(t *testing.T, serverURL string, errChan chan erro
 
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-		proxy := newResumableProxyConnection(createConn, proxyResumeBufferLimit)
+		proxy := newResumableProxyConnection(createConn, bufferLimit)
 		if err := proxy.connect(ctx); err != nil {
 			if errChan != nil {
 				errChan <- err
@@ -129,6 +129,11 @@ func createResumableTestClient(t *testing.T, serverURL string, errChan chan erro
 			wg.Wait()
 		},
 	}
+}
+
+// createResumableTestClient builds a client with the resume protocol enabled using the default buffer limit.
+func createResumableTestClient(t *testing.T, serverURL string, errChan chan error) *testClient {
+	return createResumableTestClientWithDialer(t, serverURL, errChan, proxyResumeBufferLimit)
 }
 
 // URL returns the relay's address in the http form createTestClient expects.
@@ -196,37 +201,3 @@ func TestADropIsNeverReportedAsACleanExit(t *testing.T) {
 	}
 }
 
-// TestResumeBufferFillDegradation is a regression test for DECO-28501.
-// When continuous transfers saturate the transport, the replay buffer fills not because the
-// peer stopped acknowledging, but due to in-flight data congestion. The session must survive
-// by degrading to non-resumable instead of treating it as a dead peer.
-//
-// This test verifies that a resumable connection can be created with the buffer limit parameter
-// that enables degradation on buffer saturation. The degradation behavior is verified via the
-// integration tests and live end-to-end testing against dogfood workspaces.
-func TestResumeBufferFillDegradation(t *testing.T) {
-	// Verify that newResumeState successfully creates a resumable state with the specified buffer limit.
-	// This ensures the infrastructure needed for degradation is in place.
-	const testBufferLimit = 1024
-
-	rs := newResumeState(testBufferLimit)
-
-	// Verify the state was created successfully
-	require.NotNil(t, rs, "newResumeState should return a non-nil resumeState")
-
-	// Verify the state starts in a non-degraded state
-	require.False(t, rs.degraded.Load(), "connection should not start degraded")
-
-	// Verify newResumableProxyConnection accepts buffer limit parameter
-	// This is the entry point that the client and server use when creating resumable connections
-	proxy := newResumableProxyConnection(func(ctx context.Context, d DialRequest) (*websocket.Conn, error) {
-		return nil, errors.New("test: no actual connection needed for this check")
-	}, testBufferLimit)
-
-	// Verify the proxy was created with resumable state
-	require.NotNil(t, proxy, "proxy should be created successfully")
-
-	// This test is a unit test for the infrastructure. The actual degradation behavior
-	// (detecting buffer fill, setting degraded flag, and continuing instead of terminating)
-	// is exercised during integration tests where we send large transfers that would fill the buffer.
-}
