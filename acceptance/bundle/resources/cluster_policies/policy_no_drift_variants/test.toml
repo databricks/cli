@@ -5,10 +5,11 @@
 # cluster-spec location (standalone cluster, task new_cluster, for_each new_cluster, pipeline).
 Cloud = false
 
-# Deployment-history recording (the DMS matrix) is orthogonal to drift suppression and
-# adds cloud/version-dependent plan fields; run this test once. DMS is covered by the
-# jobs/cluster_policy tests.
-EnvMatrix.DMS = []
+# Deployment-history recording (DMS) adds version-dependent plan fields and .databricks
+# artifacts, and it is orthogonal to drift suppression (covered by the jobs/cluster_policy
+# tests). Pin to the off value so the test runs once on the "direct" CI cell; DMS = [] would
+# instead run on BOTH the direct and directdms cells (same trap as DATABRICKS_BUNDLE_ENGINE=[]).
+EnvMatrix.DMS = [""]
 
 RecordRequests = false
 
