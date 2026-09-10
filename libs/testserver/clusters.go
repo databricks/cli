@@ -216,6 +216,19 @@ func (s *FakeWorkspace) ClustersStart(req Request) any {
 		return Response{StatusCode: 404}
 	}
 
+	// Only terminated clusters can be started; match the real API behavior, which rejects
+	// any other state with INVALID_STATE (it title-cases the state in the message, e.g.
+	// "Cluster 0308-101010-abcdefgh is in unexpected state Running.").
+	if cluster.State != compute.StateTerminated {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_STATE",
+				"message":    fmt.Sprintf("Cluster %s is in unexpected state %s.", request.ClusterId, cluster.State),
+			},
+		}
+	}
+
 	cluster.State = compute.StateRunning
 	s.Clusters[request.ClusterId] = cluster
 
