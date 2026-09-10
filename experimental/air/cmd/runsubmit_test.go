@@ -202,6 +202,22 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 	}
 }
 
+func TestBuildSubmitPayloadDatabricksAIEnvironment(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+	}
+
+	spec := buildSubmitPayload(cfg, "/d/command.sh", "databricks_ai_v5", "", snapshotResult{}, []string{"accelerate"}).Environments[0].Spec
+	b, err := json.Marshal(spec)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"base_environment": "workspace-base-environments/databricks_ai_v5",
+		"dependencies": ["accelerate"]
+	}`, string(b))
+}
+
 func TestSubmitToken(t *testing.T) {
 	cfg := &runConfig{IdempotencyToken: new("from-config")}
 
