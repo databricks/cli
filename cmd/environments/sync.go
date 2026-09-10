@@ -9,30 +9,43 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/flags"
 	libslocalenv "github.com/databricks/cli/libs/localenv"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
 )
 
 func newSetupLocalCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   libslocalenv.CommandVerb,
-		Short: "Provision a local Python environment matched to a Databricks compute target",
-		Long: `Provision (or update) a local Python environment matched to a Databricks compute target.
+		Short: "Set up a local Python environment that matches your Databricks compute",
+		Long: `Set up a local Python environment that matches a Databricks cluster or serverless version, so code you run on your machine behaves the same as it does on Databricks.
 
-Resolves the target to an environment key, fetches the pinned Python version,
-databricks-connect version, and dependency constraints published for that key,
-then provisions a matched .venv with uv. A project with no pyproject.toml is
-initialized from scratch; an existing pyproject.toml is merged in place (its
-env-owned sections are refreshed, user-owned content is preserved).`,
-		// Hidden until the environment constraints repository is publicly
-		// available: the command is runnable for dogfooding but stays out of
-		// help and completion until it is unveiled.
-		Hidden: true,
+Use this when you want to develop or debug a Databricks project locally: it installs the matching Python version and a compatible databricks-connect, and pins your dependencies to versions known to work with your chosen compute. It creates or updates a .venv (managed by uv) in the current directory and records the setup in pyproject.toml, leaving the rest of your project untouched.`,
+		Example: `  # Match a serverless version
+  databricks environments setup-local --serverless-version 5
+
+  # Match an existing cluster by name
+  databricks environments setup-local --cluster-name my-cluster
+
+  # See what would change without writing anything
+  databricks environments setup-local --serverless-version 5 --dry-run`,
 	}
 	// The target is selected via flags; reject stray positional args rather than
 	// silently ignoring them.
 	cmd.Args = cobra.NoArgs
-	cmd.PreRunE = root.MustWorkspaceClient
+	// This command resolves its own compute target and only consults the bundle as
+	// an optional source of bundle.cluster_id (see bundleTarget). Skip bundle-based
+	// auth configuration in the shared PreRunE so a malformed databricks.yml (e.g.
+	// two targets marked default) can't fail the command before it runs; the fallback
+	// bundle read in bundleTarget swallows such errors and falls through to E_NO_TARGET.
+	// As a consequence auth resolves from profile/env only: the bundle's
+	// workspace.host/profile no longer feed the workspace client for this command.
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+		return root.MustWorkspaceClient(cmd, args)
+	}
 	addComputeFlags(cmd)
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return runPipeline(cmd)
@@ -47,6 +60,16 @@ func addComputeFlags(cmd *cobra.Command) {
 	cmd.Flags().String("serverless-version", "", "serverless version to use as the compute target (e.g. 5)")
 	cmd.Flags().String("job-task", "", "job task to use as the compute target, as <job-id>.<task-key> (the task key is required)")
 	cmd.Flags().Bool("constraints-only", false, "apply the Python version and constraints without adding the databricks-connect dependency")
+	// --constraints-only is superseded by the orthogonal --no-dbconnect (identical
+	// behaviour). Keep it defined so existing scripts and CI keep working, but hide
+	// it from --help and emit a one-line deprecation notice on stderr when it is
+	// used. MarkDeprecated does both; removal is a separate, later step.
+	cmd.Flags().MarkDeprecated("constraints-only", "use --no-dbconnect instead")
+	// The negative flags (--no-constraints, --no-dbconnect) are orthogonal and
+	// compose. --no-dbconnect and the older --constraints-only are equivalent (both
+	// skip the databricks-connect dependency).
+	cmd.Flags().Bool("no-constraints", false, "skip writing the remote Python version and dependency constraints")
+	cmd.Flags().Bool("no-dbconnect", false, "skip adding the databricks-connect dependency")
 	cmd.Flags().Bool("dry-run", false, "compute the plan without writing files or provisioning")
 	// The mutual exclusivity of the target flags is enforced in the pipeline's
 	// preflight (as E_USAGE) rather than via cmd.MarkFlagsMutuallyExclusive, so
@@ -109,6 +132,8 @@ func runPipeline(cmd *cobra.Command) error {
 	serverless, _ := cmd.Flags().GetString("serverless-version")
 	jobTask, _ := cmd.Flags().GetString("job-task")
 	constraintsOnly, _ := cmd.Flags().GetBool("constraints-only")
+	noConstraints, _ := cmd.Flags().GetBool("no-constraints")
+	noDBConnect, _ := cmd.Flags().GetBool("no-dbconnect")
 	check, _ := cmd.Flags().GetBool("dry-run")
 
 	computeFlags := libslocalenv.ComputeFlags{
@@ -121,8 +146,10 @@ func runPipeline(cmd *cobra.Command) error {
 	// preflight, so a conflict is reported as E_USAGE through the phase/JSON
 	// contract rather than as a bare error here.
 
+	// --no-dbconnect is the orthogonal spelling of --constraints-only; either skips
+	// the databricks-connect dependency, which the pipeline models as the mode.
 	mode := libslocalenv.ModeDefault
-	if constraintsOnly {
+	if constraintsOnly || noDBConnect {
 		mode = libslocalenv.ModeConstraintsOnly
 	}
 
@@ -149,9 +176,22 @@ func runPipeline(cmd *cobra.Command) error {
 	}
 
 	w := cmdctx.WorkspaceClient(ctx)
+
+	// Show live per-phase progress only in text mode. In --output json the only
+	// thing on stdout must be the JSON object; the spinner writes to stderr and
+	// no-ops when non-interactive, but we still skip it entirely for JSON so the
+	// pipeline stays silent for machine consumers.
+	var rep *spinnerReporter
+	var progress libslocalenv.Reporter
+	if root.OutputType(cmd) != flags.OutputJSON {
+		rep = newSpinnerReporter(ctx)
+		progress = rep
+	}
+
 	p := &libslocalenv.Pipeline{
 		Mode:              mode,
 		Check:             check,
+		SkipConstraints:   noConstraints,
 		ProjectDir:        projectDir,
 		ConstraintBaseURL: constraintBaseURL,
 		CacheDir:          cacheDir,
@@ -159,9 +199,13 @@ func runPipeline(cmd *cobra.Command) error {
 		Compute:           sdkCompute{w: w},
 		Bundle:            bt,
 		PM:                libslocalenv.NewUvManager(),
+		Progress:          progress,
 	}
 
 	res, pipelineErr := p.Run(ctx)
+	if rep != nil {
+		rep.Close()
+	}
 	return renderResult(ctx, cmd, res, pipelineErr)
 }
 
@@ -175,7 +219,24 @@ func runPipeline(cmd *cobra.Command) error {
 //
 // TODO: extend once bundle config exposes a serverless field at the bundle level.
 func bundleTarget(cmd *cobra.Command) libslocalenv.BundleTarget {
+	// Load the bundle in an isolated diagnostics context: the bundle is only an
+	// optional source of cluster_id here, so a malformed databricks.yml must not
+	// surface as a fatal command error. Any load error is logged for debugging and
+	// treated as "no bundle target", so the pipeline falls through to E_NO_TARGET
+	// (which tells the user to pass an explicit --cluster-id/--serverless-version/etc).
+	orig := cmd.Context()
+	ctx := logdiag.IsolatedContext(orig)
+	// Collect (buffer) diagnostics instead of rendering them: an isolated context
+	// still prints each diagnostic to stderr unless collection is on, and we want a
+	// bundle load error to be silent (debug-logged) on this optional fallback path.
+	logdiag.SetCollect(ctx, true)
+	cmd.SetContext(ctx)
+	defer cmd.SetContext(orig)
 	b := root.TryConfigureBundle(cmd)
+	if logdiag.HasError(ctx) {
+		log.Debugf(ctx, "ignoring bundle for cluster_id fallback: %s", logdiag.GetFirstErrorSummary(ctx))
+		return libslocalenv.BundleTarget{Selected: false}
+	}
 	if b == nil {
 		return libslocalenv.BundleTarget{Selected: false}
 	}

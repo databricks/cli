@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -26,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -39,21 +39,28 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-// ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
-// If the plan has no lineage (first deployment), validation is skipped.
+// ValidatePlanAgainstState rejects a saved plan that no longer matches the state it was built
+// against: its features, its lineage and its serial.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
-	if plan.Lineage == "" {
-		return nil
-	}
-
 	stateDB.AssertOpenedForReadOrWrite()
 
+	// A plan is built against a set of state features, and the stamps it carries follow from
+	// them, so applying it to a target with a different set would deploy the wrong shape.
+	// The state is the target's source of truth and carries its features even on a first
+	// recorded deploy (unlike the version ids, which are empty then).
+	if !maps.Equal(plan.Features, stateDB.StateFeatures()) {
+		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
+	}
+
+	// A plan taken before the first deploy carries no lineage, so both sides are empty then and this
+	// passes. If a deployment has happened since, the lineage no longer matches.
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
 
-	if plan.Serial != stateDB.Data.Serial {
-		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	expected := stateDB.GetSerial()
+	if plan.Serial != expected {
+		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)
 	}
 
 	return nil
@@ -114,6 +121,42 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
+// StampDeploymentIdForFirstVersion fills deploymentID into the plan's jobs and pipelines that still lack one, in
+// both the state cache the apply reads and the plan JSON. It is called after approval creates the
+// deployment, for a first deploy whose deployment_id did not exist at plan time.
+//
+// For subsequent deployments, the deployment_id is already stamped in the plan.
+func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string) error {
+	for resourceKey, entry := range b.Plan.Plan {
+		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
+			continue
+		}
+		sv, ok := b.StateCache.Load(resourceKey)
+		if !ok {
+			continue
+		}
+		var stamped bool
+		switch v := sv.Value.(type) {
+		case *jobs.JobSettings:
+			if v.Deployment.DeploymentId == "" {
+				v.Deployment.DeploymentId = deploymentID
+				stamped = true
+			}
+		case *dresources.PipelineState:
+			if v.Deployment.DeploymentId == "" {
+				v.Deployment.DeploymentId = deploymentID
+				stamped = true
+			}
+		}
+		if stamped {
+			if err := sv.SyncToJSON(entry.NewState); err != nil {
+				return fmt.Errorf("%s: stamping deployment into plan: %w", resourceKey, err)
+			}
+		}
+	}
+	return nil
+}
+
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
@@ -128,6 +171,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
+
+	// The plan records the state it was built against so deploy --plan can reject a plan built for a
+	// target of a different shape or a state that has moved on since.
+	plan.Features = b.StateDB.StateFeatures()
+	plan.Serial = b.StateDB.GetSerial()
 
 	b.Plan = plan
 
@@ -317,6 +365,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	for _, entry := range plan.Plan {
 		if entry.Action == deployplan.Skip {
 			entry.NewState = nil
+		}
+	}
+
+	for resourceKey, entry := range plan.Plan {
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return nil, fmt.Errorf("redacting plan entry %s: %w", resourceKey, err)
+		}
+		if err := redactPlanEntry(adapter, entry); err != nil {
+			return nil, fmt.Errorf("redacting plan entry %s: %w", resourceKey, err)
 		}
 	}
 
@@ -682,6 +740,13 @@ func isEmptyStruct(rv reflect.Value) bool {
 	}
 
 	rt := rv.Type()
+
+	// Opaque structs (duration.Duration, types/time.Time) have no exported
+	// fields to inspect, so the loop below would call every value empty.
+	if structdiff.IsOpaqueStruct(rt) {
+		return false
+	}
+
 	for i := range rt.NumField() {
 		field := rt.Field(i)
 
@@ -712,12 +777,6 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
-	// template string is preserved in the plan output rather than causing an error.
-	if path.String() == "workspace.snapshot_path" {
-		return nil, errDelayed
-	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -775,9 +834,9 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	localConfig := sv.Value
 
-	adapter := b.Adapters[targetGroup]
-	if adapter == nil {
-		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
+	adapter, err := b.getAdapterForKey(targetResourceKey)
+	if err != nil {
+		return nil, fmt.Errorf("internal error: %s: %w", targetResourceKey, err)
 	}
 
 	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
@@ -951,7 +1010,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	slices.Sort(nodes)
-
 	for _, node := range nodes {
 		delete(existingKeys, node)
 
@@ -966,38 +1024,24 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		baseRefs := map[string]string{}
-
-		if strings.HasSuffix(node, ".permissions") {
-			var inputConfigStructVar *structvar.StructVar
-			var err error
-
-			if strings.HasPrefix(node, "resources.secret_scopes.") {
-				typedConfig, ok := inputConfig.(*[]resources.SecretScopePermission)
-				if !ok {
-					return nil, fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", prefix, inputConfig)
-				}
-				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(*typedConfig, node)
-			} else {
-				inputConfigStructVar, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
-			}
-
-			if err != nil {
-				return nil, err
-			}
-			inputConfig = inputConfigStructVar.Value
-			baseRefs = inputConfigStructVar.Refs
-		} else if strings.HasSuffix(node, ".grants") {
-			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
-			if err != nil {
-				return nil, err
-			}
-			inputConfig = inputConfigStructVar.Value
-			baseRefs = inputConfigStructVar.Refs
+		inputStructVar, err := adapter.PrepareInputConfig(inputConfig, node)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
-		newStateConfig, err := adapter.PrepareState(inputConfig)
+		newStateConfig, err := adapter.PrepareState(inputStructVar.Value)
 		if err != nil {
+			return nil, fmt.Errorf("%s: %w", prefix, err)
+		}
+
+		// Unescape "$${...}" to a literal "${...}" in the typed state, which is what
+		// gets deployed and saved. The terraform engine leaves the escape in place for
+		// Terraform itself to unescape; the direct engine has to do it here.
+		//
+		// This runs on the typed state rather than the dynamic config so that
+		// extractReferences below still sees the escaped form and does not mistake
+		// these placeholders for bundle references.
+		if err := unescapeRefs(newStateConfig); err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}
 
@@ -1022,7 +1066,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return nil, fmt.Errorf("failed to read references from config for %s: %w", node, err)
 		}
 
-		maps.Copy(refs, baseRefs)
+		maps.Copy(refs, inputStructVar.Refs)
 
 		var dependsOn []deployplan.DependsOnEntry
 		for _, reference := range refs {
@@ -1039,11 +1083,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
-				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-				// snapshot.Upload(), not by the direct engine — skip it here.
-				if targetPath == "workspace.snapshot_path" {
-					continue
-				}
 
 				fullRef := "${" + targetPath + "}"
 
@@ -1070,15 +1109,31 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return strings.Compare(a.Label, b.Label)
 		})
 
+		// Store an unredacted copy in the cache so Apply can deploy with the
+		// actual values. The original newStateConfig is redacted below and used
+		// only for the plan output.
+		stateType := adapter.StateType()
+		cacheCopyPtr := reflect.New(stateType.Elem())
+		cacheCopyPtr.Elem().Set(reflect.ValueOf(newStateConfig).Elem())
+		b.StateCache.Store(node, &structvar.StructVar{
+			Value: cacheCopyPtr.Interface(),
+			Refs:  refs,
+		})
+
+		// Redact sensitive fields before serialising. Sensitive values always come
+		// from bundle variables (enforced by ValidateSecretValueIsVariable), which
+		// are resolved before plan time, so SyncToJSON (called when cross-resource
+		// refs are resolved during planNode) will never re-serialise these fields.
+		if err := redactStruct(adapter, newStateConfig); err != nil {
+			return nil, fmt.Errorf("%s: cannot redact state: %w", node, err)
+		}
+
 		newState := &structvar.StructVar{
 			Value: newStateConfig,
 			Refs:  refs,
 		}
 
-		// Store in cache for use during planning phase
-		b.StateCache.Store(node, newState)
-
-		// Convert to JSON for serialization in plan
+		// Convert to JSON for serialization in plan (values already redacted above).
 		newStateJSON, err := newState.ToJSON()
 		if err != nil {
 			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)

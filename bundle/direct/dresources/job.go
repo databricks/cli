@@ -24,6 +24,7 @@ type JobRemote struct {
 	EffectiveUsagePolicyId  string                  `json:"effective_usage_policy_id,omitempty"`
 	JobId                   int64                   `json:"job_id,omitempty"`
 	RunAsUserName           string                  `json:"run_as_user_name,omitempty"`
+	TriggerDetails          []jobs.TriggerDetails   `json:"trigger_details,omitempty"`
 	TriggerState            *jobs.TriggerStateProto `json:"trigger_state,omitempty"`
 }
 
@@ -145,6 +146,7 @@ func makeJobRemote(job *jobs.Job) *JobRemote {
 		EffectiveUsagePolicyId:  job.EffectiveUsagePolicyId,
 		JobId:                   job.JobId,
 		RunAsUserName:           job.RunAsUserName,
+		TriggerDetails:          job.TriggerDetails,
 		TriggerState:            job.TriggerState,
 	}
 }
@@ -206,6 +208,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Tasks:                config.Tasks,
 		TimeoutSeconds:       config.TimeoutSeconds,
 		Trigger:              config.Trigger,
+		Triggers:             config.Triggers,
 		UsagePolicyId:        config.UsagePolicyId,
 		WebhookNotifications: config.WebhookNotifications,
 		ForceSendFields:      utils.FilterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),

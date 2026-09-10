@@ -1,0 +1,19 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# Double slash keeps Windows from rewriting the path.
+BUNDLE_DIR="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle-${UNIQUE_NAME}"
+
+trace $CLI bundle deploy -t dev
+trace $CLI bundle deploy -t prod
+
+title "Destroy one target while the other is still deployed"
+trace $CLI bundle destroy -t dev --auto-approve
+
+title "Assert the bundle directory is kept: the sibling target is still under it"
+trace $CLI workspace get-status "${BUNDLE_DIR}" | jq '{object_type}'
+
+title "Destroy the remaining target"
+trace $CLI bundle destroy -t prod --auto-approve
+
+title "Assert the bundle directory is deleted"
+trace musterr $CLI workspace get-status "${BUNDLE_DIR}"

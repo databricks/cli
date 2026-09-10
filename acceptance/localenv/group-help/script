@@ -1,0 +1,5 @@
+# Assert setup-local is now listed under the generated environments group (the
+# visibility this PR unveils). Grep a single line rather than snapshotting the
+# whole group help, which also lists generated API subcommands that churn on
+# SDK regen.
+trace $CLI environments --help | grep setup-local

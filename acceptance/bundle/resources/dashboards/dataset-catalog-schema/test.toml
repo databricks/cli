@@ -1,7 +1,8 @@
-Local = true
 Cloud = true
-RequiresWarehouse = true
 RecordRequests = true
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+Ignore = [
+    "plan_raw.terraform.json",
+    "plan_raw.direct.json",
+]

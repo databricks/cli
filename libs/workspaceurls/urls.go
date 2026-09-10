@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -11,6 +12,7 @@ var resourceURLPatterns = map[string]string{
 	"alerts":                  "sql/alerts-v2/%s",
 	"apps":                    "apps/%s",
 	"catalogs":                "explore/data/%s",
+	"cluster_policies":        "compute/policies/%s",
 	"clusters":                "compute/clusters/%s",
 	"dashboards":              "dashboardsv3/%s/published",
 	"database_catalogs":       "explore/data/%s",
@@ -68,6 +70,22 @@ func ResourceTypes() []string {
 	}
 	slices.Sort(names)
 	return names
+}
+
+// DeploymentURL returns the workspace URL for a bundle deployment:
+// <host>/deployments/<deploymentID>?version=<version>. Version pins the page to the deploy that produced it.
+func DeploymentURL(baseURL url.URL, deploymentID string, version int) string {
+	if deploymentID == "" {
+		return ""
+	}
+
+	baseURL.Path = "deployments/" + deploymentID
+	if version > 0 {
+		values := baseURL.Query()
+		values.Set("version", strconv.Itoa(version))
+		baseURL.RawQuery = values.Encode()
+	}
+	return baseURL.String()
 }
 
 // JobRunPath returns the modern workspace path for a job run, of the form

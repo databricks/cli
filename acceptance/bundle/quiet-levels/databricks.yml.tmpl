@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# An experiment needs no local files and has no sub-resources, so this bundle has
+# nothing to build, no language runtime leaving artifacts behind, and one plan node
+# on both engines. That keeps the counts below identical across engines and runs.
+resources:
+  experiments:
+    my_experiment:
+      name: /Users/${CURRENT_USER_NAME}/test-experiment-${UNIQUE_NAME}

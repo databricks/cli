@@ -2,7 +2,6 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files...
-Deploying resources...
 [PROCESS_KILLED]
 
 Exit code: [KILLED]

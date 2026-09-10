@@ -1,0 +1,7 @@
+# Reading .git is independent of the deploy engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# The commit differs on every run.
+[[Repls]]
+Old = '\b[0-9a-f]{40}\b'
+New = '[COMMIT_SHA]'

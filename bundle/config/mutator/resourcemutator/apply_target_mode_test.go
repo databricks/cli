@@ -153,6 +153,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				InstancePools: map[string]*resources.InstancePool{
 					"instance_pool1": {CreateInstancePool: compute.CreateInstancePool{InstancePoolName: "instance_pool1", NodeTypeId: "i3.xlarge"}},
 				},
+				ClusterPolicies: map[string]*resources.ClusterPolicy{
+					"cluster_policy1": {CreatePolicy: compute.CreatePolicy{Name: "cluster_policy1"}},
+				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
 						DashboardConfig: resources.DashboardConfig{
@@ -302,6 +305,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+					"postgres_snapshot_schedule1": {
+						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+							Branch: "projects/project1/branches/branch1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -318,6 +328,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							PrimaryKey:   "id",
 							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
 						},
+					},
+				},
+				Snapshots: map[string]*resources.Snapshot{
+					"snapshot1": {
+						BundleID: "bundle1",
+						ACL:      nil,
 					},
 				},
 			},
@@ -349,7 +365,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 
 	// Experiment 1

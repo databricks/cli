@@ -6,14 +6,17 @@ resources:
     foo:
       name: test-job-$UNIQUE_NAME
       tasks:
+        # Deploying a job_run actually runs the job, and the wait needs a task a
+        # workspace will execute. Serverless keeps this one to about a minute.
         - task_key: only_task
-          notebook_task:
-            notebook_path: /Shared/notebook
-          new_cluster:
-            spark_version: $DEFAULT_SPARK_VERSION
-            node_type_id: $NODE_TYPE_ID
-            instance_pool_id: $TEST_INSTANCE_POOL_ID
-            num_workers: 1
+          spark_python_task:
+            python_file: ./job_run.py
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
 
   job_runs:
     foo_run:

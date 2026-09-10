@@ -275,8 +275,8 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if err != nil {
 		return err
 	}
-	cmdio.LogString(ctx, "Using skills version "+DisplaySkillsVersion(ref))
-	cmdio.LogString(ctx, "Fetching skills manifest...")
+	cmdio.LogProgress(ctx, "Using skills version "+DisplaySkillsVersion(ref))
+	cmdio.LogProgress(ctx, "Fetching skills manifest...")
 	manifest, ref, err := FetchSkillsManifestWithFallback(ctx, src, ref, !explicit)
 	if err != nil {
 		return err
@@ -422,7 +422,7 @@ func InstallSkillsForAgents(ctx context.Context, src ManifestSource, targetAgent
 	if len(targetSkills) == 1 {
 		noun = "skill"
 	}
-	cmdio.LogString(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
+	cmdio.LogProgress(ctx, fmt.Sprintf("Installed %d %s.", len(targetSkills), noun))
 	return nil
 }
 
@@ -441,7 +441,7 @@ func filterProjectAgents(ctx context.Context, targetAgents []*agents.Agent) []*a
 		if a.SupportsProjectScope {
 			compatible = append(compatible, a)
 		} else {
-			cmdio.LogString(ctx, "Skipped "+a.DisplayName+": does not support project-scoped skills.")
+			cmdio.LogProgress(ctx, "Skipped "+a.DisplayName+": does not support project-scoped skills.")
 		}
 	}
 	return compatible
@@ -463,7 +463,7 @@ func incompatibleAgentNames(targetAgents []*agents.Agent) []string {
 func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts InstallOptions) (map[string]SkillMeta, error) {
 	isSpecific := len(opts.SpecificSkills) > 0
 	cliVersion := build.GetInfo().Version
-	isDev := strings.HasPrefix(cliVersion, build.DefaultSemver)
+	isDev := build.GetInfo().IsDevelopment()
 
 	// Start with all skills or only the requested ones.
 	var candidates map[string]SkillMeta
@@ -472,7 +472,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 		for _, name := range opts.SpecificSkills {
 			meta, ok := skills[name]
 			if !ok {
-				return nil, fmt.Errorf("skill %q not found", name)
+				return nil, &SkillError{Skill: name, Reason: ReasonSkillNotFound, Detail: "not found"}
 			}
 			candidates[name] = meta
 		}
@@ -484,7 +484,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 	for name, meta := range candidates {
 		if meta.IsExperimental() && !opts.IncludeExperimental {
 			if isSpecific {
-				return nil, fmt.Errorf("skill %q is experimental; use --experimental to install", name)
+				return nil, &SkillError{Skill: name, Reason: ReasonExperimentalSkill, Detail: "is experimental; use --experimental to install"}
 			}
 			log.Debugf(ctx, "Skipping experimental skill %s", name)
 			continue
@@ -492,7 +492,7 @@ func resolveSkills(ctx context.Context, skills map[string]SkillMeta, opts Instal
 
 		if meta.MinCLIVer != "" && !isDev && semver.Compare("v"+cliVersion, "v"+meta.MinCLIVer) < 0 {
 			if isSpecific {
-				return nil, fmt.Errorf("skill %q requires CLI version %s (running %s)", name, meta.MinCLIVer, cliVersion)
+				return nil, &SkillError{Skill: name, Reason: ReasonVersionIncompatible, Detail: fmt.Sprintf("requires CLI version %s (running %s)", meta.MinCLIVer, cliVersion)}
 			}
 			log.Warnf(ctx, "Skipping %s: requires CLI version %s (running %s)", name, meta.MinCLIVer, cliVersion)
 			continue
@@ -529,7 +529,7 @@ func PrintInstallingFor(ctx context.Context, targetAgents []*agents.Agent) {
 func printNoAgentsDetected(ctx context.Context) {
 	cmdio.LogString(ctx, cmdio.Yellow(ctx, "No supported coding agents detected."))
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
+	cmdio.LogString(ctx, "Supported agents: "+strings.Join(agents.SupportedNames(), ", "))
 	cmdio.LogString(ctx, "Please install at least one coding agent first.")
 }
 

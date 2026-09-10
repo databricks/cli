@@ -1,0 +1,17 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_quality_monitor"
+
+resources:
+  quality_monitors:
+    my_monitor_1:
+      assets_dir: "/Workspace/monitoring"
+      output_schema_name: "default.monitoring"
+      table_name: "default.test_table"

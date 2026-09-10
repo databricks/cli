@@ -2,13 +2,20 @@ package aircmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"os"
+	"os/signal"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
@@ -36,8 +43,35 @@ func newRunCommand() *cobra.Command {
 		Short: "Submit a training workload from a YAML config",
 		Long: `Submit a training workload to Databricks serverless GPU compute.
 
-The workload is described by a YAML config file (see --file).`,
+The workload is described by a YAML config file (see --file).
+
+To look up a config field, pass its path to -h:
+
+  databricks experimental air run -h config
+  databricks experimental air run -h config.compute
+  databricks experimental air run -h config.compute.accelerator_type
+
+The path must be a separate argument: cobra reserves -h as a boolean, so
+-h=config.compute and -hconfig.compute are not accepted.`,
 	}
+
+	// cobra passes -h's positional args to the help func before Args/required-flag
+	// validation, so a config path documents a field without needing -f.
+	cmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		fields := c.Flags().Args()
+		if len(fields) == 0 {
+			// Parent() is nil for a detached command (unit tests).
+			if parent := c.Parent(); parent != nil {
+				parent.HelpFunc()(c, args)
+				return
+			}
+			_ = c.Usage()
+			return
+		}
+		if err := writeConfigFieldHelp(c.OutOrStdout(), fields[0]); err != nil {
+			c.PrintErrln("Error:", err)
+		}
+	})
 
 	cmd.Flags().StringVarP(&file, "file", "f", "", "Path to the workload YAML config")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Stream logs until the run completes")
@@ -71,23 +105,37 @@ The workload is described by a YAML config file (see --file).`,
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
 
+		jsonOut := root.OutputType(cmd) == flags.OutputJSON
+
+		// Announce the experiment before uploading; skipped in JSON mode to keep
+		// stdout a clean envelope stream.
+		if !jsonOut {
+			cmdio.LogString(ctx, "Submitting experiment: "+cfg.ExperimentName)
+		}
+
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey)
+		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
 		if err != nil {
 			return err
 		}
 
 		runIDStr := strconv.FormatInt(runID, 10)
-		jsonOut := root.OutputType(cmd) == flags.OutputJSON
 
 		if !watch {
 			if !jsonOut {
-				cmdio.LogString(ctx, "Submitted run "+runIDStr)
-				cmdio.LogString(ctx, "View at: "+dashboardURL)
-				cmdio.LogString(ctx, "\nTip: use --watch to stream logs until the run completes.")
+				out := cmd.OutOrStdout()
+				printSubmitResult(ctx, out, runIDStr, dashboardURL)
+				// Append the MLflow links only if they resolve; a bare submit is not
+				// blocked on them since the confirmation above is already printed.
+				if ids := resolveMLflowIDsForRun(ctx, w, runID); ids != nil {
+					printMLflowLinks(ctx, out, w.Config.Host, ids)
+				}
+				printPostSubmitGuidance(out, w.Config.Profile, runIDStr)
 				return nil
 			}
-			return renderEnvelope(ctx, runResult{Status: "SUBMITTED", RunID: runIDStr, DashboardURL: dashboardURL})
+			// PENDING is the submit status, distinct from the --watch JSONL
+			// SUBMITTED event type below.
+			return renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL})
 		}
 
 		// --watch: stream the submitted run's logs until it reaches a terminal
@@ -100,22 +148,29 @@ The workload is described by a YAML config file (see --file).`,
 			jsonOutput: jsonOut,
 		}
 
+		watchCtx, stop := notifyInterrupt(ctx)
+		defer stop()
+
 		if !jsonOut {
-			cmdio.LogString(ctx, "Submitted run "+runIDStr)
-			cmdio.LogString(ctx, "View at: "+dashboardURL)
-			cmdio.LogString(ctx, "Monitoring run and streaming logs...")
-			return runLogs(ctx, cmd, req)
+			out := cmd.OutOrStdout()
+			// The MLflow links stream in via the logs below, so don't poll here.
+			printSubmitResult(ctx, out, runIDStr, dashboardURL)
+			// Separate the submit summary from the streamed logs.
+			fmt.Fprintln(out)
+			fmt.Fprintln(out, "Monitoring run and streaming logs...")
+			printLogsDivider(ctx, out)
+			return handleWatchResult(out, w.Config.Profile, runIDStr, runLogs(watchCtx, cmd, req))
 		}
 
 		// --json: emit SUBMITTED first (so a consumer sees the run id immediately),
 		// STATUS events on each lifecycle transition, and a closing terminal-status
-		// envelope after streaming. Mirrors the Python CLI's --watch JSONL contract.
+		// envelope after streaming.
 		out := cmd.OutOrStdout()
 		printSubmittedEvent(out, runIDStr, dashboardURL)
 		req.onStatusChange = func(current, previous string) {
 			printStatusEvent(out, current, previous)
 		}
-		err = runLogs(ctx, cmd, req)
+		err = runLogs(watchCtx, cmd, req)
 
 		// Re-resolve the run for the closing envelope. STATUS events only fire on
 		// the Bricklens path, so the terminal status must come from the run's
@@ -126,6 +181,113 @@ The workload is described by a YAML config file (see --file).`,
 	}
 
 	return cmd
+}
+
+func airLogsCommand(profile, runID string) string {
+	args := []string{"databricks", "experimental", "air", "logs", shellquote.BashArg(runID)}
+	if profile != "" {
+		args = append(args, "-p", shellquote.BashArg(profile))
+	}
+	return strings.Join(args, " ")
+}
+
+func airGetCommand(profile, runID string) string {
+	args := []string{"databricks", "experimental", "air", "get", shellquote.BashArg(runID)}
+	if profile != "" {
+		args = append(args, "-p", shellquote.BashArg(profile))
+	}
+	return strings.Join(args, " ")
+}
+
+func printPostSubmitGuidance(out io.Writer, profile, runID string) {
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Tip: use --watch when submitting a run to stream logs to your terminal.")
+	fmt.Fprintln(out, "Stream logs after submission using:")
+	fmt.Fprintln(out, "  "+airLogsCommand(profile, runID))
+}
+
+// notifyInterrupt returns a context cancelled on the first interrupt (Ctrl-C),
+// which lets the log stream unwind and print resume guidance via
+// handleWatchResult; the CLI root installs no signal handler of its own. The
+// caller must defer the returned stop.
+//
+// signal.Notify disables the default SIGINT disposition process-wide for as long
+// as the channel stays registered, so a second Ctrl-C would merely be buffered
+// and dropped, leaving no way to abort a hung teardown. Calling signal.Stop
+// before cancel restores SIG_DFL first, so the cancellation is only observable
+// once a second signal is guaranteed to terminate the process.
+func notifyInterrupt(parent context.Context) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(parent)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt)
+	go func() {
+		// Selecting on ctx.Done() too lets the goroutine exit on the normal (no
+		// signal) path rather than parking on sigCh for the life of the process.
+		select {
+		case <-sigCh:
+			signal.Stop(sigCh)
+			cancel()
+		case <-ctx.Done():
+			signal.Stop(sigCh)
+		}
+	}()
+	return ctx, cancel
+}
+
+func handleWatchResult(out io.Writer, profile, runID string, err error) error {
+	if !errors.Is(err, context.Canceled) {
+		return err
+	}
+
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "Streaming logs interrupted.")
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "To check status:")
+	fmt.Fprintln(out, airGetCommand(profile, runID))
+	fmt.Fprintln(out)
+	fmt.Fprintln(out, "To resume streaming logs:")
+	fmt.Fprintln(out, airLogsCommand(profile, runID))
+	return root.ErrAlreadyPrinted
+}
+
+// printSubmitResult writes the green success line and Job Run link. These don't
+// depend on the MLflow IDs, so they print before any MLflow poll. The link is
+// styled (blue, underlined) and clickable, matching the `air get` view, and
+// degrades to plain text on non-rich terminals.
+func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
+	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+
+	fmt.Fprintln(out, p.green.Render("Submitted workload with Job Run ID: "+runIDStr))
+	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, dashboardURL, dashboardURL))
+}
+
+// printMLflowLinks appends the styled, clickable MLflow run and experiment links
+// once their IDs are resolved.
+func printMLflowLinks(ctx context.Context, out io.Writer, host string, ids *mlflowIdentifiers) {
+	renderer, colorOn := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+
+	runURL := mlflowRunURL(host, ids)
+	expURL := mlflowExperimentURL(host, ids)
+	fmt.Fprintln(out, "View MLflow run at: "+link(colorOn, p.blue, runURL, runURL))
+	fmt.Fprintln(out, "View MLflow experiment at: "+link(colorOn, p.blue, expURL, expURL))
+}
+
+// logsDividerWidth is the total display width of the --watch logs divider.
+const logsDividerWidth = 60
+
+// printLogsDivider prints a centered "Logs" rule marking where the streamed
+// --watch logs begin, separating them from the submit summary. The dim color is
+// dropped on non-rich terminals; the rule characters are always printed.
+func printLogsDivider(ctx context.Context, out io.Writer) {
+	renderer, _ := cmdio.NewRenderer(ctx, out)
+	p := newPalette(renderer)
+
+	const label = " Logs "
+	side := max((logsDividerWidth-utf8.RuneCountInString(label))/2, 0)
+	rule := strings.Repeat("─", side) + label + strings.Repeat("─", side)
+	fmt.Fprintln(out, p.n7.Render(rule))
 }
 
 // watchTerminalStatus resolves a watched run's final display state for the

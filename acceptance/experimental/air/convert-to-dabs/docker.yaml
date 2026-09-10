@@ -1,0 +1,8 @@
+experiment_name: docker-test
+command: python train.py
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 1
+environment:
+  docker_image:
+    url: myregistry/img:tag

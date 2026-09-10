@@ -39,7 +39,10 @@ func (v *verifyCliVersion) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	}
 
 	if !c.Check(version) {
-		if version.Prerelease() == "dev" && version.Major() == 0 {
+		// Development builds are built from main and may already carry the change
+		// the constraint requires, so the constraint is a warning rather than an
+		// error. Masterminds reports the prerelease without its leading dash.
+		if version.Prerelease() == "dev" {
 			return diag.Warningf("Ignoring Databricks CLI version constraint for development build. Required: %s, current: %s", constraint, currentVersion)
 		}
 

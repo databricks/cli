@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -18,6 +19,14 @@ import (
 func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) {
 	if plan == nil {
 		panic("Planning is not done")
+	}
+
+	// Read before the early return below so a malformed value is reported even when there is
+	// nothing to deploy.
+	maxWait, err := resourceMaxWait(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	if len(plan.Plan) == 0 {
@@ -34,6 +43,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		return
 	}
 
+	// The state DB records every write with DMS from here on (via the buffer InitializeOperationBuffer opened
+	// in the deploy phase), so the service mirrors the WAL. Writes go out on one background
+	// goroutine, off the apply path, and are drained below once every worker has finished recording.
 	g.Run(defaultParallelism, func(resourceKey string, failedDependency *string) bool {
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
@@ -64,23 +76,43 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
+		// Stop resource CRUD once recording state with DMS has failed.
+		if err := b.StateDB.RecordingError(); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if adapter == nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: cannot get adapter: %w", errorPrefix, err))
 			return false
 		}
 
+		// Deletes are capped even with dependents: state is dropped before the wait, so a
+		// cut-short delete leaves the resource untracked while it tears down, and a dependency
+		// deleted after it may be rejected for still having a child. Accepted deliberately.
+		// Recreate's internal delete-wait is never routed through the cap at all, because it
+		// releases the name for the create that follows.
+		unitWait := maxWait
+		if action != deployplan.Delete && hasBlockingDependents(g, resourceKey) {
+			unitWait = maxWaitUnset
+			if maxWait != maxWaitUnset {
+				log.Debugf(ctx, "Not capping wait for %s: other resources depend on it", resourceKey)
+			}
+		}
+
 		d := &DeploymentUnit{
 			ResourceKey: resourceKey,
 			Adapter:     adapter,
 			DependsOn:   entry.DependsOn,
+			MaxWait:     unitWait,
 		}
 
 		if action == deployplan.Delete {
 			if entry.Gone {
 				// Planning confirmed the resource is already deleted remotely; only
 				// remove it from the state, without calling the delete API.
-				err = b.StateDB.DeleteState(resourceKey)
+				err = b.StateDB.DeleteState(ctx, resourceKey, false)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
 			}
@@ -111,8 +143,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			//
+			// Success is recorded by the state writes inside Deploy, so a recreate reports
+			// each of its steps.
 			err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry)
 			if err != nil {
+				// Empty for a create that never got an ID, and for a recreate whose delete
+				// step already dropped it.
+				failedID := b.StateDB.GetResourceID(resourceKey)
+				b.StateDB.RecordFailure(resourceKey, failedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}

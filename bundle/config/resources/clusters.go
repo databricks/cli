@@ -65,7 +65,3 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 func (s *Cluster) GetName() string {
 	return s.ClusterName
 }
-
-func (s *Cluster) GetURL() string {
-	return s.URL
-}

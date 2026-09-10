@@ -1,5 +1,5 @@
 # Maintainers (can approve any PR)
-*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose @lennartkats-db
+*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose @lennartkats-db @rugpanov @rclarey
 
 # Bundles
 /bundle/                    team:bundle
@@ -64,12 +64,14 @@
 # Integration tests
 /integration/               team:platform
 
+/integration/cmd/environments/  team:ide
+
 # Internal
 /internal/                  team:platform
 
 # AI tools
-/cmd/aitools/               team:eng-apps-devex team:platform @lennartkats-db
-/libs/aitools/              team:eng-apps-devex team:platform @lennartkats-db
+/cmd/aitools/               team:eng-apps-devex team:ide @lennartkats-db
+/libs/aitools/              team:eng-apps-devex team:ide @lennartkats-db
 
 # CLI compatibility manifest
 /internal/build/cli-compat.json  team:eng-apps-devex team:platform

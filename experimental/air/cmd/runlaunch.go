@@ -33,6 +33,13 @@ func userWorkspaceDir(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	if override := env.Get(ctx, userWorkspaceDirEnv); override != "" {
 		return override, nil
 	}
+	override, err := profileValue(w.Config, "databricks_internal_user_workspace_dir")
+	if err != nil {
+		return "", fmt.Errorf("failed to read selected profile: %w", err)
+	}
+	if override != "" {
+		return override, nil
+	}
 	email, err := currentUserEmail(ctx, w)
 	if err != nil {
 		return "", err

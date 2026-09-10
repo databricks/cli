@@ -4,7 +4,7 @@ package terraform_dabs_map
 
 // alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 16 dabs-only
+// apps / databricks_app: 6 dabs-only
 // apps / databricks_app: 1 tf-only
 // clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
@@ -12,11 +12,11 @@ package terraform_dabs_map
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
 // jobs / databricks_job: 7 dabs-only
-// jobs / databricks_job: 259 tf-only
+// jobs / databricks_job: 261 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 5 dabs-only
+// pipelines / databricks_pipeline: 6 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
@@ -99,18 +99,6 @@ var DABsOnlyFields = map[string]FieldSet{
 				"value_from": {}, // apps.*.config.env.value_from
 			},
 		},
-		"git_source": {
-			"branch": {}, // apps.*.git_source.branch
-			"commit": {}, // apps.*.git_source.commit
-			"git_repository": {
-				"provider": {}, // apps.*.git_source.git_repository.provider
-				"url":      {}, // apps.*.git_source.git_repository.url
-			},
-			"resolved_commit":  {}, // apps.*.git_source.resolved_commit
-			"source_code_path": {}, // apps.*.git_source.source_code_path
-			"tag":              {}, // apps.*.git_source.tag
-		},
-		"source_code_path": {},
 	},
 	"jobs": {
 		"job_clusters": {
@@ -137,6 +125,7 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 	},
 	"pipelines": {
+		"cascade_on_destroy": {},
 		"clusters": {
 			"gcp_attributes": {
 				"boot_disk_size":            {}, // pipelines.*.clusters.gcp_attributes.boot_disk_size
@@ -349,6 +338,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"driver_instance_pool_id": {}, // databricks_job.*.new_cluster.driver_instance_pool_id
 			"driver_node_type_flexibility": {
 				"alternate_node_type_ids": {}, // databricks_job.*.new_cluster.driver_node_type_flexibility.alternate_node_type_ids
+				"aws_context_id":          {}, // databricks_job.*.new_cluster.driver_node_type_flexibility.aws_context_id
 			},
 			"driver_node_type_id":          {}, // databricks_job.*.new_cluster.driver_node_type_id
 			"enable_elastic_disk":          {}, // databricks_job.*.new_cluster.enable_elastic_disk
@@ -433,6 +423,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"use_ml_runtime":                 {}, // databricks_job.*.new_cluster.use_ml_runtime
 			"worker_node_type_flexibility": {
 				"alternate_node_type_ids": {}, // databricks_job.*.new_cluster.worker_node_type_flexibility.alternate_node_type_ids
+				"aws_context_id":          {}, // databricks_job.*.new_cluster.worker_node_type_flexibility.aws_context_id
 			},
 			"workload_type": {
 				"clients": {
@@ -634,6 +625,7 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"source_branch":      {},
 		"source_branch_lsn":  {},
 		"source_branch_time": {},
+		"source_snapshot":    {},
 		"ttl":                {},
 	},
 	"postgres_catalogs": {

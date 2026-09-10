@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 type RepositoryInfo struct {
@@ -31,6 +32,7 @@ type RepositoryInfo struct {
 type gitInfo struct {
 	Branch       string `json:"branch"`
 	HeadCommitID string `json:"head_commit_id"`
+	ID           int64  `json:"id"`
 	Path         string `json:"path"`
 	URL          string `json:"url"`
 }
@@ -50,7 +52,7 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 	var info RepositoryInfo
 	var err error
 	if strings.HasPrefix(path, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		info, err = fetchRepositoryInfoAPI(ctx, path, w)
+		info, err = FetchRepositoryInfoAPI(ctx, path, w)
 	} else {
 		info, err = fetchRepositoryInfoDotGit(ctx, path)
 	}
@@ -65,7 +67,14 @@ func FetchRepositoryInfo(ctx context.Context, path string, w *databricks.Workspa
 	return info, err
 }
 
-func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
+// FetchRepositoryInfoAPI reads the metadata from the workspace API, which is what
+// FetchRepositoryInfo does on a Databricks Runtime. Exported so that
+// `bundle debug fetch-repository-info --workspace-api` can reach this path
+// off-runtime; the product calls it through FetchRepositoryInfo.
+//
+// A path that does not exist is reported as fs.ErrNotExist; callers that treat
+// that as "no repository here" must normalize it the way FetchRepositoryInfo does.
+func FetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.WorkspaceClient) (RepositoryInfo, error) {
 	result := RepositoryInfo{}
 
 	apiClient, err := client.New(w.Config)
@@ -108,6 +117,21 @@ func fetchRepositoryInfoAPI(ctx context.Context, path string, w *databricks.Work
 		result.LatestCommit = gi.HeadCommitID
 		result.CurrentBranch = gi.Branch
 		result.WorktreeRoot = fixedPath
+
+		// A Git folder with Git CLI access does not store the git metadata on the
+		// workspace object, so get-status returns only the id and path for it. The
+		// Repos API still has the metadata, and git_info.id identifies the Git
+		// folder root even when the queried path is a subdirectory of it.
+		if gi.ID != 0 && gi.Branch == "" && gi.HeadCommitID == "" && gi.URL == "" {
+			repo, err := w.Repos.Get(ctx, workspace.GetRepoRequest{RepoId: gi.ID})
+			if err != nil {
+				log.Warnf(ctx, "failed to load git info for repo %d: %s", gi.ID, err)
+			} else {
+				result.OriginURL = repo.Url
+				result.LatestCommit = repo.HeadCommitId
+				result.CurrentBranch = repo.Branch
+			}
+		}
 	} else {
 		log.Infof(ctx, "Failed to load git info from %s", apiEndpoint)
 	}

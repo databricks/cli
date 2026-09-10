@@ -9,11 +9,12 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.job_with_permissions
+Created jobs.job_with_permissions.permissions
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs/
+>>> print_requests.py --nostamp //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -75,11 +76,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.job_with_permissions.permissions
+Files: 6 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //jobs/
+>>> print_requests.py --nostamp //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -90,11 +91,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.job_with_permissions.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //jobs/
+>>> print_requests.py --nostamp //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -105,11 +106,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deleted jobs.job_with_permissions.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
->>> print_requests.py //jobs/
+>>> print_requests.py --nostamp //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -133,11 +134,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.job_with_permissions.permissions
+Files: 4 uploaded, 1 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //jobs/
+>>> print_requests.py --nostamp //jobs/
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -148,11 +149,11 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Deleted jobs.job_with_permissions.permissions
+Files: 5 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 1 deleted, 1 unchanged
 
->>> print_requests.py //jobs/
+>>> print_requests.py --nostamp //jobs/
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -160,7 +161,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
->>> print_requests.py //jobs/
+>>> print_requests.py --nostamp //jobs/

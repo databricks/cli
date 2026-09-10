@@ -1,0 +1,18 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/dev-branch"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
+    "branch_id": "dev-branch"
+  },
+  "body": {
+    "spec": {
+      "no_expiry": true,
+      "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+      "source_branch_time": "[FORK_TIME_AFTER]"
+    }
+  }
+}

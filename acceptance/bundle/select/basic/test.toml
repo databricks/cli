@@ -1,4 +1,3 @@
-Local = true
 Cloud = true
 RecordRequests = true
 # --select is only supported by the direct engine, so this happy-path test runs on

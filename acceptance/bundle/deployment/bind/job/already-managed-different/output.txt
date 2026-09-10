@@ -1,8 +1,8 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.foo
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] jobs create --json {"name": "My Job"}

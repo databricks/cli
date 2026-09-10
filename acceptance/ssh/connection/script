@@ -10,7 +10,7 @@ fi
 if [ -n "${CLOUD_ENV:-}" ]; then
   # On cloud the dedicated cluster runs the remote command over a full SSH
   # handshake; dump the run on failure.
-  errcode $CLI ssh connect --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
+  errcode $CLI ssh connect --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR --known-hosts-dir=known-hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
   if ! grep -q "Connection successful" out.stdout.txt; then
     run_id=$(cat LOG.stderr | grep -o "Job submitted successfully with run ID: [0-9]*" | grep -o "[0-9]*$")
     trace $CLI jobs get-run "$run_id" > LOG.job
@@ -24,6 +24,6 @@ else
     echo "SKIP_TEST sshd (openssh-server) not installed"
     exit 0
   fi
-  errcode $CLI ssh connect --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR --user-known-hosts-file=known_hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
+  errcode $CLI ssh connect --cluster=$TEST_DEFAULT_CLUSTER_ID --releases-dir=$CLI_RELEASES_DIR --known-hosts-dir=known-hosts -- "echo 'Connection successful'" >out.stdout.txt 2>LOG.stderr
   trace print_requests.py //api/2.2/jobs/runs/submit
 fi

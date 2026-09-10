@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
@@ -65,13 +66,18 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 	return response.FullName, response, nil
 }
 
+// See schemaForceSend. Verified against a real workspace: {"comment": ""} clears it.
+var registeredModelForceSend = []string{"Comment"}
+
 func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *PlanEntry) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
-		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](config.ForceSendFields, "Owner", "NewName"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](append(slices.Clone(registeredModelForceSend), config.ForceSendFields...), "Owner", "NewName"),
 
-		// Owner is not part of the configuration tree
+		// Owner is settable in the config (it comes from the embedded
+		// CreateRegisteredModelRequest) and create sends it, but update never has: a
+		// change to it is silently dropped rather than applied.
 		Owner: "",
 
 		// Name updates are not supported yet without recreating. Can be added as a follow-up.

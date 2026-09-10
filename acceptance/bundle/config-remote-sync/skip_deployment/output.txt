@@ -1,0 +1,50 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Created pipelines.my_pipeline
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Modify the CLI-managed deployment metadata and one user field remotely
+
+=== Detect and save changes
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.my_job
+  description: replace
+
+Resource: resources.pipelines.my_pipeline
+  configuration['key2']: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -6,5 +6,5 @@
+     my_job:
+       name: test-job-[UNIQUE_NAME]
+-      description: original description
++      description: updated remotely
+       job_clusters:
+         - job_cluster_key: test_cluster
+@@ -25,4 +25,5 @@
+       configuration:
+         key1: value1
++        key2: value2
+       libraries:
+         - notebook:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

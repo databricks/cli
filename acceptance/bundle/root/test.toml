@@ -1,4 +1,3 @@
-Local = true
 Cloud = false
 
 # These errors originate in bundle/root.go before any engine is selected,

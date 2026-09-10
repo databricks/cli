@@ -1,7 +1,11 @@
+# The raw plans the replays read go under .databricks, which sync skips.
+mkdir -p .databricks
+
 trace $CLI bundle plan
 trace $CLI bundle deploy
 job_id=`$CLI bundle summary -o json | jq -r .resources.jobs.foo.id`
 trace $CLI jobs delete $job_id
 trace $CLI bundle plan
-$CLI bundle plan -o json &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-$CLI bundle deploy $(readplanarg out.plan.direct.json)
+$CLI bundle plan -o json &> .databricks/tmp.plan.json
+nostamp < .databricks/tmp.plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle deploy $(readplanarg .databricks/tmp.plan.json)

@@ -26,7 +26,7 @@ deploy_dashboard
 
 # Capture the dashboard ID as a replacement.
 dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
-echo "$dashboard_id:DASHBOARD_ID" >> ACC_REPLS
+add_repl "$dashboard_id" DASHBOARD_ID
 
 # Change the serialized_dashboard content - this should trigger an update (not recreate)
 export PAGE_NAME="name2"

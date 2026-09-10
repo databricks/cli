@@ -38,5 +38,5 @@
     "message": "No compute target is selected. Select a cluster or serverless target, or pass --cluster-id / --cluster-name / --serverless-version / --job-task",
     "diskMutated": false
   },
-  "durationMs": 0
+  "durationMs": [DURATION_MS]
 }

@@ -114,7 +114,7 @@ func UpdateSkills(ctx context.Context, src ManifestSource, targetAgents []*agent
 	result := &UpdateResult{}
 
 	cliVersion := build.GetInfo().Version
-	isDev := strings.HasPrefix(cliVersion, build.DefaultSemver)
+	isDev := build.GetInfo().IsDevelopment()
 
 	// Sort skill names for deterministic output.
 	names := slices.Sorted(maps.Keys(skillSet))

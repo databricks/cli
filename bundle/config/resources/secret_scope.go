@@ -13,9 +13,18 @@ type SecretScopePermissionLevel string
 
 const (
 	SecretScopePermissionLevelRead   SecretScopePermissionLevel = "READ"
-	SecretScopePermissionLevelManage SecretScopePermissionLevel = "MANAGE"
 	SecretScopePermissionLevelWrite  SecretScopePermissionLevel = "WRITE"
+	SecretScopePermissionLevelManage SecretScopePermissionLevel = "MANAGE"
 )
+
+// Values enables generated enum validation. Order matches privilege rank (READ < WRITE < MANAGE).
+func (SecretScopePermissionLevel) Values() []SecretScopePermissionLevel {
+	return []SecretScopePermissionLevel{
+		SecretScopePermissionLevelRead,
+		SecretScopePermissionLevelWrite,
+		SecretScopePermissionLevelManage,
+	}
+}
 
 // SecretScopePermission holds the permission level setting for a single principal.
 // Multiple of these can be defined on any secret scope.
@@ -95,9 +104,9 @@ func (s SecretScope) GetName() string {
 	return s.Name
 }
 
-func (s SecretScope) GetURL() string {
+func (s SecretScope) GetURL() (string, bool) {
 	// Secret scopes do not have a URL
-	return ""
+	return "", false
 }
 
 func (s SecretScope) InitializeURL(_ url.URL) {

@@ -14,9 +14,13 @@ Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.a
+Created jobs.b
+Created jobs.c
+Created jobs.d
+Created jobs.e
+Files: 5 uploaded, 0 deleted
+Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests_short
 "aa"
@@ -44,9 +48,13 @@ Plan: 0 to add, 5 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.a
+Updated jobs.b
+Updated jobs.c
+Updated jobs.d
+Updated jobs.e
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 5 changed, 0 deleted, 0 unchanged
 
 >>> print_requests_short
 "aa"

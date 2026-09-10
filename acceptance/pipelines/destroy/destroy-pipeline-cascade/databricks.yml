@@ -1,0 +1,7 @@
+bundle:
+  name: test-pipeline-destroy-cascade
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-cascade
+      cascade_on_destroy: false

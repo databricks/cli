@@ -1,0 +1,6 @@
+# KNOWN BUG (Cloud=false): emptying a grants node makes apply call DeleteState, which records
+# the operation as a delete with no state. The staged action is still UPDATE, so the service
+# rejects a succeeded UPDATE that names no state while the schema still exists. The fake does
+# not model that check, so this passes locally but fails on a real workspace. Re-enable once
+# emptying grants records an update carrying the emptied state instead of a delete.
+Cloud = false

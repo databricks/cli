@@ -22,4 +22,5 @@ type DatabricksCliLog struct {
 	SshTunnelEvent              *SshTunnelEvent              `json:"ssh_tunnel_event,omitempty"`
 	BundleConfigRemoteSyncEvent *BundleConfigRemoteSyncEvent `json:"bundle_config_remote_sync_event,omitempty"`
 	AitoolsInstallEvent         *AitoolsInstallEvent         `json:"aitools_install_event,omitempty"`
+	SetupLocalEvent             *SetupLocalEvent             `json:"setup_local_event,omitempty"`
 }

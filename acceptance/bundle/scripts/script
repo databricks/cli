@@ -1,3 +1,7 @@
 trace EXITCODE=0 errcode $CLI bundle validate
 trace EXITCODE=1 errcode $CLI bundle validate
-trace EXITCODE=0 errcode $CLI bundle deploy
+trace EXITCODE=0 POSTDEPLOY_EXITCODE=0 errcode $CLI bundle deploy
+
+# A failing postdeploy script still reports the deploy summary (the resources were
+# already applied), and the script's failure still propagates as a nonzero exit.
+trace EXITCODE=0 POSTDEPLOY_EXITCODE=1 errcode $CLI bundle deploy

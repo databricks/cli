@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+PREFIX="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/explicit-${UNIQUE_NAME}"
+
+trace $CLI bundle deploy
+trace $CLI bundle destroy --auto-approve
+
+# root_path spells out ${bundle.name}/${bundle.target}, so the directory named after the
+# bundle goes with the deployment even outside the default location.
+title "Assert the bundle directory is deleted"
+trace musterr $CLI workspace get-status "${PREFIX}/test-bundle"
+
+title "Assert the prefix above it is kept"
+trace $CLI workspace get-status "${PREFIX}" | jq '{object_type}'
+
+title "Clean up"
+trace $CLI workspace delete "${PREFIX}" --recursive

@@ -5,12 +5,14 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
-	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -20,69 +22,49 @@ type ResourceSecret struct {
 	client *databricks.WorkspaceClient
 }
 
-// SecretState is the persisted state type for a UC secret. It extends the SDK
-// Secret struct with a Fingerprint field so that value changes can be detected
-// across deploys without storing the plaintext value on disk. The Value field
-// is always cleared after the API call (see DoCreate/DoUpdate).
-type SecretState struct {
-	catalog.Secret
-
-	// SecretValue is the plaintext value of the secret. It is not stored in the state file.
-	// It is carried here so DoCreate/DoUpdate can send it to the API.
-	SecretValue string `json:"-" bundle:"sensitive"`
-}
-
 func (*ResourceSecret) New(client *databricks.WorkspaceClient) *ResourceSecret {
 	return &ResourceSecret{client: client}
 }
 
-func (*ResourceSecret) PrepareState(input *resources.Secret) *SecretState {
-	return &SecretState{
-		Secret: catalog.Secret{
-			CatalogName:     input.CatalogName,
-			SchemaName:      input.SchemaName,
-			Name:            input.Name,
-			Value:           "",
-			Comment:         input.Comment,
-			ExpireTime:      input.ExpireTime,
-			Owner:           "",
-			CreateTime:      nil,
-			CreatedBy:       "",
-			EffectiveOwner:  "",
-			EffectiveValue:  "",
-			FullName:        "",
-			MetastoreId:     "",
-			UpdateTime:      nil,
-			UpdatedBy:       "",
-			ForceSendFields: utils.FilterFields[catalog.Secret](nil),
-		},
-		// Value is carried here so DoCreate/DoUpdate can send it to the API.
-		// It is cleared from state after the API call (see DoCreate/DoUpdate).
-		SecretValue: input.Value,
+func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
+	return &catalog.Secret{
+		CatalogName:     input.CatalogName,
+		SchemaName:      input.SchemaName,
+		Name:            input.Name,
+		Value:           input.Value,
+		Comment:         input.Comment,
+		ExpireTime:      input.ExpireTime,
+		Owner:           "",
+		CreateTime:      nil,
+		CreatedBy:       "",
+		EffectiveOwner:  "",
+		EffectiveValue:  "",
+		FullName:        "",
+		MetastoreId:     "",
+		UpdateTime:      nil,
+		UpdatedBy:       "",
+		ForceSendFields: utils.FilterFields[catalog.Secret](nil),
 	}
 }
 
-func (*ResourceSecret) RemapState(remote *catalog.Secret) *SecretState {
-	return &SecretState{
-		Secret: catalog.Secret{
-			CatalogName:     remote.CatalogName,
-			SchemaName:      remote.SchemaName,
-			Name:            remote.Name,
-			Comment:         remote.Comment,
-			Owner:           remote.Owner,
-			ExpireTime:      remote.ExpireTime,
-			Value:           "",
-			CreateTime:      nil,
-			CreatedBy:       "",
-			EffectiveOwner:  "",
-			EffectiveValue:  remote.EffectiveValue,
-			FullName:        "",
-			MetastoreId:     "",
-			UpdateTime:      nil,
-			UpdatedBy:       "",
-			ForceSendFields: utils.FilterFields[catalog.Secret](remote.ForceSendFields),
-		},
-		SecretValue: remote.EffectiveValue,
+func (*ResourceSecret) RemapState(remote *catalog.Secret) *catalog.Secret {
+	return &catalog.Secret{
+		CatalogName:     remote.CatalogName,
+		SchemaName:      remote.SchemaName,
+		Name:            remote.Name,
+		Value:           remote.EffectiveValue,
+		Comment:         remote.Comment,
+		ExpireTime:      remote.ExpireTime,
+		Owner:           remote.EffectiveOwner,
+		CreateTime:      nil,
+		CreatedBy:       "",
+		EffectiveOwner:  "",
+		EffectiveValue:  "",
+		FullName:        "",
+		MetastoreId:     "",
+		UpdateTime:      nil,
+		UpdatedBy:       "",
+		ForceSendFields: utils.FilterFields[catalog.Secret](nil),
 	}
 }
 
@@ -105,14 +87,10 @@ func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret
 }
 
 // DoCreate creates a new UC secret.
-func (r *ResourceSecret) DoCreate(ctx context.Context, state *SecretState) (string, *catalog.Secret, error) {
-	state.Value = state.SecretValue
+func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (string, *catalog.Secret, error) {
 	response, err := r.client.SecretsUc.CreateSecret(ctx, catalog.CreateSecretRequest{
-		Secret: state.Secret,
+		Secret: *state,
 	})
-	// Clear the plaintext so it is not written to the state file.
-	// Fingerprint already captures whether the value changed.
-	state.Value = ""
 	if err != nil || response == nil {
 		return "", nil, err
 	}
@@ -120,17 +98,14 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *SecretState) (stri
 }
 
 // DoUpdate updates the secret in place and returns remote state.
-func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *SecretState, _ *PlanEntry) (*catalog.Secret, error) {
-	state.Value = state.SecretValue
+func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog.Secret, _ *PlanEntry) (*catalog.Secret, error) {
 	response, err := r.client.SecretsUc.UpdateSecret(ctx, catalog.UpdateSecretRequest{
 		FullName: id,
-		Secret:   state.Secret,
+		Secret:   *state,
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"*"},
 		},
 	})
-	// Clear the plaintext so it is not written to the state file.
-	state.Value = ""
 	if err != nil {
 		return nil, err
 	}
@@ -138,21 +113,27 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *SecretS
 }
 
 // DoDelete deletes the secret.
-func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *SecretState) error {
+func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *catalog.Secret) error {
 	return r.client.SecretsUc.DeleteSecret(ctx, catalog.DeleteSecretRequest{
 		FullName: id,
 	})
 }
 
-// MarshalJSON serializes SecretState as a merged JSON object: the fields from
-// catalog.Secret (via its own MarshalJSON) plus "fingerprint". Without this,
-// the embedded catalog.Secret.MarshalJSON takes over and drops Fingerprint.
-func (s SecretState) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
-}
-
-// UnmarshalJSON deserializes SecretState, restoring both the embedded
-// catalog.Secret fields and Fingerprint.
-func (s *SecretState) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
+// OverrideChangeDesc handles the "value" field, which is write-only (the API never
+// returns it in GET responses — only effective_value is readable). The state file
+// stores "" for this field (never the plaintext), so old is always "" regardless of
+// the actual stored value. We compare new vs remote (via effective_value from DoRead)
+// to decide whether the secret actually changed: if they are equal, the user's config
+// already matches what is stored remotely and no update is needed.
+func (*ResourceSecret) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *catalog.Secret) error {
+	if path.String() != "value" {
+		return nil
+	}
+	if structdiff.IsEqual(ch.Remote, ch.New) {
+		ch.Action = deployplan.Skip
+		ch.Reason = deployplan.ReasonCustom
+	} else {
+		ch.Action = deployplan.Update
+	}
+	return nil
 }

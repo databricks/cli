@@ -1,7 +1,6 @@
 # This test uses the workspace import API to load a notebook file. The testserver
 # models the SOURCE import format (notebook with an explicit language), so it runs
 # locally in addition to cloud.
-Local = true
 Cloud = true
 
 Ignore = [
@@ -10,8 +9,7 @@ Ignore = [
     "src/*"
 ]
 
-[Env]
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
-MSYS_NO_PATHCONV = "1"
+Env.MSYS_NO_PATHCONV = "1"

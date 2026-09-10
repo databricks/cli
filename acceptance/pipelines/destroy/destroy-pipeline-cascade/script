@@ -1,0 +1,27 @@
+title "Deploy a pipeline configured with cascade_on_destroy: false"
+trace $CLI pipelines deploy
+
+# Flush the deploy requests: cascade_on_destroy is delete-time-only, so the create request must not carry it.
+trace print_requests.py //api/2.0/pipelines
+
+title "Change only cascade_on_destroy (false -> true): expect a state-only update, no pipeline update API call"
+update_file.py databricks.yml "cascade_on_destroy: false" "cascade_on_destroy: true"
+trace $CLI pipelines deploy
+# No POST/PATCH to /pipelines is expected here; the cascade-only change is persisted to state.
+trace print_requests.py //api/2.0/pipelines
+
+title "Set cascade_on_destroy back to false and deploy so state reflects it before destroy"
+update_file.py databricks.yml "cascade_on_destroy: true" "cascade_on_destroy: false"
+trace $CLI pipelines deploy
+trace print_requests.py //api/2.0/pipelines
+
+title "Unset cascade_on_destroy entirely: expect a state-only update that persists nil to state"
+update_file.py databricks.yml "      cascade_on_destroy: false
+" ""
+trace $CLI pipelines deploy
+# No pipeline API call is expected; the cascade-only change is persisted to state.
+trace print_requests.py //api/2.0/pipelines
+
+title "Destroy: cascade_on_destroy is unset in state, so the delete uses the backend default (no cascade param)"
+trace $CLI pipelines destroy --auto-approve
+trace print_requests.py //api/2.0/pipelines

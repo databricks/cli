@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -14,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const uvPythonInstall312Pattern = `^uv(?:\.exe)? python install 3\.12$`
 
 // writePipConf writes conf to the primary OS-specific pip config path under a
 // fresh temp home and returns a context rooted at that home. On Windows the
@@ -35,11 +38,154 @@ func writePipConf(t *testing.T, conf string) context.Context {
 	return ctx
 }
 
+// uvStubCommand returns the normalized command spelling produced by
+// processStub.Commands on the current platform.
+func uvStubCommand(args string) string {
+	bin := "uv"
+	if runtime.GOOS == "windows" {
+		bin = "uv.exe"
+	}
+	return bin + " " + args
+}
+
 func TestUvArgs(t *testing.T) {
 	m := &uvManager{bin: "uv"}
 	assert.Equal(t, []string{"sync", "--python", "3.12"}, m.syncArgs("3.12"))
 	assert.Equal(t, []string{"python", "install", "3.12"}, m.pythonInstallArgs("3.12"))
+	assert.Equal(t, []string{
+		"python", "find", "--system", "--no-python-downloads", "cpython@==3.12.*",
+	}, m.pythonFindArgs("3.12"))
 	assert.Equal(t, []string{"pip", "install", "pip", "--python", "/p/.venv/bin/python"}, m.pipSeedArgs("/p/.venv/bin/python"))
+}
+
+func TestEnsurePythonStopsAfterSuccessfulInstall(t *testing.T) {
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithCallback(func(_ *exec.Cmd) error { return nil })
+	m := &uvManager{bin: "uv"}
+
+	selection, err := m.EnsurePython(ctx, "3.12")
+
+	require.NoError(t, err)
+	assert.Equal(t, PythonSelection{
+		Executable: "3.12",
+		Resolution: PythonResolutionUVInstallSucceeded,
+	}, selection)
+	assert.Equal(t, []string{uvStubCommand("python install 3.12")}, stub.Commands())
+}
+
+func TestEnsurePythonFallsBackToInstalledInterpreter(t *testing.T) {
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithStdoutFor(`python find`, "/system/python3.12\n")
+	m := &uvManager{bin: "uv"}
+
+	selection, err := m.EnsurePython(ctx, "3.12")
+
+	require.NoError(t, err)
+	assert.Equal(t, PythonSelection{
+		Executable: "/system/python3.12",
+		Resolution: PythonResolutionInstalledFallback,
+	}, selection)
+	assert.Equal(t, []string{
+		uvStubCommand("python install 3.12"),
+		uvStubCommand("python find --system --no-python-downloads cpython@==3.12.*"),
+	}, stub.Commands())
+}
+
+func TestEnsurePythonFallbackPreservesIndexURLBridge(t *testing.T) {
+	// CI sets UV_INDEX_URL. Remove it so this test exercises pip.conf bridging;
+	// t.Setenv registers cleanup that restores the original value.
+	t.Setenv("UV_INDEX_URL", "")
+	os.Unsetenv("UV_INDEX_URL")
+	ctx := writePipConf(t, "[global]\nindex-url = https://proxy.example/simple\n")
+	ctx, stub := process.WithStub(ctx)
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithStdoutFor(`python find`, "/system/python3.12\n")
+
+	selection, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12")
+
+	require.NoError(t, err)
+	assert.Equal(t, "/system/python3.12", selection.Executable)
+	assert.Equal(t, "https://proxy.example/simple", stub.LookupEnv("UV_INDEX_URL"))
+}
+
+func TestEnsurePythonStopsFallbackWhenContextIsCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	ctx, stub := process.WithStub(ctx)
+	stub.WithCallback(func(_ *exec.Cmd) error {
+		cancel()
+		return context.Canceled
+	})
+
+	_, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12")
+
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Equal(t, []string{uvStubCommand("python install 3.12")}, stub.Commands())
+}
+
+func TestEnsurePythonFallbackErrorSurfacesSearchStderr(t *testing.T) {
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithStderrFor(uvPythonInstall312Pattern, "error: Connection refused")
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("exit status 1"))
+	stub.WithStderrFor(`python find`, "error: unexpected argument '--no-python-downloads'")
+	stub.WithFailureFor(`python find`, errors.New("exit status 2"))
+	m := &uvManager{bin: "uv"}
+
+	_, err := m.EnsurePython(ctx, "3.12")
+
+	require.Error(t, err)
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	// Each stderr must be attributed to its own command so the find stderr does
+	// not read as if `python install` rejected an argument it never saw. Assert on
+	// Error() — what the user sees — since PipelineError.Error() appends the wrapped
+	// cause after Msg.
+	rendered := pe.Error()
+	assert.Contains(t, rendered, "uv python install 3.12 failed: error: Connection refused")
+	assert.Contains(t, rendered, "no compatible installed Python found either: error: unexpected argument '--no-python-downloads'")
+}
+
+func TestEnsurePythonReportsCancellationDuringFallbackSearch(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	ctx, stub := process.WithStub(ctx)
+	// Install fails normally (ctx still live), so the search runs; the search is
+	// then interrupted. The error must report the interruption, not claim that no
+	// interpreter is installed.
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithCallback(func(_ *exec.Cmd) error {
+		cancel()
+		return context.Canceled
+	})
+
+	_, err := (&uvManager{bin: "uv"}).EnsurePython(ctx, "3.12")
+
+	require.ErrorIs(t, err, context.Canceled)
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.NotContains(t, pe.Msg, "no compatible installed Python found")
+	assert.Equal(t, []string{
+		uvStubCommand("python install 3.12"),
+		uvStubCommand("python find --system --no-python-downloads cpython@==3.12.*"),
+	}, stub.Commands())
+}
+
+func TestEnsurePythonFailsWhenFallbackFindsNothing(t *testing.T) {
+	ctx, stub := process.WithStub(t.Context())
+	stub.WithFailureFor(uvPythonInstall312Pattern, errors.New("download blocked"))
+	stub.WithFailureFor(`python find`, errors.New("No interpreter found"))
+	m := &uvManager{bin: "uv"}
+
+	selection, err := m.EnsurePython(ctx, "3.12")
+
+	require.Error(t, err)
+	assert.Empty(t, selection)
+	assert.Equal(t, []string{
+		uvStubCommand("python install 3.12"),
+		uvStubCommand("python find --system --no-python-downloads cpython@==3.12.*"),
+	}, stub.Commands())
+	var pe *PipelineError
+	require.ErrorAs(t, err, &pe)
+	assert.Equal(t, ErrPythonInstall, pe.Code)
 }
 
 func TestVenvPythonPath(t *testing.T) {

@@ -1,0 +1,3 @@
+# This test reads the sibling dbt-sql test's committed golden via $TESTDIR, so it
+# must run in phase 1 (after phase 0 regenerates that golden in update mode).
+Phase = 1

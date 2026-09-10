@@ -1,0 +1,14 @@
+bundle:
+  name: test-bundle
+
+resources:
+  model_serving_endpoints:
+    endpoint1:
+      name: test-endpoint
+      config:
+        served_entities:
+          - name: prod
+            entity_name: main.default.test_model
+            entity_version: "1"
+            workload_size: Small
+            scale_to_zero_enabled: true

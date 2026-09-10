@@ -1,11 +1,11 @@
 
 === Deploy without permissions
 >>> [CLI] bundle deploy
-Uploading immutable bundle snapshot...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-First snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
+Created internal_immutable_snapshots.immutable
+Created jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+First snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py
 
 === Add permissions and redeploy
 >>> [CLI] bundle deploy
@@ -21,11 +21,12 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:22:3
 
-Uploading immutable bundle snapshot...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[UUID]/[SNAPSHOT_HASH]/files/src/main.py
+Recreated internal_immutable_snapshots.immutable
+Updated jobs.my_job
+Created jobs.my_job.permissions
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 1 changed, 1 deleted, 0 unchanged
+Second snapshot path: /Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py
 
 === Verify snapshot path changed after permissions change
 OK: snapshot path changed as expected
@@ -48,5 +49,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-perms-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

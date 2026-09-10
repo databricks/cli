@@ -62,6 +62,11 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		}
 	}
 
+	fields, errResponse := parseUpdateFields(req.Body)
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var updateRequest catalog.UpdateRegisteredModelRequest
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
@@ -70,13 +75,8 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		}
 	}
 
-	// Update only the fields that can be updated
-	if updateRequest.Comment != "" {
-		existing.Comment = updateRequest.Comment
-	}
-	if updateRequest.Owner != "" {
-		existing.Owner = updateRequest.Owner
-	}
+	applyUpdatedFields(&existing, updateRequest, fields)
+
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
 

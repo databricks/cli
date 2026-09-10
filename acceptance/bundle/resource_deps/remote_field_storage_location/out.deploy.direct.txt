@@ -1,6 +1,8 @@
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created schemas.my
+Created volumes.bar
+Created volumes.foo
+Files: 7 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged

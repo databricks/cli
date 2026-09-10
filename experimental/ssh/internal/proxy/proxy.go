@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"sync"
@@ -29,6 +30,10 @@ const (
 	proxyHandoverInitTimeout = 30 * time.Second
 	// Timeout for the handover process, when accepted by the server.
 	proxyHandoverAcceptTimeout = 25 * time.Second
+	// Bounds how long a keepalive ping may hold the websocket's write lock. A stalled or half-open
+	// connection parks a write until the kernel gives up retransmitting (~15 minutes with Linux
+	// defaults), and close() and the sending loop need that same lock, so the ping caps its wait.
+	proxyPingWriteTimeout = 5 * time.Second
 )
 
 // handoverCoordination holds the context and channels used to coordinate a single handover operation
@@ -134,7 +139,7 @@ func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.
 		// Both loops can still be stuck on conn.ReadMessage or src.Read and won't notice context cancellation,
 		// so we close the connection and the source (sshd stdout pipe or ssh client stdio) to unblock them.
 		<-gCtx.Done()
-		return errors.Join(pc.close(), pc.closeSource(src))
+		return errors.Join(pc.close(), pc.closeConnection(), pc.closeSource(src))
 	})
 	err := g.Wait()
 	if err == nil || isNormalClosure(err) {
@@ -204,6 +209,15 @@ func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
 	return conn.WriteMessage(mt, data)
 }
 
+// sendPing writes a keepalive ping on the current connection. Unlike sendMessage it takes neither
+// the handover mutex nor an unbounded wait: gorilla permits WriteControl concurrently with the data
+// writes, and its deadline bounds how long a stalled socket holds the connection's write lock, which
+// close() and the sending loop also need.
+func (pc *proxyConnection) sendPing() error {
+	conn := pc.conn.Load()
+	return conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(proxyPingWriteTimeout))
+}
+
 func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) error {
 	for {
 		if ctx.Err() != nil {
@@ -259,6 +273,19 @@ func (pc *proxyConnection) close() error {
 		}
 	}
 	return nil
+}
+
+// closeConnection closes the underlying websocket. The close message pc.close sends only ends the
+// session if the peer is still there to react to it by closing the connection, and it does not even
+// go out once a failed write has put the connection into gorilla's permanent write-error state (one
+// timed-out keepalive ping is enough). Without this the receiving loop stays blocked in ReadMessage
+// and the session hangs instead of exiting.
+func (pc *proxyConnection) closeConnection() error {
+	err := pc.conn.Load().Close()
+	if errors.Is(err, net.ErrClosed) {
+		return nil
+	}
+	return err
 }
 
 func (pc *proxyConnection) closeSource(src io.ReadCloser) error {

@@ -167,7 +167,7 @@ func credRejectingImageServer(t *testing.T, credentialedPOSTs *int) string {
 func TestRegisterWithCredentialFallbackRetriesAnonymously(t *testing.T) {
 	var credentialedPOSTs int
 	url := credRejectingImageServer(t, &credentialedPOSTs)
-	updated, sha, err := registerWithCredentialFallback(t.Context(), newTestImageClient(t, url), "nvcr.io/org/img:1.0", "scope", "key", time.Second)
+	updated, sha, err := registerWithCredentialFallback(t.Context(), newTestImageClient(t, url), "nvcr.io/org/img:1.0", imageCredentials{scope: "scope", key: "key", discovered: true}, time.Second)
 	require.NoError(t, err)
 	assert.True(t, updated)
 	assert.Equal(t, "pubsha", sha)
@@ -179,7 +179,17 @@ func TestRegisterWithCredentialFallbackNoRetryWithoutCreds(t *testing.T) {
 	// failure surfaces directly.
 	var credentialedPOSTs int
 	url := credRejectingImageServer(t, &credentialedPOSTs)
-	_, _, err := registerWithCredentialFallback(t.Context(), newTestImageClient(t, url), "nvcr.io/org/img:1.0", "", "", time.Second)
+	_, _, err := registerWithCredentialFallback(t.Context(), newTestImageClient(t, url), "nvcr.io/org/img:1.0", imageCredentials{}, time.Second)
 	require.NoError(t, err) // anonymous POST succeeds on this server
 	assert.Equal(t, 0, credentialedPOSTs)
+}
+
+func TestRegisterWithCredentialFallbackNoRetryForExplicitCreds(t *testing.T) {
+	// The user named these credentials, so a rejection is the real answer: do not
+	// silently retry without them.
+	var credentialedPOSTs int
+	url := credRejectingImageServer(t, &credentialedPOSTs)
+	_, _, err := registerWithCredentialFallback(t.Context(), newTestImageClient(t, url), "nvcr.io/org/img:1.0", imageCredentials{scope: "scope", key: "key"}, time.Second)
+	require.Error(t, err)
+	assert.Equal(t, 1, credentialedPOSTs, "should try once with creds and stop")
 }

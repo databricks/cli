@@ -2,13 +2,14 @@
 === Deploy project, branch, and role
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-role-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_roles.my_role
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Unbind the role: it now exists on the branch but is no longer tracked by the bundle
 >>> [CLI] bundle deployment unbind my_role
-Updating deployment state...
 
 === Plan after unbind: the bundle wants to (re-)create the role
 >>> [CLI] bundle plan
@@ -19,9 +20,9 @@ Plan: 1 to add, 0 to change, 0 to delete, 2 unchanged
 === Re-deploy: replace_existing adopts the already-existing role instead of erroring
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/replace-existing-role-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created postgres_roles.my_role
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 
 === Confirm the role is under management again
 >>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
@@ -60,5 +61,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/replace-existing-role-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted

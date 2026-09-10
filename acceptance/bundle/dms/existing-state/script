@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy without recording: ordinary direct-engine state tracking one job, unknown to DMS"
+trace $CLI bundle deploy
+dms_plan
+trace print_requests.py --dms //api/2.0/bundle --oneline
+trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+
+title "Enabling recording is refused: this deployment already exists but the service has no record of it, and treating the service as authoritative would create its resources a second time"
+musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --oneline
+
+title "The check is against the remote state, not the local cache: wiping .databricks still refuses, because the deploy pulls the state back from the workspace"
+rm -rf .databricks
+musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+
+title "A leftover local WAL is refused: a recorded deployment writes none, so one can only have come from a deploy that did not record"
+mkdir -p .databricks/bundle/default
+printf '{"lineage":"stale","serial":99,"state_version":2,"features":{"deployment_history":{}}}\n' > .databricks/bundle/default/resources.json.wal
+musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+
+title "Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone"
+# Clear the stale WAL first: it was refused, not deleted, and destroy runs without recording, so it
+# would otherwise try to replay it and fail on the lineage mismatch.
+rm -f .databricks/bundle/default/resources.json.wal
+trace $CLI bundle destroy --auto-approve
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+trace print_requests.py --dms //api/2.0/bundle --oneline
+trace find.py 'resources[.]json[.]wal' --expect 0
+trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+
+# The recorded requests are asserted above via print_requests.py; drop whatever the run added after
+# that (telemetry, and the state probes of the non-recording variant) so nothing is left to compare.
+rm -f out.requests.txt

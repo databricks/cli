@@ -79,30 +79,80 @@ func (m *uvManager) EnsureAvailable(ctx context.Context) (string, error) {
 // (Python, build backends); on SIGINT/SIGTERM they must be reaped as a group
 // rather than left as orphans holding locks over a half-written .venv.
 func (m *uvManager) runUv(ctx context.Context, args []string, dir string) error {
-	if indexURL := m.resolveIndexURL(ctx); indexURL != "" {
-		_, err := process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL), process.WithProcessGroup())
-		return err
-	}
-	_, err := process.Background(ctx, args, process.WithDir(dir), process.WithProcessGroup())
+	_, err := m.runUvOutput(ctx, args, dir)
 	return err
 }
 
-// EnsurePython installs the requested Python minor version via uv.
-func (m *uvManager) EnsurePython(ctx context.Context, minor string) error {
-	args := append([]string{m.bin}, m.pythonInstallArgs(minor)...)
-	if err := m.runUv(ctx, args, ""); err != nil {
-		return uvFailure(ErrPythonInstall, err, "uv python install "+minor)
+// runUvOutput runs uv with the same directory, index-url bridge, and process
+// group behavior as runUv, returning stdout for commands with structured output.
+func (m *uvManager) runUvOutput(ctx context.Context, args []string, dir string) (string, error) {
+	if indexURL := m.resolveIndexURL(ctx); indexURL != "" {
+		return process.Background(ctx, args, process.WithDir(dir), process.WithEnv("UV_INDEX_URL", indexURL), process.WithProcessGroup())
 	}
-	return nil
+	return process.Background(ctx, args, process.WithDir(dir), process.WithProcessGroup())
+}
+
+// EnsurePython installs the requested Python minor via uv, falling back to a
+// compatible interpreter already on the machine when the download fails.
+func (m *uvManager) EnsurePython(ctx context.Context, minor string) (PythonSelection, error) {
+	args := append([]string{m.bin}, m.pythonInstallArgs(minor)...)
+	installErr := m.runUv(ctx, args, "")
+	if installErr == nil {
+		return PythonSelection{Executable: minor, Resolution: PythonResolutionUVInstallSucceeded}, nil
+	}
+	if ctx.Err() != nil {
+		return PythonSelection{}, uvFailure(ErrPythonInstall, installErr, "uv python install "+minor)
+	}
+	executable, findErr := m.findInstalledPython(ctx, minor)
+	if ctx.Err() != nil {
+		// Interrupted mid-search: report the cancellation, not a false "nothing
+		// found". errors.Join drops a nil findErr when the search had finished.
+		return PythonSelection{}, uvFailure(ErrPythonInstall, errors.Join(installErr, findErr), "uv python install "+minor)
+	}
+	if findErr != nil {
+		// The download and the installed-interpreter search are distinct commands.
+		// Attribute each stderr to its own clause ("found either: <find stderr>") so
+		// the find stderr doesn't read as if `python install` rejected an argument it
+		// never saw. Kept on one line: PipelineError.Error() appends the wrapped
+		// cause after Msg, so a newline here would strand that tail on the next line.
+		// Both process errors ride along in the joined cause for errors.As / --debug.
+		msg := "uv python install " + minor + " failed"
+		if stderr := uvStderr(installErr); stderr != "" {
+			msg += ": " + stderr
+		}
+		msg += "; no compatible installed Python found either"
+		if stderr := uvStderr(findErr); stderr != "" {
+			msg += ": " + stderr
+		}
+		return PythonSelection{}, NewError(ErrPythonInstall, errors.Join(installErr, findErr), "%s", msg)
+	}
+	log.Debugf(ctx, "uv: Python download failed (%s); using installed interpreter %s", uvStderr(installErr), executable)
+	return PythonSelection{Executable: executable, Resolution: PythonResolutionInstalledFallback}, nil
+}
+
+// findInstalledPython returns the path to an interpreter for the target minor
+// already present on the machine, or an error if none is. uv applies its own
+// managed-first preference and excludes project venvs; --system is required so an
+// active .venv is ignored, and --no-python-downloads keeps it from re-attempting
+// the download that just failed.
+// https://docs.astral.sh/uv/reference/cli/#uv-python-find
+func (m *uvManager) findInstalledPython(ctx context.Context, minor string) (string, error) {
+	args := append([]string{m.bin}, m.pythonFindArgs(minor)...)
+	out, err := m.runUvOutput(ctx, args, "")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(out), nil
 }
 
 // Provision runs `uv sync` inside projectDir to install project dependencies,
-// pinning the interpreter to pyMinor. Without --python, `uv sync` selects the
+// pinning the interpreter to python. Without --python, `uv sync` selects the
 // newest installed interpreter satisfying requires-python (e.g. 3.13 for a
-// ">=3.12" floor), which then fails validation against the 3.12 target; pinning
-// the minor we just installed keeps the venv on the intended version.
-func (m *uvManager) Provision(ctx context.Context, projectDir, pyMinor string) error {
-	args := append([]string{m.bin}, m.syncArgs(pyMinor)...)
+// ">=3.12" floor), which then fails pipeline validation against the 3.12 target.
+// The explicit request is either the minor just installed or the interpreter
+// path found by the installed-Python fallback.
+func (m *uvManager) Provision(ctx context.Context, projectDir, python string) error {
+	args := append([]string{m.bin}, m.syncArgs(python)...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
 		return uvFailure(ErrProvision, err, "uv sync")
 	}
@@ -134,22 +184,36 @@ func (m *uvManager) PostProvision(ctx context.Context, projectDir string) error 
 	return nil
 }
 
-// Validate reads the Python minor version and databricks-connect package
-// version from the project's virtual environment. When databricks-connect is not
-// installed (constraints-only mode), the second line is empty rather than an
-// error: PackageNotFoundError is caught so the probe never fails just because the
-// package is absent. The caller decides whether an empty version is acceptable.
-func (m *uvManager) Validate(ctx context.Context, projectDir string) (string, string, error) {
-	// Each value is printed with a unique prefix so parsing greps for the prefix
-	// rather than relying on line position: any stray line uv or the interpreter
-	// writes to stdout (e.g. a warning) would otherwise shift a positional parse.
-	// A missing databricks-connect prints an empty DBC: value, not an error.
-	pyCode := `import sys, importlib.metadata
+// Validate inspects the project's virtual environment: the Python minor version, the
+// databricks-connect and standalone-pyspark distribution versions, and whether
+// databricks-connect actually imports. A missing databricks-connect or pyspark yields
+// an empty version rather than an error (PackageNotFoundError is caught), so the probe
+// never fails just because a package is absent; the caller decides what is acceptable.
+//
+// The version probes read distribution metadata, not the importable module:
+// databricks-connect vendors the pyspark package tree without registering a pyspark
+// distribution, so a resolvable pyspark version means a standalone pyspark is installed
+// on top of it. Metadata alone cannot tell a live collision from a stale dist-info that
+// no longer describes the importable module, so the probe also attempts `import
+// databricks.connect`: a live collision raises there, a harmless leftover does not.
+func (m *uvManager) Validate(ctx context.Context, projectDir string) (VenvInfo, error) {
+	// Each value is printed with a unique prefix so parsing greps for the prefix rather
+	// than relying on line position: any stray line uv or the interpreter writes to
+	// stdout (e.g. a warning) would otherwise shift a positional parse.
+	pyCode := `import sys, importlib, importlib.metadata
+def _ver(name):
+    try:
+        return importlib.metadata.version(name)
+    except importlib.metadata.PackageNotFoundError:
+        return ""
 print(f"` + validatePyPrefix + `{sys.version_info.major}.{sys.version_info.minor}")
+print("` + validateDBCPrefix + `" + _ver("databricks-connect"))
+print("` + validatePysparkPrefix + `" + _ver("pyspark"))
 try:
-    print("` + validateDBCPrefix + `" + importlib.metadata.version("databricks-connect"))
-except importlib.metadata.PackageNotFoundError:
-    print("` + validateDBCPrefix + `")`
+    importlib.import_module("databricks.connect")
+    print("` + validateDBCImportPrefix + `")
+except BaseException as e:
+    print("` + validateDBCImportPrefix + `" + type(e).__name__)`
 	// Invoke the venv interpreter directly rather than `uv run`: `uv run` resolves
 	// the interpreter from an active VIRTUAL_ENV / CONDA_PREFIX when one is set
 	// (even with --no-project), which would validate whatever env the caller has
@@ -161,22 +225,32 @@ except importlib.metadata.PackageNotFoundError:
 		process.WithProcessGroup(),
 	)
 	if err != nil {
-		return "", "", uvFailure(ErrValidate, err, "venv python validation")
+		return VenvInfo{}, uvFailure(ErrValidate, err, "venv python validation")
 	}
 	pyVer, ok := lineWithPrefix(out, validatePyPrefix)
 	if !ok || pyVer == "" {
-		return "", "", NewError(ErrValidate, nil, "unexpected output from uv run: %q", out)
+		return VenvInfo{}, NewError(ErrValidate, nil, "unexpected output from uv run: %q", out)
 	}
-	// The databricks-connect value is empty when the package is not installed.
+	// databricks-connect / pyspark versions are empty when the package is not installed
+	// as a distribution of its own; the import-error line is empty when the import worked.
 	dbcVer, _ := lineWithPrefix(out, validateDBCPrefix)
-	return pyVer, dbcVer, nil
+	pysparkVer, _ := lineWithPrefix(out, validatePysparkPrefix)
+	dbcImportErr, _ := lineWithPrefix(out, validateDBCImportPrefix)
+	return VenvInfo{
+		PythonMinor:        pyVer,
+		DBConnect:          dbcVer,
+		Pyspark:            pysparkVer,
+		DBConnectImportErr: dbcImportErr,
+	}, nil
 }
 
 // Validation output prefixes: uv run's stdout is grepped for these rather than
 // parsed positionally, so extra lines from uv or the interpreter don't break it.
 const (
-	validatePyPrefix  = "PYVER:"
-	validateDBCPrefix = "DBCVER:"
+	validatePyPrefix        = "PYVER:"
+	validateDBCPrefix       = "DBCVER:"
+	validatePysparkPrefix   = "PYSPARKVER:"
+	validateDBCImportPrefix = "DBCIMPORT:"
 )
 
 // lineWithPrefix returns the trimmed remainder of the first line in out that
@@ -192,14 +266,21 @@ func lineWithPrefix(out, prefix string) (string, bool) {
 }
 
 // syncArgs returns the argument slice for `uv sync` (without the binary),
-// pinning the interpreter to pyMinor via --python.
-func (m *uvManager) syncArgs(pyMinor string) []string {
-	return []string{"sync", "--python", pyMinor}
+// pinning the interpreter to python via --python.
+func (m *uvManager) syncArgs(python string) []string {
+	return []string{"sync", "--python", python}
 }
 
 // pythonInstallArgs returns the argument slice for `uv python install <minor>`.
 func (m *uvManager) pythonInstallArgs(minor string) []string {
 	return []string{"python", "install", minor}
+}
+
+// pythonFindArgs returns the arguments for locating an installed interpreter for
+// the target minor without downloading. --system ignores the project's own venv.
+// https://docs.astral.sh/uv/reference/cli/#uv-python-find
+func (m *uvManager) pythonFindArgs(minor string) []string {
+	return []string{"python", "find", "--system", "--no-python-downloads", "cpython@==" + minor + ".*"}
 }
 
 // pipSeedArgs returns the argument slice for seeding pip into the venv.
@@ -314,10 +395,19 @@ func redactURLCredentials(raw string) string {
 // "Connection refused") rather than just the exit code.
 func uvFailure(code ErrorCode, err error, action string) *PipelineError {
 	msg := action + " failed"
-	if perr, ok := errors.AsType[*process.ProcessError](err); ok && strings.TrimSpace(perr.Stderr) != "" {
-		msg = msg + ": " + strings.TrimSpace(perr.Stderr)
+	if stderr := uvStderr(err); stderr != "" {
+		msg = msg + ": " + stderr
 	}
 	return NewError(code, err, "%s", msg)
+}
+
+// uvStderr returns the trimmed stderr of a failed uv process, or "" when err is
+// not a process failure.
+func uvStderr(err error) string {
+	if perr, ok := errors.AsType[*process.ProcessError](err); ok {
+		return strings.TrimSpace(perr.Stderr)
+	}
+	return ""
 }
 
 // confirmUvInstall reports whether the caller has consented to installUv running

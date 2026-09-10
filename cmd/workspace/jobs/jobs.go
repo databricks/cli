@@ -1137,7 +1137,8 @@ func newListRuns() *cobra.Command {
 	cmd.Short = `List job runs.`
 	cmd.Long = `List job runs.
 
-  List runs in descending order by start time.`
+  List runs in descending order by end time. If a run has not finished, it falls
+  back to start time.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

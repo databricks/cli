@@ -1,4 +1,3 @@
 command:
-  - npm
-  - run
-  - run-app
+  - node
+  - app.js

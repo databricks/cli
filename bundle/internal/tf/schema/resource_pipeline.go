@@ -228,6 +228,10 @@ type ResourcePipelineIngestionDefinitionObjectsReport struct {
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration `json:"table_configuration,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsApiSourceConnectorOptions struct {
+	Options map[string]string `json:"options,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsConfluenceOptions struct {
 	IncludeConfluenceSpaces []string `json:"include_confluence_spaces,omitempty"`
 }
@@ -285,8 +289,10 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOption
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer struct {
-	Format      string                                                                                                 `json:"format,omitempty"`
-	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+	Format       string                                                                                                 `json:"format,omitempty"`
+	InputColumn  string                                                                                                 `json:"input_column,omitempty"`
+	OutputColumn string                                                                                                 `json:"output_column,omitempty"`
+	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
@@ -298,8 +304,10 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOption
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer struct {
-	Format      string                                                                                                   `json:"format,omitempty"`
-	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+	Format       string                                                                                                   `json:"format,omitempty"`
+	InputColumn  string                                                                                                   `json:"input_column,omitempty"`
+	OutputColumn string                                                                                                   `json:"output_column,omitempty"`
+	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions struct {
@@ -310,6 +318,23 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOption
 	Topics               []string                                                                                      `json:"topics,omitempty"`
 	KeyTransformer       *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer   `json:"key_transformer,omitempty"`
 	ValueTransformer     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer `json:"value_transformer,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsLinkedinAdsOptionsCustomReportOptions struct {
+	EntityGranularity []string `json:"entity_granularity,omitempty"`
+	Finder            string   `json:"finder"`
+	Metrics           []string `json:"metrics,omitempty"`
+	TimeGranularity   string   `json:"time_granularity,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsLinkedinAdsOptions struct {
+	LookbackWindowDays  int                                                                                                    `json:"lookback_window_days,omitempty"`
+	SyncStartDate       string                                                                                                 `json:"sync_start_date,omitempty"`
+	CustomReportOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsLinkedinAdsOptionsCustomReportOptions `json:"custom_report_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMarketoOptions struct {
+	SyncStartDate string `json:"sync_start_date,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptionsCustomReportOptions struct {
@@ -344,6 +369,10 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOpti
 	SenderFilter     []string `json:"sender_filter,omitempty"`
 	StartDate        string   `json:"start_date,omitempty"`
 	SubjectFilter    []string `json:"subject_filter,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRabbitmqOptions struct {
+	Queue string `json:"queue"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptionsCustomReportOptions struct {
@@ -411,18 +440,22 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsZendeskSupp
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions struct {
-	ConfluenceOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsConfluenceOptions     `json:"confluence_options,omitempty"`
-	GdriveOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptions         `json:"gdrive_options,omitempty"`
-	GoogleAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGoogleAdsOptions      `json:"google_ads_options,omitempty"`
-	JiraOptions           *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions           `json:"jira_options,omitempty"`
-	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
-	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
-	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
-	RedditAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptions      `json:"reddit_ads_options,omitempty"`
-	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
-	SmartsheetOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSmartsheetOptions     `json:"smartsheet_options,omitempty"`
-	TiktokAdsOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsTiktokAdsOptions      `json:"tiktok_ads_options,omitempty"`
-	ZendeskSupportOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsZendeskSupportOptions `json:"zendesk_support_options,omitempty"`
+	ApiSourceConnectorOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsApiSourceConnectorOptions `json:"api_source_connector_options,omitempty"`
+	ConfluenceOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsConfluenceOptions         `json:"confluence_options,omitempty"`
+	GdriveOptions             *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGdriveOptions             `json:"gdrive_options,omitempty"`
+	GoogleAdsOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsGoogleAdsOptions          `json:"google_ads_options,omitempty"`
+	JiraOptions               *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions               `json:"jira_options,omitempty"`
+	KafkaOptions              *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions              `json:"kafka_options,omitempty"`
+	LinkedinAdsOptions        *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsLinkedinAdsOptions        `json:"linkedin_ads_options,omitempty"`
+	MarketoOptions            *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMarketoOptions            `json:"marketo_options,omitempty"`
+	MetaAdsOptions            *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions            `json:"meta_ads_options,omitempty"`
+	OutlookOptions            *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOptions            `json:"outlook_options,omitempty"`
+	RabbitmqOptions           *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRabbitmqOptions           `json:"rabbitmq_options,omitempty"`
+	RedditAdsOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptions          `json:"reddit_ads_options,omitempty"`
+	SharepointOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptions         `json:"sharepoint_options,omitempty"`
+	SmartsheetOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSmartsheetOptions         `json:"smartsheet_options,omitempty"`
+	TiktokAdsOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsTiktokAdsOptions          `json:"tiktok_ads_options,omitempty"`
+	ZendeskSupportOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsZendeskSupportOptions     `json:"zendesk_support_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJsonOptions struct {
@@ -434,8 +467,10 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJson
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransforms struct {
-	Format      string                                                                              `json:"format,omitempty"`
-	JsonOptions *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJsonOptions `json:"json_options,omitempty"`
+	Format       string                                                                              `json:"format,omitempty"`
+	InputColumn  string                                                                              `json:"input_column,omitempty"`
+	OutputColumn string                                                                              `json:"output_column,omitempty"`
+	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJsonOptions `json:"json_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptions struct {
@@ -486,10 +521,14 @@ type ResourcePipelineIngestionDefinitionObjectsSchema struct {
 	DestinationCatalog string                                                              `json:"destination_catalog"`
 	DestinationSchema  string                                                              `json:"destination_schema"`
 	SourceCatalog      string                                                              `json:"source_catalog,omitempty"`
-	SourceSchema       string                                                              `json:"source_schema"`
+	SourceSchema       string                                                              `json:"source_schema,omitempty"`
 	ConnectorOptions   *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions   `json:"connector_options,omitempty"`
 	FanoutOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptions      `json:"fanout_options,omitempty"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsApiSourceConnectorOptions struct {
+	Options map[string]string `json:"options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsConfluenceOptions struct {
@@ -549,8 +588,10 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer struct {
-	Format      string                                                                                                `json:"format,omitempty"`
-	JsonOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+	Format       string                                                                                                `json:"format,omitempty"`
+	InputColumn  string                                                                                                `json:"input_column,omitempty"`
+	OutputColumn string                                                                                                `json:"output_column,omitempty"`
+	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
@@ -562,8 +603,10 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer struct {
-	Format      string                                                                                                  `json:"format,omitempty"`
-	JsonOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+	Format       string                                                                                                  `json:"format,omitempty"`
+	InputColumn  string                                                                                                  `json:"input_column,omitempty"`
+	OutputColumn string                                                                                                  `json:"output_column,omitempty"`
+	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions struct {
@@ -574,6 +617,23 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions
 	Topics               []string                                                                                     `json:"topics,omitempty"`
 	KeyTransformer       *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer   `json:"key_transformer,omitempty"`
 	ValueTransformer     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer `json:"value_transformer,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsLinkedinAdsOptionsCustomReportOptions struct {
+	EntityGranularity []string `json:"entity_granularity,omitempty"`
+	Finder            string   `json:"finder"`
+	Metrics           []string `json:"metrics,omitempty"`
+	TimeGranularity   string   `json:"time_granularity,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsLinkedinAdsOptions struct {
+	LookbackWindowDays  int                                                                                                   `json:"lookback_window_days,omitempty"`
+	SyncStartDate       string                                                                                                `json:"sync_start_date,omitempty"`
+	CustomReportOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsLinkedinAdsOptionsCustomReportOptions `json:"custom_report_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMarketoOptions struct {
+	SyncStartDate string `json:"sync_start_date,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptionsCustomReportOptions struct {
@@ -608,6 +668,10 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptio
 	SenderFilter     []string `json:"sender_filter,omitempty"`
 	StartDate        string   `json:"start_date,omitempty"`
 	SubjectFilter    []string `json:"subject_filter,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRabbitmqOptions struct {
+	Queue string `json:"queue"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptionsCustomReportOptions struct {
@@ -675,18 +739,22 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsZendeskSuppo
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions struct {
-	ConfluenceOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsConfluenceOptions     `json:"confluence_options,omitempty"`
-	GdriveOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptions         `json:"gdrive_options,omitempty"`
-	GoogleAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGoogleAdsOptions      `json:"google_ads_options,omitempty"`
-	JiraOptions           *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions           `json:"jira_options,omitempty"`
-	KafkaOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions          `json:"kafka_options,omitempty"`
-	MetaAdsOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions        `json:"meta_ads_options,omitempty"`
-	OutlookOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptions        `json:"outlook_options,omitempty"`
-	RedditAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptions      `json:"reddit_ads_options,omitempty"`
-	SharepointOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptions     `json:"sharepoint_options,omitempty"`
-	SmartsheetOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSmartsheetOptions     `json:"smartsheet_options,omitempty"`
-	TiktokAdsOptions      *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsTiktokAdsOptions      `json:"tiktok_ads_options,omitempty"`
-	ZendeskSupportOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsZendeskSupportOptions `json:"zendesk_support_options,omitempty"`
+	ApiSourceConnectorOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsApiSourceConnectorOptions `json:"api_source_connector_options,omitempty"`
+	ConfluenceOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsConfluenceOptions         `json:"confluence_options,omitempty"`
+	GdriveOptions             *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGdriveOptions             `json:"gdrive_options,omitempty"`
+	GoogleAdsOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsGoogleAdsOptions          `json:"google_ads_options,omitempty"`
+	JiraOptions               *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions               `json:"jira_options,omitempty"`
+	KafkaOptions              *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions              `json:"kafka_options,omitempty"`
+	LinkedinAdsOptions        *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsLinkedinAdsOptions        `json:"linkedin_ads_options,omitempty"`
+	MarketoOptions            *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMarketoOptions            `json:"marketo_options,omitempty"`
+	MetaAdsOptions            *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions            `json:"meta_ads_options,omitempty"`
+	OutlookOptions            *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptions            `json:"outlook_options,omitempty"`
+	RabbitmqOptions           *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRabbitmqOptions           `json:"rabbitmq_options,omitempty"`
+	RedditAdsOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptions          `json:"reddit_ads_options,omitempty"`
+	SharepointOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptions         `json:"sharepoint_options,omitempty"`
+	SmartsheetOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSmartsheetOptions         `json:"smartsheet_options,omitempty"`
+	TiktokAdsOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsTiktokAdsOptions          `json:"tiktok_ads_options,omitempty"`
+	ZendeskSupportOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsZendeskSupportOptions     `json:"zendesk_support_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableTableConfigurationAutoFullRefreshPolicy struct {
@@ -734,7 +802,7 @@ type ResourcePipelineIngestionDefinitionObjectsTable struct {
 	DestinationTable   string                                                             `json:"destination_table,omitempty"`
 	SourceCatalog      string                                                             `json:"source_catalog,omitempty"`
 	SourceSchema       string                                                             `json:"source_schema,omitempty"`
-	SourceTable        string                                                             `json:"source_table"`
+	SourceTable        string                                                             `json:"source_table,omitempty"`
 	ConnectorOptions   *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions   `json:"connector_options,omitempty"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration `json:"table_configuration,omitempty"`
 }
@@ -743,6 +811,10 @@ type ResourcePipelineIngestionDefinitionObjects struct {
 	Report *ResourcePipelineIngestionDefinitionObjectsReport `json:"report,omitempty"`
 	Schema *ResourcePipelineIngestionDefinitionObjectsSchema `json:"schema,omitempty"`
 	Table  *ResourcePipelineIngestionDefinitionObjectsTable  `json:"table,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionSourceConfigurationsApiSourceConnectorConfig struct {
+	Configs map[string]string `json:"configs,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionSourceConfigurationsCatalogPostgresSlotConfig struct {
@@ -764,8 +836,9 @@ type ResourcePipelineIngestionDefinitionSourceConfigurationsGoogleAdsConfig stru
 }
 
 type ResourcePipelineIngestionDefinitionSourceConfigurations struct {
-	Catalog         *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog         `json:"catalog,omitempty"`
-	GoogleAdsConfig *ResourcePipelineIngestionDefinitionSourceConfigurationsGoogleAdsConfig `json:"google_ads_config,omitempty"`
+	ApiSourceConnectorConfig *ResourcePipelineIngestionDefinitionSourceConfigurationsApiSourceConnectorConfig `json:"api_source_connector_config,omitempty"`
+	Catalog                  *ResourcePipelineIngestionDefinitionSourceConfigurationsCatalog                  `json:"catalog,omitempty"`
+	GoogleAdsConfig          *ResourcePipelineIngestionDefinitionSourceConfigurationsGoogleAdsConfig          `json:"google_ads_config,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionTableConfigurationAutoFullRefreshPolicy struct {

@@ -102,7 +102,6 @@ type ResourceAiGatewayModelServiceProviderConfig struct {
 }
 
 type ResourceAiGatewayModelService struct {
-	BrowseOnly        bool                                         `json:"browse_only,omitempty"`
 	Comment           string                                       `json:"comment,omitempty"`
 	Config            *ResourceAiGatewayModelServiceConfig         `json:"config,omitempty"`
 	CreateTime        string                                       `json:"create_time,omitempty"`

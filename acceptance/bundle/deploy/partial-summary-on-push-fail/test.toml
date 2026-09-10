@@ -1,0 +1,8 @@
+# The resource summary must not print when pushing resource state fails, so the
+# fault is injected on the state upload (POST import-file). The path is fixed, so
+# the bundle name must be stable (test-bundle, not $UNIQUE_NAME).
+#
+# The injected path is the direct-engine state file (state/resources.json), so
+# this runs on the direct engine only.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Ignore = [".databricks", ".gitignore"]

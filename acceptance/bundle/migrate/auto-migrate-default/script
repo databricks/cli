@@ -1,0 +1,24 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy opts out of direct, so it uses the terraform engine"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "Redeploy with nothing set: direct is the default, so auto-migration triggers"
+trace $CLI bundle deploy
+trace print_migration_telemetry
+rm -f out.requests.txt
+
+title "Direct-engine state is now in place; terraform state is backed up\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+title "Remote state also reflects the migration (force-pull surfaces workspace state)\n"
+trace $CLI bundle debug states --force-pull
+
+title "Subsequent deploy is a no-op on direct"
+trace $CLI bundle deploy
+trace print_migration_telemetry
+
+rm -f out.requests.txt

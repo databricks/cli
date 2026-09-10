@@ -46,7 +46,7 @@ func TestCreateGitArchiveSnapshot(t *testing.T) {
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	dirName := filepath.Base(repo)
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, nil))
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, nil, ""))
 
 	entries := tarballEntries(t, out)
 	// Every real entry is prefixed with the directory name. git archive also emits a
@@ -70,11 +70,56 @@ func TestCreateGitArchiveSnapshot_IncludePaths(t *testing.T) {
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
 	dirName := filepath.Base(repo)
-	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, []string{"src"}))
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(repo), sha, out, dirName, []string{"src"}, ""))
 
 	entries := tarballEntries(t, out)
 	assert.Contains(t, entries, dirName+"/src/model.py")
 	assert.NotContains(t, entries, dirName+"/a.txt")
+}
+
+func TestCreateGitArchiveSnapshot_SubdirectoryRootPath(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "README.md", "repo root")
+	writeRepoFile(t, repo, "subpkg/train.py", "print()")
+	writeRepoFile(t, repo, "subpkg/nested/util.py", "pass")
+	sha := commitAll(t, repo, "init")
+
+	rootPath := filepath.Join(repo, "subpkg")
+	prefix, err := newGitRepo(rootPath).repoRelativePrefix(ctx)
+	require.NoError(t, err)
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(rootPath), sha, out, "subpkg", nil, prefix))
+
+	entries := tarballEntries(t, out)
+	assert.Contains(t, entries, "subpkg/train.py")
+	assert.Contains(t, entries, "subpkg/nested/util.py")
+	assert.NotContains(t, entries, "subpkg/README.md")
+	for _, entry := range entries {
+		assert.False(t, strings.HasPrefix(entry, "subpkg/subpkg/"), "entry %q is double nested", entry)
+	}
+}
+
+func TestCreateGitArchiveSnapshot_SubdirectoryRootPathWithIncludePaths(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "subpkg/train.py", "print()")
+	writeRepoFile(t, repo, "subpkg/src/model.py", "pass")
+	writeRepoFile(t, repo, "subpkg/configs/train.yaml", "x")
+	sha := commitAll(t, repo, "init")
+
+	rootPath := filepath.Join(repo, "subpkg")
+	prefix, err := newGitRepo(rootPath).repoRelativePrefix(ctx)
+	require.NoError(t, err)
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createGitArchiveSnapshot(ctx, newGitRepo(rootPath), sha, out, "subpkg", []string{"src"}, prefix))
+
+	entries := tarballEntries(t, out)
+	assert.Contains(t, entries, "subpkg/src/model.py")
+	assert.NotContains(t, entries, "subpkg/train.py")
+	assert.NotContains(t, entries, "subpkg/configs/train.yaml")
 }
 
 func TestCreatePlainTarball(t *testing.T) {
@@ -87,7 +132,7 @@ func TestCreatePlainTarball(t *testing.T) {
 	writeRepoFile(t, repo, ".git/config", "x")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createPlainTarball(ctx, repo, out, nil))
+	require.NoError(t, createPlainTarball(ctx, repo, out, nil, false))
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -107,7 +152,7 @@ func TestCreatePlainTarball_HonorsGitignore(t *testing.T) {
 	writeRepoFile(t, repo, ".gitignore", "*.log\n")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createPlainTarball(ctx, repo, out, nil))
+	require.NoError(t, createPlainTarball(ctx, repo, out, nil, false))
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -122,7 +167,7 @@ func TestCreatePlainTarball_IncludePaths(t *testing.T) {
 	writeRepoFile(t, repo, "src/model.py", "print()")
 
 	out := filepath.Join(t.TempDir(), "snap.tar.gz")
-	require.NoError(t, createPlainTarball(ctx, repo, out, []string{"src"}))
+	require.NoError(t, createPlainTarball(ctx, repo, out, []string{"src"}, false))
 
 	dirName := filepath.Base(repo)
 	entries := tarballEntries(t, out)
@@ -130,32 +175,42 @@ func TestCreatePlainTarball_IncludePaths(t *testing.T) {
 	assert.NotContains(t, entries, dirName+"/a.txt")
 }
 
-func TestParseGitignore(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, ".gitignore")
-	content := "# comment\n" +
-		"\n" +
-		"*.log\n" +
-		"!keep.log\n" + // negation: skipped
-		"build/\n" + // trailing slash stripped
-		"**/node_modules\n" + // **/foo -> foo
-		"dist/**\n" + // foo/** -> foo
-		"a/**/b\n" + // mid ** : skipped
-		"src/config\n" // path-relative kept as-is
-	require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+func TestCreatePlainTarball_HonorsNestedGitignoreAndNegation(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, ".gitignore", "*.log\n!keep.log\n/root-only.txt\n")
+	writeRepoFile(t, repo, "drop.log", "drop")
+	writeRepoFile(t, repo, "keep.log", "keep")
+	writeRepoFile(t, repo, "root-only.txt", "drop")
+	writeRepoFile(t, repo, "nested/root-only.txt", "keep")
+	writeRepoFile(t, repo, "nested/.gitignore", "*.tmp\n!keep.tmp\n")
+	writeRepoFile(t, repo, "nested/drop.tmp", "drop")
+	writeRepoFile(t, repo, "nested/keep.tmp", "keep")
 
-	patterns, err := parseGitignore(path)
-	require.NoError(t, err)
-	assert.Equal(t, []string{
-		"*.log",
-		"build",
-		"node_modules",
-		"dist",
-		"src/config",
-	}, patterns)
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil, false))
+
+	dirName := filepath.Base(repo)
+	entries := tarballEntries(t, out)
+	assert.NotContains(t, entries, dirName+"/drop.log")
+	assert.Contains(t, entries, dirName+"/keep.log")
+	assert.NotContains(t, entries, dirName+"/root-only.txt")
+	assert.Contains(t, entries, dirName+"/nested/root-only.txt")
+	assert.NotContains(t, entries, dirName+"/nested/drop.tmp")
+	assert.Contains(t, entries, dirName+"/nested/keep.tmp")
 }
 
-func TestParseGitignore_Missing(t *testing.T) {
-	_, err := parseGitignore(filepath.Join(t.TempDir(), "nope"))
-	require.Error(t, err)
+func TestCreatePlainTarball_SkipsDeletedTrackedFiles(t *testing.T) {
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "keep.txt", "keep")
+	writeRepoFile(t, repo, "deleted.txt", "deleted")
+	commitAll(t, repo, "init")
+	require.NoError(t, os.Remove(filepath.Join(repo, "deleted.txt")))
+
+	out := filepath.Join(t.TempDir(), "snap.tar.gz")
+	require.NoError(t, createPlainTarball(t.Context(), repo, out, nil, true))
+
+	dirName := filepath.Base(repo)
+	entries := tarballEntries(t, out)
+	assert.Contains(t, entries, dirName+"/keep.txt")
+	assert.NotContains(t, entries, dirName+"/deleted.txt")
 }

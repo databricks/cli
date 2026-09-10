@@ -6,15 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
@@ -167,6 +168,13 @@ func TestToken_loadToken(t *testing.T) {
 				Name: "valid-token",
 				Host: "https://valid-token.cloud.databricks.com",
 			},
+			{
+				Name:      "custom-client",
+				Host:      "https://accounts.cloud.databricks.com",
+				AccountID: "custom-client",
+				AuthType:  authTypeDatabricksCLI,
+				ClientID:  "custom-client-id",
+			},
 		},
 	}
 	tokenStore := &inMemoryStore{
@@ -217,6 +225,9 @@ func TestToken_loadToken(t *testing.T) {
 				AccessToken:  "cached-access-token",
 				RefreshToken: "valid-token",
 				Expiry:       time.Now().Add(1 * time.Hour),
+			},
+			"custom-client": {
+				RefreshToken: "custom-refresh-token",
 			},
 		},
 	}
@@ -320,6 +331,35 @@ func TestToken_loadToken(t *testing.T) {
 					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenStore)),
 					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
 					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
+				},
+			},
+			validateToken: validateToken,
+		},
+		{
+			name: "profile client ID is used for refresh",
+			args: loadTokenArgs{
+				authArguments: &auth.AuthArguments{},
+				profileName:   "custom-client",
+				args:          []string{},
+				tokenTimeout:  time.Hour,
+				profiler:      profiler,
+				tokenStore:    tokenStore,
+				persistentAuthOpts: []u2m.PersistentAuthOption{
+					u2m.WithTokenCache(storage.ToU2MTokenCache(tokenStore)),
+					u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+					u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{{
+						MatchAny: true,
+						ExpectedRequest: url.Values{
+							"client_id":     {"custom-client-id"},
+							"grant_type":    {"refresh_token"},
+							"refresh_token": {"custom-refresh-token"},
+						},
+						Response: map[string]string{
+							"access_token": "new-access-token",
+							"token_type":   "Bearer",
+							"expires_in":   "3600",
+						},
+					}}}),
 				},
 			},
 			validateToken: validateToken,

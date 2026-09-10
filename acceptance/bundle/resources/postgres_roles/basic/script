@@ -19,6 +19,10 @@ branch_name="${project_name}/branches/main"
 role_name="${branch_name}/roles/test-role"
 trace $CLI postgres get-role "${role_name}" | role_fields
 
+# Postgres roles have no workspace URL, so opening one reports that rather than
+# suggesting a deploy.
+trace musterr $CLI bundle open my_role
+
 trace $CLI bundle summary
 
 # Filter requests to only show postgres operations (exclude workspace, telemetry, and operation polling)

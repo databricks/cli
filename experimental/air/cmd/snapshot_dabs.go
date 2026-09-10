@@ -23,6 +23,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+// uploadProvenanceSidecars controls collection and upload of git_state.json
+// and git_diff.patch during submission. Keep the implementation available, but
+// turn it off for now because the additional local queries and WSFS writes add
+// latency to AIR submissions.
+const uploadProvenanceSidecars = false
+
 // snapshotViaDABsUpload packages the code_source into a tarball and uploads it using
 // DABs' artifact-upload plumbing (the same path a bundle uses for a file-valued
 // code_source_path), returning the remote path to attach to the ai_runtime_task.
@@ -62,13 +68,14 @@ func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, s
 	// than failing an otherwise-valid submission.
 	//
 	// The sidecars are deliberately NOT bundled into the code tarball. The git_archive
-	// tarball is content-addressed and cached by (commit, include_paths), so a second
-	// run at the same commit reuses it; but the sidecars vary per run (git_state's
-	// timestamp, and git_diff captures the working tree at submit time). Folding them
-	// in would force a distinct tarball per run (defeating the cache) or serve a prior
-	// run's stale provenance on a cache hit. They also live in the per-run launch dir,
+	// tarball is content-addressed and cached by (commit, include_paths, root_path
+	// subtree), so a second identical snapshot reuses it; but the sidecars vary per
+	// run (git_state's timestamp, and git_diff captures the working tree at submit
+	// time). Folding them in would force a distinct tarball per run (defeating the
+	// cache) or serve a prior run's stale provenance on a cache hit. They also live in
+	// the per-run launch dir,
 	// not the shared artifact dir, so they don't accumulate. Keep them out of the tar.
-	if plan.isGitRepo {
+	if uploadProvenanceSidecars && plan.isGitRepo {
 		result.GitStatePath, result.GitDiffPath = uploadSnapshotSidecars(ctx, sidecarStore, sidecarBase, newGitRepo(repoPath), plan)
 	}
 	return result, nil
@@ -87,7 +94,7 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 		pinnedTip = plan.commitSHA
 	}
 
-	sidecar, err := buildGitStateSidecar(ctx, git, mode, pinnedTip, time.Now())
+	sidecar, err := buildGitStateSidecar(ctx, git, mode, pinnedTip, plan.hasUncommit, time.Now())
 	if err != nil {
 		log.Warnf(ctx, "skipping git provenance sidecar: %v", err)
 		return "", ""
@@ -95,7 +102,7 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 
 	// Capture the dirty diff first so its status/path land in git_state.json.
 	if sidecar.Dirty {
-		status, diff := captureDirtyDiff(ctx, git, dirtyDiffSizeCapBytes, dirtyDiffTimeout)
+		status, diff := captureDirtyDiff(ctx, git, plan.includePaths, dirtyDiffSizeCapBytes, dirtyDiffTimeout)
 		sidecar.DiffStatus = status
 		if status == diffStatusCaptured {
 			if err := sidecarStore.Write(ctx, gitDiffName, bytes.NewReader(diff), filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
@@ -121,14 +128,14 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 }
 
 // snapshotTarballName is the uploaded filename for the snapshot. It is deterministic
-// for git_archive — <dirName>_<cacheKey>.tar.gz keyed on (commit, include_paths) — so
-// an identical commit reuses the same remote object (see the cache check below). For
-// plain_tar it is timestamped so concurrent submissions of the same directory don't
-// clobber each other's upload (working-tree content isn't pinned to a SHA, so it
-// can't be content-addressed).
+// for git_archive — <dirName>_<cacheKey>.tar.gz keyed on (commit, include_paths,
+// root_path subtree) — so an identical snapshot reuses the same remote object (see
+// the cache check below). For plain_tar it is timestamped so concurrent submissions
+// of the same directory don't clobber each other's upload (working-tree content
+// isn't pinned to a SHA, so it can't be content-addressed).
 func snapshotTarballName(plan snapshotPlan, dirName string) string {
 	if plan.mode == modeGitArchive {
-		key := computeSnapshotCacheKey(plan.commitSHA, plan.includePaths)
+		key := computeSnapshotCacheKey(plan.commitSHA, plan.includePaths, plan.subtreePrefix)
 		return fmt.Sprintf("%s_%s.tar.gz", dirName, key[:16])
 	}
 	return fmt.Sprintf("%s_%s.tar.gz", dirName, time.Now().UTC().Format("20060102_150405"))
@@ -139,9 +146,9 @@ func snapshotTarballName(plan snapshotPlan, dirName string) string {
 func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, tarball string) error {
 	dirName := filepath.Base(repoPath)
 	if plan.mode == modeGitArchive {
-		return createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, dirName, plan.includePaths)
+		return createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, dirName, plan.includePaths, plan.subtreePrefix)
 	}
-	return createPlainTarball(ctx, repoPath, tarball, plan.includePaths)
+	return createPlainTarball(ctx, repoPath, tarball, plan.includePaths, plan.isGitRepo)
 }
 
 // uploadSnapshotViaDABs uploads the snapshot through DABs' artifact-upload machinery
@@ -151,8 +158,8 @@ func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, ta
 // tarball goes to that UC Volume; otherwise to the user's repo_snapshots dir.
 //
 // git_archive snapshots are cacheable: the tarball name is content-addressed by
-// (commit, include_paths), so if the identical object is already uploaded we skip
-// packaging and upload entirely and just reuse the remote path.
+// (commit, include_paths, root_path subtree), so if the identical object is already
+// uploaded we skip packaging and upload entirely and just reuse the remote path.
 func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, remoteVolume string) (snapshotResult, error) {
 	// artifactPath is where DABs uploads the tarball; GetFilerForLibraries routes to
 	// a Workspace or Volume filer based on its prefix, then appends /.internal.
@@ -204,9 +211,9 @@ func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, r
 		return snapshotResult{}, err
 	}
 
-	// git_archive is cacheable by (commit, include_paths): if the identical tarball is
-	// already uploaded, skip packaging + upload and reuse it. Only the config-path
-	// rewrite (ReplaceWithRemotePath) runs — no bytes move.
+	// git_archive is cacheable by (commit, include_paths, root_path subtree): if the
+	// identical tarball is already uploaded, skip packaging + upload and reuse it.
+	// Only the config-path rewrite (ReplaceWithRemotePath) runs — no bytes move.
 	if plan.mode == modeGitArchive {
 		f, uploadPath, diags := libraries.GetFilerForLibraries(ctx, b)
 		if diags.HasError() {

@@ -1,7 +1,5 @@
-preflight  ok  check
-resolve    ok  source=cluster envKey=dbr/15.4.x-scala2.12
-fetch      error  no published environment for "dbr/15.4.x-scala2.12". If this is a new runtime, try the latest LTS target (e.g. --serverless-version 5 or a supported --cluster-id DBR): GET [DATABRICKS_URL]/dbr/15.4.x-scala2.12/pyproject.toml: environment key not found
-merge      pending
-provision  pending
-validate   pending
-For more detail, re-run with --debug, or --output json to share a structured report.
+✗ Setup failed while fetching constraints.
+
+  no published environment for "dbr/15.4.x-scala2.12". If this is a new runtime, try the latest LTS target (e.g. --serverless-version 5 or a supported --cluster-id DBR): GET [DATABRICKS_URL]/dbr/15.4.x-scala2.12/pyproject.toml: environment key not found
+
+Re-run with --debug for details, or --output json for a structured report.

@@ -22,6 +22,11 @@ var knownMissingInRemoteType = map[string][]string{
 	"model_serving_endpoints": {
 		"rate_limits",
 	},
+	"pipelines": {
+		// Note that this is a deliberate omission: cascade_on_destroy is a client-side-only field.
+		// It has no remote counterpart, so it is never expected in RemoteType.
+		"cascade_on_destroy",
+	},
 	"quality_monitors": {
 		"skip_builtin_dashboard",
 		"warehouse_id",
@@ -51,6 +56,15 @@ var knownMissingInRemoteType = map[string][]string{
 	"vector_search_endpoints": {
 		"usage_policy_id",
 	},
+	"internal_immutable_snapshots": {
+		"bundle_id",
+		"acl",
+		"zip_path",
+	},
+	"job_runs": {
+		// Local-only trigger fingerprints under lifecycle.
+		"lifecycle",
+	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.
@@ -77,6 +91,11 @@ var knownMissingInStateType = map[string][]string{
 	"sql_warehouses": {
 		"lifecycle.prevent_destroy",
 	},
+	"job_runs": {
+		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
+		"lifecycle.prevent_destroy",
+		"lifecycle.triggers[*]",
+	},
 	"dashboards": {
 		"file_path",
 	},
@@ -87,6 +106,11 @@ var knownMissingInStateType = map[string][]string{
 		"backend_type",
 		"keyvault_metadata",
 		"name",
+	},
+	"internal_immutable_snapshots": {
+		// RemoteRoot is only the input used to compose FullPath; the state persists
+		// the composed FullPath (and RelativePath), so it isn't kept in state.
+		"remote_root",
 	},
 }
 

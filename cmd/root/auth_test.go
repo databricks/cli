@@ -229,6 +229,64 @@ func TestWorkspaceClientOrPrompt(t *testing.T) {
 	})
 }
 
+// TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile drives the
+// full picker path: with no profile specified, MustWorkspaceClient prompts,
+// picks the only profile, and its cached token fails to refresh. The picked
+// profile lives on a client the picker builds internally, not on the caller's
+// config, so the actionable error must be rendered against the client's config.
+// Before the fix the picker returned a nil client and the user saw the raw
+// "token refresh: ... invalid_grant" error instead. A single-profile store lets
+// AskForWorkspaceProfile resolve without interactive input.
+func TestMustWorkspaceClientRewritesInvalidRefreshTokenForPickedProfile(t *testing.T) {
+	// Fake OIDC endpoints: discovery succeeds, token refresh is rejected as if
+	// the cached refresh token were invalid.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/oidc/.well-known/oauth-authorization-server":
+			fmt.Fprintf(w, `{"authorization_endpoint":"http://%[1]s/oidc/v1/authorize","token_endpoint":"http://%[1]s/oidc/v1/token"}`, r.Host)
+		case "/oidc/v1/token":
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, `{"error":"invalid_grant","error_description":"Refresh token is invalid"}`)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	// Isolate the auth-relevant environment directly rather than via
+	// CleanupEnvironment: that helper calls os.Clearenv, which makes the
+	// httptest server above fail to bind on the Windows CI runner. The other
+	// httptest-based tests avoid it for the same reason.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("DATABRICKS_AUTH_STORAGE", "plaintext")
+	t.Setenv("DATABRICKS_CACHE_DIR", t.TempDir())
+	t.Setenv("DATABRICKS_HOST", "")
+	t.Setenv("DATABRICKS_TOKEN", "")
+	t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
+
+	configFile := filepath.Join(home, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configFile,
+		[]byte("[only-workspace]\nhost = "+server.URL+"\nauth_type = databricks-cli\n"), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+
+	// Expired cached token (keyed by profile name) so the command triggers a
+	// refresh, which the server rejects.
+	require.NoError(t, os.MkdirAll(filepath.Join(home, ".databricks"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".databricks", "token-cache.json"),
+		[]byte(`{"version":1,"tokens":{"only-workspace":{"access_token":"x","token_type":"Bearer","refresh_token":"rt","expiry":"2020-01-01T00:00:00Z"}}}`), 0o600))
+
+	ctx, tt := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	t.Cleanup(tt.Done)
+	cmd := New(ctx)
+
+	err := MustWorkspaceClient(cmd, []string{})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "A new access token could not be retrieved because the refresh token is invalid")
+	assert.Contains(t, err.Error(), "databricks auth login --profile only-workspace")
+}
+
 func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 

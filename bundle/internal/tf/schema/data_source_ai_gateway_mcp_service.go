@@ -28,7 +28,6 @@ type DataSourceAiGatewayMcpServiceProviderConfig struct {
 }
 
 type DataSourceAiGatewayMcpService struct {
-	BrowseOnly     bool                                         `json:"browse_only,omitempty"`
 	Comment        string                                       `json:"comment,omitempty"`
 	Config         *DataSourceAiGatewayMcpServiceConfig         `json:"config,omitempty"`
 	CreateTime     string                                       `json:"create_time,omitempty"`

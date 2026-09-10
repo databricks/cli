@@ -62,7 +62,7 @@ func TestBuildArtifacts_ParametersButNoRequirements(t *testing.T) {
 	cfg := &runConfig{
 		Command: new("echo hi"),
 		Environment: &environmentConfig{
-			Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
+			Dependencies: dependencies{set: true, list: []string{"torch", "numpy"}},
 			Version:      stringOrInt{set: true, raw: "5"},
 		},
 		Parameters: map[string]any{"lr": 0.1},
@@ -92,21 +92,6 @@ func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
 	}
 	assert.JSONEq(t, `[{"name":"WANDB","value":"demo"}]`, string(byName[envVarsName]))
 	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
-}
-
-func TestBuildArtifacts_RequirementsFileNotUploaded(t *testing.T) {
-	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "run.yaml"), []byte("x: y\n"), 0o600))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "reqs.yaml"), []byte("version: 4\n"), 0o600))
-	cfg := &runConfig{
-		Command:     new("echo hi"),
-		Environment: &environmentConfig{Dependencies: dependencies{set: true, isList: false, path: "reqs.yaml"}},
-	}
-
-	// A declared requirements file is not uploaded; its deps travel on spec.dependencies.
-	items, err := buildArtifacts(cfg, filepath.Join(dir, "run.yaml"))
-	require.NoError(t, err)
-	assert.Equal(t, []string{trainingConfigName, commandScriptName}, itemNames(items))
 }
 
 func TestBuildArtifacts_OversizeConfigRejected(t *testing.T) {

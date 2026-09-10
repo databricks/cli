@@ -153,7 +153,7 @@ func TestRenderFields(t *testing.T) {
 		mlflowURL:    "https://h.test/ml/experiments/E1/runs/R1",
 		user:         "user@example.com",
 		accelerators: "1x A10",
-		environment:  "ml-runtime-gpu:1.0",
+		environment:  "4",
 	})
 
 	// Labels are padded to the longest ("Accelerators"), so values align.
@@ -161,7 +161,7 @@ func TestRenderFields(t *testing.T) {
 	assert.Contains(t, out, "Accelerators  1x A10")
 	// Max retries and environment show alongside the other fields.
 	assert.Contains(t, out, "Max Retries   3")
-	assert.Contains(t, out, "Environment   ml-runtime-gpu:1.0")
+	assert.Contains(t, out, "Environment   4")
 	// The status carries its dot prefix.
 	assert.Contains(t, out, "● SUCCESS")
 	// Off a terminal, links render as the bare label (URLs live in JSON output).

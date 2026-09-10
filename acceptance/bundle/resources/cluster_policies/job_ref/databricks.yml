@@ -1,0 +1,24 @@
+bundle:
+  name: cluster_policy_job_ref
+
+resources:
+  cluster_policies:
+    pol:
+      name: my_policy
+      definition: |-
+        {
+          "spark_version": {
+            "type": "fixed",
+            "value": "13.3.x-scala2.12"
+          }
+        }
+
+  jobs:
+    j:
+      name: my_job
+      tasks:
+        - task_key: main
+          new_cluster:
+            policy_id: ${resources.cluster_policies.pol.id}
+            spark_version: 13.3.x-scala2.12
+            num_workers: 1

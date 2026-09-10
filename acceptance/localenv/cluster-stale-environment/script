@@ -1,0 +1,15 @@
+# An existing project set up for serverless carries [tool.databricks.environment].
+# Re-running against a cluster target leaves it untouched but warns it is stale.
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = ">=3.11"
+
+[dependency-groups]
+dev = ["databricks-connect~=15.4.0"]
+
+[tool.databricks.environment]
+environment_version = "5"
+PY
+
+trace $CLI environments setup-local --cluster-name my-cluster --dry-run

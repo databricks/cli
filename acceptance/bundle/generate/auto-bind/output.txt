@@ -10,7 +10,6 @@ Created job with ID: [NUMID]
 >>> [CLI] bundle generate job --key test_job --existing-job-id [NUMID] --config-dir resources --source-dir src --bind
 File successfully saved to src/test.py
 Job configuration successfully saved to resources/test_job.job.yml
-Updating deployment state...
 Successfully bound job with an id '[NUMID]'
 
 >>> ls src/
@@ -22,9 +21,9 @@ test.py
 === Deploy the bound job:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated jobs.test_job
+Files: 8 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Destroy the bundle:
 >>> [CLI] bundle destroy --auto-approve
@@ -33,8 +32,7 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
 === Check that job is bound and does not exist after bundle is destroyed:
 >>> errcode [CLI] jobs get [NUMID] --output json

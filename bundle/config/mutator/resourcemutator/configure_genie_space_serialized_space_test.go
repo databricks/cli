@@ -70,7 +70,15 @@ func TestConfigureGenieSpaceSerializedSpace(t *testing.T) {
 			name:            "non-structured serialized_space is rejected",
 			setSerialized:   true,
 			serializedSpace: true,
-			wantErr:         "serialized_space must be a string, map, or sequence, got bool",
+			wantErr:         "serialized_space must be a string or map, got bool",
+		},
+		{
+			// A top-level sequence is valid JSON but meaningless for a genie space,
+			// so it is rejected rather than marshaled like an inline map.
+			name:            "inline sequence is rejected",
+			setSerialized:   true,
+			serializedSpace: []any{map[string]any{"version": 1}},
+			wantErr:         "serialized_space must be a string or map, got sequence",
 		},
 		{
 			name:     "unreadable file_path is an error",

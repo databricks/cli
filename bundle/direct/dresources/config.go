@@ -79,6 +79,9 @@ type ResourceLifecycleConfig struct {
 	// BackendDefaults: fields where the backend may set defaults.
 	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
 	BackendDefaults []BackendDefaultRule `yaml:"backend_defaults,omitempty"`
+
+	// SensitiveFields: fields that are sensitive and should not be logged.
+	SensitiveFields []FieldRule `yaml:"sensitive_fields,omitempty"`
 }
 
 // Config is the root configuration structure for resource lifecycle behavior.
@@ -100,6 +103,7 @@ var empty = ResourceLifecycleConfig{
 	UpdatableIDFields:   nil,
 	NormalizeSlash:      nil,
 	BackendDefaults:     nil,
+	SensitiveFields:     nil,
 }
 
 func mustParseConfig(data []byte) func() *Config {

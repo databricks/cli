@@ -158,14 +158,16 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.DeprecationMessage = a.DeprecationMessage
 	}
 
-	// Private-preview fields are hidden from completions and surfaced to
-	// downstream codegen via the launch stage: pydabs reads
-	// x-databricks-launch-stage from jsonschema.json to mark these fields
-	// experimental. Only the private-preview stage is emitted into the published
-	// schema — nothing consumes the others there; they surface only as the
-	// description prefix below and the per-value enumDescriptions labels.
+	// Private-preview fields are hidden from completions.
 	if a.LaunchStage == clijson.LaunchStagePrivatePreview {
 		s.DoNotSuggest = true
+	}
+
+	// Emit the launch stage for every field the contract stamps (GA included) so
+	// downstream codegen can read each field's stability, not just private
+	// preview. Fields the contract leaves unstamped stay empty. pydabs reads
+	// x-databricks-launch-stage from jsonschema.json.
+	if a.LaunchStage != "" {
 		s.LaunchStage = string(a.LaunchStage)
 	}
 

@@ -38,5 +38,5 @@
     "message": "invalid compute target flags: flags --cluster-id and --serverless-version are mutually exclusive; specify at most one",
     "diskMutated": false
   },
-  "durationMs": 0
+  "durationMs": [DURATION_MS]
 }

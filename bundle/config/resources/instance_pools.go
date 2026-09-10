@@ -53,7 +53,3 @@ func (s *InstancePool) InitializeURL(baseURL url.URL) {
 func (s *InstancePool) GetName() string {
 	return s.InstancePoolName
 }
-
-func (s *InstancePool) GetURL() string {
-	return s.URL
-}

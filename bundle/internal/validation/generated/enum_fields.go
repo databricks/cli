@@ -6,7 +6,7 @@ package generated
 // EnumFields maps [dyn.Pattern] to valid enum values they should have.
 var EnumFields = map[string][]string{
 	"artifacts.*.executable": {"bash", "sh", "cmd"},
-	"artifacts.*.type":       {"whl", "jar"},
+	"artifacts.*.type":       {"whl", "jar", "tgz"},
 
 	"permissions[*].level": {"CAN_ATTACH_TO", "CAN_BIND", "CAN_CREATE", "CAN_CREATE_APP", "CAN_EDIT", "CAN_EDIT_METADATA", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_RUN", "CAN_MANAGE_STAGING_VERSIONS", "CAN_MONITOR", "CAN_MONITOR_ONLY", "CAN_QUERY", "CAN_READ", "CAN_RESTART", "CAN_RUN", "CAN_USE", "CAN_VIEW", "CAN_VIEW_METADATA", "IS_OWNER"},
 
@@ -41,6 +41,8 @@ var EnumFields = map[string][]string{
 
 	"resources.catalogs.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
+	"resources.cluster_policies.*.permissions[*].level": {"CAN_USE"},
+
 	"resources.clusters.*.aws_attributes.availability":              {"ON_DEMAND", "SPOT", "SPOT_WITH_FALLBACK"},
 	"resources.clusters.*.aws_attributes.ebs_volume_type":           {"GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"},
 	"resources.clusters.*.azure_attributes.availability":            {"ON_DEMAND_AZURE", "SPOT_AZURE", "SPOT_WITH_FALLBACK_AZURE"},
@@ -74,6 +76,7 @@ var EnumFields = map[string][]string{
 
 	"resources.job_runs.*.performance_target": {"PERFORMANCE_OPTIMIZED", "STANDARD"},
 
+	"resources.jobs.*.continuous.maintenance_window.day_of_week":                                           {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 	"resources.jobs.*.continuous.pause_status":                                                             {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.continuous.task_retry_mode":                                                          {"NEVER", "ON_FAILURE"},
 	"resources.jobs.*.deployment.kind":                                                                     {"BUNDLE", "SYSTEM_MANAGED"},
@@ -97,11 +100,11 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.schedule.pause_status":                                                               {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.schedule.sql_condition.trigger_mode":                                                 {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
 	"resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].compute.accelerator_type":                    {"GPU_1xA10", "GPU_1xH100", "GPU_8xH100"},
-	"resources.jobs.*.tasks[*].compute.hardware_accelerator":                                               {"GPU_1xA10", "GPU_8xH100"},
+	"resources.jobs.*.tasks[*].compute.hardware_accelerator":                                               {"GPU_1xA10", "GPU_1xH100", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].condition_task.op":                                                          {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].dbt_task.source":                                                            {"GIT", "WORKSPACE"},
 	"resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute.accelerator_type": {"GPU_1xA10", "GPU_1xH100", "GPU_8xH100"},
-	"resources.jobs.*.tasks[*].for_each_task.task.compute.hardware_accelerator":                            {"GPU_1xA10", "GPU_8xH100"},
+	"resources.jobs.*.tasks[*].for_each_task.task.compute.hardware_accelerator":                            {"GPU_1xA10", "GPU_1xH100", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].for_each_task.task.condition_task.op":                                       {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].for_each_task.task.dbt_task.source":                                         {"GIT", "WORKSPACE"},
 	"resources.jobs.*.tasks[*].for_each_task.task.gen_ai_compute_task.source":                              {"GIT", "WORKSPACE"},
@@ -147,6 +150,13 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.trigger.periodic.unit":                                                               {"DAYS", "HOURS", "MINUTES", "WEEKS"},
 	"resources.jobs.*.trigger.sql_condition.trigger_mode":                                                  {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
 	"resources.jobs.*.trigger.table_update.condition":                                                      {"ALL_UPDATED", "ANY_UPDATED"},
+	"resources.jobs.*.triggers[*].continuous.maintenance_window.day_of_week":                               {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
+	"resources.jobs.*.triggers[*].continuous.task_retry_mode":                                              {"NEVER", "ON_FAILURE"},
+	"resources.jobs.*.triggers[*].model.condition":                                                         {"MODEL_ALIAS_SET", "MODEL_CREATED", "MODEL_VERSION_READY"},
+	"resources.jobs.*.triggers[*].pause_status":                                                            {"PAUSED", "UNPAUSED"},
+	"resources.jobs.*.triggers[*].periodic.unit":                                                           {"DAYS", "HOURS", "MINUTES", "WEEKS"},
+	"resources.jobs.*.triggers[*].sql_condition.trigger_mode":                                              {"QUERY_RETURNS_ROWS", "RESULT_VALUE_CHANGES"},
+	"resources.jobs.*.triggers[*].table_update.condition":                                                  {"ALL_UPDATED", "ANY_UPDATED"},
 
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior":                                        {"BLOCK", "MASK", "NONE"},
 	"resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior":                                       {"BLOCK", "MASK", "NONE"},
@@ -154,11 +164,12 @@ var EnumFields = map[string][]string{
 	"resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].renewal_period":                                        {"minute"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider": {"ai21labs", "amazon", "anthropic", "cohere"},
 	"resources.model_serving_endpoints.*.config.served_entities[*].external_model.provider":                               {"ai21labs", "amazon-bedrock", "anthropic", "cohere", "custom", "databricks-model-serving", "google-cloud-vertex-ai", "openai", "palm"},
-	"resources.model_serving_endpoints.*.config.served_entities[*].workload_type":                                         {"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "MULTIGPU_MEDIUM"},
-	"resources.model_serving_endpoints.*.config.served_models[*].workload_type":                                           {"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "MULTIGPU_MEDIUM"},
+	"resources.model_serving_endpoints.*.config.served_entities[*].workload_type":                                         {"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "GPU_XLARGE_8", "MULTIGPU_MEDIUM"},
+	"resources.model_serving_endpoints.*.config.served_models[*].workload_type":                                           {"CPU", "CPU_LARGE", "CPU_MEDIUM", "GPU_LARGE", "GPU_MEDIUM", "GPU_SMALL", "GPU_XLARGE", "GPU_XLARGE_8", "MULTIGPU_MEDIUM"},
 	"resources.model_serving_endpoints.*.permissions[*].level":                                                            {"CAN_MANAGE", "CAN_QUERY", "CAN_VIEW"},
 	"resources.model_serving_endpoints.*.rate_limits[*].key":                                                              {"endpoint", "user"},
 	"resources.model_serving_endpoints.*.rate_limits[*].renewal_period":                                                   {"minute"},
+	"resources.model_serving_endpoints.*.telemetry_config.enabled_telemetry_features[*]":                                  {"TELEMETRY_FEATURE_INFERENCE_TABLE", "TELEMETRY_FEATURE_LOGS", "TELEMETRY_FEATURE_METRICS", "TELEMETRY_FEATURE_TRACES"},
 
 	"resources.models.*.permissions[*].level": {"CAN_EDIT", "CAN_MANAGE", "CAN_MANAGE_PRODUCTION_VERSIONS", "CAN_MANAGE_STAGING_VERSIONS", "CAN_READ"},
 
@@ -179,6 +190,9 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.key_transformer.json_options.schema_evolution_mode":   {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.format":                             {"JSON", "STRING"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.kafka_options.value_transformer.json_options.schema_evolution_mode": {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.entity_granularity[*]":   {"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.finder":                  {"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"},
+	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.linkedin_ads_options.custom_report_options.time_granularity":        {"ALL", "DAILY", "MONTHLY", "YEARLY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.attachment_mode":                                    {"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.outlook_options.body_format":                                        {"TEXT_HTML", "TEXT_PLAIN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.connector_options.sharepoint_options.entity_type":                                     {"FILE", "FILE_METADATA", "LIST", "PERMISSION"},
@@ -198,6 +212,9 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.key_transformer.json_options.schema_evolution_mode":    {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.format":                              {"JSON", "STRING"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.kafka_options.value_transformer.json_options.schema_evolution_mode":  {"ADD_NEW_COLUMNS", "ADD_NEW_COLUMNS_WITH_TYPE_WIDENING", "FAIL_ON_NEW_COLUMNS", "NONE", "RESCUE"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.entity_granularity[*]":    {"CAMPAIGN", "CAMPAIGN_GROUP", "CREATIVE"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.finder":                   {"ANALYTICS", "ATTRIBUTED_REVENUE_METRICS", "STATISTICS"},
+	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.linkedin_ads_options.custom_report_options.time_granularity":         {"ALL", "DAILY", "MONTHLY", "YEARLY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.attachment_mode":                                     {"ALL", "INLINE_ONLY", "NONE", "NON_INLINE_ONLY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.outlook_options.body_format":                                         {"TEXT_HTML", "TEXT_PLAIN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.sharepoint_options.entity_type":                                      {"FILE", "FILE_METADATA", "LIST", "PERMISSION"},
@@ -208,7 +225,7 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.data_level":                                       {"AUCTION_AD", "AUCTION_ADGROUP", "AUCTION_ADVERTISER", "AUCTION_CAMPAIGN"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.connector_options.tiktok_ads_options.report_type":                                      {"AUDIENCE", "BASIC", "BUSINESS_CENTER", "DSA", "GMV_MAX", "PLAYABLE_AD"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type":                                                          {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
-	"resources.pipelines.*.ingestion_definition.source_type":                                                                                            {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLSERVER", "TERADATA", "WORKDAY_RAAS", "ZENDESK"},
+	"resources.pipelines.*.ingestion_definition.source_type":                                                                                            {"BIGQUERY", "CONFLUENCE", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "GOOGLE_DRIVE", "JIRA", "MANAGED_POSTGRESQL", "META_MARKETING", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "RABBITMQ", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLSERVER", "TERADATA", "WORKDAY_RAAS", "ZENDESK"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                                                                           {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.permissions[*].level":                                                                                                        {"CAN_MANAGE", "CAN_RUN", "CAN_VIEW", "IS_OWNER"},
 	"resources.pipelines.*.restart_window.days_of_week[*]":                                                                                              {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
@@ -221,9 +238,12 @@ var EnumFields = map[string][]string{
 	"resources.postgres_roles.*.identity_type":       {"GROUP", "SERVICE_PRINCIPAL", "USER"},
 	"resources.postgres_roles.*.membership_roles[*]": {"DATABRICKS_SUPERUSER"},
 
-	"resources.postgres_synced_tables.*.extra_columns[*].maintenance": {"STORED_GENERATED"},
-	"resources.postgres_synced_tables.*.scheduling_policy":            {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
-	"resources.postgres_synced_tables.*.type_overrides[*].pg_type":    {"PG_SPECIFIC_TYPE_VECTOR"},
+	"resources.postgres_snapshot_schedules.*.schedule[*].weekly_schedule.day_of_week": {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
+
+	"resources.postgres_synced_tables.*.extra_columns[*].maintenance":       {"STORED_GENERATED"},
+	"resources.postgres_synced_tables.*.new_pipeline_spec.pipeline_channel": {"CURRENT", "PREVIEW"},
+	"resources.postgres_synced_tables.*.scheduling_policy":                  {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
+	"resources.postgres_synced_tables.*.type_overrides[*].pg_type":          {"PG_SPECIFIC_TYPE_HALFVEC", "PG_SPECIFIC_TYPE_VARCHAR", "PG_SPECIFIC_TYPE_VECTOR"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type":     {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
@@ -233,7 +253,8 @@ var EnumFields = map[string][]string{
 
 	"resources.schemas.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
-	"resources.secret_scopes.*.backend_type": {"AZURE_KEYVAULT", "DATABRICKS"},
+	"resources.secret_scopes.*.backend_type":         {"AZURE_KEYVAULT", "DATABRICKS"},
+	"resources.secret_scopes.*.permissions[*].level": {"READ", "WRITE", "MANAGE"},
 
 	"resources.secrets.*.grants[*].privileges[*]": {"ACCESS", "ALL_PRIVILEGES", "APPLY_TAG", "BROWSE", "CREATE", "CREATE_CATALOG", "CREATE_CLEAN_ROOM", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FOREIGN_SECURABLE", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_PROVIDER", "CREATE_RECIPIENT", "CREATE_SCHEMA", "CREATE_SERVICE_CREDENTIAL", "CREATE_SHARE", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VIEW", "CREATE_VOLUME", "EXECUTE", "EXECUTE_CLEAN_ROOM_TASK", "EXTERNAL_USE_SCHEMA", "MANAGE", "MANAGE_ALLOWLIST", "MODIFY", "MODIFY_CLEAN_ROOM", "READ_FILES", "READ_METADATA", "READ_PRIVATE_FILES", "READ_VOLUME", "REFRESH", "SELECT", "SET_SHARE_PERMISSION", "USAGE", "USE_CATALOG", "USE_CONNECTION", "USE_MARKETPLACE_ASSETS", "USE_PROVIDER", "USE_RECIPIENT", "USE_SCHEMA", "USE_SHARE", "WRITE_FILES", "WRITE_PRIVATE_FILES", "WRITE_VOLUME"},
 
@@ -247,7 +268,7 @@ var EnumFields = map[string][]string{
 	"resources.synced_database_tables.*.data_synchronization_status.provisioning_status.initial_pipeline_sync_progress.provisioning_phase":      {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
 	"resources.synced_database_tables.*.data_synchronization_status.triggered_update_status.triggered_update_progress.provisioning_phase":       {"PROVISIONING_PHASE_INDEX_SCAN", "PROVISIONING_PHASE_INDEX_SORT", "PROVISIONING_PHASE_MAIN"},
 	"resources.synced_database_tables.*.spec.scheduling_policy":                                                                                 {"CONTINUOUS", "SNAPSHOT", "TRIGGERED"},
-	"resources.synced_database_tables.*.spec.type_overrides[*].pg_type":                                                                         {"PG_SPECIFIC_TYPE_VECTOR"},
+	"resources.synced_database_tables.*.spec.type_overrides[*].pg_type":                                                                         {"PG_SPECIFIC_TYPE_HALFVEC", "PG_SPECIFIC_TYPE_VARCHAR", "PG_SPECIFIC_TYPE_VECTOR"},
 	"resources.synced_database_tables.*.unity_catalog_provisioning_state":                                                                       {"ACTIVE", "DEGRADED", "DELETING", "FAILED", "PROVISIONING", "UPDATING"},
 
 	"resources.vector_search_endpoints.*.endpoint_type":        {"STANDARD", "STORAGE_OPTIMIZED"},

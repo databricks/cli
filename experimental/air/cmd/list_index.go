@@ -16,12 +16,14 @@ import (
 // skip the network. Unlike the Jobs scan it can't lazy-page (it must sort the
 // whole id set first), but it still yields in batches so the table paints early.
 type indexStrategy struct {
-	ctx        context.Context
-	w          *databricks.WorkspaceClient
-	activeOnly bool
-	filters    listFilters
-	limit      int
-	cache      *cache.Cache
+	ctx         context.Context
+	w           *databricks.WorkspaceClient
+	activeOnly  bool
+	filters     listFilters
+	limit       int
+	cache       *cache.Cache
+	host        string
+	workspaceID int64
 
 	ids    []int64 // newest-first run ids to hydrate, resolved on first next()
 	pos    int
@@ -30,12 +32,14 @@ type indexStrategy struct {
 
 func newIndexStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery, limit int) *indexStrategy {
 	return &indexStrategy{
-		ctx:        ctx,
-		w:          w,
-		activeOnly: q.activeOnly,
-		filters:    q.filters,
-		limit:      limit,
-		cache:      newListCache(ctx),
+		ctx:         ctx,
+		w:           w,
+		activeOnly:  q.activeOnly,
+		filters:     q.filters,
+		limit:       limit,
+		cache:       newListCache(ctx),
+		host:        w.Config.Host,
+		workspaceID: q.workspaceID,
 	}
 }
 
@@ -120,7 +124,7 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 		if !s.filters.matchesFields(fields) {
 			continue
 		}
-		row := buildListRow(run)
+		row := buildListRow(run, s.host, s.workspaceID)
 		rows = append(rows, listedRun{row: row, taskRunID: taskRunID(run)})
 		if isTerminal(run) {
 			start, _ := jobTiming(run)

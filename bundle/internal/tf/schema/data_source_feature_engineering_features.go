@@ -73,11 +73,6 @@ type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionSum 
 	Input string `json:"input"`
 }
 
-type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowContinuous struct {
-	Offset         string `json:"offset,omitempty"`
-	WindowDuration string `json:"window_duration"`
-}
-
 type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowRolling struct {
 	Delay          string `json:"delay,omitempty"`
 	WindowDuration string `json:"window_duration,omitempty"`
@@ -89,20 +84,24 @@ type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTime
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowSliding struct {
+	Delay          string `json:"delay,omitempty"`
+	Offset         string `json:"offset,omitempty"`
 	SlideDuration  string `json:"slide_duration"`
 	WindowDuration string `json:"window_duration,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowTumbling struct {
+	Delay          string `json:"delay,omitempty"`
+	Offset         string `json:"offset,omitempty"`
 	WindowDuration string `json:"window_duration"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindow struct {
-	Continuous *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowContinuous `json:"continuous,omitempty"`
-	Rolling    *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowRolling    `json:"rolling,omitempty"`
-	Sawtooth   *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowSawtooth   `json:"sawtooth,omitempty"`
-	Sliding    *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowSliding    `json:"sliding,omitempty"`
-	Tumbling   *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowTumbling   `json:"tumbling,omitempty"`
+	Rolling   *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowRolling  `json:"rolling,omitempty"`
+	Sawtooth  *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowSawtooth `json:"sawtooth,omitempty"`
+	Sliding   *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowSliding  `json:"sliding,omitempty"`
+	StartTime string                                                                                     `json:"start_time,omitempty"`
+	Tumbling  *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionTimeWindowTumbling `json:"tumbling,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunctionVarPop struct {
@@ -138,16 +137,20 @@ type DataSourceFeatureEngineeringFeaturesFeaturesFunctionColumnSelection struct 
 	Column string `json:"column"`
 }
 
-type DataSourceFeatureEngineeringFeaturesFeaturesFunctionExtraParameters struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+type DataSourceFeatureEngineeringFeaturesFeaturesFunctionCustomUdfInputBindings struct {
+	Column    string `json:"column"`
+	Parameter string `json:"parameter"`
+}
+
+type DataSourceFeatureEngineeringFeaturesFeaturesFunctionCustomUdf struct {
+	FunctionPath  string                                                                       `json:"function_path"`
+	InputBindings []DataSourceFeatureEngineeringFeaturesFeaturesFunctionCustomUdfInputBindings `json:"input_bindings,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesFunction struct {
 	AggregationFunction *DataSourceFeatureEngineeringFeaturesFeaturesFunctionAggregationFunction `json:"aggregation_function,omitempty"`
 	ColumnSelection     *DataSourceFeatureEngineeringFeaturesFeaturesFunctionColumnSelection     `json:"column_selection,omitempty"`
-	ExtraParameters     []DataSourceFeatureEngineeringFeaturesFeaturesFunctionExtraParameters    `json:"extra_parameters,omitempty"`
-	FunctionType        string                                                                   `json:"function_type,omitempty"`
+	CustomUdf           *DataSourceFeatureEngineeringFeaturesFeaturesFunctionCustomUdf           `json:"custom_udf,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesLineageContextJobContext struct {
@@ -165,27 +168,19 @@ type DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig struct {
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource struct {
-	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
-	EntityColumns     []string `json:"entity_columns,omitempty"`
-	FilterCondition   string   `json:"filter_condition,omitempty"`
-	FullName          string   `json:"full_name"`
-	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
-	TransformationSql string   `json:"transformation_sql,omitempty"`
-}
-
-type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceEntityColumnIdentifiers struct {
-	VariantExprPath string `json:"variant_expr_path"`
-}
-
-type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceTimeseriesColumnIdentifier struct {
-	VariantExprPath string `json:"variant_expr_path"`
+	DataframeSchema   string `json:"dataframe_schema,omitempty"`
+	FilterCondition   string `json:"filter_condition,omitempty"`
+	FullName          string `json:"full_name"`
+	TransformationSql string `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSource struct {
-	EntityColumnIdentifiers    []DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceEntityColumnIdentifiers   `json:"entity_column_identifiers,omitempty"`
-	FilterCondition            string                                                                                   `json:"filter_condition,omitempty"`
-	Name                       string                                                                                   `json:"name"`
-	TimeseriesColumnIdentifier *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceTimeseriesColumnIdentifier `json:"timeseries_column_identifier,omitempty"`
+	FilterCondition string `json:"filter_condition,omitempty"`
+	Name            string `json:"name"`
+}
+
+type DataSourceFeatureEngineeringFeaturesFeaturesSourceLateness struct {
+	SettlingDelay string `json:"settling_delay,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceRequestSourceFlatSchemaFields struct {
@@ -211,40 +206,9 @@ type DataSourceFeatureEngineeringFeaturesFeaturesSourceStreamSource struct {
 type DataSourceFeatureEngineeringFeaturesFeaturesSource struct {
 	DeltaTableSource *DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource `json:"delta_table_source,omitempty"`
 	KafkaSource      *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSource      `json:"kafka_source,omitempty"`
+	Lateness         *DataSourceFeatureEngineeringFeaturesFeaturesSourceLateness         `json:"lateness,omitempty"`
 	RequestSource    *DataSourceFeatureEngineeringFeaturesFeaturesSourceRequestSource    `json:"request_source,omitempty"`
 	StreamSource     *DataSourceFeatureEngineeringFeaturesFeaturesSourceStreamSource     `json:"stream_source,omitempty"`
-}
-
-type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous struct {
-	Offset         string `json:"offset,omitempty"`
-	WindowDuration string `json:"window_duration"`
-}
-
-type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowRolling struct {
-	Delay          string `json:"delay,omitempty"`
-	WindowDuration string `json:"window_duration,omitempty"`
-}
-
-type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSawtooth struct {
-	Delay          string `json:"delay,omitempty"`
-	WindowDuration string `json:"window_duration,omitempty"`
-}
-
-type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSliding struct {
-	SlideDuration  string `json:"slide_duration"`
-	WindowDuration string `json:"window_duration,omitempty"`
-}
-
-type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowTumbling struct {
-	WindowDuration string `json:"window_duration"`
-}
-
-type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow struct {
-	Continuous *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous `json:"continuous,omitempty"`
-	Rolling    *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowRolling    `json:"rolling,omitempty"`
-	Sawtooth   *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSawtooth   `json:"sawtooth,omitempty"`
-	Sliding    *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowSliding    `json:"sliding,omitempty"`
-	Tumbling   *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowTumbling   `json:"tumbling,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeseriesColumn struct {
@@ -257,16 +221,13 @@ type DataSourceFeatureEngineeringFeaturesFeatures struct {
 	CreatedBy        string                                                        `json:"created_by,omitempty"`
 	Description      string                                                        `json:"description,omitempty"`
 	Entities         []DataSourceFeatureEngineeringFeaturesFeaturesEntities        `json:"entities,omitempty"`
-	FilterCondition  string                                                        `json:"filter_condition,omitempty"`
 	FullName         string                                                        `json:"full_name"`
 	Function         *DataSourceFeatureEngineeringFeaturesFeaturesFunction         `json:"function,omitempty"`
-	Inputs           []string                                                      `json:"inputs,omitempty"`
 	LineageContext   *DataSourceFeatureEngineeringFeaturesFeaturesLineageContext   `json:"lineage_context,omitempty"`
 	Name             string                                                        `json:"name,omitempty"`
 	ProviderConfig   *DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig   `json:"provider_config,omitempty"`
 	SchemaName       string                                                        `json:"schema_name,omitempty"`
 	Source           *DataSourceFeatureEngineeringFeaturesFeaturesSource           `json:"source,omitempty"`
-	TimeWindow       *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow       `json:"time_window,omitempty"`
 	TimeseriesColumn *DataSourceFeatureEngineeringFeaturesFeaturesTimeseriesColumn `json:"timeseries_column,omitempty"`
 }
 

@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+  uuid: 11111111-2222-3333-4444-555555555555
+
+# Restrict the sync to a single file under src/ so the file upload (and thus the
+# forced failure below) is deterministic and does not sweep up acceptance-harness
+# files written during the run.
+sync:
+  paths:
+    - src
+
+resources:
+  jobs:
+    job_one:
+      name: job one

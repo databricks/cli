@@ -28,7 +28,6 @@ type DataSourceAiGatewayMcpServicesMcpServicesProviderConfig struct {
 }
 
 type DataSourceAiGatewayMcpServicesMcpServices struct {
-	BrowseOnly     bool                                                     `json:"browse_only,omitempty"`
 	Comment        string                                                   `json:"comment,omitempty"`
 	Config         *DataSourceAiGatewayMcpServicesMcpServicesConfig         `json:"config,omitempty"`
 	CreateTime     string                                                   `json:"create_time,omitempty"`
@@ -48,7 +47,6 @@ type DataSourceAiGatewayMcpServicesProviderConfig struct {
 }
 
 type DataSourceAiGatewayMcpServices struct {
-	IncludeBrowse  bool                                          `json:"include_browse,omitempty"`
 	McpServices    []DataSourceAiGatewayMcpServicesMcpServices   `json:"mcp_services,omitempty"`
 	PageSize       int                                           `json:"page_size,omitempty"`
 	Parent         string                                        `json:"parent,omitempty"`

@@ -1,0 +1,17 @@
+cleanup() {
+    $CLI bundle destroy --auto-approve &> LOG.destroy
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "depends_on: only the real reference creates an edge"
+$CLI bundle plan -o json > plan.json
+trace jq '.plan | map_values(.depends_on)' plan.json | nostamp
+
+# Not traced: the READPLAN variant adds "--plan ...", and the point of that variant is
+# that the payload below is identical either way.
+title "Payload: escaped stays literal, real is resolved\n"
+$CLI bundle deploy $(readplanarg plan.json)
+# --nostamp: under deployment-history recording the job payload carries the DMS deployment
+# stamp; drop it so the assertion is the same whether or not recording is on.
+trace print_requests.py //jobs --sort --nostamp

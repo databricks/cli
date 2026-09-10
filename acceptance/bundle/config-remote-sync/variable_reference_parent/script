@@ -1,0 +1,40 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+  # destroy records requests too; drop the recorded file so it is not compared.
+  rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Inject a spark_conf key under a field defined as a complex variable"
+echo
+echo "spark_conf is set to a variable reference, so a remotely-added key cannot be"
+echo "written into that scalar node; the change is skipped while unrelated edits still sync."
+edit_resource.py jobs $job_id <<'EOF'
+r["max_concurrent_runs"] = 5
+
+for jc in r.get("job_clusters", []):
+    jc["new_cluster"]["spark_conf"]["spark.executor.memory"] = "4g"
+EOF
+
+title "Detect and save all changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+title "Telemetry"
+echo
+# The engine name is dropped because both EnvMatrix variants share this output.
+# skipped_changes_count reflects the spark_conf change skipped under a variable reference.
+trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | del(.engine)'
