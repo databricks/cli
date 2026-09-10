@@ -13,5 +13,8 @@ license = "Apache-2.0"
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 
+[project.entry-points.pytest11]
+bundletest = "bundletest.pytest_plugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/bundletest"]
