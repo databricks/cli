@@ -54,6 +54,12 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
         }
       ]
     }
+  },
+  "config.env[0].value": {
+    "action": "skip",
+    "reason": "no active deployment",
+    "old": "original_value",
+    "new": "changed_value"
   }
 }
 

@@ -428,30 +428,6 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 		}
 	}
 
-	// Keep one level per subtree. A whole block added or removed shows up as a single
-	// block-level change, while the other diff (local vs remote) may have descended to
-	// inner fields of the same subtree. The block-level change already describes them,
-	// so drop any entry that has an ancestor entry in the map.
-	for pathStr := range m {
-		node, err := structpath.ParsePath(pathStr)
-		if err != nil {
-			continue
-		}
-		for other := range m {
-			if other == pathStr {
-				continue
-			}
-			ancestor, err := structpath.ParsePath(other)
-			if err != nil {
-				continue
-			}
-			if node.HasPrefix(ancestor) {
-				delete(m, pathStr)
-				break
-			}
-		}
-	}
-
 	return m, nil
 }
 
@@ -506,10 +482,10 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
-		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+		} else if reason, ok := findRecreateRule(path, cfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
-		} else if reason, ok := findMatchingRule(path, generatedCfg.RecreateOnChanges); ok {
+		} else if reason, ok := findRecreateRule(path, generatedCfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
 		} else {
@@ -574,22 +550,30 @@ func isFieldMissingInRemote(adapter *dresources.Adapter, path *structpath.PathNo
 
 func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
 	for _, r := range rules {
-		if matchesFieldRule(path, r.Field) {
+		if path.HasPatternPrefix(r.Field) {
 			return r.Reason, true
 		}
 	}
 	return "", false
 }
 
-// matchesFieldRule reports whether a rule targeting the pattern matches a change at
-// path, in either direction:
-//   - path at or below the rule: the field the rule names changed (the usual case).
-//   - path above the rule: a whole block was added or removed, recorded as one
-//     block-level change, so the field the rule names is part of it.
-//
-// The second direction is what lets a rule on ingestion_definition.connection_name
-// match a whole-block change recorded at ingestion_definition.
-func matchesFieldRule(path *structpath.PathNode, pattern *structpath.PatternNode) bool {
+// findRecreateRule matches recreate rules bidirectionally: in addition to the usual
+// descendant match, a rule on foo.bar matches a change recorded at foo, because a
+// whole block added or removed is one block-level change and the field the rule
+// names is part of it. This is only sound for an escalating action like recreate.
+// Suppressing rules (ignore_remote/ignore_local, backend_default, normalize) stay
+// descendant-only via findMatchingRule: a whole block that merely contains an
+// ignored/defaulted leaf is still a real change and must not be skipped.
+func findRecreateRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
+	for _, r := range rules {
+		if matchesFieldRuleBidirectional(path, r.Field) {
+			return r.Reason, true
+		}
+	}
+	return "", false
+}
+
+func matchesFieldRuleBidirectional(path *structpath.PathNode, pattern *structpath.PatternNode) bool {
 	if path.HasPatternPrefix(pattern) {
 		return true
 	}

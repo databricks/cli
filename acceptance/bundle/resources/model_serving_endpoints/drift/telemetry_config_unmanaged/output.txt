@@ -12,7 +12,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "telemetry_config": {
     "action": "skip",
-    "reason": "input_only",
+    "reason": "backend_default",
     "remote": {
       "telemetry_profile_id": "[UUID]"
     }

@@ -1,7 +1,7 @@
-# Direct-only: the per-field "changes" map is a direct-engine artifact (terraform
-# emits no per-field changes). A local leaf change plus a whole block dropped on the
-# remote merge into a single block-level entry (one level per subtree), not an
-# overlapping block + child pair.
+# Direct-only: the overlapping parent+child entries are a direct-engine changes-map
+# artifact (terraform emits no per-field changes).
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 RecordRequests = false
 Ignore = [".databricks"]
+
+Badness = "The plan's 'changes' map carries BOTH the whole 'schedule' block and the 'schedule.timezone_id' leaf. The local diff (saved state vs config) is at the leaf while the remote diff (remote vs config) is at the block level (schedule dropped out-of-band), and structdiff records the remote side as one block-level change instead of descending, so the two never merge into leaves."
