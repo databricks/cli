@@ -10,13 +10,15 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/tarpack"
 	"github.com/klauspost/pgzip"
 )
 
-// Tar builders ported from cli/utils/snapshot.py. Both shell out (git archive / tar)
-// for parity and to reuse git's/tar's symlink, gitignore, and AppleDouble handling.
-// The tarball's top-level dir name is load-bearing — the remote entry_script extracts
-// to /databricks/code_source/<dir> — so the --prefix / `-C parent dir` forms preserve it.
+// Tar builders ported from cli/utils/snapshot.py. The git-ref path snapshots a commit
+// with `git archive`; the plain path enumerates the working tree with `git ls-files`
+// (honoring .gitignore) and writes the tar in Go. The tarball's top-level dir name is
+// load-bearing — the remote entry_script extracts to /databricks/code_source/<dir> — so
+// both forms prefix every entry with it.
 
 // createGitArchiveSnapshot writes a gzipped tar of commitSHA to outputTarball via
 // `git archive`, with every entry prefixed by directoryName/. When includePaths is
@@ -37,21 +39,23 @@ func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outpu
 }
 
 // createPlainTarball writes a gzipped tar of repoPath's working tree to
-// outputTarball via `tar`. The archive preserves repoPath's directory name as the
-// top-level entry. When includePaths is set, only those paths (nested under the
-// directory name) are archived. .git and macOS AppleDouble files are always
-// excluded; a .gitignore at repoPath is honored.
+// outputTarball. The archive preserves repoPath's directory name as the top-level
+// entry. When includePaths is set, only those paths (nested under the directory
+// name) are archived. .git and macOS AppleDouble files are always excluded; a
+// .gitignore at repoPath is honored.
 func createPlainTarball(ctx context.Context, repoPath, outputTarball string, includePaths []string, isGitRepo bool) error {
 	dirName := filepath.Base(repoPath)
-	// Absolute so it resolves correctly regardless of tar's working dir.
-	parent, err := filepath.Abs(filepath.Dir(repoPath))
-	if err != nil {
-		return err
-	}
 
 	files, err := snapshotFiles(ctx, repoPath, includePaths, isGitRepo)
 	if err != nil {
 		return err
+	}
+	entries := make([]tarpack.Entry, len(files))
+	for i, rel := range files {
+		entries[i] = tarpack.Entry{
+			Name: filepath.ToSlash(filepath.Join(dirName, rel)),
+			Path: filepath.Join(repoPath, rel),
+		}
 	}
 
 	out, err := os.Create(outputTarball)
@@ -59,34 +63,18 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 		return fmt.Errorf("failed to create tarball: %w", err)
 	}
 
-	// tar writes the uncompressed archive to stdout and we gzip it with klauspost/pgzip
-	// rather than tar's single-threaded -z, which dominates packaging time on a large
-	// tree (pgzip spreads the same compression across cores). Compressing outside tar
-	// also keeps any archive path out of tar's args, avoiding the Windows colon-in-path
-	// issue the `-f <path>` form otherwise hits.
+	// Gzip in parallel with klauspost/pgzip rather than a single-threaded writer:
+	// compression dominates packaging time on a large tree, and pgzip spreads it
+	// across cores. tarpack writes the tar in Go, so there is no `tar` subprocess
+	// (and no Windows colon-in-path issue a `tar -f` argument would hit).
 	gz, err := pgzip.NewWriterLevel(out, pgzip.DefaultCompression)
 	if err != nil {
 		out.Close()
 		return err
 	}
-
-	args := []string{"-cf", "-", "-C", parent, "--null", "--no-recursion", "-T", "-"}
-	cmd := exec.CommandContext(ctx, "tar", args...)
-	var stdin bytes.Buffer
-	for _, file := range files {
-		stdin.WriteString(filepath.ToSlash(filepath.Join(dirName, file)))
-		stdin.WriteByte(0)
-	}
-	cmd.Stdin = &stdin
-	cmd.Stdout = gz
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
+	if err := tarpack.Write(gz, entries); err != nil {
 		gz.Close()
 		out.Close()
-		if msg := strings.TrimSpace(stderr.String()); msg != "" {
-			return fmt.Errorf("failed to create plain tarball: %w: %s", err, msg)
-		}
 		return fmt.Errorf("failed to create plain tarball: %w", err)
 	}
 	if err := gz.Close(); err != nil {
