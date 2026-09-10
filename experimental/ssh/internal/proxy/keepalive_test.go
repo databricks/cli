@@ -113,7 +113,7 @@ func startKeepaliveTestServer(t *testing.T) (*httptest.Server, <-chan struct{}) 
 // websocket handshake has completed, so a test can control how its writes behave.
 func keepaliveTestDialer(serverURL string, onNetConn func(*pausableConn)) createWebsocketConnectionFunc {
 	wsURL := "ws" + serverURL[4:]
-	return func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+	return func(ctx context.Context, connID string) (*websocket.Conn, error) {
 		var wrapped *pausableConn
 		dialer := websocket.Dialer{
 			NetDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -125,7 +125,7 @@ func keepaliveTestDialer(serverURL string, onNetConn func(*pausableConn)) create
 				return wrapped, nil
 			},
 		}
-		conn, _, err := dialer.DialContext(ctx, fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
+		conn, _, err := dialer.DialContext(ctx, fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
 		if err != nil {
 			return nil, err
 		}
@@ -152,7 +152,7 @@ func TestKeepalivePingReachesServer(t *testing.T) {
 	src, _ := io.Pipe()
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond, false, keepaliveTestDialer(server.URL, nil))
+		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond, keepaliveTestDialer(server.URL, nil))
 	}()
 
 	select {
@@ -176,7 +176,7 @@ func TestKeepalivePingFailureDoesNotEndSession(t *testing.T) {
 	src, _ := io.Pipe()
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond, false,
+		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond,
 			keepaliveTestDialer(server.URL, func(c *pausableConn) { socket.Store(c) }))
 	}()
 
@@ -250,7 +250,7 @@ func TestKeepalivePingFailureDoesNotHangTheSession(t *testing.T) {
 	src, srcWriter := io.Pipe()
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond, false,
+		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond,
 			keepaliveTestDialer(server.URL, func(c *pausableConn) { socket.Store(c) }))
 	}()
 
