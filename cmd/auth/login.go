@@ -132,6 +132,7 @@ a new profile is created.
 	var configureServerless bool
 	var skipWorkspace bool
 	var scopes string
+	var clientID string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
@@ -142,6 +143,8 @@ a new profile is created.
 		"Skip workspace selection for account-level access")
 	cmd.Flags().StringVar(&scopes, "scopes", "",
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
+	cmd.Flags().StringVar(&clientID, "client-id", "",
+		"OAuth client ID to use for U2M authentication")
 
 	cmd.PreRunE = profileHostConflictCheck
 
@@ -256,6 +259,9 @@ a new profile is created.
 		if err != nil {
 			return err
 		}
+		if clientID == "" {
+			clientID = u2mClientIDFromProfile(existingProfile)
+		}
 
 		// If no host is available from any source, use the discovery flow
 		// via login.databricks.com.
@@ -268,6 +274,7 @@ a new profile is created.
 				profileName:     profileName,
 				timeout:         loginTimeout,
 				scopes:          scopes,
+				clientID:        clientID,
 				existingProfile: existingProfile,
 				browserFunc:     getBrowserFunc(cmd),
 				tokenStore:      tokenStore,
@@ -302,7 +309,7 @@ a new profile is created.
 			u2m.WithBrowser(getBrowserFunc(cmd)),
 			u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 		}
-		if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
+		if clientID != "" {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
 		}
 		if len(scopesList) > 0 {
@@ -396,7 +403,7 @@ a new profile is created.
 				ConfigFile:          env.Get(ctx, "DATABRICKS_CONFIG_FILE"),
 				ServerlessComputeID: serverlessComputeID,
 				Scopes:              scopesList,
-				ClientID:            u2mClientIDFromProfile(existingProfile),
+				ClientID:            clientID,
 			}, clearKeys...)
 			if err != nil {
 				return err
@@ -638,6 +645,7 @@ type discoveryLoginInputs struct {
 	profileName     string
 	timeout         time.Duration
 	scopes          string
+	clientID        string
 	existingProfile *profile.Profile
 	browserFunc     func(string) error
 	tokenStore      storage.Store
@@ -664,8 +672,8 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithDiscoveryLogin(),
 		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, in.tokenStore, in.mode, arg)),
 	}
-	if clientID := u2mClientIDFromProfile(in.existingProfile); clientID != "" {
-		opts = append(opts, u2m.WithClientID(clientID))
+	if in.clientID != "" {
+		opts = append(opts, u2m.WithClientID(in.clientID))
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
@@ -757,7 +765,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		WorkspaceID: workspaceID,
 		Scopes:      scopesList,
 		ConfigFile:  configFile,
-		ClientID:    u2mClientIDFromProfile(in.existingProfile),
+		ClientID:    in.clientID,
 	}, clearKeys...)
 	if err != nil {
 		if configFile != "" {

@@ -17,6 +17,12 @@ trace $CLI auth login --profile existing-profile
 title "OAuth client ID\n"
 trace print_requests.py //oidc/v1/authorize --get | gron.py | grep client_id
 
+title "Login with a client ID override\n"
+trace $CLI auth login --profile existing-profile --client-id flag-client-id
+
+title "Overridden OAuth client ID\n"
+trace print_requests.py //oidc/v1/authorize --get | gron.py | grep client_id
+
 title "Profile after login\n"
 cat "./home/.databrickscfg"
 

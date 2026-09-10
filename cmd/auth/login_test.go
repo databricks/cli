@@ -994,6 +994,7 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 		dc:              dc,
 		profileName:     "DISCOVERY",
 		timeout:         time.Second,
+		clientID:        existingProfile.ClientID,
 		existingProfile: existingProfile,
 		browserFunc:     func(string) error { return nil },
 		tokenStore:      newTestStore(),
@@ -1006,6 +1007,50 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
 	assert.Equal(t, "sql,clusters", savedProfile.Scopes)
 	assert.Equal(t, "custom-client-id", savedProfile.ClientID)
+}
+
+func TestDiscoveryLogin_ExplicitClientIDOverridesExistingProfile(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection failed"),
+	}
+
+	existingProfile := &profile.Profile{
+		Name:     "DISCOVERY",
+		Host:     "https://old-workspace.example.com",
+		AuthType: authTypeDatabricksCLI,
+		ClientID: "profile-client-id",
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		clientID:        "flag-client-id",
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenStore:      newTestStore(),
+	})
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "flag-client-id", savedProfile.ClientID)
 }
 
 func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {
