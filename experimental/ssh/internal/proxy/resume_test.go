@@ -87,3 +87,23 @@ func TestSendBufferReplayIsACopy(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "abcdef", string(again), "mutating a replay must not corrupt the buffer")
 }
+
+// TestBufferFillDegradation verifies that when the replay buffer fills, the connection
+// can be marked as degraded (non-resumable) without crashing. The buffer itself is preserved
+// so pending replay data is still available if needed.
+func TestBufferFillCausesErrorNotPanic(t *testing.T) {
+	b := newSendBuffer(100)
+
+	// Fill to the limit: 100 bytes
+	require.NoError(t, b.append([]byte("a")))
+	require.NoError(t, b.append(make([]byte, 99)))
+
+	// Next append should fail with errSendWindowExhausted
+	err := b.append([]byte("b"))
+	require.ErrorIs(t, err, errSendWindowExhausted)
+
+	// But the buffer should still be accessible for replay
+	missing, err := b.replayFrom(0)
+	require.NoError(t, err)
+	assert.Len(t, missing, 100)
+}

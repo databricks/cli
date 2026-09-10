@@ -82,6 +82,11 @@ const (
 	proxyAckThreshold = 64 << 10
 )
 
+// proxyResumeBufferLimitForTest allows tests to override the buffer limit. When set to a non-zero
+// value, it is used instead of proxyResumeBufferLimit. This var is intentionally not exported
+// to discourage non-test usage.
+var proxyResumeBufferLimitForTest int
+
 // resumeState is the per-connection bookkeeping a resumable transport needs. It is nil unless
 // both ends negotiated resume, in which case the proxy behaves exactly as it did before.
 type resumeState struct {
@@ -103,11 +108,18 @@ type resumeState struct {
 	parked chan struct{}
 	// Throttles the sending loop while a reattach is in progress.
 	gate sendGate
+	// Set to true when the replay buffer fills, degrading the connection to non-resumable
+	// so a healthy session survives. Further reattach attempts stop advertising resumability.
+	degraded atomic.Bool
 }
 
 func newResumeState() *resumeState {
+	limit := proxyResumeBufferLimit
+	if proxyResumeBufferLimitForTest > 0 {
+		limit = proxyResumeBufferLimitForTest
+	}
 	return &resumeState{
-		sendBuf: newSendBuffer(proxyResumeBufferLimit),
+		sendBuf: newSendBuffer(limit),
 		resumed: make(chan *websocket.Conn, 1),
 		parked:  make(chan struct{}, 1),
 	}
@@ -229,8 +241,12 @@ func newResumableProxyConnection(createConn createWebsocketConnectionFunc) *prox
 }
 
 // resumable reports whether this connection can reattach to its session after a drop.
+// Once the replay buffer fills, the connection is degraded to non-resumable and this returns false.
 func (pc *proxyConnection) resumable() bool {
-	return pc.resume != nil
+	if pc.resume == nil {
+		return false
+	}
+	return !pc.resume.degraded.Load()
 }
 
 func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.Writer) error {
@@ -294,6 +310,11 @@ func (pc *proxyConnection) acceptWebsocketConnection(w http.ResponseWriter, r *h
 }
 
 func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) error {
+	var wasResumable bool
+	if pc.resume != nil {
+		wasResumable = true
+	}
+
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -301,6 +322,12 @@ func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) er
 		b := make([]byte, proxyBufferSize)
 		n, readErr := src.Read(b)
 		if n > 0 {
+			// Detect if we've transitioned from resumable to degraded
+			if wasResumable && !pc.resumable() {
+				log.Warnf(ctx, "SSH tunnel replay buffer filled: downgrading to non-resumable to keep the session alive")
+				wasResumable = false
+			}
+
 			// Wait out any reattach in progress, so a connection that is down does not fill the
 			// whole replay window before it comes back. src stays blocked on the OS side
 			// meanwhile, which is the backpressure we want.
@@ -342,7 +369,16 @@ func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
 	// missing, and a resume can never replay a range the sending loop is still appending to.
 	if pc.resumable() && mt == websocket.BinaryMessage {
 		if err := pc.resume.sendBuf.append(data); err != nil {
-			return err
+			// The replay buffer has filled. This is not a dead peer - the window is reached by
+			// ordinary in-flight data when a continuous burst saturates the transport. Degrade to
+			// non-resumable to keep the session alive: a subsequent real drop will end it.
+			if errors.Is(err, errSendWindowExhausted) {
+				pc.resume.degraded.Store(true)
+				// Log will happen from runSendingLoop which has context
+				// Continue with the write below instead of returning an error
+			} else {
+				return err
+			}
 		}
 	}
 	conn := pc.conn.Load()
