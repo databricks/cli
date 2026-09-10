@@ -15,6 +15,16 @@ resources:
             file:
               path: src/transform_orders.sql
 
+    # SQL job — the second hop: silver -> gold. Chains after transform_orders.
+    aggregate_orders:
+      name: aggregate_orders
+      tasks:
+        - task_key: aggregate
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: src/aggregate_orders.sql
+
     # Notebook job — NOT runnable locally; used to demonstrate the loud skip.
     score_model:
       name: score_model
