@@ -17,12 +17,12 @@ class JobRunTrigger:
 
     on_bundle_deploy: VariableOrOptional[bool] = None
     """
-    If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
+    If true, re-fire the run on every bundle deploy.
     """
 
     on_file_change: VariableOrOptional[str] = None
     """
-    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported. Incompatible with lifecycle.prevent_destroy.
+    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported.
     """
 
     @classmethod
@@ -38,12 +38,12 @@ class JobRunTriggerDict(TypedDict, total=False):
 
     on_bundle_deploy: VariableOrOptional[bool]
     """
-    If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
+    If true, re-fire the run on every bundle deploy.
     """
 
     on_file_change: VariableOrOptional[str]
     """
-    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported. Incompatible with lifecycle.prevent_destroy.
+    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported.
     """
 
 
