@@ -232,7 +232,7 @@ func TestCLICredentialsConfigure_ThreadsResolvedTokenCache(t *testing.T) {
 	assert.Len(t, receivedOpts, 2)
 }
 
-func TestCLICredentialsConfigure_ClientIDSource(t *testing.T) {
+func TestCLICredentialsConfigure_ClientID(t *testing.T) {
 	tests := []struct {
 		name     string
 		authType string
@@ -249,13 +249,13 @@ func TestCLICredentialsConfigure_ClientIDSource(t *testing.T) {
 			name:     "U2M environment client ID",
 			authType: "databricks-cli",
 			source:   config.SourceEnv,
-			wantOpts: 2,
+			wantOpts: 3,
 		},
 		{
 			name:     "U2M dynamic client ID",
 			authType: "databricks-cli",
 			source:   config.SourceDynamicConfig,
-			wantOpts: 2,
+			wantOpts: 3,
 		},
 		{
 			name:     "non-U2M config file client ID",

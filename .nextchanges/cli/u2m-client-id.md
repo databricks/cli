@@ -1,1 +1,1 @@
-* Allow OAuth U2M logins and profiles to override the CLI client ID with `--client-id` and `client_id`. ([#6594](https://github.com/databricks/cli/pull/6594))
+* Allow OAuth U2M logins to override the CLI client ID with `--client-id`, profile `client_id`, or `DATABRICKS_CLIENT_ID`. ([#6594](https://github.com/databricks/cli/pull/6594))
