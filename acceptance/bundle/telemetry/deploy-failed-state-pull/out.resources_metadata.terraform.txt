@@ -1,0 +1,9 @@
+{
+  "state_engine": "terraform",
+  "resources": [
+    {
+      "resource_type": "jobs",
+      "count": 1
+    }
+  ]
+}

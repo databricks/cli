@@ -104,7 +104,3 @@ func (r *GenieSpace) InitializeURL(baseURL url.URL) {
 func (r *GenieSpace) GetName() string {
 	return r.Title
 }
-
-func (r *GenieSpace) GetURL() string {
-	return r.URL
-}

@@ -197,6 +197,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		return b, nil, err
 	}
 
+	// Record the requested engine up front so deploy telemetry reports it even when
+	// the deploy fails before the state is pulled (e.g. PullResourcesState itself
+	// errors). Refined to the state's engine below once it is known; the two differ
+	// only mid-migration, when the deploy runs on the existing state's engine.
+	b.Metrics.StateEngine = requiredEngine.Type.ThisOrDefault()
+
 	// The current deployment read from the service (nil, id "" if there is none yet). Used for the
 	// metadata diff and to reject a saved plan that predates the deployment's recorded version.
 	var dmsDeployment *bundledeployments.Deployment
@@ -211,6 +217,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
+
+		// Record the engine the resolved state uses now, so deploy telemetry reports
+		// it even when the deploy fails or is cancelled before deployCore runs.
+		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 
 		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
 

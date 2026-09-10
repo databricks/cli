@@ -13,7 +13,6 @@ Resources:
   Postgres databases:
     database1:
       Name: 
-      URL:  (not deployed)
 
 >>> [CLI] bundle deployment unbind database1
 
@@ -27,4 +26,3 @@ Resources:
   Postgres databases:
     database1:
       Name: 
-      URL:  (not deployed)

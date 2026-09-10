@@ -63,7 +63,3 @@ func (s *ClusterPolicy) InitializeURL(baseURL url.URL) {
 func (s *ClusterPolicy) GetName() string {
 	return s.Name
 }
-
-func (s *ClusterPolicy) GetURL() string {
-	return s.URL
-}

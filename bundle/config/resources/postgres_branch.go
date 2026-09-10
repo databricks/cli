@@ -82,9 +82,9 @@ func (b *PostgresBranch) GetName() string {
 	return ""
 }
 
-func (b *PostgresBranch) GetURL() string {
+func (b *PostgresBranch) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (b *PostgresBranch) InitializeURL(_ url.URL) {

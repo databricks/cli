@@ -60,7 +60,3 @@ func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 func (s *QualityMonitor) GetName() string {
 	return s.TableName
 }
-
-func (s *QualityMonitor) GetURL() string {
-	return s.URL
-}

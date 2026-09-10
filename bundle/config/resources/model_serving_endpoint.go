@@ -61,7 +61,3 @@ func (s *ModelServingEndpoint) InitializeURL(baseURL url.URL) {
 func (s *ModelServingEndpoint) GetName() string {
 	return s.Name
 }
-
-func (s *ModelServingEndpoint) GetURL() string {
-	return s.URL
-}

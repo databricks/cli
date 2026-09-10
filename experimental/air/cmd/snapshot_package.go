@@ -17,18 +17,29 @@ import (
 // to /databricks/code_source/<dir> — so the --prefix / `-C parent dir` forms preserve it.
 
 // createGitArchiveSnapshot writes a gzipped tar of commitSHA to outputTarball via
-// `git archive`, with every entry prefixed by directoryName/. When includePaths is
-// set, only those paths are archived.
-func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string) error {
+// `git archive`, with every entry prefixed by directoryName/. When subtreePrefix is
+// set, only that repository subtree is archived and includePaths are relative to it.
+func createGitArchiveSnapshot(ctx context.Context, git gitRepo, commitSHA, outputTarball, directoryName string, includePaths []string, subtreePrefix string) error {
+	treeish := commitSHA
+	archiveGit := git
+	if subtreePrefix != "" {
+		repoRoot, err := git.repositoryRoot(ctx)
+		if err != nil {
+			return err
+		}
+		archiveGit = newGitRepo(repoRoot)
+		treeish = commitSHA + ":" + subtreePrefix
+	}
+
 	args := []string{
 		"archive",
 		"--format=tar.gz",
 		"--prefix=" + directoryName + "/",
 		"-o", outputTarball,
-		commitSHA,
+		treeish,
 	}
 	args = append(args, includePaths...)
-	if _, err := git.run(ctx, args...); err != nil {
+	if _, err := archiveGit.run(ctx, args...); err != nil {
 		return fmt.Errorf("failed to create git archive: %w", err)
 	}
 	return nil
