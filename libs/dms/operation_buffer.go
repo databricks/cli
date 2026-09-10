@@ -4,7 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
+
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 // bufferedOperations caps how far ahead of the service a deploy may get; DMS is what the next
@@ -19,7 +24,7 @@ const stagedSequenceID = "0"
 // path: writes are queued and sent on one background goroutine. It exists only while a bundle
 // records deployment history; callers hold a nil buffer otherwise and must not call it.
 type OperationBuffer struct {
-	client       *Client
+	service      bundledeployments.BundleDeploymentsInterface
 	deploymentID string
 	versionNum   int
 
@@ -56,9 +61,9 @@ type OperationBuffer struct {
 
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
-func StartOperationBuffer(ctx context.Context, client *Client, deploymentID string, versionNum int) *OperationBuffer {
+func StartOperationBuffer(ctx context.Context, service bundledeployments.BundleDeploymentsInterface, deploymentID string, versionNum int) *OperationBuffer {
 	b := &OperationBuffer{
-		client:       client,
+		service:      service,
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
 		queue:        make(chan string, bufferedOperations),
@@ -155,13 +160,21 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 		sequenceID = stagedSequenceID
 	}
 
-	next, err := b.client.UpdateOperation(ctx, b.deploymentID, b.versionNum, key, sequenceID, update)
+	operation, err := newOperationUpdate(update, sequenceID)
+	if err != nil {
+		return err
+	}
+	result, err := b.service.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
+		Name:       VersionName(b.deploymentID, b.versionNum) + "/operations/" + strings.TrimPrefix(key, StatePrefix),
+		Operation:  operation,
+		UpdateMask: fieldmask.FieldMask{Paths: strings.Split(update.Fields.Mask(), ",")},
+	})
 	if err != nil {
 		return err
 	}
 
 	// The next write for this resource echoes the sequence id this one earned.
-	b.sequenceIDs[key] = next
+	b.sequenceIDs[key] = strconv.FormatInt(result.SequenceId, 10)
 
 	return nil
 }
