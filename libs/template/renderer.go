@@ -305,14 +305,24 @@ func (r *renderer) walk() error {
 			return cmp.Compare(a.Name(), b.Name())
 		})
 		for _, entry := range entries {
+			entryPath := path.Join(currentDirectory, entry.Name())
+			if entry.Type()&fs.ModeSymlink != 0 {
+				info, err := fs.Stat(r.srcFS, entryPath)
+				if err != nil {
+					return err
+				}
+				if info.IsDir() {
+					return fmt.Errorf("symlinked directories are not supported in templates: %s", entryPath)
+				}
+			}
 			if entry.IsDir() {
 				// Add to slice, for BFS traversal
-				directories = append(directories, path.Join(currentDirectory, entry.Name()))
+				directories = append(directories, entryPath)
 				continue
 			}
 
 			// Generate in memory representation of file
-			f, err := r.computeFile(path.Join(currentDirectory, entry.Name()))
+			f, err := r.computeFile(entryPath)
 			if err != nil {
 				return err
 			}

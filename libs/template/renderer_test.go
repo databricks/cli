@@ -577,6 +577,19 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 	assert.Equal(t, "not-a-template", r.files[0].RelPath())
 }
 
+func TestRendererRejectsSymlinkedDirectories(t *testing.T) {
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), nil)
+	templateDir := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(templateDir, "shared"), 0o755))
+	require.NoError(t, os.Symlink("shared", filepath.Join(templateDir, "linked_dir")))
+
+	r, err := newRenderer(ctx, nil, nil, os.DirFS(templateDir), ".", "library")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.EqualError(t, err, "symlinked directories are not supported in templates: linked_dir")
+}
+
 func TestRendererFileTreeRendering(t *testing.T) {
 	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
