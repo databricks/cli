@@ -49,6 +49,24 @@ func (s *FakeOidc) OidcAuthorize(req Request) Response {
 }
 
 func (s *FakeOidc) OidcToken(req Request) Response {
+	parameters, err := url.ParseQuery(string(req.Body))
+	if err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       err.Error(),
+		}
+	}
+
+	if parameters.Get("refresh_token") == "invalid-refresh-token" {
+		return Response{
+			StatusCode: http.StatusUnauthorized,
+			Body: map[string]string{
+				"error":             "invalid_grant",
+				"error_description": "Refresh token is invalid",
+			},
+		}
+	}
+
 	return Response{
 		Body: map[string]string{
 			"access_token": "oauth-token",

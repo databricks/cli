@@ -1,4 +1,11 @@
+# Create the profile and a valid profile-bound token that can be refreshed.
 setup_test_profile
 setup_test_token_cache
 
+# Replace the valid refresh token with one the fake OIDC server rejects.
+jq '.tokens["test-profile"].refresh_token = "invalid-refresh-token"' \
+    "./home/.databricks/token-cache.json" > "./token-cache.json"
+mv "./token-cache.json" "./home/.databricks/token-cache.json"
+
+# The CLI must report that the user needs to log in again.
 musterr $CLI auth token --profile test-profile --force-refresh

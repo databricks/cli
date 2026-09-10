@@ -1,0 +1,13 @@
+# Ordinary workspace commands must reject a cached token after its profile changes.
+sethome "./home"
+export BROWSER="browser.py"
+export DATABRICKS_AUTH_STORAGE=plaintext
+
+# Login creates a cached token bound to the saved profile.
+trace $CLI auth login --host $DATABRICKS_HOST --profile fingerprint-test --scopes jobs
+
+# Simulate changing an authentication-related profile field by hand.
+sed -i.bak 's/scopes       = jobs/scopes       = all-apis,sql/' "./home/.databrickscfg"
+
+# An ordinary workspace command must reject the token bound to the old profile.
+trace musterr $CLI clusters list --profile fingerprint-test

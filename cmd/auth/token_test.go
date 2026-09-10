@@ -14,9 +14,11 @@ import (
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -34,6 +36,117 @@ func (upgradeHintStore) Lookup(string) (storage.Entry, error) {
 	return storage.Entry{}, storage.NewNotFoundHint(
 		"stored credentials from older CLI versions are no longer used; run `databricks auth login` to sign in again, or set DATABRICKS_AUTH_STORAGE=plaintext to keep using the file cache",
 	)
+}
+
+func newProfileFingerprintTokenArgs(t *testing.T, loggedInProfile, currentProfile profile.Profile, forceRefresh bool) loadTokenArgs {
+	t.Helper()
+
+	fingerprint, err := profilehash.Compute(loggedInProfile)
+	require.NoError(t, err)
+	profileName := currentProfile.Name
+
+	tokenStore := &inMemoryStore{
+		Tokens: map[string]*oauth2.Token{
+			profileName: {
+				AccessToken:  "jobs-token",
+				RefreshToken: "jobs-refresh-token",
+				Expiry:       time.Now().Add(time.Hour),
+			},
+		},
+		Fingerprints: map[string]string{profileName: fingerprint},
+	}
+
+	return loadTokenArgs{
+		authArguments: &auth.AuthArguments{},
+		profileName:   profileName,
+		tokenTimeout:  time.Minute,
+		profiler: profile.InMemoryProfiler{Profiles: profile.Profiles{
+			currentProfile,
+		}},
+		tokenStore:   tokenStore,
+		forceRefresh: forceRefresh,
+	}
+}
+
+// TestLoadTokenAcceptsMatchingProfileFingerprint verifies that a cached token
+// remains usable while its profile is unchanged.
+func TestLoadTokenAcceptsMatchingProfileFingerprint(t *testing.T) {
+	loggedInProfile := profile.Profile{
+		Name:     "TEST",
+		Host:     "https://workspace.example.test",
+		Scopes:   "jobs",
+		AuthType: "databricks-cli",
+	}
+	currentProfile := loggedInProfile
+	args := newProfileFingerprintTokenArgs(t, loggedInProfile, currentProfile, false)
+
+	got, err := loadToken(cmdio.MockDiscard(t.Context()), args)
+	require.NoError(t, err)
+	assert.Equal(t, "jobs-token", got.AccessToken)
+}
+
+// TestLoadTokenRejectsChangedProfile verifies that cached credentials cannot
+// be reused or refreshed after the profile changes.
+func TestLoadTokenRejectsChangedProfile(t *testing.T) {
+	tests := []struct {
+		name         string
+		forceRefresh bool
+	}{
+		{
+			name: "reuse",
+		},
+		{
+			name:         "force refresh",
+			forceRefresh: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			loggedInProfile := profile.Profile{
+				Name:     "TEST",
+				Host:     "https://workspace.example.test",
+				Scopes:   "jobs",
+				AuthType: "databricks-cli",
+			}
+			currentProfile := profile.Profile{
+				Name:     "TEST",
+				Host:     "https://workspace.example.test",
+				Scopes:   "all-apis,sql",
+				AuthType: "databricks-cli",
+			}
+			args := newProfileFingerprintTokenArgs(t, loggedInProfile, currentProfile, tt.forceRefresh)
+
+			_, err := loadToken(cmdio.MockDiscard(t.Context()), args)
+
+			assert.ErrorIs(t, err, storage.ErrProfileChanged)
+			assert.ErrorContains(t, err, `profile "TEST" has changed since the last login`)
+		})
+	}
+}
+
+// TestLoadTokenRejectsMissingNamedProfile verifies that an orphaned cached
+// token cannot be loaded after its profile is removed.
+func TestLoadTokenRejectsMissingNamedProfile(t *testing.T) {
+	args := loadTokenArgs{
+		authArguments: &auth.AuthArguments{
+			Host: "https://workspace.example.test",
+		},
+		profileName:  "TEST",
+		tokenTimeout: time.Minute,
+		profiler:     profile.InMemoryProfiler{},
+		tokenStore: &inMemoryStore{Tokens: map[string]*oauth2.Token{
+			"TEST": {
+				AccessToken: "orphaned-token",
+				Expiry:      time.Now().Add(time.Hour),
+			},
+		}},
+	}
+
+	_, err := loadToken(cmdio.MockDiscard(t.Context()), args)
+
+	assert.ErrorIs(t, err, errNoProfileFound)
+	assert.ErrorContains(t, err, `"TEST"`)
 }
 
 var _ storage.Store = upgradeHintStore{}

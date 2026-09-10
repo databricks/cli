@@ -3,9 +3,12 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
@@ -107,6 +110,21 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
+
+	// Fingerprints bind profile-keyed OAuth tokens to the profile that created
+	// them. Without a profile name, there is no saved profile to validate and no
+	// profile-keyed cache entry to wrap. Leave the store unchanged so existing
+	// profile-less databricks-cli authentication can still look up a legacy
+	// host-keyed token. PAT and M2M authentication do not reach this strategy;
+	// they are handled earlier in the credential chain.
+	if cfg.Profile != "" {
+		fingerprint, err := profilehash.Compute(profile.FromConfig(cfg))
+		if err != nil {
+			return nil, fmt.Errorf("compute profile fingerprint: %w", err)
+		}
+		tokenStore = storage.NewProfileFingerprintStore(tokenStore, cfg.Profile, fingerprint)
+	}
+
 	ts, err := c.persistentAuth(ctx,
 		u2m.WithOAuthArgument(oauthArg),
 		u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenStore, mode)),
@@ -114,6 +132,7 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
+
 	cp := credentials.NewOAuthCredentialsProviderFromTokenSource(
 		auth.NewCachedTokenSource(ts, auth.WithAsyncRefresh(!cfg.DisableOAuthRefreshToken)),
 	)

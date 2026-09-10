@@ -6,9 +6,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 )
 
-// Profile holds a subset of the keys in a databrickscfg profile.
-// It should only be used for prompting and filtering.
-// Use its name to construct a config.Config.
+// Profile is the simplified representation of a databrickscfg profile used for
+// prompting, filtering, and cached-token fingerprints. Every field contributes
+// to the fingerprint, so fields should only be added when changing them must
+// invalidate cached credentials. Use the profile name to construct a complete
+// config.Config.
 type Profile struct {
 	Name                 string
 	Host                 string
@@ -19,6 +21,21 @@ type Profile struct {
 	HasClientCredentials bool
 	Scopes               string
 	AuthType             string
+}
+
+// FromConfig returns the simplified profile represented by a resolved config.
+func FromConfig(cfg *config.Config) Profile {
+	return Profile{
+		Name:                 cfg.Profile,
+		Host:                 cfg.Host,
+		AccountID:            cfg.AccountID,
+		WorkspaceID:          cfg.WorkspaceID,
+		ClusterID:            cfg.ClusterID,
+		ServerlessComputeID:  cfg.ServerlessComputeID,
+		HasClientCredentials: cfg.ClientID != "" && cfg.ClientSecret != "",
+		Scopes:               strings.Join(cfg.Scopes, ","),
+		AuthType:             cfg.AuthType,
+	}
 }
 
 func (p Profile) Cloud() string {

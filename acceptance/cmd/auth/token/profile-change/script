@@ -1,0 +1,23 @@
+# A cached token must be rejected without mutation after its profile changes.
+sethome "./home"
+export BROWSER="browser.py"
+export DATABRICKS_AUTH_STORAGE=plaintext
+
+# Login creates a cached token bound to the saved profile.
+trace $CLI auth login --host $DATABRICKS_HOST --profile fingerprint-test --scopes jobs
+
+# Keep the original cache so we can verify that rejection does not modify it.
+cp "./home/.databricks/token-cache.json" "./token-cache.before.json"
+
+# Simulate changing an authentication-related profile field by hand.
+sed -i.bak 's/scopes       = jobs/scopes       = all-apis,sql/' "./home/.databrickscfg"
+
+# auth token must reject the token bound to the old profile.
+trace musterr $CLI auth token --profile fingerprint-test
+
+# Rejecting the stale token must leave the cached credentials unchanged.
+if cmp -s "./token-cache.before.json" "./home/.databricks/token-cache.json"; then
+    echo "Token cache unchanged"
+else
+    echo "Token cache changed"
+fi

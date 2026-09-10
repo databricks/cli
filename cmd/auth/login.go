@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -86,6 +87,29 @@ func (d *defaultDiscoveryClient) NewPersistentAuth(ctx context.Context, opts ...
 
 func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
 	return auth.IntrospectToken(ctx, host, accessToken, nil)
+}
+
+// setTokenProfileFingerprint runs after profile saving because OAuth-dependent
+// workspace and compute selection can change the final profile contents.
+func setTokenProfileFingerprint(ctx context.Context, profiler profile.Profiler, tokenStore storage.Store, profileName string) error {
+	savedProfile, err := loadProfileByName(ctx, profileName, profiler)
+	if err != nil {
+		return fmt.Errorf("load saved profile %q: %w", profileName, err)
+	}
+	if savedProfile == nil {
+		return fmt.Errorf("saved profile %q not found", profileName)
+	}
+
+	fingerprint, err := profilehash.Compute(*savedProfile)
+	if err != nil {
+		return fmt.Errorf("compute profile fingerprint: %w", err)
+	}
+
+	if err := storage.SetProfileFingerprint(tokenStore, profileName, fingerprint); err != nil {
+		return fmt.Errorf("save profile fingerprint: %w", err)
+	}
+
+	return nil
 }
 
 func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
@@ -395,6 +419,10 @@ a new profile is created.
 				Scopes:              scopesList,
 			}, clearKeys...)
 			if err != nil {
+				return err
+			}
+
+			if err := setTokenProfileFingerprint(ctx, profile.DefaultProfiler, tokenStore, profileName); err != nil {
 				return err
 			}
 
@@ -756,6 +784,10 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 			return fmt.Errorf("saving profile %q to %s: %w", in.profileName, configFile, err)
 		}
 		return fmt.Errorf("saving profile %q: %w", in.profileName, err)
+	}
+
+	if err := setTokenProfileFingerprint(ctx, profile.DefaultProfiler, in.tokenStore, in.profileName); err != nil {
+		return err
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", in.profileName))

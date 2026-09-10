@@ -38,7 +38,8 @@ const (
 	//       "access_token": "<access_token>",
 	//       "token_type": "<token_type>",
 	//       "refresh_token": "<refresh_token>",
-	//       "expiry": "<expiry>"
+	//       "expiry": "<expiry>",
+	//       "profile_fingerprint": "<profile_fingerprint>"
 	//     }
 	//   }
 	// }
@@ -50,6 +51,7 @@ const (
 // the historical bare-token format, leaving room for additive sibling fields.
 type fileEntry struct {
 	*oauth2.Token
+	ProfileFingerprint string `json:"profile_fingerprint,omitempty"`
 }
 
 // tokenStoreFile is the format of the token store file.
@@ -106,7 +108,10 @@ func (c *fileStore) Put(key string, e Entry) error {
 	if f.Tokens == nil {
 		f.Tokens = map[string]*fileEntry{}
 	}
-	f.Tokens[key] = &fileEntry{Token: e.Token}
+	f.Tokens[key] = &fileEntry{
+		Token:              e.Token,
+		ProfileFingerprint: e.ProfileFingerprint,
+	}
 	return c.write(f)
 }
 
@@ -122,7 +127,10 @@ func (c *fileStore) Lookup(key string) (Entry, error) {
 	if !ok {
 		return Entry{}, ErrNotFound
 	}
-	return Entry{Token: fe.Token}, nil
+	return Entry{
+		Token:              fe.Token,
+		ProfileFingerprint: fe.ProfileFingerprint,
+	}, nil
 }
 
 // Delete implements the Store interface. Removing a missing key is a no-op.

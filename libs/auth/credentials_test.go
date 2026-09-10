@@ -205,6 +205,28 @@ func TestCLICredentialsConfigure(t *testing.T) {
 	}
 }
 
+// TestCLICredentialsConfigureUsesResolvedProfile verifies that fingerprinting
+// does not try to load the profile from the configuration file again.
+func TestCLICredentialsConfigureUsesResolvedProfile(t *testing.T) {
+	hermeticAuthStorage(t)
+
+	c := CLICredentials{
+		persistentAuthFn: func(_ context.Context, _ ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+			return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+				return &oauth2.Token{AccessToken: "token"}, nil
+			}), nil
+		},
+	}
+	cfg := &config.Config{
+		Profile:  "TEST",
+		Host:     "https://workspace.example.test",
+		AuthType: "databricks-cli",
+	}
+
+	_, err := c.Configure(t.Context(), cfg)
+	require.NoError(t, err)
+}
+
 // TestCLICredentialsConfigure_ThreadsResolvedTokenCache guards against a
 // regression where Configure forgot to pass u2m.WithTokenCache. Without it,
 // the SDK's NewPersistentAuth silently defaulted to the file cache, so users

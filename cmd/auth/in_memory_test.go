@@ -6,7 +6,8 @@ import (
 )
 
 type inMemoryStore struct {
-	Tokens map[string]*oauth2.Token
+	Tokens       map[string]*oauth2.Token
+	Fingerprints map[string]string
 }
 
 // Lookup returns a copy to match real (file-backed) cache behavior, where
@@ -19,7 +20,10 @@ func (i *inMemoryStore) Lookup(key string) (storage.Entry, error) {
 		return storage.Entry{}, storage.ErrNotFound
 	}
 	cp := *token
-	return storage.Entry{Token: &cp}, nil
+	return storage.Entry{
+		Token:              &cp,
+		ProfileFingerprint: i.Fingerprints[key],
+	}, nil
 }
 
 // Put stores a copy to prevent callers from mutating cached entries after
@@ -27,6 +31,13 @@ func (i *inMemoryStore) Lookup(key string) (storage.Entry, error) {
 func (i *inMemoryStore) Put(key string, e storage.Entry) error {
 	cp := *e.Token
 	i.Tokens[key] = &cp
+
+	if i.Fingerprints == nil {
+		i.Fingerprints = make(map[string]string)
+	}
+
+	i.Fingerprints[key] = e.ProfileFingerprint
+
 	return nil
 }
 
@@ -34,6 +45,7 @@ func (i *inMemoryStore) Put(key string, e storage.Entry) error {
 // an error.
 func (i *inMemoryStore) Delete(key string) error {
 	delete(i.Tokens, key)
+	delete(i.Fingerprints, key)
 	return nil
 }
 

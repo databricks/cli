@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "tokens": {
+    "test-profile": {
+      "access_token": "cached-access-token",
+      "token_type": "Bearer",
+      "refresh_token": "test-refresh-token",
+      "expiry": "2099-01-01T00:00:00Z"
+    }
+  }
+}

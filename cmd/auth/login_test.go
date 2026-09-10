@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/databrickscfg/profilehash"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
@@ -30,7 +31,10 @@ import (
 // newTestStore returns an in-memory token cache for tests so that
 // discoveryLogin and other login helpers don't touch ~/.databricks/token-cache.json.
 func newTestStore() storage.Store {
-	return &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
+	// Prepopulate the entry because the fake Challenge does not perform the real OAuth cache write.
+	return &inMemoryStore{Tokens: map[string]*oauth2.Token{
+		"DISCOVERY": {AccessToken: "test-token"},
+	}}
 }
 
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
@@ -804,6 +808,29 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Equal(t, "all-apis,sql", savedProfile.Scopes)
 	assert.Empty(t, savedProfile.AccountID)
 	assert.Empty(t, savedProfile.WorkspaceID)
+}
+
+// TestSetTokenProfileFingerprint verifies that a cached token is bound to the
+// profile saved by login.
+func TestSetTokenProfileFingerprint(t *testing.T) {
+	savedProfile := profile.Profile{
+		Name: "DISCOVERY",
+		Host: "https://workspace.example.test",
+	}
+	profiler := profile.InMemoryProfiler{
+		Profiles: profile.Profiles{savedProfile},
+	}
+	tokenStore := newTestStore()
+
+	err := setTokenProfileFingerprint(t.Context(), profiler, tokenStore, savedProfile.Name)
+	require.NoError(t, err)
+
+	want, err := profilehash.Compute(savedProfile)
+	require.NoError(t, err)
+	entry, err := tokenStore.Lookup(savedProfile.Name)
+	require.NoError(t, err)
+
+	assert.Equal(t, want, entry.ProfileFingerprint)
 }
 
 func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {

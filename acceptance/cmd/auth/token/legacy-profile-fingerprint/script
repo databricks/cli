@@ -1,0 +1,10 @@
+# A token without fingerprint metadata must require a new login.
+# Create the profile that the legacy cached token belongs to.
+setup_test_profile
+
+# Install a cache written by an older CLI that omits profile_fingerprint.
+mkdir -p "./home/.databricks"
+cp "./token-cache.json" "./home/.databricks/token-cache.json"
+
+# The CLI must reject a cached token whose profile binding cannot be verified.
+trace musterr $CLI auth token --profile test-profile
