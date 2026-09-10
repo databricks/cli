@@ -34,8 +34,9 @@ def test_sql_literal_escaping():
     assert _sql_literal(True) == "true"
     assert _sql_literal(5) == "5"
     assert _sql_literal(2.5) == "2.5"
-    assert _sql_literal("a'b") == "'a''b'"  # single quotes doubled
-    assert _sql_literal("a\\b") == "'a\\\\b'"  # backslash escaped for Spark SQL
+    # Spark escapes with a backslash; a doubled quote would drop the quote (verified live).
+    assert _sql_literal("a'b") == "'a\\'b'"  # single quote -> \'
+    assert _sql_literal("a\\b") == "'a\\\\b'"  # backslash -> \\
 
 
 def test_cast_value_by_type():

@@ -77,9 +77,10 @@ def _sql_literal(v: Any) -> str:
         return "true" if v else "false"
     if isinstance(v, (int, float)):
         return repr(v)
-    # Spark SQL string literals honor backslash escapes, so escape the backslash before
-    # doubling the quote — otherwise a literal '\' or "'" in seed data breaks the INSERT.
-    return "'" + str(v).replace("\\", "\\\\").replace("'", "''") + "'"
+    # Databricks/Spark SQL escapes string literals with a backslash, and (unlike ANSI SQL)
+    # a doubled quote '' is NOT an escaped quote — it drops the quote. So escape the
+    # backslash first, then the single quote, both with a backslash.
+    return "'" + str(v).replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 
 def _cast_value(raw: str | None, type_name: str) -> Any:
