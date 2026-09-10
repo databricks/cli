@@ -16,6 +16,8 @@
 # Fix exists in serverless connection mode (not yet merged).
 # Slack: https://databricks.slack.com/archives/C03AV2J5FSR/p1767964913136479
 acceptance TestAccept/ssh/connection
+acceptance TestAccept/bundle/resources/postgres_snapshot_schedules/basic/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true
+acceptance TestAccept/bundle/resources/postgres_snapshot_schedules/out-of-band/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true
 
 # Need to convert to acceptance tests; terraform registry is not accessible from CI.
 * TestSparkJarTaskDeployAndRunOnVolumes
