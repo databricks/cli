@@ -102,9 +102,7 @@ func createResumableTestClient(t *testing.T, serverURL string, errChan chan erro
 	clientOutput := newTestBuffer(t)
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		proxy := newResumableProxyConnection(createConn, proxyResumeBufferLimit)
 		if err := proxy.connect(ctx); err != nil {
 			if errChan != nil {
@@ -120,7 +118,7 @@ func createResumableTestClient(t *testing.T, serverURL string, errChan chan erro
 				t.Errorf("client error: %v", err)
 			}
 		}
-	}()
+	})
 
 	return &testClient{
 		InputWriter: clientInputWriter,
