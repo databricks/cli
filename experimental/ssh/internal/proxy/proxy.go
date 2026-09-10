@@ -82,15 +82,11 @@ const (
 	proxyAckThreshold = 64 << 10
 )
 
-// proxyResumeBufferLimitForTest allows tests to override the buffer limit. When set to a non-zero
-// value, it is used instead of proxyResumeBufferLimit. This var is intentionally not exported
-// to discourage non-test usage.
-var proxyResumeBufferLimitForTest int
-
 // resumeState is the per-connection bookkeeping a resumable transport needs. It is nil unless
 // both ends negotiated resume, in which case the proxy behaves exactly as it did before.
 type resumeState struct {
-	// Outgoing payload that may still have to be replayed.
+	// Outgoing payload that may still have to be replayed. Not used after degradation but retained
+	// to avoid race conditions where concurrent goroutines may check resumable() and then access the buffer.
 	sendBuf *sendBuffer
 	// Total payload bytes written to the destination. The peer replays from this offset, so it
 	// only advances after a successful write.
@@ -113,13 +109,9 @@ type resumeState struct {
 	degraded atomic.Bool
 }
 
-func newResumeState() *resumeState {
-	limit := proxyResumeBufferLimit
-	if proxyResumeBufferLimitForTest > 0 {
-		limit = proxyResumeBufferLimitForTest
-	}
+func newResumeState(bufferLimit int) *resumeState {
 	return &resumeState{
-		sendBuf: newSendBuffer(limit),
+		sendBuf: newSendBuffer(bufferLimit),
 		resumed: make(chan *websocket.Conn, 1),
 		parked:  make(chan struct{}, 1),
 	}
@@ -234,14 +226,22 @@ func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnecti
 // session survive an unexpected disconnect. Both ends must agree: a server that does not speak
 // the protocol tears the session down on the first dropped connection regardless, and a client
 // must not attempt a resume against one (it would replay into a freshly spawned sshd).
-func newResumableProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnection {
+// bufferLimit sets the per-direction replay buffer cap; use proxyResumeBufferLimit for production.
+func newResumableProxyConnection(createConn createWebsocketConnectionFunc, bufferLimit int) *proxyConnection {
 	pc := newProxyConnection(createConn)
-	pc.resume = newResumeState()
+	pc.resume = newResumeState(bufferLimit)
 	return pc
 }
 
 // resumable reports whether this connection can reattach to its session after a drop.
 // Once the replay buffer fills, the connection is degraded to non-resumable and this returns false.
+//
+// Degrade-during-reattach safety: degraded is set inside sendMessage while holding handoverMutex.
+// reattach (dialReattach/awaitReattach) also acquires handoverMutex for its entire lifetime, so the
+// two operations are serialized. Once degraded is true, resumable() returns false, so:
+// - runReceivingLoop stops attempting reattaches (line ~475: if pc.resumable() check)
+// - replayTo will never be called by a new reattach, so sendBuf won't be accessed
+// This prevents silent data corruption from an inconsistent replay offset.
 func (pc *proxyConnection) resumable() bool {
 	if pc.resume == nil {
 		return false
@@ -269,7 +269,7 @@ func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.
 		// Both loops can still be stuck on conn.ReadMessage or src.Read and won't notice context cancellation,
 		// so we close the connection and the source (sshd stdout pipe or ssh client stdio) to unblock them.
 		<-gCtx.Done()
-		return errors.Join(pc.close(), pc.closeConnection(), pc.closeSource(src))
+		return errors.Join(pc.close(gCtx), pc.closeConnection(), pc.closeSource(src))
 	})
 	err := g.Wait()
 	if err == nil || isNormalClosure(err) {
@@ -338,7 +338,7 @@ func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) er
 			}
 			// This will block during handover - we stop sending anything except the close message.
 			// Meanwhile the "src" (sshd server stdout or ssh client stdin) will be buffered/blocked on the OS side until we start reading from it again.
-			err := pc.sendMessage(websocket.BinaryMessage, b[:n])
+			err := pc.sendMessage(ctx, websocket.BinaryMessage, b[:n])
 			switch {
 			case errors.Is(err, errSendFailedResumable):
 				// Buffered for replay, and sendMessage has closed the connection so the
@@ -361,7 +361,7 @@ func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) er
 	}
 }
 
-func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
+func (pc *proxyConnection) sendMessage(ctx context.Context, mt int, data []byte) error {
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()
 	// Record the payload before writing it, and under the same lock a resume swaps the
@@ -374,8 +374,11 @@ func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
 			// non-resumable to keep the session alive: a subsequent real drop will end it.
 			if errors.Is(err, errSendWindowExhausted) {
 				pc.resume.degraded.Store(true)
-				// Log will happen from runSendingLoop which has context
-				// Continue with the write below instead of returning an error
+				log.Warnf(ctx, "SSH tunnel replay buffer filled: downgrading to non-resumable to keep the session alive")
+				// Buffer retained but unused after degradation to avoid race conditions. Continue with
+				// the write below instead of returning an error. Once resumable() checks degraded and
+				// returns false, no more appends or acks will occur, so the ~1 MiB of retained memory
+				// is acceptable for the session's lifetime.
 			} else {
 				return err
 			}
@@ -403,12 +406,12 @@ func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
 
 // sendControlMessage tells the peer how much payload we have written to our destination, so it
 // can release that much of its replay buffer.
-func (pc *proxyConnection) sendControlMessage(delivered int64) error {
+func (pc *proxyConnection) sendControlMessage(ctx context.Context, delivered int64) error {
 	payload, err := json.Marshal(controlMessage{Delivered: delivered})
 	if err != nil {
 		return err
 	}
-	return pc.sendMessage(websocket.TextMessage, payload)
+	return pc.sendMessage(ctx, websocket.TextMessage, payload)
 }
 
 // ackDelivered reports our delivered count to the peer once it has moved far enough to be worth
@@ -419,7 +422,7 @@ func (pc *proxyConnection) ackDelivered(ctx context.Context) {
 	if delivered-pc.resume.acked.Load() < proxyAckThreshold {
 		return
 	}
-	if err := pc.sendControlMessage(delivered); err != nil {
+	if err := pc.sendControlMessage(ctx, delivered); err != nil {
 		log.Debugf(ctx, "Failed to acknowledge %d delivered bytes: %v", delivered, err)
 		return
 	}
@@ -509,9 +512,9 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 	}
 }
 
-func (pc *proxyConnection) close() error {
+func (pc *proxyConnection) close(ctx context.Context) error {
 	// Keep in mind that pc.sendMessage blocks during handover
-	err := pc.sendMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	err := pc.sendMessage(ctx, websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
 		if isNormalClosure(err) || errors.Is(err, websocket.ErrCloseSent) {
 			return nil

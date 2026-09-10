@@ -88,10 +88,9 @@ func TestSendBufferReplayIsACopy(t *testing.T) {
 	assert.Equal(t, "abcdef", string(again), "mutating a replay must not corrupt the buffer")
 }
 
-// TestBufferFillDegradation verifies that when the replay buffer fills, the connection
-// can be marked as degraded (non-resumable) without crashing. The buffer itself is preserved
-// so pending replay data is still available if needed.
-func TestBufferFillCausesErrorNotPanic(t *testing.T) {
+// TestSendBufferFillReturnsError verifies that when the replay buffer fills,
+// append returns an error rather than panicking or silently dropping data.
+func TestSendBufferFillReturnsError(t *testing.T) {
 	b := newSendBuffer(100)
 
 	// Fill to the limit: 100 bytes

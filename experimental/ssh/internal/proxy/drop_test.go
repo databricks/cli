@@ -4,6 +4,7 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -82,6 +84,12 @@ func (r *tcpRelay) resetClients(t *testing.T) {
 // URL that mirrors the production one: the delivered offset rides along on every dial, and a
 // reattach says so explicitly.
 func createResumableTestClient(t *testing.T, serverURL string, errChan chan error) *testClient {
+	return createResumableTestClientWithBufferLimit(t, serverURL, proxyResumeBufferLimit, errChan)
+}
+
+// createResumableTestClientWithBufferLimit is like createResumableTestClient but allows
+// overriding the replay buffer limit for testing. It directly creates the proxy with the custom limit.
+func createResumableTestClientWithBufferLimit(t *testing.T, serverURL string, bufferLimit int, errChan chan error) *testClient {
 	wsURL := "ws" + serverURL[4:]
 	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
 		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
@@ -94,7 +102,36 @@ func createResumableTestClient(t *testing.T, serverURL string, errChan chan erro
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
 		return conn, err
 	}
-	return createTestClientWithDialer(t, createConn, nil, time.Hour, true, errChan)
+
+	ctx := cmdio.MockDiscard(t.Context())
+	clientInput, clientInputWriter := io.Pipe()
+	clientOutput := newTestBuffer(t)
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// Directly create proxy with custom buffer limit
+		proxy := newResumableProxyConnection(createConn, bufferLimit)
+		err := proxy.start(ctx, clientInput, clientOutput)
+		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) && !isNormalClosure(err) {
+			if errChan != nil {
+				errChan <- err
+			} else {
+				t.Errorf("client error: %v", err)
+			}
+		}
+	}()
+
+	return &testClient{
+		InputWriter: clientInputWriter,
+		Output:      clientOutput,
+		Cleanup: func() {
+			clientInput.Close()
+			clientInputWriter.Close()
+			wg.Wait()
+		},
+	}
 }
 
 // URL returns the relay's address in the http form createTestClient expects.
@@ -159,5 +196,54 @@ func TestADropIsNeverReportedAsACleanExit(t *testing.T) {
 		}
 		client.Cleanup()
 		server.Close()
+	}
+}
+
+// TestResumeBufferFillDegradation is a regression test for DECO-28501.
+// When continuous transfers saturate the transport, the replay buffer fills not because the
+// peer stopped acknowledging, but due to in-flight data congestion. The session must survive
+// by degrading to non-resumable instead of treating it as a dead peer.
+// This test sends >buffer_limit bytes continuously and verifies all bytes arrive intact
+// without the session ending.
+func TestResumeBufferFillDegradation(t *testing.T) {
+	// Use a small buffer limit (32 KiB) to make the test fast while still triggering the fill condition.
+	// The burst will be 4x this, so 128 KiB total.
+	const testBufferLimit = 32 * 1024
+
+	server := createTestServer(t, 2, time.Hour)
+	defer server.Close()
+
+	relay := newTCPRelay(t, server.Listener.Addr().String())
+
+	errChan := make(chan error, 1)
+	client := createResumableTestClientWithBufferLimit(t, relay.URL(), testBufferLimit, errChan)
+	defer client.Cleanup()
+
+	// Send a continuous burst larger than 2x the buffer limit to ensure the buffer fills
+	// even with both client and server degrading. Use 128 KiB to be well above the limit.
+	const burstSize = testBufferLimit * 4
+	expectedData := make([]byte, burstSize)
+	for i := range burstSize {
+		expectedData[i] = byte(i % 256)
+	}
+
+	_, err := client.InputWriter.Write(expectedData)
+	require.NoError(t, err, "failed to write burst to client")
+
+	// Wait for all data to be echoed back. The session should survive the buffer fill
+	// (degraded to non-resumable) and deliver every byte intact.
+	require.NoError(t, client.Output.WaitForWrite(expectedData),
+		"session did not survive buffer fill or data was corrupted")
+
+	// Verify exact data received (important: SSH MAC verification would fail on any corruption)
+	assert.Equal(t, string(expectedData), client.Output.String(),
+		"data corruption detected: echoed payload does not match input")
+
+	// The session must not have ended despite the buffer filling.
+	select {
+	case err := <-errChan:
+		t.Fatalf("session ended when buffer filled: %v", err)
+	default:
+		// Good - no error means the session is still alive
 	}
 }

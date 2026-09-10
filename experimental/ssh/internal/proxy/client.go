@@ -62,18 +62,20 @@ func logPongs(ctx context.Context, createConn createWebsocketConnectionFunc) cre
 // request by starting a fresh sshd, and replaying into that corrupts the SSH stream instead of
 // repairing it.
 func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, resumable bool, createConn createWebsocketConnectionFunc) error {
-	newConnection := newProxyConnection
+	var proxy *proxyConnection
+	wrappedConn := logPongs(ctx, createConn)
 	if resumable {
-		newConnection = newResumableProxyConnection
+		proxy = newResumableProxyConnection(wrappedConn, proxyResumeBufferLimit)
+	} else {
+		proxy = newProxyConnection(wrappedConn)
 	}
-	proxy := newConnection(logPongs(ctx, createConn))
 	log.Infof(ctx, "Establishing SSH proxy connection...")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	if err := proxy.connect(ctx); err != nil {
 		return errors.Join(ErrConnectFailed, fmt.Errorf("failed to connect to proxy: %w", err))
 	}
-	defer proxy.close()
+	defer proxy.close(ctx)
 	log.Infof(ctx, "SSH proxy connection established")
 
 	wrappedDst := &firstByteWriter{w: dst, firstByte: make(chan struct{})}

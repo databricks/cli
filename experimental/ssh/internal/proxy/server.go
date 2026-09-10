@@ -113,7 +113,7 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 	// waiting for the client to come back.
 	var conn *proxyConnection
 	if req.ResumeCapable {
-		conn = newResumableProxyConnection(nil)
+		conn = newResumableProxyConnection(nil, proxyResumeBufferLimit)
 	} else {
 		conn = newProxyConnection(nil)
 	}
@@ -185,7 +185,7 @@ func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCom
 }
 
 func closeProxyConnection(ctx context.Context, conn *proxyConnection) {
-	err := conn.close()
+	err := conn.close(ctx)
 	if err != nil {
 		log.Errorf(ctx, "Failed to close websocket: %v", err)
 	}
