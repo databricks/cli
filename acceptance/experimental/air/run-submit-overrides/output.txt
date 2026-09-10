@@ -1,0 +1,19 @@
+
+=== submit with nested overrides
+>>> [CLI] experimental air run -f run.yaml --override compute.num_accelerators=2 --override parameters.model.hidden_size=2048 --override parameters.optimizer.learning_rate=0.001
+Override: changing compute.num_accelerators from 1 to 2
+Override: changing parameters.model.hidden_size from 1024 to 2048
+Override: setting parameters.optimizer.learning_rate to 0.001
+Submitting experiment: overrides-smoke
+Submitted workload with Job Run ID: 555
+View job run at: [DATABRICKS_URL]/jobs/runs/555
+
+Tip: use --watch when submitting a run to stream logs to your terminal.
+Stream logs after submission using:
+  databricks experimental air logs 555
+
+=== the uploaded config contains normalization and overrides
+>>> print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/overrides-smoke/overrides-smoke_[RUN_ID]/command.sh", "q": {"overwrite": "true"}, "raw_body": "python train.py"}
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/overrides-smoke/overrides-smoke_[RUN_ID]/hyperparameters.yaml", "q": {"overwrite": "true"}, "raw_body": "model:\n    hidden_size: 2048\noptimizer:\n    learning_rate: 0.001\n    name: adamw\n"}
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/overrides-smoke/overrides-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: overrides-smoke\ncompute:\n    num_accelerators: 2\n    accelerator_type: GPU_1xH100\ncommand: python train.py\nparameters:\n    model:\n        hidden_size: 2048\n    optimizer:\n        learning_rate: 0.001\n        name: adamw\nmlflow_artifact_location: dbfs:/Volumes/main/default/air-artifacts\n"}

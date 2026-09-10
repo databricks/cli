@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -43,23 +44,23 @@ var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 type runConfig struct {
 	ExperimentName string             `yaml:"experiment_name" help:"Name of the experiment. Becomes the Jobs API task key: max 100 characters, alphanumerics, hyphens, and underscores only." required:"yes"`
 	Compute        *computeConfig     `yaml:"compute" help:"Which accelerators to run on and how many." required:"yes"`
-	Environment    *environmentConfig `yaml:"environment" help:"Python dependencies, or a custom Docker image, for the run's runtime."`
+	Environment    *environmentConfig `yaml:"environment,omitempty" help:"Python dependencies, or a custom Docker image, for the run's runtime."`
 	Command        *string            `yaml:"command" help:"Shell command that starts the workload. Max 1000 lines; move longer logic into a script under code_source." required:"yes"`
-	EnvVariables   map[string]string  `yaml:"env_variables" help:"Plain environment variables, as NAME: value. A name here cannot also appear in secrets."`
-	Secrets        map[string]string  `yaml:"secrets" help:"Environment variables sourced from secrets, as NAME: scope/key."`
-	CodeSource     *codeSourceConfig  `yaml:"code_source" help:"Local code to upload and make available to the run."`
+	EnvVariables   map[string]string  `yaml:"env_variables,omitempty" help:"Plain environment variables, as NAME: value. A name here cannot also appear in secrets."`
+	Secrets        map[string]string  `yaml:"secrets,omitempty" help:"Environment variables sourced from secrets, as NAME: scope/key."`
+	CodeSource     *codeSourceConfig  `yaml:"code_source,omitempty" help:"Local code to upload and make available to the run."`
 	// MaxRetries defaults to 3 when unset; default-filling is a normalization
 	// concern handled at launch, so a nil pointer is left as-is here.
-	MaxRetries                *int           `yaml:"max_retries" help:"How many times to retry a failed run. Must be >= 0. Defaults to 3 when unset."`
-	TimeoutMinutes            *int           `yaml:"timeout_minutes" help:"Wall-clock limit for the run in minutes. Must be >= 1."`
-	IdempotencyToken          *string        `yaml:"idempotency_token" help:"Reuse token: a repeat submission with the same token returns the existing run instead of starting another. Max 64 characters."`
-	Parameters                map[string]any `yaml:"parameters" help:"Free-form values passed through to the workload. Any nested structure is allowed."`
-	MLflowRunName             *string        `yaml:"mlflow_run_name" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only."`
-	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace."`
-	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ."`
-	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants."`
-	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to bill the run to, by name. Max 127 characters. Mutually exclusive with usage_policy_id."`
-	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to bill the run to, by id. Mutually exclusive with usage_policy_name."`
+	MaxRetries                *int           `yaml:"max_retries,omitempty" help:"How many times to retry a failed run. Must be >= 0. Defaults to 3 when unset."`
+	TimeoutMinutes            *int           `yaml:"timeout_minutes,omitempty" help:"Wall-clock limit for the run in minutes. Must be >= 1."`
+	IdempotencyToken          *string        `yaml:"idempotency_token,omitempty" help:"Reuse token: a repeat submission with the same token returns the existing run instead of starting another. Max 64 characters."`
+	Parameters                map[string]any `yaml:"parameters,omitempty" help:"Free-form values passed through to the workload. Any nested structure is allowed."`
+	MLflowRunName             *string        `yaml:"mlflow_run_name,omitempty" help:"Name for the MLflow run. Max 100 characters, alphanumerics, hyphens, and underscores only."`
+	MLflowExperimentDirectory *string        `yaml:"mlflow_experiment_directory,omitempty" help:"Workspace directory holding the MLflow experiment. Must start with /Workspace."`
+	MLflowArtifactLocation    *string        `yaml:"mlflow_artifact_location,omitempty" help:"DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... ."`
+	Permissions               []permission   `yaml:"permissions,omitempty" help:"Who may view or manage the run, as a list of principal plus level grants."`
+	UsagePolicyName           *string        `yaml:"usage_policy_name,omitempty" help:"Usage policy to bill the run to, by name. Max 127 characters. Mutually exclusive with usage_policy_id."`
+	UsagePolicyID             *string        `yaml:"usage_policy_id,omitempty" help:"Usage policy to bill the run to, by id. Mutually exclusive with usage_policy_name."`
 }
 
 // validate runs structural validation over the whole config, returning the first
@@ -244,9 +245,9 @@ func validateSecretRefs(secrets map[string]string) error {
 // environmentConfig is the `environment` block: dependencies and/or a custom
 // docker image.
 type environmentConfig struct {
-	Dependencies dependencies       `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside docker_image."`
-	Version      stringOrInt        `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
-	DockerImage  *dockerImageConfig `yaml:"docker_image" help:"Custom image supplying the whole runtime. Not allowed alongside dependencies or version."`
+	Dependencies dependencies       `yaml:"dependencies,omitempty" help:"Inline list of packages to install. Not allowed alongside docker_image."`
+	Version      stringOrInt        `yaml:"version,omitempty" help:"Client image version to pin. Only valid alongside inline dependencies."`
+	DockerImage  *dockerImageConfig `yaml:"docker_image,omitempty" help:"Custom image supplying the whole runtime. Not allowed alongside dependencies or version."`
 }
 
 func (e *environmentConfig) validate() error {
@@ -285,7 +286,7 @@ func (e *environmentConfig) validate() error {
 // dependencies is environment.dependencies: an inline list of packages. A scalar
 // (e.g. a path to a requirements file) is rejected — the list may itself reference
 // a requirements.txt, but dependencies must be given as a list.
-type dependencies struct {
+type dependencies struct { //nolint:recvcheck
 	set  bool
 	list []string
 }
@@ -298,12 +299,21 @@ func (d *dependencies) UnmarshalYAML(node *yaml.Node) error {
 	return node.Decode(&d.list)
 }
 
+func (d dependencies) MarshalYAML() (any, error) {
+	return d.list, nil
+}
+
+func (d dependencies) IsZero() bool {
+	return !d.set
+}
+
 // stringOrInt holds a scalar that may be a string or an integer in YAML
 // (environment.version). The raw text is kept; integer-format validation is a
 // launch-time concern.
-type stringOrInt struct {
-	set bool
-	raw string
+type stringOrInt struct { //nolint:recvcheck
+	set      bool
+	isString bool
+	raw      string
 }
 
 func (s *stringOrInt) UnmarshalYAML(node *yaml.Node) error {
@@ -311,8 +321,20 @@ func (s *stringOrInt) UnmarshalYAML(node *yaml.Node) error {
 		return errors.New("environment.version must be a string or integer")
 	}
 	s.set = true
+	s.isString = node.Tag == "!!str"
 	s.raw = node.Value
 	return nil
+}
+
+func (s stringOrInt) MarshalYAML() (any, error) {
+	if s.isString {
+		return s.raw, nil
+	}
+	return strconv.Atoi(s.raw)
+}
+
+func (s stringOrInt) IsZero() bool {
+	return !s.set
 }
 
 // dockerImageConfig is environment.docker_image.
@@ -320,11 +342,11 @@ type dockerImageConfig struct {
 	URL string `yaml:"url" help:"Fully qualified image URL, e.g. myregistry.io/team/train:v3." required:"when environment.docker_image is set"`
 	// "latest" re-checks the registry for the tag's newest digest each run;
 	// "auto" (default) reuses the existing registration.
-	TagPolicy string `yaml:"tag_policy" help:"\"auto\" (default) reuses the existing registration; \"latest\" re-checks the registry for the tag's newest digest each run."`
+	TagPolicy string `yaml:"tag_policy,omitempty" help:"\"auto\" (default) reuses the existing registration; \"latest\" re-checks the registry for the tag's newest digest each run."`
 	// Credentials for a private image that "latest" re-resolves; discovered from
 	// the local Docker config when unset.
-	CredentialsScope string `yaml:"credentials_scope" help:"Secret scope holding registry credentials for a private image re-resolved under tag_policy \"latest\"; discovered from the local Docker config when unset."`
-	CredentialsKey   string `yaml:"credentials_key" help:"Secret key (paired with credentials_scope) for private-image registry credentials."`
+	CredentialsScope string `yaml:"credentials_scope,omitempty" help:"Secret scope holding registry credentials for a private image re-resolved under tag_policy \"latest\"; discovered from the local Docker config when unset."`
+	CredentialsKey   string `yaml:"credentials_key,omitempty" help:"Secret key (paired with credentials_scope) for private-image registry credentials."`
 }
 
 const (
@@ -385,9 +407,9 @@ func (c *codeSourceConfig) validate() error {
 // snapshotSourceConfig describes a local directory to tar and upload.
 type snapshotSourceConfig struct {
 	RootPath     string   `yaml:"root_path" help:"Root of the code source to archive. A git-pinned subdirectory packages only that subtree." required:"when code_source.snapshot is set"`
-	RemoteVolume *string  `yaml:"remote_volume" help:"Volume to upload the archive to. Must start with /Volumes/."`
-	Git          *gitRef  `yaml:"git" help:"Pin the snapshot to a specific git revision."`
-	IncludePaths []string `yaml:"include_paths" help:"Restrict the archive to these paths, relative to root_path and without \"..\". Omit to include everything."`
+	RemoteVolume *string  `yaml:"remote_volume,omitempty" help:"Volume to upload the archive to. Must start with /Volumes/."`
+	Git          *gitRef  `yaml:"git,omitempty" help:"Pin the snapshot to a specific git revision."`
+	IncludePaths []string `yaml:"include_paths,omitempty" help:"Restrict the archive to these paths, relative to root_path and without \"..\". Omit to include everything."`
 }
 
 func (s *snapshotSourceConfig) validate() error {
@@ -426,9 +448,9 @@ func (s *snapshotSourceConfig) validate() error {
 // gitRef pins a snapshot to a specific git ref. branch and commit are mutually
 // exclusive; remote is only meaningful with branch.
 type gitRef struct {
-	Branch *string   `yaml:"branch" help:"Branch to pin to, resolved to its local HEAD. Mutually exclusive with commit." required:"one of branch or commit"`
-	Commit *string   `yaml:"commit" help:"Commit to pin to. Mutually exclusive with branch." required:"one of branch or commit"`
-	Remote gitRemote `yaml:"remote" help:"No longer supported: the snapshot archives your local copy. Only false is accepted; use commit to pin a revision."`
+	Branch *string   `yaml:"branch,omitempty" help:"Branch to pin to, resolved to its local HEAD. Mutually exclusive with commit." required:"one of branch or commit"`
+	Commit *string   `yaml:"commit,omitempty" help:"Commit to pin to. Mutually exclusive with branch." required:"one of branch or commit"`
+	Remote gitRemote `yaml:"remote,omitempty" help:"No longer supported: the snapshot archives your local copy. Only false is accepted; use commit to pin a revision."`
 }
 
 func (g *gitRef) validate() error {
@@ -454,7 +476,7 @@ func (g *gitRef) validate() error {
 
 // gitRemote is git.remote: false (default, use local HEAD), true (auto-detect the
 // remote), or a remote name string.
-type gitRemote struct {
+type gitRemote struct { //nolint:recvcheck
 	set      bool
 	isString bool
 	name     string
@@ -474,6 +496,17 @@ func (r *gitRemote) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
+func (r gitRemote) MarshalYAML() (any, error) {
+	if r.isString {
+		return r.name, nil
+	}
+	return r.enabled, nil
+}
+
+func (r gitRemote) IsZero() bool {
+	return !r.set
+}
+
 // truthy reports whether remote requests a remote fetch (mirrors Python's
 // truthiness of the bool|str union).
 func (r *gitRemote) truthy() bool {
@@ -486,9 +519,9 @@ func (r *gitRemote) truthy() bool {
 // permission is a DABs-compatible permission grant: exactly one principal plus a
 // level.
 type permission struct {
-	UserName             *string `yaml:"user_name" help:"Grant to this user, by email. Exactly one principal field per grant." required:"one principal per grant"`
-	GroupName            *string `yaml:"group_name" help:"Grant to this group, by name. Exactly one principal field per grant." required:"one principal per grant"`
-	ServicePrincipalName *string `yaml:"service_principal_name" help:"Grant to this service principal, by name. Exactly one principal field per grant." required:"one principal per grant"`
+	UserName             *string `yaml:"user_name,omitempty" help:"Grant to this user, by email. Exactly one principal field per grant." required:"one principal per grant"`
+	GroupName            *string `yaml:"group_name,omitempty" help:"Grant to this group, by name. Exactly one principal field per grant." required:"one principal per grant"`
+	ServicePrincipalName *string `yaml:"service_principal_name,omitempty" help:"Grant to this service principal, by name. Exactly one principal field per grant." required:"one principal per grant"`
 	// Level is a databricks PermissionLevel (e.g. CAN_VIEW, CAN_MANAGE). Enum
 	// membership is validated server-side; here we only require it to be set.
 	Level string `yaml:"level" help:"Permission level to grant, e.g. CAN_VIEW or CAN_MANAGE. Validated server-side." required:"when a grant is listed"`

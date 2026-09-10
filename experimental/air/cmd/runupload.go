@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"os"
 	"slices"
 	"strings"
 
@@ -43,18 +42,15 @@ type fileWriter interface {
 	Write(ctx context.Context, name string, reader io.Reader, mode ...filer.WriteMode) error
 }
 
-// buildArtifacts assembles the files to upload for a run: the merged config, the
-// inline command as a script, and hyperparameters. configPath is the local YAML
-// path.
+// buildArtifacts assembles the files to upload for a run: the final config, the
+// inline command as a script, and hyperparameters.
 //
 // Dependencies are not uploaded here; they ride inline on the serverless
 // environment's spec.dependencies (see buildSubmitPayload).
-func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
-	// TODO(DABs): with no _bases_/overrides ported yet, the merged config is the
-	// file as-is; once those land, upload the re-serialized merged YAML instead.
-	configData, err := os.ReadFile(configPath)
+func buildArtifacts(cfg *runConfig) ([]uploadItem, error) {
+	configData, err := yaml.Marshal(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config %s: %w", configPath, err)
+		return nil, fmt.Errorf("failed to serialize config: %w", err)
 	}
 	if len(configData) > maxConfigYAMLBytes {
 		return nil, fmt.Errorf("config YAML is %.2f MB, over the %d MB limit; reduce 'parameters' or 'command'",

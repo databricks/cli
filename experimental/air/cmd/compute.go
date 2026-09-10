@@ -91,8 +91,8 @@ func gpusPerNode(g gpuType) (int, error) {
 type computeConfig struct {
 	NumAccelerators       int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types."`
 	AcceleratorType       string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
-	ProvisionedCapacityID *string `yaml:"provisioned_capacity_id" help:"Pre-provisioned AIR capacity reservation id. Must be 1-255 characters. Contact your Databricks account team to provision capacity."`
-	PriorityClass         *string `yaml:"priority_class" help:"Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires provisioned_capacity_id."`
+	ProvisionedCapacityID *string `yaml:"provisioned_capacity_id,omitempty" help:"Pre-provisioned AIR capacity reservation id. Must be 1-255 characters. Contact your Databricks account team to provision capacity."`
+	PriorityClass         *string `yaml:"priority_class,omitempty" help:"Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires provisioned_capacity_id."`
 }
 
 // validate checks the compute block against the backend's constraints.

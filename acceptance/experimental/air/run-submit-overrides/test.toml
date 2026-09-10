@@ -1,0 +1,21 @@
+# A non-dry-run submit that verifies training_config.yaml contains the finalized
+# config after normalization and nested command-line overrides.
+RecordRequests = true
+
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/runs/submit"
+Response.Body = '''
+{"run_id": 555}
+'''
+
+[[Repls]]
+Old = 'overrides-smoke_[0-9a-f]{16}'
+New = 'overrides-smoke_[RUN_ID]'
