@@ -428,6 +428,12 @@ resources:
         reason: immutable
       - field: share_name
         reason: immutable
+    normalize_slash:
+      # UC strips a trailing slash from storage_root on create. The TF provider
+      # suppresses the same slash-only drift on this field (ucDirectoryPathSlashOnlySuppressDiff):
+      # https://github.com/databricks/terraform-provider-databricks/blob/main/catalog/resource_catalog.go
+      - field: storage_root
+        reason: uc_strips_trailing_slash
     updatable_id_fields:
       - field: name
         reason: id_changes

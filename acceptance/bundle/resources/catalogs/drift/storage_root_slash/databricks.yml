@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  catalogs:
+    catalog1:
+      name: catalog_slash
+      storage_root: "s3://my_bucket/my_location/"
