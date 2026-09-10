@@ -57,7 +57,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 				return
 			}
 
-			if !confirmBindPlan(ctx, resourceKey, result.Plan, opts.AutoApprove) {
+			if !confirmBindPlan(ctx, resourceKey, result.Plan, opts.AutoApprove, false) {
 				result.Cancel()
 				return
 			}
@@ -96,8 +96,10 @@ func jsonDump(ctx context.Context, v any, field string) string {
 // confirmBindPlan shows the bound resource's planned action and, unless autoApprove, asks the user
 // to confirm. It reports whether the bind should proceed; on decline or an unpromptable console it
 // logs the reason and returns false. A plain bind or skip changes nothing, so it proceeds without a
-// prompt. The caller owns any cleanup on a false return.
-func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove bool) bool {
+// prompt. immediate is true when the caller applies the change now (the DMS path) rather than
+// deferring it to the next deploy, so the prompt describes the right timing. The caller owns any
+// cleanup on a false return.
+func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove, immediate bool) bool {
 	var entry *deployplan.PlanEntry
 	if plan != nil {
 		entry = plan.Plan[resourceKey]
@@ -124,7 +126,11 @@ func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.P
 		return false
 	}
 
-	ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
+	prompt := "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'."
+	if immediate {
+		prompt = "Confirm bind? The change will be applied to the workspace now."
+	}
+	ans, err := cmdio.AskYesOrNo(ctx, prompt)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return false
@@ -155,20 +161,12 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 			groupName = tfResourceType
 		}
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
-
-		if b.ConfiguresDeploymentHistory(ctx) {
-			// A recorded deployment keeps its resources in the metadata service, so the unbind is
-			// recorded there rather than removed from the state file.
-			unbindWithHistory(ctx, b, fullResourceKey)
-			if logdiag.HasError(ctx) {
-				return
-			}
-		} else {
-			_, statePath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey); err != nil {
-				logdiag.LogError(ctx, err)
-				return
-			}
+		// Unbind under the deployment metadata service is not supported yet (no unbind operation
+		// action type exists); DeploymentBundle.Unbind errors for a recorded deployment.
+		_, statePath := b.StateFilenameDirect(ctx)
+		if err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey); err != nil {
+			logdiag.LogError(ctx, err)
+			return
 		}
 	} else {
 		bundle.ApplySeqContext(

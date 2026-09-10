@@ -35,13 +35,9 @@ func (e ErrResourceAlreadyBound) Error() string {
 		e.ResourceKey, e.ExistingID)
 }
 
-// BindResult contains the result of a bind operation including any detected changes.
+// BindResult contains the result of a bind operation.
 type BindResult struct {
-	// HasChanges is true if deploying after bind would make changes to the resource
-	HasChanges bool
-	// Action is the planned action for the bound resource (e.g., "skip", "update", "recreate")
-	Action deployplan.ActionType
-	// Plan contains the full deployment plan for the bound resource
+	// Plan contains the full deployment plan; confirmBindPlan reads the bound resource's action.
 	Plan *deployplan.Plan
 	// TempStatePath is the path to the temporary state file
 	TempStatePath string
@@ -194,22 +190,11 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		return nil, err
 	}
 
-	// Check if the bound resource has changes
-	result := &BindResult{
-		HasChanges:    false,
-		Action:        deployplan.Skip,
+	return &BindResult{
 		Plan:          plan,
 		TempStatePath: tmpStatePath,
 		StatePath:     statePath,
-	}
-
-	entry = plan.Plan[resourceKey]
-	if entry != nil {
-		result.Action = entry.Action
-		result.HasChanges = result.Action != deployplan.Skip && result.Action != deployplan.Undefined
-	}
-
-	return result, nil
+	}, nil
 }
 
 // Finalize completes the bind operation by renaming the temp state to the final location.

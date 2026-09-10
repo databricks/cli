@@ -117,6 +117,8 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 }
 
 type PlanEntry struct {
+	// ID carries the workspace id for a Bind/BindAndUpdate action, whose resource is not yet in
+	// state; every other action reads the id from state instead, so it is empty for them.
 	ID        string           `json:"id,omitempty"`
 	DependsOn []DependsOnEntry `json:"depends_on,omitempty"`
 	Action    ActionType       `json:"action,omitempty"`

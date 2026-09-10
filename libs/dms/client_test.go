@@ -16,11 +16,6 @@ func TestClientNamesEveryResourceTheSameWay(t *testing.T) {
 	assert.Equal(t, "deployments/dep-1/versions/2", versionName("dep-1", 2))
 }
 
-func TestUnbindActionType(t *testing.T) {
-	// The SDK has no unbind action type yet, so this pins the string the service expects.
-	assert.Equal(t, "OPERATION_ACTION_TYPE_UNBIND", string(ActionUnbind))
-}
-
 func TestDeploymentIDFromName(t *testing.T) {
 	id, err := deploymentIDFromName("deployments/abc-123")
 	require.NoError(t, err)

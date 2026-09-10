@@ -360,12 +360,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// because we know remote does not exist.
 			action = deployplan.Create
 		case adopt:
-			// Adopting an existing resource: no change needed is a plain bind, a change is a
-			// bind-and-update that applies the config in the same step.
-			if getMaxAction(entry.Changes) == deployplan.Skip {
+			// Adopting an existing resource: no change is a plain bind, an in-place update is a
+			// bind-and-update that applies the config in the same step. A heavier change
+			// (recreate/resize) cannot be applied by adopting, so reject it rather than silently
+			// downgrading to an update and skipping the destructive-change confirmation a deploy
+			// would show.
+			switch maxAction := getMaxAction(entry.Changes); maxAction {
+			case deployplan.Skip:
 				action = deployplan.Bind
-			} else {
+			case deployplan.Update:
 				action = deployplan.BindAndUpdate
+			default:
+				logdiag.LogError(ctx, fmt.Errorf("%s: cannot bind id=%q: the config differs from the resource in a field that requires %s, which bind does not apply; align the config with the existing resource first", errorPrefix, resourceID, maxAction))
+				return false
 			}
 			// The id is not in state yet, so carry it to apply on the plan entry.
 			entry.ID = resourceID
@@ -837,6 +844,11 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	if fieldPathS == "id" {
 		if targetAction.KeepsID() {
 			id := b.StateDB.GetResourceID(targetResourceKey)
+			if id == "" {
+				// A resource being adopted (bundle deployment bind) is not in state yet; its id is
+				// carried on the plan entry instead, so a sub-resource can resolve it here.
+				id = targetEntry.ID
+			}
 			if id == "" {
 				return nil, errors.New("internal error: no db entry")
 			}

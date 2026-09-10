@@ -187,14 +187,6 @@ type CreateVersionRequest struct {
 	Operations []StagedOperation `json:"operations,omitempty"`
 }
 
-// ActionUnbind is the operation action type recorded for `bundle deployment unbind`. Bind is a
-// plan action (Bind/BindAndUpdate) mapped in phases.actionToSDK; unbind has no plan action, so it
-// is staged directly.
-//
-// TODO(DMS): the SDK/proto has no unbind action type yet (only BIND and BIND_AND_UPDATE), so this
-// is the string the service is expected to accept. Replace with the SDK constant once it exists.
-const ActionUnbind = bundledeployments.OperationActionType("OPERATION_ACTION_TYPE_UNBIND")
-
 // StagedOperation is one resource the version will record an operation for. The service
 // creates it in OPERATION_STATUS_PENDING at sequence id 0, and the CLI fills in the outcome
 // with UpdateOperation as the resource is applied.

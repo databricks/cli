@@ -14,10 +14,12 @@ func TestStagedOperationsCoversEveryTouchedResource(t *testing.T) {
 	// The version fixes its operation set, so anything the apply will write has to appear
 	// here. Keys go out in the service's form, without the CLI's "resources." prefix.
 	plan := &deployplan.Plan{Plan: map[string]*deployplan.PlanEntry{
-		"resources.jobs.foo":       {Action: deployplan.Create},
-		"resources.pipelines.bar":  {Action: deployplan.Recreate},
-		"resources.schemas.baz":    {Action: deployplan.Delete},
-		"resources.clusters.small": {Action: deployplan.Resize},
+		"resources.jobs.foo":         {Action: deployplan.Create},
+		"resources.pipelines.bar":    {Action: deployplan.Recreate},
+		"resources.schemas.baz":      {Action: deployplan.Delete},
+		"resources.clusters.small":   {Action: deployplan.Resize},
+		"resources.jobs.adopted":     {Action: deployplan.Bind},
+		"resources.jobs.adopted_upd": {Action: deployplan.BindAndUpdate},
 	}}
 
 	staged, err := stagedOperations(plan)
@@ -28,6 +30,8 @@ func TestStagedOperationsCoversEveryTouchedResource(t *testing.T) {
 		{ResourceKey: "resources.pipelines.bar", ActionType: bundledeployments.OperationActionTypeOperationActionTypeRecreate},
 		{ResourceKey: "resources.schemas.baz", ActionType: bundledeployments.OperationActionTypeOperationActionTypeDelete},
 		{ResourceKey: "resources.clusters.small", ActionType: bundledeployments.OperationActionTypeOperationActionTypeResize},
+		{ResourceKey: "resources.jobs.adopted", ActionType: bundledeployments.OperationActionTypeOperationActionTypeBind},
+		{ResourceKey: "resources.jobs.adopted_upd", ActionType: bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate},
 	}, staged)
 }
 
@@ -60,6 +64,8 @@ func TestActionToSDK(t *testing.T) {
 		want   bundledeployments.OperationActionType
 	}{
 		{deployplan.Create, bundledeployments.OperationActionTypeOperationActionTypeCreate},
+		{deployplan.Bind, bundledeployments.OperationActionTypeOperationActionTypeBind},
+		{deployplan.BindAndUpdate, bundledeployments.OperationActionTypeOperationActionTypeBindAndUpdate},
 		{deployplan.Update, bundledeployments.OperationActionTypeOperationActionTypeUpdate},
 		{deployplan.UpdateWithID, bundledeployments.OperationActionTypeOperationActionTypeUpdateWithId},
 		{deployplan.Recreate, bundledeployments.OperationActionTypeOperationActionTypeRecreate},

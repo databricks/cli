@@ -97,6 +97,24 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	})
 }
 
+// createDeploymentAndStamp runs createOrUpdateDeployment, then on a first deploy stamps the created
+// id into the plan the apply reads (the id did not exist at plan time). It reports whether it
+// succeeded; on failure it has already logged. firstDeploy is captured before the create, which
+// assigns the id. Shared by the deploy and bind phases.
+func createDeploymentAndStamp(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment, firstDeploy bool) bool {
+	createOrUpdateDeployment(ctx, b, current)
+	if logdiag.HasError(ctx) {
+		return false
+	}
+	if firstDeploy {
+		if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
+			logdiag.LogError(ctx, err)
+			return false
+		}
+	}
+	return true
+}
+
 // startVersion claims the version the run settled on and opens the buffer that records
 // each state write under it. Called after approval, so a declined deploy never claims a number.
 // A no-op when the bundle does not record deployment history.

@@ -1,4 +1,2 @@
-# These tests cover the file-based unbind. Under the deployment metadata service (DMS) unbind
-# records its change with the service immediately rather than in the state file, so it cannot share
-# these goldens and is covered by bundle/dms/bind-unbind instead.
+# Unbind operations are not yet supported by the Deployment Metadata Service (DMS)
 EnvMatrix.DMS = [""]

@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# sc's config matches this existing schema exactly, so binding it changes nothing (a plain bind).
+trace $CLI schemas create "dms_bind_$UNIQUE_NAME" main
+# foo's config ("foo") differs from this existing job, so binding it applies an update.
+foo_id=$($CLI jobs create --json '{"name": "bind-target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$foo_id" FOO_ID
+
+cleanup() {
+    title "Test cleanup: the bound resources are now bundle-managed, so destroy removes them"
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Bind sc, the first bind: it creates the deployment. The config already matches, so this is a plain bind that records the resource without touching it"
+trace $CLI bundle deployment bind sc "main.dms_bind_$UNIQUE_NAME" --auto-approve
+
+title "Version 1 records only sc, with the plain bind action type; the jobs are left untouched"
+trace print_requests.py --dms --method POST //versions --nostamp
+
+title "Bind foo into the existing deployment: its config differs, so this is a bind-and-update that applies the config now"
+trace $CLI bundle deployment bind foo "$foo_id" --auto-approve
+
+title "Version 2 records only foo and its permissions (bar is untouched) and chains to version 1"
+trace print_requests.py --dms --method POST //versions --nostamp
+
+title "sc and foo are now managed; bar is still an unmanaged create"
+trace $CLI bundle plan
