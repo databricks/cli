@@ -116,6 +116,15 @@ def setup_environment(extract_dir: Path) -> dict:
     bin_dir = extract_dir / "bin" / arch
     go_bin_dir = bin_dir / "go" / "bin"
 
+    # Serverless does not guarantee the driver CPU architecture, so it may run one
+    # the archive was not built for. Fail with the detected architecture instead of
+    # a bare "FileNotFoundError: 'go'" that hides which architecture was missing.
+    if not (go_bin_dir / "go").is_file():
+        raise RuntimeError(
+            f"no Go toolchain for architecture {arch!r} (platform.machine()={machine!r}) "
+            f"in the test archive at {go_bin_dir}"
+        )
+
     path_entries = [
         str(go_bin_dir),
         str(bin_dir),
