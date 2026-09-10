@@ -529,6 +529,7 @@ func TestShouldSkipRemoteAddition(t *testing.T) {
 		})
 	}
 }
+
 // Types for TestPrepareChangesWholeBlockOverlap: two levels of nesting under an
 // optional pointer.
 type threeWayInner struct {

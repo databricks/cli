@@ -5,6 +5,11 @@
 # cluster-spec location (standalone cluster, task new_cluster, for_each new_cluster, pipeline).
 Cloud = false
 
+# Deployment-history recording (the DMS matrix) is orthogonal to drift suppression and
+# adds cloud/version-dependent plan fields; run this test once. DMS is covered by the
+# jobs/cluster_policy tests.
+EnvMatrix.DMS = []
+
 RecordRequests = false
 
 Ignore = [

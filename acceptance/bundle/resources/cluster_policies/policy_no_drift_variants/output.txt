@@ -161,7 +161,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
       ]
     }
   },
-  "plan_version": 2,
+  "plan_version": [PLAN_VERSION],
   "serial": 1
 }
 
