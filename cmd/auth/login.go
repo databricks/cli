@@ -133,6 +133,7 @@ a new profile is created.
 	var skipWorkspace bool
 	var scopes string
 	var clientID string
+	var resources []string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
@@ -145,6 +146,8 @@ a new profile is created.
 		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
 	cmd.Flags().StringVar(&clientID, "client-id", "",
 		"OAuth client ID to use for U2M authentication")
+	cmd.Flags().StringArrayVar(&resources, "resource", nil,
+		"RFC 8707 resource indicator to scope the login to (repeatable). Requires --host.")
 
 	cmd.PreRunE = profileHostConflictCheck
 
@@ -314,6 +317,9 @@ a new profile is created.
 		}
 		if len(scopesList) > 0 {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
+		}
+		if len(resources) > 0 {
+			persistentAuthOpts = append(persistentAuthOpts, u2m.WithResources(resources))
 		}
 		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 		if err != nil {
@@ -624,6 +630,10 @@ var discoveryIncompatibleFlags = []string{
 	"workspace-id",
 	"configure-cluster",
 	"configure-serverless",
+	// A resource indicator scopes the login to a protected resource on a
+	// specific workspace's /oidc, which the login.databricks.com discovery
+	// flow does not target.
+	"resource",
 }
 
 // validateDiscoveryFlagCompatibility returns an error if any flags that require
