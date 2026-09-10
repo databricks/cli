@@ -65,6 +65,37 @@ func TestGitRepo_IsRepository(t *testing.T) {
 	assert.False(t, newGitRepo(t.TempDir()).isRepository(ctx))
 }
 
+func TestGitRepo_RepositoryLayout(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "a/b/train.py", "print()")
+
+	prefix, err := newGitRepo(repo).repoRelativePrefix(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, prefix)
+
+	subdir := filepath.Join(repo, "a", "b")
+	g := newGitRepo(subdir)
+	prefix, err = g.repoRelativePrefix(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "a/b", prefix)
+
+	root, err := g.repositoryRoot(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, repo, root)
+
+	writeRepoFile(t, repo, " leading-space/train.py", "print()")
+	prefix, err = newGitRepo(filepath.Join(repo, " leading-space")).repoRelativePrefix(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, " leading-space", prefix)
+}
+
+func TestGitRepo_RepoRelativePrefixFailure(t *testing.T) {
+	_, err := newGitRepo(t.TempDir()).repoRelativePrefix(t.Context())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to resolve repository-relative path")
+}
+
 func TestGitRepo_HeadSHA(t *testing.T) {
 	ctx := t.Context()
 	repo := newTestRepo(t)
@@ -193,6 +224,22 @@ func TestGitRepo_ValidateIncludePathsExist(t *testing.T) {
 	err := g.validateIncludePathsExist(ctx, sha, []string{"src", "missing"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing")
+	assert.Contains(t, err.Error(), sha[:8])
+}
+
+func TestGitRepo_ValidateSubtreeExists(t *testing.T) {
+	ctx := t.Context()
+	repo := newTestRepo(t)
+	writeRepoFile(t, repo, "subpkg/train.py", "print()")
+	sha := commitAll(t, repo, "init")
+	g := newGitRepo(filepath.Join(repo, "subpkg"))
+
+	require.NoError(t, g.validateSubtreeExists(ctx, sha, "subpkg"))
+	require.NoError(t, g.validateSubtreeExists(ctx, sha, ""))
+
+	err := g.validateSubtreeExists(ctx, sha, "missing")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `root_path "missing" does not exist`)
 	assert.Contains(t, err.Error(), sha[:8])
 }
 

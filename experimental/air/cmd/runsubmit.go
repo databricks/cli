@@ -114,8 +114,12 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	}
 }
 
-func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, provisionedCapacityID string) (int64, error) {
-	if provisionedCapacityID == "" {
+func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, provisionedCapacityID, priorityClass string) (int64, error) {
+	// Neither reservation field is modeled by the SDK's AiRuntimeTask, so a run
+	// that sets either has to go through the raw /api/2.2 body. priority_class only
+	// ever appears alongside a reservation (validation enforces it), but route on
+	// both so it can never be silently dropped.
+	if provisionedCapacityID == "" && priorityClass == "" {
 		wait, err := w.Jobs.Submit(ctx, payload)
 		if err != nil {
 			return 0, err
@@ -133,7 +137,7 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 	if err := decoder.Decode(&body); err != nil {
 		return 0, fmt.Errorf("failed to decode AIR submit payload: %w", err)
 	}
-	if err := injectProvisionedCapacityID(body, provisionedCapacityID); err != nil {
+	if err := injectReservationFields(body, provisionedCapacityID, priorityClass); err != nil {
 		return 0, err
 	}
 
@@ -149,33 +153,52 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 	return response.RunId, nil
 }
 
-func injectProvisionedCapacityID(body map[string]any, provisionedCapacityID string) error {
+// injectReservationFields sets the reservation-only fields the SDK does not
+// model onto the decoded submit body: priority_class rides directly on the
+// ai_runtime_task, while provisioned_capacity_id rides on the deployment's
+// compute spec. Each is set only when non-empty.
+func injectReservationFields(body map[string]any, provisionedCapacityID, priorityClass string) error {
+	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
+	if err != nil {
+		return err
+	}
+	if priorityClass != "" {
+		aiRuntimeTask["priority_class"] = priorityClass
+	}
+	if provisionedCapacityID != "" {
+		deployments, ok := aiRuntimeTask["deployments"].([]any)
+		if !ok || len(deployments) != 1 {
+			return errors.New("AIR submit payload must contain exactly one deployment")
+		}
+		deployment, ok := deployments[0].(map[string]any)
+		if !ok {
+			return errors.New("AIR submit payload deployment has an invalid shape")
+		}
+		computeSpec, ok := deployment["compute"].(map[string]any)
+		if !ok {
+			return errors.New("AIR submit payload is missing deployment compute")
+		}
+		computeSpec["provisioned_capacity_id"] = provisionedCapacityID
+	}
+	return nil
+}
+
+// aiRuntimeTaskFromSubmitBody navigates a decoded runs/submit body to its single
+// ai_runtime_task map, erroring if the payload isn't the expected single-task shape.
+func aiRuntimeTaskFromSubmitBody(body map[string]any) (map[string]any, error) {
 	tasks, ok := body["tasks"].([]any)
 	if !ok || len(tasks) != 1 {
-		return errors.New("AIR submit payload must contain exactly one task")
+		return nil, errors.New("AIR submit payload must contain exactly one task")
 	}
 	task, ok := tasks[0].(map[string]any)
 	if !ok {
-		return errors.New("AIR submit payload task has an invalid shape")
+		return nil, errors.New("AIR submit payload task has an invalid shape")
 	}
 	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
 	if !ok {
-		return errors.New("AIR submit payload is missing ai_runtime_task")
+		return nil, errors.New("AIR submit payload is missing ai_runtime_task")
 	}
-	deployments, ok := aiRuntimeTask["deployments"].([]any)
-	if !ok || len(deployments) != 1 {
-		return errors.New("AIR submit payload must contain exactly one deployment")
-	}
-	deployment, ok := deployments[0].(map[string]any)
-	if !ok {
-		return errors.New("AIR submit payload deployment has an invalid shape")
-	}
-	computeSpec, ok := deployment["compute"].(map[string]any)
-	if !ok {
-		return errors.New("AIR submit payload is missing deployment compute")
-	}
-	computeSpec["provisioned_capacity_id"] = provisionedCapacityID
-	return nil
+	return aiRuntimeTask, nil
 }
 
 // submitToken resolves the idempotency token: the --idempotency-key flag wins,
@@ -313,8 +336,12 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if cfg.Compute.ProvisionedCapacityID != nil {
 		provisionedCapacityID = *cfg.Compute.ProvisionedCapacityID
 	}
+	priorityClass := ""
+	if cfg.Compute.PriorityClass != nil {
+		priorityClass = *cfg.Compute.PriorityClass
+	}
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
-	runID, err := submitRun(ctx, w, payload, provisionedCapacityID)
+	runID, err := submitRun(ctx, w, payload, provisionedCapacityID, priorityClass)
 	if err != nil {
 		return 0, "", err
 	}

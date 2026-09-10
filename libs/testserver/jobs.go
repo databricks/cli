@@ -622,7 +622,8 @@ const (
 )
 
 // writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
-// write next to the bootstrap notebook. Callers must hold the workspace lock.
+// write next to the bootstrap notebook, and the host key it would publish to the
+// session's secret scope. Callers must hold the workspace lock.
 func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 	for _, t := range request.Tasks {
 		if t.NotebookTask == nil {
@@ -640,7 +641,24 @@ func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 			Info: workspace.ObjectInfo{ObjectType: "FILE", Path: metadataPath},
 			Data: metadata,
 		}
+		s.publishSSHTunnelHostKey(t.NotebookTask.BaseParameters["secretScopeName"])
 	}
+}
+
+// publishSSHTunnelHostKey stores the tunnel host key's public half in the session's
+// secret scope, the way the real server does at startup, so the client can pin it.
+// Callers must hold the workspace lock.
+func (s *FakeWorkspace) publishSSHTunnelHostKey(scope string) {
+	if scope == "" {
+		return
+	}
+	if _, err := s.ensureSSHTunnelHostKey(); err != nil {
+		return
+	}
+	if s.Secrets[scope] == nil {
+		s.Secrets[scope] = make(map[string]string)
+	}
+	s.Secrets[scope][sshServerPublicKeySecretKey] = string(s.sshTunnelHostPublicKey)
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.

@@ -4,4 +4,6 @@ RunsOnDbr = true
 
 Ignore = [
     "databricks.yml",
+    "plan_raw.terraform.json",
+    "plan_raw.direct.json",
 ]

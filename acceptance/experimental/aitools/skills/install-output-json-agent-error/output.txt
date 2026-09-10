@@ -1,0 +1,22 @@
+
+=== install --output json records a per-agent error category
+>>> [CLI] aitools install --skills-only --scope=project --agents=claude-code,cursor --output json
+{
+  "scope": "project",
+  "agents": [
+    {
+      "name": "claude-code",
+      "delivery": "skills",
+      "status": "installed"
+    },
+    {
+      "name": "cursor",
+      "delivery": "skip",
+      "status": "skipped",
+      "error_category": "UNSUPPORTED_SCOPE",
+      "message": "does not support project-scoped skills"
+    }
+  ]
+}
+
+Exit code: 1

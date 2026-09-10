@@ -15,8 +15,11 @@ trace $CLI bundle destroy --auto-approve
 rm out.requests.txt
 
 title "bundle deploy --plan does NOT upload the wheel (bug)"
-trace $CLI bundle plan -o json > out.plan.json
-trace $CLI bundle deploy --plan out.plan.json
+trace $CLI bundle plan -o json > tmp.plan.json
+# The serial differs between the DMS variants here: destroy removes the recorded deployment, so
+# under recording there is no version left to take it from, while the local state keeps counting.
+nostamp < tmp.plan.json | jq 'del(.serial)' > out.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
 # BUG: no import-file request for the wheel here (output below is empty), yet the job was
 # created pointing the task at the same .../artifacts/.internal/ path that was never uploaded.
 trace print_requests.py //artifacts/.internal --del-field raw_body

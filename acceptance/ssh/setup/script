@@ -1,0 +1,27 @@
+sethome "./home"
+
+# Send the command's own output to a LOG file: it echoes the whole host config, whose IdentityFile
+# and ProxyCommand carry OS-specific absolute paths.
+$CLI ssh setup --name=my-cluster --cluster=$TEST_DEFAULT_CLUSTER_ID --max-clients=25 --server-timeout=48h &>LOG.setup
+
+# The ProxyCommand is the invocation that submits the SSH server job, so --max-clients and
+# --server-timeout have to appear there or `ssh my-cluster` silently starts a server with the
+# defaults.
+title "ProxyCommand written by setup --max-clients=25 --server-timeout=48h\n"
+sed -n 's/.*\(ssh connect --proxy.*\)/\1/p' "$HOME/.databricks/ssh-tunnel-configs/my-cluster"
+
+# A shutdown delay longer than the default 24h lifetime worked before --server-timeout existed,
+# and `ssh setup` persisted it into the ProxyCommand. OpenSSH runs that ProxyCommand verbatim, so
+# the delay has to keep raising the lifetime rather than becoming an error the user cannot fix.
+title "A shutdown delay beyond the default lifetime raises it, no --server-timeout needed\n"
+$CLI ssh setup --name=long-delay --cluster=$TEST_DEFAULT_CLUSTER_ID --shutdown-delay=48h &>LOG.long-delay
+sed -n 's/.*\(ssh connect --proxy.*\)/\1/p' "$HOME/.databricks/ssh-tunnel-configs/long-delay"
+
+title "Rejects a server that would refuse every connection"
+musterr trace $CLI ssh setup --name=broken --cluster=$TEST_DEFAULT_CLUSTER_ID --max-clients=0
+
+title "Rejects a shutdown delay the server can never reach"
+musterr trace $CLI ssh setup --name=broken --cluster=$TEST_DEFAULT_CLUSTER_ID --shutdown-delay=48h --server-timeout=24h
+
+title "No host config is written for the rejected setups\n"
+find.py 'ssh-tunnel-configs' --expect 2

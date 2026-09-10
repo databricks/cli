@@ -1,0 +1,7 @@
+Cloud = false # tests do not interact with APIs
+
+# postgres_snapshot_schedules only exist in the current version of the wheel
+EnvMatrix.PYDAB_VERSION = ["current"]
+
+# postgres_snapshot_schedules are only supported on the direct deployment engine
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

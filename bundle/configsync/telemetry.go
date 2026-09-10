@@ -81,11 +81,17 @@ type Stats struct {
 //
 // None of these can contain PII: the lineage is an opaque random UUID minted by
 // the state layer, and the source is one of two fixed literals.
-func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc) {
+// recordedVersion is the version the deployment metadata service holds, zero when the bundle does
+// not record deployment history. A recorded state file persists no serial of its own, so the
+// recorded version stands in for it and the field means the same thing for both backends.
+func (s *Stats) CollectStateStats(desc *statemgmt.StateDesc, recordedVersion int) {
 	if desc == nil {
 		return
 	}
 	s.StateSerial = int64(desc.Serial)
+	if recordedVersion > 0 {
+		s.StateSerial = int64(recordedVersion)
+	}
 	s.StateLineage = desc.Lineage
 	s.StateSource = "remote"
 	if desc.IsLocal {

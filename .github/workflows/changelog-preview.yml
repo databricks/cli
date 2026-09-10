@@ -47,10 +47,13 @@ jobs:
       # names the right PR. PR_NUMBER is the authoritative event PR (empty on push
       # to main, where each fragment's PR is inferred from its squash-merge
       # commit); it must have full history to attribute fragments, hence the
-      # fetch-depth: 0 checkout above.
+      # fetch-depth: 0 checkout above. BASE_REF is the PR's base branch, so a
+      # gh-stacked PR's inherited fragments (which already carry the earlier PR's
+      # link) aren't attributed to this PR.
       - name: Validate .nextchanges placement
         env:
           PR_NUMBER: ${{ github.event.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: uv run tools/validate_nextchanges.py
 
       - name: Render changelog preview

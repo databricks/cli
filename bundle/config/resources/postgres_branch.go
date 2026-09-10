@@ -42,13 +42,21 @@ func (c *PostgresBranchConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresBranchConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresBranchConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
 type PostgresBranch struct {
 	BaseResource
 	PostgresBranchConfig
+}
+
+func (b *PostgresBranch) UnmarshalJSON(data []byte) error {
+	return marshal.Unmarshal(data, b)
+}
+
+func (b PostgresBranch) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(b)
 }
 
 func (b *PostgresBranch) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
@@ -74,9 +82,9 @@ func (b *PostgresBranch) GetName() string {
 	return ""
 }
 
-func (b *PostgresBranch) GetURL() string {
+func (b *PostgresBranch) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (b *PostgresBranch) InitializeURL(_ url.URL) {

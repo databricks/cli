@@ -489,7 +489,7 @@ func TestResolveConfigField_Containers(t *testing.T) {
 	compute, err := resolveConfigField("config.compute")
 	require.NoError(t, err)
 	assert.Equal(t, "object", compute.typeName)
-	require.Len(t, compute.children, 3)
+	require.Len(t, compute.children, 4)
 }
 
 func TestResolveConfigField_Errors(t *testing.T) {

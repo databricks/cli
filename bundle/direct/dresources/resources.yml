@@ -830,6 +830,14 @@ resources:
       - field: identity_type
         reason: immutable
 
+  postgres_snapshot_schedules:
+    provided_id_fields:
+      # branch composes the schedule's hierarchical name
+      # ("{branch}/snapshot-schedule"); changing it targets a different branch's
+      # schedule, so it recreates (delete + create).
+      - field: branch
+        reason: id_field
+
   vector_search_endpoints:
     provided_id_fields:
       # The endpoint API has no rename; the endpoint is fetched by name.
@@ -876,3 +884,7 @@ resources:
     backend_defaults:
       # The Vector Search API assigns index_subtype when the config omits it
       - field: index_subtype
+
+  internal_immutable_snapshots:
+    recreate_on_changes:
+      - reason: immutable

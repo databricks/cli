@@ -384,7 +384,7 @@ func (c *codeSourceConfig) validate() error {
 
 // snapshotSourceConfig describes a local directory to tar and upload.
 type snapshotSourceConfig struct {
-	RootPath     string   `yaml:"root_path" help:"Local directory to archive, relative or absolute." required:"when code_source.snapshot is set"`
+	RootPath     string   `yaml:"root_path" help:"Root of the code source to archive. A git-pinned subdirectory packages only that subtree." required:"when code_source.snapshot is set"`
 	RemoteVolume *string  `yaml:"remote_volume" help:"Volume to upload the archive to. Must start with /Volumes/."`
 	Git          *gitRef  `yaml:"git" help:"Pin the snapshot to a specific git revision."`
 	IncludePaths []string `yaml:"include_paths" help:"Restrict the archive to these paths, relative to root_path and without \"..\". Omit to include everything."`

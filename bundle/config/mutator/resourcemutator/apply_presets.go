@@ -103,6 +103,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			p.Development = true
 		}
 		if t.TriggerPauseStatus == config.Paused {
+			//nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 			p.Continuous = false
 		}
 

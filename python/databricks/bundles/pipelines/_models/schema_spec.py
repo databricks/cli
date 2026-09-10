@@ -37,15 +37,6 @@ class SchemaSpec:
     [Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
     """
 
-    source_schema: VariableOr[str]
-    """
-    [Public Preview] Schema name in the source database. Currently required; this field will become optional in
-    an upcoming release, since some source types (for example streaming / message-bus connectors)
-    do not use it. When that change ships, this field's type in the generated SDKs and CLI will
-    change from required to optional (nullable); clients that assume it is always present should
-    handle its absence.
-    """
-
     connector_options: VariableOrOptional[ConnectorOptions] = None
     """
     [Public Preview] (Optional) Source Specific Connector Options
@@ -53,6 +44,8 @@ class SchemaSpec:
 
     fanout_options: VariableOrOptional[IngestionPipelineDefinitionFanoutOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Fanout options for multi-table routing from streaming sources.
     When set, records are routed to destination tables based on a
     per-record routing key. The key value becomes the table name:
@@ -62,6 +55,13 @@ class SchemaSpec:
     source_catalog: VariableOrOptional[str] = None
     """
     [Public Preview] The source catalog name. Might be optional depending on the type of source.
+    """
+
+    source_schema: VariableOrOptional[str] = None
+    """
+    [Public Preview] Schema name in the source database. Optional: some source types (for example streaming or
+    message-bus connectors) do not use it, so it may be absent from a pipeline's definition.
+    Clients that assume it is always present should handle its absence.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfig] = None
@@ -90,15 +90,6 @@ class SchemaSpecDict(TypedDict, total=False):
     [Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.
     """
 
-    source_schema: VariableOr[str]
-    """
-    [Public Preview] Schema name in the source database. Currently required; this field will become optional in
-    an upcoming release, since some source types (for example streaming / message-bus connectors)
-    do not use it. When that change ships, this field's type in the generated SDKs and CLI will
-    change from required to optional (nullable); clients that assume it is always present should
-    handle its absence.
-    """
-
     connector_options: VariableOrOptional[ConnectorOptionsParam]
     """
     [Public Preview] (Optional) Source Specific Connector Options
@@ -106,6 +97,8 @@ class SchemaSpecDict(TypedDict, total=False):
 
     fanout_options: VariableOrOptional[IngestionPipelineDefinitionFanoutOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Fanout options for multi-table routing from streaming sources.
     When set, records are routed to destination tables based on a
     per-record routing key. The key value becomes the table name:
@@ -115,6 +108,13 @@ class SchemaSpecDict(TypedDict, total=False):
     source_catalog: VariableOrOptional[str]
     """
     [Public Preview] The source catalog name. Might be optional depending on the type of source.
+    """
+
+    source_schema: VariableOrOptional[str]
+    """
+    [Public Preview] Schema name in the source database. Optional: some source types (for example streaming or
+    message-bus connectors) do not use it, so it may be absent from a pipeline's definition.
+    Clients that assume it is always present should handle its absence.
     """
 
     table_configuration: VariableOrOptional[TableSpecificConfigParam]

@@ -42,8 +42,8 @@ func (f *firstByteWriter) Write(p []byte) (int, error) {
 // one a handover creates — logs the pongs coming back for our keepalive pings. Debug visibility only:
 // the receiving loop stays the only judge of whether a connection is alive.
 func logPongs(ctx context.Context, createConn createWebsocketConnectionFunc) createWebsocketConnectionFunc {
-	return func(connCtx context.Context, connID string) (*websocket.Conn, error) {
-		conn, err := createConn(connCtx, connID)
+	return func(connCtx context.Context, req DialRequest) (*websocket.Conn, error) {
+		conn, err := createConn(connCtx, req)
 		if err != nil {
 			return nil, err
 		}
@@ -55,13 +55,23 @@ func logPongs(ctx context.Context, createConn createWebsocketConnectionFunc) cre
 	}
 }
 
-func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, createConn createWebsocketConnectionFunc) error {
-	proxy := newProxyConnection(logPongs(ctx, createConn))
+// RunClientProxy proxies the SSH byte stream over a websocket to the tunnel server.
+//
+// resumable turns on the resume protocol, which lets a session survive an unexpected disconnect.
+// It must only be set when the server is known to speak it: an older server answers a reattach
+// request by starting a fresh sshd, and replaying into that corrupts the SSH stream instead of
+// repairing it.
+func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, resumable bool, createConn createWebsocketConnectionFunc) error {
+	newConnection := newProxyConnection
+	if resumable {
+		newConnection = newResumableProxyConnection
+	}
+	proxy := newConnection(logPongs(ctx, createConn))
 	log.Infof(ctx, "Establishing SSH proxy connection...")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	if err := proxy.connect(ctx); err != nil {
-		return fmt.Errorf("failed to connect to proxy: %w", err)
+		return errors.Join(ErrConnectFailed, fmt.Errorf("failed to connect to proxy: %w", err))
 	}
 	defer proxy.close()
 	log.Infof(ctx, "SSH proxy connection established")
@@ -78,10 +88,27 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 			for {
 				select {
 				case <-gCtx.Done():
-					return gCtx.Err()
+					// Return nil, not gCtx.Err(): this helper loop does not decide the session's
+					// outcome, proxy.start does. proxy.start's goroutine below cancels the context
+					// (its deferred cancel) before the errgroup records proxy.start's return value,
+					// so a gCtx.Err() here can be recorded as the group's first error and mask that
+					// real error — which normalizeProxyError would then swallow into a silent nil.
+					return nil
 				case <-requestHandoverTick():
 					if err := proxy.initiateHandover(gCtx); err != nil {
-						return err
+						// A handover that never got past its dial leaves the current connection
+						// untouched and still carrying traffic, so ending the session over it
+						// would throw away a working tunnel - the failure mode customers see as
+						// a drop every handover interval. The next tick tries again. Deferring
+						// the auth refresh is safe: the driver proxy authenticates a websocket
+						// at upgrade time, so a live connection is not re-checked. Logged at
+						// debug because nothing changed for the user, and this would otherwise
+						// write into their interactive terminal.
+						if errors.Is(err, errHandoverDialFailed) {
+							log.Debugf(gCtx, "Could not open a replacement connection for the auth handover, staying on the current one: %v", err)
+							continue
+						}
+						return errors.Join(ErrHandoverFailed, err)
 					}
 				}
 			}
@@ -95,7 +122,9 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 			for {
 				select {
 				case <-gCtx.Done():
-					return gCtx.Err()
+					// nil, not gCtx.Err(): see the handover loop above — a helper stopping must
+					// not mask proxy.start's error as the errgroup's first error.
+					return nil
 				case <-ticker.C:
 					// A ping that ticks during a handover goes to the connection being replaced and
 					// may simply fail. Harmless: a handover establishes a fresh connection, which

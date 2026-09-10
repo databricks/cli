@@ -27,10 +27,10 @@ Destroy: 1 deleted
 === bundle deploy --plan does NOT upload the wheel (bug)
 >>> [CLI] bundle plan -o json
 
->>> [CLI] bundle deploy --plan out.plan.json
+>>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-not-uploaded/default/files...
 Created jobs.my_job
-Files: 7 uploaded, 0 deleted
+Files: 8 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //artifacts/.internal --del-field raw_body

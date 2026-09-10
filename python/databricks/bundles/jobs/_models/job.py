@@ -87,6 +87,8 @@ class Job(Resource):
     continuous: VariableOrOptional[Continuous] = None
     """
     An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.
+    
+    Pipelines started by a continuous job also run continuously, regardless of their own pipeline mode setting.
     """
 
     description: VariableOrOptional[str] = None
@@ -217,6 +219,8 @@ class Job(Resource):
 
     triggers: VariableOrList[TriggerConfiguration] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in
     the same request as the legacy `schedule`, `trigger`, or `continuous` fields. Gated behind the "Multiple Triggers" feature preview.
     """
@@ -256,6 +260,8 @@ class JobDict(TypedDict, total=False):
     continuous: VariableOrOptional[ContinuousParam]
     """
     An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.
+    
+    Pipelines started by a continuous job also run continuously, regardless of their own pipeline mode setting.
     """
 
     description: VariableOrOptional[str]
@@ -386,6 +392,8 @@ class JobDict(TypedDict, total=False):
 
     triggers: VariableOrList[TriggerConfigurationParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] List of triggers attached to this job. A run starts when any active trigger evaluates to true. Cannot be set in
     the same request as the legacy `schedule`, `trigger`, or `continuous` fields. Gated behind the "Multiple Triggers" feature preview.
     """

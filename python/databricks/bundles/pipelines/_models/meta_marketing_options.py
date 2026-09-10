@@ -23,28 +23,38 @@ class MetaMarketingOptions:
 
     action_attribution_windows: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.action_attribution_windows) Action attribution
     windows for insights reporting (e.g. "28d_click", "1d_view")
     """
 
     action_breakdowns: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.action_breakdowns) Action breakdowns
     """
 
     action_report_time: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.action_report_time) Timing used to report
     action statistics (impression, conversion, mixed, or lifetime)
     """
 
     breakdowns: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.breakdowns) Breakdowns to configure
     """
 
     custom_insights_lookback_window: VariableOrOptional[int] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Optional) Window in days to revisit data during sync to capture
     updated conversion data from the API, shared by prebuilt and custom reports.
     """
@@ -62,18 +72,24 @@ class MetaMarketingOptions:
 
     level: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.level) Granularity of data to pull
     (account, ad, adset, campaign)
     """
 
     start_date: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added
     after this date will be ingested, shared by prebuilt and custom reports.
     """
 
     time_increment: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.time_increment) Value in string by which to
     aggregate statistics (can take all_days, monthly or number of days)
     """
@@ -91,28 +107,38 @@ class MetaMarketingOptionsDict(TypedDict, total=False):
 
     action_attribution_windows: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.action_attribution_windows) Action attribution
     windows for insights reporting (e.g. "28d_click", "1d_view")
     """
 
     action_breakdowns: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.action_breakdowns) Action breakdowns
     """
 
     action_report_time: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.action_report_time) Timing used to report
     action statistics (impression, conversion, mixed, or lifetime)
     """
 
     breakdowns: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.breakdowns) Breakdowns to configure
     """
 
     custom_insights_lookback_window: VariableOrOptional[int]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Optional) Window in days to revisit data during sync to capture
     updated conversion data from the API, shared by prebuilt and custom reports.
     """
@@ -130,18 +156,24 @@ class MetaMarketingOptionsDict(TypedDict, total=False):
 
     level: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.level) Granularity of data to pull
     (account, ad, adset, campaign)
     """
 
     start_date: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Optional) Start date in yyyy-MM-dd format (e.g. 2025-01-15). Data added
     after this date will be ingested, shared by prebuilt and custom reports.
     """
 
     time_increment: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [DEPRECATED] [Beta] (Optional, DEPRECATED — use custom_report_options.time_increment) Value in string by which to
     aggregate statistics (can take all_days, monthly or number of days)
     """

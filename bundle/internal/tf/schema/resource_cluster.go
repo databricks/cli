@@ -80,6 +80,7 @@ type ResourceClusterDockerImage struct {
 
 type ResourceClusterDriverNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceClusterGcpAttributes struct {
@@ -169,6 +170,7 @@ type ResourceClusterProviderConfig struct {
 
 type ResourceClusterWorkerNodeTypeFlexibility struct {
 	AlternateNodeTypeIds []string `json:"alternate_node_type_ids,omitempty"`
+	AwsContextId         string   `json:"aws_context_id,omitempty"`
 }
 
 type ResourceClusterWorkloadTypeClients struct {
