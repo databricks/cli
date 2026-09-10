@@ -111,8 +111,14 @@ func createResumableTestClientWithBufferLimit(t *testing.T, serverURL string, bu
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		// Directly create proxy with custom buffer limit
+		// Directly create proxy with custom buffer limit and connect
 		proxy := newResumableProxyConnection(createConn, bufferLimit)
+		if err := proxy.connect(ctx); err != nil {
+			if errChan != nil {
+				errChan <- err
+			}
+			return
+		}
 		err := proxy.start(ctx, clientInput, clientOutput)
 		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) && !isNormalClosure(err) {
 			if errChan != nil {

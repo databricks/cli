@@ -115,7 +115,7 @@ func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 			t.Errorf("failed to accept websocket connection: %v", err)
 			return
 		}
-		defer serverProxy.close()
+		defer serverProxy.close(ctx)
 		err = serverProxy.start(ctx, serverInput, serverOutput)
 		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			t.Errorf("server error: %v", err)
@@ -124,7 +124,7 @@ func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 	}))
 	cleanup := func() {
 		server.Close()
-		serverProxy.close()
+		serverProxy.close(ctx)
 		serverInputWriter.Close()
 	}
 	return &TestProxy{
@@ -175,7 +175,7 @@ func setupTestClientWithDialHook(ctx context.Context, t *testing.T, serverURL st
 	})
 
 	cleanup := func() {
-		clientProxy.close()
+		clientProxy.close(ctx)
 		clientInput.Close()
 		clientInputWriter.Close()
 		wg.Wait()
@@ -295,7 +295,7 @@ func TestFailedAckWriteClosesResumableConnectionToDriveReattach(t *testing.T) {
 	conn, err := createTestWebsocketConnection(wsURL)
 	require.NoError(t, err)
 
-	pc := newResumableProxyConnection(nil)
+	pc := newResumableProxyConnection(nil, proxyResumeBufferLimit)
 	pc.conn.Store(conn)
 
 	// Poison the write side the way gorilla latches it after any failed write, without disturbing
@@ -303,7 +303,7 @@ func TestFailedAckWriteClosesResumableConnectionToDriveReattach(t *testing.T) {
 	require.NoError(t, conn.SetWriteDeadline(time.Now().Add(-time.Hour)))
 
 	// sendControlMessage is the ack path (a text control frame), not a binary payload.
-	err = pc.sendControlMessage(42)
+	err = pc.sendControlMessage(t.Context(), 42)
 	require.ErrorIs(t, err, errSendFailedResumable, "a failed ack write on a resumable connection must report the resumable-send failure that drives the reattach")
 
 	// It must have closed the connection: a second close returns net.ErrClosed. With the
@@ -352,7 +352,7 @@ func TestTeardownIsNotTreatedAsADrop(t *testing.T) {
 	pc := newResumableProxyConnection(func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
 		dials.Add(1)
 		return nil, errors.New("a teardown must never dial a reattach")
-	})
+	}, proxyResumeBufferLimit)
 	pc.conn.Store(conn)
 
 	ctx, cancel := context.WithCancel(t.Context())

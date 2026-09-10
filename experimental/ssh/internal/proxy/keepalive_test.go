@@ -213,7 +213,7 @@ func TestKeepalivePingParkedInWriteDoesNotStallClose(t *testing.T) {
 	}
 
 	start := time.Now()
-	closeErr := proxy.close()
+	closeErr := proxy.close(ctx)
 	require.Less(t, time.Since(start), proxyPingWriteTimeout+5*time.Second,
 		"the closing handshake waited on the parked keepalive ping for longer than its write deadline allows")
 	// The write itself fails, which close() reports; the point is that it was not held indefinitely.
