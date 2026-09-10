@@ -16,13 +16,16 @@ real output:
 
 ```python
 def test_transform_dedupes(env):
-    env.seed("shop.bronze.raw_orders", [
-        {"order_id": 1, "total_price": 10.0},
-        {"order_id": 1, "total_price": 10.0},   # duplicate
-        {"order_id": 2, "total_price": 5.0},
-        {"order_id": None, "total_price": 1.0},  # null id -> filtered out
-    ])
-    env.run_job("transform_orders")             # runs src/transform_orders.sql for real
+    env.seed(
+        "shop.bronze.raw_orders",
+        [
+            {"order_id": 1, "total_price": 10.0},
+            {"order_id": 1, "total_price": 10.0},  # duplicate
+            {"order_id": 2, "total_price": 5.0},
+            {"order_id": None, "total_price": 1.0},  # null id -> filtered out
+        ],
+    )
+    env.run_job("transform_orders")  # runs src/transform_orders.sql for real
     assert env.table("shop.silver.orders").row_count() == 2
     assert env.table("shop.silver.orders").has_no_nulls("order_id")
     assert env.table("shop.silver.orders").column("order_id").is_unique()

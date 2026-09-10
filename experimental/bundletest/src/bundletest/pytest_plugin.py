@@ -18,8 +18,7 @@ from bundletest.env import current_backend_kind
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers",
-        "cloud_only: assertion depends on cloud-only behavior; skipped unless "
-        "BUNDLETEST_BACKEND=cloud",
+        "cloud_only: assertion depends on cloud-only behavior; skipped unless BUNDLETEST_BACKEND=cloud",
     )
 
 
@@ -35,15 +34,11 @@ def pytest_runtest_call(item: pytest.Item):
         outcome.force_exception(Skipped(msg=str(excinfo[1])))
 
 
-def pytest_collection_modifyitems(
-    config: pytest.Config, items: list[pytest.Item]
-) -> None:
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     backend = current_backend_kind()
     if backend == "cloud":
         return
-    skip = pytest.mark.skip(
-        reason=f"cloud_only: needs cloud backend (BUNDLETEST_BACKEND={backend})"
-    )
+    skip = pytest.mark.skip(reason=f"cloud_only: needs cloud backend (BUNDLETEST_BACKEND={backend})")
     for item in items:
         if "cloud_only" in item.keywords:
             item.add_marker(skip)
