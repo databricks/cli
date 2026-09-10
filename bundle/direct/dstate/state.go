@@ -1020,29 +1020,6 @@ func (db *DeploymentState) unlockedSave() error {
 	return nil
 }
 
-// SnapshotToPlainState writes what this deployment-history state holds to path as an ordinary
-// state file (no history marker), so a file-based flow can run against a copy of what the service
-// records. The state must be open for read.
-func (db *DeploymentState) SnapshotToPlainState(path string) error {
-	db.AssertOpenedForRead()
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
-	snapshot := Database{
-		Header: Header{
-			StateVersion: currentStateVersion,
-			CLIVersion:   build.GetInfo().Version,
-			Lineage:      db.Data.Lineage,
-		},
-		State: db.Data.State,
-	}
-	data, err := json.MarshalIndent(snapshot, "", " ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, data, 0o600)
-}
-
 // Data to persist in the remote resources.json file.
 func (db *DeploymentState) dataForFile() Database {
 	if db.isDeploymentMetadataService() {
