@@ -12,7 +12,7 @@ from bundletest.table import TableHandle
 if TYPE_CHECKING:
     pass
 
-DEFAULT_BACKEND = "memory"
+DEFAULT_BACKEND = "local"
 
 
 class JobHandle:
@@ -88,15 +88,15 @@ class BundleEnv:
 def make_backend(kind: str, **kwargs: Any) -> Backend:
     """Construct a backend by name. Backends are imported lazily so selecting one
     never pulls in the others' dependencies."""
-    if kind == "memory":
-        from bundletest.backends.memory import InMemoryBackend
+    if kind == "local":
+        from bundletest.backends.duckdb import DuckDBBackend
 
-        return InMemoryBackend(**kwargs)
+        return DuckDBBackend(**kwargs)
     if kind == "cloud":
         raise NotImplementedError(
             "the cloud backend arrives in a follow-up PR on top of this base branch"
         )
-    raise ValueError(f"unknown backend {kind!r} (expected 'memory' or 'cloud')")
+    raise ValueError(f"unknown backend {kind!r} (expected 'local' or 'cloud')")
 
 
 def current_backend_kind() -> str:

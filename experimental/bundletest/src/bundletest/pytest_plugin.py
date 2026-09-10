@@ -9,7 +9,9 @@ implies false confidence.
 from __future__ import annotations
 
 import pytest
+from _pytest.outcomes import Skipped
 
+from bundletest.backend import LocalUnsupported
 from bundletest.env import current_backend_kind
 
 
@@ -19,6 +21,18 @@ def pytest_configure(config: pytest.Config) -> None:
         "cloud_only: assertion depends on cloud-only behavior; skipped unless "
         "BUNDLETEST_BACKEND=cloud",
     )
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_call(item: pytest.Item):
+    """Turn a LocalUnsupported escaping a test into a skip-with-reason, never a failure.
+
+    This is the third routing arm: something the local backend can't judge (notebook task,
+    Databricks-only function, reserved catalog) skips loudly instead of false-red-ing."""
+    outcome = yield
+    excinfo = outcome.excinfo
+    if excinfo is not None and issubclass(excinfo[0], LocalUnsupported):
+        outcome.force_exception(Skipped(msg=str(excinfo[1])))
 
 
 def pytest_collection_modifyitems(

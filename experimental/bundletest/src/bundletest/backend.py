@@ -12,6 +12,16 @@ from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
 
+class LocalUnsupported(Exception):
+    """Raised when the local backend cannot faithfully run something.
+
+    Not a failure — a signal that the check can only be answered on the cloud backend
+    (a notebook/Python task, a Databricks-only SQL function, a reserved catalog name).
+    The pytest plugin turns it into a *skip with a reason*, never a red test, so the
+    local tier neither false-greens nor false-reds on things it can't judge.
+    """
+
+
 @dataclass
 class RunResult:
     """Outcome of running a single bundle resource (e.g. a job)."""

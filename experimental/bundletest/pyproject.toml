@@ -9,6 +9,10 @@ description = "pytest-style isolation testing for Databricks Asset Bundles (DABs
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
+dependencies = [
+    "duckdb>=1.0",
+    "pyyaml>=6.0",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
