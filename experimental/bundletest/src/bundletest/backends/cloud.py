@@ -192,7 +192,11 @@ class CloudBackend:
             detail = err.message if err else resp.status.state.value
             raise RuntimeError(f"statement failed: {detail}")
 
-        columns = resp.manifest.schema.columns or []
+        # A successful DDL/DML statement (CREATE/INSERT/DROP, and the schema-prep here)
+        # returns no result set, so there is nothing to read or cast.
+        if resp.result is None:
+            return []
+        columns = (resp.manifest.schema.columns if resp.manifest and resp.manifest.schema else None) or []
         types = [c.type_name.value for c in columns]
         rows = list(resp.result.data_array or [])
         # Inline results past the first chunk are fetched by index.

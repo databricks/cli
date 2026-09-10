@@ -105,6 +105,19 @@ def test_execute_sql_casts_and_paginates_chunks():
     assert be.execute_sql("SELECT ...") == [(1, 1.5, "a"), (2, 2.5, "b")]
 
 
+def test_execute_sql_returns_empty_for_ddl_with_no_result_set():
+    # A successful CREATE/INSERT/DROP comes back SUCCEEDED with result=None (and no manifest);
+    # touching result.data_array would crash. seed/teardown/schema-prep all rely on this.
+    ddl = SimpleNamespace(
+        statement_id="s1",
+        status=SimpleNamespace(state=StatementState.SUCCEEDED, error=None),
+        manifest=None,
+        result=None,
+    )
+    be = _backend_with(_FakeStatements(ddl))
+    assert be.execute_sql("CREATE OR REPLACE TABLE t (a INT)") == []
+
+
 def test_execute_sql_polls_until_terminal():
     cols = [_column("n", T.LONG)]
     pending = _resp(StatementState.PENDING)
