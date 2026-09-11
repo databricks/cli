@@ -15,6 +15,8 @@ EnvMatrixExclude.no_job_run = ["INPUT_CONFIG=job_run.yml.tmpl"]
 EnvMatrixExclude.no_catalog = ["INPUT_CONFIG=catalog.yml.tmpl"]
 EnvMatrixExclude.no_catalog_optional_fields = ["INPUT_CONFIG=catalog_optional_fields.yml.tmpl"]
 EnvMatrixExclude.no_external_location = ["INPUT_CONFIG=external_location.yml.tmpl"]
+# uc_trailing_slash includes a catalog, which is direct-only (see above).
+EnvMatrixExclude.no_uc_trailing_slash = ["INPUT_CONFIG=uc_trailing_slash.yml.tmpl"]
 # Genie spaces are direct-only too; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]
 # Instance pools are direct-only; the terraform deploy that seeds the migration fails for them.
