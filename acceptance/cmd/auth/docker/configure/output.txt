@@ -1,0 +1,23 @@
+
+=== Docker config
+{
+  "auths": {
+    "registry.example.test": {
+      "auth": "preserved"
+    }
+  },
+  "credHelpers": {
+    "[NUMID].container.us-west-2.cloud.databricks.com": "databricks"
+  }
+}
+
+=== Installed shim
+Platform shim verified
+
+=== Credential from shim
+
+>>> docker-credential-databricks get
+{
+  "Secret": "oauth-token",
+  "Username": "oauthtoken"
+}

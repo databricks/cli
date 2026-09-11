@@ -1,0 +1,44 @@
+setup_docker_auth
+
+mkdir -p "$HOME/.databricks"
+cp "$TESTDIR/../token/token-cache.json" "$HOME/.databricks/token-cache.json"
+cp profile.databrickscfg "$HOME/.databrickscfg"
+
+export DOCKER_CONFIG="$HOME/docker"
+mkdir -p "$DOCKER_CONFIG"
+cp docker-config.json "$DOCKER_CONFIG/config.json"
+
+mkdir -p "$HOME/bin"
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    cli_path="$HOME/bin/databricks.exe"
+    cp "$(cygpath -u "$CLI")" "$cli_path"
+    helper="$HOME/bin/docker-credential-databricks.cmd"
+else
+    cli_path="$HOME/bin/databricks"
+    cp "$CLI" "$cli_path"
+    chmod +x "$cli_path"
+    helper="$HOME/bin/docker-credential-databricks"
+fi
+export PATH="$(dirname "$helper"):$PATH"
+
+"$cli_path" auth docker configure docker-test --region us-west-2 >LOG.configure 2>&1
+
+title "Docker config\n"
+jq -S . "$DOCKER_CONFIG/config.json"
+
+title "Installed shim\n"
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    test -f "$helper"
+else
+    test -x "$helper"
+fi
+printf 'Platform shim verified\n'
+
+title "Credential from shim\n"
+cat > "$HOME/.databrickscfg" <<ENDCFG
+[docker-test]
+host = $DATABRICKS_HOST_ORIG
+auth_type = databricks-cli
+workspace_id = 123456789
+ENDCFG
+printf '%s\n' "$DAR_REGISTRY_HOST" | trace docker-credential-databricks get | jq -S .
