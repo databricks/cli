@@ -50,8 +50,6 @@ config.env[0].value_from                     x          absent     START_NOT_REA
 config.env[0].value_from                     x          y          START_NOT_REACHED  no active deployment
 config.env[0].value_from                     y          absent     START_NOT_REACHED  no active deployment
 config.env[0].value_from                     y          x          START_NOT_REACHED  no active deployment
-description                                  x          absent     UPDATE_IGNORED
-description                                  y          absent     UPDATE_IGNORED
 git_source.branch                            absent     x          SUPPRESSED  no active deployment
 git_source.branch                            absent     y          SUPPRESSED  no active deployment
 git_source.branch                            x          absent     START_NOT_REACHED  no active deployment
@@ -100,13 +98,10 @@ source_code_path                             x-UNIQUE   absent     START_NOT_REA
 source_code_path                             x-UNIQUE   y-UNIQUE   START_NOT_REACHED  no active deployment
 source_code_path                             y-UNIQUE   absent     START_NOT_REACHED  no active deployment
 source_code_path                             y-UNIQUE   x-UNIQUE   START_NOT_REACHED  no active deployment
-user_api_scopes                              len1       absent     UPDATE_IGNORED
-user_api_scopes                              len2       absent     UPDATE_IGNORED
 
 === summary
-OK                         20
-SUPPRESSED                 16
-UPDATE_IGNORED             4
+OK                         22
+SUPPRESSED                 18
 UNSETTABLE                 2
 SKIPPED                    95
 START_NOT_REACHED          72
