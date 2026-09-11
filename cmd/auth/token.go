@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
-	"github.com/databricks/cli/libs/auth/u2m/cache"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
@@ -118,8 +117,8 @@ type loadTokenArgs struct {
 	// profiler is the profiler to use for reading the host and account ID from the .databrickscfg file.
 	profiler profile.Profiler
 
-	// tokenStore is the underlying CLI cache used for OAuth tokens. The caller is
-	// responsible for construction so that tests can substitute an in-memory cache.
+	// tokenStore is the underlying CLI store used for OAuth tokens. The caller is
+	// responsible for construction so that tests can substitute an in-memory store.
 	tokenStore storage.Store
 
 	// mode is the resolved storage mode. When set to StorageModePlaintext,
@@ -191,11 +190,11 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	// When no profile was specified, resolve the host to a profile in
 	// .databrickscfg. This ensures the token cache lookup uses the profile
 	// key (e.g. "logfood") rather than the host URL, which is important
-	// because the SDK's dualWrite is a transitional mechanism: it writes
-	// tokens under both keys for backward compatibility with older SDKs
+	// because the store's dual-write wrapper is a transitional mechanism: it
+	// writes tokens under both keys for backward compatibility with older SDKs
 	// that only know host keys, but the profile key is the intended
 	// primary key. Once older SDKs have migrated to profile-based keys,
-	// dualWrite and the host key can be removed entirely.
+	// dual-writing and the host key can be removed entirely.
 	if args.profileName == "" && args.authArguments.Host != "" {
 		// Match profiles by host and available identifiers. For SPOG workspace
 		// profiles (host + account_id + workspace_id), use all three to
@@ -264,7 +263,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenCache(storage.OAuthTokenCache(ctx, args.tokenStore, args.mode))}, args.persistentAuthOpts...)
+	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenStore(storage.OAuthTokenStore(ctx, args.tokenStore, args.mode))}, args.persistentAuthOpts...)
 	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
 		allArgs = append(allArgs, u2m.WithClientID(clientID))
 	}
@@ -281,7 +280,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		t, err = persistentAuth.Token()
 	}
 	if err != nil {
-		if errors.Is(err, cache.ErrNotFound) {
+		if errors.Is(err, storage.ErrNotFound) {
 			// The error returned by the SDK when the token cache doesn't exist or doesn't contain a token
 			// for the given host changed in SDK v0.77.0: https://github.com/databricks/databricks-sdk-go/pull/1250.
 			// This was released as part of CLI v0.264.0.
@@ -431,7 +430,7 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	persistentAuthOpts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
-		u2m.WithTokenCache(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
+		u2m.WithTokenStore(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 	}
 	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
 		persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))

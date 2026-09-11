@@ -28,7 +28,7 @@ OAuthArgument and call Challenge:
 	}
 	auth, err := NewPersistentAuth(ctx,
 		WithOAuthArgument(arg),
-		WithTokenCache(tokenCache),
+		WithTokenStore(tokenStore),
 	)
 	if err != nil {
 		return err
@@ -40,8 +40,8 @@ OAuthArgument and call Challenge:
 	token, err := auth.Token()
 
 Because the U2M flow requires user interaction, callers should provide a
-persistent cache to avoid prompting the user on every invocation. Without
-WithTokenCache, PersistentAuth uses an in-memory cache. See the cache package
-for the cache contract.
+persistent store to avoid prompting the user on every invocation. Without
+WithTokenStore, PersistentAuth uses an in-memory store. See the storage package
+for the store contract.
 */
 package u2m
