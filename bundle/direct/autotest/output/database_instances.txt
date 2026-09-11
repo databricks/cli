@@ -22,12 +22,6 @@ custom_tags[0].key                           x          absent     COLLATERAL_DR
 custom_tags[0].key                           x          y          COLLATERAL_DRIFT  capacity
 custom_tags[0].key                           y          absent     COLLATERAL_DRIFT  capacity
 custom_tags[0].key                           y          x          COLLATERAL_DRIFT  capacity
-custom_tags[0].value                         absent     x          COLLATERAL_DRIFT  capacity
-custom_tags[0].value                         absent     y          COLLATERAL_DRIFT  capacity
-custom_tags[0].value                         x          absent     COLLATERAL_DRIFT  capacity
-custom_tags[0].value                         x          y          COLLATERAL_DRIFT  capacity
-custom_tags[0].value                         y          absent     COLLATERAL_DRIFT  capacity
-custom_tags[0].value                         y          x          COLLATERAL_DRIFT  capacity
 enable_readable_secondaries                  absent     true       COLLATERAL_DRIFT  capacity
 enable_readable_secondaries                  false      true       COLLATERAL_DRIFT  capacity
 enable_readable_secondaries                  true       absent     COLLATERAL_DRIFT  capacity
@@ -36,11 +30,11 @@ name                                         x-UNIQUE   absent     POST_DEPLOY_D
 name                                         y-UNIQUE   absent     POST_DEPLOY_DRIFT  create
 
 === summary
-OK                         28
-OK_RECREATE                32
+OK                         34
+OK_RECREATE                20
 SUPPRESSED                 9
 NOT_OBSERVABLE             1
 UPDATE_IGNORED             4
 POST_DEPLOY_DRIFT          2
-COLLATERAL_DRIFT           20
-SKIPPED                    24
+COLLATERAL_DRIFT           14
+SKIPPED                    26
