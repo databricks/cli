@@ -1,0 +1,2 @@
+# Matches migrations/* but sync skips it, so a content edit must not re-fire.
+migrations/ignored.txt

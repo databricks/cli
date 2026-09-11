@@ -1,0 +1,17 @@
+bundle:
+  name: deploy-model-service-test-$UNIQUE_NAME
+
+resources:
+  model_services:
+    ms:
+      parent: schemas/main.default
+      model_service_id: test_ms_$UNIQUE_NAME
+      comment: "Routes chat traffic to a foundation model"
+      config:
+        routing:
+          destinations:
+            - name: primary
+              destination_type: DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL
+              pay_per_token_config:
+                model: models/system.ai.databricks-gpt-5
+              traffic_percentage: 100

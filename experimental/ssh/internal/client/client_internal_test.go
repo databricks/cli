@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	"github.com/databricks/cli/libs/cmdio"
@@ -549,17 +548,6 @@ func TestConnectOutcomeCategory(t *testing.T) {
 			want:    protos.SshTunnelErrorCategoryUnspecified,
 		},
 		{
-			// A session end the proxy did attribute must survive isSuccess, or a mid-session
-			// drop is indistinguishable from a clean exit.
-			name: "attributed session end after a successful connection keeps its category",
-			outcome: connectOutcome{
-				isSuccess:     true,
-				errorCategory: protos.SshTunnelErrorCategoryWebsocketDropped,
-				err:           errFailed,
-			},
-			want: protos.SshTunnelErrorCategoryWebsocketDropped,
-		},
-		{
 			name:    "attributed failure keeps its category",
 			outcome: connectOutcome{errorCategory: protos.SshTunnelErrorCategoryIDECommandNotOnPath, err: errFailed},
 			want:    protos.SshTunnelErrorCategoryIDECommandNotOnPath,
@@ -616,18 +604,6 @@ func TestConnectOutcomeCategory(t *testing.T) {
 			outcome: connectOutcome{isSuccess: true, ctxErr: context.Canceled, err: errFailed},
 			want:    protos.SshTunnelErrorCategoryUnspecified,
 		},
-		{
-			// ...but a session end the proxy did attribute outranks the interruption, or a drop
-			// that happened to coincide with the user giving up would be lost.
-			name: "an attributed session end wins over an interruption",
-			outcome: connectOutcome{
-				isSuccess:     true,
-				ctxErr:        context.Canceled,
-				errorCategory: protos.SshTunnelErrorCategoryWebsocketDropped,
-				err:           errFailed,
-			},
-			want: protos.SshTunnelErrorCategoryWebsocketDropped,
-		},
 	}
 
 	for _, tt := range tests {
@@ -677,53 +653,6 @@ func TestSshExtensionErrorCategory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, sshExtensionErrorCategory(tt.err))
-		})
-	}
-}
-
-func TestProxySessionEndCategory(t *testing.T) {
-	tests := []struct {
-		name string
-		err  error
-		want protos.SshTunnelErrorCategory
-	}{
-		{
-			name: "clean finish is not attributed",
-			err:  nil,
-			want: "",
-		},
-		{
-			name: "dropped websocket",
-			err:  fmt.Errorf("wrapped: %w", proxy.ErrWebsocketDropped),
-			want: protos.SshTunnelErrorCategoryWebsocketDropped,
-		},
-		{
-			name: "handover failure",
-			err:  fmt.Errorf("wrapped: %w", proxy.ErrHandoverFailed),
-			want: protos.SshTunnelErrorCategoryHandoverFailed,
-		},
-		{
-			name: "connect failure",
-			err:  fmt.Errorf("wrapped: %w", proxy.ErrConnectFailed),
-			want: protos.SshTunnelErrorCategoryWebsocketConnectFailed,
-		},
-		{
-			// A drop landing during a handover surfaces from either the receiving loop or the
-			// handover goroutine, so it must be counted as a drop either way.
-			name: "a drop during a handover counts as a drop",
-			err:  errors.Join(proxy.ErrHandoverFailed, proxy.ErrWebsocketDropped),
-			want: protos.SshTunnelErrorCategoryWebsocketDropped,
-		},
-		{
-			name: "an unrecognised error is left unattributed",
-			err:  errors.New("something else"),
-			want: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, proxySessionEndCategory(tt.err))
 		})
 	}
 }

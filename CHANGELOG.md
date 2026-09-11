@@ -1,5 +1,12 @@
 # Version changelog
 
+## Release v1.16.1 (2026-09-10)
+
+### CLI
+
+ * Revert tunnel resume layer to fix SSH transfer regression in v1.16.0 affecting transfers larger than 1 MiB. ([#6608](https://github.com/databricks/cli/pull/6608), [#6612](https://github.com/databricks/cli/pull/6612))
+
+
 ## Release v1.16.0 (2026-09-09)
 
 ### CLI

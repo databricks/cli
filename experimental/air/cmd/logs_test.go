@@ -30,6 +30,8 @@ func TestLogsCommandShape(t *testing.T) {
 	review := cmd.Flags().Lookup("review")
 	require.NotNil(t, review)
 	assert.True(t, review.Hidden)
+	assert.NotNil(t, cmd.Flags().Lookup("tail"))
+	assert.Nil(t, cmd.Flags().Lookup("lines"))
 }
 
 // runLogsCmd invokes the logs command's RunE with the given flags against a mock
@@ -55,16 +57,16 @@ func TestLogsFlagValidation(t *testing.T) {
 		wantMsg string
 	}{
 		{
-			name:    "lines and minutes are mutually exclusive",
+			name:    "tail and minutes are mutually exclusive",
 			args:    []string{"5"},
-			flags:   map[string]string{"lines": "100", "minutes": "10"},
-			wantMsg: "cannot combine --lines with --minutes",
+			flags:   map[string]string{"tail": "100", "minutes": "10"},
+			wantMsg: "cannot combine --tail with --minutes",
 		},
 		{
-			name:    "negative lines rejected",
+			name:    "negative tail rejected",
 			args:    []string{"5"},
-			flags:   map[string]string{"lines": "-1"},
-			wantMsg: "invalid --lines",
+			flags:   map[string]string{"tail": "-1"},
+			wantMsg: "invalid --tail",
 		},
 		{
 			name:    "negative minutes rejected",
