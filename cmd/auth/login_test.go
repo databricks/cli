@@ -768,6 +768,12 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 			wantErr: "--configure-serverless requires --host to be specified",
 		},
 		{
+			name:    "resource is incompatible",
+			setFlag: "resource",
+			flagVal: "https://workspace.test/ai-gateway/mcp-services/system.ai.github",
+			wantErr: "--resource requires --host to be specified",
+		},
+		{
 			name: "no flags set is ok",
 		},
 	}
@@ -778,6 +784,7 @@ func TestValidateDiscoveryFlagCompatibility(t *testing.T) {
 			cmd.Flags().String("workspace-id", "", "")
 			cmd.Flags().Bool("configure-cluster", false, "")
 			cmd.Flags().Bool("configure-serverless", false, "")
+			cmd.Flags().StringArray("resource", nil, "")
 
 			if tt.setFlag != "" {
 				require.NoError(t, cmd.Flags().Set(tt.setFlag, tt.flagVal))

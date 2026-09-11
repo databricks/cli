@@ -1,0 +1,1 @@
+* Allow OAuth U2M logins to send RFC 8707 `resource` indicators on the authorization request with the repeatable `--resource` flag (requires `--host`). ([#6621](https://github.com/databricks/cli/pull/6621))

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -112,6 +113,13 @@ type PersistentAuth struct {
 	// scopes is the list of OAuth scopes to request.
 	scopes []string
 
+	// resources is the list of RFC 8707 resource indicators to send on the
+	// authorization request. The Databricks /oidc authorize endpoint reads
+	// these to scope the login to a specific protected resource (e.g. an AI
+	// Gateway MCP connection), so it can drive that resource's own login
+	// before issuing the authorization code. Empty means an unrestricted login.
+	resources []string
+
 	// disableOfflineAccess controls whether offline_access scope is requested.
 	// When true, offline_access will NOT be automatically added to scopes,
 	// meaning the token will not include a refresh token.
@@ -191,6 +199,15 @@ func WithPort(port int) PersistentAuthOption {
 func WithScopes(scopes []string) PersistentAuthOption {
 	return func(a *PersistentAuth) {
 		a.scopes = scopes
+	}
+}
+
+// WithResources sets the RFC 8707 resource indicators for the PersistentAuth.
+// Each value is added as a `resource` query parameter on the authorization
+// request.
+func WithResources(resources []string) PersistentAuthOption {
+	return func(a *PersistentAuth) {
+		a.resources = resources
 	}
 }
 
@@ -626,16 +643,40 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetching OAuth endpoints: %w", err)
 	}
+	authURL, err := appendResources(endpoints.AuthorizationEndpoint, a.resources)
+	if err != nil {
+		return nil, err
+	}
 	return &oauth2.Config{
 		ClientID: a.clientID,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:   endpoints.AuthorizationEndpoint,
+			AuthURL:   authURL,
 			TokenURL:  endpoints.TokenEndpoint,
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
 		RedirectURL: "http://" + a.redirectAddr,
 		Scopes:      scopes,
 	}, nil
+}
+
+// appendResources adds RFC 8707 `resource` indicators to an authorization
+// endpoint URL, preserving any query parameters the endpoint already carries.
+// The oauth2 library appends its own parameters (client_id, PKCE, etc.) after
+// these when it builds the final authorization URL.
+func appendResources(authURL string, resources []string) (string, error) {
+	if len(resources) == 0 {
+		return authURL, nil
+	}
+	u, err := url.Parse(authURL)
+	if err != nil {
+		return "", fmt.Errorf("parsing authorization endpoint: %w", err)
+	}
+	q := u.Query()
+	for _, r := range resources {
+		q.Add("resource", r)
+	}
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }
 
 func (a *PersistentAuth) stateAndPKCE() (string, *authhandler.PKCEParams, error) {
