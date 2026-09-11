@@ -28,6 +28,7 @@ Config comes from the environment: ``BUNDLETEST_PROFILE`` (CLI/SDK auth profile)
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import shutil
@@ -41,6 +42,8 @@ import duckdb
 import yaml
 
 from bundletest.backend import RunResult
+
+log = logging.getLogger(__name__)
 
 # DuckDB reader per file extension, reused to parse a volume file downloaded from the
 # workspace (duckdb is already a base dependency, so no extra parser is pulled in).
@@ -134,16 +137,17 @@ class CloudBackend:
         self._bundle("deploy")
 
     def teardown(self) -> None:
-        # Drop what we seeded, then destroy the bundle. Best-effort: teardown must not raise.
+        # Drop what we seeded, then destroy the bundle. Best-effort (must not raise), but a
+        # failed cleanup leaks real resources — log it rather than swallow it silently.
         for fqn in self._seeded:
             try:
                 self.execute_sql(f"DROP TABLE IF EXISTS {fqn}")
-            except Exception:
-                pass
+            except Exception as e:
+                log.warning("teardown: failed to drop seeded table %s (may be leaked): %s", fqn, e)
         try:
             self._bundle("destroy", "--auto-approve")
-        except Exception:
-            pass
+        except Exception as e:
+            log.warning("teardown: `bundle destroy` failed (resources may be leaked): %s", e)
 
     # --- scaffolding ---
     def seed_table(self, fqn: str, rows: list[dict[str, Any]]) -> None:
@@ -260,9 +264,13 @@ class CloudBackend:
         reader = _FILE_READERS.get(suffix)
         if reader is None:
             raise ValueError(f"cannot read {suffix!r} files")
+        from databricks.sdk.errors import NotFound
+
         try:
             resp = self._ws().files.download(path)
-        except Exception as e:
+        except NotFound as e:
+            # Only a genuine missing file becomes FileNotFoundError (FileHandle.exists() keys on
+            # it); auth/permission errors must surface, not masquerade as "not found".
             raise FileNotFoundError(f"no file {filename!r} in volume {volume!r}: {e}") from e
         # DuckDB re-opens the file by path, so write it into a temp dir and pass a forward-slash
         # path: a NamedTemporaryFile can't be reopened while open on Windows, and its backslash
@@ -329,8 +337,11 @@ class CloudBackend:
             for ns in _schemas_in(sql):
                 try:
                     self.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {ns}")
-                except Exception:
-                    pass
+                except RuntimeError as e:
+                    # A misparsed reference (e.g. a struct field read as catalog.schema) fails
+                    # here; ignore it and let a real error surface on run. Narrow to the
+                    # statement failure execute_sql raises so auth/permission errors propagate.
+                    log.debug("skipping schema prep for %s: %s", ns, e)
 
     def _volume_path(self, dst: str) -> str:
         """Resolve ``/Volumes/<resource_name>/<path...>`` to a real UC volume path.
