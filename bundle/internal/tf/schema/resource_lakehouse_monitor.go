@@ -47,8 +47,7 @@ type ResourceLakehouseMonitorSchedule struct {
 	TimezoneId           string `json:"timezone_id"`
 }
 
-type ResourceLakehouseMonitorSnapshot struct {
-}
+type ResourceLakehouseMonitorSnapshot struct{}
 
 type ResourceLakehouseMonitorTimeSeries struct {
 	Granularities []string `json:"granularities"`

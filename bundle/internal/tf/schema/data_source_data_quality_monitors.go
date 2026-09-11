@@ -37,8 +37,7 @@ type DataSourceDataQualityMonitorsMonitorsDataProfilingConfigSchedule struct {
 	TimezoneId           string `json:"timezone_id"`
 }
 
-type DataSourceDataQualityMonitorsMonitorsDataProfilingConfigSnapshot struct {
-}
+type DataSourceDataQualityMonitorsMonitorsDataProfilingConfigSnapshot struct{}
 
 type DataSourceDataQualityMonitorsMonitorsDataProfilingConfigTimeSeries struct {
 	Granularities   []string `json:"granularities"`

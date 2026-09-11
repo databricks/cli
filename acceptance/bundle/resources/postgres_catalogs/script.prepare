@@ -1,0 +1,6 @@
+# catalog_fields is the allow-list of catalog fields the acceptance tests assert
+# on. Anything the backend returns outside this list is dropped, so a new field
+# in the API response does not break the golden.
+catalog_fields() {
+    jq '{catalog_id, name, status: (.status | {branch, postgres_database, project})}'
+}

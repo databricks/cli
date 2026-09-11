@@ -1,23 +1,29 @@
+# The raw plans the replays read go under .databricks, which sync skips.
+mkdir -p .databricks
+
 echo "*" > .gitignore
 trace $CLI bundle plan
-$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
-$CLI bundle deploy $(readplanarg out.plan_create.direct.json)
-trace print_requests.py //jobs > out.create.requests.json
+$CLI bundle plan -o json > .databricks/tmp.plan_create.json
+nostamp < .databricks/tmp.plan_create.json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle deploy $(readplanarg .databricks/tmp.plan_create.json)
+trace print_requests.py //jobs --nostamp > out.create.requests.json
 
 print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan
-trace $CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > .databricks/tmp.plan_skip.json
+nostamp < .databricks/tmp.plan_skip.json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 
-$CLI bundle deploy $(readplanarg out.plan_skip.direct.json)
-trace print_requests.py //jobs
+$CLI bundle deploy $(readplanarg .databricks/tmp.plan_skip.json)
+trace print_requests.py //jobs --nostamp
 
 title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
-$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > .databricks/tmp.plan_update.json
+nostamp < .databricks/tmp.plan_update.json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 
-$CLI bundle deploy $(readplanarg out.plan_update.direct.json)
-trace print_requests.py //jobs | jq 'del(.body.new_settings.run_as, .body.new_settings.webhook_notifications, .body.new_settings.email_notifications)' > out.update.requests.json
+$CLI bundle deploy $(readplanarg .databricks/tmp.plan_update.json)
+trace print_requests.py //jobs --nostamp | jq 'del(.body.new_settings.run_as, .body.new_settings.webhook_notifications, .body.new_settings.email_notifications)' > out.update.requests.json
 
 trace $CLI bundle plan
 
@@ -25,12 +31,12 @@ title "Fetch job ID and verify remote state"
 
 ppid=`read_id.py foo`
 
-trace $CLI jobs get $ppid | jq 'del(.settings.run_as)'
+trace $CLI jobs get $ppid | jq 'del(.settings.run_as)' | nostamp
 rm out.requests.txt
 
 title "Destroy the job and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py //jobs
+trace print_requests.py //jobs --nostamp
 
 trace musterr $CLI jobs get $ppid
 rm out.requests.txt

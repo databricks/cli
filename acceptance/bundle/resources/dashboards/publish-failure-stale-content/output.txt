@@ -1,11 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
-
->>> [CLI] lakeview get [DASHBOARD1_ID]
+Created dashboards.dashboard1
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "display_name": "my dashboard",
   "etag": "[ETAG_1]"
@@ -27,7 +25,6 @@ json.plan.resources.dashboards.dashboard1.changes.serialized_dashboard.reason = 
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
-Deploying resources...
 Error: cannot update resources.dashboards.dashboard1: updating id=[DASHBOARD1_ID]: Fault injected by test. (400 INJECTED)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/lakeview/dashboards/[DASHBOARD1_ID]/published
@@ -35,7 +32,7 @@ HTTP Status: 400 Bad Request
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Updating deployment state...
+Files: 3 uploaded, 0 deleted
 
 Exit code: 1
 
@@ -86,10 +83,14 @@ The remote modifications will be lost.
 
 json.plan.resources.dashboards.dashboard1.new_state.value.published = true;
 json.plan.resources.dashboards.dashboard1.remote_state.etag = "[ETAG_2]";
-json.plan.resources.dashboards.dashboard1.remote_state.published = true;
+json.plan.resources.dashboards.dashboard1.remote_state.published = false;
 json.plan.resources.dashboards.dashboard1.changes.etag.action = "update";
 json.plan.resources.dashboards.dashboard1.changes.etag.old = "[ETAG_1]";
 json.plan.resources.dashboards.dashboard1.changes.etag.remote = "[ETAG_2]";
+json.plan.resources.dashboards.dashboard1.changes.published.action = "update";
+json.plan.resources.dashboards.dashboard1.changes.published.old = true;
+json.plan.resources.dashboards.dashboard1.changes.published.new = true;
+json.plan.resources.dashboards.dashboard1.changes.published.remote = false;
 json.plan.resources.dashboards.dashboard1.changes.serialized_dashboard.reason = "etag_based";
 
 >>> [CLI] bundle deploy
@@ -124,9 +125,9 @@ Exit code: 1
 
 >>> [CLI] bundle deploy --force
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated dashboards.dashboard1
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //lakeview/dashboards
 {
@@ -168,5 +169,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-publish-failure-stale-content/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

@@ -1,11 +1,6 @@
 sethome "./home"
 
-# Create an existing profile with a DIFFERENT host
-cat > "./home/.databrickscfg" <<EOF
-[override-test]
-host = https://old-host.cloud.databricks.com
-EOF
-
+# home/.databrickscfg is a checked-in input: an existing profile with a DIFFERENT host.
 title "Initial profile with old host\n"
 cat "./home/.databrickscfg"
 

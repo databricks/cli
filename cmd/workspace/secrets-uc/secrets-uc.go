@@ -4,6 +4,7 @@ package secrets_uc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -32,15 +33,12 @@ func New() *cobra.Command {
   Secrets can be managed using standard Unity Catalog permissions and are scoped
   to a schema within a catalog.`,
 		GroupID: "catalog",
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateSecret())
@@ -104,14 +102,14 @@ func newCreateSecret() *cobra.Command {
       keys, and other sensitive credential data.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'catalog_name', 'schema_name', 'value' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'catalog_name', 'schema_name', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -206,8 +204,8 @@ func newDeleteSecret() *cobra.Command {
       **catalog_name.schema_name.secret_name**).`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -254,7 +252,7 @@ func newGetSecret() *cobra.Command {
 
 	var getSecretReq catalog.GetSecretRequest
 
-	cmd.Flags().BoolVar(&getSecretReq.IncludeBrowse, "include-browse", getSecretReq.IncludeBrowse, `Whether to include secrets in the response for which you only have the **BROWSE** privilege, which limits access to metadata.`)
+	cmd.Flags().BoolVar(&getSecretReq.IncludeValue, "include-value", getSecretReq.IncludeValue, `Whether to include the secret value in the response.`)
 
 	cmd.Use = "get-secret FULL_NAME"
 	cmd.Short = `Get a secret.`
@@ -274,8 +272,8 @@ func newGetSecret() *cobra.Command {
       **catalog_name.schema_name.secret_name**).`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -328,7 +326,6 @@ func newListSecrets() *cobra.Command {
 	var listSecretsLimit int
 
 	cmd.Flags().StringVar(&listSecretsReq.CatalogName, "catalog-name", listSecretsReq.CatalogName, `The name of the catalog under which to list secrets.`)
-	cmd.Flags().BoolVar(&listSecretsReq.IncludeBrowse, "include-browse", listSecretsReq.IncludeBrowse, `Whether to include secrets in the response for which you only have the **BROWSE** privilege, which limits access to metadata.`)
 	cmd.Flags().IntVar(&listSecretsReq.PageSize, "page-size", listSecretsReq.PageSize, `Maximum number of secrets to return.`)
 	cmd.Flags().StringVar(&listSecretsReq.SchemaName, "schema-name", listSecretsReq.SchemaName, `The name of the schema under which to list secrets.`)
 
@@ -353,8 +350,8 @@ func newListSecrets() *cobra.Command {
   **page_token** field from the response to retrieve subsequent pages.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -428,8 +425,12 @@ func newUpdateSecret() *cobra.Command {
   Arguments:
     FULL_NAME: The three-level (fully qualified) name of the secret (for example,
       **catalog_name.schema_name.secret_name**).
-    UPDATE_MASK: The field mask specifying which fields of the secret to update. Supported
-      fields: **value**, **comment**, **owner**, **expire_time**.
+    UPDATE_MASK: The field mask specifying which fields of the secret to update. - If
+      **update_mask** is **"*"**, all fields specified in **secret** are
+      updated. - If **update_mask** specifies one or more fields, only those
+      fields are updated. Each specified field must be set in **secret**.
+      Supported fields: **value**, **comment**, **owner**, **expire_time**. To
+      change the secret name, delete and recreate the secret.
     NAME: The name of the secret, relative to its parent schema.
     CATALOG_NAME: The name of the catalog where the schema and the secret reside.
     SCHEMA_NAME: The name of the schema where the secret resides.
@@ -440,14 +441,14 @@ func newUpdateSecret() *cobra.Command {
       keys, and other sensitive credential data.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'name', 'catalog_name', 'schema_name', 'value' in your JSON input")
+				return errors.New("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'name', 'catalog_name', 'schema_name', 'value' in your JSON input")
 			}
 			return nil
 		}

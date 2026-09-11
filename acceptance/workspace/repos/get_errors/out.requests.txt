@@ -9,17 +9,3 @@
     "path": "/Repos/me@databricks.com/doesnotexist"
   }
 }
-{
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
-    "path": "/not-a-repo"
-  }
-}
-{
-  "method": "GET",
-  "path": "/api/2.0/workspace/get-status",
-  "q": {
-    "path": "/not-a-repo"
-  }
-}

@@ -12,10 +12,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-trace $CLI bundle deploy
+trace $CLI bundle deploy -qq
 DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
 
 # Capture the dashboard ID as a replacement.
-echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
+add_repl "$DASHBOARD_ID" DASHBOARD_ID
 
-trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard}'
+trace retry $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard}'

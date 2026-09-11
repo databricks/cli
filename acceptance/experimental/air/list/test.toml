@@ -1,0 +1,95 @@
+# Disable the on-disk run cache so --all-status output is deterministic across runs.
+Env.DATABRICKS_CACHE_ENABLED = "false"
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# `air list` reads Jobs runs/list directly (expand_tasks), filtering to AIR runs.
+# The current runs carry an ai_runtime_task (not modeled by the typed SDK), which
+# is why the CLI parses the response raw. Both runs belong to the default user
+# (tester@databricks.com, from the built-in scim/v2/Me handler). The second run
+# has no AI task and must be filtered out.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/list"
+Response.Body = '''
+{
+  "runs": [
+    {
+      "run_id": 334747067049496,
+      "run_name": "qwen-train",
+      "creator_user_name": "tester@databricks.com",
+      "start_time": 1717608759000,
+      "end_time": 1717608771000,
+      "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+      "tasks": [{
+        "run_id": 334747067049497,
+        "ai_runtime_task": {
+          "experiment": "/Users/tester@databricks.com/qwen-train",
+          "deployments": [{"compute": {"accelerator_type": "GPU_8xH100", "accelerator_count": 8}}]
+        }
+      }]
+    },
+    {
+      "run_id": 999000999000,
+      "run_name": "not-an-air-run",
+      "creator_user_name": "tester@databricks.com",
+      "state": {"life_cycle_state": "RUNNING"},
+      "tasks": [{"notebook_task": {"notebook_path": "/x"}}]
+    }
+  ]
+}
+'''
+
+# MLflow IDs for the deep link, fetched per AIR run (text mode). The current
+# task type resolves them under ai_runtime_task_output.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}
+'''
+
+# `air list --all-status` scoped to the current user is served by the
+# AiTrainingService index: it returns cheap (job_run_id, submit_time) pairs, which
+# the CLI orders and then hydrates into full runs via runs/get.
+[[Server]]
+Pattern = "GET /api/2.0/ai-training/workflows"
+Response.Body = '''
+{"training_workflows": [{"job_run_id": "334747067049496", "submit_time": "2024-06-05T17:32:39Z"}]}
+'''
+
+# MLflow run names (for the MLflow column label) are fetched per AIR run (text mode).
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/runs/get"
+Response.Body = '''
+{
+  "run": {
+    "info": {
+      "run_name": "qwen-train-001"
+    }
+  }
+}
+'''
+
+# runs/get hydrates one index id into the same shape as a runs/list element.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 334747067049496,
+  "run_name": "qwen-train",
+  "creator_user_name": "tester@databricks.com",
+  "start_time": 1717608759000,
+  "end_time": 1717608771000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "tasks": [{
+    "run_id": 334747067049497,
+    "ai_runtime_task": {
+      "experiment": "/Users/tester@databricks.com/qwen-train",
+      "deployments": [{"compute": {"accelerator_type": "GPU_8xH100", "accelerator_count": 8}}]
+    }
+  }]
+}
+'''

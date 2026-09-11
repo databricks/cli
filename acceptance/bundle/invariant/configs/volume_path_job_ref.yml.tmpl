@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# The volume name references foo.id (only known after deploy), so volume_path
+# resolves at deploy and exercises the foo -> data.volume_path -> process chain
+# on both engines. schema_name must be a real schema (create-volume validates
+# it), so it points at "default" rather than a deferred reference.
+resources:
+  jobs:
+    foo:
+      name: test-job-foo-$UNIQUE_NAME
+
+    process:
+      name: test-job-process-$UNIQUE_NAME
+      parameters:
+        - name: data_path
+          default: ${resources.volumes.data.volume_path}
+
+  volumes:
+    data:
+      catalog_name: main
+      schema_name: default
+      name: ${resources.jobs.foo.id}

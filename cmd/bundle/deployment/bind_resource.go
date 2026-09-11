@@ -20,7 +20,7 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		SkipInitContext: skipInitContext,
 		AlwaysPull:      true,
 		InitFunc: func(b *bundle.Bundle) {
-			b.Config.Bundle.Deployment.Lock.Force = forceLock
+			utils.SetForceLock(cmd, b, forceLock)
 		},
 	})
 	if err != nil {

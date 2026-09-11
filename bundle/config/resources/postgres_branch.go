@@ -24,19 +24,39 @@ type PostgresBranchConfig struct {
 	// instead of returning ALREADY_EXISTS. Used to manage the implicitly-created
 	// production branch of a new project. Input-only: not returned by the GET API.
 	ReplaceExisting bool `json:"replace_existing,omitempty"`
+
+	// PurgeOnDelete, when true, hard-deletes the branch on destroy (Purge=true on
+	// DeleteBranch). When false or unset, the backend performs a soft delete that
+	// can be undone within the branch's retention window. Input-only: not
+	// returned by the GET API.
+	PurgeOnDelete bool `json:"purge_on_delete,omitempty"`
+
+	// ForceSendFields shadows the embedded BranchSpec.ForceSendFields so the
+	// SDK's marshal package tracks zero-value top-level fields (branch_id,
+	// parent, replace_existing, purge_on_delete) here instead of polluting
+	// BranchSpec.ForceSendFields with names that don't exist in that struct.
+	ForceSendFields []string `json:"-" url:"-"`
 }
 
 func (c *PostgresBranchConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresBranchConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresBranchConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
 type PostgresBranch struct {
 	BaseResource
 	PostgresBranchConfig
+}
+
+func (b *PostgresBranch) UnmarshalJSON(data []byte) error {
+	return marshal.Unmarshal(data, b)
+}
+
+func (b PostgresBranch) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(b)
 }
 
 func (b *PostgresBranch) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
@@ -62,9 +82,9 @@ func (b *PostgresBranch) GetName() string {
 	return ""
 }
 
-func (b *PostgresBranch) GetURL() string {
+func (b *PostgresBranch) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (b *PostgresBranch) InitializeURL(_ url.URL) {

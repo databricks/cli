@@ -1,0 +1,125 @@
+package mutator_test
+
+import (
+	"testing"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestValidateJobRunTriggers(t *testing.T) {
+	trueVal := true
+	falseVal := false
+
+	fileChange := "seed.txt"
+	emptyFile := ""
+	whitespaceFile := "  \t"
+
+	tests := []struct {
+		name           string
+		triggers       []resources.JobRunTrigger
+		preventDestroy bool
+		summary        string
+	}{
+		{
+			name: "on_bundle_deploy true",
+			triggers: []resources.JobRunTrigger{
+				{OnBundleDeploy: &trueVal},
+			},
+		},
+		{
+			name: "on_file_change set",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+			},
+		},
+		{
+			name: "both triggers as separate entries",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+				{OnBundleDeploy: &trueVal},
+			},
+		},
+		{
+			name: "empty entry",
+			triggers: []resources.JobRunTrigger{
+				{},
+			},
+			summary: "lifecycle.triggers entry must set on_bundle_deploy or on_file_change",
+		},
+		{
+			name: "both keys on one entry",
+			triggers: []resources.JobRunTrigger{
+				{OnBundleDeploy: &trueVal, OnFileChange: &fileChange},
+			},
+			summary: "lifecycle.triggers entry must set only one of on_bundle_deploy or on_file_change",
+		},
+		{
+			name: "on_bundle_deploy false",
+			triggers: []resources.JobRunTrigger{
+				{OnBundleDeploy: &falseVal},
+			},
+			summary: "lifecycle.triggers.on_bundle_deploy must be true when set",
+		},
+		{
+			name: "on_file_change empty",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &emptyFile},
+			},
+			summary: "lifecycle.triggers.on_file_change must be non-empty when set",
+		},
+		{
+			name: "on_file_change whitespace",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &whitespaceFile},
+			},
+			summary: "lifecycle.triggers.on_file_change must be non-empty when set",
+		},
+		{
+			// A trigger with prevent_destroy is valid at this stage; the recreate a
+			// fired trigger plans is rejected generically by checkForPreventDestroy.
+			name: "trigger with prevent_destroy is allowed here",
+			triggers: []resources.JobRunTrigger{
+				{OnFileChange: &fileChange},
+			},
+			preventDestroy: true,
+		},
+		{
+			name:           "prevent_destroy alone",
+			preventDestroy: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := t.TempDir()
+			b := &bundle.Bundle{
+				BundleRootPath: root,
+				SyncRootPath:   root,
+				Config: config.Root{
+					Resources: config.Resources{
+						JobRuns: map[string]*resources.JobRun{
+							"my_run": {
+								Lifecycle: &resources.JobRunLifecycle{
+									Lifecycle:     resources.Lifecycle{PreventDestroy: tt.preventDestroy},
+									Triggers:      tt.triggers,
+									TriggersState: nil,
+								},
+							},
+						},
+					},
+				},
+			}
+			diags := bundle.Apply(t.Context(), b, mutator.ValidateJobRunTriggers())
+			if tt.summary == "" {
+				assert.Empty(t, diags)
+				return
+			}
+			assert.True(t, diags.HasError())
+			assert.Equal(t, tt.summary, diags[0].Summary)
+		})
+	}
+}

@@ -3,7 +3,7 @@
 package csp_enablement_account
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -154,7 +154,7 @@ Update the compliance security profile setting for new workspaces.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.Settings.CspEnablementAccount().Update(ctx, updateReq)

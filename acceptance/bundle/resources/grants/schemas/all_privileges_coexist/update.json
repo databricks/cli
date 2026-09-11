@@ -1,0 +1,8 @@
+{
+  "changes": [
+    {
+      "principal": "$CURRENT_USER_NAME",
+      "add": ["USE_SCHEMA"]
+    }
+  ]
+}

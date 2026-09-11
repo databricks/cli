@@ -1,0 +1,42 @@
+
+=== Deploy with a comment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created external_locations.location1
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove the comment from the configuration and redeploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated external_locations.location1
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== The comment the bundle no longer declares
+>>> [CLI] api get /api/2.1/unity-catalog/external-locations/myloc
+""
+
+=== Redeploy
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== The UpdateExternalLocation payloads the deploys sent
+>>> print_requests.py --method PATCH //external-locations
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/external-locations/myloc",
+  "body": {
+    "comment": "",
+    "credential_name": "test_storage_credential",
+    "url": "s3://test-bucket/path"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.external_locations.location1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

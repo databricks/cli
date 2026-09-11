@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# Regression: a saved delete-plan computed while the app is ACTIVE has Gone=false.
+# If the app enters DELETING before the plan is applied (concurrent delete, or an
+# interrupted destroy), apply must still succeed instead of failing with the
+# backend's "Cannot delete app ... not terminal with state DELETING" 400.
+
+# databricks.yml is assembled from a shared header plus a resources fragment, so
+# the delete config below reuses the exact same bundle/workspace stanza.
+envsubst < databricks_header.yml.tmpl > databricks.yml
+envsubst < databricks_resources.yml.tmpl >> databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve &> LOG.destroy
+}
+trap cleanup EXIT
+
+title "Deploy the app\n"
+trace $CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+
+# Save a delete plan while the app is still ACTIVE, so the plan records Gone=false.
+# Same header, empty resources -> the app is removed from config.
+envsubst < databricks_header.yml.tmpl > databricks.yml
+echo "resources: {}" >> databricks.yml
+
+trace $CLI bundle plan -o json > plan_delete.json 2>LOG.plan_delete.err
+cat LOG.plan_delete.err | contains.py '!panic' '!internal error' > /dev/null
+
+# Out-of-band delete flips the app into DELETING: a second delete now returns 400.
+trace $CLI apps delete "app-$UNIQUE_NAME" &> LOG.apps_delete
+cat LOG.apps_delete | contains.py '!panic' '!internal error' > /dev/null
+
+title "Apply the stale delete plan against the DELETING app\n"
+trace $CLI bundle deploy --auto-approve --plan plan_delete.json &> LOG.deploy_delete
+cat LOG.deploy_delete | contains.py '!panic' '!internal error' > /dev/null
+
+echo DELETE_OK

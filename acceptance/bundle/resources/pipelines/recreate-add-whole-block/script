@@ -1,0 +1,17 @@
+touch foo.py
+
+# The ingestion_definition block is commented out in the template with #TO_ADD:
+# markers, so phase 1 deploys a pipeline without it.
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+# Phase 2: add the whole ingestion_definition block by dropping the #TO_ADD:
+# markers. connection_name is immutable, so adding it must recreate the pipeline.
+trace update_file.py databricks.yml "#TO_ADD: " ""
+
+# Both engines recreate. structdiff records the added block as one change at
+# "ingestion_definition"; bidirectional rule matching relates that to the recreate
+# rule on the connection_name leaf. See the per-engine "changes"/"action" in the JSON.
+$CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+rm -f out.requests.txt

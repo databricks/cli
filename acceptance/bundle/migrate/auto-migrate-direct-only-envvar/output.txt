@@ -1,0 +1,54 @@
+
+=== Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.job_a
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Add a direct-only resource to the config
+>>> update_file.py databricks.yml #instance_pools instance_pools
+
+=== Opt in via env var only: deploy migrates the state, ignoring the direct-only resource
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine selected via DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
+Migrated 1 resource to direct deployment engine.
+
+>>> print_migration_telemetry
+direct_migrated_via_env true
+
+=== The direct-only resource is created on the next deploy
+>>> [CLI] bundle plan
+create instance_pools.pool
+
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created instance_pools.pool
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //instance-pools/create
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/instance-pools/create",
+  "body": {
+    "idle_instance_autotermination_minutes": 60,
+    "instance_pool_name": "My Pool",
+    "node_type_id": "Standard_DS3_v2"
+  }
+}
+
+=== No further actions planned
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

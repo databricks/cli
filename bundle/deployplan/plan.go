@@ -16,14 +16,57 @@ import (
 const currentPlanVersion = 2
 
 type Plan struct {
-	PlanVersion int                   `json:"plan_version,omitempty"`
-	CLIVersion  string                `json:"cli_version,omitempty"`
-	Lineage     string                `json:"lineage,omitempty"`
-	Serial      int                   `json:"serial,omitempty"`
-	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
+	PlanVersion int    `json:"plan_version,omitempty"`
+	CLIVersion  string `json:"cli_version,omitempty"`
+	Lineage     string `json:"lineage,omitempty"`
+	Serial      int    `json:"serial,omitempty"`
+
+	// Features are the state feature flags this plan was built against, mirroring the state
+	// file's own "features" field. The stamps above exist because of a feature being set, so
+	// deploy --plan rejects a plan whose features differ from the target's (see process.go).
+	Features map[string]struct{} `json:"features,omitempty"`
+
+	Plan map[string]*PlanEntry `json:"plan,omitzero"`
+
+	// NotSelected is the number of resources removed by FilterToSelected via the
+	// --select flag. Serialized so the summary survives a deploy from a plan file
+	// (--plan); used only for summary reporting.
+	NotSelected int `json:"not_selected,omitempty"`
 
 	mutex   sync.Mutex `json:"-"`
 	lockmap lockmap    `json:"-"`
+}
+
+// ActionCounts summarizes a plan's actions by category. A recreate counts as
+// both a create and a delete, matching how plan and deploy report changes.
+type ActionCounts struct {
+	Create    int
+	Change    int
+	Delete    int
+	Unchanged int
+}
+
+// CountActions tallies the plan's actions by category. Order is irrelevant to a
+// tally, so it iterates the plan map directly rather than the sorted GetActions.
+func (p *Plan) CountActions() ActionCounts {
+	var c ActionCounts
+	for _, entry := range p.Plan {
+		switch entry.Action {
+		case Create:
+			c.Create++
+		case Update, UpdateWithID, Resize:
+			c.Change++
+		case Delete:
+			c.Delete++
+		case Recreate:
+			// A recreate counts as both a delete and a create.
+			c.Delete++
+			c.Create++
+		case Skip, Undefined:
+			c.Unchanged++
+		}
+	}
+	return c
 }
 
 // NewPlanDirect creates a new Plan for direct engine with plan_version set.
@@ -211,15 +254,21 @@ func (p *Plan) ReadUnlockEntry(resourceKey string) {
 // e.g. "jobs.my_job") plus their transitive dependencies as recorded in each
 // entry's DependsOn field. Nodes not reachable from the selected set are removed.
 func (p *Plan) FilterToSelected(selected []string) {
+	before := len(p.Plan)
+
 	// Convert "type.name" → "resources.type.name" (plan key format).
 	queue := make([]string, 0, len(selected))
 	reachable := make(map[string]struct{}, len(selected))
 	for _, s := range selected {
 		key := "resources." + s
-		if _, ok := p.Plan[key]; ok {
-			reachable[key] = struct{}{}
-			queue = append(queue, key)
-		}
+		p.enqueueReachable(reachable, &queue, key)
+		// Grants and permissions are modeled as separate plan nodes for internal
+		// reasons, but the user cannot address them via --select. Pull them in as
+		// part of the parent resource so selecting a resource applies its grants
+		// and permissions too. The dependency edge runs sub-node → parent, so the
+		// BFS below would never reach them from the parent otherwise.
+		p.enqueueReachable(reachable, &queue, key+".grants")
+		p.enqueueReachable(reachable, &queue, key+".permissions")
 	}
 
 	// BFS following DependsOn edges to include transitive dependencies.
@@ -227,12 +276,7 @@ func (p *Plan) FilterToSelected(selected []string) {
 		key := queue[0]
 		queue = queue[1:]
 		for _, dep := range p.Plan[key].DependsOn {
-			if _, seen := reachable[dep.Node]; !seen {
-				if _, ok := p.Plan[dep.Node]; ok {
-					reachable[dep.Node] = struct{}{}
-					queue = append(queue, dep.Node)
-				}
-			}
+			p.enqueueReachable(reachable, &queue, dep.Node)
 		}
 	}
 
@@ -240,6 +284,20 @@ func (p *Plan) FilterToSelected(selected []string) {
 		if _, ok := reachable[key]; !ok {
 			delete(p.Plan, key)
 		}
+	}
+
+	p.NotSelected = before - len(p.Plan)
+}
+
+// enqueueReachable marks key as reachable and appends it to queue, if key exists
+// in the plan and has not been seen before. Missing or already-seen keys are ignored.
+func (p *Plan) enqueueReachable(reachable map[string]struct{}, queue *[]string, key string) {
+	if _, seen := reachable[key]; seen {
+		return
+	}
+	if _, ok := p.Plan[key]; ok {
+		reachable[key] = struct{}{}
+		*queue = append(*queue, key)
 	}
 }
 

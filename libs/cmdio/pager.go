@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"io"
 	"strings"
 	"time"
 
@@ -62,6 +63,7 @@ type pagerModel[T any] struct {
 // struct has to hold onto a context.
 func newPagerModel[T any](
 	ctx context.Context,
+	out io.Writer,
 	iter listing.Iterator[T],
 	pager *templatePager,
 	pageSize, limit int,
@@ -69,7 +71,7 @@ func newPagerModel[T any](
 	m := &pagerModel[T]{
 		iter:     iter,
 		pager:    pager,
-		spinner:  newPagerSpinner(),
+		spinner:  newPagerSpinner(ctx, out),
 		pageSize: pageSize,
 		limit:    limit,
 	}
@@ -81,13 +83,14 @@ func newPagerModel[T any](
 
 // newPagerSpinner builds a spinner matching the one the cmdio package's
 // NewSpinner uses, so interactive feedback looks the same everywhere.
-func newPagerSpinner() bubblespinner.Model {
+func newPagerSpinner(ctx context.Context, out io.Writer) bubblespinner.Model {
 	s := bubblespinner.New()
 	s.Spinner = bubblespinner.Spinner{
 		Frames: []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"},
 		FPS:    time.Second / 5,
 	}
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
+	r, _ := NewRenderer(ctx, out)
+	s.Style = r.NewStyle().Foreground(lipgloss.Color("10"))
 	return s
 }
 

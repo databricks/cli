@@ -1,0 +1,36 @@
+bundle:
+  name: test-bundle
+
+resources:
+  model_serving_endpoints:
+    endpoint1:
+      name: test-endpoint
+      config:
+        served_entities:
+          - name: prod
+            # burst_scaling_enabled is accepted on write but never returned on GET.
+            burst_scaling_enabled: true
+            external_model:
+              name: gpt-4o-mini
+              provider: openai
+              task: llm/v1/chat
+              openai_config:
+                # Write-only secret: the backend stores it and never echoes it back.
+                openai_api_key_plaintext: sk-test-plaintext-key
+          - name: prod-custom
+            external_model:
+              name: my-custom-model
+              provider: custom
+              task: llm/v1/chat
+              custom_provider_config:
+                custom_provider_url: https://custom-provider.example
+                api_key_auth:
+                  key: Authorization
+                  # Write-only secret nested a level deeper than the sibling *_config
+                  # plaintext keys; only reachable now that the generator descends past
+                  # the old depth-4 cap into the auth wrapper.
+                  value_plaintext: custom-plaintext-key
+        traffic_config:
+          routes:
+            - served_model_name: prod
+              traffic_percentage: 100

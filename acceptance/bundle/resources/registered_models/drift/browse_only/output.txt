@@ -1,0 +1,33 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created registered_models.model1
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan is a no-op despite the backend computing browse_only
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== The remote-only browse_only is skipped as output_only (confirms the matched rule)
+>>> [CLI] bundle plan --output json
+{
+  "action": "skip",
+  "reason": "spec:output_only",
+  "remote": true
+}
+
+=== Redeploy is a no-op (no UpdateRegisteredModel call)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //unity
+json.method = "POST";
+json.path = "/api/2.1/unity-catalog/models";
+json.body.catalog_name = "main";
+json.body.comment = "original comment";
+json.body.name = "model_browse_only";
+json.body.schema_name = "default";

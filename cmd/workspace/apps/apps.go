@@ -3,6 +3,7 @@
 package apps
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -102,11 +103,15 @@ func newCreate() *cobra.Command {
 	cmd.Flags().IntVar(&createReq.App.ComputeMinInstances, "compute-min-instances", createReq.App.ComputeMinInstances, `Minimum number of app instances.`)
 	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
+	// TODO: complex arg: default_git_source
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
+	cmd.Flags().BoolVar(&createReq.App.ForwardUserAccessToken, "forward-user-access-token", createReq.App.ForwardUserAccessToken, `Forward the user's access token to the app.`)
 	// TODO: complex arg: git_repository
+	// TODO: complex arg: git_source
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&createReq.App.SourceCodePath, "source-code-path", createReq.App.SourceCodePath, ``)
 	cmd.Flags().StringVar(&createReq.App.Space, "space", createReq.App.Space, `Name of the space this app belongs to.`)
 	// TODO: array: telemetry_export_destinations
 	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
@@ -130,7 +135,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -221,6 +226,7 @@ func newCreateSpace() *cobra.Command {
 
 	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createSpaceReq.Space.AssumeGroupId, "assume-group-id", createSpaceReq.Space.AssumeGroupId, `The group whose permissions users assume via Role Authorization for apps in this space.`)
 	cmd.Flags().StringVar(&createSpaceReq.Space.Description, "description", createSpaceReq.Space.Description, `The description of the app space.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: array: resources
@@ -255,7 +261,7 @@ func newCreateSpace() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -389,7 +395,7 @@ func newCreateUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'update_mask' in your JSON input")
+				return errors.New("when --json flag is specified, provide only APP_NAME as positional arguments. Provide 'update_mask' in your JSON input")
 			}
 			return nil
 		}
@@ -1697,11 +1703,15 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().IntVar(&updateReq.App.ComputeMinInstances, "compute-min-instances", updateReq.App.ComputeMinInstances, `Minimum number of app instances.`)
 	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, MEDIUM, XLARGE]`)
 	// TODO: complex arg: compute_status
+	// TODO: complex arg: default_git_source
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
+	cmd.Flags().BoolVar(&updateReq.App.ForwardUserAccessToken, "forward-user-access-token", updateReq.App.ForwardUserAccessToken, `Forward the user's access token to the app.`)
 	// TODO: complex arg: git_repository
+	// TODO: complex arg: git_source
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&updateReq.App.SourceCodePath, "source-code-path", updateReq.App.SourceCodePath, ``)
 	cmd.Flags().StringVar(&updateReq.App.Space, "space", updateReq.App.Space, `Name of the space this app belongs to.`)
 	// TODO: array: telemetry_export_destinations
 	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
@@ -1942,6 +1952,7 @@ func newUpdateSpace() *cobra.Command {
 
 	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateSpaceReq.Space.AssumeGroupId, "assume-group-id", updateSpaceReq.Space.AssumeGroupId, `The group whose permissions users assume via Role Authorization for apps in this space.`)
 	cmd.Flags().StringVar(&updateSpaceReq.Space.Description, "description", updateSpaceReq.Space.Description, `The description of the app space.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: array: resources

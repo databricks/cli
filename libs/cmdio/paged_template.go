@@ -103,7 +103,7 @@ func renderIteratorPagedTemplateCore[T any](
 		rowT:      rowT,
 		headerStr: headerTemplate,
 	}
-	m := newPagerModel(ctx, iter, pager, pageSize, limitFromContext(ctx))
+	m := newPagerModel(ctx, out, iter, pager, pageSize, limitFromContext(ctx))
 	p := tea.NewProgram(
 		m,
 		tea.WithInput(in),

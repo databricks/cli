@@ -1,6 +1,9 @@
 package aitools
 
 import (
+	"strings"
+
+	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/spf13/cobra"
 )
 
@@ -11,8 +14,7 @@ func NewAitoolsCmd() *cobra.Command {
 		Long: `Install Databricks skills and plugins into your coding agent so it can work
 effectively with Databricks resources (bundles, jobs, SQL, and more).
 
-Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub
-Copilot, Antigravity.
+Supported agents: ` + strings.Join(agents.SupportedNames(), ", ") + `.
 
 Skills and plugins are sourced from
 https://github.com/databricks/databricks-agent-skills`,

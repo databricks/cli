@@ -1,0 +1,10 @@
+# Local only: the lost response is staged by injecting a fault into the testserver.
+Ignore = [".databricks"]
+
+# Number each distinct token so a reused token shows as [0] on both requests.
+# Leave the closing quote out of Old/New so Distinct's [0] lands inside the string.
+[[Repls]]
+Old = '"idempotency_token": "[0-9a-f-]{36}'
+New = '"idempotency_token": "[IDEMPOTENCY_TOKEN]'
+Distinct = true
+Order = -1

@@ -1,0 +1,5 @@
+Cloud = false
+
+# These errors originate in bundle/root.go before any engine is selected,
+# so they are identical for both deployment engines.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

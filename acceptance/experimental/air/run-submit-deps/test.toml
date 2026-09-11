@@ -1,0 +1,27 @@
+# A non-dry-run submit with inline dependencies (no code_source): asserts the deps
+# land on spec.dependencies and that requirements.yaml is not uploaded.
+RecordRequests = true
+
+# The SDK probes host reachability with a HEAD request; stub it for determinism.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+[[Server]]
+Pattern = "POST /api/2.0/ai-training/config:validate"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/runs/submit"
+Response.Body = '''
+{"run_id": 555}
+'''
+
+# The per-run launch directory ends in <run>_<16 hex>; the random suffix varies.
+[[Repls]]
+Old = 'deps-smoke_[0-9a-f]{16}'
+New = 'deps-smoke_[RUN_ID]'
+
+[[Repls]]
+Old = 'deps-file-smoke_[0-9a-f]{16}'
+New = 'deps-file-smoke_[RUN_ID]'

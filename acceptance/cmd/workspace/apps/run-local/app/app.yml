@@ -1,6 +1,6 @@
 command:
-  - flask
-  - run
+  - python
+  - app.py
 
 env:
   - name: TEST

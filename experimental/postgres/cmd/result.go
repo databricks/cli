@@ -68,7 +68,7 @@ func (s *bufferSink) Row(values []any) error {
 	return nil
 }
 
-func (s *bufferSink) End(commandTag string) error {
+func (s *bufferSink) End(ctx context.Context, commandTag string) error {
 	s.result.CommandTag = commandTag
 	return nil
 }

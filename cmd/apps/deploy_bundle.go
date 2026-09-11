@@ -50,7 +50,7 @@ type bundleDeployOptions struct {
 // Flags that override bundle YAML are only applied when explicitly set by the user.
 func applyDeployFlags(cmd *cobra.Command, b *bundle.Bundle, opts bundleDeployOptions) {
 	b.Config.Bundle.Force = opts.force
-	b.Config.Bundle.Deployment.Lock.Force = opts.forceLock
+	utils.SetForceLock(cmd, b, opts.forceLock)
 	b.AutoApprove = opts.autoApprove
 
 	if cmd.Flag("compute-id").Changed {

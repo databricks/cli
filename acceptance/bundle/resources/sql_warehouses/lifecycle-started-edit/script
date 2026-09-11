@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy with started=false: warehouse created and then stopped"
+trace errcode $CLI bundle deploy
+WAREHOUSE_ID=$($CLI bundle summary -o json | jq -r '.resources.sql_warehouses.mywarehouse.id')
+add_repl "$WAREHOUSE_ID" "WAREHOUSE_ID"
+trace print_requests.py //sql/warehouses
+rm -f out.requests.txt
+{ trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true
+
+# Editing a warehouse restarts it: Edit's long-running op waits for RUNNING
+# (SDK WaitGetWarehouseRunning), so a started=false config must follow the Edit
+# with a Stop. Before the fix this redeploy hung waiting for STOPPED.
+title "Edit a field with started=false: Edit restarts the warehouse, so a Stop must follow"
+trace update_file.py databricks.yml "auto_stop_mins: 10" "auto_stop_mins: 20"
+trace errcode $CLI bundle deploy
+trace print_requests.py //sql/warehouses
+rm -f out.requests.txt
+{ trace errcode $CLI warehouses get "$WAREHOUSE_ID" | jq '.state'; } || true

@@ -35,6 +35,14 @@ func TestJobRunPath(t *testing.T) {
 	assert.Equal(t, "jobs/123/runs/456", JobRunPath("123", "456"))
 }
 
+func TestJobRunURL(t *testing.T) {
+	base := url.URL{Scheme: "https", Host: "host.com"}
+	assert.Equal(t, "https://host.com/jobs/123/runs/456", JobRunURL(base, "123", "456"))
+
+	withWorkspace := url.URL{Scheme: "https", Host: "host.com", RawQuery: "w=789"}
+	assert.Equal(t, "https://host.com/jobs/123/runs/456?w=789", JobRunURL(withWorkspace, "123", "456"))
+}
+
 func TestResourceTypes(t *testing.T) {
 	types := ResourceTypes()
 	assert.NotEmpty(t, types)
@@ -133,6 +141,55 @@ func TestResourceURL(t *testing.T) {
 	}
 }
 
+func TestDeploymentURL(t *testing.T) {
+	tests := []struct {
+		name         string
+		deploymentID string
+		version      int
+		base         url.URL
+		expected     string
+	}{
+		{
+			name:         "id and version",
+			deploymentID: "996980114684409",
+			version:      2,
+			base:         url.URL{Scheme: "https", Host: "host.com"},
+			expected:     "https://host.com/deployments/996980114684409?version=2",
+		},
+		{
+			// The version is only known once CreateVersion has run, so link to the
+			// deployment itself rather than emitting version=0.
+			name:         "zero version omits the query",
+			deploymentID: "996980114684409",
+			version:      0,
+			base:         url.URL{Scheme: "https", Host: "host.com"},
+			expected:     "https://host.com/deployments/996980114684409",
+		},
+		{
+			// A base URL carrying ?w=<workspace id> keeps it, so a vanity or legacy
+			// host still addresses the right workspace.
+			name:         "preserves an existing query",
+			deploymentID: "42",
+			version:      7,
+			base:         url.URL{Scheme: "https", Host: "host.com", RawQuery: "w=123"},
+			expected:     "https://host.com/deployments/42?version=7&w=123",
+		},
+		{
+			name:         "empty id returns empty",
+			deploymentID: "",
+			version:      1,
+			base:         url.URL{Scheme: "https", Host: "host.com"},
+			expected:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, DeploymentURL(tt.base, tt.deploymentID, tt.version))
+		})
+	}
+}
+
 func TestHasWorkspaceIDInHostname(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -155,6 +212,52 @@ func TestHasWorkspaceIDInHostname(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := hasWorkspaceIDInHostname(tt.hostname, tt.workspaceID)
 			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestModernizeJobRunPageURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		raw      string
+		expected string
+	}{
+		{
+			"legacy fragment form preserves workspace selector",
+			"https://myworkspace.databricks.test/?o=900800700600#job/123/run/456",
+			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
+		},
+		{
+			"no workspace selector",
+			"https://myworkspace.databricks.test/#job/123/run/456",
+			"https://myworkspace.databricks.test/jobs/123/runs/456",
+		},
+		{
+			"http host with port",
+			"http://127.0.0.1:8080/?o=900800700600#job/1/run/2",
+			"http://127.0.0.1:8080/jobs/1/runs/2?o=900800700600",
+		},
+		// The conversion is cosmetic, so any other format passes through unchanged.
+		{
+			"already modern path is left as-is",
+			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
+			"https://myworkspace.databricks.test/jobs/123/runs/456?o=900800700600",
+		},
+		{
+			"incomplete fragment is left as-is",
+			"https://myworkspace.databricks.test/?o=900800700600#job/123",
+			"https://myworkspace.databricks.test/?o=900800700600#job/123",
+		},
+		{
+			"empty job id is left as-is",
+			"https://myworkspace.databricks.test/?o=900800700600#job//run/456",
+			"https://myworkspace.databricks.test/?o=900800700600#job//run/456",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, ModernizeJobRunPageURL(tt.raw))
 		})
 	}
 }

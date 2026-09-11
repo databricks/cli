@@ -1,0 +1,2 @@
+# The two-phase deletion race is simulated by the testserver, so this only runs locally.
+Cloud = false

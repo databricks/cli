@@ -6,12 +6,12 @@
 # The deployment/version stubs include git_info: it is the field of interest
 # for this service and is silently dropped by older CLI releases whose SDK
 # model predates it, so we assert it round-trips through the generated command.
-Local = true
 Cloud = false
 
 # bundle-deployments is a workspace-service command independent of the bundle
-# deploy engine, so opt out of the inherited terraform/direct matrix.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+# deploy engine, so pin to a single value instead of the inherited matrix so
+# it runs once (empty list would run on both direct and terraform CI runners).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Normalize the git commit SHA so the golden output isn't tied to a specific
 # commit value.
@@ -64,7 +64,7 @@ Response.Body = '''
   "versions": [
     {
       "name": "deployments/abc/versions/v1",
-      "cli_version": "0.0.0-dev",
+      "cli_version": "0.0.0-test",
       "status": "VERSION_STATUS_COMPLETED"
     }
   ]
@@ -76,7 +76,7 @@ Pattern = "GET /api/2.0/bundle/deployments/abc/versions/v1"
 Response.Body = '''
 {
   "name": "deployments/abc/versions/v1",
-  "cli_version": "0.0.0-dev",
+  "cli_version": "0.0.0-test",
   "status": "VERSION_STATUS_COMPLETED",
   "git_info": {
     "branch": "main",

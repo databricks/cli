@@ -18,25 +18,24 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
   Postgres databases:
     my_database:
       Name: 
-      URL:  (not deployed)
   Postgres projects:
     my_project:
       Name: Test Project for Database
-      URL:  (not deployed)
   Postgres roles:
     owner:
       Name: 
-      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created postgres_branches.main
+Created postgres_databases.my_database
+Created postgres_projects.my_project
+Created postgres_roles.owner
+Files: 0 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-database projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
 {
@@ -60,19 +59,15 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
   Postgres databases:
     my_database:
       Name: 
-      URL:  (not deployed)
   Postgres projects:
     my_project:
       Name: Test Project for Database
-      URL:  (not deployed)
   Postgres roles:
     owner:
       Name: 
-      URL:  (not deployed)
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -97,5 +92,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 4 deleted

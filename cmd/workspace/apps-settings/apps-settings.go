@@ -3,6 +3,7 @@
 package apps_settings
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -93,7 +94,7 @@ func newCreateCustomTemplate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
 			}
 			return nil
 		}
@@ -391,7 +392,7 @@ func newUpdateCustomTemplate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME as positional arguments. Provide 'name', 'git_repo', 'path', 'manifest', 'git_provider' in your JSON input")
 			}
 			return nil
 		}

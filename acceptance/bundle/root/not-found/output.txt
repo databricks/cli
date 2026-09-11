@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle validate
+Error: Unable to locate the bundle root: databricks.yml not found.
+
+Run this command from a directory that contains a bundle, or set the DATABRICKS_BUNDLE_ROOT environment variable to the bundle root directory.
+Alternatively, create a new bundle with 'databricks bundle init'.
+
+Found 1 error

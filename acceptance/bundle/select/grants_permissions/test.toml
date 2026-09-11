@@ -1,0 +1,13 @@
+# Local-only: exercises --select (issue #5794) end to end against the testserver.
+# It deploys a schema, so it needs a UC metastore; --select is direct-engine only.
+# The bundle name deliberately avoids the "permissions" token used in the
+# print_requests.py filter: on Windows, Git Bash mangles the leading "//" of
+# "//permissions" so the filter degrades to the bare substring "permissions", which
+# would otherwise also match the bundle's own file-upload paths. (We can't set
+# MSYS_NO_PATHCONV to keep the "//" intact, because that breaks the python helper's
+# own path resolution -- see the env -u workaround in acceptance/script.prepare.)
+Cloud = false
+RecordRequests = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan-job.json", "plan-schema.json"]

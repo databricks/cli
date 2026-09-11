@@ -5,11 +5,11 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/credentials"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
 // The credentials chain used by the CLI. It is a custom implementation
@@ -107,10 +107,14 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	if err != nil {
 		return nil, err
 	}
-	ts, err := c.persistentAuth(ctx,
+	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArg),
 		u2m.WithTokenCache(storage.OAuthTokenCache(ctx, tokenStore, mode)),
-	)
+	}
+	if cfg.AuthType == c.Name() && cfg.ClientID != "" {
+		opts = append(opts, u2m.WithClientID(cfg.ClientID))
+	}
+	ts, err := c.persistentAuth(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

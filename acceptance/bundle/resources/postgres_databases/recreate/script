@@ -41,7 +41,7 @@ title "Fetch database and verify it exists after recreation"
 
 database_id_2=`read_id.py my_database`
 # Verify the database was recreated (DELETE/POST in requests proves recreation)
-trace $CLI postgres get-database $database_id_2 | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-database $database_id_2 | database_fields
 
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve

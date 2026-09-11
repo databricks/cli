@@ -1,0 +1,4 @@
+Cloud = false
+
+# databricks-lakeflow-integrations requires Python 3.12+.
+Env.UV_PYTHON = "3.12"

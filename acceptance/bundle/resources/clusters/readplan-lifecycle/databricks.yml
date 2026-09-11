@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  clusters:
+    mycluster:
+      cluster_name: test-cluster
+      spark_version: 13.3.x-scala2.12
+      num_workers: 1
+      custom_tags:
+        env: original
+      lifecycle:
+        started: true

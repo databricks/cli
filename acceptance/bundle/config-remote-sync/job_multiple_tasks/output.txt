@@ -1,7 +1,9 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created jobs.my_job
+Created jobs.no_tasks_job
+Created jobs.rename_task_job
+Files: 7 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify c_task, remove d_task, add e_task
 === Detect and save changes
@@ -71,10 +73,8 @@ Resource: resources.jobs.no_tasks_job
 +          task_key: new_task
 
      rename_task_job:
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+
+>>> [CLI] bundle deploy -qq
 
 === Rename b_task, replace a_task notebook_path, add synced_task
 === Detect task key rename
@@ -97,21 +97,14 @@ Resource: resources.jobs.rename_task_job
 >>> diff.py databricks.yml.backup2 databricks.yml
 --- databricks.yml.backup2
 +++ databricks.yml
-@@ -52,14 +52,14 @@
+@@ -52,5 +52,5 @@
      rename_task_job:
        tasks:
 -        - task_key: b_task
-+        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
-+            num_workers: 1
-+            spark_version: 13.3.x-snapshot-scala2.12
++        - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/b_task
--          new_cluster:
--            spark_version: 13.3.x-snapshot-scala2.12
--            node_type_id: [NODE_TYPE_ID]
--            num_workers: 1
-+          task_key: b_task_renamed
+@@ -61,5 +61,5 @@
          - task_key: d_task
            depends_on:
 -            - task_key: b_task
@@ -152,5 +145,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted

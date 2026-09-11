@@ -3,6 +3,7 @@
 package feature_engineering
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -85,10 +86,7 @@ func newCreateFeature() *cobra.Command {
 
 	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature.`)
 	// TODO: array: entities
-	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `Deprecated: Use DeltaTableSource.filter_condition or KafkaSource.filter_condition instead.`)
-	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
-	// TODO: complex arg: time_window
 	// TODO: complex arg: timeseries_column
 
 	cmd.Use = "create-feature FULL_NAME SOURCE FUNCTION"
@@ -112,7 +110,7 @@ func newCreateFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'full_name', 'source', 'function' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'full_name', 'source', 'function' in your JSON input")
 			}
 			return nil
 		}
@@ -223,7 +221,7 @@ func newCreateKafkaConfig() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
 			}
 			return nil
 		}
@@ -307,7 +305,6 @@ func newCreateMaterializedFeature() *cobra.Command {
 
 	cmd.Flags().Var(&createMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
 	// TODO: complex arg: cron_schedule_trigger
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
@@ -331,7 +328,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'feature_name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'feature_name' in your JSON input")
 			}
 			return nil
 		}
@@ -411,9 +408,8 @@ func newCreateStream() *cobra.Command {
     NAME: Full three-part (catalog.schema.stream) name of the stream.
     SOURCE_CONFIG: Source-specific configuration. Determines the streaming platform source.
     CONNECTION_CONFIG: Specifies how to connect and authenticate to the stream platform.
-    SCHEMA_CONFIG: Schema definitions for the stream. Currently only direct schemas are
-      supported. In a future milestone, we will support schema registries
-      through a UC Connection.
+    SCHEMA_CONFIG: Schema definitions for the stream, provided either directly on the Stream
+      or resolved from an external schema registry through a UC Connection.
     INGESTION_CONFIG: Configuration for streaming data ingestion: the managed table storing an
       offline copy of forward fill data and optional historical backfill.`
 
@@ -425,7 +421,7 @@ func newCreateStream() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'source_config', 'connection_config', 'schema_config', 'ingestion_config' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'source_config', 'connection_config', 'schema_config', 'ingestion_config' in your JSON input")
 			}
 			return nil
 		}
@@ -1279,10 +1275,7 @@ func newUpdateFeature() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
 	// TODO: array: entities
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `Deprecated: Use DeltaTableSource.filter_condition or KafkaSource.filter_condition instead.`)
-	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
-	// TODO: complex arg: time_window
 	// TODO: complex arg: timeseries_column
 
 	cmd.Use = "update-feature FULL_NAME UPDATE_MASK SOURCE FUNCTION"
@@ -1307,7 +1300,7 @@ func newUpdateFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'full_name', 'source', 'function' in your JSON input")
+				return errors.New("when --json flag is specified, provide only FULL_NAME, UPDATE_MASK as positional arguments. Provide 'full_name', 'source', 'function' in your JSON input")
 			}
 			return nil
 		}
@@ -1418,7 +1411,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
 			}
 			return nil
 		}
@@ -1504,7 +1497,6 @@ func newUpdateMaterializedFeature() *cobra.Command {
 
 	cmd.Flags().Var(&updateMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
 	// TODO: complex arg: cron_schedule_trigger
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
@@ -1533,7 +1525,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only MATERIALIZED_FEATURE_ID, UPDATE_MASK as positional arguments. Provide 'feature_name' in your JSON input")
+				return errors.New("when --json flag is specified, provide only MATERIALIZED_FEATURE_ID, UPDATE_MASK as positional arguments. Provide 'feature_name' in your JSON input")
 			}
 			return nil
 		}
@@ -1615,9 +1607,8 @@ func newUpdateStream() *cobra.Command {
     UPDATE_MASK: The list of fields to update.
     SOURCE_CONFIG: Source-specific configuration. Determines the streaming platform source.
     CONNECTION_CONFIG: Specifies how to connect and authenticate to the stream platform.
-    SCHEMA_CONFIG: Schema definitions for the stream. Currently only direct schemas are
-      supported. In a future milestone, we will support schema registries
-      through a UC Connection.
+    SCHEMA_CONFIG: Schema definitions for the stream, provided either directly on the Stream
+      or resolved from an external schema registry through a UC Connection.
     INGESTION_CONFIG: Configuration for streaming data ingestion: the managed table storing an
       offline copy of forward fill data and optional historical backfill.`
 
@@ -1629,7 +1620,7 @@ func newUpdateStream() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'source_config', 'connection_config', 'schema_config', 'ingestion_config' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'source_config', 'connection_config', 'schema_config', 'ingestion_config' in your JSON input")
 			}
 			return nil
 		}

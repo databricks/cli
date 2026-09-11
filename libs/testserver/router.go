@@ -93,6 +93,18 @@ func (r *Router) Handle(method, path string, handler HandlerFunc) {
 	})
 }
 
+// HandleRaw registers a handler with the raw ResponseWriter and Request, bypassing
+// the JSON serve() pipeline, for endpoints that take over the connection (e.g. a
+// websocket upgrade). First registration wins; only wildcard patterns are supported.
+func (r *Router) HandleRaw(method, path string, handler http.HandlerFunc) {
+	pattern := method + " " + path
+	if r.wildcard[pattern] {
+		return
+	}
+	r.wildcard[pattern] = true
+	r.mux.HandleFunc(pattern, handler)
+}
+
 // ServeHTTP routes a request to the registered handler, falling back to
 // NotFound if no route matches.
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {

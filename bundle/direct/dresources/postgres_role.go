@@ -29,6 +29,10 @@ type PostgresRoleState struct {
 
 	// Parent is "projects/{project_id}/branches/{branch_id}".
 	Parent string `json:"parent"`
+
+	// ReplaceExisting takes over an existing role with the same ID on create
+	// instead of returning ALREADY_EXISTS. Input-only: not returned by the GET API.
+	ReplaceExisting bool `json:"replace_existing,omitempty"`
 }
 
 // PostgresRoleRemote is the return type for DoRead. It embeds RoleRoleSpec so that
@@ -70,16 +74,22 @@ func (*ResourcePostgresRole) New(client *databricks.WorkspaceClient) *ResourcePo
 
 func (*ResourcePostgresRole) PrepareState(input *resources.PostgresRole) *PostgresRoleState {
 	return &PostgresRoleState{
-		RoleId:       input.RoleId,
-		Parent:       input.Parent,
-		RoleRoleSpec: input.RoleRoleSpec,
+		RoleId:          input.RoleId,
+		Parent:          input.Parent,
+		ReplaceExisting: input.ReplaceExisting,
+		RoleRoleSpec:    input.RoleRoleSpec,
 	}
 }
 
 func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRoleState {
 	return &PostgresRoleState{
-		RoleId:       remote.RoleId,
-		Parent:       remote.Parent,
+		RoleId: remote.RoleId,
+		Parent: remote.Parent,
+
+		// replace_existing is a create-time-only flag; the GET API never returns
+		// it, so RemapState leaves it false.
+		ReplaceExisting: false,
+
 		RoleRoleSpec: remote.RoleRoleSpec,
 	}
 }
@@ -128,9 +138,7 @@ func (r *ResourcePostgresRole) DoCreate(ctx context.Context, config *PostgresRol
 			UpdateTime:      nil,
 			ForceSendFields: nil,
 		},
-		// ReplaceExisting adopts an existing role with the same ID instead of
-		// returning ALREADY_EXISTS. Not exposed in bundle config, so always false.
-		ReplaceExisting: false,
+		ReplaceExisting: config.ReplaceExisting,
 		ForceSendFields: nil,
 	})
 	if err != nil {
@@ -150,7 +158,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 	// Build update mask from fields that have action="update" in the changes map.
 	// Prefix with "spec." because the API expects paths relative to the Role
 	// object, not relative to our flattened state type.
-	fieldPaths := collectLeafUpdatePathsWithPrefix(entry.Changes, "spec.")
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", nil)
 
 	waiter, err := r.client.Postgres.UpdateRole(ctx, postgres.UpdateRoleRequest{
 		Name: id,

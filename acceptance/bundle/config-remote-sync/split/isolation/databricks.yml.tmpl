@@ -1,0 +1,34 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# job_a's task list is split across both blocks and one task, "shared", is defined
+# in both. job_b is an ordinary single-block job.
+#
+# The point of the fixture: an unrelated resource's change must still be applied
+# in the same run as a structural change to a split element. The sync is
+# unattended, so one harder change must never stop the rest.
+resources:
+  jobs:
+    job_a:
+      tasks:
+        - task_key: shared
+          max_retries: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/shared
+
+    job_b:
+      max_concurrent_runs: 1
+      tasks:
+        - task_key: simple
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/simple
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        job_a:
+          tasks:
+            - task_key: shared
+              timeout_seconds: 45

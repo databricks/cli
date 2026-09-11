@@ -3,6 +3,7 @@
 package credentials
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -103,7 +104,7 @@ func newCreateCredential() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -252,7 +253,7 @@ func newGenerateTemporaryServiceCredential() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'credential_name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'credential_name' in your JSON input")
 			}
 			return nil
 		}

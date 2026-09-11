@@ -25,7 +25,7 @@ type ProxyServer struct {
 	ResponseCallback func(request *testserver.Request, response *testserver.EncodedResponse)
 }
 
-// This creates a reverse proxy server that sits in front of a real Databricks
+// New creates a reverse proxy server that sits in front of the upstream
 // workspace. This is useful for recording API requests and responses in
 // integration tests.
 //
@@ -36,22 +36,20 @@ type ProxyServer struct {
 // OAuth endpoints based on the nature of the URL.
 // For reference, see:
 // https://github.com/databricks/databricks-sdk-go/blob/79e4b3a6e9b0b7dcb1af9ad4025deb447b01d933/common/environment/environments.go#L57
-func New(t testutil.TestingT) *ProxyServer {
+//
+// An upstream with no fields set resolves a real workspace and its auth from the
+// environment; an explicit host and token point at a testserver instead.
+func New(t testutil.TestingT, upstream *config.Config) *ProxyServer {
 	s := &ProxyServer{
 		t: t,
 	}
 
-	// Create an API client using the current authentication context.
-	// In CI test environments this would read the appropriate environment
-	// variables.
-	var err error
-	cfg := &config.Config{}
-	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
+	clientCfg, err := config.HTTPClientConfigFromConfig(upstream)
 	require.NoError(t, err)
 	s.apiClient = httpclient.NewApiClient(clientCfg)
 
 	// Set up the proxy handler as the default handler for all requests.
-	server := httptest.NewServer(http.HandlerFunc(s.proxyToCloud))
+	server := httptest.NewServer(http.HandlerFunc(s.proxyToUpstream))
 	t.Cleanup(server.Close)
 
 	s.Server = server
@@ -73,7 +71,7 @@ func (s *ProxyServer) reqBody(r testserver.Request) any {
 	return r.Body
 }
 
-func (s *ProxyServer) proxyToCloud(w http.ResponseWriter, r *http.Request) {
+func (s *ProxyServer) proxyToUpstream(w http.ResponseWriter, r *http.Request) {
 	request := testserver.NewRequest(s.t, r, nil)
 	if s.RequestCallback != nil {
 		s.RequestCallback(&request)

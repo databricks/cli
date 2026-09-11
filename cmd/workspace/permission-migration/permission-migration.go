@@ -3,6 +3,7 @@
 package permission_migration
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -82,7 +83,7 @@ func newMigratePermissions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'workspace_id', 'from_workspace_group_name', 'to_account_group_name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'workspace_id', 'from_workspace_group_name', 'to_account_group_name' in your JSON input")
 			}
 			return nil
 		}

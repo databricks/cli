@@ -29,7 +29,7 @@ $CLI bundle deploy --select jobs.foo $(readplanarg plan.json)
 title "Telemetry:\n"
 print_telemetry_bool_values | grep '^select_used '
 # Only bar and foo were created, never baz.
-trace print_requests.py --sort //jobs
+trace print_requests.py --nostamp --sort //jobs
 # Summary after the partial deploy: foo and bar are deployed, baz is not.
 trace $CLI bundle summary
 
@@ -41,7 +41,7 @@ $CLI bundle plan -o json > plan-full.json
 title "Full deploy\n"
 $CLI bundle deploy $(readplanarg plan-full.json)
 # Only baz is created this time.
-trace print_requests.py --sort //jobs
+trace print_requests.py --nostamp --sort //jobs
 # Everything is deployed now: no changes.
 title "Full plan again"
 trace $CLI bundle plan

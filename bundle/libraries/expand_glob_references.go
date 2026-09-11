@@ -116,6 +116,9 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 			continue
 		}
 
+		// Strip extras before globbing so "[...]" isn't read as a glob class, then re-append.
+		path, extras := patchwheel.SplitWheelExtras(path)
+
 		matches, err := findMatches(ctx, b, path)
 		if err != nil {
 			diags = diags.Append(matchError(lp, dep.Locations(), err.Error()))
@@ -123,7 +126,7 @@ func expandEnvironmentDeps(ctx context.Context, b *bundle.Bundle, p dyn.Path, v 
 		}
 
 		for _, match := range matches {
-			output = append(output, dyn.NewValue(match, dep.Locations()))
+			output = append(output, dyn.NewValue(match+extras, dep.Locations()))
 		}
 	}
 
@@ -153,6 +156,28 @@ var forEachTaskLibrariesPattern = dyn.NewPattern(
 	dyn.Key("for_each_task"),
 	dyn.Key("task"),
 	dyn.Key("libraries"),
+)
+
+var aiRuntimeCodeSourcePattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+	dyn.Key("ai_runtime_task"),
+	dyn.Key("code_source_path"),
+)
+
+var forEachAiRuntimeCodeSourcePattern = dyn.NewPattern(
+	dyn.Key("resources"),
+	dyn.Key("jobs"),
+	dyn.AnyKey(),
+	dyn.Key("tasks"),
+	dyn.AnyIndex(),
+	dyn.Key("for_each_task"),
+	dyn.Key("task"),
+	dyn.Key("ai_runtime_task"),
+	dyn.Key("code_source_path"),
 )
 
 var envDepsPattern = dyn.NewPattern(

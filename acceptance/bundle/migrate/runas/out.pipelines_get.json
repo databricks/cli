@@ -4,6 +4,9 @@
   "last_modified": [UNIX_TIME_MILLIS],
   "name": "DABs Revenue Pipeline",
   "pipeline_id": "[UUID]",
+  "run_as": {
+    "service_principal_name": "[UUID]"
+  },
   "run_as_user_name": "[USERNAME]",
   "spec": {
     "catalog": "main",

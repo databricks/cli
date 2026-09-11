@@ -1,5 +1,4 @@
 {
-  "create_time": "[TIMESTAMP]",
   "name": "[MY_PROJECT_ID_2]",
   "project_id": "test-pg-new-[UNIQUE_NAME]",
   "status": {
@@ -18,6 +17,5 @@
     "project_id": "test-pg-new-[UNIQUE_NAME]",
     "synthetic_storage_size_bytes": 0
   },
-  "uid": "[UUID]",
-  "update_time": "[TIMESTAMP]"
+  "uid": "[UUID]"
 }

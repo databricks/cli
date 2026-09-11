@@ -5,6 +5,7 @@ package workspace
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	agent_bricks "github.com/databricks/cli/cmd/workspace/agent-bricks"
+	ai_gateway "github.com/databricks/cli/cmd/workspace/ai-gateway"
 	ai_search "github.com/databricks/cli/cmd/workspace/ai-search"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	alerts_legacy "github.com/databricks/cli/cmd/workspace/alerts-legacy"
@@ -138,6 +139,7 @@ func All() []*cobra.Command {
 
 	out = append(out, access_control.New())
 	out = append(out, agent_bricks.New())
+	out = append(out, ai_gateway.New())
 	out = append(out, ai_search.New())
 	out = append(out, alerts.New())
 	out = append(out, alerts_legacy.New())

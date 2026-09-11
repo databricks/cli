@@ -54,6 +54,13 @@ func TestVisitJobPaths(t *testing.T) {
 			WorkspacePath: "abc",
 		},
 	}
+	task8 := jobs.Task{
+		AiRuntimeTask: &jobs.AiRuntimeTask{
+			Deployments: []jobs.DeploymentSpec{
+				{CommandPath: "abc"},
+			},
+		},
+	}
 
 	job0 := &resources.Job{
 		JobSettings: jobs.JobSettings{
@@ -66,6 +73,7 @@ func TestVisitJobPaths(t *testing.T) {
 				task5,
 				task6,
 				task7,
+				task8,
 			},
 		},
 	}
@@ -86,6 +94,7 @@ func TestVisitJobPaths(t *testing.T) {
 		dyn.MustPathFromString("resources.jobs.job0.tasks[3].sql_task.file.path"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[6].libraries[0].requirements"),
 		dyn.MustPathFromString("resources.jobs.job0.tasks[7].alert_task.workspace_path"),
+		dyn.MustPathFromString("resources.jobs.job0.tasks[8].ai_runtime_task.deployments[0].command_path"),
 	}
 
 	assert.ElementsMatch(t, expected, actual)

@@ -1,0 +1,20 @@
+
+>>> [CLI] repos create https://github.com/databricks/databricks-empty-ide-project.git gitHub --path /Workspace/Users/me@databricks.com/test-repo
+[NUMID]
+
+=== Get by path resolves a Git CLI folder
+>>> [CLI] repos get /Workspace/Users/me@databricks.com/test-repo -o json
+{
+  "branch": "main",
+  "head_commit_id": "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f",
+  "id": [NUMID],
+  "path": "/Workspace/Users/me@databricks.com/test-repo",
+  "provider": "gitHub",
+  "url": "https://github.com/databricks/databricks-empty-ide-project.git"
+}
+
+=== Update by path resolves a Git CLI folder
+>>> [CLI] repos update /Workspace/Users/me@databricks.com/test-repo --branch update-by-path
+
+=== Delete by path resolves a Git CLI folder
+>>> [CLI] repos delete /Workspace/Users/me@databricks.com/test-repo

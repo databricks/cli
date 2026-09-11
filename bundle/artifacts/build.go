@@ -63,6 +63,22 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 		}
 
+		// A `tgz` artifact with `include`/`git` (and no user `build` command) is built
+		// by DABs itself. Produce the tarball, then expand globs so its output file is
+		// picked up for upload just like a build-command output.
+		if a.BuildCommand == "" && a.Type == config.ArtifactTarball && (len(a.Include) > 0 || a.Git != nil) {
+			cmdio.LogProgress(ctx, fmt.Sprintf("Building %s...", artifactName))
+			if err := buildTarballArtifact(ctx, b, artifactName, a); err != nil {
+				logdiag.LogError(ctx, err)
+				break
+			}
+			bundle.ApplyContext(ctx, b, expandGlobs{name: artifactName})
+			a = b.Config.Artifacts[artifactName]
+			if logdiag.HasError(ctx) {
+				break
+			}
+		}
+
 		if a.Type == "whl" && a.DynamicVersion && cacheDir != "" {
 			b.Metrics.AddBoolValue(metrics.ArtifactDynamicVersionIsSet, true)
 			for ind, artifactFile := range a.Files {
@@ -82,7 +98,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 }
 
 func doBuild(ctx context.Context, artifactName string, a *config.Artifact) error {
-	cmdio.LogString(ctx, fmt.Sprintf("Building %s...", artifactName))
+	cmdio.LogProgress(ctx, fmt.Sprintf("Building %s...", artifactName))
 
 	var executor *exec.Executor
 	if a.Executable != "" {

@@ -13,24 +13,39 @@
 envsubst < config.json.tmpl > config.json
 trace cat config.json
 
+# The template hard-codes the model's schema name to the project name and always
+# registers the model in Unity Catalog, so the schema must already exist in the
+# target catalog. Create it in the shared "main" catalog (the convention used by
+# other cloud UC acceptance tests) and override catalog_name to match.
+SCHEMA_NAME="project_name_${UNIQUE_NAME}"
+
 cleanup() {
-  trace $CLI bundle destroy --auto-approve
+  trace $CLI bundle destroy --var catalog_name=main --auto-approve
+  trace $CLI schemas delete "main.${SCHEMA_NAME}"
   cd ../..
   rm -rf test_repo_mlops_stacks
 }
 trap cleanup EXIT
 
-trace $CLI bundle init mlops-stacks --config-file config.json
+trace $CLI schemas create "${SCHEMA_NAME}" main | jq '{full_name}'
+
+# Local runs must not reach the network; cloud runs clone to keep that path covered.
+# The vendored copy in ./template/ can be updated with `task bump-mlops-stacks`
+if [ -z "$CLOUD_ENV" ]; then
+  trace $CLI bundle init "$TESTDIR/template" --config-file config.json
+else
+  trace $CLI bundle init mlops-stacks --config-file config.json
+fi
 trace cat test_repo_mlops_stacks/README.md | head -n 4
 
 cd "test_repo_mlops_stacks/project_name_${UNIQUE_NAME}" || exit 1
 
-trace $CLI bundle summary
-trace $CLI bundle validate
-trace $CLI bundle deploy
+trace $CLI bundle summary --var catalog_name=main
+trace $CLI bundle validate --var catalog_name=main
+trace $CLI bundle deploy --var catalog_name=main
 
-trace $CLI bundle summary -o json | jq -r '{experiment_id: .resources.experiments.experiment.id, model_id: .resources.models.model.id, inference_job_id: .resources.jobs.batch_inference_job.id, training_job_id: .resources.jobs.model_training_job.id}'
+trace $CLI bundle summary --var catalog_name=main -o json | jq -r '{experiment_id: .resources.experiments.experiment.id, model_id: .resources.registered_models.model.id, inference_job_id: .resources.jobs.batch_inference_job.id, training_job_id: .resources.jobs.model_training_job.id}'
 
 title "Assert the batch inference job actually exists\n"
-JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.batch_inference_job.id')
+JOB_ID=$($CLI bundle summary --var catalog_name=main -o json | jq -r '.resources.jobs.batch_inference_job.id')
 $CLI jobs get "${JOB_ID}" | jq '{name: .settings.name}'

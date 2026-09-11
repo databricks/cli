@@ -69,7 +69,14 @@ Get an asset revision.
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: Asset type. Only NOTEBOOK_FILE is supported.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: Name of the asset.
     ETAG: Revision etag to fetch. If not provided, the latest revision will be
       returned.`
@@ -155,7 +162,14 @@ List asset revisions.
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
     ASSET_TYPE: Asset type. Only NOTEBOOK_FILE is supported.
-      Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
+      Supported values: [
+        FOREIGN_TABLE,
+        JAR_ANALYSIS,
+        NOTEBOOK_FILE,
+        TABLE,
+        VIEW,
+        VOLUME,
+      ]
     NAME: Name of the asset.`
 
 	cmd.Annotations = make(map[string]string)

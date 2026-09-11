@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/dyn/merge"
 
@@ -50,6 +51,7 @@ type resolveVariableReferences struct {
 	prefixes    []string
 	pattern     dyn.Pattern
 	lookupFn    func(dyn.Value, dyn.Path, *bundle.Bundle) (dyn.Value, error)
+	allowPathFn func(dyn.Path) bool
 	extraRounds int
 
 	// includeResources allows resolving variables in 'resources', otherwise, they are excluded.
@@ -79,24 +81,6 @@ func ResolveVariableReferencesOnlyResources(prefixes ...string) bundle.Mutator {
 	}
 }
 
-// ResolveVariableReferencesOnlyResourcesExcluding is like ResolveVariableReferencesOnlyResources
-// but leaves the listed variable reference paths unresolved. Use this when a workspace path will
-// be updated by a later mutator (e.g. snapshot.Upload sets workspace.file_path to the snapshot
-// location) and the final value should be substituted at that later point.
-func ResolveVariableReferencesOnlyResourcesExcluding(excluded []string, prefixes ...string) bundle.Mutator {
-	if len(prefixes) == 0 {
-		prefixes = defaultPrefixes
-	}
-	return &resolveVariableReferences{
-		prefixes:         prefixes,
-		lookupFn:         lookup,
-		extraRounds:      maxResolutionRounds - 1,
-		pattern:          dyn.NewPattern(dyn.Key("resources")),
-		includeResources: true,
-		excludePaths:     excluded,
-	}
-}
-
 func ResolveVariableReferencesWithoutResources(prefixes ...string) bundle.Mutator {
 	if len(prefixes) == 0 {
 		prefixes = defaultPrefixes
@@ -114,6 +98,17 @@ func ResolveVariableReferencesInLookup() bundle.Mutator {
 		pattern:     dyn.NewPattern(dyn.Key("variables"), dyn.AnyKey(), dyn.Key("lookup")),
 		lookupFn:    lookupForVariables,
 		extraRounds: maxResolutionRounds - 1,
+	}
+}
+
+// ResolveVolumePathReferencesOnlyResources resolves only references to resources.volumes.*.volume_path.
+func ResolveVolumePathReferencesOnlyResources() bundle.Mutator {
+	return &resolveVariableReferences{
+		prefixes:         []string{"resources"},
+		lookupFn:         lookup,
+		allowPathFn:      isVolumePathReferencePath,
+		extraRounds:      maxResolutionRounds - 1,
+		includeResources: true,
 	}
 }
 
@@ -255,6 +250,9 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 					if slices.Contains(m.excludePaths, path.String()) {
 						return dyn.InvalidValue, dynvar.ErrSkipResolution
 					}
+					if m.allowPathFn != nil && !m.allowPathFn(path) {
+						return dyn.InvalidValue, dynvar.ErrSkipResolution
+					}
 					value, err := m.lookupFn(normalized, path, b)
 					hasUpdates = hasUpdates || (err == nil && value.IsValid())
 					return value, err
@@ -274,10 +272,35 @@ func (m *resolveVariableReferences) resolveOnce(b *bundle.Bundle, prefixes []dyn
 		return root, nil
 	})
 	if err != nil {
-		diags = diags.Extend(diag.FromErr(err))
+		diags = diags.Extend(resolveErrorDiags(err))
 	}
 
 	return hasUpdates, diags
+}
+
+// resolveErrorDiags renders "did you mean" suggestions as a diagnostic Detail so
+// libs/diag owns the multi-line formatting.
+func resolveErrorDiags(err error) diag.Diagnostics {
+	refErr, ok := errors.AsType[*dynvar.ReferenceError](err)
+	if !ok || len(refErr.Suggestions) == 0 {
+		return diag.FromErr(err)
+	}
+
+	header := "did you mean:"
+	if len(refErr.Suggestions) > 1 {
+		header = "did you mean one of:"
+	}
+	var detail strings.Builder
+	detail.WriteString(header)
+	for _, ref := range refErr.Suggestions {
+		detail.WriteString("\n  ${" + ref + "}")
+	}
+
+	return diag.Diagnostics{{
+		Severity: diag.Error,
+		Summary:  refErr.Error(),
+		Detail:   detail.String(),
+	}}
 }
 
 // selectivelyMutate applies a function to a subset of the configuration
@@ -333,4 +356,13 @@ func getAllKeys(root dyn.Value) ([]string, error) {
 	}
 
 	return keys, nil
+}
+
+func isVolumePathReferencePath(path dyn.Path) bool {
+	if len(path) != 4 {
+		return false
+	}
+	return path[0].Key() == "resources" &&
+		path[1].Key() == "volumes" &&
+		path[3].Key() == "volume_path"
 }

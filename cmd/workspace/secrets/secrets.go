@@ -3,6 +3,7 @@
 package secrets
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -135,7 +136,7 @@ func newCreateScope() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'scope' in your JSON input")
 			}
 			return nil
 		}
@@ -231,7 +232,7 @@ func newDeleteAcl() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'principal' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'principal' in your JSON input")
 			}
 			return nil
 		}
@@ -327,7 +328,7 @@ func newDeleteScope() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'scope' in your JSON input")
 			}
 			return nil
 		}
@@ -422,7 +423,7 @@ func newDeleteSecret() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'key' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'key' in your JSON input")
 			}
 			return nil
 		}
@@ -941,7 +942,7 @@ func newPutAcl() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'principal', 'permission' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'scope', 'principal', 'permission' in your JSON input")
 			}
 			return nil
 		}

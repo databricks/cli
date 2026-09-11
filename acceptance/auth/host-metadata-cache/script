@@ -4,11 +4,7 @@ export DATABRICKS_CACHE_DIR="$TEST_TMP_DIR/cache"
 # Point a profile at the mock server so auth profiles triggers a host metadata
 # fetch. Validation must stay on: --skip-validate resolves offline and would
 # never fetch or populate the cache.
-cat > "./home/.databrickscfg" <<EOF
-[cached]
-host = ${DATABRICKS_HOST}
-token = test-token
-EOF
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
 title "First invocation populates the cache\n"
 $CLI auth profiles --output json

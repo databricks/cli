@@ -1,11 +1,11 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-trace $CLI bundle validate -t green -o json | jq .resources
+trace $CLI bundle validate -t green -o json | nostamp | jq .resources
 trace errcode $CLI bundle deploy -t green
-print_requests.py //jobs &> out.deploy.requests.json
+print_requests.py //jobs --nostamp &> out.deploy.requests.json
 
 # check plan to ensure there is not drift
-trace $CLI bundle plan -o json -t green > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan -o json -t green | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 
 trace errcode $CLI bundle destroy -t green --auto-approve
-print_requests.py //jobs &> out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json
+print_requests.py //jobs --nostamp &> out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json

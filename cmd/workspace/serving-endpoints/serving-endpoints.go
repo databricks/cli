@@ -3,6 +3,7 @@
 package serving_endpoints
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -57,6 +58,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newLogs())
 	cmd.AddCommand(newPatch())
+	cmd.AddCommand(newPatchTelemetryConfig())
 	cmd.AddCommand(newPut())
 	cmd.AddCommand(newPutAiGateway())
 	cmd.AddCommand(newQuery())
@@ -187,7 +189,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -303,7 +305,7 @@ Create a new PT serving endpoint.`
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		wait, err := w.ServingEndpoints.CreateProvisionedThroughputEndpoint(ctx, createProvisionedThroughputEndpointReq)
@@ -969,6 +971,83 @@ func newPatch() *cobra.Command {
 	return cmd
 }
 
+// start patch-telemetry-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var patchTelemetryConfigOverrides []func(
+	*cobra.Command,
+	*serving.PatchTelemetryConfigRequest,
+)
+
+func newPatchTelemetryConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var patchTelemetryConfigReq serving.PatchTelemetryConfigRequest
+	var patchTelemetryConfigJson flags.JsonFlag
+
+	cmd.Flags().Var(&patchTelemetryConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: telemetry_config
+
+	cmd.Use = "patch-telemetry-config NAME"
+	cmd.Short = `Update the telemetry config of a serving endpoint.`
+	cmd.Long = `Update the telemetry config of a serving endpoint.
+
+  Updates the telemetry configuration of a serving endpoint.
+
+  Arguments:
+    NAME: The name of the serving endpoint whose telemetry configuration is being
+      updated. This field is required.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := patchTelemetryConfigJson.Unmarshal(&patchTelemetryConfigReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		patchTelemetryConfigReq.Name = args[0]
+
+		response, err := w.ServingEndpoints.PatchTelemetryConfig(ctx, patchTelemetryConfigReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range patchTelemetryConfigOverrides {
+		fn(cmd, &patchTelemetryConfigReq)
+	}
+
+	return cmd
+}
+
 // start put command
 
 // Slice with functions to override default command behavior.
@@ -1616,7 +1695,7 @@ Update config of a PT serving endpoint.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateProvisionedThroughputEndpointConfigReq.Name = args[0]
 

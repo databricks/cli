@@ -1,3 +1,6 @@
 trace $CLI pipelines deploy
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
 trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
+
+# --quiet prints only the summary line: no per-resource line, no "View your ... here".
+trace $CLI pipelines deploy --quiet

@@ -1,0 +1,22 @@
+
+=== help
+>>> [CLI] pipelines show --help
+Preview a table's columns and sample rows on a SQL warehouse.
+
+TABLE is a fully-qualified name: catalog.schema.table (Unity Catalog) or
+schema.table (legacy Hive metastore).
+
+Usage:
+  databricks pipelines show TABLE [flags]
+
+Flags:
+  -h, --help                  help for show
+  -n, --limit int             Maximum number of rows to fetch. (default 10)
+      --warehouse-id string   SQL warehouse to run the query on. Defaults to DATABRICKS_WAREHOUSE_ID or a workspace default.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in project config. Example: --var="foo=bar"

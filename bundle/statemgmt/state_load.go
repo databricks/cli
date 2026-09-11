@@ -46,6 +46,26 @@ func applyState(ctx context.Context, b *bundle.Bundle, state ExportedResourcesMa
 		return diag.FromErr(err)
 	}
 
+	// Load each run's resolved job_id into ResolvedJobID (for the URL only). We
+	// leave config's job_id ${resources.jobs.*.id} reference intact so it keeps
+	// its plan dependency. Typed-only write, like the dashboard etag below.
+	for resourceKey, rstate := range state {
+		if !strings.HasPrefix(resourceKey, "resources.job_runs.") || rstate.JobID == 0 {
+			continue
+		}
+		parts := strings.Split(resourceKey, ".")
+		if len(parts) != 3 {
+			continue
+		}
+
+		// A run in state but not config was deleted; skip it.
+		jrconfig, ok := b.Config.Resources.JobRuns[parts[2]]
+		if !ok {
+			continue
+		}
+		jrconfig.ResolvedJobID = rstate.JobID
+	}
+
 	// Merge dashboard etags into configuration.
 	for resourceKey, dstate := range state {
 		// Check if this is a dashboard resource key

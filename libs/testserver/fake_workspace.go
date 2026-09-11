@@ -5,10 +5,13 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -19,8 +22,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/google/uuid"
 
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/files"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -38,10 +43,13 @@ const (
 	// identity's workspace, kept distinct from a test whose primary identity is
 	// itself a service principal.
 	GuestServicePrincipalTokenPrefix = "dbapi2"
-	UserID                           = "1000012345"
-	TestDefaultClusterId             = "0123-456789-cluster0"
-	TestDefaultWarehouseId           = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId        = "0123-456789-pool0"
+	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
+	// consistency: the first GET after a create returns 404 (not yet visible).
+	EventualConsistencyTokenPrefix = "dbapi3"
+	UserID                         = "1000012345"
+	TestDefaultClusterId           = "0123-456789-cluster0"
+	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId      = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -125,6 +133,14 @@ func nowMilli() int64 {
 	return lastNowMilli
 }
 
+// nextTimestamp returns a strictly-increasing RFC3339 timestamp with nanosecond
+// precision. The sub-second component keeps distinct events ordered even within the
+// same wall-clock second, which the dashboard publish lifecycle relies on to compare
+// a draft's update_time against a published revision's revision_create_time.
+func nextTimestamp() string {
+	return time.Unix(0, nowNano()).UTC().Format(time.RFC3339Nano)
+}
+
 func nextUUID() string {
 	var b [16]byte
 	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
@@ -166,6 +182,7 @@ type FakeWorkspace struct {
 	Jobs                  map[int64]jobs.Job
 	JobRuns               map[int64]jobs.Run
 	JobRunOutputs         map[int64]jobs.RunOutput
+	JobRunIdempotency     map[string]int64
 	Pipelines             map[string]pipelines.GetPipelineResponse
 	PipelineUpdates       map[string]bool
 	Monitors              map[string]catalog.MonitorInfo
@@ -173,7 +190,7 @@ type FakeWorkspace struct {
 	Schemas               map[string]catalog.SchemaInfo
 	Grants                map[string][]catalog.PrivilegeAssignment
 	Volumes               map[string]catalog.VolumeInfo
-	Dashboards            map[string]fakeDashboard
+	Dashboards            *EventualMap[string, *fakeDashboard]
 	PublishedDashboards   map[string]dashboards.PublishedDashboard
 	GenieSpaces           map[string]dashboards.GenieSpace
 	SqlWarehouses         map[string]sql.GetWarehouseResponse
@@ -182,6 +199,8 @@ type FakeWorkspace struct {
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
 	Clusters              map[string]compute.ClusterDetails
+	InstancePools         map[string]compute.GetInstancePool
+	ClusterPolicies       map[string]compute.Policy
 	Catalogs              map[string]catalog.CatalogInfo
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
@@ -189,9 +208,15 @@ type FakeWorkspace struct {
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
 
+	// VectorSearchIndexesPendingDeletion counts how many further CREATEs an
+	// already-deleted index name must reject with "pending deletion". See
+	// VectorSearchIndexDelete.
+	VectorSearchIndexesPendingDeletion map[string]int
+
 	SecretScopes map[string]workspace.SecretScope
 	Secrets      map[string]map[string]string // scope -> key -> value
 	Acls         map[string][]workspace.AclItem
+	UCSecrets    map[string]catalog.Secret // full_name -> secret (Unity Catalog secrets)
 
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
@@ -204,14 +229,15 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
-	PostgresProjects     map[string]postgres.Project
-	PostgresBranches     map[string]postgres.Branch
-	PostgresCatalogs     map[string]postgres.Catalog
-	PostgresDatabases    map[string]postgres.Database
-	PostgresEndpoints    map[string]postgres.Endpoint
-	PostgresRoles        map[string]postgres.Role
-	PostgresSyncedTables map[string]postgres.SyncedTable
-	PostgresOperations   map[string]postgres.Operation
+	PostgresProjects          map[string]postgres.Project
+	PostgresBranches          map[string]postgres.Branch
+	PostgresCatalogs          map[string]postgres.Catalog
+	PostgresDatabases         map[string]postgres.Database
+	PostgresEndpoints         map[string]postgres.Endpoint
+	PostgresRoles             map[string]postgres.Role
+	PostgresSyncedTables      map[string]postgres.SyncedTable
+	PostgresSnapshotSchedules map[string]postgres.SnapshotSchedule
+	PostgresOperations        map[string]postgres.Operation
 
 	// Branches and endpoints that the server provisioned implicitly together
 	// with their parent (e.g. the production branch on a new project, or the
@@ -223,6 +249,22 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	// DmsDeployments holds Deployment Metadata Service (DMS) records, keyed by
+	// deployment ID. Each record carries its versions and latest resource state.
+	DmsDeployments map[string]*DmsDeployment
+
+	// DmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment made for
+	// it. An ID appears here before DmsDeployments has a record, which its first version
+	// creates, so the node is what makes the ID valid in between.
+	DmsDeploymentNodes map[string]string
+
+	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
+	// serves, generated on first use. See sshTunnelHostKey.
+	sshTunnelHostKeyPEM []byte
+	// sshTunnelHostPublicKey is sshTunnelHostKeyPEM in authorized-key form, published
+	// to the tunnel's secret scope so a client can pin it.
+	sshTunnelHostPublicKey []byte
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -231,6 +273,85 @@ func (s *FakeWorkspace) LockUnlock() func() {
 	}
 	s.mu.Lock()
 	return func() { s.mu.Unlock() }
+}
+
+// parseUpdateFields decodes an update payload into its raw fields, so a handler can tell
+// a field explicitly set to a zero value from one the caller omitted.
+func parseUpdateFields(body []byte) (map[string]json.RawMessage, *Response) {
+	var fields map[string]json.RawMessage
+
+	if err := json.Unmarshal(body, &fields); err != nil {
+		return nil, &Response{
+			Body:       fmt.Sprintf("internal error: %s", err),
+			StatusCode: http.StatusInternalServerError,
+		}
+	}
+	return fields, nil
+}
+
+// parseUCUpdate is parseUpdateFields for the UC APIs that reject a payload carrying no
+// field to act on, answering "<operation> Nothing to update." (400) rather than treating it
+// as a no-op. A key set to null does not count.
+//
+// Verified against a real workspace for schemas, volumes and catalogs: {} and
+// {"comment": null} are rejected, while {"comment": ""} and
+// {"custom_max_retention_hours": 0} are accepted. Registered models accept {} instead, so
+// they use parseUpdateFields.
+func parseUCUpdate(body []byte, operation string) (map[string]json.RawMessage, *Response) {
+	fields, errResponse := parseUpdateFields(body)
+	if errResponse != nil {
+		return nil, errResponse
+	}
+
+	for _, value := range fields {
+		if string(value) != "null" {
+			return fields, nil
+		}
+	}
+
+	return nil, &Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    operation + " Nothing to update.",
+		},
+	}
+}
+
+// applyUpdatedFields copies every field the update payload names from update onto
+// existing, matched by JSON name, and marks it force-send so a zero value survives the
+// response encoding (the stored *Info types are all omitempty).
+//
+// Fields the payload omits are left untouched: a partial-update API changes only what the
+// caller names, and modelling that is the whole point of these fakes. Fields the payload
+// names but the stored type lacks (new_name, force) are skipped for the caller to handle.
+// existing must be a pointer; update is passed by value.
+func applyUpdatedFields(existing, update any, fields map[string]json.RawMessage) {
+	dst := reflect.ValueOf(existing).Elem()
+	src := reflect.ValueOf(update)
+
+	for i := range src.Type().NumField() {
+		name := structtag.JSONTag(src.Type().Field(i).Tag.Get("json")).Name()
+		if name == "" || name == "-" {
+			continue
+		}
+		if _, ok := fields[name]; !ok {
+			continue
+		}
+		dstField := dst.FieldByName(src.Type().Field(i).Name)
+		if !dstField.IsValid() || !dstField.CanSet() || dstField.Type() != src.Field(i).Type() {
+			continue
+		}
+		dstField.Set(src.Field(i))
+		forceSend := dst.FieldByName("ForceSendFields")
+		if forceSend.IsValid() && forceSend.CanSet() {
+			goName := src.Type().Field(i).Name
+			// Repeated updates would otherwise keep appending the same name.
+			if !slices.Contains(forceSend.Interface().([]string), goName) {
+				forceSend.Set(reflect.Append(forceSend, reflect.ValueOf(goName)))
+			}
+		}
+	}
 }
 
 // Generic functions to handle map operations
@@ -242,6 +363,23 @@ func MapGet[T any](w *FakeWorkspace, collection map[string]T, key string) Respon
 		return Response{
 			StatusCode: 404,
 			Body:       map[string]string{"message": fmt.Sprintf("Resource %T not found: %v", value, key)},
+		}
+	}
+	return Response{
+		Body: value,
+	}
+}
+
+// MapGetUC is MapGet for Unity Catalog securables. The CLI surfaces the API's
+// message verbatim, and UC words it as "Volume 'main.s.v' does not exist."
+func MapGetUC[T any](w *FakeWorkspace, collection map[string]T, key, securable string) Response {
+	defer w.LockUnlock()()
+
+	value, ok := collection[key]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("%s '%s' does not exist.", securable, key)},
 		}
 	}
 	return Response{
@@ -331,6 +469,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Jobs:                map[int64]jobs.Job{},
 		JobRuns:             map[int64]jobs.Run{},
 		JobRunOutputs:       map[int64]jobs.RunOutput{},
+		JobRunIdempotency:   map[string]int64{},
 		Grants:              map[string][]catalog.PrivilegeAssignment{},
 		Pipelines:           map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:     map[string]bool{},
@@ -341,7 +480,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Schemas:             map[string]catalog.SchemaInfo{},
 		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
 		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          map[string]fakeDashboard{},
+		Dashboards:          NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
 		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:         map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
@@ -370,20 +509,37 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresRoles:             map[string]postgres.Role{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
+		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
+		DmsDeployments:            map[string]*DmsDeployment{},
+		DmsDeploymentNodes:        map[string]string{},
 		Alerts:                    map[string]sql.AlertV2{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},
 		ModelRegistryModelIDs:     map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
+			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
+			// requires (ValidateClusterAccess rejects anything else), matching the cloud
+			// TEST_DEFAULT_CLUSTER_ID this stands in for.
 			TestDefaultClusterId: {
-				ClusterId:   TestDefaultClusterId,
-				ClusterName: "DEFAULT Test Cluster",
+				ClusterId:        TestDefaultClusterId,
+				ClusterName:      "DEFAULT Test Cluster",
+				State:            compute.StateRunning,
+				DataSecurityMode: compute.DataSecurityModeSingleUser,
+				SingleUserName:   TestUser.UserName,
 			},
 		},
+		InstancePools: map[string]compute.GetInstancePool{},
+		ClusterPolicies: map[string]compute.Policy{
+			// Seeded so the stateful list keeps backing the variable-lookup tests
+			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).
+			"5678": {PolicyId: "5678", Name: "wrong-cluster-policy"},
+			"9876": {PolicyId: "9876", Name: "some-test-cluster-policy"},
+		},
+		VectorSearchIndexesPendingDeletion: map[string]int{},
 	}
 }
 
@@ -395,19 +551,96 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
+// gitInfoBlock is the git_info block get-status adds for return_git_info=true.
+// workspace.ObjectInfo does not model it (the field is undocumented), so it is
+// merged into the response separately, see withGitInfo.
+//
+// A Git folder that has Git CLI access does not store the git metadata on the
+// workspace object, so Branch, HeadCommitID and URL are empty for one; only a
+// standard Git folder reports them.
+type gitInfoBlock struct {
+	Branch       string `json:"branch,omitempty"`
+	HeadCommitID string `json:"head_commit_id,omitempty"`
+	ID           int64  `json:"id"`
+	Path         string `json:"path"`
+	URL          string `json:"url,omitempty"`
+}
+
+// withGitInfo returns info as an object with a git_info block added.
+//
+// It cannot be a struct embedding workspace.ObjectInfo: ObjectInfo declares
+// MarshalJSON, which gets promoted to the embedding struct, so the outer
+// git_info field would be dropped from the output without any error. The
+// intermediate map holds json.RawMessage rather than any, so that large ids do
+// not lose precision by passing through float64.
+func withGitInfo(info workspace.ObjectInfo, gi gitInfoBlock) (any, error) {
+	infoJSON, err := json.Marshal(info)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]json.RawMessage{}
+	if err := json.Unmarshal(infoJSON, &out); err != nil {
+		return nil, err
+	}
+	giJSON, err := json.Marshal(gi)
+	if err != nil {
+		return nil, err
+	}
+	out["git_info"] = giJSON
+	return out, nil
+}
+
+// gitFolderFor returns the Git folder containing objectPath, which is the
+// longest registered Git folder path that is a prefix of it. get-status reports
+// the containing folder's metadata for paths inside a Git folder, not just for
+// its root.
+func (s *FakeWorkspace) gitFolderFor(objectPath string) (workspace.RepoInfo, bool) {
+	longest := ""
+	for repoPath := range s.repoIdByPath {
+		if objectPath != repoPath && !strings.HasPrefix(objectPath, repoPath+"/") {
+			continue
+		}
+		if len(repoPath) > len(longest) {
+			longest = repoPath
+		}
+	}
+	if longest == "" {
+		return workspace.RepoInfo{}, false
+	}
+	return s.Repos[strconv.FormatInt(s.repoIdByPath[longest], 10)], true
+}
+
+// isGitCliFolder reports whether a Git folder at this path has Git CLI access.
+// Those are materialized as plain DIRECTORY nodes outside /Repos, while a
+// standard Git folder under /Repos keeps the REPO object type. The /Workspace
+// mount prefix is optional on a request, so it is not part of the distinction.
+func isGitCliFolder(repoPath string) bool {
+	return !strings.HasPrefix(strings.TrimPrefix(repoPath, "/Workspace"), "/Repos/")
+}
+
+func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string, returnGitInfo bool) Response {
 	defer s.LockUnlock()()
 
 	// The real API collapses duplicate slashes, so look up the cleaned path.
 	cleaned := path.Clean(requestPath)
 
 	var info workspace.ObjectInfo
-	if dirInfo, ok := s.directories[cleaned]; ok {
+	// A Git folder root is reported as the repo, before any directory entry for
+	// the same path: mkdirs of a path inside a Git folder seeds its ancestors,
+	// which would otherwise shadow the root and report the wrong object id.
+	if repoId, ok := s.repoIdByPath[cleaned]; ok {
+		// Control-plane repos (under /Repos) report the REPO object type, while
+		// Git-CLI-enabled folders elsewhere are materialized as plain DIRECTORY
+		// nodes. Both resolve to a valid repo ID via the repos API.
+		objectType := workspace.ObjectTypeRepo
+		if isGitCliFolder(cleaned) {
+			objectType = workspace.ObjectTypeDirectory
+		}
+		info = workspace.ObjectInfo{ObjectType: objectType, Path: cleaned, ObjectId: repoId}
+	} else if dirInfo, ok := s.directories[cleaned]; ok {
 		info = dirInfo
 	} else if entry, ok := s.files[cleaned]; ok {
 		info = entry.Info
-	} else if repoId, ok := s.repoIdByPath[cleaned]; ok {
-		info = workspace.ObjectInfo{ObjectType: "REPO", Path: cleaned, ObjectId: repoId}
 	} else {
 		// Match the real Workspace API wording, which echoes the requested path.
 		return Response{
@@ -424,21 +657,58 @@ func (s *FakeWorkspace) WorkspaceGetStatus(requestPath string) Response {
 		info.Path = strings.TrimPrefix(info.Path, "/Workspace")
 	}
 
+	if returnGitInfo {
+		if repo, ok := s.gitFolderFor(cleaned); ok {
+			// The real API reports the Git folder root without the /Workspace mount
+			// prefix, whichever spelling the folder was created with.
+			gi := gitInfoBlock{ID: repo.Id, Path: strings.TrimPrefix(repo.Path, "/Workspace")}
+			if isGitCliFolder(repo.Path) {
+				info.DirectoryInfo = &workspace.DirectoryInfo{IsGitFolder: true}
+			} else {
+				gi.Branch = repo.Branch
+				gi.HeadCommitID = repo.HeadCommitId
+				gi.URL = repo.Url
+			}
+			body, err := withGitInfo(info, gi)
+			if err != nil {
+				return Response{
+					StatusCode: 500,
+					Body:       fmt.Sprintf("internal error: %s", err),
+				}
+			}
+			return Response{Body: body}
+		}
+	}
+
 	return Response{Body: info}
 }
 
 func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	defer s.LockUnlock()()
 
+	// The real API collapses duplicate slashes, so look up the cleaned path.
+	cleaned := path.Clean(listPath)
+
+	// The real API 404s on a missing path rather than reporting an empty directory.
+	// Repos are listable but tracked outside s.directories, so admit them too.
+	_, isDir := s.directories[cleaned]
+	_, isRepo := s.repoIdByPath[cleaned]
+	if !isDir && !isRepo {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("Path (%s) doesn't exist.", listPath)},
+		}
+	}
+
 	var objects []workspace.ObjectInfo
 
 	for filePath, entry := range s.files {
-		if path.Dir(filePath) == listPath {
+		if path.Dir(filePath) == cleaned {
 			objects = append(objects, entry.Info)
 		}
 	}
 	for dirPath, dirInfo := range s.directories {
-		if dirPath != listPath && path.Dir(dirPath) == listPath {
+		if dirPath != cleaned && path.Dir(dirPath) == cleaned {
 			objects = append(objects, dirInfo)
 		}
 	}
@@ -450,6 +720,71 @@ func (s *FakeWorkspace) WorkspaceList(listPath string) Response {
 	return Response{
 		Body: workspace.ListResponse{Objects: objects},
 	}
+}
+
+// FsListDirectory implements GET /api/2.0/fs/directories/{path}. A path that is
+// not a directory, including one pointing at a file, is a 404, as it is for HEAD.
+func (s *FakeWorkspace) FsListDirectory(dirPath string) Response {
+	if !strings.HasPrefix(dirPath, "/") {
+		dirPath = "/" + dirPath
+	}
+
+	defer s.LockUnlock()()
+
+	if _, isDir := s.directories[dirPath]; !isDir {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "directory does not exist"},
+		}
+	}
+
+	var contents []files.DirectoryEntry
+
+	for filePath, entry := range s.files {
+		if path.Dir(filePath) == dirPath {
+			contents = append(contents, files.DirectoryEntry{
+				Name:     path.Base(filePath),
+				Path:     filePath,
+				FileSize: int64(len(entry.Data)),
+			})
+		}
+	}
+	for childPath := range s.directories {
+		if childPath != dirPath && path.Dir(childPath) == dirPath {
+			contents = append(contents, files.DirectoryEntry{
+				Name:        path.Base(childPath),
+				Path:        childPath,
+				IsDirectory: true,
+			})
+		}
+	}
+
+	slices.SortFunc(contents, func(a, b files.DirectoryEntry) int {
+		return strings.Compare(a.Path, b.Path)
+	})
+
+	return Response{
+		Body: files.ListDirectoryResponse{Contents: contents},
+	}
+}
+
+// FsDeleteFile implements DELETE /api/2.0/fs/files/{path}.
+func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
+	if !strings.HasPrefix(filePath, "/") {
+		filePath = "/" + filePath
+	}
+
+	defer s.LockUnlock()()
+
+	if _, exists := s.files[filePath]; !exists {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": "file does not exist"},
+		}
+	}
+
+	delete(s.files, filePath)
+	return Response{}
 }
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
@@ -472,9 +807,21 @@ func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
 	return s.files[path].Data
 }
 
-func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
+// WorkspaceDelete implements POST /api/2.0/workspace/delete. As in the real API, a
+// non-recursive delete of a directory that still has children fails instead of removing
+// it, which is what lets a caller delete a directory only if it is empty.
+func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 	defer s.LockUnlock()()
 	if !recursive {
+		if _, isDir := s.directories[path]; isDir && s.hasChildren(path) {
+			return Response{
+				StatusCode: 400,
+				Body: map[string]string{
+					"error_code": "DIRECTORY_NOT_EMPTY",
+					"message":    "Folder (" + path + ") is not empty",
+				},
+			}
+		}
 		delete(s.files, path)
 		delete(s.directories, path)
 	} else {
@@ -489,6 +836,24 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 			}
 		}
 	}
+	return Response{}
+}
+
+// hasChildren reports whether any file or directory lives under dirPath. Callers must
+// hold the lock.
+func (s *FakeWorkspace) hasChildren(dirPath string) bool {
+	prefix := dirPath + "/"
+	for key := range s.files {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	for key := range s.directories {
+		if strings.HasPrefix(key, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {

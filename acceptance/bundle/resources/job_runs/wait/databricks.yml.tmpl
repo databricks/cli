@@ -1,0 +1,49 @@
+bundle:
+  name: job-runs-wait
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      name: test-job-$UNIQUE_NAME
+      parameters:
+        - name: env
+          default: dev
+        - name: region
+          default: us
+      tasks:
+        # Serverless keeps the run to about a minute.
+        - task_key: main
+          spark_python_task:
+            python_file: ./hello.py
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
+
+    # Reads the run's outcome, so its tag shows the deploy waited for the run
+    # before creating what depends on it. Separate from my_job, which my_run
+    # already depends on, to avoid a cycle.
+    downstream_job:
+      name: test-downstream-job-$UNIQUE_NAME
+      tags:
+        run_result: ${resources.job_runs.my_run.state.result_state}
+      tasks:
+        - task_key: main
+          condition_task:
+            op: EQUAL_TO
+            left: "1"
+            right: "1"
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      # Override one of the job's two parameters: a real GetRun reports the full
+      # resolved set, including the region default, which ignore_remote_changes
+      # has to absorb.
+      job_parameters:
+        env: prod

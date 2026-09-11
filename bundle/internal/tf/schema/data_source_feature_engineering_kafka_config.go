@@ -32,12 +32,10 @@ type DataSourceFeatureEngineeringKafkaConfigAuthConfig struct {
 }
 
 type DataSourceFeatureEngineeringKafkaConfigBackfillSourceDeltaTableSource struct {
-	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
-	EntityColumns     []string `json:"entity_columns,omitempty"`
-	FilterCondition   string   `json:"filter_condition,omitempty"`
-	FullName          string   `json:"full_name"`
-	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
-	TransformationSql string   `json:"transformation_sql,omitempty"`
+	DataframeSchema   string `json:"dataframe_schema,omitempty"`
+	FilterCondition   string `json:"filter_condition,omitempty"`
+	FullName          string `json:"full_name"`
+	TransformationSql string `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigBackfillSource struct {
@@ -46,12 +44,10 @@ type DataSourceFeatureEngineeringKafkaConfigBackfillSource struct {
 }
 
 type DataSourceFeatureEngineeringKafkaConfigIngestionConfigBackfillSourceDeltaTableSource struct {
-	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
-	EntityColumns     []string `json:"entity_columns,omitempty"`
-	FilterCondition   string   `json:"filter_condition,omitempty"`
-	FullName          string   `json:"full_name"`
-	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
-	TransformationSql string   `json:"transformation_sql,omitempty"`
+	DataframeSchema   string `json:"dataframe_schema,omitempty"`
+	FilterCondition   string `json:"filter_condition,omitempty"`
+	FullName          string `json:"full_name"`
+	TransformationSql string `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigIngestionConfigBackfillSource struct {
@@ -72,8 +68,15 @@ type DataSourceFeatureEngineeringKafkaConfigIngestionConfig struct {
 	IngestionPipelineId  string                                                                      `json:"ingestion_pipeline_id,omitempty"`
 }
 
+type DataSourceFeatureEngineeringKafkaConfigKeySchemaProtoSchema struct {
+	MessageName string `json:"message_name"`
+	SchemaText  string `json:"schema_text"`
+}
+
 type DataSourceFeatureEngineeringKafkaConfigKeySchema struct {
-	JsonSchema string `json:"json_schema,omitempty"`
+	AvroSchema  string                                                       `json:"avro_schema,omitempty"`
+	JsonSchema  string                                                       `json:"json_schema,omitempty"`
+	ProtoSchema *DataSourceFeatureEngineeringKafkaConfigKeySchemaProtoSchema `json:"proto_schema,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigProviderConfig struct {
@@ -86,8 +89,15 @@ type DataSourceFeatureEngineeringKafkaConfigSubscriptionMode struct {
 	SubscribePattern string `json:"subscribe_pattern,omitempty"`
 }
 
+type DataSourceFeatureEngineeringKafkaConfigValueSchemaProtoSchema struct {
+	MessageName string `json:"message_name"`
+	SchemaText  string `json:"schema_text"`
+}
+
 type DataSourceFeatureEngineeringKafkaConfigValueSchema struct {
-	JsonSchema string `json:"json_schema,omitempty"`
+	AvroSchema  string                                                         `json:"avro_schema,omitempty"`
+	JsonSchema  string                                                         `json:"json_schema,omitempty"`
+	ProtoSchema *DataSourceFeatureEngineeringKafkaConfigValueSchemaProtoSchema `json:"proto_schema,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfig struct {

@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/auth/storage"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -230,6 +230,71 @@ func TestCLICredentialsConfigure_ThreadsResolvedTokenCache(t *testing.T) {
 	// check is the most resilient way to assert both were passed without
 	// poking at u2m's unexported state.
 	assert.Len(t, receivedOpts, 2)
+}
+
+func TestCLICredentialsConfigure_ClientID(t *testing.T) {
+	tests := []struct {
+		name     string
+		authType string
+		source   config.SourceType
+		wantOpts int
+	}{
+		{
+			name:     "U2M config file client ID",
+			authType: "databricks-cli",
+			source:   config.SourceFile,
+			wantOpts: 3,
+		},
+		{
+			name:     "U2M environment client ID",
+			authType: "databricks-cli",
+			source:   config.SourceEnv,
+			wantOpts: 3,
+		},
+		{
+			name:     "U2M dynamic client ID",
+			authType: "databricks-cli",
+			source:   config.SourceDynamicConfig,
+			wantOpts: 3,
+		},
+		{
+			name:     "non-U2M config file client ID",
+			authType: "oauth-m2m",
+			source:   config.SourceFile,
+			wantOpts: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hermeticAuthStorage(t)
+			cfg := &config.Config{
+				Host:     "https://workspace.test",
+				AuthType: tt.authType,
+				ClientID: "custom-client-id",
+			}
+			for i := range config.ConfigAttributes {
+				if config.ConfigAttributes[i].Name == "client_id" {
+					cfg.SetAttrSource(&config.ConfigAttributes[i], config.Source{Type: tt.source})
+					break
+				}
+			}
+
+			var receivedOpts []u2m.PersistentAuthOption
+			c := CLICredentials{
+				persistentAuthFn: func(_ context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+					receivedOpts = opts
+					return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
+						return &oauth2.Token{AccessToken: "tok"}, nil
+					}), nil
+				},
+			}
+
+			_, err := c.Configure(t.Context(), cfg)
+			require.NoError(t, err)
+			assert.Len(t, receivedOpts, tt.wantOpts)
+		})
+	}
 }
 
 // TestCLICredentialsConfigure_PropagatesStorageResolutionError confirms

@@ -74,7 +74,9 @@ func newCreate() *cobra.Command {
   Create Published OAuth App Integration.
 
   You can retrieve the published OAuth app integration via
-  :method:PublishedAppIntegration/get.`
+  [PublishedAppIntegration/get].
+
+  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -142,7 +144,9 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete Published OAuth App Integration.
 
   Delete an existing Published OAuth App Integration. You can retrieve the
-  published OAuth app integration via :method:PublishedAppIntegration/get.`
+  published OAuth app integration via [PublishedAppIntegration/get].
+
+  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -330,7 +334,9 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates Published OAuth App Integration.
 
   Updates an existing published OAuth App Integration. You can retrieve the
-  published OAuth app integration via :method:PublishedAppIntegration/get.`
+  published OAuth app integration via [PublishedAppIntegration/get].
+
+  [PublishedAppIntegration/get]: https://docs.databricks.com/api/account/publishedappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

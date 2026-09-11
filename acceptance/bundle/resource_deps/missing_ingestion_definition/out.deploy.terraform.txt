@@ -12,5 +12,6 @@ The given key does not identify an element in this collection value: the
 collection has no elements.
 
 
+Files: 7 uploaded, 0 deleted
 
 Exit code: 1

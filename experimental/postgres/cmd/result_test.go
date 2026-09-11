@@ -34,7 +34,7 @@ func TestBufferSink_RowAndEnd(t *testing.T) {
 	require.NoError(t, s.Begin([]pgconn.FieldDescription{{Name: "a"}}))
 	require.NoError(t, s.Row([]any{int64(1)}))
 	require.NoError(t, s.Row([]any{int64(2)}))
-	require.NoError(t, s.End("SELECT 2"))
+	require.NoError(t, s.End(t.Context(), "SELECT 2"))
 
 	assert.Equal(t, [][]any{{int64(1)}, {int64(2)}}, r.Rows)
 	assert.Equal(t, "SELECT 2", r.CommandTag)

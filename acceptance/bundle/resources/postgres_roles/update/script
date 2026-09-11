@@ -15,7 +15,7 @@ print_requests() {
 title "Initial deployment"
 trace $CLI bundle validate
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -24,11 +24,11 @@ print_requests create
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
 role_name="${branch_name}/roles/test-role"
-trace $CLI postgres get-role "${role_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-role "${role_name}" | role_fields
 
 title "Verify no changes"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -39,21 +39,21 @@ trace update_file.py databricks.yml "createdb: false" "createdb: true"
 trace cat databricks.yml
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests update
 
-trace $CLI postgres get-role "${role_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-role "${role_name}" | role_fields
 
 title "Restore attributes.createdb to original value"
 trace update_file.py databricks.yml "createdb: true" "createdb: false"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_roles.my_role" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests restore
 
-trace $CLI postgres get-role "${role_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-role "${role_name}" | role_fields

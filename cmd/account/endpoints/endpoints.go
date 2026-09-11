@@ -3,6 +3,7 @@
 package endpoints
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -62,7 +63,9 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: aws_vpc_endpoint_info
 	// TODO: complex arg: azure_private_endpoint_info
+	// TODO: complex arg: gcp_psc_endpoint_info
 
 	cmd.Use = "create-endpoint PARENT DISPLAY_NAME REGION"
 	cmd.Short = `Create a network endpoint.`
@@ -94,7 +97,7 @@ func newCreateEndpoint() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PARENT as positional arguments. Provide 'display_name', 'region' in your JSON input")
+				return errors.New("when --json flag is specified, provide only PARENT as positional arguments. Provide 'display_name', 'region' in your JSON input")
 			}
 			return nil
 		}

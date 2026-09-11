@@ -1,0 +1,14 @@
+bundle:
+  name: script-env-precedence
+
+targets:
+  default:
+    default: true
+
+# A script's env: entry must win over the DATABRICKS_BUNDLE_TARGET variable the
+# CLI injects into the script process (executeScript appends env: last).
+scripts:
+  show_target:
+    env:
+      DATABRICKS_BUNDLE_TARGET: from-script-env
+    content: echo "target=$DATABRICKS_BUNDLE_TARGET"

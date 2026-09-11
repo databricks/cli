@@ -1,0 +1,1 @@
+trace $CLI workspace delete /Workspace/Users/$CURRENT_USER_NAME/test-$UNIQUE_NAME --recursive

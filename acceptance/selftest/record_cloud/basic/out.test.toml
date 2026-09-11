@@ -1,3 +1,2 @@
-Local = false
 Cloud = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

@@ -1,0 +1,35 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.file_order_job
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Edit aaa, whose file position differs from its merged position
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.file_order_job
+  tasks[task_key='aaa'].notebook_task.notebook_path: replace
+
+
+
+=== aaa keeps its own variable reference
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -23,3 +23,3 @@
+         - task_key: aaa
+           notebook_task:
+-            notebook_path: /Users/${var.aaa_dir}/aaa
++            notebook_path: /Users/${var.aaa_dir}/renamed
+
+>>> grep -c var.aaa_dir databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.file_order_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

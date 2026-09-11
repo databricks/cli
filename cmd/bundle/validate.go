@@ -5,9 +5,11 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/render"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
@@ -17,7 +19,15 @@ func renderJsonOutput(cmd *cobra.Command, b *bundle.Bundle) error {
 	if b == nil {
 		return nil
 	}
-	buf, err := json.MarshalIndent(b.Config.Value().AsAny(), "", "  ")
+	redactedRoot, err := dresources.RedactSensitiveConfigValues(&b.Config)
+	if err != nil {
+		return err
+	}
+	converted, err := convert.FromTyped(redactedRoot, b.Config.Value())
+	if err != nil {
+		return err
+	}
+	buf, err := json.MarshalIndent(converted.AsAny(), "", "  ")
 	if err != nil {
 		return err
 	}

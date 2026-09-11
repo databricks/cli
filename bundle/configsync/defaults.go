@@ -100,6 +100,7 @@ var serverSideDefaults = map[string]any{
 
 	// Volume fields
 	"resources.volumes.*.storage_location": alwaysSkip,
+	"resources.volumes.*.volume_path":      alwaysSkip,
 
 	// SQL warehouse fields
 	"resources.sql_warehouses.*.creator_name":     alwaysSkip,
@@ -108,6 +109,13 @@ var serverSideDefaults = map[string]any{
 
 	// Terraform defaults
 	"resources.jobs.*.run_as": alwaysSkip,
+
+	// deployment.* is CLI-managed: metadata.AnnotateJobs / AnnotatePipelines write
+	// kind + metadata_file_path on every deploy, and the Deployment Metadata Service
+	// sets deployment_id + version_id. None is user-authored (validate.ValidateDeploymentFields
+	// even rejects deployment_id / version_id in config), so no subfield is synced back.
+	"resources.jobs.*.deployment.*":      alwaysSkip,
+	"resources.pipelines.*.deployment.*": alwaysSkip,
 
 	// Pipeline fields
 	"resources.pipelines.*.storage":    alwaysSkip,
@@ -119,6 +127,9 @@ var serverSideDefaults = map[string]any{
 	// modified-remotely detection), so configsync cannot rely on the plan's Skip
 	// action and must exclude the field explicitly.
 	"resources.dashboards.*.etag": alwaysSkip,
+	// published is an internal state field (not part of the user config): DoRead
+	// derives it from the publish lifecycle, so it must never be synced into config.
+	"resources.dashboards.*.published": alwaysSkip,
 }
 
 // shouldSkipField checks if a field should be skipped in change detection.

@@ -1,9 +1,11 @@
 .databricks/
+{{- if eq .language "python"}}
 build/
 dist/
 __pycache__/
 *.egg-info
 .venv/
+{{- end}}
 scratch/**
 !scratch/README.md
 **/explorations/**

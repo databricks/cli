@@ -12,6 +12,7 @@
       "catalog_name": "main",
       "name": "volumebar-[UNIQUE_NAME]",
       "schema_name": "${resources.schemas.my.name}",
+      "volume_path": "/Volumes/main/myschema-[UNIQUE_NAME]/volumebar-[UNIQUE_NAME]",
       "volume_type": "MANAGED"
     },
     "foo": {
@@ -19,6 +20,7 @@
       "comment": "${resources.volumes.bar.storage_location}",
       "name": "volumefoo-[UNIQUE_NAME]",
       "schema_name": "${resources.schemas.my.name}",
+      "volume_path": "/Volumes/main/myschema-[UNIQUE_NAME]/volumefoo-[UNIQUE_NAME]",
       "volume_type": "MANAGED"
     }
   }

@@ -13,6 +13,7 @@ type DataSourcePostgresBranchesBranchesSpec struct {
 	SourceBranch     string `json:"source_branch,omitempty"`
 	SourceBranchLsn  string `json:"source_branch_lsn,omitempty"`
 	SourceBranchTime string `json:"source_branch_time,omitempty"`
+	SourceSnapshot   string `json:"source_snapshot,omitempty"`
 	Ttl              string `json:"ttl,omitempty"`
 }
 
@@ -29,6 +30,7 @@ type DataSourcePostgresBranchesBranchesStatus struct {
 	SourceBranch     string `json:"source_branch,omitempty"`
 	SourceBranchLsn  string `json:"source_branch_lsn,omitempty"`
 	SourceBranchTime string `json:"source_branch_time,omitempty"`
+	SourceSnapshot   string `json:"source_snapshot,omitempty"`
 	StateChangeTime  string `json:"state_change_time,omitempty"`
 }
 

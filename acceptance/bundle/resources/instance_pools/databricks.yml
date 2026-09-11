@@ -1,0 +1,11 @@
+bundle:
+  name: test_instance_pool
+
+resources:
+  instance_pools:
+    test_instance_pool:
+      instance_pool_name: my_instance_pool
+      node_type_id: Standard_DS3_v2
+      min_idle_instances: 0
+      max_capacity: 5
+      idle_instance_autotermination_minutes: 60

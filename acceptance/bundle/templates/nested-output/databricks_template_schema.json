@@ -1,0 +1,20 @@
+{
+    "properties": {
+        "group": {
+            "type": "string",
+            "description": "The group the project belongs to"
+        },
+        "project_name": {
+            "type": "string",
+            "description": "The name of the project"
+        },
+        "language": {
+            "type": "string",
+            "description": "The language of the project",
+            "enum": [
+                "python",
+                "sql"
+            ]
+        }
+    }
+}

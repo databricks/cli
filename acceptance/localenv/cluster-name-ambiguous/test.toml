@@ -1,0 +1,19 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
+# Two active clusters share the same name, so name→ID resolution is genuinely
+# ambiguous and errors as an actionable E_RESOLVE at the resolve phase.
+# (A terminated cluster sharing the name would be filtered out server-side via
+# ListClustersFilterBy, so it does not cause a spurious collision — see
+# GetClusterByName.)
+
+[[Server]]
+Pattern = "GET /api/2.1/clusters/list"
+Response.Body = '''
+{
+  "clusters": [
+    {"cluster_id": "cid-123", "cluster_name": "dup", "state": "RUNNING", "spark_version": "15.4.x-scala2.12"},
+    {"cluster_id": "cid-999", "cluster_name": "dup", "state": "RUNNING", "spark_version": "14.3.x-scala2.12"}
+  ]
+}
+'''

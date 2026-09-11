@@ -100,32 +100,63 @@ func TestTemplateResolverForCustomPath(t *testing.T) {
 	assert.Equal(t, "/config/file", tmpl.Writer.(*defaultWriter).configPath)
 }
 
-func TestBundleInitIsRepoUrl(t *testing.T) {
-	assert.True(t, IsRepoUrl("git@github.com:databricks/cli.git"))
-	assert.True(t, IsRepoUrl("https://github.com/databricks/cli.git"))
+func TestBundleInitIsGitRepoUrl(t *testing.T) {
+	// Supported
+	assert.True(t, IsGitRepoUrl("git@github.com:databricks/cli.git"))
+	assert.True(t, IsGitRepoUrl("https://github.com/databricks/cli.git"))
+	assert.True(t, IsGitRepoUrl("ssh://user@company.ghe.com/databricks/cli.git"))
 
-	assert.False(t, IsRepoUrl("./local"))
-	assert.False(t, IsRepoUrl("foo"))
+	// Unsupported
+	assert.False(t, IsGitRepoUrl("git://github.com/databricks/cli.git"))
+	assert.False(t, IsGitRepoUrl("http://github.com/databricks/cli.git"))
+	assert.False(t, IsGitRepoUrl("ftp://github.com/databricks/cli.git"))
+	assert.False(t, IsGitRepoUrl("ftps://github.com/databricks/cli.git"))
+
+	// Not git repos
+	assert.False(t, IsGitRepoUrl("./local"))
+	assert.False(t, IsGitRepoUrl("foo"))
+	assert.False(t, IsGitRepoUrl("github.com/databricks/cli.git"))
 }
 
 func TestResolveReader(t *testing.T) {
 	t.Run("builtin template", func(t *testing.T) {
-		reader, isGit := ResolveReader("default-python", "", "")
+		reader, isGit, err := ResolveReader("default-python", "", "")
+		require.NoError(t, err)
 		assert.False(t, isGit)
 		assert.Equal(t, &builtinReader{name: "default-python"}, reader)
 	})
 
-	t.Run("git URL", func(t *testing.T) {
-		reader, isGit := ResolveReader("https://github.com/example/repo", "/template", "v1.0")
-		assert.True(t, isGit)
-		gitReader := reader.(*gitReader)
-		assert.Equal(t, "https://github.com/example/repo", gitReader.gitUrl)
-		assert.Equal(t, "/template", gitReader.templateDir)
-		assert.Equal(t, "v1.0", gitReader.ref)
-	})
+	for _, url := range []string{
+		"https://github.com/example/repo",
+		"ssh://git@github.com/example/repo",
+		"git@github.com:example/repo",
+	} {
+		t.Run("git URL "+url, func(t *testing.T) {
+			reader, isGit, err := ResolveReader(url, "/template", "v1.0")
+			require.NoError(t, err)
+			assert.True(t, isGit)
+			gitReader := reader.(*gitReader)
+			assert.Equal(t, url, gitReader.gitUrl)
+			assert.Equal(t, "/template", gitReader.templateDir)
+			assert.Equal(t, "v1.0", gitReader.ref)
+		})
+	}
+
+	for _, url := range []string{
+		"http://github.com/example/repo",
+		"git://github.com/example/repo",
+		"ftp://github.com/example/repo",
+		"ftps://github.com/example/repo",
+	} {
+		t.Run("unsupported protocol "+url, func(t *testing.T) {
+			_, _, err := ResolveReader(url, "", "")
+			assert.ErrorContains(t, err, "unsupported protocol")
+		})
+	}
 
 	t.Run("local path", func(t *testing.T) {
-		reader, isGit := ResolveReader("/local/path", "", "")
+		reader, isGit, err := ResolveReader("/local/path", "", "")
+		require.NoError(t, err)
 		assert.False(t, isGit)
 		assert.Equal(t, "/local/path", reader.(*localReader).path)
 	})

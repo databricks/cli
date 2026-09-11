@@ -20,6 +20,9 @@ vars:
   EMBED_SOURCES:
     sh: 'uv run -p ">=3.11" --no-project python tools/list_embeds.py'
 
+env:
+  GOFIPS140: v1.0.0
+
 # pydabs-* tasks live in python/Taskfile.yml so `task pydabs-foo` works when
 # run from python/. Flattened so they keep their `pydabs-` names at the root.
 includes:
@@ -278,13 +281,20 @@ tasks:
     cmds:
       - "./tools/validate_whitespace.py --fix"
 
-  links:
-    desc: Update GitHub links in docs
-    sources:
-      - "**/*.md"
-      - tools/update_github_links.py
+  check-changelog:
+    desc: Validate .nextchanges fragment placement and links
     cmds:
-      - "./tools/update_github_links.py"
+      - "./tools/validate_nextchanges.py"
+
+  changelog-preview:
+    desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
+    env:
+      NEXTCHANGES_DIR: .nextchanges/
+    cmds:
+      # Validate placement first so a misplaced fragment fails loudly instead of
+      # being silently skipped by the renderer (see validate_nextchanges.py).
+      - task: check-changelog
+      - "uv run --locked internal/genkit/tagging.py --preview"
 
   deadcode:
     desc: Check for dead code
@@ -295,23 +305,24 @@ tasks:
     cmds:
       - ./tools/check_deadcode.py
 
-  check-uv-lock:
-    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock
-    # pydabs-codegen reverts this proxy-URL churn after regenerating; this is a
+  check-lockfiles:
+    desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock or .py.lock
+    # pydabs-codegen reverts this proxy-URL churn after regenerating, and
+    # generate-clijson scrubs it from the genkit tagging locks; this is a
     # backstop against a proxy URL reaching a committed lock any other way.
     cmds:
-      - "! git grep -lF databricks.com -- '*uv.lock'"
+      - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, uv.lock)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
-    # touching more paths should not race with whitespace/link scanners.
+    # touching more paths should not race with the whitespace scanner.
     cmds:
       - task: tidy
       - task: ws
-      - task: links
       - task: deadcode
-      - task: check-uv-lock
+      - task: check-changelog
+      - task: check-lockfiles
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
@@ -384,7 +395,7 @@ tasks:
   # --- Testing ---
 
   test:
-    desc: Run unit and acceptance tests
+    desc: Run unit, acceptance, and doctests
     # Run the legs as sequential cmds (not parallel deps) so the concatenating
     # cat can be a `defer`, which runs even when a leg fails. When the legs are
     # deps, the cat in cmds is skipped on failure, so test-output.json is never
@@ -396,10 +407,18 @@ tasks:
       - test-output.json
     cmds:
       - defer: cat test-output-unit.json test-output-acc.json > test-output.json
+      - task: doctest
       - task: test-unit
       - task: test-acc
         vars:
           ACCEPTANCE_TEST_FILTER: "{{.ACCEPTANCE_TEST_FILTER}}"
+
+  doctest:
+    desc: Run doctests for all Python files in the repo
+    sources:
+      - "**/*.py"
+    cmds:
+      - 'uv run -p ">=3.11" --no-project python tools/run_doctests.py'
 
   test-unit:
     desc: Run unit tests across all Go modules (root, tools, codegen)
@@ -442,6 +461,11 @@ tasks:
     generates:
       - test-output-unit-root.json
     cmds:
+      # Unit packages default to a far shorter per-package timeout than the acceptance
+      # suite (test-acc keeps 60m for the single, legitimately long ./acceptance binary).
+      # The slowest unit package observed across Linux/macOS/Windows is ~83s, so 10m is
+      # ample headroom while a hung package (e.g. a wedged goroutine) fails in minutes
+      # instead of burning the full hour. LOCAL_TIMEOUT still overrides when needed.
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
@@ -449,7 +473,7 @@ tasks:
           --jsonfile test-output-unit-root.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-unit-tools:
     desc: Run unit tests in tools/ module
@@ -473,7 +497,7 @@ tasks:
           --jsonfile test-output-unit-tools.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-unit-codegen:
     desc: Run unit tests in bundle/internal/tf/codegen module
@@ -493,7 +517,7 @@ tasks:
           --jsonfile test-output-unit-codegen.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-acc:
     desc: Run acceptance tests
@@ -510,10 +534,10 @@ tasks:
       # acceptance/install_terraform.py parses the provider version from this file.
       - bundle/internal/tf/codegen/schema/version.go
       - acceptance/**
-      # Pydabs wheel is built in-process by TestInprocessMode (cd python && uv build).
+      # Pydabs wheel is built in-process by TestAccept (cd python && uv build).
       - python/**
       - libs/vendored_py_packages/**
-      # TestInprocessMode builds yamlfmt via tools/go.mod.
+      # TestAccept builds yamlfmt via tools/go.mod.
       - tools/go.mod
       - tools/go.sum
       - go.mod
@@ -532,7 +556,16 @@ tasks:
           --jsonfile test-output-acc.json \
           --rerun-fails \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+
+  local-select:
+    desc: Run selection of local tests (tests changed in this branch)
+    # Local counterpart of cloud-select: the same DATABRICKS_TEST_SELECT_CHANGED selection,
+    # against the testserver instead of a real workspace. -v to show the selection summary
+    # and the tests that ran; no sources/generates because the selection depends on the git
+    # diff, which Task cannot checksum.
+    cmds:
+      - "DATABRICKS_TEST_SELECT_CHANGED=${DATABRICKS_TEST_SELECT_CHANGED:-50} go test ./acceptance -run '^TestAccept$' -v -timeout=${LOCAL_TIMEOUT:-60m}"
 
   test-update:
     desc: Update acceptance test output (local)
@@ -559,28 +592,28 @@ tasks:
     generates: &ACC_GENERATES_UPDATE
       - acceptance/**/out*
     cmds:
-      - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-30m}"
+      - "go test ./acceptance -run '^TestAccept$' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
   test-update-templates:
     desc: Update acceptance test template output
     sources: *ACC_SOURCES_UPDATE
     generates: *ACC_GENERATES_UPDATE
     cmds:
-      - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-30m}"
-
-  test-update-aws:
-    desc: Update acceptance test output (integration, requires deco access)
-    sources: *ACC_SOURCES_UPDATE
-    generates: *ACC_GENERATES_UPDATE
-    cmds:
-      - "deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$ -update -timeout=1h -v"
+      - "go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
   test-update-all:
     desc: Update all acceptance test outputs
-    # Sequential: both tasks overwrite the same acceptance output files.
     cmds:
       - task: test-update
-      - task: test-update-aws
+
+  # Follows upstream HEAD, so its result changes over time: keep it out of
+  # `generate-check`, which requires byte-for-byte reproducible output.
+  bump-mlops-stacks:
+    desc: Bump the vendored mlops-stacks acceptance template to github.com/databricks/mlops-stacks HEAD
+    cmds:
+      - "./tools/bump_mlops_stacks.py"
+      # The bump rewrites a test input, so refresh that test's golden output.
+      - "go test ./acceptance -run '^TestAccept/bundle/deploy/mlops-stacks' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
   slowest:
     desc: Show 50 slowest tests from last run
@@ -600,7 +633,7 @@ tasks:
           --jsonfile test-output-unit.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
-          -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
@@ -608,7 +641,7 @@ tasks:
           --jsonfile test-output-acc.json \
           --rerun-fails \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
       - cat test-output-unit.json test-output-acc.json > test-output.json
       - rm -fr ./acceptance/build/cover-merged/
       - mkdir -p acceptance/build/cover-merged/
@@ -634,7 +667,7 @@ tasks:
   # generic `test` target (the catch-all) instead.
 
   test-exp-aitools:
-    desc: Run aitools (top-level + experimental) unit and acceptance tests
+    desc: Run aitools (top-level + experimental) unit and acceptance tests.
     sources:
       - cmd/aitools/**
       - libs/aitools/**
@@ -648,13 +681,13 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages "./cmd/aitools/... ./libs/aitools/... ./experimental/aitools/..." \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/(apps|experimental/aitools)"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/(apps|experimental/aitools)"
 
   test-exp-ssh:
     desc: Run experimental SSH unit and acceptance tests
@@ -668,13 +701,13 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./experimental/ssh/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/ssh"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/ssh"
 
   test-pipelines:
     desc: Run pipelines unit and acceptance tests
@@ -687,13 +720,13 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./cmd/pipelines/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/pipelines"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/pipelines"
 
   test-sandbox:
     desc: Run sandbox unit and acceptance tests
@@ -706,13 +739,13 @@ tasks:
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./cmd/sandbox/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m}
+          -- -timeout=${LOCAL_TIMEOUT:-60m}
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
           --no-summary=skipped \
           --packages ./acceptance/... \
-          -- -timeout=${LOCAL_TIMEOUT:-30m} -run "TestAccept/cmd/sandbox"
+          -- -timeout=${LOCAL_TIMEOUT:-60m} -run "TestAccept/cmd/sandbox"
 
   # --- Integration tests ---
 
@@ -743,12 +776,16 @@ tasks:
           --packages "./acceptance ./integration/..." \
           -- -parallel 4 -timeout=12h -short
 
-  integration-short-skiplocal:
-    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
+  cloud-select:
+    desc: Run selection of integration tests (tests changed in this branch)
+    # The alias is the name the eng-dev-ecosystem CI job dispatches (cli-isolated-pr.yml
+    # passes it as integration_task, and cli-isolated-tests.yml greps Taskfile.yml for it
+    # and falls back to integration-short, the full cloud suite, if it is missing).
+    aliases: [integration-short-skiplocal]
     deps: [install-pythons]
     cmds:
       - |
-        DATABRICKS_TEST_SKIPLOCAL=1 VERBOSE_TEST=1 \
+        DATABRICKS_TEST_SELECT_CHANGED=50 VERBOSE_TEST=1 \
         go run -modfile=tools/go.mod ./tools/testrunner/main.go \
           {{.GO_TOOL}} gotestsum \
           --format github-actions \
@@ -878,11 +915,27 @@ tasks:
       - rm .github/workflows/next-changelog.yml
       - mv tagging.py internal/genkit/tagging.py
       - mv tagging.py.lock internal/genkit/tagging.py.lock
+      # The release workflow tagging.yml expects tagging.py in a different location
+      # so we rewrite via sed
       - |
         if [ "$(uname)" = "Darwin" ]; then
           sed -i '' 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
         else
           sed -i 's|tagging.py|internal/genkit/tagging.py|g' .github/workflows/tagging.yml
+        fi
+      # In an environment configured with the internal PyPI proxy, uv bakes the
+      # proxy URL into the resolved locks. Unlike pydabs (which blind-reverts its
+      # locks because codegen never wants to change them), these locks legitimately
+      # track the synced producer's deps, so rewrite only the proxy URL back to the
+      # public registry and preserve any real dependency changes. Glob the lock
+      # files so a future genkit lock is scrubbed without editing this task. The
+      # trailing slash is optional so both proxy URL forms are matched.
+      # check-lockfiles is the backstop if this ever misses.
+      - |
+        if [ "$(uname)" = "Darwin" ]; then
+          sed -i '' 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
+        else
+          sed -i 's|https://pypi-proxy.cloud.databricks.com/simple/\{0,1\}|https://pypi.org/simple|g' internal/genkit/*.py.lock
         fi
       - "{{.GO_TOOL}} yamlfmt .github/workflows/tagging.yml"
       - task: ws

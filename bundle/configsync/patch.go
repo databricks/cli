@@ -40,7 +40,7 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 
 		modifiedContent, err := applyChange(ctx, modifiedFiles[filePath], fieldChange)
 		if err != nil {
-			return nil, fmt.Errorf("failed to apply change to file %s for a field %s: %w", filePath, fieldChange.FieldCandidates[0], err)
+			return nil, fmt.Errorf("failed to apply change to file %s for a field %s: %w", filePath, fieldChange.WritePath, err)
 		}
 
 		modifiedFiles[filePath] = modifiedContent
@@ -81,7 +81,7 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 	var firstErr error
 	var parentNodesToCreate []parentNode
 
-	for _, fieldPathCandidate := range fieldChange.FieldCandidates {
+	for _, fieldPathCandidate := range fieldChange.writePaths() {
 		jsonPointer, err := strPathToJSONPointer(fieldPathCandidate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPathCandidate, err)
@@ -285,7 +285,7 @@ func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, er
 		return content, nil //nolint:nilerr // return original content if YAML parsing fails
 	}
 	for _, fc := range fieldChanges {
-		for _, candidate := range fc.FieldCandidates {
+		for _, candidate := range fc.writePaths() {
 			clearFlowStyleAlongPath(&doc, candidate)
 		}
 	}

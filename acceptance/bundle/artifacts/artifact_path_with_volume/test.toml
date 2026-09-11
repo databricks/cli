@@ -1,3 +1,4 @@
-Local = false
 Cloud = true
+
+# Overrides RecordRequests = true set by the artifacts parent test.toml.
 RecordRequests = false

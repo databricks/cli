@@ -860,6 +860,79 @@ func TestNormalizeAnchors(t *testing.T) {
 	}, vout.AsAny())
 }
 
+func TestNormalizeAnchorContainers(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	anchor := func() dyn.Value {
+		return dyn.V(map[string]dyn.Value{"name": dyn.V("x")}).MarkAnchor()
+	}
+
+	tcases := []struct {
+		name     string
+		value    dyn.Value
+		wantWarn bool
+	}{
+		{
+			name:     "list of anchors",
+			value:    dyn.V([]dyn.Value{anchor(), anchor()}),
+			wantWarn: false,
+		},
+		{
+			name: "map of anchors",
+			value: dyn.V(map[string]dyn.Value{
+				"a": anchor(),
+				"b": anchor(),
+			}),
+			wantWarn: false,
+		},
+		{
+			name:     "nested list of anchors",
+			value:    dyn.V([]dyn.Value{dyn.V([]dyn.Value{anchor()})}),
+			wantWarn: false,
+		},
+		{
+			name:     "list with a non-anchor element",
+			value:    dyn.V([]dyn.Value{anchor(), dyn.V(map[string]dyn.Value{"name": dyn.V("x")})}),
+			wantWarn: true,
+		},
+		{
+			name:     "empty list",
+			value:    dyn.V([]dyn.Value{}),
+			wantWarn: true,
+		},
+		{
+			name:     "empty map",
+			value:    dyn.V(map[string]dyn.Value{}),
+			wantWarn: true,
+		},
+	}
+
+	for _, tc := range tcases {
+		t.Run(tc.name, func(t *testing.T) {
+			var typ Tmp
+			vin := dyn.V(map[string]dyn.Value{
+				"foo":   dyn.V("bar"),
+				"thing": tc.value,
+			})
+
+			vout, diags := Normalize(typ, vin)
+			if tc.wantWarn {
+				assert.Len(t, diags, 1)
+				assert.Equal(t, "unknown field: thing", diags[0].Summary)
+			} else {
+				assert.Empty(t, diags)
+			}
+
+			// The unknown field is never retained regardless of the warning.
+			assert.Equal(t, map[string]any{
+				"foo": "bar",
+			}, vout.AsAny())
+		})
+	}
+}
+
 func TestNormalizeAnyFromSlice(t *testing.T) {
 	var typ any
 	v1 := dyn.NewValue(1, []dyn.Location{{File: "file", Line: 1, Column: 1}})
@@ -900,4 +973,41 @@ func TestNormalizeAnyFromTime(t *testing.T) {
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
+}
+
+func TestNormalizeStructDropEmptyStrings(t *testing.T) {
+	type Tmp struct {
+		// Optional: dropped when empty.
+		Opt string `json:"opt,omitempty"`
+		// Required (no omitempty): kept even when empty.
+		Req string `json:"req"`
+	}
+
+	vin := dyn.V(map[string]dyn.Value{
+		"opt": dyn.V(""),
+		"req": dyn.V(""),
+	})
+
+	vout, diags := Normalize(Tmp{}, vin, DropEmptyStrings)
+	assert.Empty(t, diags)
+
+	_, hasOpt := vout.MustMap().Get(dyn.V("opt"))
+	assert.False(t, hasOpt, "empty omitempty string should be dropped")
+	req, hasReq := vout.MustMap().Get(dyn.V("req"))
+	assert.True(t, hasReq, "empty non-omitempty string should be kept")
+	assert.Empty(t, req.MustString())
+}
+
+func TestNormalizeStructDropEmptyStringsKeepsNonEmpty(t *testing.T) {
+	type Tmp struct {
+		Opt string `json:"opt,omitempty"`
+	}
+
+	vin := dyn.V(map[string]dyn.Value{"opt": dyn.V("value")})
+
+	vout, diags := Normalize(Tmp{}, vin, DropEmptyStrings)
+	assert.Empty(t, diags)
+	opt, ok := vout.MustMap().Get(dyn.V("opt"))
+	assert.True(t, ok)
+	assert.Equal(t, "value", opt.MustString())
 }

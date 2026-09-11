@@ -1,0 +1,44 @@
+
+=== the deploy stops waiting before the run finishes
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-destroy-unfinished-run/default/files...
+Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: Fault injected by test. (403 INJECTED)
+
+Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/runs/get?run_id=[MY_RUN_ID]
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Files: 4 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> read_id.py my_run
+[MY_RUN_ID]
+
+=== destroy cancels the run before deleting it
+>>> [CLI] bundle destroy --auto-approve
+Warn: planning resources.job_runs.my_run: reading resources.job_runs.my_run id="[MY_RUN_ID]": Fault injected by test.
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-destroy-unfinished-run/default
+
+Destroy: 2 deleted
+
+>>> print_requests.py //jobs/runs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/cancel",
+  "body": {
+    "run_id": [MY_RUN_ID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/runs/delete",
+  "body": {
+    "run_id": [MY_RUN_ID]
+  }
+}

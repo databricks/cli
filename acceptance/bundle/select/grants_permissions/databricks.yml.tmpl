@@ -1,0 +1,19 @@
+bundle:
+  name: select-subnodes-$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      name: my_job-$UNIQUE_NAME
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
+
+  schemas:
+    my_schema:
+      catalog_name: main
+      name: my_schema_$UNIQUE_NAME
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - ALL_PRIVILEGES

@@ -988,6 +988,56 @@ func TestHasPatternPrefix(t *testing.T) {
 			pattern:  "a.x.c",
 			expected: false,
 		},
+
+		// Bracket map key globs
+		{
+			name:     "bracket map key glob matches managed delta property",
+			path:     "properties['unity.catalog.managed.delta.defaults.delta.enableRowTracking']",
+			pattern:  "properties['unity.catalog.managed.*.defaults.*']",
+			expected: true,
+		},
+		{
+			name:     "bracket map key glob matches managed iceberg property",
+			path:     "properties['unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged']",
+			pattern:  "properties['unity.catalog.managed.*.defaults.*']",
+			expected: true,
+		},
+		{
+			name:     "bracket map key glob rejects unrelated property",
+			path:     "properties['custom.remote_only']",
+			pattern:  "properties['unity.catalog.managed.*.defaults.*']",
+			expected: false,
+		},
+		{
+			name:     "bracket map key glob rejects mismatched non-wildcard segment",
+			path:     "properties['unity.catalog.managed.delta.other.delta.enableRowTracking']",
+			pattern:  "properties['unity.catalog.managed.*.defaults.*']",
+			expected: false,
+		},
+		{
+			// A trailing '*' matches the segment(s) after the preceding literal
+			// '.'; a key ending in '.' has an empty final segment, which matches.
+			name:     "bracket map key glob trailing star matches empty child",
+			path:     "properties['unity.catalog.managed.something.defaults.']",
+			pattern:  "properties['unity.catalog.managed.something.defaults.*']",
+			expected: true,
+		},
+		{
+			// A trailing '*' requires a child segment; a key ending at the
+			// preceding literal (no trailing '.') has nothing for '*' to match.
+			name:     "bracket map key glob trailing star requires a child segment",
+			path:     "properties['unity.catalog.managed.delta.defaults']",
+			pattern:  "properties['unity.catalog.managed.delta.defaults.*']",
+			expected: false,
+		},
+		{
+			// A non-trailing '*' consumes exactly one segment, so a key missing
+			// that segment does not match.
+			name:     "bracket map key glob middle star requires one segment",
+			path:     "properties['unity.catalog.managed.defaults.enableRowTracking']",
+			pattern:  "properties['unity.catalog.managed.*.defaults.enableRowTracking']",
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {

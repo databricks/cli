@@ -1,0 +1,8 @@
+experiment_name: my-exp
+compute:
+  accelerator_type: a10
+  num_accelerators: 1
+command: |-
+  for i in $(seq 1 10); do
+    echo "step $i"
+  done

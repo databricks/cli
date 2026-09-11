@@ -28,8 +28,11 @@
               }
             ],
             "id": "function/main.schema_grants.mymodel",
+            "mcp_service": null,
             "metastore": null,
             "model": null,
+            "model_provider_service": null,
+            "model_service": null,
             "pipeline": null,
             "provider_config": [
               {
@@ -76,8 +79,11 @@
               }
             ],
             "id": "schema/main.schema_grants",
+            "mcp_service": null,
             "metastore": null,
             "model": null,
+            "model_provider_service": null,
+            "model_service": null,
             "pipeline": null,
             "provider_config": [
               {
@@ -123,8 +129,11 @@
               }
             ],
             "id": "volume/main.schema_grants.volume_name",
+            "mcp_service": null,
             "metastore": null,
             "model": null,
+            "model_provider_service": null,
+            "model_service": null,
             "pipeline": null,
             "provider_config": [
               {

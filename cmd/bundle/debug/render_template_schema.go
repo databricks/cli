@@ -44,7 +44,10 @@ func NewRenderTemplateSchemaCommand() *cobra.Command {
 		}
 
 		// Resolve the template reader
-		reader, isGitReader := template.ResolveReader(templatePathOrUrl, templateDir, ref)
+		reader, isGitReader, err := template.ResolveReader(templatePathOrUrl, templateDir, ref)
+		if err != nil {
+			return err
+		}
 		defer reader.Cleanup(ctx)
 
 		// For git reader, load schema first to initialize the temp directory

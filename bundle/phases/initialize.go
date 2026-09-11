@@ -26,6 +26,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
 
 	bundle.ApplySeqContext(ctx, b,
+		// Reads (dynamic): resources.internal_immutable_snapshots (and other internal keys)
+		// Warns and removes any internal resource fields set by the user.
+		mutator.RejectInternalResources(),
+
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -33,6 +37,7 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		validate.NoInterpolationInBundleName(),
 		validate.ValidateEngine(),
 		validate.Scripts(),
+		mutator.ValidateSecretValueIsVariable(),
 
 		// Updates (dynamic): sync.{paths,include,exclude} (makes them relative to bundle root rather than to definition file)
 		// Rewrites sync paths to be relative to the bundle root instead of the file they were defined in.
@@ -148,6 +153,18 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// After PythonMutator, mutators must not change bundle resources, or such changes are not
 		// going to be visible in Python code.
 
+		// Compute resources.volumes.*.volume_path and resolve references to it. Must run after
+		// PythonMutator: volume_path is computed and read-only, not declared by the PyDABs Volume
+		// model, so exposing it to Python would fail resource loading (like "deployment" below).
+		mutator.InitializeVolumePaths(),
+		mutator.ResolveVolumePathReferencesOnlyResources(),
+
+		// Drop empty-string values on omitempty resource fields so they are not
+		// force-sent to the backend. Runs after variable resolution (a variable may
+		// resolve to "") and after all resource mutations, before validation so that
+		// required fields (no omitempty) still error if empty.
+		mutator.DropEmptyStrings(),
+
 		// Resolve --select selectors against the materialized resources: normalize
 		// each to its "type.name" form and validate it exists. Runs after all resource
 		// mutations so that dynamically added resources are visible. This does not
@@ -170,6 +187,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that deployment_id / version_id are not set on jobs or pipelines.
 		// They are set by the CLI to track the bundle deployment and must not be set by the user.
 		validate.ValidateDeploymentFields(),
+
+		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
+		validate.ValidateJobRunIdempotencyToken(),
+
+		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
+		mutator.ValidateJobRunTriggers(),
 
 		// Reads (dynamic): * (strings) (searches for ${resources.*} references)
 		// Warns (TF engine) or errors (direct engine) when a cross-resource reference

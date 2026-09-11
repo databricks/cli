@@ -66,6 +66,7 @@
                     "cluster_name": "",
                     "custom_tags": null,
                     "data_security_mode": "DATA_SECURITY_MODE_AUTO",
+                    "dependency_mode": "",
                     "docker_image": [],
                     "driver_instance_pool_id": "",
                     "driver_node_type_flexibility": [],
@@ -95,7 +96,8 @@
                     "worker_node_type_flexibility": [],
                     "workload_type": []
                   }
-                ]
+                ],
+                "serverless_compute_id": ""
               }
             ],
             "library": [],
@@ -116,6 +118,7 @@
                 "name": "schema"
               }
             ],
+            "parent_path": null,
             "performance_target": null,
             "pipeline_task": [],
             "provider_config": [
@@ -374,9 +377,11 @@
                     "unit": "DAYS"
                   }
                 ],
+                "sql_condition": [],
                 "table_update": []
               }
             ],
+            "triggers": [],
             "url": "[DATABRICKS_URL]/#job/[NUMID]",
             "usage_policy_id": null,
             "webhook_notifications": [

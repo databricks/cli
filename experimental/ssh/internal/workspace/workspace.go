@@ -19,6 +19,9 @@ type WorkspaceMetadata struct {
 	Port int `json:"port"`
 	// ClusterID is required for Driver Proxy websocket connections (for any compute type, including serverless)
 	ClusterID string `json:"cluster_id,omitempty"`
+	// UsagePolicyID records the usage policy the server's job was submitted with, so a
+	// reconnect can tell whether a running server matches the requested usage policy.
+	UsagePolicyID string `json:"usage_policy_id,omitempty"`
 }
 
 func getWorkspaceRootDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {

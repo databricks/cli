@@ -1,0 +1,52 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.split_job
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Edit alpha, defined only in the target block
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.split_job
+  tasks[task_key='alpha'].timeout_seconds: add
+
+
+
+=== Only alpha in the target block gains timeout_seconds: 111
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -29,2 +29,3 @@
+               notebook_task:
+                 notebook_path: /Users/{{workspace_user_name}}/alpha
++              timeout_seconds: 111
+
+=== Edit mu, a top-level task that is not first after the merge sort
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.split_job
+  tasks[task_key='mu'].timeout_seconds: add
+
+
+
+=== Only mu in the top-level block gains timeout_seconds: 222
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -18,4 +18,5 @@
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/mu
++          timeout_seconds: 222
+
+ targets:
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.split_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 1 deleted

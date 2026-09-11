@@ -1,0 +1,11 @@
+# A resource generated into a directory matched by the 'include' section
+# is deployed, so no warning is emitted.
+trace $CLI bundle generate job --existing-job-id 1234 --config-dir resources --key included
+
+# A resource generated into a directory that no 'include' pattern matches is
+# written to disk but silently ignored during deploy, so we warn about it.
+trace $CLI bundle generate job --existing-job-id 1234 --config-dir subdir --key excluded
+
+# The generated config files are not asserted on here; remove them so they are
+# not reported as unexpected leftover files.
+rm -r resources subdir

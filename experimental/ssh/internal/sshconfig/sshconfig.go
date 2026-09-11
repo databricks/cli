@@ -19,6 +19,18 @@ const (
 	configDirName = ".databricks/ssh-tunnel-configs"
 )
 
+// ServerAliveIntervalSeconds is how often the ssh client asks the SSH server to confirm it is
+// still there. The reply is a real SSH packet, so the keepalive puts payload bytes on every hop
+// of the tunnel — and payload is what an idle session needs. The driver proxy terminates
+// websocket control frames itself, so the proxy's own websocket ping never becomes payload on
+// the leg past it, and that leg is reaped after ~8 minutes without any.
+//
+// It also brings in ServerAliveCountMax (OpenSSH default 3), so a tunnel that stops responding
+// is torn down after ~90s with ssh's own "server not responding" message instead of hanging.
+// That is well clear of the up to 30s a handover can hold the sending loop
+// (proxyHandoverInitTimeout), the longest legitimate pause on a healthy tunnel.
+const ServerAliveIntervalSeconds = 30
+
 func GetConfigDir(ctx context.Context) (string, error) {
 	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
@@ -201,14 +213,31 @@ func PromptRecreateConfig(ctx context.Context, hostName string) (bool, error) {
 	return response, nil
 }
 
-func GenerateHostConfig(hostName, userName, identityFile, proxyCommand string) string {
+// GenerateHostConfig renders the host block for a tunnel connection. Host key checking is
+// strict rather than accept-new: the ProxyCommand pins the server's key (see PinHostKey)
+// into knownHostsFile before ssh gets as far as verifying it, so there is no first
+// connection that has to be taken on trust.
+//
+// hostKeyAlias is the name the key is pinned under in knownHostsFile - the session ID, i.e.
+// the cluster ID for dedicated compute and the connection name for serverless. When it is
+// non-empty it is emitted as HostKeyAlias so ssh looks the key up under that name. This
+// matters whenever the user-facing hostName differs from it, as with
+// `ssh setup --name <alias> --cluster <id>`: without it ssh would look the key up under the
+// alias, find no matching entry, and fail strict host key checking (DECO-27882).
+func GenerateHostConfig(hostName, userName, identityFile, knownHostsFile, hostKeyAlias, proxyCommand string) string {
+	hostKeyAliasLine := ""
+	if hostKeyAlias != "" {
+		hostKeyAliasLine = fmt.Sprintf("    HostKeyAlias %s\n", hostKeyAlias)
+	}
 	return fmt.Sprintf(`
 Host %s
     User %s
     ConnectTimeout 360
-    StrictHostKeyChecking accept-new
-    IdentitiesOnly yes
+    ServerAliveInterval %d
+    StrictHostKeyChecking yes
+    UserKnownHostsFile %q
+%s    IdentitiesOnly yes
     IdentityFile %q
     ProxyCommand %s
-`, hostName, userName, identityFile, proxyCommand)
+`, hostName, userName, ServerAliveIntervalSeconds, knownHostsFile, hostKeyAliasLine, identityFile, proxyCommand)
 }

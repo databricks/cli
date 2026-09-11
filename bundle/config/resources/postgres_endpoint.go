@@ -30,13 +30,21 @@ func (c *PostgresEndpointConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresEndpointConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresEndpointConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
 type PostgresEndpoint struct {
 	BaseResource
 	PostgresEndpointConfig
+}
+
+func (e *PostgresEndpoint) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, e)
+}
+
+func (e PostgresEndpoint) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(e)
 }
 
 func (e *PostgresEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
@@ -62,9 +70,9 @@ func (e *PostgresEndpoint) GetName() string {
 	return ""
 }
 
-func (e *PostgresEndpoint) GetURL() string {
+func (e *PostgresEndpoint) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (e *PostgresEndpoint) InitializeURL(_ url.URL) {

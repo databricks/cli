@@ -1,0 +1,13 @@
+errcode trace $CLI bundle deploy
+
+cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
+
+# The deploy fails before deployCore runs (the deployment-lock write is stubbed to
+# 500), yet resources_metadata still reports state_engine: b.Metrics.StateEngine is
+# set as soon as the deployment state is pulled, not only inside deployCore. Before
+# that fix state_engine was empty on this path, which the dashboard showed as
+# engine="unknown". state_engine is engine-specific, so capture it per-engine.
+cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
+
+rm out.requests.txt
+rm telemetry.json

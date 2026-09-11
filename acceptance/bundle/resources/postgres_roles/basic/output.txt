@@ -18,21 +18,20 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
   Postgres projects:
     my_project:
       Name: Test Project for Role
-      URL:  (not deployed)
   Postgres roles:
     my_role:
       Name: 
-      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_roles.my_role
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-role projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/test-role
 {
@@ -52,6 +51,9 @@ Deployment complete!
   }
 }
 
+>>> musterr [CLI] bundle open my_role
+Error: this resource type does not have a URL
+
 >>> [CLI] bundle summary
 Name: deploy-postgres-role-[UNIQUE_NAME]
 Target: default
@@ -62,15 +64,12 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
   Postgres projects:
     my_project:
       Name: Test Project for Role
-      URL:  (not deployed)
   Postgres roles:
     my_role:
       Name: 
-      URL:  (not deployed)
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -90,5 +89,4 @@ All data stored in them will be permanently lost:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 3 deleted

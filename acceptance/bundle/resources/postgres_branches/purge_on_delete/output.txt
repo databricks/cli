@@ -1,0 +1,58 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-branch-purge-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-purge-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-purge-[UNIQUE_NAME]/default/files...
+Created postgres_branches.hard_delete
+Created postgres_branches.soft_delete
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/test-pg-branch-hard-[UNIQUE_NAME]
+{
+  "branch_id": "test-pg-branch-hard-[UNIQUE_NAME]",
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/test-pg-branch-hard-[UNIQUE_NAME]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_id": "test-pg-branch-hard-[UNIQUE_NAME]",
+    "current_state": "READY",
+    "default": false,
+    "is_protected": false,
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
+
+>>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/test-pg-branch-soft-[UNIQUE_NAME]
+{
+  "branch_id": "test-pg-branch-soft-[UNIQUE_NAME]",
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/test-pg-branch-soft-[UNIQUE_NAME]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_id": "test-pg-branch-soft-[UNIQUE_NAME]",
+    "current_state": "READY",
+    "default": false,
+    "is_protected": false,
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== bundle destroy
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my_test_code"
+version = "0.0.1"
+description = "my test wheel"
+authors = [{ name = "Databricks", email = "john.doe@databricks.com" }]
+dependencies = ["setuptools"]
+
+[project.urls]
+Homepage = "https://databricks.com"
+
+[project.entry-points.group_1]
+run = "src.__main__:main"
+
+[tool.setuptools]
+packages = ["src"]

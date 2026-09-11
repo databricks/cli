@@ -1,9 +1,9 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created volumes.volume1
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity
 {
@@ -28,6 +28,7 @@ Deployment complete!
       "name": "myvolume",
       "schema_name": "myschema",
       "url": "[DATABRICKS_URL]/explore/data/volumes/main/myschema/myvolume?w=[NUMID]",
+      "volume_path": "/Volumes/main/myschema/myvolume",
       "volume_type": "MANAGED"
     }
   }
@@ -43,9 +44,9 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated volumes.volume1
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity
 {
@@ -75,4 +76,4 @@ Deployment complete!
 }
 
 >>> musterr [CLI] volumes read main.myschema.myvolume
-Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
+Error: Volume 'main.myschema.myvolume' does not exist.

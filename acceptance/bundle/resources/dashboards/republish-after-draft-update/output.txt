@@ -1,0 +1,40 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created dashboards.dashboard1
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Plan right after deploy -- published is current, no change:
+>>> [CLI] bundle plan -o json
+null
+
+=== Plan after out-of-band draft update -- a republish is owed:
+>>> [CLI] bundle plan -o json
+Warning: dashboard "dashboard1" has been modified remotely
+  at resources.dashboards.dashboard1
+  in databricks.yml:10:7
+
+This dashboard has been modified remotely since the last bundle deployment.
+These modifications are untracked and will be overwritten on deploy.
+
+Make sure that the local dashboard definition matches what you intend to deploy
+before proceeding with the deployment.
+
+To overwrite the remote changes with your local version, use --force.
+The remote modifications will be lost.
+
+{
+  "action": "update",
+  "old": true,
+  "new": true,
+  "remote": false
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.dashboards.dashboard1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/aitools/agents"
+	"github.com/databricks/cli/libs/aitools/installer"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -79,8 +81,14 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
 		ctx = withInteractiveModeInUserAgent(ctx)
+		ctx = installer.WithAiToolsInUserAgent(ctx)
+		ctx = installer.WithAiDevKitInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
+
+		// Recommend installing Databricks AI tooling to Claude Code when it is
+		// driving the CLI without the tooling installed (best-effort, stderr only).
+		agents.MaybeHint(ctx, cmd)
 		return nil
 	}
 

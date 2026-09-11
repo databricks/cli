@@ -1,7 +1,5 @@
-Local = true
 Cloud = false # tests don't interact with APIs
 
-[EnvMatrix]
-PYDAB_VERSION = [
+EnvMatrix.PYDAB_VERSION = [
     "current",
 ]

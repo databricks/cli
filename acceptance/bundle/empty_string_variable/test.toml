@@ -1,0 +1,2 @@
+# validate does not deploy, so engine choice is irrelevant: run once on direct.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

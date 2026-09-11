@@ -1,0 +1,7 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "spark_version": "13.3.x-scala2.12",
+  "policy_id": null,
+  "has_policy_id": false
+}

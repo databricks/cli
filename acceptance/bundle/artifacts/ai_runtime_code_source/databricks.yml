@@ -1,0 +1,44 @@
+bundle:
+  name: test-bundle
+
+workspace:
+  artifact_path: /foo/bar/artifacts
+
+# The tarball is delivered as an artifact; don't also sync it as a bundle file.
+# The archive glob is natural here and must not be mistaken for an exclude of the
+# generated code-snapshot dir: this task's code_source_path is a local FILE, so no
+# snapshot is packaged and the snapshot-dir guards must stay silent.
+sync:
+  exclude:
+    - build/**
+    - dist/**
+    - code.tgz
+    - "**/*.tar.gz"
+
+# The AI Runtime task ships user code as a tarball built locally by an artifact.
+artifacts:
+  code_source:
+    build: touch code.tgz
+    files:
+      - source: code.tgz
+
+resources:
+  jobs:
+    job:
+      name: "[${bundle.target}] AI Runtime Job"
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+      tasks:
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-experiment
+            # Local path to the built tarball; rewritten to the uploaded remote path.
+            code_source_path: code.tgz
+            deployments:
+              - command_path: command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1

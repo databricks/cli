@@ -1,0 +1,43 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# "shared" is defined in both blocks: max_retries at the top level and
+# timeout_seconds in the target override. Renaming it must rewrite the key in both
+# places and leave each field in the scope it was written in.
+#
+# "solo" lives only in the target block, and the new keys are chosen so their sort
+# order is the reverse of the block order: "a_shared" sorts before "z_solo", while
+# the top-level block comes before the target block. An implementation that pairs
+# renames by order rather than by identity swaps their contents.
+resources:
+  jobs:
+    rename_job:
+      tasks:
+        - task_key: shared
+          max_retries: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/shared
+
+    # A single block, to check that a removal earlier in the list shifts the
+    # position a later rename has to be written at.
+    shift_job:
+      tasks:
+        - task_key: aaa
+          max_retries: 1
+        - task_key: mmm
+          max_retries: 2
+        - task_key: zzz
+          max_retries: 3
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        rename_job:
+          tasks:
+            - task_key: shared
+              timeout_seconds: 45
+            - task_key: solo
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/solo

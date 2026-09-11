@@ -1,0 +1,6 @@
+{{skip "__preamble"}}
+{{if eq .language "python"}}
+  {{skip "projects/{{.group}}/{{.project_name}}/{{.project_name}}.sql"}}
+{{else}}
+  {{skip "projects/{{.group}}/{{.project_name}}/src"}}
+{{end}}

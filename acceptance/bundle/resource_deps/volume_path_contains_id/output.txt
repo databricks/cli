@@ -1,0 +1,35 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "volumes": {
+    "bar": {
+      "catalog_name": "mycatalog",
+      "name": "${resources.volumes.baz.id}",
+      "schema_name": "myschema",
+      "volume_path": "/Volumes/mycatalog/myschema/${resources.volumes.baz.id}",
+      "volume_type": "MANAGED"
+    },
+    "baz": {
+      "catalog_name": "mycatalog",
+      "name": "bazname",
+      "schema_name": "myschema",
+      "volume_path": "/Volumes/mycatalog/myschema/bazname",
+      "volume_type": "MANAGED"
+    },
+    "foo": {
+      "catalog_name": "mycatalog",
+      "comment": "/Volumes/mycatalog/myschema/${resources.volumes.baz.id}",
+      "name": "fooname",
+      "schema_name": "myschema",
+      "volume_path": "/Volumes/mycatalog/myschema/fooname",
+      "volume_type": "MANAGED"
+    }
+  }
+}
+
+>>> [CLI] bundle plan
+create volumes.bar
+create volumes.baz
+create volumes.foo
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged

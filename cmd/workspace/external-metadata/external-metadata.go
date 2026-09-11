@@ -3,6 +3,7 @@
 package external_metadata
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -125,7 +126,7 @@ Create an external metadata object.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'system_type', 'entity_type' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name', 'system_type', 'entity_type' in your JSON input")
 			}
 			return nil
 		}
@@ -464,7 +465,7 @@ Update an external metadata object.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'system_type', 'entity_type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'system_type', 'entity_type' in your JSON input")
 			}
 			return nil
 		}

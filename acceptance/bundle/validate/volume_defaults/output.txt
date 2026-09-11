@@ -44,13 +44,16 @@ Warning: invalid value "already-set" for enum field. Valid values are [EXTERNAL 
 
 {
   "v1": {
+    "volume_path": "/Volumes///",
     "volume_type": ""
   },
   "v2": {
+    "volume_path": "/Volumes///",
     "volume_type": "already-set"
   },
   "v3": {
     "comment": "hello",
+    "volume_path": "/Volumes///",
     "volume_type": "MANAGED"
   }
 }

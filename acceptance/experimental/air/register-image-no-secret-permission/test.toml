@@ -1,0 +1,40 @@
+# A user who cannot create secret scopes: the Docker credentials found locally
+# can't be stored, so registration falls back to anonymous access and the private
+# image is rejected. The error must name the storage failure as the cause rather
+# than telling the user to `docker login` (which they already did successfully).
+
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+[[Server]]
+Pattern = "GET /api/2.0/ai-compute-manager/images:get"
+Response.StatusCode = 404
+Response.Body = '''
+{"error_code": "NOT_FOUND", "message": "image not registered"}
+'''
+
+# The image is private, so credential discovery proceeds.
+[[Server]]
+Pattern = "GET /api/2.0/ai-compute-manager/images:checkImageAccess"
+Response.Body = '''
+{"publicly_accessible": false}
+'''
+
+# The workspace admin has not granted permission to create secret scopes.
+[[Server]]
+Pattern = "POST /api/2.0/secrets/scopes/create"
+Response.StatusCode = 403
+Response.Body = '''
+{"error_code": "PERMISSION_DENIED", "message": "user does not have permission to create secret scopes"}
+'''
+
+# Without credentials the manager cannot pull the private image.
+[[Server]]
+Pattern = "POST /api/2.0/ai-compute-manager/images"
+Response.StatusCode = 403
+Response.Body = '''
+{"error_code": "PERMISSION_DENIED", "message": "cannot pull nvcr.io/org/img:1.0: unauthorized"}
+'''

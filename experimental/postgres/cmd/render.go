@@ -1,6 +1,7 @@
 package postgrescmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -74,7 +75,7 @@ func escapeControlForTabwriter(s string) string {
 	return r.Replace(s)
 }
 
-func (s *textSink) End(commandTag string) error {
+func (s *textSink) End(ctx context.Context, commandTag string) error {
 	if len(s.columns) == 0 {
 		_, err := fmt.Fprintln(s.out, commandTag)
 		return err
@@ -85,7 +86,7 @@ func (s *textSink) End(commandTag string) error {
 		// resize race, etc.) fall through to the static path so the user
 		// still sees the rows their query returned. Without this fallback
 		// a successful query would surface as "viewer failed" with no data.
-		if err := tableview.Run(s.out, s.columns, s.rows); err == nil {
+		if err := tableview.Run(ctx, s.out, s.columns, s.rows); err == nil {
 			return nil
 		}
 	}

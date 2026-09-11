@@ -16,3 +16,4 @@ Error: Self-referential block
 Configuration for databricks_job.foo may not refer to itself.
 
 
+Files: 6 uploaded, 0 deleted

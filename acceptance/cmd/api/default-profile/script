@@ -3,18 +3,7 @@ sethome "./home"
 # Two profiles plus an explicit default_profile pointing at the test server.
 # The 'other' profile points at an RFC 2606 reserved host so we can assert
 # that --profile overrides default_profile without making a real request.
-cat > "./home/.databrickscfg" <<EOF
-[default-target]
-host  = $DATABRICKS_HOST
-token = $DATABRICKS_TOKEN
-
-[other]
-host  = https://other.test
-token = other-token
-
-[__settings__]
-default_profile = default-target
-EOF
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
 unset DATABRICKS_HOST
 unset DATABRICKS_TOKEN

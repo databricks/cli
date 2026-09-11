@@ -1,0 +1,28 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# One target's override of a single job is spread across two included files.
+# Resource keys are unique across top-level files, but that is not enforced
+# inside the targets subtree, so a target override may legitimately span
+# several files. An edit must land in the exact file that defines the element.
+#
+# "in_both_files" is declared in both override files, so its fields come from two
+# files within the same target scope: max_retries from the first, timeout_seconds
+# from the second. Each field still has one definition, so each edit has one
+# destination.
+#
+# "same_field_both_files" sets max_retries in BOTH override files. Includes are merged
+# in load order, so the later file wins and its value is the one deployed -- note that
+# order is not the alphabetical order of the filenames, so the destination cannot be
+# chosen by sorting them. Writing the losing copy would leave the effective value
+# unchanged and the sync would re-detect the same change on every run.
+include:
+  - overrides/*.yml
+
+resources:
+  jobs:
+    multifile_job:
+      tasks:
+        - task_key: base
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/base

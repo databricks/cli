@@ -12,7 +12,7 @@ func newMkdirCommand() *cobra.Command {
 		// is called databricks fs mkdirs in our legacy CLI: https://github.com/databricks/databricks-cli
 		Aliases: []string{"mkdirs"},
 		Short:   "Make directories.",
-		Long:    `Make directories in DBFS and UC Volumes. Mkdir will create directories along the path to the argument directory.`,
+		Long:    `Make directories in DBFS, UC Volumes and UC Skills. Mkdir will create directories along the path to the argument directory.`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 	}

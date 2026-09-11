@@ -41,4 +41,4 @@ CUSTOM_NUMBER_REGEX
 
 === Testing --version
 >>> [CLI] --version
-Databricks CLI v[DEV_VERSION]
+Databricks CLI v[CLI_VERSION]

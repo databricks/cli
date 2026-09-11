@@ -3,6 +3,7 @@
 package lakeview
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -89,7 +90,9 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create dashboard.`
 	cmd.Long = `Create dashboard.
 
-  Create a draft dashboard.`
+  Create a draft dashboard.
+
+  Requires the Databricks SQL access entitlement.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -177,7 +180,7 @@ func newCreateSchedule() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
+				return errors.New("when --json flag is specified, provide only DASHBOARD_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
 			}
 			return nil
 		}
@@ -269,7 +272,7 @@ func newCreateSubscription() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'subscriber' in your JSON input")
+				return errors.New("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'subscriber' in your JSON input")
 			}
 			return nil
 		}
@@ -466,6 +469,8 @@ func newGet() *cobra.Command {
 
   Get a draft dashboard.
 
+  Requires the Databricks SQL access entitlement.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -524,6 +529,9 @@ func newGetPublished() *cobra.Command {
 	cmd.Long = `Get published dashboard.
 
   Get the current published dashboard.
+
+  Requires one of the following entitlements: Workspace access, Databricks SQL
+  access, or Consumer access.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
@@ -715,7 +723,11 @@ func newList() *cobra.Command {
 
 	cmd.Use = "list"
 	cmd.Short = `List dashboards.`
-	cmd.Long = `List dashboards.`
+	cmd.Long = `List dashboards.
+
+  List dashboards.
+
+  Requires the Databricks SQL access entitlement.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -940,7 +952,7 @@ func newMigrate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'source_dashboard_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'source_dashboard_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1014,6 +1026,8 @@ func newPublish() *cobra.Command {
 	cmd.Long = `Publish dashboard.
 
   Publish the current draft dashboard.
+
+  Requires the Databricks SQL access entitlement.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to be published.`
@@ -1089,6 +1103,8 @@ func newRevert() *cobra.Command {
 
   Revert a dashboard's definition in draft mode to the last published version.
 
+  Requires the Databricks SQL access entitlement.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1160,6 +1176,8 @@ func newTrash() *cobra.Command {
 
   Trash a dashboard.
 
+  Requires the Databricks SQL access entitlement.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1217,6 +1235,8 @@ func newUnpublish() *cobra.Command {
 	cmd.Long = `Unpublish dashboard.
 
   Unpublish the dashboard.
+
+  Requires the Databricks SQL access entitlement.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
@@ -1285,6 +1305,8 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update dashboard.
 
   Update a draft dashboard.
+
+  Requires the Databricks SQL access entitlement.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
@@ -1377,7 +1399,7 @@ func newUpdateSchedule() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
+				return errors.New("when --json flag is specified, provide only DASHBOARD_ID, SCHEDULE_ID as positional arguments. Provide 'cron_schedule' in your JSON input")
 			}
 			return nil
 		}

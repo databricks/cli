@@ -1,0 +1,37 @@
+title "re-registers and reports an updated digest"
+trace $CLI experimental air register-image my-image:latest
+
+title "re-registers and reports an updated digest (json)"
+trace $CLI experimental air register-image my-image:latest -o json
+
+title "tag-policy latest is accepted for backward compatibility"
+trace $CLI experimental air register-image my-image:latest --tag-policy latest -o json
+
+title "empty image url"
+errcode trace $CLI experimental air register-image "   "
+
+title "tag-policy auto is rejected"
+errcode trace $CLI experimental air register-image my-image:latest --tag-policy auto
+
+title "invalid tag policy (json)"
+errcode trace $CLI experimental air register-image my-image:latest --tag-policy bogus -o json
+
+title "non-positive timeout is rejected"
+errcode trace $CLI experimental air register-image my-image:latest --timeout-minutes 0
+
+title "removed credential flags are unknown"
+errcode trace $CLI experimental air register-image my-image:latest --scope s --key k
+
+# Drain the requests recorded by the cases above so the next assertion sees only
+# the private-image registration's requests.
+print_requests.py //api/2.0/ai-compute-manager/images &> LOG.drain
+
+# Exported rather than passed through trace: $TESTDIR is a backslash path on
+# Windows, so echoing it into the output would not match this golden.
+export DOCKER_CONFIG="$TESTDIR/dockercfg"
+
+title "private image: credentials are discovered from the local Docker config"
+trace $CLI experimental air register-image nvcr.io/org/img:1.0
+
+title "the registration POST carries the auto-stored credential reference"
+trace print_requests.py //api/2.0/ai-compute-manager/images ^//api/2.0/secrets

@@ -1,0 +1,21 @@
+bundle:
+  name: script-env-section
+
+variables:
+  region:
+    default: us-west-2
+  database:
+    default: mydb
+
+scripts:
+  show_env:
+    env:
+      BUNDLE_NAME: ${bundle.name}
+      REGION: ${var.region}
+      DATABASE: ${var.database}
+      MIXED: "region=${var.region};db=${var.database}"
+    content: |-
+      echo "bundle=$BUNDLE_NAME"
+      echo "region=$REGION"
+      echo "database=$DATABASE"
+      echo "mixed=$MIXED"

@@ -1,0 +1,30 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# The task list of split_job is defined in two physical blocks: the top-level
+# one below and the targets.dev override further down. After loading they merge
+# into one list sorted by task_key, so the merged order is
+#   [alpha (target), mu (top-level), zeta (top-level)]
+# while each physical block keeps its own order. Editing a task must therefore
+# resolve to (file, block, index-within-that-block), not to the merged index.
+resources:
+  jobs:
+    split_job:
+      tasks:
+        - task_key: zeta
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/zeta
+        - task_key: mu
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/mu
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        split_job:
+          tasks:
+            - task_key: alpha
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/alpha

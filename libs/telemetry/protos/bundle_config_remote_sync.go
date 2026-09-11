@@ -54,11 +54,55 @@ type BundleConfigRemoteSyncEvent struct {
 	FilesChangedCount int64 `json:"files_changed_count,omitempty"`
 	FilesWrittenCount int64 `json:"files_written_count,omitempty"`
 
+	// Number of detected changes that were not written back because they could
+	// not be attributed to a single source location (e.g. a sequence element
+	// defined in both a top-level block and a target override). These are
+	// counted in ChangesTotal: a nonzero value means the command reported
+	// changes it did not apply. Distinct from the "skip" operation filtered out
+	// during change detection, which never reaches ChangesTotal.
+	SkippedChangesCount int64 `json:"skipped_changes_count,omitempty"`
+
 	// Variable-reference restoration counts for the two mechanisms that can
 	// write a current-target-scoped reference into a shared file (the source of
 	// the cross-target "reference does not exist" failures).
 	RefsRetargeted   int64 `json:"refs_retargeted,omitempty"`
 	RefsFromSiblings int64 `json:"refs_from_siblings,omitempty"`
+
+	// Identity of the resource state this run read, so a selector that matched
+	// nothing can be attributed: a stale local cache, a different target's or
+	// bundle's state, and no state at all are otherwise indistinguishable.
+	//
+	// StateSerial is the state file's own monotonic counter.
+	StateSerial int64 `json:"state_serial,omitempty"`
+
+	// StateLineage is the state's lineage identifier. It cannot contain PII: it
+	// is an opaque random UUID minted by dstate.GetOrInitLineage and is never
+	// derived from a user, workspace, path, or resource name.
+	StateLineage string `json:"state_lineage,omitempty"`
+
+	// StateSource is "local" or "remote" — a closed, system-defined set of
+	// exactly two values assigned in CollectStateStats, never user input, so it
+	// cannot contain PII.
+	StateSource string `json:"state_source,omitempty"`
+
+	// No state paths and no target names are recorded: the target is
+	// user-authored configuration, and BundleDeployEvent likewise records only
+	// the target count.
+
+	// How many of the four candidate state files (direct/terraform x
+	// local/remote) were found. A pointer so that zero — the run proceeded
+	// against a synthesized empty state — is emitted rather than dropped by
+	// omitempty. Not derivable from StateResourceIDs: a state file holding no
+	// resources and no state file at all both yield an empty id set.
+	StatesAvailableCount *int64 `json:"states_available_count,omitempty"`
+
+	// IDs of the resources found in the deployment state this run read, and the
+	// IDs the run was asked to sync via --select-ids. Comparing the two is what
+	// classifies a selector miss; the counts are intentionally not sent
+	// separately since they are len() of these lists, and the matched set is
+	// their intersection.
+	StateResourceIDs    *BundleConfigRemoteSyncResourceIds `json:"state_resource_ids,omitempty"`
+	SelectedResourceIDs *BundleConfigRemoteSyncResourceIds `json:"selected_resource_ids,omitempty"`
 
 	// Scrubbed, truncated summary of the failure when the command exits with an
 	// error. Privileged free-text (DATA_LABEL_USER_COMMANDS_RESPONSE, LPP-5543);
@@ -68,6 +112,20 @@ type BundleConfigRemoteSyncEvent struct {
 	// Category of the failure when the command exits with an error.
 	// Unset on success.
 	ErrorCategory BundleConfigRemoteSyncErrorCategory `json:"error_category,omitempty"`
+}
+
+// BundleConfigRemoteSyncResourceIds holds resource IDs grouped by type. The
+// same shape is used for the state's IDs and for the selected IDs so the two
+// can be compared directly.
+//
+// IDs of resources managed by the bundle. Some resources like volumes or schemas
+// do not expose a numerical or UUID identifier and are tracked by name. Those
+// resources are not tracked here since the names are PII.
+type BundleConfigRemoteSyncResourceIds struct {
+	ResourceJobIDs       []string `json:"resource_job_ids,omitempty"`
+	ResourcePipelineIDs  []string `json:"resource_pipeline_ids,omitempty"`
+	ResourceClusterIDs   []string `json:"resource_cluster_ids,omitempty"`
+	ResourceDashboardIDs []string `json:"resource_dashboard_ids,omitempty"`
 }
 
 // BundleConfigRemoteSyncResourceChanges holds field-level change counts for a

@@ -1,0 +1,7 @@
+bundle:
+  name: test-bundle
+
+resources:
+  #instance_pools: {pool: {instance_pool_name: "My Pool", node_type_id: "Standard_DS3_v2", idle_instance_autotermination_minutes: 60}}
+  jobs:
+    job_a: {name: "Job A"}

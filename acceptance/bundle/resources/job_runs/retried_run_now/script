@@ -1,0 +1,20 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Keep the run the handler started, replace only the response with a 503. The SDK
+# retries that status, so run-now is sent again while the first run already exists.
+fault.py --after-handler "POST /api/2.2/jobs/run-now" 503 0 1
+
+title "the deploy succeeds, though its run-now was answered with a 503"
+trace $CLI bundle deploy
+
+title "run-now was sent twice, both times with the same token"
+trace read_id.py my_job
+trace print_requests.py //jobs/run-now
+
+title "the second request was answered with the run the first one started"
+trace read_id.py my_run
+trace $CLI jobs list-runs -o json | jq length

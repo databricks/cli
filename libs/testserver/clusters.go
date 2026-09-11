@@ -34,12 +34,34 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 
 	clusterFixUps(&request)
 
+	// The cluster GET API returns apply_policy_default_values only under .spec, not at the top
+	// level (compute.ClusterDetails has no such field, so it is dropped by the unmarshal above).
+	// Snapshot it from the raw body so re-reads match cloud.
+	request.Spec = specSnapshot(req.Body)
+
 	s.Clusters[clusterId] = request
 
 	return Response{
 		Body: compute.ClusterDetails{
 			ClusterId: clusterId,
 		},
+	}
+}
+
+// specSnapshot mirrors how the cluster GET API returns apply_policy_default_values under .spec
+// (it is absent from compute.ClusterDetails and thus invisible at the top level of a re-read).
+// Returns nil when the field is unset so re-reads of clusters that don't use it are unchanged;
+// a nil .spec reads back as false, which is what the field's absence means anyway.
+func specSnapshot(body []byte) *compute.ClusterSpec {
+	var spec compute.ClusterSpec
+	if err := json.Unmarshal(body, &spec); err != nil {
+		return nil
+	}
+	if !spec.ApplyPolicyDefaultValues {
+		return nil
+	}
+	return &compute.ClusterSpec{
+		ApplyPolicyDefaultValues: true,
 	}
 }
 
@@ -83,12 +105,17 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	}
 
 	defer s.LockUnlock()()
-	_, ok := s.Clusters[request.ClusterId]
+	existing, ok := s.Clusters[request.ClusterId]
 	if !ok {
 		return Response{StatusCode: 404}
 	}
 
+	// Preserve runtime-only fields that the Edit API request doesn't include.
+	request.State = existing.State
+	request.ClusterId = existing.ClusterId
 	clusterFixUps(&request)
+	// Refresh the .spec snapshot from the new settings, matching cloud behavior on edit.
+	request.Spec = specSnapshot(req.Body)
 	s.Clusters[request.ClusterId] = request
 
 	// Clear venv cache when cluster is edited to match cloud behavior where

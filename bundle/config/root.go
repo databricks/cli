@@ -24,6 +24,13 @@ import (
 type Script struct {
 	// Content of the script to be executed.
 	Content string `json:"content"`
+
+	// Env is a map of environment variables exported when running the script.
+	// Values may reference ${bundle.*}, ${workspace.*}, ${var.*} (or
+	// ${variables.*}); other prefixes are rejected at validation time.
+	// Use this to pass bundle configuration into a script's shell environment
+	// without polluting the script content with DABs interpolation syntax.
+	Env map[string]string `json:"env,omitempty"`
 }
 
 type Root struct { //nolint:recvcheck // value receivers for read-only accessors, pointer for mutators

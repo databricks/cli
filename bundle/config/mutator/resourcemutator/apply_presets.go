@@ -103,6 +103,7 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 			p.Development = true
 		}
 		if t.TriggerPauseStatus == config.Paused {
+			//nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 			p.Continuous = false
 		}
 
@@ -232,6 +233,26 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		}
 	}
 
+	// Instance Pools: Prefix, Tags
+	for _, pool := range r.InstancePools {
+		if pool == nil {
+			continue
+		}
+		pool.InstancePoolName = prefix + pool.InstancePoolName
+		if len(tags) > 0 {
+			if pool.CustomTags == nil {
+				pool.CustomTags = make(map[string]string, len(tags))
+			}
+			for _, tag := range tags {
+				k := b.Tagging.NormalizeKey(tag.Key)
+				v := b.Tagging.NormalizeValue(tag.Value)
+				if _, ok := pool.CustomTags[k]; !ok {
+					pool.CustomTags[k] = v
+				}
+			}
+		}
+	}
+
 	// Dashboards: Prefix
 	for _, dashboard := range r.Dashboards {
 		if dashboard == nil {
@@ -299,6 +320,16 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 				}
 			}
 		}
+	}
+
+	// Cluster Policies: Prefix. The policy name is a user-facing display name
+	// (unique, 1-100 chars), not the API id (policy_id), so prefixing it in dev
+	// mode avoids collisions between developers without changing identity.
+	for _, cp := range r.ClusterPolicies {
+		if cp == nil {
+			continue
+		}
+		cp.Name = prefix + cp.Name
 	}
 
 	// Vector Search Endpoints: no prefix. The endpoint name is the primary key

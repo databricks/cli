@@ -1,11 +1,11 @@
 # Maintainers (can approve any PR)
-*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose
+*                           @andrewnester @anton-107 @denik @pietern @shreyas-goenka @simonfaltum @renaudhartert-db @janniklasrose @lennartkats-db @rugpanov @rclarey
 
 # Bundles
-/bundle/                    team:bundle @lennartkats-db
-/cmd/bundle/                team:bundle @lennartkats-db
-/acceptance/bundle/         team:bundle @lennartkats-db
-/libs/template/             team:bundle @lennartkats-db
+/bundle/                    team:bundle
+/cmd/bundle/                team:bundle
+/acceptance/bundle/         team:bundle
+/libs/template/             team:bundle
 
 # Pipelines
 /cmd/pipelines/             @jefferycheng1 @kanterov @lennartkats-db
@@ -13,6 +13,11 @@
 
 # Labs
 /cmd/labs/                  @alexott @asnare
+
+# Local environments / DB Connect
+/libs/localenv/             team:ide
+/cmd/environments/          team:ide
+/acceptance/localenv/       team:ide
 
 # Apps
 /cmd/apps/                  team:eng-apps-devex
@@ -59,12 +64,14 @@
 # Integration tests
 /integration/               team:platform
 
+/integration/cmd/environments/  team:ide
+
 # Internal
 /internal/                  team:platform
 
 # AI tools
-/cmd/aitools/               team:eng-apps-devex team:platform @lennartkats-db
-/libs/aitools/              team:eng-apps-devex team:platform @lennartkats-db
+/cmd/aitools/               team:eng-apps-devex team:ide @lennartkats-db
+/libs/aitools/              team:eng-apps-devex team:ide @lennartkats-db
 
 # CLI compatibility manifest
 /internal/build/cli-compat.json  team:eng-apps-devex team:platform

@@ -1,0 +1,6 @@
+# database_instance_fields is the allow-list of database-instance fields the
+# acceptance tests assert on. Anything the backend returns outside this list is
+# dropped, so a new field in the API response does not break the golden.
+database_instance_fields() {
+    jq '{capacity, creation_time, creator, effective_capacity, effective_enable_pg_native_login, effective_enable_readable_secondaries, effective_node_count, effective_retention_window_in_days, effective_stopped, name, pg_version, state, uid}'
+}

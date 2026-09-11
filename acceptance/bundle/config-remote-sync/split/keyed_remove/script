@@ -1,0 +1,54 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
+$CLI bundle deploy -t dev
+remove_job_id="$(read_id.py remove_job)"
+twoblock_job_id="$(read_id.py twoblock_remove_job)"
+
+
+# Remove one task from each block in a single run. Exactly gamma and alpha must
+# disappear; beta must survive even though the removals shift indices in both
+# blocks.
+title "Remove gamma from the top-level block and alpha from the target block"
+edit_resource.py jobs $remove_job_id <<EOF
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] not in ("gamma", "alpha")]
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$remove_job_id" --save
+
+title "Exactly gamma and alpha are gone; beta survives"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
+
+
+# "both" is defined in two blocks, so it has a part in each. The merged element
+# only disappears once both parts are gone, so the removal has to be written to
+# both blocks. "keep" must survive in the top-level block.
+title "Remove the task defined in BOTH blocks"
+edit_resource.py jobs $twoblock_job_id <<EOF
+r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "both"]
+EOF
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --select-ids "jobs:$twoblock_job_id" --save
+
+title "'both' is gone from both blocks; 'keep' survives"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+# grep -c exits non-zero on a count of zero, which would abort the script under
+# bash -e before the second assertion runs.
+errcode trace grep -c "task_key: both" databricks.yml
+errcode trace grep -c "task_key: keep" databricks.yml
+rm databricks.yml.backup

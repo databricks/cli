@@ -24,6 +24,8 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 	var clusterID string
 	var sshConfigPath string
 	var shutdownDelay time.Duration
+	var maxClients int
+	var serverTimeout time.Duration
 	var autoStartCluster bool
 	var autoApprove bool
 
@@ -33,6 +35,8 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster when establishing the ssh connection")
 	cmd.Flags().StringVar(&sshConfigPath, "ssh-config", "", "Path to SSH config file (default ~/.ssh/config)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "SSH server will terminate after this delay if there are no active connections")
+	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
+	cmd.Flags().DurationVar(&serverTimeout, "server-timeout", defaultServerTimeout, "Maximum lifetime of the SSH server; it is terminated after this duration even if clients are connected")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, recreating existing SSH host configs without asking")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -51,6 +55,8 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 			AutoStartCluster: autoStartCluster,
 			SSHConfigPath:    sshConfigPath,
 			ShutdownDelay:    shutdownDelay,
+			MaxClients:       maxClients,
+			ServerTimeout:    resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
 			Profile:          wsClient.Config.Profile,
 			AutoApprove:      autoApprove,
 		}

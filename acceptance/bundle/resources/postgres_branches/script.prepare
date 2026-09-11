@@ -1,0 +1,10 @@
+# branch_fields is the allow-list of branch fields the acceptance tests assert
+# on. Anything the backend returns outside this list is dropped, so a new field
+# in the API response does not break the golden.
+#
+# The source_* provenance fields are present on branches forked from another
+# branch but absent on the default branch, so the null-drop keeps the projection
+# valid for both shapes.
+branch_fields() {
+    jq '{branch_id, name, parent, status: (.status | {branch_id, current_state, default, expire_time, is_protected, source_branch, source_branch_lsn, source_branch_time, state_change_time} | with_entries(select(.value != null))), uid}'
+}

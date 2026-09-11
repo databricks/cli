@@ -1,0 +1,17 @@
+cleanup() {
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Fake workspace settles a run on the first successful poll, so both the deploy
+# wait and destroy's refresh are faulted: delete sees an in-progress run.
+fault.py "GET /api/2.2/jobs/runs/get" 403 0 2
+
+title "the deploy stops waiting before the run finishes"
+trace errcode $CLI bundle deploy
+trace read_id.py my_run
+
+# jobs/runs/delete rejects an active run, so the run is cancelled first.
+title "destroy cancels the run before deleting it"
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //jobs/runs

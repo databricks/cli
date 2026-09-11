@@ -1,0 +1,8 @@
+# Generated commands validate their input before issuing any request, so these
+# cases need no workspace.
+
+title "clusters create requires a positional arg (or --json)\n"
+trace musterr $CLI clusters create
+
+title "alerts-legacy create only accepts JSON input\n"
+trace musterr $CLI alerts-legacy create

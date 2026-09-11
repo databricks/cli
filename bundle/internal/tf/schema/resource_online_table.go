@@ -6,11 +6,9 @@ type ResourceOnlineTableProviderConfig struct {
 	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
-type ResourceOnlineTableSpecRunContinuously struct {
-}
+type ResourceOnlineTableSpecRunContinuously struct{}
 
-type ResourceOnlineTableSpecRunTriggered struct {
-}
+type ResourceOnlineTableSpecRunTriggered struct{}
 
 type ResourceOnlineTableSpec struct {
 	PerformFullCopy     bool                                    `json:"perform_full_copy,omitempty"`

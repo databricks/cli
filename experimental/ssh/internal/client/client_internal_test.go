@@ -1,18 +1,114 @@
 package client
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
+	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/environments"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func TestValidateClusterAccessSingleUser(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.NoError(t, err)
+}
+
+// A dedicated cluster reporting the newer DATA_SECURITY_MODE_DEDICATED enum (rather than the
+// legacy SINGLE_USER alias) must still pass validation.
+func TestValidateClusterAccessDedicatedEnum(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeDataSecurityModeDedicated,
+		SingleUserName:   "me@example.com",
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.NoError(t, err)
+}
+
+func TestValidateClusterAccessInvalidAccessMode(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeUserIsolation,
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be a dedicated single-user cluster")
+	// The error surfaces the UI label ("Standard"), not the raw API enum (USER_ISOLATION).
+	assert.Contains(t, err.Error(), "Current access mode: Standard")
+	assert.NotContains(t, err.Error(), "USER_ISOLATION")
+}
+
+// A Dedicated cluster assigned to a group (no single_user_name) is rejected, and the error
+// reports the mode specifically as "Dedicated (group)".
+func TestValidateClusterAccessDedicatedGroup(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeDataSecurityModeDedicated,
+	}, nil)
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be a dedicated single-user cluster")
+	assert.Contains(t, err.Error(), "Current access mode: Dedicated (group)")
+}
+
+func TestAccessModeUILabel(t *testing.T) {
+	tests := []struct {
+		mode           compute.DataSecurityMode
+		singleUserName string
+		want           string
+	}{
+		{compute.DataSecurityModeSingleUser, "me@example.com", "Dedicated (single user)"},
+		{compute.DataSecurityModeDataSecurityModeDedicated, "me@example.com", "Dedicated (single user)"},
+		{compute.DataSecurityModeDataSecurityModeDedicated, "", "Dedicated (group)"},
+		{compute.DataSecurityModeUserIsolation, "", "Standard"},
+		{compute.DataSecurityModeDataSecurityModeStandard, "", "Standard"},
+		{compute.DataSecurityModeNone, "", "No isolation"},
+		// Legacy/unknown modes fall back to the raw API value.
+		{compute.DataSecurityModeLegacyTableAcl, "", "LEGACY_TABLE_ACL"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, accessModeUILabel(tt.mode, tt.singleUserName), "mode=%s", tt.mode)
+	}
+}
+
+func TestValidateClusterAccessClusterNotFound(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "nonexistent"}).Return(nil, errors.New("cluster not found"))
+
+	err := ValidateClusterAccess(ctx, m.WorkspaceClient, "nonexistent")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to get cluster information for cluster ID 'nonexistent'")
+}
 
 // terminatedRun builds a job run whose SSH server task has terminated, for the failure-surfacing tests.
 func terminatedRun(runID, taskRunID int64, message, pageURL string) *jobs.Run {
@@ -223,20 +319,24 @@ func TestHostKeyChangedHint(t *testing.T) {
 		hostName       string
 		knownHostsFile string
 		wantContains   []string
+		wantOmits      []string
 		wantEmpty      bool
 	}{
 		{
-			name:         "host key failure",
-			stderr:       hostKeyFailureStderr,
-			hostName:     "databricks-cpu-6e7644d0",
-			wantContains: []string{"databricks-cpu-6e7644d0", "ssh-keygen -R databricks-cpu-6e7644d0"},
-		},
-		{
-			name:           "host key failure with custom known_hosts file",
+			name:           "host key failure names the host and the pinned file",
 			stderr:         hostKeyFailureStderr,
 			hostName:       "databricks-cpu-6e7644d0",
 			knownHostsFile: "/tmp/known_hosts",
-			wantContains:   []string{"ssh-keygen -R databricks-cpu-6e7644d0 -f /tmp/known_hosts"},
+			wantContains:   []string{"databricks-cpu-6e7644d0", "/tmp/known_hosts"},
+		},
+		{
+			// The stale-entry advice this hint used to give no longer applies: the CLI
+			// rewrites the entry from the workspace before every connection.
+			name:           "host key failure does not blame a stale local entry",
+			stderr:         hostKeyFailureStderr,
+			hostName:       "databricks-cpu-6e7644d0",
+			knownHostsFile: "/tmp/known_hosts",
+			wantOmits:      []string{"ssh-keygen -R"},
 		},
 		{
 			name:      "unrelated failure",
@@ -255,14 +355,17 @@ func TestHostKeyChangedHint(t *testing.T) {
 			for _, want := range tt.wantContains {
 				assert.Contains(t, got, want)
 			}
+			for _, unwanted := range tt.wantOmits {
+				assert.NotContains(t, got, unwanted)
+			}
 		})
 	}
 }
 
 func TestBuildRemoteShellArgs(t *testing.T) {
-	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -l || exec "${SHELL:-/bin/sh}" -l`
+	const bashCmd = `command -v bash >/dev/null 2>&1 && exec bash -i || exec "${SHELL:-/bin/sh}" -i`
 
-	t.Run("interactive returns login bash command", func(t *testing.T) {
+	t.Run("interactive returns non-login bash command", func(t *testing.T) {
 		args := buildRemoteShellArgs(ClientOptions{}, "")
 		require.Len(t, args, 1)
 		assert.Equal(t, bashCmd, args[0])
@@ -281,6 +384,32 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 	})
 }
 
+func TestBuildSSHArgsSetsServerAliveInterval(t *testing.T) {
+	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{})
+
+	// ssh stops parsing options at the destination, so an option placed after the host would be
+	// treated as part of the remote command rather than as an ssh option.
+	optIdx := slices.Index(args, "ServerAliveInterval="+strconv.Itoa(sshconfig.ServerAliveIntervalSeconds))
+	require.NotEqual(t, -1, optIdx, "ssh must be asked to send keepalives")
+	require.Equal(t, "-o", args[optIdx-1])
+	assert.Less(t, optIdx, slices.Index(args, "myhost"), "the option must precede the destination host")
+}
+
+func TestBuildSSHArgsPinsHostKey(t *testing.T) {
+	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{})
+
+	// The pinned file is the whole point of strict checking here: without it ssh would
+	// fall back to ~/.ssh/known_hosts, where an entry for this name may be left over from
+	// other compute (DECO-27882).
+	hostIdx := slices.Index(args, "myhost")
+	for _, want := range []string{"StrictHostKeyChecking=yes", "UserKnownHostsFile=/pins/myhost"} {
+		optIdx := slices.Index(args, want)
+		require.NotEqual(t, -1, optIdx, "%s must be passed to ssh", want)
+		require.Equal(t, "-o", args[optIdx-1])
+		assert.Less(t, optIdx, hostIdx, "the option must precede the destination host")
+	}
+}
+
 func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	indexOf := func(args []string, want string) int {
 		for i, a := range args {
@@ -292,7 +421,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	}
 
 	t.Run("interactive forces a PTY before the destination", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
+		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
 		ptyIdx := indexOf(args, "-t")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, ptyIdx, "-t must be present for interactive sessions")
@@ -300,11 +429,11 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 		assert.Less(t, ptyIdx, hostIdx, "-t must precede the destination host")
 		// The remote command is the final arg, after the host.
 		assert.Greater(t, len(args)-1, hostIdx)
-		assert.Contains(t, args[len(args)-1], "exec bash -l")
+		assert.Contains(t, args[len(args)-1], "exec bash -i")
 	})
 
 	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
+		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
 		assert.Equal(t, -1, indexOf(args, "-t"), "no PTY for non-interactive passthrough")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, hostIdx)
@@ -327,4 +456,226 @@ func TestTailWriterRetainsTail(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "ab", w.String())
 	})
+}
+
+func TestBuildSshTunnelEvent(t *testing.T) {
+	tests := []struct {
+		name string
+		opts ClientOptions
+		want protos.SshTunnelEvent
+	}{
+		{
+			name: "dedicated cluster via raw SSH client",
+			opts: ClientOptions{ClusterID: "abc-123", AutoStartCluster: true},
+			want: protos.SshTunnelEvent{
+				ComputeType:      protos.SshTunnelComputeTypeDedicated,
+				ClientMode:       protos.SshTunnelClientModeSSH,
+				AutoStartCluster: true,
+			},
+		},
+		{
+			name: "serverless with accelerator",
+			opts: ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10"},
+			want: protos.SshTunnelEvent{
+				ComputeType:     protos.SshTunnelComputeTypeServerless,
+				AcceleratorType: "GPU_1xA10",
+				ClientMode:      protos.SshTunnelClientModeSSH,
+			},
+		},
+		{
+			name: "proxy mode takes precedence over IDE",
+			opts: ClientOptions{ConnectionName: "my-conn", ProxyMode: true, IDE: "vscode"},
+			want: protos.SshTunnelEvent{
+				ComputeType: protos.SshTunnelComputeTypeServerless,
+				IdeType:     "vscode",
+				ClientMode:  protos.SshTunnelClientModeProxy,
+			},
+		},
+		{
+			name: "IDE mode",
+			opts: ClientOptions{ConnectionName: "my-conn", IDE: "cursor"},
+			want: protos.SshTunnelEvent{
+				ComputeType: protos.SshTunnelComputeTypeServerless,
+				IdeType:     "cursor",
+				ClientMode:  protos.SshTunnelClientModeIDE,
+			},
+		},
+		{
+			// The raw --base-environment value can carry PII, so only its presence is recorded.
+			name: "custom base environment records presence only",
+			opts: ClientOptions{ConnectionName: "my-conn", BaseEnvironment: "/Workspace/Users/me@example.com/env.yaml"},
+			want: protos.SshTunnelEvent{
+				ComputeType:        protos.SshTunnelComputeTypeServerless,
+				ClientMode:         protos.SshTunnelClientModeSSH,
+				HasBaseEnvironment: true,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildSshTunnelEvent(tt.opts, connectOutcome{
+				isSuccess:         true,
+				isReconnect:       true,
+				serverStartTimeMs: 1500,
+			})
+			tt.want.IsSuccess = true
+			tt.want.IsReconnect = true
+			tt.want.ServerStartTimeMs = 1500
+			tt.want.ErrorCategory = protos.SshTunnelErrorCategoryUnspecified
+			assert.Equal(t, &tt.want, got)
+		})
+	}
+}
+
+func TestConnectOutcomeCategory(t *testing.T) {
+	errFailed := errors.New("failed")
+
+	tests := []struct {
+		name    string
+		outcome connectOutcome
+		want    protos.SshTunnelErrorCategory
+	}{
+		{
+			name:    "success reports no category",
+			outcome: connectOutcome{isSuccess: true},
+			want:    protos.SshTunnelErrorCategoryUnspecified,
+		},
+		{
+			// A non-zero exit after the tunnel is up belongs to the ssh client, not the connection.
+			name:    "error after a successful connection reports no category",
+			outcome: connectOutcome{isSuccess: true, err: errFailed},
+			want:    protos.SshTunnelErrorCategoryUnspecified,
+		},
+		{
+			name:    "attributed failure keeps its category",
+			outcome: connectOutcome{errorCategory: protos.SshTunnelErrorCategoryIDECommandNotOnPath, err: errFailed},
+			want:    protos.SshTunnelErrorCategoryIDECommandNotOnPath,
+		},
+		{
+			name:    "unattributed failure falls back to UNKNOWN",
+			outcome: connectOutcome{err: errFailed},
+			want:    protos.SshTunnelErrorCategoryUnknown,
+		},
+		{
+			name:    "cancellation reports USER_ABORTED",
+			outcome: connectOutcome{err: fmt.Errorf("wrapped: %w", context.Canceled)},
+			want:    protos.SshTunnelErrorCategoryUserAborted,
+		},
+		{
+			// Ctrl-C surfaces as a cancellation from whichever step observed it first, so the
+			// interruption must win over the category that step recorded.
+			name: "cancellation wins over the category set at the failure site",
+			outcome: connectOutcome{
+				errorCategory: protos.SshTunnelErrorCategoryServerStartTimeout,
+				err:           fmt.Errorf("wrapped: %w", context.Canceled),
+			},
+			want: protos.SshTunnelErrorCategoryUserAborted,
+		},
+		{
+			// A step that shells out reports a killed child as *exec.ExitError, which does not
+			// wrap context.Canceled, so the cancelled context is the only evidence left. Without
+			// this branch a Ctrl-C during the extension install counts as a rejected install and
+			// pollutes the bucket that is supposed to mean "the marketplace or a policy blocked
+			// it" -- one of only two reachable under --auto-approve.
+			name: "interruption wins over the category set at the failure site",
+			outcome: connectOutcome{
+				ctxErr:        context.Canceled,
+				errorCategory: protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed,
+				err:           errors.New("signal: killed"),
+			},
+			want: protos.SshTunnelErrorCategoryUserAborted,
+		},
+		{
+			// Only a cancellation is the user giving up. No ancestor of the connect context
+			// carries a deadline today, so this is unreachable; matching the cause rather than
+			// testing ctxErr for non-nil keeps it that way if one is ever added.
+			name: "an expired deadline is not a user abort",
+			outcome: connectOutcome{
+				ctxErr:        context.DeadlineExceeded,
+				errorCategory: protos.SshTunnelErrorCategoryServerStartTimeout,
+				err:           errFailed,
+			},
+			want: protos.SshTunnelErrorCategoryServerStartTimeout,
+		},
+		{
+			// Interrupting an established tunnel is not a connection failure.
+			name:    "interruption after a successful connection reports no category",
+			outcome: connectOutcome{isSuccess: true, ctxErr: context.Canceled, err: errFailed},
+			want:    protos.SshTunnelErrorCategoryUnspecified,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.outcome.category())
+		})
+	}
+}
+
+// The four Remote SSH extension outcomes were reported as one category until they were split,
+// which left the largest IDE-mode failure bucket unattributable. Pin the mapping, including the
+// wrapping, since CheckIDESSHExtension returns its sentinels wrapped in a message.
+func TestSshExtensionErrorCategory(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want protos.SshTunnelErrorCategory
+	}{
+		{
+			name: "list failure",
+			err:  fmt.Errorf("%w in VS Code: %w", vscode.ErrSSHExtensionListFailed, errors.New("exit 4")),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionListFailed,
+		},
+		{
+			name: "install failure",
+			err:  fmt.Errorf("%w: %w", vscode.ErrSSHExtensionInstallFailed, errors.New("exit 3")),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed,
+		},
+		{
+			name: "user declined the install",
+			err:  fmt.Errorf("%w: install it with ...", vscode.ErrSSHExtensionInstallDeclined),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallDeclined,
+		},
+		{
+			name: "no way to ask for consent",
+			err:  fmt.Errorf("%w: install it with ...", vscode.ErrSSHExtensionInstallUnavailable),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallUnavailable,
+		},
+		{
+			// Only reachable if a new failure path forgets its sentinel.
+			name: "unsentinelled failure falls back to UNKNOWN",
+			err:  errors.New("something else"),
+			want: protos.SshTunnelErrorCategoryUnknown,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, sshExtensionErrorCategory(tt.err))
+		})
+	}
+}
+
+func TestBuildSshTunnelEventReportsErrorCategory(t *testing.T) {
+	got := buildSshTunnelEvent(ClientOptions{ConnectionName: "my-conn", IDE: "vscode"}, connectOutcome{
+		errorCategory: protos.SshTunnelErrorCategoryIDECommandNotOnPath,
+		err:           errors.New("failed"),
+	})
+
+	assert.False(t, got.IsSuccess)
+	assert.Equal(t, protos.SshTunnelErrorCategoryIDECommandNotOnPath, got.ErrorCategory)
+}
+
+// A failed first attempt is the case the telemetry exists to measure, so assert
+// the outcome fields reach the payload as an explicit false rather than being
+// dropped as zero values.
+func TestBuildSshTunnelEventReportsFailure(t *testing.T) {
+	got := buildSshTunnelEvent(ClientOptions{ClusterID: "abc-123"}, connectOutcome{})
+
+	assert.False(t, got.IsSuccess)
+
+	b, err := json.Marshal(got)
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"is_success":false`)
 }

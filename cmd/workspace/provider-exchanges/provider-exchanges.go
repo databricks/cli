@@ -3,6 +3,7 @@
 package provider_exchanges
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -85,7 +86,7 @@ Add an exchange for listing.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'listing_id', 'exchange_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'listing_id', 'exchange_id' in your JSON input")
 			}
 			return nil
 		}
@@ -183,7 +184,7 @@ Create an exchange.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.ProviderExchanges.Create(ctx, createReq)
@@ -647,7 +648,7 @@ Update exchange.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		updateReq.Id = args[0]
 

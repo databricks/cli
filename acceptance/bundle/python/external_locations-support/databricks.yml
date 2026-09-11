@@ -1,0 +1,17 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_external_location"
+
+resources:
+  external_locations:
+    my_location_1:
+      name: "my_location_1"
+      url: "s3://test-bucket/path"
+      credential_name: "test_cred"

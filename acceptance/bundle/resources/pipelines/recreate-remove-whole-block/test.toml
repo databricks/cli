@@ -1,0 +1,5 @@
+# Runs on both engines: both recreate (connection_name is immutable). The direct
+# plan's per-engine "changes" map (out.plan.direct.json) shows the recreate keyed on
+# the ingestion_definition block via bidirectional rule matching; terraform's plan
+# JSON just carries the action.
+Ignore = ["foo.py", ".databricks"]

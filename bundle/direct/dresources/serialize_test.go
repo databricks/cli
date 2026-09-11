@@ -3,6 +3,7 @@ package dresources
 import (
 	"encoding/json"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -67,6 +68,10 @@ func TestRoundtripFixtureStateType(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
 	for resourceType, resource := range SupportedResources {
+		// secrets are dropping value from state, so we skip it
+		if resourceType == "secrets" {
+			continue
+		}
 		adapter, err := NewAdapter(resource, resourceType, client)
 		require.NoError(t, err)
 
@@ -92,8 +97,11 @@ func TestRoundtripFixtureStateType(t *testing.T) {
 // independent of which fields a realistic value would populate. StateType and
 // RemoteType are validated as pointer-to-struct by the adapter, so typeOf always
 // returns a pointer here.
-func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) reflect.Type) {
+func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) reflect.Type, skip []string) {
 	for resourceType, resource := range SupportedResources {
+		if slices.Contains(skip, resourceType) {
+			continue
+		}
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
@@ -108,7 +116,7 @@ func testRoundtripAllFields(t *testing.T, label string, typeOf func(*Adapter) re
 // TestRoundtripAllFieldsStateType verifies StateType survives a JSON round-trip
 // with every field populated. StateType is persisted to the state file.
 func TestRoundtripAllFieldsStateType(t *testing.T) {
-	testRoundtripAllFields(t, "StateType", (*Adapter).StateType)
+	testRoundtripAllFields(t, "StateType", (*Adapter).StateType, nil)
 }
 
 // TestRoundtripAllFieldsRemoteType verifies RemoteType survives a JSON round-trip
@@ -116,7 +124,128 @@ func TestRoundtripAllFieldsStateType(t *testing.T) {
 // field, so a wrapper embedding an SDK type with its own MarshalJSON must define
 // its own or its extra fields vanish.
 func TestRoundtripAllFieldsRemoteType(t *testing.T) {
-	testRoundtripAllFields(t, "RemoteType", (*Adapter).RemoteType)
+	testRoundtripAllFields(t, "RemoteType", (*Adapter).RemoteType, nil)
+}
+
+// TestRoundtripAllFieldsInputConfigType verifies InputConfigType, the typed
+// bundle config a resource is loaded into, survives a JSON round-trip with every
+// field populated. Bundle config is normally read and written through libs/dyn,
+// which walks the struct itself and never calls these marshalers, so this is a
+// latent trap rather than live corruption. It is guarded anyway because it is the
+// same trap as StateType and RemoteType: a resource that embeds a member with its
+// own MarshalJSON and defines none of its own inherits that method by promotion
+// and silently drops id, url, lifecycle, modified_status and permissions.
+//
+// cluster_policies is exempt. Its definition and policy_family_definition_overrides
+// are typed `any` and deliberately shadow same-named string fields in the embedded
+// compute.CreatePolicy, so a policy document can be authored as inline YAML
+// (ConfigureClusterPolicyDefinition normalizes it to the JSON string the API wants
+// before deploy). Only the shallower `any` is reachable by that JSON name, but
+// marshal.Unmarshal hands the whole payload to the embedded member, so the shadowed
+// string comes back holding the raw JSON text and reads as a lost field. Its other
+// fields go unchecked on this surface as a result.
+func TestRoundtripAllFieldsInputConfigType(t *testing.T) {
+	testRoundtripAllFields(t, "InputConfigType", (*Adapter).InputConfigType, []string{"cluster_policies"})
+}
+
+var jsonMarshalerType = reflect.TypeFor[json.Marshaler]()
+
+// hasPointerOnlyMarshaler reports whether *T marshals itself but T does not.
+//
+// A type with no marshaler at all is not a defect: encoding/json treats it the
+// same by value and by pointer. Only the asymmetry is. Kind is not restricted:
+// a named scalar, slice or map can declare MarshalJSON on a pointer receiver and
+// diverges exactly the same way.
+func hasPointerOnlyMarshaler(t reflect.Type) bool {
+	return reflect.PointerTo(t).Implements(jsonMarshalerType) &&
+		!t.Implements(jsonMarshalerType)
+}
+
+// collectPointerOnlyMarshalers records into found every type reachable from t
+// whose MarshalJSON is declared on a pointer receiver only.
+//
+// Pointers are followed as edges rather than stripped up front, so `type L *L`
+// terminates on seen rather than spinning in Elem().
+func collectPointerOnlyMarshalers(t reflect.Type, seen, found map[reflect.Type]bool) {
+	if seen[t] {
+		return
+	}
+	seen[t] = true
+
+	if hasPointerOnlyMarshaler(t) {
+		found[t] = true
+	}
+
+	switch t.Kind() {
+	case reflect.Pointer, reflect.Slice, reflect.Array, reflect.Map:
+		collectPointerOnlyMarshalers(t.Elem(), seen, found)
+	case reflect.Struct:
+		for field := range t.Fields() {
+			// json:"-" is never serialized, so a type reachable only through one
+			// cannot diverge. Skipped for the same reason as unexported fields.
+			if !field.IsExported() || structtag.JSONTag(field.Tag.Get("json")).Name() == "-" {
+				continue
+			}
+			collectPointerOnlyMarshalers(field.Type, seen, found)
+		}
+	default:
+		// Scalars hold no reachable named type, and an interface field's dynamic
+		// type is not knowable from the static type.
+	}
+}
+
+// TestMarshalerValueReceiver asserts that no type reachable from an adapter
+// surface declares MarshalJSON on a pointer receiver only.
+//
+// Such a method is satisfied by *T but not by T, and encoding/json reaches it
+// only for an addressable value. json.Marshal(&x) then uses the marshaler while
+// json.Marshal(x) silently falls back to plain struct-field encoding -- two code
+// paths for one type. They disagree on more than key order, because encoding/json
+// knows nothing about ForceSendFields (tagged json:"-"), so a force-sent zero
+// value of an omitempty field survives one path and vanishes on the other.
+//
+// The walk covers embedded members and named fields, not just the surface type
+// itself. Both matter, for different reasons: an embedded member's pointer
+// receiver is promoted to *T only, which makes T itself asymmetric unless T
+// declares its own marshaler -- and if it does, the member's asymmetry is hidden
+// from a top-level check while still applying wherever that member is marshalled
+// directly. A named field is stronger still: marshal's structAsMap stores every
+// field into a map via .Interface(), and a map value is not addressable, so the
+// pointer receiver is unreachable there. (Slice elements, by contrast, stay
+// addressable and do reach it -- the walk covers them for the embedded-member
+// reason, not this one.)
+//
+// The round-trip tests above cannot catch any of this: they build values with
+// reflect.New, so they only ever marshal a pointer.
+func TestMarshalerValueReceiver(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		t.Run(resourceType, func(t *testing.T) {
+			// Each subtest walks with its own maps. Sharing them across subtests
+			// would attribute a type to whichever one reached it first, and
+			// iteration order over SupportedResources is random.
+			seen := make(map[reflect.Type]bool)
+			found := make(map[reflect.Type]bool)
+			for _, typeOf := range []func(*Adapter) reflect.Type{
+				(*Adapter).InputConfigType,
+				(*Adapter).StateType,
+				(*Adapter).RemoteType,
+			} {
+				collectPointerOnlyMarshalers(typeOf(adapter), seen, found)
+			}
+
+			names := make([]string, 0, len(found))
+			for typ := range found {
+				names = append(names, typ.String())
+			}
+			slices.Sort(names)
+			require.Empty(t, names,
+				"reachable from %s: these types declare MarshalJSON on a pointer receiver only; give each a value receiver so marshalling by value and by pointer agree:\n  %s",
+				resourceType, strings.Join(names, "\n  "))
+		})
+	}
 }
 
 // fillNonZero recursively populates v with non-zero values so that every

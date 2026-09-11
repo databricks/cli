@@ -1,6 +1,4 @@
-Local = true
 Cloud = true
-RequiresWarehouse = true
 RecordRequests = false
 RunsOnDbr = true
 

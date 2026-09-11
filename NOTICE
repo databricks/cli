@@ -111,6 +111,10 @@ golang.org/x/sys - https://github.com/golang/sys
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/sys/blob/master/LICENSE
 
+golang.org/x/term - https://github.com/golang/term
+Copyright 2009 The Go Authors.
+License - https://github.com/golang/term/blob/master/LICENSE
+
 golang.org/x/text - https://github.com/golang/text
 Copyright 2009 The Go Authors.
 License - https://github.com/golang/text/blob/master/LICENSE
@@ -126,6 +130,10 @@ License - https://github.com/google/jsonschema-go/blob/main/LICENSE
 jackc/pgx - https://github.com/jackc/pgx
 Copyright (c) 2013-2021 Jack Christensen
 License - https://github.com/jackc/pgx/blob/master/LICENSE
+
+klauspost/pgzip - https://github.com/klauspost/pgzip
+Copyright (c) 2014 Klaus Post
+License - https://github.com/klauspost/pgzip/blob/master/LICENSE
 
 charmbracelet/bubbles - https://github.com/charmbracelet/bubbles
 Copyright (c) 2020-2025 Charmbracelet, Inc
@@ -154,6 +162,10 @@ License - https://github.com/Masterminds/semver/blob/master/LICENSE.txt
 mattn/go-isatty - https://github.com/mattn/go-isatty
 Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
 License - https://github.com/mattn/go-isatty/blob/master/LICENSE
+
+muesli/termenv - https://github.com/muesli/termenv
+Copyright (c) 2019 Christian Muehlhaeuser
+License - https://github.com/muesli/termenv/blob/master/LICENSE
 
 sabhiram/go-gitignore - https://github.com/sabhiram/go-gitignore
 Copyright (c) 2015 Shaba Abhiram

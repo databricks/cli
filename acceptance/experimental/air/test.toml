@@ -1,0 +1,4 @@
+# No air command deploys a bundle, so the engine matrix adds no coverage; pin a
+# single engine ("direct") so the air tests run once, not across the direct+terraform
+# matrix. (An empty list is rejected: it would run on both runners.)
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

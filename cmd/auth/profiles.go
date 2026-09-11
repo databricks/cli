@@ -21,6 +21,13 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+// profileValidationTimeout bounds each per-profile validation so a host the SDK
+// retries — connection refused, connect/TLS timeout, retriable 5xx — cannot
+// stall the whole listing. Without it a single such host blocks `auth profiles`
+// for the SDK's default retry budget (~5 minutes). Hosts that fail DNS are not
+// retriable and already fail fast, so this only bounds the retriable cases.
+const profileValidationTimeout = 5 * time.Second
+
 type profileMetadata struct {
 	Name        string `json:"name"`
 	Host        string `json:"host,omitempty"`
@@ -36,12 +43,22 @@ func (c *profileMetadata) IsEmpty() bool {
 	return c.Host == "" && c.AccountID == ""
 }
 
-func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool) {
+func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool, timeout time.Duration) {
+	timeoutSeconds := int(timeout / time.Second)
 	cfg := &config.Config{
 		Loaders:           []config.Loader{config.ConfigFile},
 		ConfigFile:        configFilePath,
 		Profile:           c.Name,
 		DatabricksCliPath: env.Get(ctx, "DATABRICKS_CLI_PATH"),
+
+		// Bound the SDK's per-request and total-retry budgets to the same
+		// per-profile ceiling. EnsureResolved fetches host metadata via the
+		// SDK's retrier, which defaults to 5 minutes — and it runs on
+		// context.Background internally, so the context.WithTimeout below on the
+		// validation call cannot reach it. Without these a single unreachable
+		// host stalls the listing well past the validation timeout.
+		HTTPTimeoutSeconds:  timeoutSeconds,
+		RetryTimeoutSeconds: timeoutSeconds,
 	}
 	if skipValidate {
 		// EnsureResolved fetches <host>/.well-known/databricks-config to enrich
@@ -72,13 +89,16 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		log.Debugf(ctx, "Profile %q: overrode config type from %s to %s (SPOG host)", c.Name, cfg.ConfigType(), configType)
 	}
 
+	callCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	switch configType {
 	case config.AccountConfig:
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
 			return
 		}
-		_, err = a.Workspaces.List(ctx)
+		_, err = a.Workspaces.List(callCtx)
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
@@ -90,7 +110,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		if err != nil {
 			return
 		}
-		_, err = w.CurrentUser.Me(ctx, iam.MeRequest{})
+		_, err = w.CurrentUser.Me(callCtx, iam.MeRequest{})
 		c.Host = cfg.Host
 		c.AuthType = cfg.AuthType
 		if err != nil {
@@ -148,7 +168,7 @@ func newProfilesCommand() *cobra.Command {
 			wg.Go(func() {
 				ctx := cmd.Context()
 				t := time.Now()
-				profile.Load(ctx, iniFile.Path(), skipValidate)
+				profile.Load(ctx, iniFile.Path(), skipValidate, profileValidationTimeout)
 				log.Debugf(ctx, "Profile %q took %s to load", profile.Name, time.Since(t))
 			})
 			profiles = append(profiles, profile)

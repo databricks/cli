@@ -3,6 +3,8 @@ package snapshot
 import (
 	"context"
 	"fmt"
+	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,16 +14,25 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type mockUploader struct{ path string }
-
-func (m *mockUploader) Upload(_ context.Context, _, _ string, _ []ACLEntry, _ []byte) (*SnapshotInfo, error) {
-	return &SnapshotInfo{Path: m.path}, nil
+func setupTestClient(t *testing.T) *databricks.WorkspaceClient {
+	t.Helper()
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:               server.URL,
+		Token:              "testtoken",
+		RateLimitPerSecond: math.MaxInt,
+	})
+	require.NoError(t, err)
+	return client
 }
 
 func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {
@@ -38,6 +49,10 @@ func makeBundle(t *testing.T, nFiles int) *bundle.Bundle {
 		WorktreeRoot:   root,
 		Config: config.Root{
 			Bundle: config.Bundle{Target: "default"},
+			// The SyncDefaultPath mutator sets this to ["."] during initialize;
+			// set it here since these tests bypass the mutator pipeline. Empty
+			// sync paths select no files.
+			Sync: config.Sync{Paths: []string{"."}},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
 					User: &iam.User{UserName: "test@example.test"},
@@ -55,21 +70,39 @@ func testContext(t *testing.T) context.Context {
 
 func TestUploadWarnsAboveFileLimit(t *testing.T) {
 	b := makeBundle(t, fileLimitWarning+1)
-	m := &snapshotUpload{uploader: &mockUploader{path: "/snapshots/test"}}
+	b.SetWorkpaceClient(setupTestClient(t))
+	m := &snapshotUpload{clean: true}
 
 	diags := m.Apply(testContext(t), b)
 
 	require.Len(t, diags, 1)
 	assert.Equal(t, diag.Warning, diags[0].Severity)
 	assert.Contains(t, diags[0].Summary, fmt.Sprintf("%d files", fileLimitWarning+1))
-	assert.Equal(t, "/snapshots/test", b.Config.Workspace.SnapshotPath)
 }
 
 func TestUploadNoWarningBelowFileLimit(t *testing.T) {
 	b := makeBundle(t, 5)
-	m := &snapshotUpload{uploader: &mockUploader{path: "/snapshots/test"}}
+	b.SetWorkpaceClient(setupTestClient(t))
+	m := &snapshotUpload{clean: true}
 
 	diags := m.Apply(testContext(t), b)
 
 	assert.True(t, diags.HasError() == false && len(diags) == 0, "expected no diagnostics")
+}
+
+func TestUploadReusesStagedZipWhenNotClean(t *testing.T) {
+	// clean=false is the deploy --plan path: the plan already carries the resource and
+	// its staged zip, so Apply must not rebuild, stage, or register anything (and must
+	// not warn), even for a bundle that would otherwise exceed the file limit.
+	ctx := testContext(t)
+	b := makeBundle(t, fileLimitWarning+1)
+	b.SetWorkpaceClient(setupTestClient(t))
+	m := &snapshotUpload{clean: false}
+
+	diags := m.Apply(ctx, b)
+
+	require.Empty(t, diags)
+	assert.Nil(t, b.Config.Resources.Snapshots)
+	_, err := os.Stat(b.GetLocalStateDir(ctx, "snapshots"))
+	assert.ErrorIs(t, err, fs.ErrNotExist, "no snapshots dir should be created")
 }

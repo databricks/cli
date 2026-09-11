@@ -1,0 +1,33 @@
+trace $CLI bundle validate
+trace $CLI bundle validate -o json | jq ".resources.instance_pools"
+
+trace $CLI bundle summary
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+trace $CLI bundle deploy
+
+title "Verify the create request"
+trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/create")))' out.requests.txt
+
+trace $CLI bundle summary
+
+title "Update the instance pool name"
+trace update_file.py databricks.yml my_instance_pool my_instance_pool_2
+trace $CLI bundle deploy
+
+title "Verify the update request"
+trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/edit")))' out.requests.txt
+
+trace $CLI bundle summary
+
+title "Destroy the instance pool"
+trace $CLI bundle destroy --auto-approve
+
+title "Verify the destroy request"
+trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/delete")))' out.requests.txt
+
+trace $CLI bundle summary

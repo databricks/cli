@@ -1,14 +1,7 @@
 sethome "./home"
 
 # A profile carries full credentials; a second profile carries only a host.
-cat > "./home/.databrickscfg" <<EOF
-[my-workspace]
-host  = $DATABRICKS_HOST
-token = $DATABRICKS_TOKEN
-
-[host-only]
-host  = $DATABRICKS_HOST
-EOF
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
 # direnv-style auth env vars for a different workspace; before #5096 these
 # shadowed the profile selected with --profile.

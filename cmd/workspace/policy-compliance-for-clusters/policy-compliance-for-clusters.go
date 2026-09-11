@@ -3,6 +3,7 @@
 package policy_compliance_for_clusters
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -92,7 +93,7 @@ func newCancelPendingClusterEnforcement() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -188,7 +189,7 @@ func newEnforceCompliance() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}

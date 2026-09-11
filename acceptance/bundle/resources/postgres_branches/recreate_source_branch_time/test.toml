@@ -1,0 +1,18 @@
+# Distinct from the other duration/timestamp tests: source_branch_time is
+# immutable, so a change recreates the branch rather than updating it. Before the
+# diffing fix the change was invisible and the branch was silently left on its old
+# fork point.
+#
+# Local only: the fork point has to be a real instant in the source branch's
+# history, so the literal timestamps here are not valid against a live workspace.
+Cloud = false
+
+[[Repls]]
+Old = '2026-01-01T00:00:00Z'
+New = '[FORK_TIME_BEFORE]'
+Order = 1
+
+[[Repls]]
+Old = '2026-02-01T00:00:00Z'
+New = '[FORK_TIME_AFTER]'
+Order = 1

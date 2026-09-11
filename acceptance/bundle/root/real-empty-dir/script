@@ -1,0 +1,3 @@
+# DATABRICKS_BUNDLE_ROOT points at an existing directory that has no databricks.yml.
+mkdir emptydir
+musterr trace DATABRICKS_BUNDLE_ROOT=emptydir $CLI bundle validate

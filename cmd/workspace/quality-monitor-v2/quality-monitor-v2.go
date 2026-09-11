@@ -3,6 +3,7 @@
 package quality_monitor_v2
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -91,7 +92,7 @@ Create a quality monitor.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}
@@ -388,7 +389,7 @@ Update a quality monitor.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only OBJECT_TYPE, OBJECT_ID as positional arguments. Provide 'object_type', 'object_id' in your JSON input")
+				return errors.New("when --json flag is specified, provide only OBJECT_TYPE, OBJECT_ID as positional arguments. Provide 'object_type', 'object_id' in your JSON input")
 			}
 			return nil
 		}

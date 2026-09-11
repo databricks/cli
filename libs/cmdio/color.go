@@ -3,10 +3,12 @@ package cmdio
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"text/template"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 )
 
 // SGR (Select Graphic Rendition) escapes; see
@@ -137,4 +139,18 @@ func PadLeft(s string, n int) string {
 		return strings.Repeat(" ", pad) + s
 	}
 	return s
+}
+
+// NewRenderer returns a lipgloss renderer targeting w, along with whether w
+// supports color. When it does not (NO_COLOR, TERM=dumb, or w is piped or
+// redirected) the renderer is forced to the Ascii profile so every Style it
+// mints emits no SGR escapes. Callers still write rendered strings to w
+// themselves; the renderer only carries the color profile.
+func NewRenderer(ctx context.Context, w io.Writer) (*lipgloss.Renderer, bool) {
+	color := SupportsColor(ctx, w)
+	r := lipgloss.NewRenderer(w)
+	if !color {
+		r.SetColorProfile(termenv.Ascii)
+	}
+	return r, color
 }

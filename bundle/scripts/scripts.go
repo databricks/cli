@@ -49,7 +49,7 @@ func (m *script) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 		return diag.FromErr(fmt.Errorf("failed to execute script: %w", err))
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Executing '%s' script", m.scriptHook))
+	cmdio.LogProgress(ctx, fmt.Sprintf("Executing '%s' script", m.scriptHook))
 
 	// Reading the pipes sequentially deadlocks once the script fills the ~64KiB
 	// stderr pipe buffer while stdout is still open, so drain stderr concurrently.

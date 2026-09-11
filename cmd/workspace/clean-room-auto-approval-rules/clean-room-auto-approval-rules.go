@@ -3,6 +3,7 @@
 package clean_room_auto_approval_rules
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -103,7 +104,7 @@ Create an auto-approval rule.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		createReq.CleanRoomName = args[0]
 

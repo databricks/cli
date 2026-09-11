@@ -1,15 +1,8 @@
 sethome "./home"
 
-# Create an initial profile with cluster_id, warehouse_id, azure_environment,
-# and a custom key that is not a recognized SDK config attribute.
-cat > "./home/.databrickscfg" <<EOF
-[DEFAULT]
-host = $DATABRICKS_HOST
-cluster_id = existing-cluster-123
-warehouse_id = warehouse-456
-azure_environment = USGOVERNMENT
-custom_key = my-custom-value
-EOF
+# Initial profile with cluster_id, warehouse_id, azure_environment, and a custom
+# key that is not a recognized SDK config attribute.
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
 
 title "Initial profile\n"
 cat "./home/.databrickscfg"

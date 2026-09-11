@@ -3,7 +3,7 @@
 package aibi_dashboard_embedding_access_policy
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -211,7 +211,7 @@ Update the AI/BI dashboard embedding access policy.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Settings.AibiDashboardEmbeddingAccessPolicy().Update(ctx, updateReq)

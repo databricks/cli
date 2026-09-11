@@ -1,0 +1,7 @@
+
+>>> DATABRICKS_BUNDLE_ROOT=emptydir [CLI] bundle validate
+Error: Invalid bundle root DATABRICKS_BUNDLE_ROOT="emptydir": databricks.yml not found
+
+The DATABRICKS_BUNDLE_ROOT environment variable must point to an existing directory that contains a bundle configuration file.
+
+Found 1 error

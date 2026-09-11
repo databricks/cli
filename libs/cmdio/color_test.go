@@ -1,10 +1,12 @@
 package cmdio_test
 
 import (
+	"bytes"
 	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -124,6 +126,17 @@ func TestPadLeft(t *testing.T) {
 			assert.Equal(t, c.want, cmdio.PadLeft(c.in, c.n))
 		})
 	}
+}
+
+func TestNewRendererForcesAsciiWhenNoColor(t *testing.T) {
+	ctx := noColorContext(t)
+
+	// A bytes.Buffer is never a TTY, so the renderer must fall back to Ascii and
+	// its styles must render without SGR escapes.
+	r, color := cmdio.NewRenderer(ctx, &bytes.Buffer{})
+	assert.False(t, color)
+	assert.Equal(t, termenv.Ascii, r.ColorProfile())
+	assert.Equal(t, "hi", r.NewStyle().Bold(true).Render("hi"))
 }
 
 func TestRenderFuncMap(t *testing.T) {

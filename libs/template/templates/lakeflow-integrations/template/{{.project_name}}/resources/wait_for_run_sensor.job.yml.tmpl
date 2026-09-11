@@ -1,0 +1,20 @@
+resources:
+  jobs:
+    wait_for_run_sensor:
+      name: "[example] wait_for_run_sensor"
+
+      tasks:
+        - task_key: wait_for_run_sensor
+          environment_key: {{.project_name}}_environment
+          python_operator_task:
+            main: {{.project_name}}.examples.wait_for_run_sensor.WaitForRunSensor
+            parameters:
+              - name: "run_id"
+                value: "CHANGEME"
+
+      environments:
+        - environment_key: {{.project_name}}_environment
+          spec:
+            environment_version: "5"
+            dependencies:
+              - ../dist/*.whl

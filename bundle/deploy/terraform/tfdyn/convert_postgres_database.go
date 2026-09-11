@@ -15,7 +15,7 @@ func (c postgresDatabaseConverter) Convert(ctx context.Context, key string, vin 
 	// The bundle config has flattened DatabaseSpec fields at the top level.
 	// Terraform expects them nested in a "spec" block.
 	specFields := specFieldNames(schema.ResourcePostgresDatabaseSpec{})
-	topLevelFields := []string{"database_id", "parent"}
+	topLevelFields := []string{"database_id", "parent", "replace_existing"}
 
 	// Build the spec block from the flattened fields
 	specMap := make(map[string]dyn.Value)

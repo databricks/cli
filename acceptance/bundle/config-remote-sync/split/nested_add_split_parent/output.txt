@@ -1,0 +1,42 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.nested_add_job
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Add a task, then depend on it from the split task zzz_shared
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.nested_add_job
+  tasks[task_key='mid_new']: add
+  tasks[task_key='zzz_shared'].depends_on[task_key='mid_new']: add
+
+
+
+=== The dependency lands on zzz_shared, in the block that defines it
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -17,6 +17,10 @@
+           depends_on:
+             - task_key: aaa_target
++            - task_key: mid_new
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/nb
++        - notebook_task:
++            notebook_path: /Users/{{workspace_user_name}}/nb
++          task_key: mid_new
+
+ targets:
+
+>>> grep -c task_key: mid_new databricks.yml
+2
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.nested_add_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 1 deleted

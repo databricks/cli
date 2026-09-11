@@ -40,12 +40,8 @@ const MaterializedConfigFile = "out.test.toml"
 func GenerateMaterializedConfig(config *TestConfig) string {
 	var buf strings.Builder
 
-	writeBool(&buf, "Local", config.Local)
 	writeBool(&buf, "Cloud", config.Cloud)
 	writeBool(&buf, "CloudSlow", config.CloudSlow)
-	writeBool(&buf, "RequiresUnityCatalog", config.RequiresUnityCatalog)
-	writeBool(&buf, "RequiresCluster", config.RequiresCluster)
-	writeBool(&buf, "RequiresWarehouse", config.RequiresWarehouse)
 	writeBool(&buf, "RunsOnDbr", config.RunsOnDbr)
 	if config.Phase != 0 {
 		fmt.Fprintf(&buf, "Phase = %d\n", config.Phase)

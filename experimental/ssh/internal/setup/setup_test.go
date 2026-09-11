@@ -2,7 +2,6 @@ package setup
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/client"
+	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -17,45 +17,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestValidateClusterAccess_SingleUser(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeSingleUser,
-	}, nil)
-
-	err := validateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
-	assert.NoError(t, err)
-}
-
-func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
-		DataSecurityMode: compute.DataSecurityModeUserIsolation,
-	}, nil)
-
-	err := validateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "does not have dedicated access mode")
-}
-
-func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	m := mocks.NewMockWorkspaceClient(t)
-	clustersAPI := m.GetMockClustersAPI()
-
-	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "nonexistent"}).Return(nil, errors.New("cluster not found"))
-
-	err := validateClusterAccess(ctx, m.WorkspaceClient, "nonexistent")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get cluster information for cluster ID 'nonexistent'")
-}
 
 func TestGenerateProxyCommand(t *testing.T) {
 	opts := client.ClientOptions{
@@ -143,13 +104,24 @@ func TestGenerateHostConfig_Valid(t *testing.T) {
 
 	assert.Contains(t, result, "Host test-host")
 	assert.Contains(t, result, "User root")
-	assert.Contains(t, result, "StrictHostKeyChecking accept-new")
 	assert.Contains(t, result, "--cluster=cluster-123")
 	assert.Contains(t, result, "--shutdown-delay=30s")
 	assert.Contains(t, result, "--profile=test-profile")
 
 	expectedKeyPath := filepath.Join(tmpDir, "cluster-123")
 	assert.Contains(t, result, fmt.Sprintf(`IdentityFile %q`, expectedKeyPath))
+
+	// `ssh <name>` reaches ssh through this block and nothing else, so the host key the
+	// ProxyCommand pins has to be the one it verifies against (DECO-27882).
+	assert.Contains(t, result, "StrictHostKeyChecking yes")
+	expectedKnownHostsPath, err := sshconfig.GetKnownHostsPath(t.Context(), "cluster-123", "")
+	require.NoError(t, err)
+	assert.Contains(t, result, fmt.Sprintf(`UserKnownHostsFile %q`, expectedKnownHostsPath))
+
+	// The host name (test-host) differs from the cluster ID the key is pinned under, so the
+	// block has to carry HostKeyAlias cluster-123 or strict checking looks the key up under
+	// test-host and fails (DECO-27882).
+	assert.Contains(t, result, "\n    HostKeyAlias cluster-123\n")
 }
 
 func TestGenerateHostConfig_WithoutProfile(t *testing.T) {
@@ -214,6 +186,7 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 
 	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
 		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
 	}, nil)
 
 	opts := SetupOptions{
@@ -222,6 +195,8 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 		SSHConfigPath: configPath,
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 30 * time.Second,
+		MaxClients:    10,
+		ServerTimeout: 24 * time.Hour,
 		Profile:       "test-profile",
 	}
 
@@ -244,6 +219,9 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 	assert.Contains(t, hostConfigStr, "Host test-host")
 	assert.Contains(t, hostConfigStr, "--cluster=cluster-123")
 	assert.Contains(t, hostConfigStr, "--profile=test-profile")
+	// The written block pins the key lookup to the cluster ID, which differs from the host
+	// name test-host (DECO-27882).
+	assert.Contains(t, hostConfigStr, "HostKeyAlias cluster-123")
 }
 
 func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
@@ -264,6 +242,7 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 	clustersAPI := m.GetMockClustersAPI()
 	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
 		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
 	}, nil)
 
 	opts := SetupOptions{
@@ -272,6 +251,8 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 		SSHConfigPath: configPath,
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 30 * time.Second,
+		MaxClients:    10,
+		ServerTimeout: 24 * time.Hour,
 		AutoApprove:   true,
 	}
 
@@ -284,6 +265,86 @@ func TestSetup_AutoApproveRecreatesExistingHost(t *testing.T) {
 	s := string(content)
 	assert.NotContains(t, s, "User stale")
 	assert.Contains(t, s, "--cluster=cluster-123")
+}
+
+func TestSetup_SerializesServerLifecycleFlags(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
+
+	m := mocks.NewMockWorkspaceClient(t)
+	m.GetMockClustersAPI().EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
+	}, nil)
+
+	opts := SetupOptions{
+		HostName:      "test-host",
+		ClusterID:     "cluster-123",
+		SSHConfigPath: filepath.Join(tmpDir, "ssh_config"),
+		SSHKeysDir:    tmpDir,
+		ShutdownDelay: 30 * time.Second,
+		MaxClients:    25,
+		ServerTimeout: 48 * time.Hour,
+	}
+
+	require.NoError(t, Setup(ctx, m.WorkspaceClient, opts))
+
+	// The ProxyCommand is the invocation that submits the server job, so both values have to
+	// reach the persisted host config or the user's choice is silently dropped.
+	hostContent, err := os.ReadFile(filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host"))
+	require.NoError(t, err)
+	assert.Contains(t, string(hostContent), "--max-clients=25")
+	assert.Contains(t, string(hostContent), "--server-timeout=48h0m0s")
+}
+
+func TestSetup_RejectsUnusableServerLifecycleFlags(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    SetupOptions
+		wantErr string
+	}{
+		{
+			name:    "zero max clients",
+			opts:    SetupOptions{ServerTimeout: 24 * time.Hour},
+			wantErr: "--max-clients must be at least 1, got 0",
+		},
+		{
+			name:    "zero server timeout",
+			opts:    SetupOptions{MaxClients: 10},
+			wantErr: "--server-timeout must be at least 1s, got 0s",
+		},
+		{
+			name:    "shutdown delay longer than server timeout",
+			opts:    SetupOptions{MaxClients: 10, ShutdownDelay: 48 * time.Hour, ServerTimeout: 24 * time.Hour},
+			wantErr: "--shutdown-delay (48h0m0s) cannot be longer than --server-timeout (24h0m0s)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := cmdio.MockDiscard(t.Context())
+			tmpDir := t.TempDir()
+			t.Setenv("HOME", tmpDir)
+			t.Setenv("USERPROFILE", tmpDir)
+
+			// Validation fires before any cluster API calls, so no mock expectations needed.
+			m := mocks.NewMockWorkspaceClient(t)
+
+			opts := tt.opts
+			opts.HostName = "test-host"
+			opts.ClusterID = "cluster-123"
+			opts.SSHConfigPath = filepath.Join(tmpDir, "ssh_config")
+			opts.SSHKeysDir = tmpDir
+
+			assert.EqualError(t, Setup(ctx, m.WorkspaceClient, opts), tt.wantErr)
+
+			// Nothing is written when the values are rejected.
+			_, err := os.Stat(filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host"))
+			assert.ErrorIs(t, err, os.ErrNotExist)
+		})
+	}
 }
 
 func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
@@ -308,6 +369,7 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 	clustersAPI := m.GetMockClustersAPI()
 	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "picked-cluster"}).Return(&compute.ClusterDetails{
 		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
 	}, nil)
 
 	opts := SetupOptions{
@@ -315,6 +377,8 @@ func TestSetup_PromptsForClusterWhenNotProvided(t *testing.T) {
 		SSHConfigPath: configPath,
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 30 * time.Second,
+		MaxClients:    10,
+		ServerTimeout: 24 * time.Hour,
 	}
 
 	err := Setup(ctx, m.WorkspaceClient, opts)
@@ -348,6 +412,7 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 
 	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-456"}).Return(&compute.ClusterDetails{
 		DataSecurityMode: compute.DataSecurityModeSingleUser,
+		SingleUserName:   "me@example.com",
 	}, nil)
 
 	opts := SetupOptions{
@@ -356,6 +421,8 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 		SSHConfigPath: configPath,
 		SSHKeysDir:    tmpDir,
 		ShutdownDelay: 60 * time.Second,
+		MaxClients:    10,
+		ServerTimeout: 24 * time.Hour,
 	}
 
 	err = Setup(ctx, m.WorkspaceClient, opts)

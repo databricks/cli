@@ -1,6 +1,6 @@
 {
-  "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "create",
@@ -20,8 +20,8 @@
   }
 }
 {
-  "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
   "plan": {
@@ -92,8 +92,8 @@
   }
 }
 {
-  "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
   "plan": {
@@ -164,8 +164,8 @@
   }
 }
 {
-  "plan_version": 2,
-  "cli_version": "[DEV_VERSION]",
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 3,
   "plan": {

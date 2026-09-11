@@ -3,7 +3,7 @@
 package automatic_cluster_update
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -152,7 +152,7 @@ Update the automatic cluster update setting.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Settings.AutomaticClusterUpdate().Update(ctx, updateReq)

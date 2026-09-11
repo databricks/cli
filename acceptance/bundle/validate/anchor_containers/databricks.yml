@@ -1,0 +1,48 @@
+bundle:
+  name: test-bundle
+
+# This test verifies that anchors grouped in a list or a map do not trigger
+# "unknown field" warnings. The suppression recurses into containers whose
+# elements are all anchors. A container that also holds a non-anchor element is
+# not suppressed: it is reported as an unknown field, since it is more likely a
+# misplaced configuration value than a block of reusable anchors.
+
+task_defaults: &task_defaults
+  max_retries: 3
+
+# List of anchors.
+parameter_items:
+  - &p_first
+    name: first
+    default: one
+  - &p_second
+    name: second
+    default: two
+
+# Map of anchors.
+parameter_map:
+  entry: &p_map_entry
+    name: first
+
+# Container nested inside a container: a map whose value is a list of anchors.
+nested_parameters:
+  group:
+    - &p_nested
+      name: nested
+
+# Mixed container: one anchor and one non-anchor element. This is reported as an
+# unknown field because not all elements are anchor containers.
+mixed_parameters:
+  - &p_mixed
+    name: mixed
+  - name: plain
+
+resources:
+  jobs:
+    my_job:
+      name: "test job with anchors"
+      tasks:
+        - task_key: "main"
+          <<: *task_defaults
+          notebook_task:
+            notebook_path: "/some/notebook"

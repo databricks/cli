@@ -2,10 +2,27 @@
 === Initial profile
 [existing-profile]
 host = [DATABRICKS_URL]
+auth_type = databricks-cli
+client_id = custom-client-id
 
 === Login with existing profile (no host argument)
 >>> [CLI] auth login --profile existing-profile
 Profile existing-profile was successfully saved
+
+=== OAuth client ID
+
+>>> print_requests.py //oidc/v1/authorize --get
+json.q.client_id = "custom-client-id";
+
+=== Login with a client ID override
+
+>>> [CLI] auth login --profile existing-profile --client-id flag-client-id
+Profile existing-profile was successfully saved
+
+=== Overridden OAuth client ID
+
+>>> print_requests.py //oidc/v1/authorize --get
+json.q.client_id = "flag-client-id";
 
 === Profile after login
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
@@ -13,5 +30,6 @@ Profile existing-profile was successfully saved
 
 [existing-profile]
 host         = [DATABRICKS_URL]
-workspace_id = [NUMID]
 auth_type    = databricks-cli
+workspace_id = [NUMID]
+client_id    = flag-client-id

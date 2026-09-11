@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+   rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Deploy project, branch, and role"
+trace $CLI bundle deploy
+
+title "Unbind the role: it now exists on the branch but is no longer tracked by the bundle"
+# Mirrors an inherited role on a child branch: present on the branch, but not
+# created or owned by this bundle.
+trace $CLI bundle deployment unbind my_role
+
+title "Plan after unbind: the bundle wants to (re-)create the role"
+trace $CLI bundle plan
+
+title "Re-deploy: replace_existing adopts the already-existing role instead of erroring"
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+title "Confirm the role is under management again"
+trace $CLI postgres get-role "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/roles/test-role" | role_fields
+
+trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json

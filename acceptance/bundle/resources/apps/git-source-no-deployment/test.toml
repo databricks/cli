@@ -1,0 +1,10 @@
+Cloud = false
+
+# Asserts plan classification, not requests; drop the inherited RecordRequests.
+RecordRequests = false
+
+Ignore = [".databricks"]
+
+# Direct engine only: the skip logic lives in OverrideChangeDesc. Mirrors
+# config-no-deployment.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

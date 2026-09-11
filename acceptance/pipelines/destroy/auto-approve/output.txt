@@ -2,9 +2,9 @@
 === Test auto-approve pipelines destroy
 >>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created pipelines.my_pipeline
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
 >>> errcode [CLI] pipelines destroy
@@ -19,10 +19,9 @@ The following resources will be deleted:
   delete resources.pipelines.my_pipeline
 
 This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
   delete resources.pipelines.my_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

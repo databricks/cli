@@ -1,0 +1,29 @@
+# Deploys the same config the invariant suite uses, and records the plan and the
+# job payload so both engines are shown to send "${...}" (single $) to the API.
+envsubst < "$TESTDIR/../invariant/configs/job_escaped_refs.yml.tmpl" > databricks.yml
+# The raw plan the replay reads goes under .databricks, which sync skips, so it stays out of the
+# uploaded file count.
+mkdir -p .databricks
+
+cleanup() {
+    $CLI bundle destroy --auto-approve &> LOG.destroy
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Validate: escapes are still escaped in the config"
+trace $CLI bundle validate -o json | jq '.resources.jobs.example_ingestion_job.tasks[0].notebook_task.base_parameters'
+
+title "Plan (json)"
+trace $CLI bundle plan -o json > .databricks/tmp.plan.json
+# The golden gets the stamped-out copy; the replay below reads the raw one, which still carries
+# the DMS headers deploy --plan validates.
+nostamp < .databricks/tmp.plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Not traced: the READPLAN variant adds "--plan ...", and the point of that variant is
+# that the payload below is identical either way.
+title "Deploy: payload sent to the jobs API\n"
+$CLI bundle deploy $(readplanarg .databricks/tmp.plan.json)
+# --nostamp: under deployment-history recording the job payload carries the DMS deployment
+# stamp; drop it so the assertion is the same whether or not recording is on.
+trace print_requests.py //jobs --nostamp

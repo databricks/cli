@@ -1,0 +1,26 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+cleanup() { trace $CLI bundle destroy --auto-approve -t dev; }
+trap cleanup EXIT
+$CLI bundle deploy -t dev
+job_id="$(read_id.py cli_default_job)"
+
+title "existing_cluster_id is injected by OverrideCompute; the YAML has none"
+errcode trace grep -c "existing_cluster_id" databricks.yml
+
+title "Edit that locationless field remotely on a two-block task"
+edit_resource.py jobs $job_id <<PYEDIT
+for task in r["tasks"]:
+    if task["task_key"] == "shared":
+        task["existing_cluster_id"] = "0101-000000-remote1"
+PYEDIT
+
+title "Sync"
+echo
+cp databricks.yml databricks.yml.backup
+errcode $CLI bundle config-remote-sync -t dev --save
+title "The field is added to the block declaring the resource"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+errcode trace grep -c "existing_cluster_id: 0101-000000-remote1" databricks.yml
+rm databricks.yml.backup

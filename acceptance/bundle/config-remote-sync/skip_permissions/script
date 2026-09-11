@@ -1,0 +1,34 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Add a permission remotely (a change on the permissions sub-resource)"
+echo
+# permissions set replaces the whole ACL, so keep the deploy identity as owner
+# and add a grantee (the built-in "users" group) that is not in config: this
+# makes the permissions sub-resource show a change on the next sync.
+$CLI permissions set jobs $job_id --json '{"access_control_list":[{"permission_level":"IS_OWNER","user_name":"'"$CURRENT_USER_NAME"'"},{"permission_level":"CAN_VIEW","group_name":"users"}]}' > /dev/null
+
+title "Modify a regular job field remotely"
+echo
+edit_resource.py jobs $job_id <<EOF
+r["max_concurrent_runs"] = 5
+EOF
+
+title "Sync: permissions are skipped, the regular field change is written"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

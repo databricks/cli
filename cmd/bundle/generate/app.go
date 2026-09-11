@@ -128,6 +128,8 @@ per target environment.`,
 
 		cmdio.LogString(ctx, "App configuration successfully saved to "+filename)
 
+		warnIfNotIncluded(ctx, b, filename)
+
 		if bind {
 			return deployment.BindResource(cmd, appKey, app.Name, true, false, true)
 		}

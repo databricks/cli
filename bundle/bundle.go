@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
@@ -36,6 +37,28 @@ import (
 
 const internalFolder = ".internal"
 
+// QuietLevel is how much of the informational output to suppress, controlled by
+// repeating -q. Warnings and errors are never suppressed.
+type QuietLevel int
+
+const (
+	// QuietNone prints everything.
+	QuietNone QuietLevel = iota
+
+	// QuietSummary (-q) drops the per-resource action lines, keeping the summary.
+	QuietSummary
+
+	// QuietAll (-qq) also drops the summary and the progress lines ("Uploading
+	// bundle files to ...", "Building ...", "Executing 'postdeploy' script"), so
+	// only warnings and errors remain.
+	QuietAll
+)
+
+// SuppressProgress reports whether progress and summary output should be skipped.
+func (b *Bundle) SuppressProgress() bool {
+	return b.Quiet >= QuietAll
+}
+
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
 const resourcesFilename = "resources.json"
 
@@ -56,6 +79,13 @@ type Metrics struct {
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
+
+	// StateEngine is the engine that ran (or would have run) the deploy. Set to the
+	// requested engine as soon as it is resolved, then refined to the state's engine
+	// once the state is pulled, so deploy telemetry reports it even when the deploy
+	// fails or is cancelled before applying resources. Empty only when the deploy
+	// fails before the engine is resolved.
+	StateEngine engine.EngineType
 
 	// ResourceState is the direct engine's per-resource deployment state
 	// captured right after the deploy. It carries each resource's state-size in
@@ -116,8 +146,19 @@ type Bundle struct {
 	// It is loaded from the bundle configuration files and mutators may update it.
 	Config config.Root
 
+	// includePatterns holds the raw (unexpanded) 'include' patterns from the root
+	// databricks.yml. ProcessRootIncludes overwrites Config.Include with the
+	// expanded list of loaded files, so this preserves the original patterns for
+	// IsFileIncluded. Set via SetIncludePatterns.
+	includePatterns []string
+
 	// Target stores a snapshot of the Root.Bundle.Target configuration when it was selected by SelectTarget.
 	Target *config.Target `json:"target_config,omitempty" bundle:"internal"`
+
+	// RootPathIsNameTargetScoped reports whether workspace.root_path ends in the bundle
+	// name and target. Recorded before variable resolution, so a path that only happens
+	// to end in those two segments does not count.
+	RootPathIsNameTargetScoped bool
 
 	// Metadata about the bundle deployment. This is the interface Databricks services
 	// rely on to integrate with bundles when they need additional information about
@@ -132,6 +173,10 @@ type Bundle struct {
 
 	// Files that are synced to the workspace.file_path
 	Files []fileset.File
+
+	// FileCounts is how many files the deploy uploaded and deleted. Unlike Files,
+	// which lists everything tracked, this counts only what actually changed.
+	FileCounts libsync.FileCounts
 
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
@@ -155,6 +200,19 @@ type Bundle struct {
 	// Select contains resource selectors passed via --select flag.
 	// When non-empty, only the specified resources are included in deployment.
 	Select []string
+
+	// MigratingToDirect is set when the direct engine is requested but the existing
+	// state still uses terraform, so the state is migrated to the direct engine after
+	// this deploy. Resources that only the direct engine supports are skipped by this
+	// run rather than rejected: terraform cannot deploy them, and since terraform
+	// could never have deployed them they are absent from its state. The next deploy,
+	// which runs on the migrated state, creates them.
+	MigratingToDirect bool
+
+	// Quiet is the output verbosity reduction requested via -q/--quiet, which is
+	// repeatable: QuietSummary drops the per-resource lines, QuietAll additionally
+	// drops the summary and progress lines, leaving warnings and errors.
+	Quiet QuietLevel
 
 	// SkipLocalFileValidation makes path translation tolerant of missing local files.
 	// When set, TranslatePaths computes workspace paths without verifying files exist.
@@ -191,9 +249,11 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 // MustLoad returns a bundle configuration.
 // The errors are recorded by logdiag, check with logdiag.HasError().
 func MustLoad(ctx context.Context) *Bundle {
-	root, err := mustGetRoot(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
+	root, diags := mustGetRoot(ctx)
+	if diags.HasError() {
+		for _, d := range diags {
+			logdiag.LogDiag(ctx, d)
+		}
 		return nil
 	}
 
@@ -211,9 +271,11 @@ func MustLoad(ctx context.Context) *Bundle {
 // The errors are recorded by logdiag, check with logdiag.HasError().
 // It returns a `nil` bundle if a bundle was not found.
 func TryLoad(ctx context.Context) *Bundle {
-	root, err := tryGetRoot(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
+	root, diags := tryGetRoot(ctx)
+	if diags.HasError() {
+		for _, d := range diags {
+			logdiag.LogDiag(ctx, d)
+		}
 		return nil
 	}
 
@@ -256,6 +318,14 @@ func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClien
 	}
 
 	return client
+}
+
+// ConfiguresDeploymentHistory reports whether this bundle is configured to record deployment history with the
+// deployment metadata service, from experimental.deployment_history or
+// DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY.
+func (b *Bundle) ConfiguresDeploymentHistory(ctx context.Context) bool {
+	configured := b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory
+	return env.RecordsDeploymentHistory(ctx, configured)
 }
 
 // SetWorkpaceClient sets the workspace client for this bundle.
@@ -348,7 +418,8 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*"))), nil
+	includes := append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*")))
+	return includes, nil
 }
 
 // AuthEnv returns a map with environment variables and their values

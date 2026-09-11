@@ -22,13 +22,13 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Project for Catalog
-      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created postgres_catalogs.my_catalog
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-catalog catalogs/lakebase_test_[UNIQUE_NAME]
 {
@@ -55,7 +55,6 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Project for Catalog
-      URL:  (not deployed)
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
@@ -70,5 +69,4 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-catalog-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 2 deleted

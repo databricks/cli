@@ -1,0 +1,11 @@
+# Seed the run's training_config.yaml next to command.sh so `air get` can
+# download and render it in the Configuration box. The import API does not
+# create missing parents, so mkdirs the containing folder first.
+$CLI workspace mkdirs "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc" &> LOG.mkdirs
+$CLI workspace import "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/training_config.yaml" --file training_config.yaml --format AUTO &> LOG.import
+
+title "get (text)"
+trace $CLI experimental air get 123
+
+title "get (json)"
+trace $CLI experimental air get 123 -o json

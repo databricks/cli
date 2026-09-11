@@ -1,24 +1,34 @@
 
+=== Env var with valueFrom cannot be resolved locally
+
 >>> errcode [CLI] apps run-local --entry-point value-from.yml
 Error: VALUE_FROM defined in value-from.yml with valueFrom property and can't be resolved locally. Please set VALUE_FROM environment variable in your terminal or using --env flag
 
 Exit code: 1
-Running command: uv run python -c print('Hello, world')
+
+=== Entry point overrides the command from app.yml
+
+>>> grep -x Running command: python -c print('Hello, world') ../LOG.entry-point
+Running command: python -c print('Hello, world')
+
+>>> grep -x Hello, world ../LOG.entry-point
 Hello, world
 
-=== Starting the app in background...
-=== Waiting
-=== Checking app is running...
-=== Checking the proxy is running...
->>> curl -s -o - http://127.0.0.1:$(port)
-{"Accept":"*/*","Accept-Encoding":"gzip","Host":"127.0.0.1:$(port)","User-Agent":"curl/(version)","X-Forwarded-Email":"[USERNAME]","X-Forwarded-Host":"localhost","X-Forwarded-Preferred-Username":"","X-Forwarded-User":"[USERNAME]","X-Real-Ip":"127.0.0.1","X-Request-Id":"[UUID]"}
+=== Proxy forwards to the app and injects the identity headers
 
-=== Sending shutdown request...
->>> curl -s -o /dev/null http://127.0.0.1:$(port)/shutdown
+>>> retry --until X-Forwarded-Email curl -sS http://127.0.0.1:[PROXY_PORT]
+{"Accept": "*/*", "Accept-Encoding": "gzip", "Host": "127.0.0.1:[APP_PORT]", "User-Agent": "curl/(version)", "X-Forwarded-Email": "[USERNAME]", "X-Forwarded-Host": "localhost", "X-Forwarded-Preferred-Username": "", "X-Forwarded-User": "[USERNAME]", "X-Real-Ip": "127.0.0.1", "X-Request-Id": "[UUID]"}
 
-=== Checking CLI command output...
->>> grep To debug your app, attach a debugger to port ./out.run.txt
-To debug your app, attach a debugger to port $(debug_port)
+=== Proxy URL is reported on the port that was asked for
 
->>> grep -o Python Flask app has started with: test ./out.run.txt
-Python Flask app has started with: test
+>>> grep -x To access your app go to http://localhost:[PROXY_PORT] LOG.run
+To access your app go to http://localhost:[PROXY_PORT]
+
+=== App picked up the env var from app.yml
+
+>>> grep -x Python app has started with: test LOG.run
+Python app has started with: test
+
+=== Shutting the app down
+
+>>> curl -sS -o /dev/null http://127.0.0.1:[PROXY_PORT]/shutdown

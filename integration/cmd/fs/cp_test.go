@@ -347,12 +347,6 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	}
 }
 
-func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
-	ctx := t.Context()
-	_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "cp", "dbfs:/a", "https:/b")
-	assert.Equal(t, "invalid scheme: https", err.Error())
-}
-
 func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 	t.Parallel()
 

@@ -1,0 +1,28 @@
+bundle:
+  name: deploy-postgres-branch-purge-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+# A project with two branches side by side so the recorded destroy requests
+# make the purge_on_delete contrast obvious:
+#   - hard_delete:  purge_on_delete: true   -> DELETE …?purge=true
+#   - soft_delete:  field omitted (default) -> DELETE …    (no purge query)
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Test Project for Branch purge_on_delete"
+      pg_version: 16
+
+  postgres_branches:
+    hard_delete:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: test-pg-branch-hard-$UNIQUE_NAME
+      no_expiry: true
+      purge_on_delete: true
+
+    soft_delete:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: test-pg-branch-soft-$UNIQUE_NAME
+      no_expiry: true

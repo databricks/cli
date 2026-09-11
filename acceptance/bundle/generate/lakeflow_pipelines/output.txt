@@ -1,4 +1,12 @@
 Pipeline configuration successfully saved to out/config/out.pipeline.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out/config/out.pipeline.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - out/config/*.yml
+
 File successfully saved to out/pipeline/explorations/1.py
 File successfully saved to out/pipeline/transformations/1.py
 File successfully saved to out/pipeline/transformations/2.py

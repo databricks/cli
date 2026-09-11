@@ -6,10 +6,18 @@ type DataSourcePostgresSyncedTableProviderConfig struct {
 	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
+type DataSourcePostgresSyncedTableSpecExtraColumns struct {
+	ColumnName  string `json:"column_name"`
+	ColumnType  string `json:"column_type"`
+	Compute     string `json:"compute,omitempty"`
+	Maintenance string `json:"maintenance,omitempty"`
+}
+
 type DataSourcePostgresSyncedTableSpecNewPipelineSpec struct {
-	BudgetPolicyId string `json:"budget_policy_id,omitempty"`
-	StorageCatalog string `json:"storage_catalog,omitempty"`
-	StorageSchema  string `json:"storage_schema,omitempty"`
+	BudgetPolicyId  string `json:"budget_policy_id,omitempty"`
+	PipelineChannel string `json:"pipeline_channel,omitempty"`
+	StorageCatalog  string `json:"storage_catalog,omitempty"`
+	StorageSchema   string `json:"storage_schema,omitempty"`
 }
 
 type DataSourcePostgresSyncedTableSpecTypeOverrides struct {
@@ -23,6 +31,7 @@ type DataSourcePostgresSyncedTableSpec struct {
 	Branch                         string                                            `json:"branch,omitempty"`
 	CreateDatabaseObjectsIfMissing bool                                              `json:"create_database_objects_if_missing,omitempty"`
 	ExistingPipelineId             string                                            `json:"existing_pipeline_id,omitempty"`
+	ExtraColumns                   []DataSourcePostgresSyncedTableSpecExtraColumns   `json:"extra_columns,omitempty"`
 	NewPipelineSpec                *DataSourcePostgresSyncedTableSpecNewPipelineSpec `json:"new_pipeline_spec,omitempty"`
 	PostgresDatabase               string                                            `json:"postgres_database,omitempty"`
 	PrimaryKeyColumns              []string                                          `json:"primary_key_columns,omitempty"`

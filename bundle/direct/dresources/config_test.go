@@ -4,7 +4,10 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 func TestMustLoadConfig(t *testing.T) {
@@ -15,6 +18,17 @@ func TestMustLoadConfig(t *testing.T) {
 func TestGetResourceConfig(t *testing.T) {
 	assert.NotEmpty(t, GetResourceConfig("volumes").RecreateOnChanges)
 	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
+}
+
+// TestFieldRuleOmittedIsRoot verifies that a FieldRule with no field is a root
+// rule matching every field, which the job_runs root rules rely on.
+func TestFieldRuleOmittedIsRoot(t *testing.T) {
+	someField := structpath.MustParsePath("dbt_commands")
+
+	var omitted FieldRule
+	require.NoError(t, yaml.Unmarshal([]byte("reason: input_only\n"), &omitted))
+	assert.True(t, omitted.Field.IsRoot(), "omitting field should be root")
+	assert.True(t, someField.HasPatternPrefix(omitted.Field), "omitting field should match every field")
 }
 
 // categoryRules projects ResourceLifecycleConfig's categories onto a
@@ -79,6 +93,12 @@ func TestResourcesYMLNoRedundantRules(t *testing.T) {
 // in resources.yml do not duplicate the automatic missing-in-remote suppression. A field
 // absent from RemoteType is already skipped automatically (reason: missing_in_remote) when
 // there is no local change, so a manual ignore_remote_changes entry for it is dead weight.
+//
+// This rests on RemapState being a dumb subset copy: absence from RemoteType reliably means
+// the field is input-only (accepted on write, never echoed on read). See the "RemapState is
+// a dumb copy" section in README.md. Note the redundancy claim only holds for the no-local-change
+// case — missing_in_remote carries an old==new guard, so a write-only field that legitimately
+// transitions old!=new->nil is NOT auto-handled and a declared entry there is load-bearing.
 func TestResourcesYMLNoRedundantMissingInRemote(t *testing.T) {
 	cfg := MustLoadConfig()
 	for resourceType, rc := range cfg.Resources {

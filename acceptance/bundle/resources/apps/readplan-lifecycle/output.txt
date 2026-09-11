@@ -1,0 +1,24 @@
+
+=== Initial deploy: app created and started
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.myapp
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //apps/myapp/start
+
+=== Change description and deploy from plan: no extra start
+>>> update_file.py databricks.yml description: initial description: updated
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated apps.myapp
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //apps/myapp/start
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

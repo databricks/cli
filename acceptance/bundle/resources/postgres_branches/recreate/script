@@ -38,7 +38,7 @@ print_requests.py --del-body parent,project_id,branch_id,endpoint_id,database_id
 title "Fetch new branch ID"
 branch_id_2=`read_id.py main`
 # Get output differs between engines (different branch IDs)
-$CLI postgres get-branch $branch_id_2 | jq 'del(.create_time, .update_time, .status.logical_size_bytes)' > out.get_branch.txt
+$CLI postgres get-branch $branch_id_2 | branch_fields > out.get_branch.txt
 
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve

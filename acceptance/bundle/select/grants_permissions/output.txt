@@ -1,0 +1,79 @@
+
+>>> [CLI] bundle plan --select jobs.my_job
+create jobs.my_job
+create jobs.my_job.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 2 not selected
+
+>>> [CLI] bundle plan --select schemas.my_schema
+create schemas.my_schema
+create schemas.my_schema.grants
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged, 2 not selected
+
+>>> [CLI] bundle plan --select jobs.my_job.permissions
+Error: no such resource: jobs.my_job.permissions
+
+
+>>> [CLI] bundle plan --select schemas.my_schema.grants
+Error: no such resource: schemas.my_schema.grants
+
+
+=== bundle deploy --select jobs.my_job
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Created jobs.my_job.permissions
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
+
+=== bundle deploy --select schemas.my_schema
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
+Created schemas.my_schema
+Created schemas.my_schema.grants
+Files: 3 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
+
+>>> print_requests.py --sort //permissions
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.my_schema_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "ALL_PRIVILEGES"
+        ],
+        "principal": "deco-test-user@databricks.com"
+      }
+    ]
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_VIEW",
+        "user_name": "viewer@example.com"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
+
+=== Destroy
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.schemas.my_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.my_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

@@ -78,6 +78,37 @@ func TestConvertPostgresBranchWithSourceBranch(t *testing.T) {
 	}, postgresBranch)
 }
 
+func TestConvertPostgresBranchPurgeOnDelete(t *testing.T) {
+	src := resources.PostgresBranch{
+		PostgresBranchConfig: resources.PostgresBranchConfig{
+			BranchId:      "my-branch",
+			Parent:        "projects/my-project",
+			PurgeOnDelete: true,
+			BranchSpec: postgres.BranchSpec{
+				IsProtected: true,
+			},
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := t.Context()
+	out := schema.NewResources()
+	err = postgresBranchConverter{}.Convert(ctx, "my_postgres_branch", vin, out)
+	require.NoError(t, err)
+
+	postgresBranch := out.PostgresBranch["my_postgres_branch"]
+	assert.Equal(t, map[string]any{
+		"branch_id":       "my-branch",
+		"parent":          "projects/my-project",
+		"purge_on_delete": true,
+		"spec": map[string]any{
+			"is_protected": true,
+		},
+	}, postgresBranch)
+}
+
 func TestConvertPostgresBranchMinimal(t *testing.T) {
 	src := resources.PostgresBranch{
 		PostgresBranchConfig: resources.PostgresBranchConfig{

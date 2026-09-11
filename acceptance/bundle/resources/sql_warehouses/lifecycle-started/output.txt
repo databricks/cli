@@ -2,9 +2,9 @@
 === Deploy with started=true: warehouse created and running
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created sql_warehouses.mywarehouse
+Files: 6 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //sql/warehouses
 {
@@ -35,18 +35,20 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 === Deploy fixes the drift: warehouse restarted
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated sql_warehouses.mywarehouse
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop"
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
+  "body": {}
 }
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start"
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
+  "body": {}
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
@@ -60,14 +62,14 @@ Deployment complete!
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop"
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
+  "body": {}
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
@@ -78,14 +80,15 @@ Deployment complete!
 
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated sql_warehouses.mywarehouse
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //sql/warehouses
 {
   "method": "POST",
-  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start"
+  "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
+  "body": {}
 }
 
 >>> errcode [CLI] warehouses get [WAREHOUSE_ID]
@@ -97,5 +100,4 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted

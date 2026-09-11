@@ -3,6 +3,7 @@
 package artifact_allowlists
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -163,7 +164,7 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.ArtifactType)
 		if err != nil {

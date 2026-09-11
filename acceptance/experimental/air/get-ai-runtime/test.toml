@@ -1,0 +1,61 @@
+# On Windows, Git Bash rewrites the leading-/ workspace paths passed to
+# `workspace mkdirs`/`import` into C:/... paths; disable that conversion.
+Env.MSYS_NO_PATHCONV = "1"
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# The GetRun response for an ai_runtime_task run. It has no gen_ai_compute_task,
+# so the Environment cell instead comes from the run's environments[].spec (keyed
+# by the task's environment_key), which the typed SDK Run drops — `air get` reads
+# it with a raw request, so this route is hit twice (typed GetRun + that request).
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{
+  "run_id": 123,
+  "run_page_url": "https://my-workspace.cloud.databricks.test/jobs/runs/123",
+  "creator_user_name": "user@example.com",
+  "start_time": 1700000000000,
+  "end_time": 1700000012000,
+  "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
+  "environments": [
+    {"environment_key": "default", "spec": {"environment_version": "4"}}
+  ],
+  "tasks": [
+    {
+      "task_key": "train",
+      "run_id": 456,
+      "attempt_number": 0,
+      "max_retries": 3,
+      "environment_key": "default",
+      "ai_runtime_task": {
+        "experiment": "my-exp",
+        "deployments": [
+          {
+            "command_path": "/Workspace/Users/user@example.com/.air/cli_launch/my-exp/my-exp_abc/command.sh",
+            "compute": {"accelerator_type": "GPU_1xA10", "accelerator_count": 1}
+          }
+        ]
+      }
+    }
+  ]
+}
+'''
+
+# MLflow identifiers for the deep-link, under ai_runtime_task_output.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '''
+{"ai_runtime_task_output": {"mlflow_experiment_id": "exp1", "mlflow_run_id": "run1"}}
+'''
+
+# The MLflow Run cell shows the run's name, fetched from the MLflow REST API.
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/runs/get"
+Response.Body = '''
+{"run": {"info": {"run_name": "my-run"}}}
+'''

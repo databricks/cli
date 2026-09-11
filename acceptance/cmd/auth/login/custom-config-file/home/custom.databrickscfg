@@ -1,0 +1,4 @@
+[custom-test]
+host = https://old-host.cloud.databricks.com
+auth_type = pat
+token = old-token-123

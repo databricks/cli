@@ -1,6 +1,6 @@
 
 >>> [CLI] selftest send-telemetry --debug
-HH:MM:SS Info: start pid=PID version=[DEV_VERSION] args="[CLI], selftest, send-telemetry, --debug"
+HH:MM:SS Info: start pid=PID version=[CLI_VERSION] args="[CLI], selftest, send-telemetry, --debug"
 HH:MM:SS Debug: [Local Cache] using cache key: [SHA256_HASH] pid=PID
 HH:MM:SS Debug: [Local Cache] cache miss, computing pid=PID
 HH:MM:SS Debug: GET /.well-known/databricks-config
@@ -37,7 +37,7 @@ HH:MM:SS Debug: All 2 logs uploaded successfully pid=PID
     "databricks_cli_log": {
       "execution_context": {
         "cmd_exec_id": "[CMD-EXEC-ID]",
-        "version": "[DEV_VERSION]",
+        "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
         "execution_time_ms": SMALL_INT,
@@ -55,7 +55,7 @@ HH:MM:SS Debug: All 2 logs uploaded successfully pid=PID
     "databricks_cli_log": {
       "execution_context": {
         "cmd_exec_id": "[CMD-EXEC-ID]",
-        "version": "[DEV_VERSION]",
+        "version": "[CLI_VERSION]",
         "command": "selftest_send-telemetry",
         "operating_system": "[OS]",
         "execution_time_ms": SMALL_INT,

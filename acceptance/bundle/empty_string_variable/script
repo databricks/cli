@@ -1,0 +1,3 @@
+# policy_id resolves to "" via the variable. It must be absent from the resolved
+# config (dropped as an empty omitempty string), not present as "".
+trace $CLI bundle validate -o json | jq '.resources.clusters.my_cluster | {spark_version, policy_id, has_policy_id: has("policy_id")}'

@@ -1,0 +1,13 @@
+# A custom template whose output path is nested: the outputs are under
+# projects/<group>/<project_name>, not under <project_name> at the output root.
+#
+# stderr is dropped so that the golden output only pins the JSON payload; the
+# success message is printed to stderr and would otherwise interleave with it.
+trace $CLI bundle init . --config-file input.json --output-dir output -o json 2>/dev/null
+
+# The bundle is written to the nested directory, and the CLI does not create a
+# stray top-level directory named after the project.
+[ -f "output/projects/alpha/yz/databricks.yml" ] || exit 1
+[ ! -e "output/yz" ] || exit 1
+
+rm -r output

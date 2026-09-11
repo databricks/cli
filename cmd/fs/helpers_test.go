@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/fakefs"
 	"github.com/databricks/cli/libs/filer"
+	databrickscfg "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -39,6 +40,31 @@ func TestFilerForPathForInvalidScheme(t *testing.T) {
 
 	_, _, err = filerForPath(ctx, "file:/a")
 	assert.ErrorContains(t, err, "invalid scheme")
+}
+
+func TestFilerForPathForDbfsScheme(t *testing.T) {
+	tcases := []struct {
+		fullPath string
+		path     string
+		filer    filer.Filer
+	}{
+		{"dbfs:/Volumes/foo/bar/baz", "/Volumes/foo/bar/baz", &filer.FilesClient{}},
+		{"dbfs:/Skills/foo/bar/baz", "/Skills/foo/bar/baz", &filer.FilesClient{}},
+		{"dbfs:/foo/bar/baz", "/foo/bar/baz", &filer.DbfsClient{}},
+	}
+
+	for _, tc := range tcases {
+		t.Run(tc.fullPath, func(t *testing.T) {
+			m := mocks.NewMockWorkspaceClient(t)
+			m.WorkspaceClient.Config = &databrickscfg.Config{}
+			ctx := cmdctx.SetWorkspaceClient(t.Context(), m.WorkspaceClient)
+
+			f, path, err := filerForPath(ctx, tc.fullPath)
+			require.NoError(t, err)
+			assert.Equal(t, tc.path, path)
+			assert.IsType(t, tc.filer, f)
+		})
+	}
 }
 
 func testWindowsFilerForPath(t *testing.T, ctx context.Context, fullPath string) {

@@ -55,6 +55,7 @@
             "notebook_task": [],
             "notification_settings": [],
             "parameter": [],
+            "parent_path": null,
             "performance_target": null,
             "pipeline_task": [],
             "provider_config": [
@@ -145,6 +146,7 @@
             "timeout_seconds": 0,
             "timeouts": null,
             "trigger": [],
+            "triggers": [],
             "url": "[DATABRICKS_URL]/#job/[NUMID]",
             "usage_policy_id": null,
             "webhook_notifications": [

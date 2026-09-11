@@ -92,6 +92,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				JobRuns: map[string]*resources.JobRun{
+					"job_run1": {RunNow: jobs.RunNow{JobId: 1234}},
+				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1", Continuous: true}},
 				},
@@ -147,6 +150,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {ClusterSpec: compute.ClusterSpec{ClusterName: "cluster1", SparkVersion: "13.2.x", NumWorkers: 1}},
 				},
+				InstancePools: map[string]*resources.InstancePool{
+					"instance_pool1": {CreateInstancePool: compute.CreateInstancePool{InstancePoolName: "instance_pool1", NodeTypeId: "i3.xlarge"}},
+				},
+				ClusterPolicies: map[string]*resources.ClusterPolicy{
+					"cluster_policy1": {CreatePolicy: compute.CreatePolicy{Name: "cluster_policy1"}},
+				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
 						DashboardConfig: resources.DashboardConfig{
@@ -171,6 +180,15 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				SecretScopes: map[string]*resources.SecretScope{
 					"secretScope1": {
 						Name: "secretScope1",
+					},
+				},
+				Secrets: map[string]*resources.Secret{
+					"secret1": {
+						Secret: catalog.Secret{
+							CatalogName: "main",
+							SchemaName:  "default",
+							Name:        "secret1",
+						},
 					},
 				},
 				SqlWarehouses: map[string]*resources.SqlWarehouse{
@@ -287,6 +305,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+					"postgres_snapshot_schedule1": {
+						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+							Branch: "projects/project1/branches/branch1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -303,6 +328,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							PrimaryKey:   "id",
 							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
 						},
+					},
+				},
+				Snapshots: map[string]*resources.Snapshot{
+					"snapshot1": {
+						BundleID: "bundle1",
+						ACL:      nil,
 					},
 				},
 			},
@@ -334,7 +365,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 
 	// Experiment 1
@@ -372,6 +403,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Clusters
 	assert.Equal(t, "[dev lennart] cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+
+	// Instance pools
+	assert.Equal(t, "[dev lennart] instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
 
 	// Dashboards
 	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
@@ -449,6 +483,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
+	assert.Equal(t, "instance_pool1", b.Config.Resources.InstancePools["instance_pool1"].InstancePoolName)
 	assert.Equal(t, "sql_warehouse1", b.Config.Resources.SqlWarehouses["sql_warehouse1"].Name)
 }
 
@@ -492,6 +527,7 @@ func TestAppropriateResourcesAreRenamed(t *testing.T) {
 	notUserNamed := []string{
 		"Apps",
 		"SecretScopes",
+		"Secrets",
 		"DatabaseInstances",
 		"DatabaseCatalogs",
 		"SyncedDatabaseTables",

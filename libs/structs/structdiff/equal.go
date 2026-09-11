@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
@@ -44,6 +45,13 @@ func equalValues(v1, v2 reflect.Value) bool {
 
 	if v1Type != v2.Type() {
 		return false
+	}
+
+	if IsOpaqueStruct(v1Type) {
+		// A marshaling failure is reported as "not equal" so the change surfaces
+		// rather than being silently dropped.
+		equal, err := equalJSON(v1, v2)
+		return err == nil && equal
 	}
 
 	kind := v1.Kind()
@@ -100,8 +108,9 @@ func equalStruct(s1, s2 reflect.Value) bool {
 			continue
 		}
 
-		// Continue traversing embedded structs.
-		if sf.Anonymous {
+		// Continue traversing embedded structs. A tagged anonymous field is a named field to
+		// encoding/json, so it goes through the path below.
+		if structaccess.IsFlattenedEmbed(sf) {
 			if !equalValues(s1.Field(i), s2.Field(i)) {
 				return false
 			}

@@ -1,0 +1,9 @@
+# Without the fix, validate only warns; deploy fails later in SecretScopeFixups (direct)
+# or leaves empty-principal ACLs that destroy cannot remove (terraform).
+musterr trace $CLI bundle validate
+
+# Deploy must abort at validation: no scope is created, so no partial deploy.
+musterr trace $CLI bundle deploy
+trace print_requests.py //secrets
+
+rm -f out.requests.txt

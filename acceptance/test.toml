@@ -1,5 +1,7 @@
 # Default settings that apply to all tests unless overriden by test.toml files in inner directories.
-Local = true
+# Tests always run locally; set Cloud = true to also run on a real workspace.
+# Cloud = false (the inherited default) therefore means local only.
+# CloudSlow only narrows a Cloud = true run (skipped under -short); it does not enable cloud on its own.
 Cloud = false
 
 # default timeouts
@@ -90,3 +92,12 @@ Order = 9
 [[Repls]]
 Old = "deco-uc-prod-isolated-aws-us-east-1|metastore_azure_eastus2"
 New = "[METASTORE_NAME]"
+
+# Normalize plan_version so bumping it doesn't churn every recorded plan.
+[[Repls]]
+Old = '"plan_version": 2,'
+New = '"plan_version": [PLAN_VERSION],'
+
+[[Repls]]
+Old = 'json\.plan_version = 2;'
+New = 'json.plan_version = [PLAN_VERSION];'

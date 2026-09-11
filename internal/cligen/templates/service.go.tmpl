@@ -4,6 +4,7 @@ package {{(.TrimPrefix "account").SnakeName}}
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/experimental/api"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
@@ -330,9 +332,9 @@ func new{{.PascalName}}() *cobra.Command {
 			err := root.ExactArgs({{len .Request.RequiredInUrlFields}})(cmd, args)
 			if err != nil {
 			{{- if eq 0 (len .Request.RequiredInUrlFields) }}
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide{{- range $index, $field := $request.RequiredFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide{{- range $index, $field := $request.RequiredFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
 			{{- else }}
-				return fmt.Errorf("when --json flag is specified, provide only{{- range $index, $field := .Request.RequiredInUrlFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := $request.RequiredRequestBodyFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
+				return errors.New("when --json flag is specified, provide only{{- range $index, $field := .Request.RequiredInUrlFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := $request.RequiredRequestBodyFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
 			{{- end }}
 			}
 			return nil
@@ -364,7 +366,7 @@ func new{{.PascalName}}() *cobra.Command {
 						}
 					}
 			}{{end}}{{ if .MustUseJson }}else {
-				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+				return errors.New("please provide command input in JSON format by specifying the --json flag")
 			}{{- end}}
 			{{- if $hasPosArgs }}
 			{{- if and $canUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }} else {
@@ -385,7 +387,7 @@ func new{{.PascalName}}() *cobra.Command {
 					args = append(args, id)
 				}
 				if len(args) != 1 {
-					return fmt.Errorf("expected to have {{range $request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
+					return errors.New("expected to have {{range $request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
 				}
 			{{- end -}}
 

@@ -1,0 +1,33 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# depends_on is a keyed sequence nested inside tasks. "zzz_shared" is defined in both
+# blocks and sorts after the target-only "aaa_target", so it is index 1 in the merged
+# list but index 0 in the top-level block that holds its depends_on.
+#
+# Placing a new depends_on entry means finding the sequence that receives it, and that
+# lookup runs per block -- so the enclosing task index has to be translated first.
+# Probing the merged index inside a block finds nothing, and the addition is dropped.
+resources:
+  jobs:
+    nested_add_job:
+      tasks:
+        - task_key: zzz_shared
+          max_retries: 1
+          depends_on:
+            - task_key: aaa_target
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/nb
+
+targets:
+  dev:
+    mode: development
+    resources:
+      jobs:
+        nested_add_job:
+          tasks:
+            - task_key: aaa_target
+              notebook_task:
+                notebook_path: /Users/{{workspace_user_name}}/nb
+            - task_key: zzz_shared
+              timeout_seconds: 60

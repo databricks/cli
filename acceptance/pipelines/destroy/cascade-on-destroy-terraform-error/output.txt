@@ -1,0 +1,11 @@
+
+=== pipelines deploy fails with cascade_on_destroy on terraform engine
+>>> errcode [CLI] pipelines deploy
+Error: cascade_on_destroy is only supported in direct deployment mode
+  in databricks.yml:7:27
+
+cascade_on_destroy is not yet supported by the terraform provider. Set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use it.
+Learn more at https://docs.databricks.com/dev-tools/bundles/direct
+
+
+Exit code: 1

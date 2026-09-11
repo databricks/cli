@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"errors"
+	"io"
 	"reflect"
 	"testing"
 	"text/template"
@@ -20,7 +21,7 @@ func newTestPager(t *testing.T, iter listing.Iterator[int], pageSize int) *pager
 	require.NoError(t, err)
 	headerT, err := template.New("header").Funcs(fm).Parse("")
 	require.NoError(t, err)
-	return newPagerModel(ctx, iter, &templatePager{
+	return newPagerModel(ctx, io.Discard, iter, &templatePager{
 		headerT: headerT,
 		rowT:    rowT,
 	}, pageSize, 0)
@@ -44,7 +45,7 @@ func unwrapCmds(t *testing.T, msg tea.Msg) []tea.Cmd {
 	require.Equal(t, reflect.Slice, rv.Kind(), "expected a slice-of-cmds msg, got %T", msg)
 	cmds := make([]tea.Cmd, rv.Len())
 	for i := range cmds {
-		c, ok := rv.Index(i).Interface().(tea.Cmd)
+		c, ok := reflect.TypeAssert[tea.Cmd](rv.Index(i))
 		require.True(t, ok, "slice element %d is not a tea.Cmd", i)
 		cmds[i] = c
 	}

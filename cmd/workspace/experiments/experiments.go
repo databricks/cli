@@ -3,6 +3,7 @@
 package experiments
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -106,6 +107,7 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
 	// TODO: array: tags
+	// TODO: complex arg: trace_location
 
 	cmd.Use = "create-experiment NAME"
 	cmd.Short = `Create experiment.`
@@ -131,7 +133,7 @@ func newCreateExperiment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -218,7 +220,7 @@ func newCreateLoggedModel() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id' in your JSON input")
 			}
 			return nil
 		}
@@ -382,7 +384,7 @@ func newDeleteExperiment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id' in your JSON input")
 			}
 			return nil
 		}
@@ -578,7 +580,7 @@ func newDeleteRun() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -667,7 +669,7 @@ func newDeleteRuns() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id', 'max_timestamp_millis' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id', 'max_timestamp_millis' in your JSON input")
 			}
 			return nil
 		}
@@ -759,7 +761,7 @@ func newDeleteTag() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id', 'key' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id', 'key' in your JSON input")
 			}
 			return nil
 		}
@@ -846,7 +848,7 @@ func newFinalizeLoggedModel() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only MODEL_ID as positional arguments. Provide 'status' in your JSON input")
+				return errors.New("when --json flag is specified, provide only MODEL_ID as positional arguments. Provide 'status' in your JSON input")
 			}
 			return nil
 		}
@@ -1646,7 +1648,7 @@ func newLogInputs() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1817,7 +1819,7 @@ func newLogMetric() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'key', 'value', 'timestamp' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'key', 'value', 'timestamp' in your JSON input")
 			}
 			return nil
 		}
@@ -1991,7 +1993,7 @@ func newLogOutputs() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -2080,7 +2082,7 @@ func newLogParam() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'key', 'value' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -2170,7 +2172,7 @@ func newRestoreExperiment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id' in your JSON input")
 			}
 			return nil
 		}
@@ -2256,7 +2258,7 @@ func newRestoreRun() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'run_id' in your JSON input")
 			}
 			return nil
 		}
@@ -2345,7 +2347,7 @@ func newRestoreRuns() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id', 'min_timestamp_millis' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id', 'min_timestamp_millis' in your JSON input")
 			}
 			return nil
 		}
@@ -2696,7 +2698,7 @@ func newSetExperimentTag() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id', 'key', 'value' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id', 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -2941,7 +2943,7 @@ func newSetTag() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'key', 'value' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -3028,7 +3030,7 @@ func newUpdateExperiment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'experiment_id' in your JSON input")
 			}
 			return nil
 		}

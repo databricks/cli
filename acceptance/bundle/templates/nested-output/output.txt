@@ -1,0 +1,6 @@
+{
+  "outputs": [
+    "projects/alpha/yz/databricks.yml",
+    "projects/alpha/yz/src/yz.py"
+  ]
+}

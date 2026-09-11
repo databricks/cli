@@ -1,0 +1,4 @@
+# Normalize the os.Stat error message from Windows.
+[[Repls]]
+Old = "GetFileAttributesEx doesnotexist: The system cannot find the file specified."
+New = "stat doesnotexist: no such file or directory"

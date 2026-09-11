@@ -37,49 +37,59 @@ func newParser(schemas map[string]*clijson.SchemaJSON) *annotationParser {
 
 // This function checks if the input type:
 // 1. Is a Databricks Go SDK type.
-// 2. Has a Databricks Go SDK type embedded in it.
+// 2. Has a Databricks Go SDK type embedded in it, at any depth.
 //
 // If the above conditions are met, the function returns the schema
 // corresponding to the Databricks Go SDK type from the spec.
+//
+// Embedded structs are traversed breadth first, mirroring how
+// [jsonschema.FromType] flattens them, so the shallowest SDK type present in
+// the spec wins. Traversing past the first level matters because some resources
+// wrap the SDK spec in an intermediate struct rather than embedding it directly
+// (e.g. PostgresProject -> PostgresProjectConfig -> postgres.ProjectSpec).
 func (p *annotationParser) findRef(typ reflect.Type) (*clijson.SchemaJSON, bool) {
-	typs := []reflect.Type{typ}
+	bfsQueue := []reflect.Type{typ}
 
-	// Check for embedded Databricks Go SDK types.
-	if typ.Kind() == reflect.Struct {
-		for field := range typ.Fields() {
+	for len(bfsQueue) > 0 {
+		ctyp := bfsQueue[0]
+		bfsQueue = bfsQueue[1:]
+
+		if ref, ok := p.lookupSDKType(ctyp); ok {
+			return ref, true
+		}
+
+		if ctyp.Kind() != reflect.Struct {
+			continue
+		}
+
+		for field := range ctyp.Fields() {
 			if !field.Anonymous {
 				continue
 			}
 
 			// Deference current type if it's a pointer.
-			ctyp := field.Type
-			for ctyp.Kind() == reflect.Pointer {
-				ctyp = ctyp.Elem()
+			ftyp := field.Type
+			for ftyp.Kind() == reflect.Pointer {
+				ftyp = ftyp.Elem()
 			}
 
-			typs = append(typs, ctyp)
+			bfsQueue = append(bfsQueue, ftyp)
 		}
-	}
-
-	for _, ctyp := range typs {
-		// Skip if it's not a Go SDK type.
-		if !strings.HasPrefix(ctyp.PkgPath(), "github.com/databricks/databricks-sdk-go") {
-			continue
-		}
-
-		pkgName := path.Base(ctyp.PkgPath())
-		k := fmt.Sprintf("%s.%s", pkgName, ctyp.Name())
-
-		// Skip if the type is not in the spec.
-		if _, ok := p.ref[k]; !ok {
-			continue
-		}
-
-		// Return the first Go SDK type found in the spec.
-		return p.ref[k], true
 	}
 
 	return nil, false
+}
+
+// lookupSDKType returns the spec schema for a Databricks Go SDK type, if the
+// spec defines one for it.
+func (p *annotationParser) lookupSDKType(typ reflect.Type) (*clijson.SchemaJSON, bool) {
+	if !strings.HasPrefix(typ.PkgPath(), "github.com/databricks/databricks-sdk-go") {
+		return nil, false
+	}
+
+	k := fmt.Sprintf("%s.%s", path.Base(typ.PkgPath()), typ.Name())
+	ref, ok := p.ref[k]
+	return ref, ok
 }
 
 // normalizeLaunchStage validates the contract's launch stage and drops GA so it
@@ -170,17 +180,17 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 			}
 
 			basePath := getPath(typ)
-			// The contract carries no schema-level launch stage, so a type is
-			// never itself marked private-preview — only its fields are (below).
-			// Enum schemas do carry per-value launch stages and descriptions.
+			// A type carries no launch stage by default, so we set to GA, unless overridden.
+			typeLaunchStage := annotation.OverrideLaunchStage(basePath, "")
 			enumLaunchStages, enumErr := notableEnumLaunchStages(ref.EnumLaunchStages)
 			if enumErr != nil {
 				stageErr = errors.Join(stageErr, fmt.Errorf("%s: %w", basePath, enumErr))
 			}
 			enumDescriptions := nonEmptyEnumDescriptions(ref.EnumDescriptions)
-			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil {
+			if ref.Description != "" || ref.Enum != nil || enumLaunchStages != nil || enumDescriptions != nil || typeLaunchStage != "" {
 				annotations.SetSelf(basePath, annotation.Descriptor{
 					Description:      ref.Description,
+					LaunchStage:      typeLaunchStage,
 					Enum:             enumValues(ref.Enum),
 					EnumLaunchStages: enumLaunchStages,
 					EnumDescriptions: enumDescriptions,
@@ -189,10 +199,18 @@ func (p *annotationParser) extractAnnotations(typ reflect.Type) (annotation.File
 
 			for k := range s.Properties {
 				if refProp, ok := ref.Fields[k]; ok {
-					launchStage, fieldErr := normalizeLaunchStage(refProp.LaunchStage)
-					if fieldErr != nil {
-						stageErr = errors.Join(stageErr, fmt.Errorf("%s.%s: %w", basePath, k, fieldErr))
+					// An empty stage means the contract assigns none; keep it
+					// unmarked rather than letting ParseLaunchStage default it to GA.
+					var launchStage clijson.LaunchStage
+					if refProp.LaunchStage != "" {
+						stage, fieldErr := clijson.ParseLaunchStage(refProp.LaunchStage)
+						if fieldErr != nil {
+							stageErr = errors.Join(stageErr, fmt.Errorf("%s.%s: %w", basePath, k, fieldErr))
+						}
+						launchStage = stage
 					}
+					// Apply custom launch stage override (e.g. keep resource in Beta despite API being GA)
+					launchStage = annotation.OverrideLaunchStage(basePath, launchStage)
 
 					description := refProp.Description
 

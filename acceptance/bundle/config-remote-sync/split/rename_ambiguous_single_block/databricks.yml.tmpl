@@ -1,0 +1,30 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# A depends_on entry holds nothing but a task_key, so stripping the key leaves an
+# empty body and every removal matches every addition by content. Renaming two tasks
+# rewrites gamma's two depends_on entries, and that pairing is unforced.
+#
+# Holding those back would be wrong: all of these elements are in one block, where
+# every pairing writes the same keys to the same place. Refusing them applies the task
+# renames while leaving depends_on pointing at keys that no longer exist, which breaks
+# the next deploy. Ambiguity only has to be refused when it crosses blocks.
+
+resources:
+  jobs:
+    ambiguous_single_block_job:
+      tasks:
+        - task_key: alpha
+          max_retries: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/alpha
+        - task_key: beta
+          max_retries: 1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/beta
+        - task_key: gamma
+          depends_on:
+            - task_key: alpha
+            - task_key: beta
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/gamma

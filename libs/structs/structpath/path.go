@@ -865,7 +865,8 @@ func (p *PathNode) HasPatternPrefix(prefix *PatternNode) bool {
 }
 
 // nodeMatchesPattern checks if a concrete path node matches a pattern node.
-// Wildcards (.* and [*]) match any node.
+// Wildcards (.* and [*]) match any node. A * inside a bracket map key matches
+// one dot-separated segment; a trailing * matches the remainder of the key.
 func nodeMatchesPattern(concrete *PathNode, pattern *PatternNode) bool {
 	if concrete == nil && pattern == nil {
 		return true
@@ -876,7 +877,35 @@ func nodeMatchesPattern(concrete *PathNode, pattern *PatternNode) bool {
 	if pattern.DotStar() || pattern.BracketStar() {
 		return true
 	}
+	patternKey, patternIsBracket := ((*PathNode)(pattern)).BracketString()
+	concreteKey, concreteIsBracket := concrete.BracketString()
+	if patternIsBracket && concreteIsBracket && strings.Contains(patternKey, "*") {
+		return matchDotSeparatedGlob(patternKey, concreteKey)
+	}
 	return nodesEqual(concrete, (*PathNode)(pattern))
+}
+
+// matchDotSeparatedGlob matches keys split on '.'. Each '*' consumes exactly one
+// segment unless it is the last pattern segment, in which case it absorbs the
+// remaining segments after the preceding '.'. That suffix must be present (a
+// key ending in '.' has an empty final segment and still matches), so the key
+// needs at least one segment beyond the '*'s position.
+func matchDotSeparatedGlob(pattern, key string) bool {
+	patternParts := strings.Split(pattern, ".")
+	keyParts := strings.Split(key, ".")
+	for i, p := range patternParts {
+		if p == "*" && i == len(patternParts)-1 {
+			return i < len(keyParts) // trailing '*' absorbs a non-empty suffix
+		}
+		if i >= len(keyParts) {
+			return false // pattern still has segments, key ran out
+		}
+		if p != "*" && p != keyParts[i] {
+			return false
+		}
+	}
+	// Pattern exhausted with no trailing '*': the key must be too.
+	return len(patternParts) == len(keyParts)
 }
 
 // MarshalYAML implements yaml.Marshaler for PathNode.

@@ -1,0 +1,11 @@
+title "cancel by id (text)"
+trace $CLI experimental air cancel 123
+
+title "cancel by id (json)"
+trace $CLI experimental air cancel 123 -o json
+
+title "cancel multiple ids"
+trace $CLI experimental air cancel 123 456
+
+title "cancel --all"
+trace $CLI experimental air cancel --all -y

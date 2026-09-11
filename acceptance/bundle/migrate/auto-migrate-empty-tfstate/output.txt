@@ -1,0 +1,50 @@
+
+=== Deploy with bundle.engine: direct and an empty terraform state — sweep, don't migrate
+>>> [CLI] bundle deploy
+Warn: Direct engine selected via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+Removing empty terraform state; direct engine will be used on the next deploy (selected via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11)...
+
+=== Terraform state is renamed to .backup; no resources.json (empty state, nothing to persist)
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup
+
+=== Sweep is recorded in telemetry as via-config
+
+>>> print_migration_telemetry
+direct_migrated_via_config true
+
+=== Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted
+
+>>> print_requests.py //workspace-files/import-file //workspace/delete --sort
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/out.requests.txt"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/output.txt"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup"
+"POST /api/2.0/workspace/delete"
+"POST /api/2.0/workspace/delete"
+"POST /api/2.0/workspace/delete"
+
+=== debug states confirms no terraform.tfstate anywhere; only .backup remains
+
+>>> [CLI] bundle debug states --force-pull
+
+
+=== Next deploy uses direct engine by default (no more mismatch warning)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry

@@ -34,8 +34,8 @@
     "# Set default catalog and schema\n",
     "catalog = dbutils.widgets.get(\"catalog\")\n",
     "schema = dbutils.widgets.get(\"schema\")\n",
-    "spark.sql(f\"USE CATALOG {catalog}\")\n",
-    "spark.sql(f\"USE SCHEMA {schema}\")"
+    "spark.sql(f\"USE CATALOG `{catalog}`\")\n",
+    "spark.sql(f\"USE SCHEMA `{schema}`\")"
    ]
   },
   {

@@ -26,7 +26,7 @@ func TestJSONSink_TwoRows(t *testing.T) {
 	require.NoError(t, s.Begin(fieldsWithOIDs([]string{"id", "name"}, []uint32{pgtype.Int8OID, pgtype.TextOID})))
 	require.NoError(t, s.Row([]any{int64(1), "alice"}))
 	require.NoError(t, s.Row([]any{int64(2), "bob"}))
-	require.NoError(t, s.End("SELECT 2"))
+	require.NoError(t, s.End(t.Context(), "SELECT 2"))
 
 	assert.Equal(t,
 		"[\n"+
@@ -42,7 +42,7 @@ func TestJSONSink_EmptyRowsProducing(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	s := newJSONSink(&stdout, &stderr)
 	require.NoError(t, s.Begin(fieldsWithOIDs([]string{"id"}, []uint32{pgtype.Int8OID})))
-	require.NoError(t, s.End("SELECT 0"))
+	require.NoError(t, s.End(t.Context(), "SELECT 0"))
 	assert.Equal(t, "[\n]\n", stdout.String())
 }
 
@@ -51,7 +51,7 @@ func TestJSONSink_KeysInColumnOrder(t *testing.T) {
 	s := newJSONSink(&stdout, &stderr)
 	require.NoError(t, s.Begin(fieldsWithOIDs([]string{"b", "a"}, []uint32{pgtype.Int8OID, pgtype.Int8OID})))
 	require.NoError(t, s.Row([]any{int64(1), int64(2)}))
-	require.NoError(t, s.End("SELECT 1"))
+	require.NoError(t, s.End(t.Context(), "SELECT 1"))
 	assert.Equal(t, "[\n"+`{"b":1,"a":2}`+"\n]\n", stdout.String())
 }
 
@@ -59,7 +59,7 @@ func TestJSONSink_CommandOnly_WithRowCount(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	s := newJSONSink(&stdout, &stderr)
 	require.NoError(t, s.Begin(nil))
-	require.NoError(t, s.End("INSERT 0 5"))
+	require.NoError(t, s.End(t.Context(), "INSERT 0 5"))
 	// Byte-equal: pins the field order so adding a future field (e.g. last_oid)
 	// must update the test rather than silently drift.
 	assert.Equal(t, `{"command":"INSERT","rows_affected":5}`+"\n", stdout.String())
@@ -69,7 +69,7 @@ func TestJSONSink_CommandOnly_NoRowCount(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	s := newJSONSink(&stdout, &stderr)
 	require.NoError(t, s.Begin(nil))
-	require.NoError(t, s.End("CREATE DATABASE"))
+	require.NoError(t, s.End(t.Context(), "CREATE DATABASE"))
 	assert.Equal(t, `{"command":"CREATE"}`+"\n", stdout.String())
 }
 
@@ -78,7 +78,7 @@ func TestJSONSink_DuplicateColumns(t *testing.T) {
 	s := newJSONSink(&stdout, &stderr)
 	require.NoError(t, s.Begin(fieldsWithOIDs([]string{"id", "id", "id"}, []uint32{pgtype.Int8OID, pgtype.Int8OID, pgtype.Int8OID})))
 	require.NoError(t, s.Row([]any{int64(1), int64(2), int64(3)}))
-	require.NoError(t, s.End("SELECT 1"))
+	require.NoError(t, s.End(t.Context(), "SELECT 1"))
 
 	assert.Contains(t, stdout.String(), `"id":1`)
 	assert.Contains(t, stdout.String(), `"id__2":2`)
@@ -149,7 +149,7 @@ func TestJSONSink_DuplicateColumns_DoesNotCollideWithExistingSuffix(t *testing.T
 		[]uint32{pgtype.Int8OID, pgtype.Int8OID, pgtype.Int8OID},
 	)))
 	require.NoError(t, s.Row([]any{int64(1), int64(2), int64(3)}))
-	require.NoError(t, s.End("SELECT 1"))
+	require.NoError(t, s.End(t.Context(), "SELECT 1"))
 
 	// All three keys present with no duplicates.
 	out := stdout.String()

@@ -302,7 +302,7 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFile(t *testing.T) {
 	dir := "base/dir"
 	sourceDir := filepath.Join(dir, "source")
 	configDir := filepath.Join(dir, "config")
-	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir)
+	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir, WithSparkPythonFiles())
 
 	pythonFile := "/Users/user/project/etl/job.py"
 	m.GetMockWorkspaceAPI().EXPECT().GetStatusByPath(ctx, pythonFile).Return(&workspace.ObjectInfo{
@@ -336,7 +336,7 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileSkipped(t *testing.T) {
 		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
 	})
 
-	downloader := NewDownloader(w, "source", "config")
+	downloader := NewDownloader(w, "source", "config", WithSparkPythonFiles())
 
 	tasks := []jobs.Task{
 		{
@@ -359,6 +359,32 @@ func TestDownloader_MarkTasksForDownload_SparkPythonFileSkipped(t *testing.T) {
 	assert.Empty(t, downloader.files)
 	assert.Equal(t, "dbfs:/FileStore/job.py", tasks[0].SparkPythonTask.PythonFile)
 	assert.Equal(t, "etl/job.py", tasks[1].SparkPythonTask.PythonFile)
+}
+
+func TestDownloader_MarkTasksForDownload_SparkPythonFileDisabledByDefault(t *testing.T) {
+	ctx := t.Context()
+	// Without WithSparkPythonFiles, workspace files referenced by a
+	// spark_python_task are left untouched, so no requests are made.
+	w := newTestWorkspaceClient(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+	})
+
+	downloader := NewDownloader(w, "source", "config")
+
+	pythonFile := "/Users/user/project/etl/job.py"
+	tasks := []jobs.Task{
+		{
+			TaskKey: "spark_python_task",
+			SparkPythonTask: &jobs.SparkPythonTask{
+				PythonFile: pythonFile,
+			},
+		},
+	}
+
+	err := downloader.MarkTasksForDownload(ctx, tasks)
+	require.NoError(t, err)
+	assert.Empty(t, downloader.files)
+	assert.Equal(t, pythonFile, tasks[0].SparkPythonTask.PythonFile)
 }
 
 func TestDownloader_MarkTasksForDownload_NoNotebooks(t *testing.T) {
@@ -472,6 +498,66 @@ func TestWriteAndClose(t *testing.T) {
 			assert.Equal(t, tt.wantData, dst.String())
 		})
 	}
+}
+
+func TestDownloader_MarkDirectoryForDownload_NotebookGetsExtension(t *testing.T) {
+	ctx := t.Context()
+
+	rootPath := "/pipeline/root"
+	notebookPath := "/pipeline/root/ExploratoryNotebook"
+	filePath := "/pipeline/root/utils.py"
+
+	type listResponse struct {
+		Objects []workspace.ObjectInfo `json:"objects"`
+	}
+
+	w := newTestWorkspaceClient(t, func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/2.0/workspace/list":
+			err := json.NewEncoder(rw).Encode(listResponse{
+				Objects: []workspace.ObjectInfo{
+					{Path: notebookPath, ObjectType: workspace.ObjectTypeNotebook},
+					{Path: filePath, ObjectType: workspace.ObjectTypeFile},
+				},
+			})
+			assert.NoError(t, err)
+		case "/api/2.0/workspace/get-status":
+			path := r.URL.Query().Get("path")
+			switch path {
+			case rootPath:
+				err := json.NewEncoder(rw).Encode(workspace.ObjectInfo{Path: rootPath})
+				assert.NoError(t, err)
+			case notebookPath:
+				err := json.NewEncoder(rw).Encode(workspaceStatus{
+					Language:     workspace.LanguagePython,
+					ObjectType:   workspace.ObjectTypeNotebook,
+					ExportFormat: workspace.ExportFormatSource,
+				})
+				assert.NoError(t, err)
+			case filePath:
+				err := json.NewEncoder(rw).Encode(workspace.ObjectInfo{Path: filePath})
+				assert.NoError(t, err)
+			default:
+				t.Fatalf("unexpected get-status path: %s", path)
+			}
+		default:
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	})
+
+	dir := "base/dir"
+	sourceDir := filepath.Join(dir, "source")
+	configDir := filepath.Join(dir, "config")
+	downloader := NewDownloader(w, sourceDir, configDir)
+
+	err := downloader.MarkDirectoryForDownload(ctx, &rootPath)
+	require.NoError(t, err)
+
+	assert.Contains(t, downloader.files, filepath.Join(sourceDir, "ExploratoryNotebook.py"))
+	assert.NotContains(t, downloader.files, filepath.Join(sourceDir, "ExploratoryNotebook"))
+	assert.Contains(t, downloader.files, filepath.Join(sourceDir, "utils.py"))
+	assert.Len(t, downloader.files, 2)
 }
 
 func TestDownloader_CleanupOldFiles(t *testing.T) {

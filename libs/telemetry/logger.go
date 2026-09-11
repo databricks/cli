@@ -29,7 +29,16 @@ const (
 )
 
 func Log(ctx context.Context, event protos.DatabricksCliLog) {
-	fromContext(ctx).log(event)
+	// A missing logger means telemetry was never initialized on this context
+	// (e.g. a command invoked outside the normal cmd/root setup). Dropping the
+	// event is the right call: telemetry is best-effort and must never crash a
+	// command.
+	l, ok := loggerFromContext(ctx)
+	if !ok {
+		log.Debugf(ctx, "telemetry logger not found in the context; dropping event")
+		return
+	}
+	l.log(event)
 }
 
 type logger struct {

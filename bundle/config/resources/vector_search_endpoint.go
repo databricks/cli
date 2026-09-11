@@ -16,7 +16,7 @@ type VectorSearchEndpoint struct {
 	BaseResource
 	vectorsearch.CreateEndpoint
 
-	Permissions []Permission `json:"permissions,omitempty"`
+	Permissions []VectorSearchEndpointPermission `json:"permissions,omitempty"`
 }
 
 func (e *VectorSearchEndpoint) UnmarshalJSON(b []byte) error {
@@ -57,8 +57,4 @@ func (e *VectorSearchEndpoint) InitializeURL(baseURL url.URL) {
 
 func (e *VectorSearchEndpoint) GetName() string {
 	return e.Name
-}
-
-func (e *VectorSearchEndpoint) GetURL() string {
-	return e.URL
 }

@@ -4,28 +4,40 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/spf13/cobra"
+	"golang.org/x/mod/semver"
 )
 
 type ProcessOptions struct {
@@ -139,6 +151,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) { opts.InitFunc(b) })
 	}
 
+	// InitFunc is where -q is applied, so the quiet context can only be derived
+	// afterwards. Progress messages are emitted from mutators that receive only a
+	// context, not the bundle, so the level has to travel on the context too.
+	if b != nil && b.SuppressProgress() {
+		ctx = cmdio.WithQuiet(ctx)
+		cmd.SetContext(ctx)
+	}
+
 	if !opts.SkipInitialize {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)
@@ -170,20 +190,59 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
+	// Resolve engine setting up front so a garbage DATABRICKS_BUNDLE_ENGINE
+	// value fails every bundle command instead of only the ones that read
+	// state. The resolver is cheap (config lookup + env var read); no reason
+	// to gate it on state-touching options.
+	requiredEngine, err := ResolveEngineSetting(ctx, b)
+	if err != nil {
+		return b, nil, err
+	}
+
+	// Record the requested engine up front so deploy telemetry reports it even when
+	// the deploy fails before the state is pulled (e.g. PullResourcesState itself
+	// errors). Refined to the state's engine below once it is known; the two differ
+	// only mid-migration, when the deploy runs on the existing state's engine.
+	b.Metrics.StateEngine = requiredEngine.Type.ThisOrDefault()
+
+	// The current deployment read from the service (nil, id "" if there is none yet). Used for the
+	// metadata diff and to reject a saved plan that predates the deployment's recorded version.
+	var dmsDeployment *bundledeployments.Deployment
+	var dmsDeploymentID string
+
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
-		requiredEngine, err := ResolveEngineSetting(ctx, b)
-		if err != nil {
-			return b, nil, err
-		}
-
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
 		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
+
+		// Record the engine the resolved state uses now, so deploy telemetry reports
+		// it even when the deploy fails or is cancelled before deployCore runs.
+		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
+
+		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
+
+		// Announce the auto-migration path here (only on deploy) so the user
+		// isn't surprised when MigrateToDirect commits state changes at the
+		// end. PullResourcesState is shared with non-deploy commands like
+		// `bundle debug states`, which would otherwise print the same hint
+		// even though they will not migrate.
+		if opts.Deploy && b.MigratingToDirect {
+			if requiredEngine.IsDefault {
+				// The user did not ask for direct; it is the default. Frame the
+				// auto-migration as an informational notice rather than a warning,
+				// and do not claim the user selected anything.
+				cmdio.LogString(ctx, "Notice: the direct deployment engine is the default as of CLI v1.14.0.\n\n"+
+					"This bundle will be automatically migrated to use the direct deployment engine after this deployment.\n\n"+
+					"Learn more: https://docs.databricks.com/dev-tools/bundles/direct\n")
+			} else {
+				log.Warnf(ctx, "Direct engine selected via %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
+			}
+		}
 
 		// --select is only supported by the direct engine, which tracks resource
 		// dependencies in the plan graph (used to expand the selection transitively).
@@ -198,9 +257,65 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
-			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false)); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
+
+			if b.ConfiguresDeploymentHistory(ctx) {
+				var err error
+				dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+				if err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+
+				// Stamp the deployment and the version this run records onto every job and pipeline so
+				// the plan carries them. version_id is always known (last recorded + 1); deployment_id
+				// does not exist until a first deploy creates it, so it is left off here and the deploy
+				// phase stamps the created id.
+				// The service reports the version as a string; parse it here so everything below
+				// carries a number.
+				lastVersionID := 0
+				if dmsDeployment != nil && dmsDeployment.LastVersionId != "" {
+					lastVersionID, err = strconv.Atoi(dmsDeployment.LastVersionId)
+					if err != nil {
+						logdiag.LogError(ctx, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err))
+						return b, stateDesc, root.ErrAlreadyPrinted
+					}
+				}
+				nextVersion := lastVersionID + 1
+				muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
+				if dmsDeploymentID != "" {
+					bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
+						b.Config.Bundle.Deployment.DeploymentID = dmsDeploymentID
+						b.Config.Bundle.Deployment.LatestVersionID = lastVersionID
+					})
+					muts = append(muts, metadata.AnnotateDeployment(dmsDeploymentID))
+				}
+				bundle.ApplySeqContext(ctx, b, muts...)
+				if logdiag.HasError(ctx) {
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+				// StateDB.Open builds the DMS client from the workspace client on the context.
+				if !cmdctx.HasWorkspaceClient(ctx) {
+					ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+				}
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			} else {
+				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			}
+
+			// Warn when the state was last written by a newer CLI than the one
+			// running now. The state schema version is a hard gate (dstate.Open
+			// rejects a too-new state_version), but a state can be written by a
+			// newer CLI that shares this schema; that is allowed, and this only
+			// hints that a downgrade may be unintended.
+			currentVersion := build.GetInfo().Version
+			if stateVersion := b.DeploymentBundle.StateDB.StateCLIVersion(); isNewerVersion(stateVersion, currentVersion) {
+				log.Warnf(ctx, "State was last deployed with CLI version %s but current version is %s", stateVersion, currentVersion)
 			}
 		}
 
@@ -233,6 +348,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
+
 	}
 
 	var plan *deployplan.Plan
@@ -256,10 +372,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
 		}
 
-		// Validate that the plan's lineage and serial match the current state
-		// This must happen before any file operations
-		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
-		if err != nil {
+		if err := direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan); err != nil {
 			logdiag.LogError(ctx, err)
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
@@ -320,6 +433,28 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 	}
 
+	// The predeploy script can generate or rewrite files that on_file_change
+	// watches, so it has to run before those files are fingerprinted below. It
+	// stays ahead of the deployment lock, as it was when phases.Deploy ran it.
+	if opts.Deploy {
+		bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPreDeploy))
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
+	// Fingerprint on_file_change triggers once, after every step that can produce
+	// a watched file: build and the predeploy script. Reads the sync root that
+	// phases.Initialize resolves, so it is skipped along with it; `bundle deploy
+	// --plan` recomputes fingerprints that the loaded plan then overrides with the
+	// ones it recorded.
+	if !opts.SkipInitialize {
+		bundle.ApplyContext(ctx, b, mutator.ResolveJobRunFileTriggers())
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
 	if opts.Deploy {
 		var outputHandler sync.OutputHandler
 		if opts.Verbose {
@@ -329,7 +464,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, plan)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, requiredEngine, libs, plan, dmsDeployment)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
@@ -358,7 +493,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
-// Priority: bundle.engine config > DATABRICKS_BUNDLE_ENGINE env var.
+// Priority: bundle.engine config > DATABRICKS_BUNDLE_ENGINE env var > engine.Default.
 func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineSetting, error) {
 	configEngine := b.Config.Bundle.Engine
 
@@ -380,7 +515,50 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil
 	}
 
-	return engine.EngineSetting{}, nil
+	return engine.EngineSetting{Type: engine.Default, Source: engine.SourceDefault, IsDefault: true}, nil
+}
+
+// Lookup and return the deployment object from ${workspace.state_path}/resources.deployment.json
+//
+// TODO: a deployment is only usable when both the node and the service's record exist, and a
+// half-created one - node present, record missing - blocks the bundle here even though
+// CreateDeployment already recovers from it. Move this behind a dms.ReadDeployment(ctx, statePath)
+// that returns an empty id and version unless both halves are there, leaving the caller to call
+// CreateDeployment to create or finalize it.
+//
+// TODO: ask the service for a lookup by state path, so this is one round trip rather than two - a
+// workspace lookup to turn the node into an id, then a get by that id.
+func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceClient, statePath string) (string, *bundledeployments.Deployment, error) {
+	nodePath := path.Join(statePath, dms.DeploymentNodeName)
+
+	obj, err := w.Workspace.GetStatusByPath(ctx, nodePath)
+	if errors.Is(err, apierr.ErrNotFound) || errors.Is(err, apierr.ErrResourceDoesNotExist) {
+		return "", nil, nil
+	}
+	if err != nil {
+		return "", nil, fmt.Errorf("looking up deployment at %s: %w", nodePath, err)
+	}
+	deploymentID := strconv.FormatInt(obj.ObjectId, 10)
+	deployment, err := w.BundleDeployments.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+		Name: dms.DeploymentName(deploymentID),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return deploymentID, deployment, nil
+}
+
+// isNewerVersion reports whether the state's recorded CLI version is strictly
+// newer than the running build. Both are bare versions without a leading "v".
+// An empty stateVersion (state not written by any CLI yet) or an unparseable
+// version returns false, so we never warn on missing or malformed data.
+func isNewerVersion(stateVersion, currentVersion string) bool {
+	sv := "v" + stateVersion
+	cv := "v" + currentVersion
+	if !semver.IsValid(sv) || !semver.IsValid(cv) {
+		return false
+	}
+	return semver.Compare(sv, cv) > 0
 }
 
 func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {

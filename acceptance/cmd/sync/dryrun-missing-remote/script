@@ -5,7 +5,6 @@ script
 test.toml
 output.txt
 out.requests.txt
-repls.json
 EOF
 
 # Use an ephemeral remote directory so concurrent test runs do not interfere.

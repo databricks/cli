@@ -3,6 +3,7 @@
 package rfa
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -230,13 +231,10 @@ Update Access Request Destinations.
 
   Updates the access request destinations for the given securable. The caller
   must be a metastore admin, the owner of the securable, or a user that has the
-  **MANAGE** privilege on the securable in order to assign destinations.
-  Destinations cannot be updated for securables underneath schemas (tables,
-  volumes, functions, and models). For these securable types, destinations are
-  inherited from the parent securable. A maximum of 5 emails and 5 external
-  notification destinations (Slack, Microsoft Teams, and Generic Webhook
-  destinations) can be assigned to a securable. If a URL destination is
-  assigned, no other destinations can be set.
+  **MANAGE** privilege on the securable in order to assign destinations. A
+  maximum of 5 emails and 5 external notification destinations (Slack, Microsoft
+  Teams, and Generic Webhook destinations) can be assigned to a securable. If a
+  URL destination is assigned, no other destinations can be set.
 
   The supported securable types are: "metastore", "catalog", "schema", "table",
   "external_location", "connection", "credential", "function",
@@ -265,7 +263,7 @@ Update Access Request Destinations.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'securable' in your JSON input")
+				return errors.New("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'securable' in your JSON input")
 			}
 			return nil
 		}

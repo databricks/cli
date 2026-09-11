@@ -1,0 +1,7 @@
+[[Repls]]
+# environments setup-local emits a real wall-time durationMs; normalize it so the
+# JSON goldens are deterministic. Order must beat the generic numeric repls
+# (Order = 10 in the root test.toml), which would otherwise rewrite the digits first.
+Old = '"durationMs": \d+'
+New = '"durationMs": [DURATION_MS]'
+Order = 8

@@ -17,6 +17,7 @@
       "catalog_name": "${resources.catalogs.my_catalog.name}",
       "name": "myvolume",
       "schema_name": "${resources.schemas.my_schema.name}",
+      "volume_path": "/Volumes/mycatalog/dev_[USERNAME]_myschema/myvolume",
       "volume_type": "MANAGED"
     }
   }

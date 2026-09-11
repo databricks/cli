@@ -6,8 +6,7 @@ Ignore = [
     "home",
 ]
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = []
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # Initial release: alpha + beta.
 [[Server]]

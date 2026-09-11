@@ -3,6 +3,7 @@
 package clusters
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -124,7 +125,7 @@ func newChangeOwner() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id', 'owner_username' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id', 'owner_username' in your JSON input")
 			}
 			return nil
 		}
@@ -219,6 +220,7 @@ func newCreate() *cobra.Command {
   SINGLE_USER,
   USER_ISOLATION,
 ]`)
+	cmd.Flags().Var(&createReq.DependencyMode, "dependency-mode", `Controls dependency configuration for the cluster. Supported values: [DEPENDENCY_MODE_AUTO, DEPENDENCY_MODE_CLUSTER_LIBRARIES, DEPENDENCY_MODE_ENVIRONMENTS]`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	// TODO: complex arg: driver_node_type_flexibility
@@ -269,7 +271,9 @@ func newCreate() *cobra.Command {
   Arguments:
     SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
       available Spark versions can be retrieved by using the
-      :method:clusters/sparkVersions API call.`
+      [clusters/sparkVersions] API call.
+
+      [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -279,7 +283,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'spark_version' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'spark_version' in your JSON input")
 			}
 			return nil
 		}
@@ -382,7 +386,7 @@ func newDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -421,7 +425,7 @@ func newDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the cluster to be terminated")
+				return errors.New("expected to have the cluster to be terminated")
 			}
 			deleteReq.ClusterId = args[0]
 		}
@@ -500,6 +504,7 @@ func newEdit() *cobra.Command {
   SINGLE_USER,
   USER_ISOLATION,
 ]`)
+	cmd.Flags().Var(&editReq.DependencyMode, "dependency-mode", `Controls dependency configuration for the cluster. Supported values: [DEPENDENCY_MODE_AUTO, DEPENDENCY_MODE_CLUSTER_LIBRARIES, DEPENDENCY_MODE_ENVIRONMENTS]`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	// TODO: complex arg: driver_node_type_flexibility
@@ -546,7 +551,9 @@ func newEdit() *cobra.Command {
     CLUSTER_ID: ID of the cluster
     SPARK_VERSION: The Spark version of the cluster, e.g. 3.3.x-scala2.11. A list of
       available Spark versions can be retrieved by using the
-      :method:clusters/sparkVersions API call.`
+      [clusters/sparkVersions] API call.
+
+      [clusters/sparkVersions]: https://docs.databricks.com/api/workspace/clusters/sparkversions`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -556,7 +563,7 @@ func newEdit() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id', 'spark_version' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id', 'spark_version' in your JSON input")
 			}
 			return nil
 		}
@@ -673,7 +680,7 @@ func newEvents() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -712,7 +719,7 @@ func newEvents() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the cluster to retrieve events about")
+				return errors.New("expected to have the id of the cluster to retrieve events about")
 			}
 			eventsReq.ClusterId = args[0]
 
@@ -789,7 +796,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster about which to retrieve information")
+			return errors.New("expected to have the cluster about which to retrieve information")
 		}
 		getReq.ClusterId = args[0]
 
@@ -860,7 +867,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster for which to get or manage permissions")
+			return errors.New("expected to have the cluster for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.ClusterId = args[0]
 
@@ -932,7 +939,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster for which to get or manage permissions")
+			return errors.New("expected to have the cluster for which to get or manage permissions")
 		}
 		getPermissionsReq.ClusterId = args[0]
 
@@ -1161,7 +1168,7 @@ func newPermanentDelete() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1200,7 +1207,7 @@ func newPermanentDelete() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the cluster to be deleted")
+				return errors.New("expected to have the cluster to be deleted")
 			}
 			permanentDeleteReq.ClusterId = args[0]
 		}
@@ -1257,7 +1264,7 @@ func newPin() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1296,7 +1303,7 @@ func newPin() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
+				return errors.New("expected to have ")
 			}
 			pinReq.ClusterId = args[0]
 		}
@@ -1364,7 +1371,7 @@ func newResize() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1403,7 +1410,7 @@ func newResize() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the cluster to be resized")
+				return errors.New("expected to have the cluster to be resized")
 			}
 			resizeReq.ClusterId = args[0]
 
@@ -1483,7 +1490,7 @@ func newRestart() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1522,7 +1529,7 @@ func newRestart() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the cluster to be started")
+				return errors.New("expected to have the cluster to be started")
 			}
 			restartReq.ClusterId = args[0]
 
@@ -1625,7 +1632,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster for which to get or manage permissions")
+			return errors.New("expected to have the cluster for which to get or manage permissions")
 		}
 		setPermissionsReq.ClusterId = args[0]
 
@@ -1741,7 +1748,7 @@ func newStart() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1780,7 +1787,7 @@ func newStart() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have the cluster to be started")
+				return errors.New("expected to have the cluster to be started")
 			}
 			startReq.ClusterId = args[0]
 		}
@@ -1849,7 +1856,7 @@ func newUnpin() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id' in your JSON input")
 			}
 			return nil
 		}
@@ -1888,7 +1895,7 @@ func newUnpin() *cobra.Command {
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
+				return errors.New("expected to have ")
 			}
 			unpinReq.ClusterId = args[0]
 		}
@@ -1977,7 +1984,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id', 'update_mask' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'cluster_id', 'update_mask' in your JSON input")
 			}
 			return nil
 		}
@@ -2105,7 +2112,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster for which to get or manage permissions")
+			return errors.New("expected to have the cluster for which to get or manage permissions")
 		}
 		updatePermissionsReq.ClusterId = args[0]
 

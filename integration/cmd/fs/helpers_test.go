@@ -30,14 +30,14 @@ func setupDbfsFiler(t testutil.TestingT) (filer.Filer, string) {
 }
 
 func setupUcVolumesFiler(t testutil.TestingT) (filer.Filer, string) {
-	_, wt := acc.WorkspaceTest(t)
+	ctx, wt := acc.WorkspaceTest(t)
 
 	if os.Getenv("TEST_METASTORE_ID") == "" {
 		t.Skip("Skipping tests that require a UC Volume when metastore id is not set.")
 	}
 
 	tmpdir := acc.TemporaryVolume(wt)
-	f, err := filer.NewFilesClient(wt.W, tmpdir)
+	f, err := filer.NewFilesClient(ctx, wt.W, tmpdir)
 	require.NoError(t, err)
 
 	return f, path.Join("dbfs:/", tmpdir)

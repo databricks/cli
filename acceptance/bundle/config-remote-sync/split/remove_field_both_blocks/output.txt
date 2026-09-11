@@ -1,0 +1,40 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.shared_field_job
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove max_retries, which both blocks define
+=== Sync
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.shared_field_job
+  tasks[task_key='shared'].max_retries: remove
+
+
+
+=== Both copies must be gone, else the next deploy pushes the value back
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -12,5 +12,4 @@
+       tasks:
+         - task_key: shared
+-          max_retries: 1
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/nb
+@@ -24,3 +23,2 @@
+           tasks:
+             - task_key: shared
+-              max_retries: 5
+
+>>> grep -c max_retries databricks.yml
+1
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.shared_field_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 1 deleted

@@ -372,23 +372,29 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request, handler HandlerFu
 
 	var resp EncodedResponse
 
-	if rule := s.faults.Check(r.Method, r.URL.Path, token); rule != nil {
+	fault := s.faults.Check(r.Method, r.URL.Path, token)
+
+	if fault == nil || fault.AfterHandler {
+		if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
+			resp = EncodedResponse{
+				StatusCode: 500,
+				Body:       []byte("INJECTED"),
+			}
+		} else {
+			respAny := handler(request)
+			if respAny == nil && request.Context.Err() != nil {
+				return
+			}
+			resp = normalizeResponse(s.t, respAny)
+		}
+	}
+
+	if fault != nil {
 		resp = EncodedResponse{
-			StatusCode: rule.StatusCode,
-			Body:       []byte(rule.Body),
+			StatusCode: fault.StatusCode,
+			Body:       []byte(fault.Body),
 			Headers:    getJsonHeaders(),
 		}
-	} else if bytes.Contains(request.Body, []byte("INJECT_ERROR")) {
-		resp = EncodedResponse{
-			StatusCode: 500,
-			Body:       []byte("INJECTED"),
-		}
-	} else {
-		respAny := handler(request)
-		if respAny == nil && request.Context.Err() != nil {
-			return
-		}
-		resp = normalizeResponse(s.t, respAny)
 	}
 
 	maps.Copy(w.Header(), resp.Headers)

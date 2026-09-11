@@ -78,7 +78,9 @@ func newCreate() *cobra.Command {
   Create Custom OAuth App Integration.
 
   You can retrieve the custom OAuth app integration via
-  :method:CustomAppIntegration/get.`
+  [CustomAppIntegration/get].
+
+  [CustomAppIntegration/get]: https://docs.databricks.com/api/account/customappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -146,7 +148,9 @@ func newDelete() *cobra.Command {
 	cmd.Long = `Delete Custom OAuth App Integration.
 
   Delete an existing Custom OAuth App Integration. You can retrieve the custom
-  OAuth app integration via :method:CustomAppIntegration/get.`
+  OAuth app integration via [CustomAppIntegration/get].
+
+  [CustomAppIntegration/get]: https://docs.databricks.com/api/account/customappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -341,7 +345,9 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Updates Custom OAuth App Integration.
 
   Updates an existing custom OAuth App Integration. You can retrieve the custom
-  OAuth app integration via :method:CustomAppIntegration/get.`
+  OAuth app integration via [CustomAppIntegration/get].
+
+  [CustomAppIntegration/get]: https://docs.databricks.com/api/account/customappintegration/get`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

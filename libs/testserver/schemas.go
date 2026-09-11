@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"dario.cat/mergo"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -54,8 +53,13 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 		// Mirror UC behavior: managed system defaults are populated when the user
 		// doesn't specify any properties. Required to cover backend-default drift.
 		schema.Properties = map[string]string{
-			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":        "true",
-			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged": "true",
+			"unity.catalog.managed.delta.defaults.delta.enableRowTracking":                   "true",
+			"unity.catalog.managed.iceberg.defaults.delta.feature.catalogManaged":            "true",
+			"unity.catalog.managed.delta.defaults.defaultClusterByAuto":                      "true",
+			"unity.catalog.managed.delta.defaults.delta.checkpointPolicy":                    "v2",
+			"unity.catalog.managed.delta.defaults.delta.parquet.format.version":              "2.12.0",
+			"unity.catalog.managed.delta.defaults.delta.parquet.format.version.afe.internal": "2.12.0",
+			"unity.catalog.managed.delta.defaults.delta.feature.catalogManaged":              "supported",
 		}
 	}
 	s.Schemas[schema.FullName] = schema
@@ -75,6 +79,11 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateSchema")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var schemaUpdate catalog.SchemaInfo
 
 	if err := json.Unmarshal(req.Body, &schemaUpdate); err != nil {
@@ -84,13 +93,7 @@ func (s *FakeWorkspace) SchemasUpdate(req Request, name string) Response {
 		}
 	}
 
-	err := mergo.Merge(&existing, schemaUpdate, mergo.WithOverride)
-	if err != nil {
-		return Response{
-			Body:       fmt.Sprintf("mergo error: %s", err),
-			StatusCode: http.StatusInternalServerError,
-		}
-	}
+	applyUpdatedFields(&existing, schemaUpdate, fields)
 
 	existing.UpdatedAt = nowMilli()
 	existing.UpdatedBy = s.CurrentUser().UserName

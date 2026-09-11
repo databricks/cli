@@ -3,6 +3,7 @@
 package consumer_personalization_requests
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -104,7 +105,7 @@ Create a personalization request.
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
 		}
 		createReq.ListingId = args[0]
 

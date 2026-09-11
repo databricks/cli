@@ -25,13 +25,21 @@ func (c *PostgresSyncedTableConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresSyncedTableConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresSyncedTableConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
 type PostgresSyncedTable struct {
 	BaseResource
 	PostgresSyncedTableConfig
+}
+
+func (s *PostgresSyncedTable) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s PostgresSyncedTable) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func (s *PostgresSyncedTable) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
@@ -62,10 +70,6 @@ func (s *PostgresSyncedTable) GetName() string {
 		return id
 	}
 	return s.SyncedTableId
-}
-
-func (s *PostgresSyncedTable) GetURL() string {
-	return s.URL
 }
 
 func (s *PostgresSyncedTable) InitializeURL(baseURL url.URL) {

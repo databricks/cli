@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -27,6 +28,21 @@ type IResource interface {
 	// The return value must be a pointer to a specific instance of the resource implementation, e.g. *ResourceJob.
 	// Single instance is reused across all instances, so it must not store any resource-specific state.
 	New(client *databricks.WorkspaceClient) any
+
+	// [Optional] Configure passes the resource type this instance is registered under in SupportedResources
+	// (e.g. "jobs.permissions"). One instance is created per resource type, so type-level lookups belong here
+	// rather than in per-node methods, and an unsupported type fails at init instead of at plan time.
+	// Example: func (r *ResourcePermissions) Configure(resourceType string) error
+	Configure(resourceType string) error
+
+	// [Optional] PrepareInputConfig converts the bundle config for a node into the value passed to PrepareState,
+	// plus references that complete it but have no source in the config. resourceKey is the full node,
+	// e.g. "resources.jobs.foo.permissions". Sub-resources use it to reference their parent's id.
+	// Resources that don't implement it receive their config unchanged and contribute no references.
+	// Like the other resource methods, inputConfig is never nil, so it may be declared as a concrete
+	// pointer and dereferenced: nodes are discovered from the config tree, so the key always exists.
+	// Example: func (r *ResourceGrants) PrepareInputConfig(inputConfig *[]catalog.PrivilegeAssignment, resourceKey string) (*structvar.StructVar, error)
+	PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error)
 
 	// PrepareState converts resource's config as defined by bundle schema to the concrete type used by create/update and persisted in the state.
 	// Example: func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings
@@ -56,13 +72,20 @@ type IResource interface {
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
+	// [Optional] IsEmptyState reports that newState describes no resource at all: the planner
+	// omits the node instead of planning a create, and apply drops the state entry instead of
+	// persisting one, so both engines converge on "this node does not exist".
+	// Example: func (*ResourceGrants) IsEmptyState(state *GrantsState) bool
+	IsEmptyState(newState any) bool
+
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
 	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, entry *PlanEntry) (*catalog.SchemaInfo, error)
 	DoUpdate(ctx context.Context, id string, newState any, entry *PlanEntry) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
-	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
+	// Example: func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, newState *catalog.CreateCatalog, entry *PlanEntry) (string, *catalog.CatalogInfo, error)
+	DoUpdateWithID(ctx context.Context, id string, newState any, entry *PlanEntry) (newID string, remoteState any, e error)
 
 	// [Optional] DoResize resizes the resource. Only supported by clusters
 	DoResize(ctx context.Context, id string, newState any, entry *PlanEntry) error
@@ -83,6 +106,13 @@ type IResource interface {
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices() map[string]any
+
+	// [Optional] IsGone reports whether a remote resource should be treated as
+	// already-deleted when planning a delete. Use for backends whose DELETE is
+	// asynchronous and leaves the resource in a transient terminal-teardown state
+	// (returned by GET, not 404) that rejects a second DELETE.
+	// Example: func (*ResourceApp) IsGone(remote *AppRemote) bool
+	IsGone(remoteState any) bool
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -96,6 +126,8 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
+	prepareInputConfig *calladapt.BoundCaller
+	isEmptyState       *calladapt.BoundCaller
 	doUpdate           *calladapt.BoundCaller
 	doUpdateWithID     *calladapt.BoundCaller
 	waitAfterCreate    *calladapt.BoundCaller
@@ -103,6 +135,7 @@ type Adapter struct {
 	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
+	isGone             *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -122,12 +155,20 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		return nil, fmt.Errorf("internal error: New returned %d values, expected 1", len(outs))
 	}
 	impl := outs[0]
+
+	err = configureImpl(impl, resourceType)
+	if err != nil {
+		return nil, err
+	}
+
 	adapter := &Adapter{
 		prepareState:            nil,
 		remapState:              nil,
 		doRefresh:               nil,
 		doDelete:                nil,
 		doCreate:                nil,
+		prepareInputConfig:      nil,
+		isEmptyState:            nil,
 		doUpdate:                nil,
 		doUpdateWithID:          nil,
 		doResize:                nil,
@@ -135,6 +176,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		waitAfterUpdate:         nil,
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
+		isGone:                  nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
 		keyedSlices:             nil,
@@ -151,6 +193,19 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 	}
 
 	return adapter, nil
+}
+
+// configureImpl calls the resource's Configure method, if it has one.
+func configureImpl(impl any, resourceType string) error {
+	call, err := calladapt.PrepareCall(impl, reflect.TypeFor[IResource](), "Configure")
+	if err != nil {
+		return err
+	}
+	if call == nil {
+		return nil
+	}
+	_, err = call.Call(resourceType)
+	return err
 }
 
 // loadKeyedSlices validates and calls KeyedSlices method, returning the resulting map.
@@ -196,6 +251,16 @@ func (a *Adapter) initMethods(resource any) error {
 
 	// Optional methods with varying signatures:
 
+	a.prepareInputConfig, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "PrepareInputConfig")
+	if err != nil {
+		return err
+	}
+
+	a.isEmptyState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsEmptyState")
+	if err != nil {
+		return err
+	}
+
 	a.doUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoUpdate")
 	if err != nil {
 		return err
@@ -227,6 +292,11 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.doResize, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoResize")
+	if err != nil {
+		return err
+	}
+
+	a.isGone, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsGone")
 	if err != nil {
 		return err
 	}
@@ -285,7 +355,8 @@ func (a *Adapter) validate() error {
 	// If RemapState is implemented, validate its signature.
 	// Otherwise require remote type to equal state type so remapping isn't needed.
 	if a.remapState != nil {
-		validations = append(validations,
+		validations = append(
+			validations,
 			"RemapState input", a.remapState.InTypes[0], remoteType,
 			"RemapState return", a.remapState.OutTypes[0], stateType,
 		)
@@ -299,6 +370,10 @@ func (a *Adapter) validate() error {
 	}
 	validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
 
+	if a.isEmptyState != nil {
+		validations = append(validations, "IsEmptyState newState", a.isEmptyState.InTypes[0], stateType)
+	}
+
 	// Validate DoUpdate: must return (remoteType, error) if implemented
 	if a.doUpdate != nil {
 		validations = append(validations, "DoUpdate newState", a.doUpdate.InTypes[2], stateType)
@@ -310,6 +385,10 @@ func (a *Adapter) validate() error {
 
 	if a.doResize != nil {
 		validations = append(validations, "DoResize newState", a.doResize.InTypes[2], stateType)
+	}
+
+	if a.isGone != nil {
+		validations = append(validations, "IsGone remoteState", a.isGone.InTypes[0], remoteType)
 	}
 
 	if a.doUpdateWithID != nil {
@@ -378,6 +457,15 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 	return a.generatedResourceConfig
 }
 
+// GetSensitiveFields returns the list of sensitive fields for the resource.
+func (a *Adapter) GetSensitiveFields() []string {
+	var fields []string
+	for _, r := range a.resourceConfig.SensitiveFields {
+		fields = append(fields, r.Field.String())
+	}
+	return fields
+}
+
 // FieldTriggersRecreate reports whether a local change to the field forces a
 // delete + create. Both recreate_on_changes and provided_id_fields do this, so a
 // caller that knows the ID is preserved can conclude the field is unchanged.
@@ -393,6 +481,20 @@ func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
 		}
 	}
 	return false
+}
+
+// PrepareInputConfig converts the node's bundle config into the input for PrepareState and the
+// references needed to complete it. Resources without PrepareInputConfig pass their config through.
+func (a *Adapter) PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error) {
+	if a.prepareInputConfig == nil {
+		return &structvar.StructVar{Value: inputConfig, Refs: nil}, nil
+	}
+
+	outs, err := a.prepareInputConfig.Call(inputConfig, resourceKey)
+	if err != nil {
+		return nil, err
+	}
+	return outs[0].(*structvar.StructVar), nil
 }
 
 func (a *Adapter) PrepareState(input any) (any, error) {
@@ -452,6 +554,19 @@ func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, erro
 	return id, remoteState, nil
 }
 
+// IsEmptyState reports whether newState describes no resource; false if not implemented.
+func (a *Adapter) IsEmptyState(newState any) (bool, error) {
+	if a.isEmptyState == nil {
+		return false, nil
+	}
+
+	outs, err := a.isEmptyState.Call(newState)
+	if err != nil {
+		return false, err
+	}
+	return outs[0].(bool), nil
+}
+
 // HasDoUpdate returns true if the resource implements DoUpdate method.
 func (a *Adapter) HasDoUpdate() bool {
 	return a.doUpdate != nil
@@ -479,12 +594,12 @@ func (a *Adapter) HasDoUpdateWithID() bool {
 }
 
 // DoUpdateWithID updates the resource and may change its ID. Returns newID and remoteState if available.
-func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any) (string, any, error) {
+func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any, entry *PlanEntry) (string, any, error) {
 	if a.doUpdateWithID == nil {
 		return "", nil, errors.New("internal error: DoUpdateWithID not found")
 	}
 
-	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
+	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState, entry)
 	if err != nil {
 		return "", nil, err
 	}
@@ -562,6 +677,19 @@ func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathN
 // If the resource doesn't implement KeyedSlices, returns nil.
 func (a *Adapter) KeyedSlices() map[string]any {
 	return a.keyedSlices
+}
+
+// IsGone reports whether the remote state represents an already-deleted resource
+// for planning purposes. Resources that don't implement IsGone are never gone.
+func (a *Adapter) IsGone(remoteState any) bool {
+	if a.isGone == nil {
+		return false
+	}
+	outs, err := a.isGone.Call(remoteState)
+	if err != nil {
+		return false
+	}
+	return outs[0].(bool)
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

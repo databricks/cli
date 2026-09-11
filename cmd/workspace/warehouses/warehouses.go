@@ -3,6 +3,7 @@
 package warehouses
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -216,7 +217,7 @@ Create default warehouse override.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only DEFAULT_WAREHOUSE_OVERRIDE_ID as positional arguments. Provide 'type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only DEFAULT_WAREHOUSE_OVERRIDE_ID as positional arguments. Provide 'type' in your JSON input")
 			}
 			return nil
 		}
@@ -317,7 +318,7 @@ func newDelete() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		deleteReq.Id = args[0]
 
@@ -394,7 +395,7 @@ Delete default warehouse override.
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		deleteDefaultWarehouseOverrideReq.Name = args[0]
 
@@ -499,7 +500,7 @@ func newEdit() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		editReq.Id = args[0]
 
@@ -588,7 +589,7 @@ func newGet() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		getReq.Id = args[0]
 
@@ -666,7 +667,7 @@ Get default warehouse override.
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		getDefaultWarehouseOverrideReq.Name = args[0]
 
@@ -737,7 +738,7 @@ func newGetPermissionLevels() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
 		getPermissionLevelsReq.WarehouseId = args[0]
 
@@ -809,7 +810,7 @@ func newGetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
 		getPermissionsReq.WarehouseId = args[0]
 
@@ -1089,7 +1090,7 @@ func newSetPermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
 		setPermissionsReq.WarehouseId = args[0]
 
@@ -1247,7 +1248,7 @@ func newStart() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		startReq.Id = args[0]
 
@@ -1342,7 +1343,7 @@ func newStop() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
+			return errors.New("expected to have required")
 		}
 		stopReq.Id = args[0]
 
@@ -1432,7 +1433,7 @@ Update default warehouse override.
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'type' in your JSON input")
+				return errors.New("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'type' in your JSON input")
 			}
 			return nil
 		}
@@ -1555,7 +1556,7 @@ func newUpdatePermissions() *cobra.Command {
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+			return errors.New("expected to have the sql warehouse for which to get or manage permissions")
 		}
 		updatePermissionsReq.WarehouseId = args[0]
 

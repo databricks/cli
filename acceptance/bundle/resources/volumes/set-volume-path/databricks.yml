@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+# volume_path is computed and read-only. Setting it explicitly must be rejected
+# rather than silently overwritten with the computed path.
+resources:
+  volumes:
+    volume1:
+      catalog_name: main
+      schema_name: myschema
+      name: myvolume
+      volume_path: /Volumes/bogus/path/set-by-user

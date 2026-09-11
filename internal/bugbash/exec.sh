@@ -68,8 +68,8 @@ echo "Looking for a snapshot build of the Databricks CLI on branch $BRANCH..."
 
 # Find last successful build on $BRANCH.
 last_successful_run_id=$(
-  gh run list -b "$BRANCH" -w release-build --json 'databaseId,conclusion' |
-      jq 'limit(1; .[] | select(.conclusion == "success")) | .databaseId'
+  gh run --repo databricks/cli list --branch "$BRANCH" --workflow release-build \
+    --json 'databaseId,conclusion' --jq 'limit(1; .[] | select(.conclusion == "success")) | .databaseId'
 )
 if [ -z "$last_successful_run_id" ]; then
   echo "Unable to find last successful build of the release-build workflow for branch $BRANCH."
@@ -81,7 +81,7 @@ dir=$(mktemp -d)
 
 # Download the artifact.
 echo "Downloading the snapshot build..."
-gh run download "$last_successful_run_id" -n cli -D "$dir/.download"
+gh run --repo databricks/cli download "$last_successful_run_id" --name cli --dir "$dir/.download"
 
 # Extract the archive for this platform.
 archive=$(cli_snapshot_archive)

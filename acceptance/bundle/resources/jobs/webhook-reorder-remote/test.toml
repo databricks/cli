@@ -1,0 +1,2 @@
+# The phantom-diff bug and the KeyedSlices fix are specific to the direct engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ['direct']

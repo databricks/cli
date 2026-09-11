@@ -3,6 +3,7 @@
 package temporary_path_credentials
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
@@ -112,7 +113,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are allowed. Provide 'url', 'operation' in your JSON input")
+				return errors.New("when --json flag is specified, no positional arguments are allowed. Provide 'url', 'operation' in your JSON input")
 			}
 			return nil
 		}

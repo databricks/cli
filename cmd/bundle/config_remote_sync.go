@@ -2,10 +2,11 @@ package bundle
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"runtime"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/configsync"
@@ -15,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 )
@@ -66,6 +66,13 @@ Examples:
 			}
 		}()
 
+		// Populated by PostStateFunc on success; rendered after the run so an
+		// error raised anywhere in ProcessBundleRet takes the same output path.
+		var (
+			files   []configsync.FileChange
+			changes configsync.Changes
+		)
+
 		_, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			ReadState:  true,
 			Build:      true,
@@ -75,6 +82,7 @@ Examples:
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				stats.Engine = stateDesc.Engine
+				stats.CollectStateStats(stateDesc, b.DeploymentBundle.StateDB.VersionID)
 
 				// Open the deployment state once and reuse it for both planning and
 				// selector resolution (avoids reading the terraform snapshot twice).
@@ -93,77 +101,66 @@ Examples:
 					return fmt.Errorf("failed to detect changes: %w", err)
 				}
 
-				changes, err := configsync.ExtractChanges(ctx, b, plan, stateDesc.Engine)
+				detected, err := configsync.ExtractChanges(ctx, b, plan, stateDesc.Engine)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryDetectChangesFailed
 					return fmt.Errorf("failed to extract changes: %w", err)
 				}
-				stats.CollectChangeStats(ctx, changes)
+				stats.CollectChangeStats(ctx, detected)
+
+				// Record the ids present in state and the ids requested: on failure
+				// they are what classifies the miss.
+				stats.CollectStateIDs(slices.Collect(maps.Keys(configsync.IndexDeployedResources(&deployBundle.StateDB))))
 
 				if len(selectIDs) > 0 {
+					stats.CollectSelectedIDs(selectIDs)
 					// Filter after planning, never before: the plan must cover every
 					// resource so ${resources.*} references resolve; only the emitted
 					// changes are restricted to the selected resources.
-					selected, err := configsync.ResolveResourceSelectors(&deployBundle.StateDB, selectIDs)
+					selected, err := configsync.ResolveResourceSelectors(ctx, &deployBundle.StateDB, selectIDs)
 					if err != nil {
 						return err
 					}
-					changes = configsync.FilterChanges(changes, selected)
+					detected = configsync.FilterChanges(detected, selected)
 				}
 
-				fieldChanges, err := configsync.ResolveChanges(ctx, b, changes)
+				// Loaded once and shared: ResolveChanges uses it to skip changes whose
+				// parent is a variable reference, RestoreVariableReferences to restore refs.
+				preResolved := configsync.LoadPreResolvedConfig(ctx, b)
+
+				fieldChanges, skipped, err := configsync.ResolveChanges(ctx, b, detected, preResolved)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryResolveFailed
 					return fmt.Errorf("failed to resolve field changes: %w", err)
 				}
+				stats.SkippedChangesCount = int64(skipped)
 
-				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, &stats.Restore); err != nil {
+				if err := configsync.RestoreVariableReferences(ctx, b, fieldChanges, preResolved, &stats.Restore); err != nil {
 					log.Warnf(ctx, "variable restoration skipped: %v", err)
 				}
 
-				files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
+				applied, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 				if err != nil {
 					stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryYamlApplyFailed
 					return fmt.Errorf("failed to generate YAML files: %w", err)
 				}
-				stats.FilesChangedCount = int64(len(files))
+				stats.FilesChangedCount = int64(len(applied))
 
 				if save {
-					if err := configsync.SaveFiles(ctx, b, files); err != nil {
+					if err := configsync.SaveFiles(ctx, b, applied); err != nil {
 						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategorySaveFailed
 						return fmt.Errorf("failed to save files: %w", err)
 					}
-					stats.FilesWrittenCount = int64(len(files))
+					stats.FilesWrittenCount = int64(len(applied))
 				}
 
-				var result []byte
-				if root.OutputType(cmd) == flags.OutputJSON {
-					diffOutput := &configsync.DiffOutput{
-						Files:   files,
-						Changes: changes,
-					}
-					result, err = json.MarshalIndent(diffOutput, "", "  ")
-					if err != nil {
-						stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryOutputFailed
-						return fmt.Errorf("failed to marshal output: %w", err)
-					}
-				} else if root.OutputType(cmd) == flags.OutputText {
-					result = []byte(configsync.FormatTextOutput(changes))
-				}
-
-				out := cmd.OutOrStdout()
-				_, _ = out.Write(result)
-				_, _ = out.Write([]byte{'\n'})
+				files = applied
+				changes = detected
 				return nil
 			},
 		})
-		if err != nil {
-			if stats.ErrorCategory == "" {
-				stats.ErrorCategory = protos.BundleConfigRemoteSyncErrorCategoryBundleLoadFailed
-			}
-			stats.ErrorMessage = telemetry.ScrubErrorMessage(err.Error())
-		}
-		return err
+
+		return configsync.WriteResult(cmd.OutOrStdout(), root.OutputType(cmd) == flags.OutputJSON, &stats, files, changes, err)
 	}
 
 	return cmd

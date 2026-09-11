@@ -1,0 +1,327 @@
+package configsync
+
+import (
+	"maps"
+	"slices"
+
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
+)
+
+// renamedElement is a keyed sequence element whose key changed remotely.
+type renamedElement struct {
+	// keyField is the field holding the key, e.g. "task_key".
+	keyField string
+	oldKey   string
+	newKey   string
+	// addPath is the change path of the add half, kept so it can be skipped.
+	addPath string
+}
+
+type renameSet struct {
+	// byRemovePath maps the remove half's change path to the pair.
+	byRemovePath map[string]renamedElement
+	// addPaths are the add halves, which must not be routed on their own.
+	addPaths map[string]struct{}
+	// unpairedPaths are the halves of a suspected key change that could not be
+	// matched up one-to-one. Applying them separately would delete the element from
+	// every block and recreate it in one, collapsing a split element and moving
+	// fields into a scope the user did not choose, so neither half is applied. The
+	// value is the reason, for reporting.
+	unpairedPaths map[string]string
+}
+
+// matchRenamingPairs matches removes of keyed elements against adds in the same sequence
+// that carry the same content apart from the key.
+//
+// A remote key change is reported as an unrelated remove plus add, so without
+// pairing the element is deleted and recreated: the recreated copy has to be
+// placed somewhere, and for an element defined in several blocks there is no
+// single right place. Recognising the pair turns it into a key rewrite, which
+// every defining block can apply to its own part.
+func matchRenamingPairs(b *bundle.Bundle, blocks *blockResolver, resourceKey string, changes ResourceChanges) renameSet {
+	set := renameSet{
+		byRemovePath:  map[string]renamedElement{},
+		addPaths:      map[string]struct{}{},
+		unpairedPaths: map[string]string{},
+	}
+	if blocks == nil {
+		return set
+	}
+
+	removes, adds := keyedElementChanges(changes)
+
+	// The remove half carries no value, so each removed element is read from the
+	// merged configuration once: its fields decide which additions it could have
+	// become, and its source blocks decide whether a choice between them is safe.
+	candidates := make([]renameCandidate, 0, len(removes))
+	for _, remove := range removes {
+		resolved, err := resolveSelectors(resourceKey+"."+remove.path, b, OperationRemove)
+		if err != nil || !resolved.leaf.IsValid() {
+			continue
+		}
+		element, ok := resolved.leaf.AsAny().(map[string]any)
+		if !ok {
+			continue
+		}
+		candidates = append(candidates, renameCandidate{
+			remove:    remove,
+			resolved:  resolved,
+			oldFields: withoutKey(element, remove.keyField),
+		})
+	}
+
+	// Which additions each removal could equally well have become. Matching is by
+	// content, so it is symmetric: an addition can be a match for several removals
+	// just as a removal can match several additions.
+	matches := make([][]keyedElement, len(candidates))
+	for i, candidate := range candidates {
+		matches[i] = matchingAdds(candidate, adds, sameElementApartFromKey)
+	}
+
+	// Which removals each addition matches, so "forced from both sides" is a lookup
+	// rather than a rescan of every other removal's matches.
+	matchedBy := map[string][]int{}
+	for i, candidateMatches := range matches {
+		for _, add := range candidateMatches {
+			matchedBy[add.path] = append(matchedBy[add.path], i)
+		}
+	}
+
+	for i, candidate := range candidates {
+		// A pair is only unambiguous when the choice is forced from both sides. One
+		// removal matching several additions is the obvious case, but so is several
+		// removals matching the same addition: pairing the first and deleting the rest
+		// would move a key into a block the user did not choose.
+		if len(matches[i]) == 1 && len(matchedBy[matches[i][0].path]) == 1 {
+			add := matches[i][0]
+			set.byRemovePath[candidate.remove.path] = renamedElement{
+				keyField: candidate.remove.keyField,
+				oldKey:   candidate.remove.key,
+				newKey:   add.key,
+				addPath:  add.path,
+			}
+			set.addPaths[add.path] = struct{}{}
+			continue
+		}
+
+		if len(matches[i]) > 0 {
+			// Which pairing was intended only matters when the elements live in
+			// different blocks, because then it decides which block each new key is
+			// written to. Within one block every pairing writes the same elements to the
+			// same place, so the halves are applied as a plain removal and addition --
+			// holding them back would drop the rename and leave anything referring to
+			// them by key (depends_on) pointing at keys that no longer exist.
+			if ambiguityCrossesBlocks(blocks, candidates, matches[i], matchedBy) {
+				set.holdBack(candidate.remove.path, addPaths(matches[i]),
+					"several elements with the same contents were renamed at once, in different blocks")
+			}
+			continue
+		}
+
+		// The removal matched no addition. A plain removal is fine: it deletes every
+		// part of the element. But the same element re-added under a new key with one of
+		// its fields also edited cannot be recognised as a rename: applying the halves
+		// separately would delete a split element from every block and recreate it in
+		// one, collapsing the split and moving fields into a scope the user did not
+		// choose.
+		var edited []keyedElement
+		for _, add := range matchingAdds(candidate, adds, sameFieldsApartFromKey) {
+			// An addition already paired with another removal is that rename's half.
+			if _, taken := set.addPaths[add.path]; !taken {
+				edited = append(edited, add)
+			}
+		}
+		if len(edited) > 0 && multiBlockElement(blocks, candidate.resolved) {
+			set.holdBack(candidate.remove.path, addPaths(edited),
+				"a split element cannot be removed and recreated at once")
+		}
+	}
+	return set
+}
+
+// renameCandidate is a removal of a keyed element, resolved once so its fields and
+// source blocks can be consulted without walking the tree again.
+type renameCandidate struct {
+	remove   keyedElement
+	resolved resolvedChange
+	// oldFields is the removed element without its key field, i.e. what an addition
+	// has to look like to be the same element under a new key.
+	oldFields map[string]any
+}
+
+// matchingAdds returns the additions in the same sequence that satisfy pred, i.e. the
+// ones this removal could have become.
+func matchingAdds(candidate renameCandidate, adds []keyedElement, pred func(map[string]any, keyedElement) bool) []keyedElement {
+	var out []keyedElement
+	for _, add := range adds {
+		if candidate.remove.parent != add.parent || candidate.remove.keyField != add.keyField {
+			continue
+		}
+		if pred(candidate.oldFields, add) {
+			out = append(out, add)
+		}
+	}
+	return out
+}
+
+// ambiguityCrossesBlocks reports whether an unforced pairing would have to choose
+// between blocks. Every removal that could have become one of the same additions is
+// considered, because the choice is between them.
+func ambiguityCrossesBlocks(blocks *blockResolver, candidates []renameCandidate, matches []keyedElement, matchedBy map[string][]int) bool {
+	var seen []sourceBlock
+	for _, i := range competingRemovals(matches, matchedBy) {
+		steps := candidates[i].resolved.steps
+		if len(steps) == 0 {
+			return true
+		}
+		elementBlocks := blocks.blocksOf(steps[len(steps)-1].element)
+		if len(elementBlocks) != 1 {
+			return true
+		}
+		if !slices.Contains(seen, elementBlocks[0]) {
+			seen = append(seen, elementBlocks[0])
+		}
+	}
+	return len(seen) != 1
+}
+
+// competingRemovals returns the indices of every removal matching any of these
+// additions, including the one they came from.
+func competingRemovals(matches []keyedElement, matchedBy map[string][]int) []int {
+	var out []int
+	for _, add := range matches {
+		for _, i := range matchedBy[add.path] {
+			if !slices.Contains(out, i) {
+				out = append(out, i)
+			}
+		}
+	}
+	return out
+}
+
+// holdBack refuses both halves of a suspected key change, so a rename is never applied
+// as a removal that lands without its matching addition.
+func (s renameSet) holdBack(removePath string, addPaths []string, reason string) {
+	s.unpairedPaths[removePath] = reason
+	for _, path := range addPaths {
+		s.unpairedPaths[path] = reason
+	}
+}
+
+func addPaths(adds []keyedElement) []string {
+	paths := make([]string, 0, len(adds))
+	for _, add := range adds {
+		paths = append(paths, add.path)
+	}
+	return paths
+}
+
+// multiBlockElement reports whether the element the change addresses is assembled
+// from more than one physical block.
+func multiBlockElement(blocks *blockResolver, change resolvedChange) bool {
+	if len(change.steps) == 0 {
+		return false
+	}
+	last := change.steps[len(change.steps)-1]
+	return len(blocks.blocksOf(last.element)) > 1
+}
+
+// keyedElement is one side of a candidate rename.
+type keyedElement struct {
+	path     string
+	parent   string
+	keyField string
+	key      string
+	value    any
+}
+
+// keyedElementChanges splits the changes that address a whole keyed element into
+// removes and adds, in a deterministic order.
+func keyedElementChanges(changes ResourceChanges) (removes, adds []keyedElement) {
+	for _, path := range slices.Sorted(maps.Keys(changes)) {
+		change := changes[path]
+		if change.Operation != OperationRemove && change.Operation != OperationAdd {
+			continue
+		}
+		node, err := structpath.ParsePath(path)
+		if err != nil {
+			continue
+		}
+		keyField, key, ok := node.KeyValue()
+		if !ok {
+			continue
+		}
+		element := keyedElement{
+			path:     path,
+			parent:   node.Parent().String(),
+			keyField: keyField,
+			key:      key,
+			value:    change.Value,
+		}
+		if change.Operation == OperationRemove {
+			removes = append(removes, element)
+		} else {
+			adds = append(adds, element)
+		}
+	}
+	return removes, adds
+}
+
+// sameElementApartFromKey reports whether the added element is the removed one with
+// a different key, i.e. a plain rename. oldFields is the removed element without its
+// key field.
+func sameElementApartFromKey(oldFields map[string]any, add keyedElement) bool {
+	newFields, ok := fieldsApartFromKey(add)
+	return ok && structdiff.IsEqual(oldFields, newFields)
+}
+
+// sameFieldsApartFromKey reports whether the added element has the same fields as the
+// removed one, ignoring their values, i.e. whether it could be that element with a field
+// edited. An unrelated new element generally has a different shape.
+func sameFieldsApartFromKey(oldFields map[string]any, add keyedElement) bool {
+	newFields, ok := fieldsApartFromKey(add)
+	return ok && slices.Equal(slices.Sorted(maps.Keys(oldFields)), slices.Sorted(maps.Keys(newFields)))
+}
+
+// fieldsApartFromKey returns the added element's fields without its key field.
+func fieldsApartFromKey(add keyedElement) (map[string]any, bool) {
+	value, ok := add.value.(map[string]any)
+	if !ok {
+		return nil, false
+	}
+	return withoutKey(value, add.keyField), true
+}
+
+func withoutKey(value map[string]any, keyField string) map[string]any {
+	out := make(map[string]any, len(value))
+	for field, fieldValue := range value {
+		if field != keyField {
+			out[field] = fieldValue
+		}
+	}
+	return out
+}
+
+// renameKeyChange turns a paired rename into a write of just the element's key field, so
+// the element's other fields stay where they are and a split element keeps its parts in
+// their original scopes.
+//
+// The index is still adjusted, because a removal earlier in the same block shifts the
+// position the key rewrite has to target.
+func renameKeyChange(blocks *blockResolver, block sourceBlock, scope string, indices *indexTracker,
+	blockPath, mergedPath *structpath.PatternNode, rename renamedElement, change *ConfigChangeDesc,
+) FieldChange {
+	change.Operation = OperationReplace
+	change.Value = rename.newKey
+
+	blockPath = adjustArrayIndex(blockPath, scope, indices.operations)
+	blockPath = structpath.NewPatternStringKey(blockPath, rename.keyField)
+	return FieldChange{
+		FilePath:     block.file,
+		Change:       change,
+		WritePath:    blocks.candidatePath(block, blockPath),
+		originalPath: structpath.NewPatternStringKey(mergedPath, rename.keyField).String(),
+	}
+}

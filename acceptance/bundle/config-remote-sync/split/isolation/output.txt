@@ -1,0 +1,59 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Created jobs.job_a
+Created jobs.job_b
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the two-block task on job_a, and edit job_b in the same run
+=== Sync
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.job_a
+  tasks[task_key='shared']: remove
+  tasks[task_key='shared_renamed']: add
+
+Resource: resources.jobs.job_b
+  max_concurrent_runs: replace
+
+
+
+=== job_b is updated, and job_a's rename is written in both blocks
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -12,5 +12,5 @@
+     job_a:
+       tasks:
+-        - task_key: shared
++        - task_key: shared_renamed
+           max_retries: 1
+           notebook_task:
+@@ -18,5 +18,5 @@
+
+     job_b:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 6
+       tasks:
+         - task_key: simple
+@@ -31,4 +31,4 @@
+         job_a:
+           tasks:
+-            - task_key: shared
++            - task_key: shared_renamed
+               timeout_seconds: 45
+
+>>> grep -c max_concurrent_runs: 6 databricks.yml
+1
+
+>>> grep -c task_key: shared_renamed databricks.yml
+2
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.job_a
+  delete resources.jobs.job_b
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Destroy: 2 deleted

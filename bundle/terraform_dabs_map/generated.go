@@ -4,36 +4,32 @@ package terraform_dabs_map
 
 // alerts / databricks_alert_v2: 1 dabs-only
 // alerts / databricks_alert_v2: 3 tf-only
-// apps / databricks_app: 16 dabs-only
+// apps / databricks_app: 6 dabs-only
 // apps / databricks_app: 1 tf-only
-// clusters / databricks_cluster: 25 tf-only
+// clusters / databricks_cluster: 26 tf-only
 // dashboards / databricks_dashboard: 2 tf-only
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
 // jobs / databricks_job: 7 dabs-only
-// jobs / databricks_job: 258 tf-only
+// jobs / databricks_job: 261 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 5 dabs-only
+// pipelines / databricks_pipeline: 6 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
-// postgres_branches / databricks_postgres_branch: 1 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
-// postgres_databases / databricks_postgres_database: 1 tf-only
 // postgres_databases / databricks_postgres_database: 1 unwraps
 // postgres_endpoints / databricks_postgres_endpoint: 1 unwraps
 // postgres_projects / databricks_postgres_project: 2 tf-only
 // postgres_projects / databricks_postgres_project: 1 unwraps
-// postgres_roles / databricks_postgres_role: 1 tf-only
 // postgres_roles / databricks_postgres_role: 1 unwraps
 // postgres_synced_tables / databricks_postgres_synced_table: 1 unwraps
 // schemas / databricks_schema: 1 dabs-only
 // schemas / databricks_schema: 1 tf-only
 // secret_scopes / databricks_secret_scope: 1 tf-only
 // sql_warehouses / databricks_sql_endpoint: 2 tf-only
-// volumes / databricks_volume: 1 tf-only
 
 // TerraformToDABsFieldMap maps DABs group name → nested TF segments → DABs segment name.
 // Navigate using TF field name segments; DABs is the corresponding DABs name when it differs.
@@ -103,18 +99,6 @@ var DABsOnlyFields = map[string]FieldSet{
 				"value_from": {}, // apps.*.config.env.value_from
 			},
 		},
-		"git_source": {
-			"branch": {}, // apps.*.git_source.branch
-			"commit": {}, // apps.*.git_source.commit
-			"git_repository": {
-				"provider": {}, // apps.*.git_source.git_repository.provider
-				"url":      {}, // apps.*.git_source.git_repository.url
-			},
-			"resolved_commit":  {}, // apps.*.git_source.resolved_commit
-			"source_code_path": {}, // apps.*.git_source.source_code_path
-			"tag":              {}, // apps.*.git_source.tag
-		},
-		"source_code_path": {},
 	},
 	"jobs": {
 		"job_clusters": {
@@ -141,6 +125,7 @@ var DABsOnlyFields = map[string]FieldSet{
 		},
 	},
 	"pipelines": {
+		"cascade_on_destroy": {},
 		"clusters": {
 			"gcp_attributes": {
 				"boot_disk_size":            {}, // pipelines.*.clusters.gcp_attributes.boot_disk_size
@@ -172,6 +157,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"no_compute": {},
 	},
 	"clusters": {
+		"clear_cloud_attributes_on_remove": {},
 		"cluster_mount_info": {
 			"local_mount_dir_path": {}, // databricks_cluster.*.cluster_mount_info.local_mount_dir_path
 			"network_filesystem_info": {
@@ -341,6 +327,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 				"*": {}, // databricks_job.*.new_cluster.custom_tags.*
 			},
 			"data_security_mode": {}, // databricks_job.*.new_cluster.data_security_mode
+			"dependency_mode":    {}, // databricks_job.*.new_cluster.dependency_mode
 			"docker_image": {
 				"basic_auth": {
 					"password": {}, // databricks_job.*.new_cluster.docker_image.basic_auth.password
@@ -351,6 +338,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"driver_instance_pool_id": {}, // databricks_job.*.new_cluster.driver_instance_pool_id
 			"driver_node_type_flexibility": {
 				"alternate_node_type_ids": {}, // databricks_job.*.new_cluster.driver_node_type_flexibility.alternate_node_type_ids
+				"aws_context_id":          {}, // databricks_job.*.new_cluster.driver_node_type_flexibility.aws_context_id
 			},
 			"driver_node_type_id":          {}, // databricks_job.*.new_cluster.driver_node_type_id
 			"enable_elastic_disk":          {}, // databricks_job.*.new_cluster.enable_elastic_disk
@@ -435,6 +423,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"use_ml_runtime":                 {}, // databricks_job.*.new_cluster.use_ml_runtime
 			"worker_node_type_flexibility": {
 				"alternate_node_type_ids": {}, // databricks_job.*.new_cluster.worker_node_type_flexibility.alternate_node_type_ids
+				"aws_context_id":          {}, // databricks_job.*.new_cluster.worker_node_type_flexibility.aws_context_id
 			},
 			"workload_type": {
 				"clients": {
@@ -562,19 +551,10 @@ var TerraformOnlyFields = map[string]FieldSet{
 		"expected_last_modified": {},
 		"url":                    {},
 	},
-	"postgres_branches": {
-		"purge_on_delete": {},
-	},
-	"postgres_databases": {
-		"replace_existing": {},
-	},
 	"postgres_projects": {
 		"initial_branch_spec": {
 			"is_protected": {}, // databricks_postgres_project.*.initial_branch_spec.is_protected
 		},
-	},
-	"postgres_roles": {
-		"replace_existing": {},
 	},
 	"schemas": {
 		"force_destroy": {},
@@ -585,9 +565,6 @@ var TerraformOnlyFields = map[string]FieldSet{
 	"sql_warehouses": {
 		"data_source_id": {},
 		"no_wait":        {},
-	},
-	"volumes": {
-		"volume_path": {},
 	},
 }
 
@@ -648,6 +625,7 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"source_branch":      {},
 		"source_branch_lsn":  {},
 		"source_branch_time": {},
+		"source_snapshot":    {},
 		"ttl":                {},
 	},
 	"postgres_catalogs": {
@@ -691,6 +669,7 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"branch":                             {},
 		"create_database_objects_if_missing": {},
 		"existing_pipeline_id":               {},
+		"extra_columns":                      {},
 		"new_pipeline_spec":                  {},
 		"postgres_database":                  {},
 		"primary_key_columns":                {},

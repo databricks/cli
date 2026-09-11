@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy without permissions"
+trace $CLI bundle deploy
+
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
+SNAPSHOT_PATH_1=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
+echo "First snapshot path: $SNAPSHOT_PATH_1"
+
+title "Add permissions and redeploy"
+cat >> databricks.yml <<'EOF'
+
+permissions:
+  - level: CAN_VIEW
+    group_name: admins
+EOF
+
+trace $CLI bundle deploy
+
+SNAPSHOT_PATH_2=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
+echo "Second snapshot path: $SNAPSHOT_PATH_2"
+
+title "Verify snapshot path changed after permissions change"
+echo ""
+if [ "$SNAPSHOT_PATH_1" = "$SNAPSHOT_PATH_2" ]; then
+    echo "ERROR: snapshot path did not change after permissions were added"
+    exit 1
+else
+    echo "OK: snapshot path changed as expected"
+fi

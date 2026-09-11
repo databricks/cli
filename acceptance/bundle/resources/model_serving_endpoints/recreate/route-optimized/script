@@ -6,17 +6,17 @@ cleanup() {
 }
 trap cleanup EXIT
 
-trace $CLI bundle plan -o json > out.first-plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp > out.first-plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 ENDPOINT_ID=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.test_endpoint.id')
-echo "$ENDPOINT_ID:ORIGINAL_ENDPOINT_ID" >> ACC_REPLS
-trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '{route_optimized, id}' > out.first-get.$DATABRICKS_BUNDLE_ENGINE.json
+add_repl "$ENDPOINT_ID" ORIGINAL_ENDPOINT_ID
+trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '{route_optimized, id}' > out.first-get.json
 
 print_requests.py //serving-endpoints > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace update_file.py databricks.yml "route_optimized: false" "route_optimized: true"
-trace $CLI bundle plan -o json > out.second-plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp > out.second-plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 trace print_requests.py //serving-endpoints

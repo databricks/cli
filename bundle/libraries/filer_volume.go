@@ -10,6 +10,6 @@ import (
 
 func filerForVolume(ctx context.Context, b *bundle.Bundle, uploadPath string) (filer.Filer, string, diag.Diagnostics) {
 	w := b.WorkspaceClient(ctx)
-	f, err := filer.NewFilesClient(w, uploadPath)
+	f, err := filer.NewFilesClient(ctx, w, uploadPath)
 	return f, uploadPath, diag.FromErr(err)
 }

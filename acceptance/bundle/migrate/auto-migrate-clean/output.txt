@@ -1,0 +1,71 @@
+
+=== Initial deploy uses terraform engine (no bundle.engine set, override via env var)
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.test_job
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+direct_drymigrate_success true
+direct_drymigrate_warnings false
+
+=== Opt in to direct engine via config and redeploy: dry-run is clean, auto-migration triggers
+>>> update_file.py databricks.yml name: test-bundle name: test-bundle
+  engine: direct
+
+>>> [CLI] bundle deploy
+Warn: Direct engine selected via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Migrating state to direct deployment engine (selected via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11)...
+Migrated 1 resource to direct deployment engine.
+
+>>> print_migration_telemetry
+direct_migrated_via_config true
+
+=== Direct-engine state is now in place; terraform state is backed up
+
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup
+
+=== Remote state also reflects the migration (force-pull surfaces workspace state)
+
+>>> [CLI] bundle debug states --force-pull
+resources.json: remote direct state serial=3 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=3 lineage="[UUID]"
+
+=== Subsequent plan under direct is a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Subsequent deploy under direct is a no-op
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_migration_telemetry
+
+=== Modify the config — plan shows the pending update
+>>> update_file.py databricks.yml Test Auto-Migrate Job Test Auto-Migrate Job (renamed)
+
+>>> [CLI] bundle plan
+update jobs.test_job
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Deploy picks up the update (with and without --plan)
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated jobs.test_job
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
