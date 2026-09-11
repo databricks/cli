@@ -44,11 +44,6 @@
         "createdb": true
       }
     },
-    "attributes.createdb": {
-      "action": "update",
-      "old": false,
-      "new": true
-    },
     "postgres_role": {
       "action": "skip",
       "reason": "spec:input_only",
