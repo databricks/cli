@@ -10,7 +10,8 @@
 
 
 === summary
-OK                         561
+OK                         554
+OK_RECREATE                7
 CANNOT_DELETE_REQUIRED     2
 OK_INERT                   12
 SUPPRESSED                 32
