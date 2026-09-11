@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -49,7 +50,7 @@ func workspaceToken(client *databricks.WorkspaceClient) fuse.TokenFunc {
 		}
 		token, ok := strings.CutPrefix(req.Header.Get("Authorization"), "Bearer ")
 		if !ok || token == "" {
-			return "", fmt.Errorf("resolved credentials do not provide a bearer token")
+			return "", errors.New("resolved credentials do not provide a bearer token")
 		}
 		return token, nil
 	}

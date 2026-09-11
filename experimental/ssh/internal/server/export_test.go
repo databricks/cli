@@ -1,4 +1,6 @@
 package server
 
-var WorkspaceToken = workspaceToken
-var FuseUserID = fuseUserID
+var (
+	WorkspaceToken = workspaceToken
+	FuseUserID     = fuseUserID
+)

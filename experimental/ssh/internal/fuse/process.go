@@ -1,6 +1,7 @@
 package fuse
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -45,12 +46,12 @@ func parseRegistration(pid int, namespace, stat string) (Registration, error) {
 	// https://man7.org/linux/man-pages/man5/proc_pid_stat.5.html
 	end := strings.LastIndex(stat, ")")
 	if end < 0 {
-		return Registration{}, fmt.Errorf("missing process name in process stat")
+		return Registration{}, errors.New("missing process name in process stat")
 	}
 	fields := strings.Fields(stat[end+1:])
 	const startTimeIndex = 19
 	if len(fields) <= startTimeIndex {
-		return Registration{}, fmt.Errorf("missing start time in process stat")
+		return Registration{}, errors.New("missing start time in process stat")
 	}
 	startTime, err := strconv.ParseUint(fields[startTimeIndex], 10, 64)
 	if err != nil {
