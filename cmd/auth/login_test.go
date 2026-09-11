@@ -42,6 +42,16 @@ func (s *putErrorStore) Put(string, storage.Entry) error {
 	return s.err
 }
 
+type countingStore struct {
+	storage.Store
+	putCalls int
+}
+
+func (s *countingStore) Put(key string, entry storage.Entry) error {
+	s.putCalls++
+	return s.Store.Put(key, entry)
+}
+
 func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
 	const profileName = "TEST"
 	inner := storage.NewMemoryStore()
@@ -852,6 +862,38 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Equal(t, "all-apis,sql", savedProfile.Scopes)
 	assert.Empty(t, savedProfile.AccountID)
 	assert.Empty(t, savedProfile.WorkspaceID)
+}
+
+func TestDiscoveryLogin_ProfileSaveFailureDoesNotStoreToken(t *testing.T) {
+	tmpDir := t.TempDir()
+	parentFile := filepath.Join(tmpDir, "not-a-directory")
+	require.NoError(t, os.WriteFile(parentFile, nil, 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(parentFile, ".databrickscfg"))
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.test")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection failed"),
+	}
+	store := &countingStore{Store: storage.NewMemoryStore()}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  store,
+	})
+
+	require.ErrorContains(t, err, "saving profile")
+	assert.Zero(t, store.putCalls)
 }
 
 func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
