@@ -11,7 +11,7 @@
 
 === summary
 OK                         34
-OK_RECREATE                114
+OK_RECREATE                78
 SUPPRESSED                 5
 NOT_OBSERVABLE             3
-SKIPPED                    18
+SKIPPED                    24
