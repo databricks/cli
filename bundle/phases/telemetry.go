@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/libs/dyn"
@@ -108,6 +109,45 @@ func uploadFileSizeHistogram(files []sizer) []int64 {
 	return hist
 }
 
+// aiRuntimeTaskMetrics computes the deploy-time ai_runtime_task (BYOT) adoption
+// booleans. present is true when any job declares an ai_runtime_task (including one
+// nested in a for_each_task); scheduled and multitask describe those jobs and are
+// meaningful only when present is true.
+//
+// The code_source_path is deliberately not inspected here: the aicode mutator
+// rewrites a local path to its uploaded remote path before this runs, so it would
+// always read as remote. Runtime dimensions (GPU type/count) likewise are not
+// recorded here; they come from the server-side workload log joined on the job id.
+func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, multitask bool) {
+	for _, job := range jobs {
+		if job == nil {
+			continue
+		}
+		jobHasAiRuntimeTask := false
+		for _, task := range job.Tasks {
+			rt := task.AiRuntimeTask
+			if rt == nil && task.ForEachTask != nil {
+				rt = task.ForEachTask.Task.AiRuntimeTask
+			}
+			if rt != nil {
+				jobHasAiRuntimeTask = true
+				break
+			}
+		}
+		if !jobHasAiRuntimeTask {
+			continue
+		}
+		present = true
+		if job.Schedule != nil || job.Trigger != nil || job.Continuous != nil {
+			scheduled = true
+		}
+		if len(job.Tasks) > 1 {
+			multitask = true
+		}
+	}
+	return present, scheduled, multitask
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
@@ -200,6 +240,16 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 			b.Metrics.SetBoolValue(metrics.SqlWarehouseLifecycleStarted, *warehouse.Lifecycle.Started)
 			break
 		}
+	}
+
+	// Record AI Runtime (ai_runtime_task / BYOT) adoption. has_ai_runtime_task is
+	// emitted on every deploy; the rest describe the ai_runtime_task jobs and are
+	// emitted only when one is present.
+	airPresent, airScheduled, airMultitask := aiRuntimeTaskMetrics(b.Config.Resources.Jobs)
+	b.Metrics.SetBoolValue(metrics.HasAiRuntimeTask, airPresent)
+	if airPresent {
+		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskScheduled, airScheduled)
+		b.Metrics.SetBoolValue(metrics.AiRuntimeTaskMultitask, airMultitask)
 	}
 
 	// Record whether the deprecated terraform engine was explicitly opted into,

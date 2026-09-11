@@ -1,0 +1,43 @@
+bundle:
+  name: test-bundle
+
+workspace:
+  artifact_path: /foo/bar/artifacts
+
+# The tarball is delivered as an artifact; don't also sync it as a bundle file.
+sync:
+  exclude:
+    - build/**
+    - dist/**
+    - code.tgz
+    - "**/*.tar.gz"
+
+artifacts:
+  code_source:
+    build: touch code.tgz
+    files:
+      - source: code.tgz
+
+resources:
+  jobs:
+    job:
+      name: "[${bundle.target}] AI Runtime Job"
+      # Present so the ai_runtime_task_scheduled telemetry bool is exercised.
+      schedule:
+        quartz_cron_expression: "0 0 12 * * ?"
+        timezone_id: UTC
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+      tasks:
+        - task_key: train
+          environment_key: default
+          ai_runtime_task:
+            experiment: my-experiment
+            code_source_path: code.tgz
+            deployments:
+              - command_path: command.sh
+                compute:
+                  accelerator_type: GPU_1xA10
+                  accelerator_count: 1

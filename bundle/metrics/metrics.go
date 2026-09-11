@@ -109,4 +109,15 @@ const (
 	DMSUndeclaredOtherUser        = "dms_undeclared_other_user"
 	DMSUndeclaredServicePrincipal = "dms_undeclared_service_principal"
 	DMSUndeclaredGroup            = "dms_undeclared_group"
+
+	// AI Runtime (ai_runtime_task, a.k.a. BYOT) adoption signals recorded at deploy.
+	// HasAiRuntimeTask is emitted on every deploy so adoption can be measured against
+	// all deploys. The other two are emitted only when the bundle declares an
+	// ai_runtime_task, so a false value means "has an ai_runtime_task, but it is not
+	// scheduled / not multi-task" rather than "no ai_runtime_task". Runtime GPU type
+	// and count are not recorded here; they come from the server-side workload log
+	// joined on the deployed job id.
+	HasAiRuntimeTask       = "has_ai_runtime_task"
+	AiRuntimeTaskScheduled = "ai_runtime_task_scheduled"
+	AiRuntimeTaskMultitask = "ai_runtime_task_multitask"
 )
