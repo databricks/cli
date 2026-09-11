@@ -1,0 +1,49 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created cluster_policies.policy
+Created jobs.test_job
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle config-remote-sync
+No changes detected.
+
+
+=== Sync remote user edits unrelated to the attached policy
+
+>>> [CLI] bundle config-remote-sync --save
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  job_clusters[job_cluster_key='shared'].new_cluster.num_workers: replace
+  job_clusters[job_cluster_key='shared'].new_cluster.spark_conf: add
+  job_clusters[job_cluster_key='ungated'].new_cluster.num_workers: replace
+  job_clusters[job_cluster_key='ungated'].new_cluster.spark_conf: add
+  max_concurrent_runs: replace
+  tasks[task_key='loop'].for_each_task.task.new_cluster.num_workers: replace
+  tasks[task_key='loop'].for_each_task.task.new_cluster.spark_conf: add
+  tasks[task_key='own_cluster'].new_cluster.num_workers: replace
+  tasks[task_key='own_cluster'].new_cluster.spark_conf: add
+
+
+
+>>> [CLI] bundle validate -o json
+json.resources.jobs.test_job.job_clusters[0].new_cluster.num_workers = 2;
+json.resources.jobs.test_job.job_clusters[0].new_cluster.spark_conf.spark.sql.shuffle.partitions = "7";
+json.resources.jobs.test_job.job_clusters[1].new_cluster.num_workers = 2;
+json.resources.jobs.test_job.job_clusters[1].new_cluster.spark_conf.spark.sql.shuffle.partitions = "7";
+json.resources.jobs.test_job.max_concurrent_runs = 5;
+json.resources.jobs.test_job.tasks[0].for_each_task.task.new_cluster.num_workers = 2;
+json.resources.jobs.test_job.tasks[0].for_each_task.task.new_cluster.spark_conf.spark.sql.shuffle.partitions = "7";
+json.resources.jobs.test_job.tasks[1].new_cluster.num_workers = 2;
+json.resources.jobs.test_job.tasks[1].new_cluster.spark_conf.spark.sql.shuffle.partitions = "7";
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.policy
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 2 deleted

@@ -1,0 +1,66 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    policy:
+      name: test-policy-$UNIQUE_NAME
+      definition:
+        # This rule controls only PolicyTag, not the Spark setting edited below.
+        custom_tags.PolicyTag:
+          type: fixed
+          value: from-policy
+  jobs:
+    test_job:
+      name: test-job-$UNIQUE_NAME
+      max_concurrent_runs: 1
+      job_clusters:
+        - job_cluster_key: shared
+          new_cluster:
+            policy_id: ${resources.cluster_policies.policy.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            custom_tags:
+              PolicyTag: from-policy
+        - job_cluster_key: ungated
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: shared_task
+          job_cluster_key: shared
+          spark_python_task:
+            python_file: ./hello.py
+        - task_key: ungated_task
+          job_cluster_key: ungated
+          spark_python_task:
+            python_file: ./hello.py
+        - task_key: own_cluster
+          new_cluster:
+            policy_id: ${resources.cluster_policies.policy.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            custom_tags:
+              PolicyTag: from-policy
+          spark_python_task:
+            python_file: ./hello.py
+        - task_key: loop
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: nested_cluster
+              new_cluster:
+                policy_id: ${resources.cluster_policies.policy.id}
+                spark_version: $DEFAULT_SPARK_VERSION
+                node_type_id: $NODE_TYPE_ID
+                num_workers: 1
+                custom_tags:
+                  PolicyTag: from-policy
+              spark_python_task:
+                python_file: ./hello.py

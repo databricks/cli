@@ -1,0 +1,29 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+job_id=$(read_id.py test_job)
+
+trace $CLI bundle config-remote-sync | contains.py "No changes detected"
+
+title "Sync remote user edits unrelated to the attached policy\n"
+edit_resource.py jobs "$job_id" <<'EOF'
+r["max_concurrent_runs"] = 5
+clusters = [jc["new_cluster"] for jc in r["job_clusters"]]
+for task in r["tasks"]:
+    if "new_cluster" in task:
+        clusters.append(task["new_cluster"])
+    if "for_each_task" in task:
+        clusters.append(task["for_each_task"]["task"]["new_cluster"])
+for cluster in clusters:
+    cluster["spark_conf"] = {"spark.sql.shuffle.partitions": "7"}
+    cluster["num_workers"] = 2
+EOF
+
+trace $CLI bundle config-remote-sync --save
+# The snapshot must include the user addition for every cluster, including those with a policy.
+trace $CLI bundle validate -o json | gron.py | grep -E 'max_concurrent_runs|num_workers|spark.sql.shuffle.partitions'
