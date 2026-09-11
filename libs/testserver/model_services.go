@@ -30,6 +30,11 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 		}
 	}
 
+	// A model service is created around its routing config; the backend refuses one without it.
+	if ms.Config == nil {
+		return modelServiceInvalidRequest("config is required")
+	}
+
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("model_service_id")
 
@@ -65,6 +70,13 @@ func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 		}
 	}
 
+	// A model service always routes somewhere, so its destinations cannot be emptied: the backend
+	// refuses it and points at DeleteModelService instead. Only a change that leaves no destination is
+	// rejected -- setting or changing them is fine.
+	if incoming.Config == nil || incoming.Config.Routing == nil || len(incoming.Config.Routing.Destinations) == 0 {
+		return modelServiceInvalidRequest("destinations cannot be cleared; use DeleteModelService to remove the resource")
+	}
+
 	// Apply the mutable fields carried in the update mask (comment, config).
 	existing.Comment = incoming.Comment
 	existing.Config = incoming.Config
@@ -73,5 +85,16 @@ func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 	s.ModelServices[name] = existing
 	return Response{
 		Body: existing,
+	}
+}
+
+// modelServiceInvalidRequest mirrors the backend's 400 for a model-service request it will not accept.
+func modelServiceInvalidRequest(message string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    message,
+		},
 	}
 }
