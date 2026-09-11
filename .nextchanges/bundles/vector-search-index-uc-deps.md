@@ -1,1 +1,1 @@
-* Capture the implicit dependency a vector search index has on a catalog or schema defined in the same bundle, so the catalog and schema are deployed first.
+* Capture the implicit dependency a vector search index has on a catalog or schema defined in the same bundle, so the catalog and schema are deployed first. ([#6655](https://github.com/databricks/cli/pull/6655))
