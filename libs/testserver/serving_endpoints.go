@@ -574,8 +574,15 @@ func (s *FakeWorkspace) ServingEndpointPatchTags(req Request, name string) Respo
 		tagMap[tag.Key] = tag.Value
 	}
 
-	// Add or update tags
+	// Add or update tags. A tag has to have a key; the backend refuses an empty one, which is how
+	// clearing a tag key is rejected rather than storing a keyless tag.
 	for _, tag := range patchReq.AddTags {
+		if tag.Key == "" {
+			return Response{
+				StatusCode: 400,
+				Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "Endpoint tag keys must be defined."},
+			}
+		}
 		tagMap[tag.Key] = tag.Value
 	}
 
