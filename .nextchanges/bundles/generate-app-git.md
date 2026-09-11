@@ -1,0 +1,1 @@
+`databricks bundle generate app` now reproduces a git-backed app's `git_repository` and `git_source` configuration instead of emitting a workspace `source_code_path`, so generating from a Git-deployed app no longer silently converts it to workspace source.
