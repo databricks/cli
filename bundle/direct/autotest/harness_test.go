@@ -304,7 +304,7 @@ func opTimeout() time.Duration {
 func (h *bundleHarness) plan() (*pendingApply, *deployplan.Plan, diag.Diagnostics) {
 	ctx, cancel := h.opCtx()
 	db := &direct.DeploymentBundle{} //exhaustruct:ignore
-	if err := db.StateDB.Open(ctx, h.statePath, dstate.WithRecovery(false), dstate.WithWrite(false)); err != nil {
+	if err := db.StateDB.Open(ctx, h.statePath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 		// A pendingApply even here: every caller cancels what plan hands back, and a nil one
 		// would turn a state-file problem into a panic.
 		return &pendingApply{ctx: ctx, cancel: cancel, db: db}, nil, diag.FromErr(err)
@@ -370,7 +370,7 @@ func (h *bundleHarness) deploy() (deployplan.ActionType, diag.Diagnostics) {
 func (h *bundleHarness) destroy() diag.Diagnostics {
 	ctx, cancel := h.opCtx()
 	db := &direct.DeploymentBundle{} //exhaustruct:ignore
-	if err := db.StateDB.Open(ctx, h.statePath, dstate.WithRecovery(false), dstate.WithWrite(false)); err != nil {
+	if err := db.StateDB.Open(ctx, h.statePath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 		cancel()
 		return diag.FromErr(err)
 	}
