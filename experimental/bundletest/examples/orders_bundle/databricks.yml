@@ -72,15 +72,16 @@ resources:
             layout: []
 
   genie_spaces:
-    # Genie Space with an inline serialized definition — same source_tables() parser.
+    # Genie Space with an inline serialized definition. A space declares its tables
+    # explicitly under data_sources.tables[].identifier (a different schema from a dashboard).
     orders_genie:
       title: Orders Genie
       warehouse_id: ${var.warehouse_id}
       serialized_space:
-        datasets:
-          - name: summary
-            queryLines:
-              - "SELECT * FROM shop.gold.order_summary\n"
+        version: 1
+        data_sources:
+          tables:
+            - identifier: shop.gold.order_summary
 
   quality_monitors:
     # Monitors the gold table the aggregate job produces.
