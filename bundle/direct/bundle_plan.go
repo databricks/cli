@@ -428,6 +428,23 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 		}
 	}
 
+	// Keep one level per subtree. A whole block added or removed on one side is recorded
+	// as a single block-level change (Old/New/Remote carry the whole block); the other
+	// diff may have descended to inner fields of the same subtree. The block-level entry
+	// already describes those, so drop any entry that has an ancestor entry in the map.
+	for pathStr := range m {
+		node, err := structpath.ParsePath(pathStr)
+		if err != nil {
+			continue
+		}
+		for ancestor := node.Parent(); ancestor != nil; ancestor = ancestor.Parent() {
+			if _, ok := m[ancestor.String()]; ok {
+				delete(m, pathStr)
+				break
+			}
+		}
+	}
+
 	return m, nil
 }
 

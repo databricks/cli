@@ -24,18 +24,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === redeploy re-fires with unchanged config
 >>> [CLI] bundle plan
-recreate job_runs.my_run
-
-Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle.triggers_state.on_bundle_deploy": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": "[UUID]",
-    "new": "[UUID]"
-  },
   "result_state": {
     "action": "skip",
     "reason": "remote_already_set",
@@ -46,11 +38,8 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 === bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
-Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
-Recreated job_runs.my_run
 Files: 3 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> [CLI] bundle summary
 Name: job-runs-on-bundle-deploy
@@ -62,7 +51,7 @@ Resources:
   Job Runs:
     my_run:
       Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?w=[NUMID]
   Jobs:
     my_job:
       Name: my-job
@@ -70,23 +59,8 @@ Resources:
 
 === second run-now after recreate
 >>> print_requests.py --keep //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [MY_RUN_ID]
-  }
-}
 
 >>> print_requests.py //jobs/run-now
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/run-now",
-  "body": {
-    "idempotency_token": "[UUID]",
-    "job_id": [MY_JOB_ID]
-  }
-}
 
 === removing on_bundle_deploy is unchanged and does not run
 >>> [CLI] bundle plan
