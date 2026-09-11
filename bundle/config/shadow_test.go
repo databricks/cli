@@ -17,6 +17,7 @@ package config_test
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -47,8 +48,7 @@ func TestNoSameDepthJSONShadows(t *testing.T) {
 	rt := reflect.TypeFor[config.Resources]()
 	var newCollisions []string
 
-	for i := range rt.NumField() {
-		f := rt.Field(i)
+	for f := range rt.Fields() {
 		et := f.Type.Elem()
 		for et.Kind() == reflect.Pointer {
 			et = et.Elem()
@@ -59,13 +59,7 @@ func TestNoSameDepthJSONShadows(t *testing.T) {
 		group := structtag.JSONTag(f.Tag.Get("json")).Name()
 
 		for _, c := range sameDepthCollisions(et) {
-			known := false
-			for _, k := range knownSameDepthCollisions[group] {
-				if k == c.name {
-					known = true
-					break
-				}
-			}
+			known := slices.Contains(knownSameDepthCollisions[group], c.name)
 			if !known {
 				newCollisions = append(newCollisions,
 					fmt.Sprintf("%s (%s): json name %q declared by %s and %s at the same embedding depth",
@@ -101,8 +95,7 @@ func sameDepthCollisions(t reflect.Type) []collision {
 	for len(level) > 0 {
 		nameToTypes := map[string][]string{}
 		for _, ft := range level {
-			for i := range ft.NumField() {
-				sf := ft.Field(i)
+			for sf := range ft.Fields() {
 				if sf.PkgPath != "" || sf.Anonymous {
 					continue
 				}
@@ -138,8 +131,7 @@ func sameDepthCollisions(t reflect.Type) []collision {
 
 func embeddedTypes(t reflect.Type) []reflect.Type {
 	var out []reflect.Type
-	for i := range t.NumField() {
-		sf := t.Field(i)
+	for sf := range t.Fields() {
 		if !sf.Anonymous {
 			continue
 		}

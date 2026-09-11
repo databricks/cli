@@ -13,7 +13,11 @@ import (
 
 type Pipeline struct {
 	BaseResource
-	pipelines.CreatePipeline //nolint CreatePipeline also defines Id field with the same json tag "id"
+	pipelines.CreatePipeline //nolint:govet // CreatePipeline.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
+	// ID shadows the same-depth collision between BaseResource.ID and
+	// CreatePipeline.Id — both embed json:"id" at depth 1. Declaring it
+	// here at depth 0 makes the field reachable and unambiguous.
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	Permissions []PipelinePermission `json:"permissions,omitempty"`
 
