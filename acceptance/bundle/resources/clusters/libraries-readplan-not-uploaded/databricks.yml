@@ -1,0 +1,13 @@
+bundle:
+  name: libraries-readplan-not-uploaded
+
+resources:
+  clusters:
+    mycluster:
+      cluster_name: mycluster
+      spark_version: 15.4.x-scala2.12
+      node_type_id: Standard_DS3_v2
+      num_workers: 1
+      libraries:
+        # Prebuilt local wheel (no build: step) to keep the test hermetic.
+        - whl: ./dist/*.whl

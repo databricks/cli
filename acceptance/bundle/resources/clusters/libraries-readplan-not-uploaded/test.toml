@@ -1,0 +1,6 @@
+Badness = "bundle deploy --plan skips the build phase, so a cluster's local wheel is never uploaded (proven in deploy/readplan/whl-not-uploaded). Kept as a note: when the bug is fixed, deploy --plan will print 'Uploading dist/...' and this golden changes - then delete this test and restore EnvMatrix.READPLAN = [\"\", \"1\"] on clusters/libraries and clusters/libraries-content-change."
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# This test is just asserting bad behaviour so that it can be removed once that behaviour is fixed
+RecordRequests = false
+Ignore = [".databricks", "tmp.plan.json"]

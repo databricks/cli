@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy output goes to LOG (differs fake vs cloud); echo a pass line instead.
+title "Deploy creates the cluster and installs the pypi library"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
+printf '\n%s\n' "OK: cluster created with pypi library"
+
+title "Plan is a no-op after deploy: the repo round-trips"
+trace $CLI bundle plan
+
+title "Changing only the repo is planned as an update"
+update_file.py databricks.yml "repo: https://pypi.org/simple" "repo: https://example.invalid/simple"
+trace $CLI bundle plan

@@ -222,6 +222,35 @@ func (s *FakeWorkspace) ClustersStart(req Request) any {
 	return Response{}
 }
 
+// ClustersRestart restarts a running cluster. It moves the cluster back to PENDING so the next
+// ClustersGet transitions it to RUNNING, mirroring how a real restart cycles through states, and
+// clears the venv cache like ClustersEdit (a restart rebuilds the library environment).
+func (s *FakeWorkspace) ClustersRestart(req Request) any {
+	var request compute.RestartCluster
+	if err := json.Unmarshal(req.Body, &request); err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("request parsing error: %s", err),
+		}
+	}
+	defer s.LockUnlock()()
+
+	cluster, ok := s.Clusters[request.ClusterId]
+	if !ok {
+		return Response{StatusCode: 404}
+	}
+
+	cluster.State = compute.StatePending
+	s.Clusters[request.ClusterId] = cluster
+
+	if env, ok := s.clusterVenvs[request.ClusterId]; ok {
+		os.RemoveAll(env.dir)
+		delete(s.clusterVenvs, request.ClusterId)
+	}
+
+	return Response{}
+}
+
 func (s *FakeWorkspace) ClustersPermanentDelete(req Request) any {
 	var request compute.PermanentDeleteCluster
 	if err := json.Unmarshal(req.Body, &request); err != nil {

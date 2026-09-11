@@ -1,0 +1,7 @@
+# A cluster's local wheel library is uploaded by `bundle deploy` but NOT by
+# `bundle deploy --plan`. This tripwire pins that difference.
+# Can be removed once fixed, and other tests can be moved to READPLAN variants.
+#See acceptance/bundle/deploy/readplan/whl-not-uploaded for the bug.
+trace $CLI bundle plan -o json > tmp.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
+trace $CLI bundle destroy --auto-approve

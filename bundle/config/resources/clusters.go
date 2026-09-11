@@ -18,6 +18,9 @@ type Cluster struct {
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
 	Lifecycle *LifecycleWithStarted `json:"lifecycle,omitempty"`
 
+	// Libraries are installed via the Libraries API, not the cluster spec.
+	Libraries []compute.Library `json:"libraries,omitempty"`
+
 	Permissions []ClusterPermission `json:"permissions,omitempty"`
 }
 

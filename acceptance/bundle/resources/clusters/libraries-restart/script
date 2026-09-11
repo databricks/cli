@@ -1,0 +1,38 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy output goes to LOG (differs fake vs cloud); the captured restart request is the proof.
+title "Install (create): libraries install on the fresh cluster with no restart"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.create
+cat LOG.create | contains.py "Created clusters.mycluster" > /dev/null
+# No restart request on create (empty below).
+trace print_requests.py //clusters/restart
+
+title "Update: adding a library restarts the running cluster"
+update_file.py databricks.yml "        - pypi:
+            package: requests" "        - pypi:
+            package: requests
+        - pypi:
+            package: six"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.update
+cat LOG.update | contains.py "Updated clusters.mycluster" > /dev/null
+trace print_requests.py //clusters/restart
+
+title "Delete: removing all libraries restarts the running cluster"
+update_file.py databricks.yml "      libraries:
+        - pypi:
+            package: requests
+        - pypi:
+            package: six
+" ""
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.remove
+cat LOG.remove | contains.py "Updated clusters.mycluster" > /dev/null
+trace print_requests.py //clusters/restart
