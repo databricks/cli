@@ -1,0 +1,9 @@
+# Value library for model services. See ../../README.md.
+#
+# parent references the pre-existing main.default schema and model_service_id is the other half of the
+# server-derived id; both are immutable, so a change recreates. Shape follows
+# acceptance/bundle/invariant/configs/model_service.yml.tmpl.
+base:
+  parent: schemas/main.default
+  model_service_id: test-model-service-$UNIQUE_NAME
+  comment: test model service
