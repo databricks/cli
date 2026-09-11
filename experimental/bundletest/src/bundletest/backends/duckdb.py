@@ -239,8 +239,7 @@ class DuckDBBackend:
         reason = _unresolved(cfg)
         if reason is not None:
             raise LocalUnsupported(
-                f"resource {kind}.{name} can't be introspected locally: {reason}; "
-                f"use the cloud backend"
+                f"resource {kind}.{name} can't be introspected locally: {reason}; use the cloud backend"
             )
         return cfg
 
