@@ -1,0 +1,251 @@
+# Value library for jobs. See ../../README.md.
+
+# git_source only validates as a coherent set: a provider, a url, and exactly one of
+# branch/tag/commit. Seeding one makes its fields reachable, so changing the commit or the
+# provider is tested rather than skipped.
+#
+# job_clusters, triggers and environments would otherwise be absent entirely, so their
+# fields would go untested; seeding one entry each makes them reachable.
+base:
+  name: test-job-$UNIQUE_NAME
+  git_source:
+    git_provider: gitHub
+    git_url: https://github.com/databricks/cli.test
+    git_commit: abc123
+  tasks:
+    - task_key: seeded
+      notebook_task:
+        # Relative, because the seeded git_source makes the task read from the repository:
+        # "Only relative paths are currently supported for remote repositories."
+        notebook_path: notebook
+      job_cluster_key: seeded
+  job_clusters:
+    - job_cluster_key: seeded
+      new_cluster:
+        spark_version: 13.3.x-scala2.12
+        node_type_id: $NODE_TYPE_ID
+        num_workers: 1
+        custom_tags:
+          team: eng
+        spark_conf:
+          spark.speculation: "true"
+  environments:
+    - environment_key: seeded
+      spec:
+        client: "1"
+        dependencies:
+          - requests
+  parameters:
+    - name: table
+      default: users
+  tags:
+    team: eng
+  health:
+    rules:
+      - metric: RUN_DURATION_SECONDS
+        op: GREATER_THAN
+        value: 3600
+  webhook_notifications:
+    on_failure:
+      - id: 00000000-0000-0000-0000-000000000000
+  trigger:
+    pause_status: UNPAUSED
+    periodic:
+      interval: 1
+      unit: HOURS
+
+skip:
+  # Clearing the name does not converge on a real workspace. The CLI defaults a nameless job to
+  # Untitled (resourcemutator's defaults table), the remote ends up holding that, and the plan keeps
+  # proposing an update afterwards -- so the transition to absent never settles. The mock server
+  # stores the cleared value and converges, which is the divergence. The other five transitions of
+  # the field are fine on both, so only absent is out of reach.
+  name: clearing it leaves the remote at the CLI default Untitled, and the plan never converges
+
+  # --- Fields a real workspace rejects. The mock server accepts every one of them, so each row below
+  # had only ever measured the mock server. The API's own words are quoted in each comment.
+
+  # Invalid trigger settings. One of schedule, trigger or continuous can be set -- and base seeds a
+  # trigger, so no field of continuous is reachable without removing that first.
+  continuous: one of schedule, trigger or continuous, and base declares a trigger
+
+  # Metadata file path must begin with a slash, so no generic value is one.
+  deployment.metadata_file_path: must be an absolute path, which no generic value is
+
+  # An environment is validated as a set -- either base environment or version must be specified, and
+  # specifying both is refused. No one of the three can move on its own.
+  environments[*].spec.base_environment: validated as a set with client and environment_version
+  environments[*].spec.client: validated as a set with base_environment and environment_version
+  environments[*].spec.environment_version: validated as a set with base_environment and client
+
+  # Git branch, tag, or commit must be specified -- clearing the commit leaves no ref at all, and the
+  # other two members of that oneof are already skipped.
+  git_source.git_commit: clearing it leaves git_source with no ref, which the API refuses
+
+  # Job cluster seeded is not defined in the field job_clusters -- the task names the key, so the list
+  # cannot move unless the task moves with it.
+  job_clusters: the task names a key in it, which cannot change at the same time
+
+  # Cluster-level constraints. A job cluster is created with no kind and no size of its own, so
+  # several of these can never hold on this fixture.
+  job_clusters[*].new_cluster.autoscale.min_workers: the maximum must be greater, and max does not move with it
+  job_clusters[*].new_cluster.autotermination_minutes: automated clusters do not support autotermination
+  job_clusters[*].new_cluster.cluster_log_conf.dbfs.destination: needs a dbfs path, which no generic value is
+  job_clusters[*].new_cluster.cluster_log_conf.volumes.destination: needs an access mode this cluster does not have
+  job_clusters[*].new_cluster.is_single_node: not allowed with unspecified kind, and a job cluster has none
+  job_clusters[*].new_cluster.use_ml_runtime: not allowed with unspecified kind, and a job cluster has none
+  job_clusters[*].new_cluster.num_workers: clearing it leaves the cluster with no size, which the API refuses
+  job_clusters[*].new_cluster.spark_version: required, so clearing it is refused
+  job_clusters[*].new_cluster.remote_disk_throughput: an unrecognized field on this workspace
+  job_clusters[*].new_cluster.total_initial_remote_disk_size: an unrecognized field on this workspace
+
+  # A shared job cluster is only supported for multi-task jobs, so the list cannot shrink to one task
+  # while a job_cluster_key is in play.
+  tasks: a shared job cluster needs more than one task, and base seeds one of each
+
+  # compute in task settings cannot be used with job_cluster_key, which base seeds.
+  tasks[*].compute.hardware_accelerator: cannot be set on a task that names a job_cluster_key
+
+  # Only an absolute notebook path is accepted, so no generic value is one.
+  tasks[*].notebook_task.source: needs an absolute notebook path, which no generic value is
+
+  # A Python operator task does not need a command, and the API refuses one.
+  tasks[*].python_operator_task.main: the API refuses a command on this task type
+
+  # The duration warning threshold must not be greater than the timeout, and base seeds a rule whose
+  # threshold is above every timeout the suite would try.
+  timeout_seconds: must exceed the seeded health rule warning threshold
+
+  # A webhook id has to be a valid UUID naming a destination that exists.
+  webhook_notifications.on_failure[*].id: needs a notification destination to exist
+
+  # --- Fields the API accepts and then does not apply. Recorded here rather than as rows, because the
+  # mock server does apply them: a local row would say OK where a workspace says the write had no
+  # effect. Modelling each in libs/testserver is the real fix; until then the reason is the finding.
+  edit_mode: the API accepts the write and does not apply it
+  format: the API accepts the write and does not apply it
+  health.rules: the API accepts the write and does not apply it
+  max_concurrent_runs: the API accepts the write and does not apply it
+  parent_path: the API accepts the write and does not apply it
+  trigger.pause_status: the API accepts the write and does not apply it
+  # Not seeded in base either: the create does not apply it, so the job drifts from the moment it
+  # exists and every other field is then measured against a resource already pending.
+  email_notifications: the API accepts the write and does not apply it
+  tasks[*].email_notifications: the API accepts the write and does not apply it
+  tasks[*].disable_auto_optimization: the API accepts the write and does not apply it
+  # An init script has to name a file that exists: a real workspace fails the cluster with "Init
+  # scripts failed ... Tree node with path ... does not exist". This suite deliberately uploads no
+  # bundle files -- a sync per permutation would dominate the run -- so no destination it could name
+  # is there, and the mock server's acceptance of any path is what made the field look testable.
+  job_clusters[*].new_cluster.init_scripts: an init script has to name a file that exists, and this suite uploads none
+  # git_branch and git_tag are the other two sides of the same oneof as git_commit, which
+  # base sets. Adding one alongside it is rejected for being ambiguous, not for anything
+  # this suite measures. Covered by acceptance/bundle/resources/jobs.
+  git_source.git_branch: mutually exclusive with the seeded git_commit
+  git_source.git_tag: mutually exclusive with the seeded git_commit
+
+  # A task's type is a union and base seeds notebook_task, so reaching any other member means
+  # putting two types on one task -- which the API rejects, usually by complaining about the
+  # cluster the seeded task carries ("For each does not need a cluster"). Locally the fake server
+  # accepted it, so ~2200 transitions were exercising configurations no user can write.
+  #
+  # Covering a member needs a fixture whose task is of that type. Some exist in the acceptance corpus --
+  # job_apply_policy_default_values_for_each_task.yml.tmpl is one -- but this suite drives the
+  # simplest config per resource type, so they are not the one picked. Their fields are listed as
+  # uncovered rather than tested against a task that cannot hold them.
+  tasks[*].ai_runtime_task: another member of the same union as the seeded notebook_task
+  tasks[*].alert_task: another member of the same union as the seeded notebook_task
+  tasks[*].clean_rooms_notebook_task: another member of the same union as the seeded notebook_task
+  tasks[*].condition_task: another member of the same union as the seeded notebook_task
+  tasks[*].dashboard_task: another member of the same union as the seeded notebook_task
+  tasks[*].dbt_cloud_task: another member of the same union as the seeded notebook_task
+  tasks[*].dbt_platform_task: another member of the same union as the seeded notebook_task
+  tasks[*].dbt_task: another member of the same union as the seeded notebook_task
+  tasks[*].for_each_task: another member of the same union as the seeded notebook_task
+  tasks[*].gen_ai_compute_task: another member of the same union as the seeded notebook_task
+  tasks[*].pipeline_task: another member of the same union as the seeded notebook_task
+  tasks[*].power_bi_task: another member of the same union as the seeded notebook_task
+  tasks[*].python_wheel_task: another member of the same union as the seeded notebook_task
+  tasks[*].run_job_task: another member of the same union as the seeded notebook_task
+  tasks[*].spark_jar_task: another member of the same union as the seeded notebook_task
+  tasks[*].spark_python_task: another member of the same union as the seeded notebook_task
+  tasks[*].spark_submit_task: another member of the same union as the seeded notebook_task
+  tasks[*].sql_task: another member of the same union as the seeded notebook_task
+
+  # A task's compute is a union too, and base seeds job_cluster_key.
+  tasks[*].existing_cluster_id: another way to name the task's compute than the seeded job_cluster_key
+  tasks[*].new_cluster: another way to name the task's compute than the seeded job_cluster_key
+  tasks[*].environment_key: only for a task type that runs in a serverless environment
+
+  # Each names a workspace object this suite does not provision.
+  job_clusters[*].serverless_compute_id: needs a serverless compute to exist
+  schedule.sql_condition: needs a saved query and a warehouse to exist
+  trigger.sql_condition: needs a saved query and a warehouse to exist
+  trigger.model.securable_name: needs a registered model to exist
+  git_source.job_source: needs a job whose configuration lives in the repository
+  # run_as must name a principal allowed to run the job, which depends on the identity the
+  # suite runs as -- a service principal on cloud.
+  run_as: depends on the identity the suite runs as
+  # A job cluster key has to name an entry in job_clusters, and this suite drives one field at a
+  # time -- so renaming the key on the task and on the definition cannot happen together.
+  tasks[*].job_cluster_key: has to name a job_clusters entry, which cannot change with it
+  job_clusters[*].job_cluster_key: has to match the key the task names, which cannot change with it
+  # A node type is cloud-specific and the suite has one variable for it, so there is no second
+  # value to move to: "Node type x is not supported. Supported node types: r3.xlarge, ...".
+  job_clusters[*].new_cluster.node_type_id: cloud-specific; the suite has one node type
+  job_clusters[*].new_cluster.driver_node_type_id: cloud-specific; the suite has one node type
+  # An account-level policy, as with apps.
+  usage_policy_id: needs an account-level usage policy to exist
+  # The backend assigns a job cluster its name: "Cluster name should not be provided".
+  job_clusters[*].new_cluster.cluster_name: assigned by the backend for a job cluster
+  # Each names a workspace object this suite does not provision.
+  job_clusters[*].new_cluster.policy_id: needs a cluster policy to exist
+  job_clusters[*].new_cluster.instance_pool_id: needs an instance pool to exist
+  job_clusters[*].new_cluster.driver_instance_pool_id: needs an instance pool to exist
+  job_clusters[*].new_cluster.init_scripts[*].s3.kms_key: needs a KMS key registered for the workspace
+  job_clusters[*].new_cluster.cluster_log_conf.s3.kms_key: needs a KMS key registered for the workspace
+  tasks[*].notebook_task.warehouse_id: needs a second SQL warehouse to exist
+  # A trigger, a schedule and a continuous block are three arms of one choice, so a schedule
+  # field cannot move on a job base gives no schedule.
+  schedule: one of schedule, trigger or continuous, and the config declares none
+  # trigger is a choice between file_arrival, table_update, model and periodic, and base seeds
+  # periodic. Each other member is rejected as a set, in its own words:
+  #   "Invalid trigger settings. One of 'schedule', 'trigger' or 'continuous' can be set."
+  #   "Field 'new_settings.trigger.table_update.table_names' is required, expected non-empty collection!"
+  #   "Missing required field: new_settings.trigger.model.condition"
+  # Covering them needs a second fixture per member rather than a value for a leaf inside one.
+  trigger.file_arrival: a trigger member the seeded periodic trigger excludes
+  trigger.table_update: a trigger member the seeded periodic trigger excludes
+  trigger.model: a trigger member the seeded periodic trigger excludes
+
+  # "dependencies and java_dependencies cannot be provided at the same time for environment key
+  # seeded", and base seeds dependencies.
+  environments[*].spec.java_dependencies: cannot be set alongside the seeded dependencies
+
+  # "Sparse checkout pattern must a valid file path and cannot exceed 2048 characters" -- the
+  # generic x and y are not paths.
+  git_source.sparse_checkout: needs a valid file path, which no generic string value is
+
+  # Both hold node type ids, and a node type is cloud-specific: "Node type x is not supported."
+  # The suite has one node type variable, so there is no second value to move to.
+  job_clusters[*].new_cluster.worker_node_type_flexibility: cloud-specific node type ids
+  job_clusters[*].new_cluster.driver_node_type_flexibility: cloud-specific node type ids
+
+  # "S3 cluster log destination is provided without region" -- the block is validated as a set,
+  # and a region is cloud-specific.
+  job_clusters[*].new_cluster.cluster_log_conf.s3: validated as a set with a cloud-specific region
+
+  # Only one of the three cloud attribute blocks applies, decided by the workspace's cloud.
+  job_clusters[*].new_cluster.azure_attributes: cloud-specific; only one attribute block applies
+  job_clusters[*].new_cluster.gcp_attributes: cloud-specific; only one attribute block applies
+  job_clusters[*].new_cluster.aws_attributes: cloud-specific; only one attribute block applies
+
+fields:
+  format: [SINGLE_TASK, MULTI_TASK]
+  performance_target: [PERFORMANCE_OPTIMIZED, STANDARD]
+  max_concurrent_runs: [1, 5]
+  timeout_seconds: [600, 1200]
+  git_source.git_provider: [gitHub, gitLab]
+  # A repository URL and a TZ database zone id, neither free text.
+  git_source.git_url: ['https://github.com/databricks/cli.test', 'https://github.com/databricks/dabs.test']
+  git_source.git_commit: [abc123, def456]

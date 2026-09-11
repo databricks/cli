@@ -31,7 +31,6 @@
         }
       }
     ],
-    "name": "test-pipeline",
-    "storage": "dbfs:/pipelines/[NEW_PIPELINE_ID]"
+    "name": "test-pipeline"
   }
 }

@@ -1,0 +1,26 @@
+# Value library for instance pools. See ../../README.md.
+
+# Most of a pool's spec is immutable, so most transitions recreate it -- and a real workspace
+# refuses the delete half ("Can't delete pool with id: ..."), which this suite hits on every
+# one of them. A plain deploy and destroy works, which is what the invariant suite does; a
+# thousand recreates in a row does not, so the catalog for this type is the local one.
+local_only: a real workspace refuses to delete a pool, and most fields recreate
+base:
+  instance_pool_name: test-instance-pool-$UNIQUE_NAME
+  node_type_id: $NODE_TYPE_ID
+  custom_tags:
+    team: eng
+  preloaded_spark_versions:
+    - $DEFAULT_SPARK_VERSION
+
+skip:
+  # A preloaded image needs custom containers enabled for the workspace, which a test
+  # workspace does not have ("Custom containers is turned off for your deployment").
+  preloaded_docker_images: needs custom containers enabled for the workspace
+  # Naming a second node type, which differs per cloud and the suite has no variable for.
+  node_type_flexibility: needs a second node type, which differs per cloud
+  # Only one of aws_/azure_/gcp_attributes applies, decided by the workspace's cloud, and the
+  # backend fills in defaults for the one that does -- so a value set here cannot be cleared.
+  aws_attributes: cloud-specific; only one of the three attribute blocks applies
+  azure_attributes: cloud-specific; only one of the three attribute blocks applies
+  gcp_attributes: cloud-specific; only one of the three attribute blocks applies

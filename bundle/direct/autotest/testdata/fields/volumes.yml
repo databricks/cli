@@ -1,0 +1,23 @@
+# Value library for volumes. See ../../README.md.
+base:
+  name: test-volume-$UNIQUE_NAME
+  catalog_name: main
+  schema_name: default
+
+skip:
+  # An external volume needs a storage location backed by a real external location and
+  # cloud IAM, which this suite does not provision.
+  storage_location: needs an external location
+
+fields:
+  # EXTERNAL is only valid together with storage_location, so only MANAGED is
+  # deployable on its own.
+  volume_type: [MANAGED]
+
+  # A name that refers to another object has to name one that exists: a real workspace
+  # rejects the generic "x" outright, so the field would report nothing but BACKEND_ERROR.
+  # main.default exists in every UC workspace the suite runs against. One value, not two:
+  # a second catalog and schema would have to be provisioned, and the pairs with absent
+  # already cover what a single value can show.
+  catalog_name: [main]
+  schema_name: [default]

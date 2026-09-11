@@ -160,6 +160,16 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 		}
 	}
 
+	if missing := missingAlertField(alert); missing != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    fmt.Sprintf("Field '%s' is required, expected non-default value (not \"\")!", missing),
+			},
+		}
+	}
+
 	defer s.LockUnlock()()
 
 	if alertId != "" {
@@ -188,6 +198,27 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 		StatusCode: 200,
 		Body:       alert,
 	}
+}
+
+// missingAlertField names the first required field the request left empty, or "" if none did. The
+// backend refuses such a write on update as well as on create, so an alert cannot have one of these
+// cleared once it exists. A schedule is optional -- it is a value, so an unset one is the zero struct --
+// but an alert that has one must fill both of its fields: there is no such thing as a schedule without
+// a cron expression or a timezone.
+func missingAlertField(alert sql.AlertV2) string {
+	switch {
+	case alert.DisplayName == "":
+		return "display_name"
+	case alert.QueryText == "":
+		return "query_text"
+	case alert.Schedule == (sql.CronSchedule{}):
+		return ""
+	case alert.Schedule.QuartzCronSchedule == "":
+		return "schedule.quartz_cron_schedule"
+	case alert.Schedule.TimezoneId == "":
+		return "schedule.timezone_id"
+	}
+	return ""
 }
 
 func (s *FakeWorkspace) AlertsDelete(alertId string, purge bool) Response {

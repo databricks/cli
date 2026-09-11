@@ -1,0 +1,27 @@
+# Value library for postgres synced tables. See ../../README.md.
+
+# The branch below names a project this fixture does not create -- one resource per bundle -- so
+# on a real workspace there is no parent to attach to and the create fails with "Project
+# test-pg-project-... not found". The fake server does not require the parent to exist, so the
+# local report stands on its own; confirming it needs a project and branch provisioned first.
+local_only: needs a postgres project and branch the suite does not provision
+base:
+  synced_table_id: lakebase_$UNIQUE_NAME.public.trips_synced
+  source_table_full_name: main.raw.trips
+  primary_key_columns: [id]
+  scheduling_policy: SNAPSHOT
+  postgres_database: appdb
+  branch: projects/test-pg-project-$UNIQUE_NAME/branches/production
+  create_database_objects_if_missing: true
+  new_pipeline_spec:
+    storage_catalog: main
+    storage_schema: pipelines
+  extra_columns:
+    - column_name: ingested_at
+      column_type: TIMESTAMP
+  type_overrides:
+    # pg_type is an enum, not a Postgres type name: only PG_SPECIFIC_TYPE_HALFVEC, _VARCHAR and
+    # _VECTOR. "bigint" parsed to the unspecified zero value, which the real API rejects as a
+    # missing required field while the fake server stored it verbatim.
+    - column_name: id
+      pg_type: PG_SPECIFIC_TYPE_VARCHAR

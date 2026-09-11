@@ -1,0 +1,11 @@
+# Value library for database instances. See ../../README.md.
+
+# Lakebase v1 (database instances, catalogs and synced tables) is not available
+# on every cloud, and the invariant suite excludes it from every cloud run for that reason.
+local_only: Lakebase v1 is not available in every cloud
+base:
+  name: test-db-instance-$UNIQUE_NAME
+  capacity: CU_1
+  custom_tags:
+    - key: team
+      value: eng

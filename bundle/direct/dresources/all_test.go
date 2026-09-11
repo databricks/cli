@@ -44,6 +44,15 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	// A policy has to say what it constrains: the API rejects one with no definition and no
+	// policy family to take one from.
+	"cluster_policies": &resources.ClusterPolicy{
+		CreatePolicy: compute.CreatePolicy{
+			Name:       "mypolicy",
+			Definition: `{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}`,
+		},
+	},
+
 	"catalogs": &resources.Catalog{
 		CreateCatalog: catalog.CreateCatalog{
 			Name:    "mycatalog",
@@ -76,12 +85,24 @@ var testConfig map[string]any = map[string]any{
 			SchemaName:  "myschema",
 			Name:        "myvolume",
 			Comment:     "Test volume",
+			// Required by CreateVolume; the API refuses a volume without one.
+			VolumeType: catalog.VolumeTypeManaged,
 		},
 	},
 
 	"database_instances": &resources.DatabaseInstance{
 		DatabaseInstance: database.DatabaseInstance{
 			Name: "mydbinstance",
+		},
+	},
+
+	// The API requires all three of these on a create, and libs/testserver applies the same checks:
+	// a warehouse with no name, no cluster_size or max_num_clusters outside 1..40 is refused.
+	"sql_warehouses": &resources.SqlWarehouse{
+		CreateWarehouseRequest: sql.CreateWarehouseRequest{
+			Name:           "my-warehouse",
+			ClusterSize:    "2X-Small",
+			MaxNumClusters: 1,
 		},
 	},
 

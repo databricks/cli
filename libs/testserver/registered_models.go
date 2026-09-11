@@ -23,9 +23,28 @@ func (s *FakeWorkspace) RegisteredModelsCreate(req Request) Response {
 		}
 	}
 
+	// UC requires all three parts of the name; without this the fake would store a model
+	// under a key like "..name" that no read can address.
+	for _, required := range []struct{ field, value string }{
+		{"catalog_name", createRequest.CatalogName},
+		{"schema_name", createRequest.SchemaName},
+		{"name", createRequest.Name},
+	} {
+		if required.value == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body: map[string]string{
+					"error_code": "INVALID_PARAMETER_VALUE",
+					"message":    "CreateRegisteredModel Missing required field: " + required.field,
+				},
+			}
+		}
+	}
+
 	// Build full name from catalog.schema.name
 	fullName := createRequest.CatalogName + "." + createRequest.SchemaName + "." + createRequest.Name
 
+	// Aliases are not settable here; see the note in RegisteredModelsUpdate.
 	registeredModel := catalog.RegisteredModelInfo{
 		CatalogName:     createRequest.CatalogName,
 		Comment:         createRequest.Comment,
@@ -84,6 +103,12 @@ func (s *FakeWorkspace) RegisteredModelsUpdate(req Request, fullName string) Res
 		delete(s.RegisteredModels, fullName)
 		fullName = existing.CatalogName + "." + existing.SchemaName + "." + updateRequest.NewName
 	}
+
+	// An alias belongs to a model version and is created through its own API, so neither
+	// create nor UpdateRegisteredModel sets one -- the request field exists but the backend
+	// does not honour it. Keeping whatever the model already had (nothing, since create does
+	// not set aliases either) is what makes a config that sets aliases report the truth.
+	existing.Aliases = nil
 
 	existing.UpdatedAt = nowMilli()
 	s.RegisteredModels[fullName] = existing

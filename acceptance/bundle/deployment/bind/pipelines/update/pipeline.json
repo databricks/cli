@@ -1,5 +1,6 @@
 {
     "name": "lakeflow-pipeline",
+    "catalog": "main",
     "libraries": [
         {
             "glob": {

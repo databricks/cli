@@ -1,0 +1,28 @@
+# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
+latest_monitor_failure_msg                   absent     x          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+latest_monitor_failure_msg                   absent     y          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+latest_monitor_failure_msg                   x          y          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+latest_monitor_failure_msg                   y          x          POST_DEPLOY_DRIFT  latest_monitor_failure_msg
+table_name                                   absent     x-UNIQUE   BASE_ERROR  No stub found for pattern: POST /api/2.1/unity-catalog/tables/monitor (501 <nil>)
+table_name                                   absent     y-UNIQUE   BASE_ERROR  No stub found for pattern: POST /api/2.1/unity-catalog/tables/monitor (501 <nil>)
+table_name                                   x-UNIQUE   absent     DEPLOY_ERROR  No stub found for pattern: POST /api/2.1/unity-catalog/tables/monitor (501 <nil>)
+table_name                                   y-UNIQUE   absent     DEPLOY_ERROR  No stub found for pattern: POST /api/2.1/unity-catalog/tables/monitor (501 <nil>)
+
+=== summary
+OK                         138
+OK_RECREATE                8
+SUPPRESSED                 11
+NOT_OBSERVABLE             3
+POST_DEPLOY_DRIFT          4
+DEPLOY_ERROR               2
+SKIPPED                    1
+BASE_ERROR                 2

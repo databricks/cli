@@ -102,9 +102,61 @@ func (s *FakeWorkspace) ClusterPoliciesEdit(req Request) any {
 	if policy.Definition == "" && policy.PolicyFamilyId != "" {
 		policy.Definition = policyFamilyDefinition(policy.PolicyFamilyId)
 	}
+
+	// A policy is named, and it takes its rules from either its own definition or a policy
+	// family -- never both.
+	if policy.Name == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "'name' must be supplied.",
+			},
+		}
+	}
+	if request.Definition != "" && request.PolicyFamilyId != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "policy_family_id and definition cannot both be set.",
+			},
+		}
+	}
+
+	// A policy has to say what it constrains, so the API refuses an edit that leaves it with
+	// no definition and no family to take one from.
+	if policy.Definition == "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "'definition' must be supplied.",
+			},
+		}
+	}
+
+	// A library entry names an artifact, so an entry with none is rejected rather than stored
+	// as an empty object. "Unknown library" is the API's own wording for it.
+	if slices.ContainsFunc(policy.Libraries, isEmptyLibrary) {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "Unknown library",
+			},
+		}
+	}
+
 	s.ClusterPolicies[request.PolicyId] = policy
 
 	return Response{}
+}
+
+// isEmptyLibrary reports whether a library entry names no artifact at all.
+func isEmptyLibrary(library compute.Library) bool {
+	return library.Jar == "" && library.Egg == "" && library.Whl == "" &&
+		library.Requirements == "" && library.Pypi == nil && library.Maven == nil && library.Cran == nil
 }
 
 func (s *FakeWorkspace) ClusterPoliciesDelete(req Request) any {

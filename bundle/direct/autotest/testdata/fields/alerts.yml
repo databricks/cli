@@ -1,0 +1,47 @@
+# Value library for alerts. See ../../README.md.
+
+# The invariant config declares neither block, so their fields would only ever be reported
+# as not covered. Seeding one entry each makes both testable: the containers themselves and
+# the fields inside an entry.
+base:
+  warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+  display_name: test-alert-$UNIQUE_NAME
+  file_path: ./alert.dbalert.json
+
+skip:
+  # An alert built from a .dbalert.json takes everything but warehouse_id, display_name and
+  # file_path from that file: load_dbalert_files rejects any other field in the bundle YAML
+  # ("field X is not allowed in the bundle configuration"). So these are not bundle fields at
+  # all, and the values the suite used to seed reached the resource only by being patched in
+  # after that mutator had run.
+  evaluation: settable only in the .dbalert.json, not in the bundle
+  parameters: settable only in the .dbalert.json, not in the bundle
+
+  # Must name an existing SQL warehouse, and alerts require one, so there is no absent
+  # transition either -- a value-to-value move would need a second warehouse to exist.
+  warehouse_id: needs a second SQL warehouse to exist
+  # Must name an existing workspace folder, and the backend refuses to move an alert
+  # between folders at all ("Updating parent path is not supported").
+  parent_path: needs a second workspace folder; the backend refuses to move an alert
+  # Must be the id of a notification destination registered with the workspace.
+  evaluation.notification.subscriptions[*].destination_id: needs a notification destination
+
+  # A threshold compares against either a column or a value, and the alert file this config
+  # loads (data/alert.dbalert.json) sets the value -- so the column is the other arm of that
+  # choice and the backend drops it, leaving it drifting forever. The value's own three
+  # members (bool, double, string) are a oneof in the same way.
+  evaluation.threshold: two arms of one choice, and the alert file already picks the value
+  # Also a oneof (user_name or service_principal_name), and which member is valid depends on
+  # whether the identity running the suite is a user or a service principal. run_as_user_name
+  # is the deprecated flat form of the same thing: setting it has no effect when the caller is
+  # a service principal, which is what a cloud run is.
+  run_as: a oneof, and which member is valid depends on the run identity
+  run_as_user_name: only settable when the caller is a user, not a service principal
+  # An alert has to be able to notify somebody, so the backend will not leave a subscription
+  # without a recipient -- but what it keeps instead is not something this suite can predict.
+  evaluation.notification.subscriptions[*].user_email: the backend refuses to leave a subscription without a recipient
+
+fields:
+  # A real zone, and a real cron expression -- neither is free text.
+  schedule.timezone_id: [UTC, America/New_York]
+  schedule.quartz_cron_schedule: ["0 0 9 10 1 ?", "0 0 10 10 1 ?"]

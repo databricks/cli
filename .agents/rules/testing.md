@@ -185,6 +185,7 @@ Available on `PATH` during test execution (from `acceptance/bin/`):
 - `diff.py DIR1 DIR2` or `diff.py FILE1 FILE2`: recursive diff with test replacements applied.
 - `print_state.py [-t TARGET] [--backup]`: print deployment state (terraform or direct).
 - `edit_resource.py TYPE ID < script.py`: fetch resource by ID, execute Python on it (resource in `r`), then update it. TYPE is `jobs` or `pipelines`.
+- `verify_no_drift.py PLAN.json`: assert every action in a JSON plan is `skip`.
 - `gron.py`: flatten JSON into greppable discrete assignments (simpler than `jq` for searching JSON).
 - `jq` is also available for JSON processing.
 

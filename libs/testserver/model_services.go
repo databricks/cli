@@ -65,6 +65,14 @@ func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 		}
 	}
 
+	// A model service that has routing destinations cannot have them emptied: the backend refuses it
+	// and points at DeleteModelService instead. Only a change that removes existing destinations is
+	// rejected -- setting or changing them is fine, and a service that never had any (no config block)
+	// is left alone.
+	if hasDestinations(existing) && !hasDestinations(incoming) {
+		return modelServiceInvalidRequest("destinations cannot be cleared; use DeleteModelService to remove the resource")
+	}
+
 	// Apply the mutable fields carried in the update mask (comment, config).
 	existing.Comment = incoming.Comment
 	existing.Config = incoming.Config
@@ -73,5 +81,21 @@ func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 	s.ModelServices[name] = existing
 	return Response{
 		Body: existing,
+	}
+}
+
+// hasDestinations reports whether a model service's config names at least one routing destination.
+func hasDestinations(ms catalog.ModelService) bool {
+	return ms.Config != nil && ms.Config.Routing != nil && len(ms.Config.Routing.Destinations) > 0
+}
+
+// modelServiceInvalidRequest mirrors the backend's 400 for a model-service request it will not accept.
+func modelServiceInvalidRequest(message string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    message,
+		},
 	}
 }
