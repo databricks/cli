@@ -95,7 +95,12 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
 	// backend installs them via --deps-config. The SDK marshaler drops nil and empty
 	// slices, so a no-deps run omits the key.
-	envSpec := &compute.Environment{EnvironmentVersion: dlImage}
+	envSpec := &compute.Environment{}
+	if strings.HasPrefix(dlImage, databricksAIPrefix) {
+		envSpec.BaseEnvironment = "workspace-base-environments/" + dlImage
+	} else {
+		envSpec.EnvironmentVersion = dlImage
+	}
 	if len(deps) > 0 {
 		envSpec.Dependencies = deps
 	}
