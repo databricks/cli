@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -326,10 +327,8 @@ func parseConfig(content string) (*Config, error) {
 func parsePattern(pattern string) ([]string, error) {
 	prefix := strings.HasSuffix(pattern, "/")
 	segments := strings.Split(strings.TrimSuffix(pattern, "/"), "/")
-	for _, s := range segments {
-		if s == "" {
-			return nil, fmt.Errorf("empty segment in pattern %q", pattern)
-		}
+	if slices.Contains(segments, "") {
+		return nil, fmt.Errorf("empty segment in pattern %q", pattern)
 	}
 	if prefix {
 		segments = append(segments, "*")
