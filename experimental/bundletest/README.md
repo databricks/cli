@@ -61,11 +61,12 @@ The same test runs against either backend, chosen by the `BUNDLETEST_BACKEND` en
     (`main`/`temp`/`system`) can't be judged locally → `LocalUnsupported` → the test
     **skips with a reason**;
   - anything that runs and disagrees with an assertion → **red**.
-- **Variables resolved offline, online references skipped loudly.** `${var.name}` is
-  resolved from `BUNDLE_VAR_*` or the declared `default` (no auth, no network), so local
-  config matches what deploy renders. A reference only the workspace can resolve —
-  `${workspace.*}`, a `lookup` variable, or an unset variable — is `LocalUnsupported` at the
-  use site, never silently left as the literal `${...}`.
+- **Config resolved by the CLI's own engine, online references skipped loudly.** Deploy
+  runs the real offline resolution (`cmd/offline-resolve`) — includes, target overrides,
+  presets, and `${var.*}`/`${bundle.*}` all resolve exactly as `bundle validate` renders
+  them, with no auth or network and no reimplementation. A reference only the workspace can
+  resolve — `${workspace.*}`, a `lookup` variable, or an unset variable — is
+  `LocalUnsupported` at the use site, never silently passed through.
 
 Assertions you *know* are cloud-only (Databricks type naming, SLA timing, permissions)
 can also be fenced explicitly with `@pytest.mark.cloud_only`, which skips them on any

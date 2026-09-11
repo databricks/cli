@@ -20,16 +20,17 @@ Design invariants (from a design review of the earlier sqlite/callable prototype
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
+import subprocess
 import tempfile
 import time
 from pathlib import Path
 from typing import Any
 
 import duckdb
-import yaml
 
 from bundletest.backend import LocalUnsupported, RunResult
 
@@ -68,69 +69,63 @@ def _first_line(err: Exception) -> str:
     return str(err).splitlines()[0] if str(err) else type(err).__name__
 
 
-# ${...} is a bundle reference; $${...} is the literal escape, so a ${ not preceded by $ is a
-# real reference. We resolve only ${var.NAME} offline (from BUNDLE_VAR_* or the declared
-# default); any other reference — ${workspace.*}, ${resources.*}, a lookup or unset variable —
-# needs the workspace and is left for the use site to reject loudly.
+# Bundle config is resolved offline by the CLI's own engine (cmd/offline-resolve), which
+# reuses the real load/target/variable mutators — no reimplementation here. References only a
+# workspace can resolve come back two ways: ${workspace.*}/${resources.*} stay literal ($${...}
+# is the escape, so a ${ not preceded by $ is a real reference), and a lookup or unset variable
+# comes back as a sentinel marker. Both are rejected loudly at the use site.
 _VAR_REF = re.compile(r"(?<!\$)\$\{[^}]+\}")
-_PLAIN_VAR = re.compile(r"(?<!\$)\$\{var\.([A-Za-z_][\w-]*)\}")
+# Must match SentinelFormat in cmd/offline-resolve/main.go.
+_SENTINEL = re.compile(r"__bundletest_unresolved__(lookup|unset)__([A-Za-z_][\w-]*)__")
+
+# Package path of the offline resolver, relative to the repo root (the module containing go.mod).
+_OFFLINE_RESOLVE_PKG = "./experimental/bundletest/cmd/offline-resolve"
 
 
-def _offline_var_values(variables: dict[str, Any]) -> dict[str, Any]:
-    values: dict[str, Any] = {}
-    for name, spec in (variables or {}).items():
-        env = os.environ.get(f"BUNDLE_VAR_{name}")
-        if env is not None:
-            values[name] = env
-        elif isinstance(spec, dict) and "default" in spec:
-            values[name] = spec["default"]
-        elif not isinstance(spec, dict):
-            values[name] = spec  # `variables: {name: value}` shorthand default
-        # a {lookup: ...} or description-only variable has no offline value
-    return values
+def _repo_root() -> Path:
+    for p in Path(__file__).resolve().parents:
+        if (p / "go.mod").exists():
+            return p
+    raise RuntimeError("could not locate the repo root (go.mod) for the offline-resolve helper")
 
 
-def _substitute_vars(node: Any, values: dict[str, Any]) -> Any:
+def _resolve_config(bundle_path: str) -> dict[str, Any]:
+    """Load and resolve the bundle at ``bundle_path`` offline via the Go helper, returning the
+    resolved config as a dict."""
+    result = subprocess.run(
+        ["go", "run", _OFFLINE_RESOLVE_PKG, bundle_path],
+        cwd=_repo_root(),
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"offline bundle resolution failed:\n{result.stderr.strip()}")
+    return json.loads(result.stdout)
+
+
+def _unresolved_in_str(s: str) -> str | None:
+    """A message describing why ``s`` can't be resolved locally (a sentinel-marked variable or a
+    residual ${...} reference), or None if it is fully resolved."""
+    m = _SENTINEL.search(s)
+    if m:
+        reason, name = m.group(1), m.group(2)
+        if reason == "lookup":
+            return f"variable {name!r} is a lookup variable that needs a workspace to resolve"
+        return f"variable {name!r} has no value offline — set BUNDLE_VAR_{name} or run on the cloud backend"
+    m = _VAR_REF.search(s)
+    if m:
+        return f"{m.group(0)} needs a workspace to resolve"
+    return None
+
+
+def _unresolved(node: Any) -> str | None:
+    """First offline-unresolvable reference anywhere in the subtree, as a message, or None."""
     if isinstance(node, dict):
-        return {k: _substitute_vars(v, values) for k, v in node.items()}
+        return next((r for r in map(_unresolved, node.values()) if r), None)
     if isinstance(node, list):
-        return [_substitute_vars(v, values) for v in node]
+        return next((r for r in map(_unresolved, node) if r), None)
     if isinstance(node, str):
-        whole = _PLAIN_VAR.fullmatch(node)
-        if whole and whole.group(1) in values:
-            return values[whole.group(1)]  # exact ref -> keep the value's native type
-        return _PLAIN_VAR.sub(lambda m: str(values[m.group(1)]) if m.group(1) in values else m.group(0), node)
-    return node
-
-
-def _resolve_variables(config: dict[str, Any]) -> dict[str, Any]:
-    """Offline-resolve ${var.name} across the config; a variable value that references another
-    variable resolves too. Online references are left as-is for the use site to reject."""
-    values = _offline_var_values(config.get("variables", {}))
-    for _ in range(10):
-        stepped = {k: _substitute_vars(v, values) for k, v in values.items()}
-        if stepped == values:
-            break
-        values = stepped
-    resolved = config
-    for _ in range(10):
-        stepped = _substitute_vars(resolved, values)
-        if stepped == resolved:
-            break
-        resolved = stepped
-    return resolved
-
-
-def _online_reference(node: Any) -> str | None:
-    """First residual ${...} reference in the offline-resolved subtree (a workspace/lookup/
-    unset variable), or None."""
-    if isinstance(node, dict):
-        return next((r for r in map(_online_reference, node.values()) if r), None)
-    if isinstance(node, list):
-        return next((r for r in map(_online_reference, node) if r), None)
-    if isinstance(node, str):
-        m = _VAR_REF.search(node)
-        return m.group(0) if m else None
+        return _unresolved_in_str(node)
     return None
 
 
@@ -157,9 +152,7 @@ class DuckDBBackend:
     # --- lifecycle ---
     def deploy(self, bundle_path: str) -> None:
         self._bundle_path = bundle_path
-        path = os.path.join(bundle_path, "databricks.yml")
-        raw = yaml.safe_load(Path(path).read_text()) if os.path.exists(path) else {}
-        self._config = _resolve_variables(raw)
+        self._config = _resolve_config(bundle_path)
         self._jobs = self._extract_jobs(self._config)
 
     def teardown(self) -> None:
@@ -193,11 +186,12 @@ class DuckDBBackend:
                         f"job {name!r} task {task.key!r} is a {task.kind} task; the "
                         f"local backend runs sql_task only — run it on the cloud backend"
                     )
-                if task.sql_file and _VAR_REF.search(task.sql_file):
-                    raise LocalUnsupported(
-                        f"job {name!r} task {task.key!r} path {task.sql_file!r} uses a "
-                        f"workspace/lookup/unset variable; run it on the cloud backend"
-                    )
+                if task.sql_file:
+                    reason = _unresolved_in_str(task.sql_file)
+                    if reason is not None:
+                        raise LocalUnsupported(
+                            f"job {name!r} task {task.key!r} sql path can't be resolved locally: {reason}"
+                        )
                 sql = Path(self._bundle_path, task.sql_file).read_text()
                 self._prepare_namespaces(sql)
                 for statement in _split_statements(sql):
@@ -227,11 +221,11 @@ class DuckDBBackend:
     # --- control plane ---
     def get_resource(self, kind: str, name: str) -> dict[str, Any]:
         cfg = self._config.get("resources", {}).get(kind, {})[name]
-        ref = _online_reference(cfg)
-        if ref is not None:
+        reason = _unresolved(cfg)
+        if reason is not None:
             raise LocalUnsupported(
-                f"resource {kind}.{name} references {ref} — a workspace/lookup/unset variable "
-                f"that can't be resolved locally; introspect it on the cloud backend"
+                f"resource {kind}.{name} can't be introspected locally: {reason}; "
+                f"use the cloud backend"
             )
         return cfg
 
