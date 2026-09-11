@@ -1370,8 +1370,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		profile = w.Config.Profile
 	}
 
-	// Get selected plugins for generation
-	selectedPluginList := generator.GetSelectedPlugins(m, selectedPlugins)
+	// Get selected plugins for generation, deduping resources shared by multiple features.
+	selectedPluginList := generator.DedupeResources(generator.GetSelectedPlugins(m, selectedPlugins))
 
 	log.Debugf(ctx, "Selected plugins: %v", selectedPlugins)
 	log.Debugf(ctx, "Selected plugin list count: %d", len(selectedPluginList))
