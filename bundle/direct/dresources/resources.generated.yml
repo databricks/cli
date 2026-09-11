@@ -211,6 +211,8 @@ resources:
 
   # mcp_services: no api field behaviors
 
+  # model_provider_services: no api field behaviors
+
   # model_services: no api field behaviors
 
   model_serving_endpoints:

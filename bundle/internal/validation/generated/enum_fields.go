@@ -161,6 +161,11 @@ var EnumFields = map[string][]string{
 	"resources.mcp_services.*.config.rate_limits[*].key":            {"RATE_LIMIT_KEY_REQUEST_TAG", "RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"},
 	"resources.mcp_services.*.config.rate_limits[*].renewal_period": {"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
 
+	"resources.model_provider_services.*.config.anthropic.relayed.plan_type":   {"ANTHROPIC_RELAYED_PLAN_TYPE_MAX", "ANTHROPIC_RELAYED_PLAN_TYPE_TEAM_ENTERPRISE"},
+	"resources.model_provider_services.*.config.provider_type":                 {"EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK", "EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC", "EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI", "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM", "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE", "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY", "EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI"},
+	"resources.model_provider_services.*.config.rate_limits[*].key":            {"RATE_LIMIT_KEY_REQUEST_TAG", "RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"},
+	"resources.model_provider_services.*.config.rate_limits[*].renewal_period": {"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
+
 	"resources.model_services.*.config.rate_limits[*].key":                                {"RATE_LIMIT_KEY_REQUEST_TAG", "RATE_LIMIT_KEY_SERVICE", "RATE_LIMIT_KEY_SERVICE_PRINCIPAL", "RATE_LIMIT_KEY_USER", "RATE_LIMIT_KEY_USER_DEFAULT", "RATE_LIMIT_KEY_USER_GROUP"},
 	"resources.model_services.*.config.rate_limits[*].renewal_period":                     {"RATE_LIMIT_RENEWAL_PERIOD_HOUR", "RATE_LIMIT_RENEWAL_PERIOD_MINUTE"},
 	"resources.model_services.*.config.routing.destinations[*].destination_type":          {"DESTINATION_TYPE_EXTERNAL_FOUNDATION_MODEL", "DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL", "DESTINATION_TYPE_PROVISIONED_THROUGHPUT_FOUNDATION_MODEL"},

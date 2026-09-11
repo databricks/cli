@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-model-provider-service-test-[UNIQUE_NAME]/default/files...
+Created model_provider_services.mps
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] ai-gateway get-model-provider-service model-provider-services/main.default.test_mps_[UNIQUE_NAME]
+{
+  "name": "model-provider-services/main.default.test_mps_[UNIQUE_NAME]",
+  "comment": "Routes to a custom OpenAI-compatible provider"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.model_provider_services.mps
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-model-provider-service-test-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

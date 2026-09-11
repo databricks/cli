@@ -20,6 +20,7 @@ type Resources struct {
 	ModelServingEndpoints     map[string]*resources.ModelServingEndpoint     `json:"model_serving_endpoints,omitempty"`
 	ModelServices             map[string]*resources.ModelService             `json:"model_services,omitempty"`
 	McpServices               map[string]*resources.McpService               `json:"mcp_services,omitempty"`
+	ModelProviderServices     map[string]*resources.ModelProviderService     `json:"model_provider_services,omitempty"`
 	RegisteredModels          map[string]*resources.RegisteredModel          `json:"registered_models,omitempty"`
 	QualityMonitors           map[string]*resources.QualityMonitor           `json:"quality_monitors,omitempty"`
 	Catalogs                  map[string]*resources.Catalog                  `json:"catalogs,omitempty"`
@@ -115,6 +116,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
 		collectResourceMap(descriptions["model_services"], r.ModelServices),
 		collectResourceMap(descriptions["mcp_services"], r.McpServices),
+		collectResourceMap(descriptions["model_provider_services"], r.ModelProviderServices),
 		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
 		collectResourceMap(descriptions["catalogs"], r.Catalogs),
@@ -189,6 +191,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"model_serving_endpoints":      (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"model_services":               (&resources.ModelService{}).ResourceDescription(),
 		"mcp_services":                 (&resources.McpService{}).ResourceDescription(),
+		"model_provider_services":      (&resources.ModelProviderService{}).ResourceDescription(),
 		"registered_models":            (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":             (&resources.QualityMonitor{}).ResourceDescription(),
 		"catalogs":                     (&resources.Catalog{}).ResourceDescription(),
