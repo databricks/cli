@@ -101,9 +101,3 @@ Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
 persistent job that is not garbage-collected. When you are done, remove the
 job and its uploaded files with:
   [CLI] bundle destroy
-
-=== docker_image is not supported yet
->>> [CLI] experimental air convert-to-dabs docker.yaml --output-dir generated-docker
-Error: environment.docker_image is not yet supported by convert-to-dabs
-
-Exit code: 1
