@@ -160,6 +160,8 @@ func newListCommand() *cobra.Command {
 		return renderListText(cmd, fetcher, limit)
 	}
 
+	cmd.AddCommand(newListProvisionedCapacityCommand())
+
 	return cmd
 }
 

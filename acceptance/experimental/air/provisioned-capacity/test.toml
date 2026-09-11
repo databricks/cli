@@ -1,0 +1,29 @@
+# The SDK occasionally probes host reachability with a HEAD request; stub it so
+# the test is deterministic.
+[[Server]]
+Pattern = "HEAD /"
+Response.Body = ''
+
+# List returns the workspace's reservations. usage is intentionally absent here:
+# the real endpoint populates it only on Get. name is the AIP resource name.
+[[Server]]
+Pattern = "GET /api/2.0/ai-training/provisioned-capacities"
+Response.Body = '''
+{
+  "provisioned_capacities": [
+    {"name": "provisioned-capacities/cap-8xh100-alpha", "spec": {"accelerator_type": "GPU_8xH100", "accelerator_count": 64}},
+    {"name": "provisioned-capacities/cap-1xh100-beta", "spec": {"accelerator_type": "GPU_1xH100", "accelerator_count": 8}}
+  ]
+}
+'''
+
+# Get returns one reservation with its usage summary populated.
+[[Server]]
+Pattern = "GET /api/2.0/ai-training/provisioned-capacities/cap-8xh100-alpha"
+Response.Body = '''
+{
+  "name": "provisioned-capacities/cap-8xh100-alpha",
+  "spec": {"accelerator_type": "GPU_8xH100", "accelerator_count": 64},
+  "status": {"usage": {"used_accelerator_count": 40, "idle_accelerator_count": 24}}
+}
+'''

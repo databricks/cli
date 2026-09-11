@@ -35,6 +35,10 @@ List your active runs for the current profile (use --all-status for finished run
 
 Usage:
   databricks experimental air list [flags]
+  databricks experimental air list [command]
+
+Available Commands:
+  provisioned-capacity List the pre-provisioned AI Runtime capacity reservations for the current workspace
 
 Flags:
       --all-status           Show runs in all states (default: active only)
@@ -48,6 +52,8 @@ Global Flags:
   -o, --output type      output type: text or json (default text)
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
+
+Use "databricks experimental air list [command] --help" for more information about a command.
 
 === logs help
 >>> [CLI] experimental air logs --help
