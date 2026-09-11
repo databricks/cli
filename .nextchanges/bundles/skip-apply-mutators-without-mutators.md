@@ -1,0 +1,1 @@
+Skip the `apply_mutators` phase when no `python.mutators` are configured, so bundles that only load resources in Python no longer start a subprocess that loads every resource and returns it unchanged.
