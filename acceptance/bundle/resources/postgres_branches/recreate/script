@@ -6,7 +6,7 @@ cleanup() {
    # Also try to delete the old branch directly in case it wasn't cleaned up
    $CLI postgres delete-branch "projects/test-pg-proj-${UNIQUE_NAME}/branches/old-branch-${UNIQUE_NAME}" 2>/dev/null || true
 
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -16,7 +16,7 @@ envsubst < databricks.yml.tmpl | sed "s/BRANCH_ID_PLACEHOLDER/old-branch-${UNIQU
 trace cat databricks.yml
 
 trace $CLI bundle plan
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 branch_id_1=`read_id.py main`

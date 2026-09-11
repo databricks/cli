@@ -5,12 +5,12 @@ echo "test wheel content" > whl/source.whl
 trace $CLI bundle deploy
 
 title "Expecting 2 wheels in libraries section in /jobs/create"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' "$OUT_REQUESTS"
 
 title "Expecting environment dependencies to be updated"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' "$OUT_REQUESTS"
 
 title "Expecting wheel to be uploaded"
-trace jq -s '.[] | select(.path=="/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl")' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl")' "$OUT_REQUESTS"
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

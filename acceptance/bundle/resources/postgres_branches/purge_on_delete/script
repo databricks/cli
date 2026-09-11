@@ -10,13 +10,13 @@ cleanup() {
    $CLI postgres delete-branch --purge "${hard_branch}" 2>>LOG.delete-branch || true
    $CLI postgres delete-branch --purge "${soft_branch}" 2>>LOG.delete-branch || true
    $CLI postgres delete-project --purge "${project_name}" 2>>LOG.delete-project || true
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 trace $CLI bundle validate
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 trace $CLI postgres get-branch "${hard_branch}" | branch_fields

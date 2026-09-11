@@ -5,7 +5,7 @@ cleanup() {
    $CLI postgres delete-role "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/roles/test-role-${UNIQUE_NAME}" 2>/dev/null || true
    $CLI postgres delete-role "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/roles/test-role-${UNIQUE_NAME}-v2" 2>/dev/null || true
 
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 

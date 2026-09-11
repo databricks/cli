@@ -7,7 +7,7 @@ Created jobs.four
 Created jobs.one
 Created jobs.three
 Created jobs.two
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 5 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //versions/1/operations --sort --del-body state --oneline
@@ -77,7 +77,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 5 unchanged
 === Redeploy with no changes: nothing is applied, so no version is created at all - the deployment's version tracks state changes, like serial
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-multiple-resources-[UNIQUE_NAME]/default/files...
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 5 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle --sort --oneline

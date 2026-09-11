@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created catalogs.bar
 Created schemas.foo
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Assert the catalog is created
@@ -42,7 +42,7 @@ Error: cannot plan resources.schemas.foo: cannot resolve "${resources.catalogs.b
 
 Error: planning failed
 
-Files: 2 uploaded, 1 deleted
+Files: 1 uploaded, 1 deleted
 
 === Test cleanup
 >>> [CLI] bundle destroy --auto-approve

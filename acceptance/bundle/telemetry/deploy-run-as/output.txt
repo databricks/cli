@@ -2,10 +2,10 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.test_job
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 
 >>> cat telemetry.json
 {

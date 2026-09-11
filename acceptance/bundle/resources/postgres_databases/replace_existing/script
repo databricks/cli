@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -18,7 +18,7 @@ title "Plan after unbind: the bundle wants to (re-)create the database"
 trace $CLI bundle plan
 
 title "Re-deploy: replace_existing adopts the already-existing database instead of erroring"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 title "Confirm the database is under management again"

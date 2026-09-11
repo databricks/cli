@@ -3,7 +3,7 @@
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.job_a
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add a direct-only resource to the config
@@ -13,7 +13,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Warn: Direct engine selected via DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 3 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
 Migrated 1 resource to direct deployment engine.
@@ -30,7 +30,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created instance_pools.pool
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //instance-pools/create

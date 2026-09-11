@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -12,7 +12,7 @@ trace $CLI bundle deploy
 title "Change embedding_dimension (recreate: DELETE then CREATE the same name)"
 trace update_file.py databricks.yml "embedding_dimension: 768" "embedding_dimension: 384"
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy --auto-approve
 
 # The name is released only after the index stops being visible on GET, so

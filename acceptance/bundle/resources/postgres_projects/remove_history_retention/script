@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -10,14 +10,14 @@ project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 
 title "Initial deployment with history_retention_duration: 604800s"
 trace $CLI bundle deploy
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI postgres get-project "${project_name}" | project_fields
 
 title "Remove history_retention_duration and re-deploy"
 trace update_file.py databricks.yml "      history_retention_duration: 604800s" ""
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py --del-body project_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 

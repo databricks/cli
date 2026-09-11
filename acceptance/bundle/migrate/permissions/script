@@ -6,7 +6,7 @@ print_state.py > out.new_state.json
 
 export DATABRICKS_BUNDLE_ENGINE=
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "4 unchanged"
 trace $CLI bundle plan | contains.py "4 unchanged"
@@ -20,4 +20,4 @@ trace musterr $CLI bundle deployment migrate
 trace $CLI bundle debug states
 trace $CLI bundle debug states --force-pull
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

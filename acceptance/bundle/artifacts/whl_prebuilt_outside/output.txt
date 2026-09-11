@@ -11,7 +11,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> find.py --expect 0 whl
 
 === Expecting 2 wheels in libraries section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 [
   {
     "existing_cluster_id": "0717-132531-5opeqon1",

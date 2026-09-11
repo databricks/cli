@@ -9,7 +9,7 @@ trace $CLI bundle plan -o json | nostamp > out.plan_post_create.$DATABRICKS_BUND
 job_id="$(read_id.py job_with_permissions)"
 
 trace $CLI permissions get jobs "$job_id"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Update one permission and deploy again\n"
 update_file.py databricks.yml CAN_VIEW CAN_MANAGE

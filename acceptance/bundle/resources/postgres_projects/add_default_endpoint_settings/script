@@ -2,13 +2,13 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 title "Initial deployment with no default_endpoint_settings block"
 trace $CLI bundle deploy
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Add the whole default_endpoint_settings block and re-deploy"
 trace update_file.py databricks.yml "#TO_ADD: " ""

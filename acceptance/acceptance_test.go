@@ -836,6 +836,15 @@ func runTest(t *testing.T,
 		tmpDir = t.TempDir()
 	}
 
+	// Harness-written output files (output.txt, out.requests.txt) live outside the
+	// test dir so the bundle sync doesn't upload them as bundle sources. They are
+	// written here during the run and copied into tmpDir afterwards for comparison.
+	// Otherwise these continuously-rewritten files perturb the deploy "Files: N" count.
+	// Register this repl before [TEST_TMP_DIR] so it wins: outputDir is a sibling of
+	// tmpDir, so the [TEST_TMP_DIR]_PARENT repl would otherwise match it first.
+	outputDir := t.TempDir()
+	repls.SetPath(outputDir, "[OUTPUT_DIR]")
+
 	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
 	scriptContents := readMergedScriptContents(t, dir)
@@ -871,7 +880,7 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, outputDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
@@ -888,6 +897,9 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
+	// Forward slashes: scripts pass $OUT_REQUESTS straight to bash tools, and a
+	// backslash Windows path would be mangled inside double quotes in Git Bash.
+	cmd.Env = append(cmd.Env, "OUT_REQUESTS="+filepath.ToSlash(filepath.Join(outputDir, "out.requests.txt")))
 
 	replsPath := filepath.Join(t.TempDir(), ReplsEnvVar)
 	cmd.Env = append(cmd.Env, ReplsEnvVar+"="+replsPath)
@@ -1001,7 +1013,7 @@ func runTest(t *testing.T,
 	}
 	cmd.Dir = tmpDir
 
-	outputPath := filepath.Join(tmpDir, "output.txt")
+	outputPath := filepath.Join(outputDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
 	defer out.Close()
@@ -1015,6 +1027,16 @@ func runTest(t *testing.T,
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
+
+	// Copy harness outputs from outputDir back into tmpDir so the comparison below
+	// (and ListDir) find them where the goldens expect. They were written outside
+	// tmpDir during the run to keep them out of the bundle sync; the sync is done now.
+	for _, name := range []string{"output.txt", "out.requests.txt"} {
+		src := filepath.Join(outputDir, name)
+		if _, err := os.Stat(src); err == nil {
+			require.NoError(t, copyFile(src, filepath.Join(tmpDir, name)))
+		}
+	}
 
 	loadScriptReplacements(t, &repls, replsPath, replsWritten)
 

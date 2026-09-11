@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
 Created jobs.job_with_run_as
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --nostamp //jobs
@@ -55,7 +55,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as_job_default_[UNIQUE_NAME]/default/files...
 Updated jobs.job_with_run_as
-Files: 2 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --nostamp //jobs
