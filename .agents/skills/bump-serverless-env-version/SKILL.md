@@ -20,9 +20,10 @@ and [databricks/environments](https://github.com/databricks/environments).
 Apply `.agents/rules/template-versions.md` to the environment, Python, and DB
 Connect pins. Check Python compatibility in the
 [DB Connect requirements](https://docs.databricks.com/dev-tools/databricks-connect/python/index.html#requirements).
-Advance `conservative_db_connect_version_spec` only when its DBR line is no longer
-supported, using the supported-LTS table in the
-[Databricks Runtime release notes](https://docs.databricks.com/aws/en/release-notes/runtime/).
+Advance `conservative_db_connect_version_spec` when compatibility requires it or its
+DBR line has six months or less of support remaining. Use the supported-LTS table in
+the [Databricks Runtime release notes](https://docs.databricks.com/aws/en/release-notes/runtime/)
+to choose the oldest compatible replacement with more than six months of support remaining.
 Do not advance it merely to match the environment version.
 
 ## 2. Update every template source
@@ -30,7 +31,7 @@ Do not advance it merely to match the environment version.
 Find both macro definitions and hardcoded literals; trust the search results:
 
 ```bash
-grep -rn 'environment_version\|environment-version' libs/template/templates/
+grep -rn 'environment_version\|environment-version\|requires-python\|default_python_version' libs/template/templates/
 ```
 
 Inspect every hit and change only values that pin a version. Re-run the command
@@ -48,9 +49,9 @@ Current sources include:
 
 In `default/library/versions.tmpl`, update `python_version_spec` and
 `default_python_version` when the runtime Python version changes. Update
-`conservative_db_connect_version_spec` only under the support rule above. Keep the
-version-specific compatibility comments accurate even when their pin is unchanged.
-Do not synchronize unrelated DBR or SQL-template DB Connect macros.
+`conservative_db_connect_version_spec` only under the compatibility and support rule
+above. Keep the version-specific compatibility comments accurate even when their pin
+is unchanged. Do not synchronize unrelated DBR or SQL-template DB Connect macros.
 
 Update version-specific examples in `.agents/rules/template-versions.md` so its
 policy remains accurate; do not change the policy itself as part of the bump.
@@ -72,20 +73,17 @@ go test ./acceptance -run '^TestAccept/localenv' -timeout=60m
 Otherwise leave it unchanged and record why. Do not change the intentionally older
 SSH fixtures in `acceptance/ssh/connect-serverless-*`.
 
-## 3. Regenerate and verify targeted goldens
+## 3. Regenerate and verify goldens
 
-Update and verify both template acceptance trees:
+Update and verify the acceptance suite:
 
 ```bash
-./task test-update-templates
-go test ./acceptance -run '^TestAccept/pipelines' -update -timeout=60m
-
-go test ./acceptance -run '^TestAccept/bundle/templates' -timeout=60m
-go test ./acceptance -run '^TestAccept/pipelines' -timeout=60m
+./task test-update
+go test ./acceptance -run '^TestAccept$' -timeout=60m
 ```
 
-Both non-update commands must pass. Update mode selects covering `EnvMatrix`
-variants; the non-update runs verify every variant against the regenerated goldens.
+The non-update command must pass. Update mode selects covering `EnvMatrix` variants;
+the non-update run verifies every variant against the regenerated goldens.
 
 ## 4. Add the changelog fragment
 
@@ -109,3 +107,5 @@ and regenerate them.
 Commit, push, or create/update a PR only when the user explicitly requests that
 operation. When requested, follow `pr-checklist` rather than duplicating its commit
 and PR-body instructions here.
+
+When creating a PR for the bump, suggest `lennartkats-db` as a reviewer.
