@@ -77,6 +77,10 @@ non-cloud backend.
 
 ## Run it
 
+The local backend resolves bundle config with the in-repo Go helper
+`cmd/offline-resolve`, so a Go toolchain (matching the repo's `go.mod`) and a checkout of
+the CLI repo are required in addition to Python.
+
 ```sh
 uv venv --python 3.12
 uv pip install -e ".[dev]"
