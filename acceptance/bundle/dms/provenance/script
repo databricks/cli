@@ -25,4 +25,4 @@ trace print_state.py --no-dms -t dev
 
 # The deploy uploads files in a nondeterministic order; only the requests above are
 # asserted.
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

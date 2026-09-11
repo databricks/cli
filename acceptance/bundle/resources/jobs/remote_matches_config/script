@@ -15,7 +15,7 @@ EOF
 trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 # XXX READPLAN
 trace $CLI bundle deploy
 trace print_requests.py //jobs --nostamp

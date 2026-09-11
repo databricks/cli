@@ -1,6 +1,6 @@
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -8,7 +8,7 @@ schedule_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/production/snapshot
 
 title "Create with a snapshot schedule"
 envsubst < databricks.yml.tmpl > databricks.yml
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 trace $CLI postgres get-snapshot-schedule "${schedule_name}" | snapshot_schedule_fields
 print_requests.py --del-body parent,project_id,branch_id --sort --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.create.txt

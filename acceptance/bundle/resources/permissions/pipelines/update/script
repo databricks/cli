@@ -7,7 +7,7 @@ trace $CLI bundle plan
 pipeline_id="$(read_id.py foo)"
 
 trace $CLI permissions get pipelines "$pipeline_id"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Update one permission and deploy again\n"
 update_file.py databricks.yml CAN_VIEW CAN_MANAGE
@@ -40,4 +40,4 @@ trace $CLI bundle plan
 
 trace $CLI bundle destroy --auto-approve
 print_requests.py --nostamp //pipeline '^//api/2.0/bundle' > out.requests_destroy.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

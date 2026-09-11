@@ -6,7 +6,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 cleanup() {
     # Cleanup; direct's destroy 404s on the stale GET and diverges, so keep it out of the diff.
     $CLI bundle destroy --auto-approve &> LOG.destroy
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 

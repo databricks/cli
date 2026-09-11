@@ -31,4 +31,4 @@ title "The state shows the resource still exists but the operation is marked fai
 trace print_state.py --no-dms
 
 # Drain any accumulated requests (plan, state reads) so the harness has nothing to diff.
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

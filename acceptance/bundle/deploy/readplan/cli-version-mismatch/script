@@ -4,4 +4,4 @@ trace $CLI bundle deploy --plan plan.json
 rm plan.json
 print_requests.py //jobs | nostamp
 trace $CLI bundle destroy --auto-approve
-rm out.requests.txt
+rm "$OUT_REQUESTS"

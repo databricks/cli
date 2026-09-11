@@ -18,3 +18,50 @@
 
 === Delete by path resolves a Git CLI folder
 >>> [CLI] repos delete /Workspace/Users/me@databricks.com/test-repo
+
+>>> print_requests.py --get //repos //workspace/get-status
+{
+  "method": "POST",
+  "path": "/api/2.0/repos",
+  "body": {
+    "path": "/Workspace/Users/me@databricks.com/test-repo",
+    "provider": "gitHub",
+    "url": "https://github.com/databricks/databricks-empty-ide-project.git"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/me@databricks.com/test-repo"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/repos/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/me@databricks.com/test-repo"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/repos/[NUMID]",
+  "body": {
+    "branch": "update-by-path"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Workspace/Users/me@databricks.com/test-repo"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/repos/[NUMID]"
+}

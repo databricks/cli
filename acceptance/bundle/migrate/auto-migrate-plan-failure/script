@@ -3,7 +3,7 @@ export DATABRICKS_BUNDLE_ENGINE=
 title "Initial deploy on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace print_migration_telemetry
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Inject GET failure so the plan check blocks the migration"
 # The plan check calls GET /api/2.2/jobs/get for each resource to compare
@@ -14,7 +14,7 @@ title "Inject GET failure so the plan check blocks the migration"
 fault.py "GET /api/2.2/jobs/get*" 403 1 1
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_migration_telemetry
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Local state was NOT rewritten (still terraform)"
 trace find .databricks/bundle -name "resources.json" -type f
@@ -23,10 +23,10 @@ trace find .databricks/bundle -name "terraform.tfstate*" -type f
 title "Retry: plan check passes this time, migration succeeds"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_migration_telemetry
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Local state is now direct"
 trace find .databricks/bundle -name "resources.json" -type f
 trace find .databricks/bundle -name "terraform.tfstate*" -type f
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

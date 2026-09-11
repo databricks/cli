@@ -17,4 +17,4 @@ trace $CLI bundle deploy --plan tmp.plan_skip.json
 trace print_requests.py --get //jobs | nostamp | contains.py "!GET" "!POST"
 
 trace $CLI bundle destroy --auto-approve
-rm out.requests.txt
+rm "$OUT_REQUESTS"

@@ -12,5 +12,5 @@ title "Bundle deploy should send telemetry values\n"
 trace $CLI bundle deploy -p dogfood
 
 trace print_telemetry_bool_values | grep "local.cache"
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 rm -rf "${DATABRICKS_CACHE_DIR}"

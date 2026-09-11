@@ -1,2 +1,2 @@
 
->>> errcode jq -s .[] | select(.method == "POST" and (.path | contains("/pipelines"))) out.requests.txt
+>>> errcode jq -s .[] | select(.method == "POST" and (.path | contains("/pipelines"))) [OUTPUT_DIR]/out.requests.txt

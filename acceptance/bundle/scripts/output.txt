@@ -43,7 +43,7 @@ Executing 'predeploy' script
 from myscript.py 0 predeploy: hello stdout!
 from myscript.py 0 predeploy: hello stderr!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts/default/files...
-Files: 11 uploaded, 0 deleted
+Files: 10 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 Executing 'postdeploy' script
 from myscript.py 0 postdeploy: hello stdout!
@@ -66,7 +66,7 @@ Executing 'predeploy' script
 from myscript.py 0 predeploy: hello stdout!
 from myscript.py 0 predeploy: hello stderr!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/scripts/default/files...
-Files: 1 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 Executing 'postdeploy' script
 from myscript.py 1 postdeploy: hello stdout!

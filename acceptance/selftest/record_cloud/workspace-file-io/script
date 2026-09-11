@@ -6,8 +6,8 @@ export username=$($CLI current-user me | jq -r .userName)
 export MSYS_NO_PATHCONV=1
 
 print_requests() {
-    cat out.requests.txt
-    rm out.requests.txt
+    cat "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 title "create a folder"

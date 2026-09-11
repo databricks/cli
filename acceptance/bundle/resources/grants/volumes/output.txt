@@ -6,7 +6,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNI
 Created schemas.grants_schema
 Created volumes.grants_volume
 Created volumes.grants_volume.grants
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //permissions
@@ -29,7 +29,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
 Updated volumes.grants_volume.grants
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //permissions

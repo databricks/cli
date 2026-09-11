@@ -3,8 +3,6 @@ cat > .gitignore << EOF
 .databricks/
 script
 test.toml
-output.txt
-out.requests.txt
 EOF
 
 # Use an ephemeral remote directory so concurrent test runs do not interfere.
@@ -12,7 +10,7 @@ remote_dir="/Users/$CURRENT_USER_NAME/missing-dir-$UNIQUE_NAME"
 
 cleanup() {
   MSYS_NO_PATHCONV=1 $CLI workspace delete --recursive "$remote_dir" 2>/dev/null || true
-  rm -rf .git .gitignore .databricks out.requests.txt
+  rm -rf .git .gitignore .databricks "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 

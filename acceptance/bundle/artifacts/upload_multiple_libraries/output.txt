@@ -6,11 +6,11 @@ Uploading whl/source3.whl...
 Uploading whl/source4.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.job
-Files: 9 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Expecting 5 wheels in libraries section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 [
   {
     "existing_cluster_id": "0717-132531-5opeqon1",
@@ -51,7 +51,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source4.whl"
 
 === Expecting environment dependencies to be updated
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments [OUTPUT_DIR]/out.requests.txt
 [
   {
     "environment_key": "test_env",

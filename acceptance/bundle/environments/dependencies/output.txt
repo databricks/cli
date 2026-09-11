@@ -13,10 +13,10 @@ Uploading dist/test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files...
 Created jobs.test_job
 Created pipelines.test_pipeline
-Files: 9 uploaded, 0 deleted
+Files: 7 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments [OUTPUT_DIR]/out.requests.txt
 [
   {
     "environment_key": "test_env",
@@ -53,7 +53,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   }
 ]
 
->>> jq -s .[] | select(.path=="/api/2.0/pipelines") out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.0/pipelines") [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/pipelines",

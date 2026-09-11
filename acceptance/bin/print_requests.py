@@ -255,7 +255,7 @@ def main():
         "bodies, so a test asserts the same requests whether or not deployment history "
         "recording is on. Shorthand for the --del-body fields it implies.",
     )
-    parser.add_argument("--fname", default="out.requests.txt")
+    parser.add_argument("--fname", default=os.environ["OUT_REQUESTS"])
     args = parser.parse_args()
 
     del_body_fields = [field for group in args.del_body for field in group.split(",")]
@@ -263,11 +263,12 @@ def main():
         del_body_fields += STAMP_FIELDS
     del_fields = [field for group in args.del_field for field in group.split(",")]
 
+    fname = Path(args.fname)
     test_tmp_dir = os.environ.get("TEST_TMP_DIR")
-    if test_tmp_dir:
-        requests_file = Path(test_tmp_dir) / args.fname
+    if test_tmp_dir and not fname.is_absolute():
+        requests_file = Path(test_tmp_dir) / fname
     else:
-        requests_file = Path(args.fname)
+        requests_file = fname
 
     if not requests_file.exists():
         sys.exit(f"File {requests_file.as_posix()} not found")
