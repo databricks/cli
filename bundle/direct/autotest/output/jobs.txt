@@ -30,7 +30,8 @@ trigger.periodic.interval                    absent     1          BASE_ERROR  I
 trigger.periodic.interval                    absent     2          BASE_ERROR  Invalid periodic trigger interval: it must be greater than or equal to 1 (400 INVALID_PARAMETER_VALUE)
 
 === summary
-OK                         102
+OK                         94
+CANNOT_DELETE_REQUIRED     8
 OK_INERT                   6
 SUPPRESSED                 8
 NOT_OBSERVABLE             8
