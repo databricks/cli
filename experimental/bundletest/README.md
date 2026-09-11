@@ -39,11 +39,14 @@ nothing.
 
 The same test runs against either backend, chosen by the `BUNDLETEST_BACKEND` env var:
 
-- **`local`** (default) — runs the job's *actual* deployed `.sql` artifact against
-  [DuckDB](https://duckdb.org). Zero infra, seconds to run. Same source of truth as the
-  deployed job (so "wrong table name" is genuinely caught), and DuckDB's typing is strict
-  (no silent coercion). It is not Databricks SQL, so genuinely dialect-dependent checks
-  still belong on cloud.
+- **`local`** (default) — **portable SQL smoke testing**: runs the job's *actual* deployed
+  `.sql` artifact against [DuckDB](https://duckdb.org). Zero infra, seconds to run. Because
+  it runs the same source of truth the bundle deploys (with strict typing, no silent
+  coercion), it catches the structural bugs portable SQL can express — wrong table name,
+  broken wiring, dedup/null-filter regressions. It is **not** a Databricks SQL emulator:
+  DuckDB's dialect, type system, and semantics differ, so a green local run means "the SQL
+  is portable and structurally sound," not "this passes on Databricks." Genuinely
+  dialect-dependent checks belong on cloud.
 - **`cloud`** — deco-provisioned real workspace. Real fidelity. *(Arrives as a stacked PR
   on top of this base.)*
 

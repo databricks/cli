@@ -36,6 +36,17 @@ class RunResult:
         return self.result_state == "SUCCESS"
 
 
+class JobRunFailed(Exception):
+    """A job run finished unsuccessfully and the caller did not opt out with ``check=False``.
+
+    Raised at the handle layer (not the backends) so both tiers get it for free. Carries the
+    ``RunResult`` so a test that deliberately runs a failing job can still inspect it."""
+
+    def __init__(self, result: RunResult):
+        self.result = result
+        super().__init__(result.error or f"job run reported {result.result_state}")
+
+
 @runtime_checkable
 class Backend(Protocol):
     """The only abstraction with more than one implementation.

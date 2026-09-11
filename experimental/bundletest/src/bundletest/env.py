@@ -8,7 +8,7 @@ import re
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Iterator
 
-from bundletest.backend import Backend, LocalUnsupported, RunResult
+from bundletest.backend import Backend, JobRunFailed, LocalUnsupported, RunResult
 from bundletest.table import FileHandle, TableHandle
 
 if TYPE_CHECKING:
@@ -60,8 +60,12 @@ class JobHandle(ResourceHandle):
         super().__init__(backend, "jobs", name)
         self._last: RunResult | None = None
 
-    def run(self, params: dict[str, Any] | None = None) -> RunResult:
+    def run(self, params: dict[str, Any] | None = None, check: bool = True) -> RunResult:
+        # A failed run raises by default so a wired-up-wrong job can't slip past unnoticed;
+        # tests that deliberately run a failing job pass check=False and inspect the result.
         self._last = self._backend.run_job(self.name, params)
+        if check and not self._last.succeeded:
+            raise JobRunFailed(self._last)
         return self._last
 
     def last_run(self) -> RunResult:
@@ -288,8 +292,8 @@ class BundleEnv:
     def app(self, name: str) -> AppHandle:
         return AppHandle(self.backend, name)
 
-    def run_job(self, name: str, params: dict[str, Any] | None = None) -> RunResult:
-        return self.jobs[name].run(params)
+    def run_job(self, name: str, params: dict[str, Any] | None = None, check: bool = True) -> RunResult:
+        return self.jobs[name].run(params, check=check)
 
 
 def make_backend(kind: str, **kwargs: Any) -> Backend:
