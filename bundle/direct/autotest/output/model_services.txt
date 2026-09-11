@@ -8,6 +8,12 @@
 #
 # Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
 
+config.routing.destinations                  absent     len0       BASE_ERROR  destinations cannot be cleared; use DeleteModelService to remove the resource (400 INVALID_PARAMETER_VALUE)
+config.routing.destinations                  absent     len1       BASE_ERROR  destinations cannot be cleared; use DeleteModelService to remove the resource (400 INVALID_PARAMETER_VALUE)
+config.routing.destinations                  len0       absent     BASE_ERROR  destinations cannot be cleared; use DeleteModelService to remove the resource (400 INVALID_PARAMETER_VALUE)
+config.routing.destinations                  len0       len1       BASE_ERROR  destinations cannot be cleared; use DeleteModelService to remove the resource (400 INVALID_PARAMETER_VALUE)
+config.routing.destinations                  len1       absent     BACKEND_ERROR  destinations cannot be cleared; use DeleteModelService to remove the resource (400 INVALID_PARAMETER_VALUE)
+config.routing.destinations                  len1       len0       BACKEND_ERROR  destinations cannot be cleared; use DeleteModelService to remove the resource (400 INVALID_PARAMETER_VALUE)
 parent                                       absent     x          BASE_ERROR  unexpected model service name "model-services/.test-model-service-[UNIQUE_NAME]" (want three dot-separated components)
 parent                                       absent     y          BASE_ERROR  unexpected model service name "model-services/.test-model-service-[UNIQUE_NAME]" (want three dot-separated components)
 parent                                       x          absent     BASE_ERROR  unexpected model service name "model-services/x.test-model-service-[UNIQUE_NAME]" (want three dot-separated components)
@@ -16,8 +22,10 @@ parent                                       y          absent     BASE_ERROR  u
 parent                                       y          x          BASE_ERROR  unexpected model service name "model-services/y.test-model-service-[UNIQUE_NAME]" (want three dot-separated components)
 
 === summary
-OK                         22
+OK                         74
 OK_RECREATE                6
-SUPPRESSED                 2
+SUPPRESSED                 3
+NOT_OBSERVABLE             1
+BACKEND_ERROR              2
 SKIPPED                    7
-BASE_ERROR                 6
+BASE_ERROR                 10
