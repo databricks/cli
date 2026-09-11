@@ -7,12 +7,10 @@ deployed jobs, execute_sql/table_schema round-trips, get_resource off `bundle su
 
 import pytest
 
-SCHEMA = "main.bundletest_cloud"
 
-
-def test_bronze_to_silver_to_gold(env):
+def test_bronze_to_silver_to_gold(env, schema):
     env.seed(
-        f"{SCHEMA}.raw_orders",
+        f"{schema}.raw_orders",
         [
             {"order_id": 1, "total_price": 10.0},
             {"order_id": 1, "total_price": 10.0},  # duplicate
@@ -22,23 +20,23 @@ def test_bronze_to_silver_to_gold(env):
     )
 
     assert env.run_job("transform_orders").succeeded  # bronze -> silver
-    silver = env.table(f"{SCHEMA}.orders")
+    silver = env.table(f"{schema}.orders")
     assert silver.row_count() == 2
     assert silver.has_no_nulls("order_id")
     assert silver.column("order_id").is_unique()
 
     assert env.run_job("aggregate_orders").succeeded  # silver -> gold
-    summary = env.table(f"{SCHEMA}.order_summary")
+    summary = env.table(f"{schema}.order_summary")
     assert summary.row_count() == 1
     assert summary.column("order_count").min() == 2
     assert summary.column("total_revenue").min() == 15.0
 
 
 @pytest.mark.cloud_only
-def test_price_type_is_databricks_decimal(env):
-    env.seed(f"{SCHEMA}.raw_orders", [{"order_id": 1, "total_price": 10.0}])
+def test_price_type_is_databricks_decimal(env, schema):
+    env.seed(f"{schema}.raw_orders", [{"order_id": 1, "total_price": 10.0}])
     env.run_job("transform_orders")
-    assert env.table(f"{SCHEMA}.orders").schema["total_price"] == "decimal(10,2)"
+    assert env.table(f"{schema}.orders").schema["total_price"] == "decimal(10,2)"
 
 
 def test_job_is_wired_to_its_sql(env):
@@ -46,12 +44,12 @@ def test_job_is_wired_to_its_sql(env):
     assert job["tasks"][0]["sql_task"]["file"]["path"].endswith("transform_orders.sql")
 
 
-def test_dashboard_source_tables_from_file_path(env):
+def test_dashboard_source_tables_from_file_path(env, schema):
     # The dashboard is defined by file_path, not inline, yet source_tables() still resolves:
     # `bundle summary` inlines the file's serialized form at config-load, so get_resource has it.
     dashboard = env.dashboard("orders_overview")
     assert dashboard.exists()
-    assert dashboard.source_tables() == [f"{SCHEMA}.order_summary"]
+    assert dashboard.source_tables() == [f"{schema}.order_summary"]
 
 
 def test_uploaded_csv_is_readable(env, tmp_path):
