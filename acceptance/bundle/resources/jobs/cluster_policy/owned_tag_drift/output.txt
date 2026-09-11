@@ -2,14 +2,14 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.my_policy
-Created jobs.j
+Created jobs.my_job
 Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === An out-of-band change to a config-owned tag is drift, even with a policy attached
 
 >>> [CLI] bundle plan
-update jobs.j
+update jobs.my_job
 
 Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
@@ -18,23 +18,27 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 >>> update_file.py databricks.yml Mine: mine Other: other
 
 >>> [CLI] bundle plan -o json
-json.plan.resources.cluster_policies.my_policy.remote_state.definition = "{\"custom_tags.CostCenter\":{\"type\":\"fixed\",\"value\":\"from-policy\"}}";
-json.plan.resources.jobs.j.new_state.value.job_clusters[0].new_cluster.custom_tags.Other = "other";
-json.plan.resources.jobs.j.remote_state.job_clusters[0].new_cluster.custom_tags.CostCenter = "from-policy";
-json.plan.resources.jobs.j.remote_state.job_clusters[0].new_cluster.custom_tags.Mine = "changed-out-of-band";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].action = "skip";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].reason = "remote_addition";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter'].remote = "from-policy";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine'].action = "update";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine'].old = "mine";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Mine'].remote = "changed-out-of-band";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Other'].action = "update";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='small'].new_cluster.custom_tags['Other'].new = "other";
+{
+  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['CostCenter']": {
+    "action": "skip",
+    "reason": "remote_addition",
+    "remote": "from-policy"
+  },
+  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['Mine']": {
+    "action": "update",
+    "old": "mine",
+    "remote": "changed-out-of-band"
+  },
+  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['Other']": {
+    "action": "update",
+    "new": "other"
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.cluster_policies.my_policy
-  delete resources.jobs.j
+  delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

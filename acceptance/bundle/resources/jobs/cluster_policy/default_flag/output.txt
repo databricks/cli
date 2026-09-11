@@ -2,15 +2,23 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.my_policy
-Created jobs.j
+Created jobs.my_job
 Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === defaultValue is supplied only with apply_policy_default_values (flag_on), not flag_off
-json.settings.job_clusters[0].job_cluster_key = "flag_off";
-json.settings.job_clusters[1].job_cluster_key = "flag_on";
-json.settings.job_clusters[1].new_cluster.custom_tags.DefaultTag = "from-default";
-json.settings.tasks[0].job_cluster_key = "flag_off";
+[
+  {
+    "custom_tags": null,
+    "job_cluster_key": "flag_off"
+  },
+  {
+    "custom_tags": {
+      "DefaultTag": "from-default"
+    },
+    "job_cluster_key": "flag_on"
+  }
+]
 
 === Neither is drift on a second plan
 
@@ -20,7 +28,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.cluster_policies.my_policy
-  delete resources.jobs.j
+  delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

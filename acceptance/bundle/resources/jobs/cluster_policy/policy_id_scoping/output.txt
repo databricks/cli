@@ -2,36 +2,35 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.my_policy
-Created jobs.j
+Created jobs.my_job
 Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Inject a remote-only tag on the ungated cluster (no policy_id) to show it is not gated
 
-=== The policy tag is skipped on every gated location; the ungated cluster's tag is drift
+=== The gated cluster's policy tag is skipped; the ungated cluster's tag is drift
 
 >>> [CLI] bundle plan -o json
-json.plan.resources.cluster_policies.my_policy.remote_state.definition = "{\"custom_tags.CostCenter\":{\"type\":\"fixed\",\"value\":\"from-policy\"}}";
-json.plan.resources.jobs.j.remote_state.job_clusters[0].new_cluster.custom_tags.CostCenter = "from-policy";
-json.plan.resources.jobs.j.remote_state.job_clusters[1].new_cluster.custom_tags.Injected = "out-of-band";
-json.plan.resources.jobs.j.remote_state.tasks[0].for_each_task.task.new_cluster.custom_tags.CostCenter = "from-policy";
-json.plan.resources.jobs.j.remote_state.tasks[3].new_cluster.custom_tags.CostCenter = "from-policy";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='gated'].new_cluster.custom_tags.action = "skip";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='gated'].new_cluster.custom_tags.reason = "remote_addition";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='gated'].new_cluster.custom_tags.remote.CostCenter = "from-policy";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='ungated'].new_cluster.custom_tags.action = "update";
-json.plan.resources.jobs.j.changes.job_clusters[job_cluster_key='ungated'].new_cluster.custom_tags.remote.Injected = "out-of-band";
-json.plan.resources.jobs.j.changes.tasks[task_key='foreach'].for_each_task.task.new_cluster.custom_tags.action = "skip";
-json.plan.resources.jobs.j.changes.tasks[task_key='foreach'].for_each_task.task.new_cluster.custom_tags.reason = "remote_addition";
-json.plan.resources.jobs.j.changes.tasks[task_key='foreach'].for_each_task.task.new_cluster.custom_tags.remote.CostCenter = "from-policy";
-json.plan.resources.jobs.j.changes.tasks[task_key='task_cluster'].new_cluster.custom_tags.action = "skip";
-json.plan.resources.jobs.j.changes.tasks[task_key='task_cluster'].new_cluster.custom_tags.reason = "remote_addition";
-json.plan.resources.jobs.j.changes.tasks[task_key='task_cluster'].new_cluster.custom_tags.remote.CostCenter = "from-policy";
+{
+  "job_clusters[job_cluster_key='gated'].new_cluster.custom_tags": {
+    "action": "skip",
+    "reason": "remote_addition",
+    "remote": {
+      "CostCenter": "from-policy"
+    }
+  },
+  "job_clusters[job_cluster_key='ungated'].new_cluster.custom_tags": {
+    "action": "update",
+    "remote": {
+      "Injected": "out-of-band"
+    }
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.cluster_policies.my_policy
-  delete resources.jobs.j
+  delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

@@ -2,28 +2,32 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.my_policy
-Created clusters.c
+Created clusters.my_cluster
 Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
-=== A cluster policy tag on a standalone cluster is not drift; second plan is clean
+=== A cluster policy tag on a standalone cluster is not drift
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== ...and is classified remote_addition
+=== ...classified remote_addition
 
 >>> [CLI] bundle plan -o json
-json.plan.resources.cluster_policies.my_policy.remote_state.definition = "{\"custom_tags.CostCenter\":{\"type\":\"fixed\",\"value\":\"from-policy\"}}";
-json.plan.resources.clusters.c.remote_state.custom_tags.CostCenter = "from-policy";
-json.plan.resources.clusters.c.changes.custom_tags.action = "skip";
-json.plan.resources.clusters.c.changes.custom_tags.reason = "remote_addition";
-json.plan.resources.clusters.c.changes.custom_tags.remote.CostCenter = "from-policy";
+{
+  "custom_tags": {
+    "action": "skip",
+    "reason": "remote_addition",
+    "remote": {
+      "CostCenter": "from-policy"
+    }
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.cluster_policies.my_policy
-  delete resources.clusters.c
+  delete resources.clusters.my_cluster
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

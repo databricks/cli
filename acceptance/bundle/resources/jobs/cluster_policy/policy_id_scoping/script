@@ -6,7 +6,7 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
-job_id=$(read_id.py j)
+job_id=$(read_id.py my_job)
 
 title "Inject a remote-only tag on the ungated cluster (no policy_id) to show it is not gated\n"
 edit_resource.py jobs "$job_id" <<'EOF'
@@ -15,5 +15,6 @@ for jc in r["job_clusters"]:
         jc["new_cluster"]["custom_tags"] = {"Injected": "out-of-band"}
 EOF
 
-title "The policy tag is skipped on every gated location; the ungated cluster's tag is drift\n"
-trace $CLI bundle plan -o json | gron.py | grep custom_tags
+title "The gated cluster's policy tag is skipped; the ungated cluster's tag is drift\n"
+trace $CLI bundle plan -o json | jq -S '.plan["resources.jobs.my_job"].changes
+  | with_entries(select(.key | test("custom_tags")))'

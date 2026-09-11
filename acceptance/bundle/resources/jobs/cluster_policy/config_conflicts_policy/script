@@ -5,5 +5,5 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploy a cluster whose config contradicts a fixed policy value\n"
-errcode trace $CLI bundle deploy
+title "A cluster tag contradicting a fixed policy value is rejected at create\n"
+musterr trace $CLI bundle deploy

@@ -7,8 +7,9 @@ trap cleanup EXIT
 
 trace $CLI bundle deploy
 
-title "A cluster policy tag on a standalone cluster is not drift; second plan is clean\n"
+title "A cluster policy tag on a standalone cluster is not drift\n"
 trace $CLI bundle plan
 
-title "...and is classified remote_addition\n"
-trace $CLI bundle plan -o json | gron.py | grep custom_tags
+title "...classified remote_addition\n"
+trace $CLI bundle plan -o json | jq -S '.plan["resources.clusters.my_cluster"].changes
+  | with_entries(select(.key | test("custom_tags")))'

@@ -9,26 +9,44 @@ resources:
     my_policy:
       name: test-policy-$UNIQUE_NAME
       definition:
+        # A fixed scalar and a fixed map key; every cluster below omits both, so the policy is
+        # the sole source and each supplied value must be classified remote_addition.
         spark_version:
           type: fixed
           value: $DEFAULT_SPARK_VERSION
         custom_tags.CostCenter:
           type: fixed
-          value: policy-supplied
+          value: from-policy
 
   jobs:
-    # new_cluster deliberately omits spark_version and custom_tags: the policy is
-    # expected to supply both. apply_policy_default_values is NOT set.
-    j:
+    my_job:
       name: test-job-$UNIQUE_NAME
       job_clusters:
-        - job_cluster_key: small
+        - job_cluster_key: job_cluster
           new_cluster:
             policy_id: ${resources.cluster_policies.my_policy.id}
             node_type_id: $NODE_TYPE_ID
             num_workers: 1
       tasks:
-        - task_key: t
-          job_cluster_key: small
+        - task_key: on_job_cluster
+          job_cluster_key: job_cluster
           spark_python_task:
             python_file: ./hello_world.py
+        - task_key: task_cluster
+          new_cluster:
+            policy_id: ${resources.cluster_policies.my_policy.id}
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+          spark_python_task:
+            python_file: ./hello_world.py
+        - task_key: for_each
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: for_each_cluster
+              new_cluster:
+                policy_id: ${resources.cluster_policies.my_policy.id}
+                node_type_id: $NODE_TYPE_ID
+                num_workers: 1
+              spark_python_task:
+                python_file: ./hello_world.py

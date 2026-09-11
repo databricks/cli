@@ -11,14 +11,14 @@ resources:
       definition:
         custom_tags.CostCenter:
           type: fixed
-          value: from-fixed
+          value: from-policy
 
   jobs:
-    # The config sets the fixed attribute to a value the policy forbids.
-    j:
+    my_job:
       name: test-job-$UNIQUE_NAME
       job_clusters:
-        - job_cluster_key: small
+        # The config sets the fixed attribute to a value the policy forbids.
+        - job_cluster_key: main
           new_cluster:
             policy_id: ${resources.cluster_policies.my_policy.id}
             spark_version: $DEFAULT_SPARK_VERSION
@@ -27,7 +27,7 @@ resources:
             custom_tags:
               CostCenter: not-what-the-policy-says
       tasks:
-        - task_key: t
-          job_cluster_key: small
+        - task_key: main
+          job_cluster_key: main
           spark_python_task:
             python_file: ./hello_world.py

@@ -9,12 +9,15 @@ resources:
     my_policy:
       name: test-policy-$UNIQUE_NAME
       definition:
+        # Only a map key: the clusters resource force-sends spark_version, so a scalar the
+        # config omits arrives as "" and a fixed policy rejects it. The scalar-supply case is
+        # covered by fixed_addition, whose job-cluster new_cluster fields are omitempty.
         custom_tags.CostCenter:
           type: fixed
           value: from-policy
 
   clusters:
-    c:
+    my_cluster:
       cluster_name: test-cluster-$UNIQUE_NAME
       spark_version: $DEFAULT_SPARK_VERSION
       node_type_id: $NODE_TYPE_ID

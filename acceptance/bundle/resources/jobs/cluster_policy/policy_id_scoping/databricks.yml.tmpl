@@ -13,11 +13,10 @@ resources:
           type: fixed
           value: from-policy
 
-  # policy_id gates suppression per cluster spec, not per resource. Gated clusters appear at
-  # every jobs location (job_clusters, tasks[*].new_cluster, for_each); one cluster omits
-  # policy_id, and an out-of-band tag on it must still surface as drift.
+  # policy_id gates suppression per cluster spec, not per resource: the gated cluster's
+  # policy tag is skipped, while an out-of-band tag on the ungated sibling still surfaces.
   jobs:
-    j:
+    my_job:
       name: test-job-$UNIQUE_NAME
       job_clusters:
         - job_cluster_key: gated
@@ -40,23 +39,3 @@ resources:
           job_cluster_key: ungated
           spark_python_task:
             python_file: ./hello_world.py
-        - task_key: task_cluster
-          new_cluster:
-            policy_id: ${resources.cluster_policies.my_policy.id}
-            spark_version: $DEFAULT_SPARK_VERSION
-            node_type_id: $NODE_TYPE_ID
-            num_workers: 1
-          spark_python_task:
-            python_file: ./hello_world.py
-        - task_key: foreach
-          for_each_task:
-            inputs: "[1]"
-            task:
-              task_key: inner
-              new_cluster:
-                policy_id: ${resources.cluster_policies.my_policy.id}
-                spark_version: $DEFAULT_SPARK_VERSION
-                node_type_id: $NODE_TYPE_ID
-                num_workers: 1
-              spark_python_task:
-                python_file: ./hello_world.py

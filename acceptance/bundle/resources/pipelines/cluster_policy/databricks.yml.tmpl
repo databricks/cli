@@ -17,7 +17,7 @@ resources:
   # into the stored spec: it reads back exactly as authored, so there is no addition to suppress
   # and no ignore_remote_additions rule for pipelines. This records that it simply converges.
   pipelines:
-    p:
+    my_pipeline:
       name: test-pipeline-$UNIQUE_NAME
       clusters:
         - label: default
