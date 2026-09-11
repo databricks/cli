@@ -222,17 +222,10 @@ class CloudBackend:
     # --- control plane ---
     def get_resource(self, kind: str, name: str) -> dict[str, Any]:
         # `...[kind][name]` raises KeyError for an undeclared resource, which exists() expects.
-        cfg = self._resources()[kind][name]
-        # source_tables() needs the rendered serialized definition. A resource inlined in
-        # databricks.yml already carries it; a file_path-only one does not, so read it back
-        # from the deployed resource.
-        if kind == "dashboards" and "serialized_dashboard" not in cfg:
-            dashboard = self._ws().lakeview.get(self._deployed_id(cfg, name))
-            return {**cfg, "serialized_dashboard": dashboard.serialized_dashboard}
-        if kind == "genie_spaces" and "serialized_space" not in cfg:
-            space = self._ws().genie.get_space(self._deployed_id(cfg, name), include_serialized_space=True)
-            return {**cfg, "serialized_space": space.serialized_space}
-        return cfg
+        # `bundle summary` gives the rendered config, and its config mutators inline
+        # serialized_dashboard/serialized_space from a file_path at load time, so the
+        # serialized form source_tables() needs is already here — no workspace read needed.
+        return self._resources()[kind][name]
 
     def put_file(self, dst: str, src: str) -> None:
         if not os.path.exists(src):
@@ -286,14 +279,6 @@ class CloudBackend:
         if self._summary is None:
             self._summary = json.loads(self._bundle("summary", "-o", "json"))
         return self._summary.get("resources", {})
-
-    @staticmethod
-    def _deployed_id(cfg: dict[str, Any], name: str) -> str:
-        # A RuntimeError (not KeyError) so exists() doesn't mistake a hydration miss for absence.
-        rid = cfg.get("id")
-        if not rid:
-            raise RuntimeError(f"resource {name!r} has no deployed id yet — deploy first")
-        return str(rid)
 
     def _ensure_schema(self, fqn: str) -> None:
         parts = fqn.split(".")
