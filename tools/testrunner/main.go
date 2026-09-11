@@ -320,14 +320,21 @@ func parseConfig(content string) (*Config, error) {
 
 // parsePattern splits a pattern field into segments. A trailing "/" marks a
 // prefix match, represented as a trailing "*" segment so it matches any number
-// of segments below the listed ones.
-func parsePattern(pattern string) []string {
+// of segments below the listed ones. An empty segment (from "//" or a bare "/")
+// can never match a real path segment, so it is rejected rather than silently
+// producing a rule that matches nothing.
+func parsePattern(pattern string) ([]string, error) {
 	prefix := strings.HasSuffix(pattern, "/")
 	segments := strings.Split(strings.TrimSuffix(pattern, "/"), "/")
+	for _, s := range segments {
+		if s == "" {
+			return nil, fmt.Errorf("empty segment in pattern %q", pattern)
+		}
+	}
 	if prefix {
 		segments = append(segments, "*")
 	}
-	return segments
+	return segments, nil
 }
 
 func parseConfigRule(line, originalLine string) (ConfigRule, error) {
@@ -336,9 +343,18 @@ func parseConfigRule(line, originalLine string) (ConfigRule, error) {
 		return ConfigRule{}, fmt.Errorf("expected 2 fields, got %d", len(parts))
 	}
 
+	packagePattern, err := parsePattern(parts[0])
+	if err != nil {
+		return ConfigRule{}, err
+	}
+	testPattern, err := parsePattern(parts[1])
+	if err != nil {
+		return ConfigRule{}, err
+	}
+
 	return ConfigRule{
-		PackagePattern: parsePattern(parts[0]),
-		TestPattern:    parsePattern(parts[1]),
+		PackagePattern: packagePattern,
+		TestPattern:    testPattern,
 		OriginalLine:   strings.TrimSpace(originalLine),
 	}, nil
 }

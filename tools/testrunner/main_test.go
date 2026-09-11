@@ -91,6 +91,21 @@ func TestConfigRuleMatches(t *testing.T) {
 	}
 }
 
+func TestParseConfigRuleErrors(t *testing.T) {
+	for _, input := range []string{
+		"bundle",
+		"a b c",
+		"bundle// TestDeploy",
+		"bundle /",
+		"* TestAccept//Deploy",
+	} {
+		t.Run(input, func(t *testing.T) {
+			_, err := parseConfigRule(input, input)
+			assert.Error(t, err)
+		})
+	}
+}
+
 func TestCheckFailures(t *testing.T) {
 	const config = "* TestAccept/ssh/connection\n"
 
