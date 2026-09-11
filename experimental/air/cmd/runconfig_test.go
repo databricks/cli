@@ -149,6 +149,28 @@ func TestLoadRunConfig_UnknownFieldRejected(t *testing.T) {
 	}
 }
 
+func TestLoadRunConfig_ErrorLineNumbersUseSource(t *testing.T) {
+	path := writeConfig(t, `# first comment
+# second comment
+experiment_name: smoke
+command: echo hi
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+unknown_field: true
+`)
+
+	t.Run("without overrides", func(t *testing.T) {
+		_, err := loadRunConfig(path)
+		require.ErrorContains(t, err, "line 8: field unknown_field")
+	})
+
+	t.Run("with overrides", func(t *testing.T) {
+		_, err := loadRunConfigWithOverrides(t.Context(), path, []string{"compute.num_accelerators=2"})
+		require.ErrorContains(t, err, "line 8: field unknown_field")
+	})
+}
+
 func TestLoadRunConfig_Errors(t *testing.T) {
 	tests := []struct {
 		name    string

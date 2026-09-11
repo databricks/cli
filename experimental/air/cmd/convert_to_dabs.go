@@ -156,7 +156,7 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 	// their paths from command_path. It no longer produces a requirements.yaml —
 	// file-form deps are folded into the environments[] spec — so there is nothing to
 	// filter out here.
-	artifacts, err := buildArtifacts(cfg, configPath)
+	artifacts, err := buildArtifacts(cfg)
 	if err != nil {
 		return nil, nil, err
 	}

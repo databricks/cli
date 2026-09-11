@@ -46,43 +46,80 @@ func itemNames(items []uploadItem) []string {
 	return names
 }
 
-func TestBuildArtifacts_CommandAndConfig(t *testing.T) {
-	path := writeConfigFile(t, "run.yaml", minimalConfig)
-	cfg := &runConfig{Command: new("python train.py")}
+func itemData(t *testing.T, items []uploadItem, name string) []byte {
+	t.Helper()
+	for _, item := range items {
+		if item.name == name {
+			return item.data
+		}
+	}
+	require.FailNow(t, "artifact not found", name)
+	return nil
+}
 
-	items, err := buildArtifacts(cfg, path)
+func TestBuildArtifacts_CommandAndConfig(t *testing.T) {
+	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", minimalConfig))
+	require.NoError(t, err)
+
+	items, err := buildArtifacts(cfg)
 	require.NoError(t, err)
 	assert.Equal(t, []string{trainingConfigName, commandScriptName}, itemNames(items))
-	assert.Equal(t, minimalConfig, string(items[0].data))
+	assert.YAMLEq(t, minimalConfig, string(items[0].data))
 	assert.Equal(t, "python train.py", string(items[1].data))
 }
 
 func TestBuildArtifacts_ParametersButNoRequirements(t *testing.T) {
-	path := writeConfigFile(t, "run.yaml", "x: y\n")
-	cfg := &runConfig{
-		Command: new("echo hi"),
-		Environment: &environmentConfig{
-			Dependencies: dependencies{set: true, list: []string{"torch", "numpy"}},
-			Version:      stringOrInt{set: true, raw: "5"},
-		},
-		Parameters: map[string]any{"lr": 0.1},
-	}
+	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", `
+experiment_name: test
+compute:
+  num_accelerators: 1
+  accelerator_type: GPU_1xH100
+environment:
+  dependencies:
+    - torch
+    - numpy
+  version: 5
+command: echo hi
+parameters:
+  lr: 0.1
+`))
+	require.NoError(t, err)
 
 	// Inline deps are not uploaded, so the artifacts are config, command, and params.
-	items, err := buildArtifacts(cfg, path)
+	items, err := buildArtifacts(cfg)
 	require.NoError(t, err)
 	assert.Equal(t, []string{trainingConfigName, commandScriptName, hyperparametersName}, itemNames(items))
+	assert.YAMLEq(t, `
+experiment_name: test
+compute:
+  num_accelerators: 1
+  accelerator_type: GPU_1xH100
+environment:
+  dependencies:
+    - torch
+    - numpy
+  version: 5
+command: echo hi
+parameters:
+  lr: 0.1
+`, string(itemData(t, items, trainingConfigName)))
 }
 
 func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
-	path := writeConfigFile(t, "run.yaml", "x: y\n")
-	cfg := &runConfig{
-		Command:      new("echo hi"),
-		EnvVariables: map[string]string{"WANDB": "demo"},
-		Secrets:      map[string]string{"HF_TOKEN": "myscope/hf"},
-	}
+	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", `
+experiment_name: test
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+command: echo hi
+env_variables:
+  WANDB: demo
+secrets:
+  HF_TOKEN: myscope/hf
+`))
+	require.NoError(t, err)
 
-	items, err := buildArtifacts(cfg, path)
+	items, err := buildArtifacts(cfg)
 	require.NoError(t, err)
 	assert.Subset(t, itemNames(items), []string{envVarsName, secretEnvVarsName})
 
@@ -94,9 +131,58 @@ func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
 	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
 }
 
+func TestBuildArtifacts_SourceOrderedConfigWithNestedOverrides(t *testing.T) {
+	path := writeConfigFile(t, "run.yaml", `
+# This comment is intentionally not retained.
+experiment_name: artifact-test
+command: python train.py
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+parameters:
+  model:
+    hidden_size: 1024
+  optimizer:
+    name: adamw
+  empty_map: {}
+  empty_list: []
+  empty_value: null
+mlflow_artifact_location: /Volumes/main/default/artifacts
+`)
+	cfg, err := loadRunConfigWithOverrides(t.Context(), path, []string{
+		"compute.num_accelerators=4",
+		"parameters.model.hidden_size=2048",
+		"parameters.optimizer.learning_rate=0.001",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, cfg.MLflowArtifactLocation)
+	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", *cfg.MLflowArtifactLocation)
+
+	items, err := buildArtifacts(cfg)
+	require.NoError(t, err)
+
+	assert.Equal(t, `experiment_name: artifact-test
+command: python train.py
+compute:
+    accelerator_type: GPU_1xH100
+    num_accelerators: 4
+parameters:
+    model:
+        hidden_size: 2048
+    optimizer:
+        name: adamw
+        learning_rate: 0.001
+    empty_map: {}
+    empty_list: []
+    empty_value: null
+mlflow_artifact_location: /Volumes/main/default/artifacts
+`, string(itemData(t, items, trainingConfigName)))
+}
+
 func TestBuildArtifacts_OversizeConfigRejected(t *testing.T) {
-	path := writeConfigFile(t, "run.yaml", strings.Repeat("a", maxConfigYAMLBytes+1))
-	_, err := buildArtifacts(&runConfig{Command: new("x")}, path)
+	_, err := buildArtifacts(&runConfig{
+		artifactYAML: []byte(strings.Repeat("a", maxConfigYAMLBytes+1)),
+	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "over the 1 MB limit")
 }

@@ -309,7 +309,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
-	items, err := buildArtifacts(cfg, configPath)
+	items, err := buildArtifacts(cfg)
 	if err != nil {
 		return 0, "", err
 	}
