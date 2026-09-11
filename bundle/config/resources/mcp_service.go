@@ -46,6 +46,12 @@ func (c McpServiceConfig) MarshalJSON() ([]byte, error) {
 type McpService struct {
 	BaseResource
 	McpServiceConfig
+
+	// List of grants to apply on this MCP service. Grants are applied via the
+	// permissions API (the `.grants` sub-resource), not the MCP-service body, so
+	// this field lives on the wrapper and stays out of the diffed state that
+	// PrepareState returns (the embedded McpServiceConfig).
+	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 // UnmarshalJSON / MarshalJSON are defined on the wrapper so it does not inherit

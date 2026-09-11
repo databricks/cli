@@ -1,0 +1,35 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> print_requests.py --get //permissions
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-mcp-service-grants-[UNIQUE_NAME]/default/files...
+Created mcp_services.my_mcp_service
+Created mcp_services.my_mcp_service.grants
+Files: 7 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //permissions
+
+>>> [CLI] grants get mcp_service main.myschema.myservice
+{
+  "privilege_assignments": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "APPLY_TAG"
+      ]
+    }
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.mcp_services.my_mcp_service
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-mcp-service-grants-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py //permissions

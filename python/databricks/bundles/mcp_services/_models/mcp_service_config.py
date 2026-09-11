@@ -10,7 +10,10 @@ from databricks.bundles.mcp_services._models.mcp_service_config_source_connectio
     McpServiceConfigSourceConnection,
     McpServiceConfigSourceConnectionParam,
 )
-from databricks.bundles.mcp_services._models.rate_limit import RateLimit, RateLimitParam
+from databricks.bundles.mcp_services._models.rate_limit import (
+    RateLimit,
+    RateLimitParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

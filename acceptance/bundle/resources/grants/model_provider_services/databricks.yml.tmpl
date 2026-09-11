@@ -1,16 +1,12 @@
 bundle:
-  name: test-bundle-$UNIQUE_NAME
+  name: deploy-model-provider-service-grants-$UNIQUE_NAME
 
 resources:
   model_provider_services:
-    foo:
-      parent: schemas/main.default
-      model_provider_service_id: test-model-provider-service-$UNIQUE_NAME
-      comment: test model provider service
-      grants:
-        - principal: account users
-          privileges:
-            - APPLY_TAG
+    my_model_provider_service:
+      parent: schemas/main.myschema
+      model_provider_service_id: myservice
+      comment: mycomment
       config:
         provider_type: EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM
         targets:
@@ -22,3 +18,6 @@ resources:
             base_url: https://api.example.com/v1
             api_key:
               plaintext: dummy-api-key
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges: ["APPLY_TAG"]

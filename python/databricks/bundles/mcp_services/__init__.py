@@ -13,6 +13,11 @@ __all__ = [
     "McpServiceConfigSourceConnectionParam",
     "McpServiceDict",
     "McpServiceParam",
+    "Privilege",
+    "PrivilegeAssignment",
+    "PrivilegeAssignmentDict",
+    "PrivilegeAssignmentParam",
+    "PrivilegeParam",
     "RateLimit",
     "RateLimitDict",
     "RateLimitParam",
@@ -42,6 +47,12 @@ from databricks.bundles.mcp_services._models.mcp_service_config_source_connectio
     McpServiceConfigSourceConnection,
     McpServiceConfigSourceConnectionDict,
     McpServiceConfigSourceConnectionParam,
+)
+from databricks.bundles.mcp_services._models.privilege import Privilege, PrivilegeParam
+from databricks.bundles.mcp_services._models.privilege_assignment import (
+    PrivilegeAssignment,
+    PrivilegeAssignmentDict,
+    PrivilegeAssignmentParam,
 )
 from databricks.bundles.mcp_services._models.rate_limit import (
     RateLimit,

@@ -1,0 +1,12 @@
+bundle:
+  name: deploy-model-service-grants-$UNIQUE_NAME
+
+resources:
+  model_services:
+    my_model_service:
+      parent: schemas/main.myschema
+      model_service_id: myservice
+      comment: mycomment
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges: ["APPLY_TAG"]

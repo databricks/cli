@@ -53,6 +53,12 @@ func (c ModelServiceConfig) MarshalJSON() ([]byte, error) {
 type ModelService struct {
 	BaseResource
 	ModelServiceConfig
+
+	// List of grants to apply on this model service. Grants are applied via the
+	// permissions API (the `.grants` sub-resource), not the model-service body, so
+	// this field lives on the wrapper and stays out of the diffed state that
+	// PrepareState returns (the embedded ModelServiceConfig).
+	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`
 }
 
 // UnmarshalJSON / MarshalJSON are defined on the wrapper so it does not inherit

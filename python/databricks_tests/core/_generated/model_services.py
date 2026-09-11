@@ -7,6 +7,9 @@ from databricks.bundles.model_services._models.model_service import ModelService
 from databricks.bundles.model_services._models.model_service_config import (
     ModelServiceConfig,
 )
+from databricks.bundles.model_services._models.privilege_assignment import (
+    PrivilegeAssignment,
+)
 from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
@@ -16,12 +19,14 @@ def _test_case():
             add_resource=Resources.add_model_service,
             dict_example={
                 "config": {},
+                "grants": [{}],
                 "lifecycle": {},
                 "model_service_id": "model_service_id",
                 "parent": "parent",
             },
             dataclass_example=ModelService(
                 config=ModelServiceConfig(),
+                grants=[PrivilegeAssignment()],
                 lifecycle=Lifecycle(),
                 model_service_id="model_service_id",
                 parent="parent",
