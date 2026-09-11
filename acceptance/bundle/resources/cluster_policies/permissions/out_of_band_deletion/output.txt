@@ -51,8 +51,6 @@ update cluster_policies.test_cluster_policy.permissions
 Plan: 1 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_recreate/default
 
 Destroy: 0 deleted

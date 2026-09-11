@@ -49,9 +49,10 @@ var deployApprovalGroups = []approvalGroup{
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
-	// Deletes of resources that are already gone remotely only clean up the state,
-	// so they don't count as destructive actions and need no approval.
-	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.Gone })
+	// Deletes that only clean up the state — the resource is already gone remotely
+	// (Gone) or has no delete operation (StateOnly) — are not destructive and need
+	// no approval.
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.Gone || a.StateOnly })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {
@@ -143,6 +144,10 @@ func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Pl
 	if b.Quiet < bundle.QuietSummary {
 		for _, action := range plan.GetActions() {
 			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
+				continue
+			}
+			// A state-only delete performs no backend operation, so don't report it.
+			if action.StateOnly {
 				continue
 			}
 			verb := action.ActionType.StringShort() + "d"
