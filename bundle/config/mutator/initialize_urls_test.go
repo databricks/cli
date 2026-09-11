@@ -31,6 +31,7 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
+						ID:             "3",
 						BaseResource:   resources.BaseResource{ID: "3"},
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1"},
 					},

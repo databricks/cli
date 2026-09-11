@@ -309,11 +309,13 @@ func TestRenderSummary(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline2": {
+						ID:           "4",
 						BaseResource: resources.BaseResource{ID: "4"},
 						// no URL
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline2-name"},
 					},
 					"pipeline1": {
+						ID:             "3",
 						BaseResource:   resources.BaseResource{ID: "3", URL: "https://url3"},
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1-name"},
 					},
