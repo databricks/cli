@@ -1028,21 +1028,27 @@ func runTest(t *testing.T,
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
-	// Copy output.txt from outputDir back into tmpDir so the comparison below (and
-	// ListDir) find it where the goldens expect. It was written outside tmpDir during
-	// the run to keep it out of the bundle sync; the sync is done now. out.requests.txt
-	// stays in outputDir and is never compared directly: tests assert on recorded
-	// requests through print_requests.py, not by committing the raw recording.
-	require.NoError(t, copyFile(filepath.Join(outputDir, "output.txt"), filepath.Join(tmpDir, "output.txt")))
-
 	loadScriptReplacements(t, &repls, replsPath, replsWritten)
 
 	printedRepls := false
 
 	pathFilter := preparePathFilter(config, customEnv)
 
+	// output.txt lives in outputDir, not tmpDir, so the bundle sync never uploads it;
+	// compare it from there. Every run produces it, so compare it explicitly rather
+	// than relying on it turning up in the tmpDir scan below. out.requests.txt also
+	// stays in outputDir and is never compared: tests assert on recorded requests
+	// through print_requests.py, not by committing the raw recording.
+	if !shouldSkip(pathFilter, "output.txt") {
+		doComparison(t, repls, dir, outputDir, "output.txt", &printedRepls)
+	}
+
 	// Compare expected outputs
 	for relPath := range outputs {
+		if relPath == "output.txt" {
+			// Handled above: it is produced in outputDir, not tmpDir.
+			continue
+		}
 		if shouldSkip(pathFilter, relPath) {
 			continue
 		}
