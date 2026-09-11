@@ -6,6 +6,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+
 title "Initial deployment with no default_endpoint_settings block"
 trace $CLI bundle deploy
 rm -f out.requests.txt
@@ -13,14 +15,17 @@ rm -f out.requests.txt
 title "Add the whole default_endpoint_settings block and re-deploy"
 trace update_file.py databricks.yml "#TO_ADD: " ""
 
-# The direct plan's "changes" map is the structdiff artifact: it records one
-# change at path default_endpoint_settings (the whole block) instead of descending
-# to its leaves. (The top-level plan verdict is 'update' on both engines.)
+# The block is added as a whole, so the direct plan's "changes" map records one change
+# at path default_endpoint_settings rather than at its leaves. Masking the message asks
+# the API to replace it wholesale, which then requires the suspension oneof in the body;
+# the mask is expanded to the leaves the body carries instead (see dresources/util.go).
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-# The consequence shows up at deploy time, which diverges by engine, so route it to
-# per-engine files. Masking the whole message means the API requires the suspension
-# oneof in the body (see dresources/util.go), so the direct deploy FAILS with a 400;
-# terraform masks the leaf spec.default_endpoint_settings.autoscaling_limit_max_cu
-# and succeeds.
-errcode $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+$CLI bundle plan -o json > tmp.plan.json
+# Not traced: the command line carries --plan only in the saved-plan run, and every
+# variant must produce the same output.txt.
+$CLI bundle deploy $(readplanarg tmp.plan.json)
+
+trace print_requests.py --del-body project_id '//postgres/projects' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI postgres get-project "${project_name}" | project_fields
