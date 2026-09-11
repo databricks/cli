@@ -21,6 +21,33 @@ Response.Body = '''
 {"run_id": 555}
 '''
 
+[[Server]]
+Pattern = "GET /api/2.0/mlflow/experiments/get-by-name"
+Response.StatusCode = 404
+Response.Body = '''
+{"error_code":"RESOURCE_DOES_NOT_EXIST","message":"experiment does not exist"}
+'''
+
+[[Server]]
+Pattern = "POST /api/2.0/mlflow/experiments/create"
+Response.Body = '''
+{"experiment_id":"exp-456"}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get"
+Response.Body = '''
+{"job_id":123,"run_id":555}
+'''
+
+[[Server]]
+Pattern = "PATCH /api/2.0/permissions/jobs/123"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "PATCH /api/2.0/permissions/experiments/exp-456"
+Response.Body = '{}'
+
 # The snapshot tarball is named <dir>_<cachekey[:16]>.tar.gz, where <dir> is the
 # test's temp-dir basename and the cache key derives from the pinned commit SHA.
 # Both are stable given the pinned commit dates in the script, but the temp-dir
