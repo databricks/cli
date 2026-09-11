@@ -446,6 +446,42 @@ func aliasToVarName(prefix string) string {
 	return prefix + "_id"
 }
 
+// DedupeResources returns a copy of plugins with resources shared by several
+// plugins collapsed to a single occurrence. Two resources are the same when
+// their type and key match (the identity manifest.CollectResources uses).
+//
+// Without this, a resource carried by two selected features (e.g. the "database"
+// and "lakebase" features both declaring the same postgres resource) is emitted
+// twice by every generator, producing duplicate variables, resource entries, and
+// env vars in databricks.yml, .env, and app.yaml. Required declarations are
+// processed before optional ones so a resource the app needs is never dropped in
+// favor of an optional duplicate.
+func DedupeResources(plugins []manifest.Plugin) []manifest.Plugin {
+	seen := make(map[string]bool)
+	filter := func(rs []manifest.Resource) []manifest.Resource {
+		var out []manifest.Resource
+		for _, r := range rs {
+			id := r.Type + ":" + r.Key()
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			out = append(out, r)
+		}
+		return out
+	}
+
+	out := make([]manifest.Plugin, len(plugins))
+	copy(out, plugins)
+	for i := range out {
+		out[i].Resources.Required = filter(out[i].Resources.Required)
+	}
+	for i := range out {
+		out[i].Resources.Optional = filter(out[i].Resources.Optional)
+	}
+	return out
+}
+
 // GetSelectedPlugins returns plugins that match the given names.
 func GetSelectedPlugins(m *manifest.Manifest, names []string) []manifest.Plugin {
 	nameSet := make(map[string]bool)
