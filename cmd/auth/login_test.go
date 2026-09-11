@@ -61,18 +61,10 @@ func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *pro
 type fakeDiscoveryPersistentAuth struct {
 	token        *oauth2.Token
 	challengeErr error
-	tokenErr     error
 }
 
-func (f *fakeDiscoveryPersistentAuth) Challenge() error {
-	return f.challengeErr
-}
-
-func (f *fakeDiscoveryPersistentAuth) Token() (*oauth2.Token, error) {
-	if f.tokenErr != nil {
-		return nil, f.tokenErr
-	}
-	return f.token, nil
+func (f *fakeDiscoveryPersistentAuth) Challenge() (*oauth2.Token, error) {
+	return f.token, f.challengeErr
 }
 
 func (f *fakeDiscoveryPersistentAuth) Close() error {

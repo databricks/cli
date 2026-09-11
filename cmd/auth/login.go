@@ -61,8 +61,7 @@ func discoveryErr(msg string, err error) error {
 }
 
 type discoveryPersistentAuth interface {
-	Challenge() error
-	Token() (*oauth2.Token, error)
+	Challenge() (*oauth2.Token, error)
 	Close() error
 }
 
@@ -86,6 +85,16 @@ func (d *defaultDiscoveryClient) NewPersistentAuth(ctx context.Context, opts ...
 
 func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, accessToken string) (*auth.IntrospectionResult, error) {
 	return auth.IntrospectToken(ctx, host, accessToken, nil)
+}
+
+// storeLoginToken persists a token after login has finished building its profile.
+func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage.StorageMode, arg u2m.OAuthArgument, token *oauth2.Token) error {
+	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
+	if err := tokenStore.Put(arg.GetCacheKey(), storage.Entry{Token: token}); err != nil {
+		return fmt.Errorf("store token: %w", err)
+	}
+	storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
+	return nil
 }
 
 func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
@@ -307,7 +316,6 @@ a new profile is created.
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
 			u2m.WithBrowser(getBrowserFunc(cmd)),
-			u2m.WithTokenStore(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 		}
 		if clientID != "" {
 			persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
@@ -324,22 +332,20 @@ a new profile is created.
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
-		if err = persistentAuth.Challenge(); err != nil {
+		token, err := persistentAuth.Challenge()
+		if err != nil {
 			return err
 		}
-		// Lock secure mode in after a successful keyring write so a later
-		// transient keyring probe failure cannot silently demote this user
-		// to plaintext.
-		storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
+		tokenSource := oauth2.StaticTokenSource(token)
 
-		// At this point, an OAuth token has been successfully minted and stored
-		// in the CLI cache. The rest of the command focuses on:
+		// At this point, an OAuth token has been successfully minted. The rest of
+		// the command focuses on:
 		// 1. Workspace selection for SPOG hosts (best-effort);
 		// 2. Configuring cluster and serverless;
 		// 3. Saving the profile.
 
 		if shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace) {
-			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, persistentAuth)
+			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, tokenSource)
 			if wsErr != nil {
 				log.Warnf(ctx, "Workspace selection failed: %v", wsErr)
 			} else if wsID != "" {
@@ -369,7 +375,7 @@ a new profile is created.
 				Host:        authArguments.Host,
 				AccountID:   authArguments.AccountID,
 				WorkspaceID: authArguments.WorkspaceID,
-				Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
+				Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(tokenSource)),
 			})
 			if err != nil {
 				return err
@@ -406,6 +412,9 @@ a new profile is created.
 				ClientID:            clientID,
 			}, clearKeys...)
 			if err != nil {
+				return err
+			}
+			if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, token); err != nil {
 				return err
 			}
 
@@ -670,7 +679,6 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		u2m.WithOAuthArgument(arg),
 		u2m.WithBrowser(in.browserFunc),
 		u2m.WithDiscoveryLogin(),
-		u2m.WithTokenStore(storage.WrapForOAuthArgument(ctx, in.tokenStore, in.mode, arg)),
 	}
 	if in.clientID != "" {
 		opts = append(opts, u2m.WithClientID(in.clientID))
@@ -698,10 +706,10 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		displayHost = discoveryHost
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("Opening %s in your browser...", displayHost))
-	if err := persistentAuth.Challenge(); err != nil {
+	tok, err := persistentAuth.Challenge()
+	if err != nil {
 		return discoveryErr("login via login.databricks.com failed", err)
 	}
-	storage.PinSecureMode(ctx, in.mode, storage.StorageModeUnknown)
 
 	discoveredHost := arg.GetDiscoveredHost()
 	if discoveredHost == "" {
@@ -719,11 +727,6 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 
 	// Best-effort introspection as a fallback for workspace_id when host
 	// metadata discovery didn't return it (e.g. classic workspace hosts).
-	tok, err := persistentAuth.Token()
-	if err != nil {
-		return fmt.Errorf("retrieving token after login: %w", err)
-	}
-
 	introspection, err := in.dc.IntrospectToken(ctx, discoveredHost, tok.AccessToken)
 	if err != nil {
 		log.Debugf(ctx, "token introspection failed (non-fatal): %v", err)
@@ -773,6 +776,9 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		}
 		return fmt.Errorf("saving profile %q: %w", in.profileName, err)
 	}
+	if err := storeLoginToken(ctx, in.tokenStore, in.mode, arg, tok); err != nil {
+		return err
+	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", in.profileName))
 	return nil
@@ -813,7 +819,7 @@ func u2mClientIDFromProfile(p *profile.Profile) string {
 // user pick one. Returns the selected workspace ID or empty string if skipped.
 // This is best-effort: errors are returned to the caller for logging, not shown
 // to the user.
-func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthArguments, persistentAuth *u2m.PersistentAuth) (string, error) {
+func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthArguments, tokenSource oauth2.TokenSource) (string, error) {
 	if !cmdio.IsPromptSupported(ctx) {
 		cmdio.LogString(ctx, "To use workspace commands, set workspace_id in your profile or pass --workspace-id.")
 		return "", nil
@@ -822,7 +828,7 @@ func promptForWorkspaceSelection(ctx context.Context, authArguments *auth.AuthAr
 	a, err := databricks.NewAccountClient(&databricks.Config{
 		Host:        authArguments.Host,
 		AccountID:   authArguments.AccountID,
-		Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
+		Credentials: config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(tokenSource)),
 	})
 	if err != nil {
 		return "", err

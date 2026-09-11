@@ -1067,7 +1067,7 @@ func TestChallenge(t *testing.T) {
 
 	errc := make(chan error)
 	go func() {
-		err := p.Challenge()
+		_, err := p.Challenge()
 		errc <- err
 		close(errc)
 	}()
@@ -1117,7 +1117,7 @@ func TestChallenge_ReturnsErrorOnFailure(t *testing.T) {
 
 	errc := make(chan error)
 	go func() {
-		err := p.Challenge()
+		_, err := p.Challenge()
 		errc <- err
 		close(errc)
 	}()
@@ -1369,7 +1369,7 @@ func TestU2M_ScopesAndOfflineAccess(t *testing.T) {
 			errc := make(chan error)
 			defer close(errc)
 			go func() {
-				err := p.Challenge()
+				_, err := p.Challenge()
 				errc <- err
 			}()
 
@@ -1452,8 +1452,11 @@ func TestChallenge_Discovery(t *testing.T) {
 	defer p.Close()
 
 	errc := make(chan error, 1)
+	tokenc := make(chan *oauth2.Token, 1)
 	go func() {
-		errc <- p.Challenge()
+		token, err := p.Challenge()
+		tokenc <- token
+		errc <- err
 	}()
 
 	// Wait for browser to be called and extract state from the authorize URL.
@@ -1507,17 +1510,17 @@ func TestChallenge_Discovery(t *testing.T) {
 	if arg.GetDiscoveredHost() != expectedHost {
 		t.Errorf("discovered host = %q, want %q", arg.GetDiscoveredHost(), expectedHost)
 	}
-	if len(storedTokens) != 1 {
-		t.Fatalf("store count: want 1 key (profile), got %d", len(storedTokens))
+	if len(storedTokens) != 0 {
+		t.Fatalf("store count: want 0, got %d", len(storedTokens))
 	}
-	storedToken := storedTokens["discovery-profile"]
-	if storedToken == nil {
-		t.Fatalf("stored token for profile key is nil")
+	returnedToken := <-tokenc
+	if returnedToken == nil {
+		t.Fatal("returned token is nil")
 	}
-	if storedToken.AccessToken != "discovery-access-token" {
-		t.Errorf("access token = %q, want %q", storedToken.AccessToken, "discovery-access-token")
+	if returnedToken.AccessToken != "discovery-access-token" {
+		t.Errorf("access token = %q, want %q", returnedToken.AccessToken, "discovery-access-token")
 	}
-	if storedToken.RefreshToken != "discovery-refresh-token" {
-		t.Errorf("refresh token = %q, want %q", storedToken.RefreshToken, "discovery-refresh-token")
+	if returnedToken.RefreshToken != "discovery-refresh-token" {
+		t.Errorf("refresh token = %q, want %q", returnedToken.RefreshToken, "discovery-refresh-token")
 	}
 }

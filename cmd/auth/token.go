@@ -430,7 +430,6 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	persistentAuthOpts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArgument),
 		u2m.WithBrowser(func(url string) error { return browser.Open(ctx, url) }),
-		u2m.WithTokenStore(storage.WrapForOAuthArgument(ctx, tokenStore, mode, oauthArgument)),
 	}
 	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
 		persistentAuthOpts = append(persistentAuthOpts, u2m.WithClientID(clientID))
@@ -447,10 +446,10 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
-	if err = persistentAuth.Challenge(); err != nil {
+	token, err := persistentAuth.Challenge()
+	if err != nil {
 		return "", nil, err
 	}
-	storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
 
 	clearKeys := oauthLoginClearKeys()
 	clearKeys = append(clearKeys, databrickscfg.ExperimentalIsUnifiedHostKey)
@@ -466,6 +465,9 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		ClientID:    u2mClientIDFromProfile(existingProfile),
 	}, clearKeys...)
 	if err != nil {
+		return "", nil, err
+	}
+	if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, token); err != nil {
 		return "", nil, err
 	}
 
