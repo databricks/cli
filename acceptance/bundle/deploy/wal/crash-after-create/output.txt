@@ -1,6 +1,6 @@
 === First deploy (crashes after job_a create, before job_b) ===
 
->>> errcode [CLI] bundle deploy
+>>> errcode [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-crash-test/default/files...
 [PROCESS_KILLED]
 

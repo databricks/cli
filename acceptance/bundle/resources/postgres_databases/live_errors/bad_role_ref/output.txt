@@ -1,4 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bad-role-ref-[UNIQUE_NAME]/default/files...
+Created postgres_branches.main
+Created postgres_projects.my_project
 Error: cannot create resources.postgres_databases.my_database: role not found; role_id:"does-not-exist" [TraceId: [TRACE_ID]] (404 NOT_FOUND)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases?database_id=my-database

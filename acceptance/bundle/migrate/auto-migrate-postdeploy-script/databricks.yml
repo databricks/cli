@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+  engine: direct
+
+experimental:
+  scripts:
+    postdeploy: "python3 ./myscript.py $POSTDEPLOY_EXITCODE postdeploy"
+
+sync:
+  exclude:
+    - empty-tfstate.json

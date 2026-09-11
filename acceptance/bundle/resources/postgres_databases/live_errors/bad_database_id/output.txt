@@ -1,4 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bad-database-id-[UNIQUE_NAME]/default/files...
+Created postgres_branches.main
+Created postgres_projects.my_project
+Created postgres_roles.owner
 Error: cannot create resources.postgres_databases.my_database: Field database_id must match pattern ^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$, got 'Invalid_DB_ID'. (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases?database_id=Invalid_DB_ID
