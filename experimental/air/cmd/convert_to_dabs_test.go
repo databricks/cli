@@ -244,7 +244,7 @@ func TestConvertToDabsRuntimeVersionEnvOverride(t *testing.T) {
 	assert.Equal(t, "7", get(t, root, env+".spec.environment_version").MustString())
 }
 
-func TestConvertToDabsB300(t *testing.T) {
+func TestConvertToDabsRejectsB300(t *testing.T) {
 	path := writeConfigFile(t, "run.yaml", `
 experiment_name: b300
 command: python train.py
@@ -255,16 +255,11 @@ environment:
   version: 6
   dependencies: []
 `)
-	loaded, err := loadRunConfigWithOverrides(t.Context(), path, nil)
+	loaded, err := loadRunConfig(path)
 	require.NoError(t, err)
 
-	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
-	require.NoError(t, err)
-
-	deployment := "resources.jobs.b300.tasks[0].ai_runtime_task.deployments[0]"
-	assert.Equal(t, "GPU_8xB300", get(t, root, deployment+".compute.accelerator_type").MustString())
-	assert.Equal(t, int64(16), get(t, root, deployment+".compute.accelerator_count").MustInt())
-	assert.Equal(t, "6", get(t, root, "resources.jobs.b300.environments[0].spec.environment_version").MustString())
+	_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.EqualError(t, err, "GPU_8xB300 is not yet supported by convert-to-dabs; use air run until DAB support is available")
 }
 
 // remote_volume can't be honored by a converted bundle (bundle deploy owns the
