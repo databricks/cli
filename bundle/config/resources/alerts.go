@@ -59,7 +59,3 @@ func (a *Alert) InitializeURL(baseURL url.URL) {
 func (a *Alert) GetName() string {
 	return a.DisplayName
 }
-
-func (a *Alert) GetURL() string {
-	return a.URL
-}

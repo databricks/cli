@@ -1,0 +1,6 @@
+SCHEDULE_NAME="projects/test-project/branches/main/snapshot-schedule"
+trace $CLI bundle deployment bind schedule1 "${SCHEDULE_NAME}" --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind schedule1
+trace $CLI bundle summary

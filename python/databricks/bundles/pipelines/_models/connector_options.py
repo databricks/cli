@@ -111,11 +111,15 @@ class ConnectorOptions:
 
     jira_options: VariableOrOptional[JiraConnectorOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Jira specific options for ingestion
     """
 
     kafka_options: VariableOrOptional[KafkaOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta]
     """
 
@@ -138,6 +142,8 @@ class ConnectorOptions:
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
     """
 
@@ -150,6 +156,8 @@ class ConnectorOptions:
 
     rabbitmq_options: VariableOrOptional[RabbitmqOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] RabbitMQ specific options for ingestion.
     Performance tuning options (consumers_per_task, max_messages_per_fetch, etc.)
     are intentionally not exposed in the public API. The managed connector uses
@@ -230,11 +238,15 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     jira_options: VariableOrOptional[JiraConnectorOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Jira specific options for ingestion
     """
 
     kafka_options: VariableOrOptional[KafkaOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta]
     """
 
@@ -257,6 +269,8 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
     """
 
@@ -269,6 +283,8 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     rabbitmq_options: VariableOrOptional[RabbitmqOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] RabbitMQ specific options for ingestion.
     Performance tuning options (consumers_per_task, max_messages_per_fetch, etc.)
     are intentionally not exposed in the public API. The managed connector uses

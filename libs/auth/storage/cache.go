@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/databricks/cli/libs/auth/u2m"
-	"github.com/databricks/cli/libs/auth/u2m/cache"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -33,7 +31,7 @@ func defaultStoreFactories() storeFactories {
 }
 
 // ResolveStore resolves the storage mode for this invocation and returns
-// the corresponding token cache plus the resolved mode (so callers can log
+// the corresponding token store plus the resolved mode (so callers can log
 // or surface it).
 //
 // override is usually the command-level flag value. Pass "" when the command
@@ -46,14 +44,14 @@ func defaultStoreFactories() storeFactories {
 // fallback does not persist auth_storage = plaintext to [__settings__];
 // pinning happens only on successful login.
 //
-// Every CLI code path that calls u2m.NewPersistentAuth must supply the cache
-// returned by this package, otherwise U2M uses an in-memory cache and bypasses
+// Every CLI code path that calls u2m.NewPersistentAuth must supply the store
+// returned by this package, otherwise U2M uses an in-memory store and bypasses
 // the user's configured storage backend.
 func ResolveStore(ctx context.Context, override StorageMode) (Store, StorageMode, error) {
 	return resolveStoreForReadWith(ctx, override, defaultStoreFactories())
 }
 
-// ResolveStoreForLogin resolves the cache like ResolveStore with extra rules
+// ResolveStoreForLogin resolves the store like ResolveStore with extra rules
 // for the auth login path:
 //
 //  1. When the resolved mode is secure and the user did not explicitly ask
@@ -75,30 +73,29 @@ func ResolveStoreForLogin(ctx context.Context, override StorageMode) (Store, Sto
 	return resolveStoreForLoginWith(ctx, override, defaultStoreFactories())
 }
 
-// OAuthTokenCache adapts a CLI Store to the U2M cache.TokenCache for the
-// U2M PersistentAuth flow, applying the not-found hint so a cache miss carries
+// OAuthTokenStore applies the U2M not-found hint so a store miss carries
 // actionable "run databricks auth login" guidance. Use on read and credential
 // paths. M2M/OIDC callers use the CLI Store directly and must not route through
 // here: the login hint is the wrong remedy for those auth types.
-func OAuthTokenCache(ctx context.Context, c Store, mode StorageMode) cache.TokenCache {
-	return withNotFoundHint(ctx, ToU2MTokenCache(c), mode)
+func OAuthTokenStore(ctx context.Context, s Store, mode StorageMode) Store {
+	return withNotFoundHint(ctx, s, mode)
 }
 
-// WrapForOAuthArgument is OAuthTokenCache plus, in plaintext mode, a dual-write
+// WrapForOAuthArgument is OAuthTokenStore plus, in plaintext mode, a dual-write
 // of every Challenge/refresh write to the legacy host-based cache key. Use on
-// the login and refresh write paths. Other modes return the plain adapter:
+// the login and refresh write paths. Other modes return the hinted store:
 // secure mode never writes a host-key entry, and the dual-write has nothing to
 // do for non-file backends.
 //
 // Pass the OAuthArgument that the same NewPersistentAuth call will use. For
 // discovery arguments the discovered host is read at Store time, so it is
 // safe to wrap before Challenge populates it.
-func WrapForOAuthArgument(ctx context.Context, c Store, mode StorageMode, arg u2m.OAuthArgument) cache.TokenCache {
-	tc := OAuthTokenCache(ctx, c, mode)
+func WrapForOAuthArgument(ctx context.Context, s Store, mode StorageMode, arg TokenKeyProvider) Store {
+	s = OAuthTokenStore(ctx, s, mode)
 	if mode != StorageModePlaintext {
-		return tc
+		return s
 	}
-	return NewDualWritingTokenCache(tc, arg)
+	return NewDualWritingStore(s, arg)
 }
 
 // resolveStoreWith is the pure form of ResolveStore without the read-path

@@ -461,6 +461,11 @@ tasks:
     generates:
       - test-output-unit-root.json
     cmds:
+      # Unit packages default to a far shorter per-package timeout than the acceptance
+      # suite (test-acc keeps 60m for the single, legitimately long ./acceptance binary).
+      # The slowest unit package observed across Linux/macOS/Windows is ~83s, so 10m is
+      # ample headroom while a hung package (e.g. a wedged goroutine) fails in minutes
+      # instead of burning the full hour. LOCAL_TIMEOUT still overrides when needed.
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
@@ -468,7 +473,7 @@ tasks:
           --jsonfile test-output-unit-root.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-unit-tools:
     desc: Run unit tests in tools/ module
@@ -492,7 +497,7 @@ tasks:
           --jsonfile test-output-unit-tools.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-unit-codegen:
     desc: Run unit tests in bundle/internal/tf/codegen module
@@ -512,7 +517,7 @@ tasks:
           --jsonfile test-output-unit-codegen.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-acc:
     desc: Run acceptance tests

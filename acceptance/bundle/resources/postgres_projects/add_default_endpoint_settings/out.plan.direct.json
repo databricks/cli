@@ -1,0 +1,73 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.postgres_projects.my_project": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "default_endpoint_settings": {
+            "autoscaling_limit_max_cu": 4,
+            "autoscaling_limit_min_cu": 0.5
+          },
+          "display_name": "Test Project for Adding Default Endpoint Settings",
+          "history_retention_duration": "604800s",
+          "pg_version": 16,
+          "project_id": "test-pg-proj-[UNIQUE_NAME]"
+        }
+      },
+      "remote_state": {
+        "create_time": "[TIMESTAMP]",
+        "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+        "project_id": "test-pg-proj-[UNIQUE_NAME]",
+        "status": {
+          "branch_logical_size_limit_bytes": [NUMID],
+          "default_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+          "default_endpoint_settings": {
+            "autoscaling_limit_max_cu": 1,
+            "autoscaling_limit_min_cu": 1,
+            "suspend_timeout_duration": "86400s"
+          },
+          "display_name": "Test Project for Adding Default Endpoint Settings",
+          "enable_pg_native_login": false,
+          "history_retention_duration": "604800s",
+          "owner": "[USERNAME]",
+          "pg_version": 16,
+          "project_id": "test-pg-proj-[UNIQUE_NAME]",
+          "synthetic_storage_size_bytes": 0
+        },
+        "uid": "[UUID]",
+        "update_time": "[TIMESTAMP]"
+      },
+      "changes": {
+        "default_endpoint_settings": {
+          "action": "update",
+          "new": {
+            "autoscaling_limit_max_cu": 4,
+            "autoscaling_limit_min_cu": 0.5
+          }
+        },
+        "display_name": {
+          "action": "skip",
+          "reason": "spec:input_only",
+          "old": "Test Project for Adding Default Endpoint Settings",
+          "new": "Test Project for Adding Default Endpoint Settings"
+        },
+        "history_retention_duration": {
+          "action": "skip",
+          "reason": "spec:input_only",
+          "old": "604800s",
+          "new": "604800s"
+        },
+        "pg_version": {
+          "action": "skip",
+          "reason": "spec:input_only",
+          "old": 16,
+          "new": 16
+        }
+      }
+    }
+  }
+}

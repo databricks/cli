@@ -1,0 +1,82 @@
+
+=== Save a plan, then deploy it: records version 1
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "features": {
+    "deployment_history": {}
+  }
+}
+
+>>> [CLI] bundle plan
+create jobs.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
+[
+  {
+    "last_action_type": "OPERATION_ACTION_TYPE_CREATE",
+    "last_version_id": "1",
+    "resource_key": "jobs.foo"
+  }
+]
+
+=== The raw recorded state the service holds for this deployment
+>>> print_state.py --no-dms
+{
+ "state_version": 2,
+ "cli_version": "[CLI_VERSION]",
+ "lineage": "[UUID]",
+ "features": {
+  "deployment_history": {}
+ },
+ "state": {}
+}
+
+=== A saved plan carries the version it was built against
+>>> [CLI] bundle plan -o json
+{
+  "serial": 1
+}
+
+=== Replay: re-deploying the same plan is rejected - it predates the recorded version
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json
+Error: plan lineage "" does not match state lineage "[UUID]"; the state may have been modified by another process
+
+
+=== Only the first deploy recorded a version; the rejected replay created none
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+{"method": "POST", "path": "/api/2.0/bundle/deployments", "body": {"display_name": "dms-stale-plan-[UNIQUE_NAME]", "initial_parent_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/state", "target_name": "default", "workspace_info": {"file_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/files", "root_path": "/Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default"}}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions", "q": {"version_id": "1"}, "body": {"cli_version": "[CLI_VERSION]", "version_type": "VERSION_TYPE_DEPLOY", "operations": [{"resource_key": "jobs.foo", "action_type": "OPERATION_ACTION_TYPE_CREATE"}]}}
+{"method": "PATCH", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo", "q": {"update_mask": "state,error_message,resource_id,status"}, "body": {"error_message": "", "resource_id": "[NUMID]", "sequence_id": "0", "state": "{\"state\":{\"deployment\":{\"deployment_id\":\"[NUMID]\",\"kind\":\"BUNDLE\",\"metadata_file_path\":\"/Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/state/metadata.json\",\"version_id\":\"1\"},\"edit_mode\":\"UI_LOCKED\",\"format\":\"MULTI_TASK\",\"max_concurrent_runs\":1,\"name\":\"foo\",\"queue\":{\"enabled\":true}}}", "status": "OPERATION_STATUS_SUCCEEDED"}}
+{"method": "POST", "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete", "body": {"completion_reason": "VERSION_COMPLETE_SUCCESS"}}
+
+=== Save a plan against the recorded deployment, then move the deployment on
+>>> jq {serial} tmp.plan2.json
+{
+  "serial": 1
+}
+
+>>> update_file.py databricks.yml name: foo name: foo_renamed
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-stale-plan-[UNIQUE_NAME]/default/files...
+Updated jobs.foo
+Files: 4 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> jq {serial} .databricks/bundle/default/resources.json
+{
+  "serial": null
+}
+
+=== Replaying the older plan is rejected: same deployment, outdated version
+>>> musterr [CLI] bundle deploy --plan tmp.plan2.json
+Error: plan serial 1 does not match state serial 2; the state has been modified since the plan was created. Please run 'bundle plan' again
+

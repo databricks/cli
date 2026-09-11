@@ -56,7 +56,3 @@ func (s *MlflowModel) InitializeURL(baseURL url.URL) {
 func (s *MlflowModel) GetName() string {
 	return s.Name
 }
-
-func (s *MlflowModel) GetURL() string {
-	return s.URL
-}

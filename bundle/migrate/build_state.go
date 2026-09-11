@@ -205,7 +205,7 @@ func BuildStateFromTF(
 			}
 		}
 
-		if err := stateDB.SaveState(node, id, sv.Value, dependsOn); err != nil {
+		if err := stateDB.SaveState(ctx, node, id, sv.Value, dependsOn); err != nil {
 			return warningsSeen, fmt.Errorf("%s: SaveState: %w", node, err)
 		}
 	}

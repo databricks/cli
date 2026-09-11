@@ -36,11 +36,11 @@ func TestArchive(t *testing.T) {
 	assert.FileExists(t, filepath.Join(assertDir, "bin", "amd64", "uv"))
 	assert.FileExists(t, filepath.Join(assertDir, "bin", "amd64", "jq"))
 
-	// TODO: Serverless clusters do not support arm64 yet.
-	// Assert these files exist after we support arm64.
-	assert.NoFileExists(t, filepath.Join(assertDir, "bin", "arm64", "go", "bin", "go"))
-	assert.NoFileExists(t, filepath.Join(assertDir, "bin", "arm64", "uv"))
-	assert.NoFileExists(t, filepath.Join(assertDir, "bin", "arm64", "jq"))
+	// arm64 tool binaries are bundled alongside amd64 because the serverless
+	// driver's CPU architecture is chosen at runtime (see CreateArchive).
+	assert.FileExists(t, filepath.Join(assertDir, "bin", "arm64", "go", "bin", "go"))
+	assert.FileExists(t, filepath.Join(assertDir, "bin", "arm64", "uv"))
+	assert.FileExists(t, filepath.Join(assertDir, "bin", "arm64", "jq"))
 
 	assert.FileExists(t, filepath.Join(assertDir, "cli", "go.mod"))
 	assert.FileExists(t, filepath.Join(assertDir, "cli", "go.sum"))

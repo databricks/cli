@@ -8,32 +8,34 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/auth/u2m/cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
-// missingCache always returns ErrNotFound on Lookup. Lets us drive the
+// missingStore always returns ErrNotFound on Lookup. Lets us drive the
 // wrapper without going through the real file or keyring cache.
-type missingCache struct{}
+type missingStore struct{}
 
-func (missingCache) Store(string, *oauth2.Token) error    { return nil }
-func (missingCache) Lookup(string) (*oauth2.Token, error) { return nil, cache.ErrNotFound }
+func (missingStore) Put(string, Entry) error      { return nil }
+func (missingStore) Lookup(string) (Entry, error) { return Entry{}, ErrNotFound }
+func (missingStore) Delete(string) error          { return nil }
 
-// foundCache always returns a token. Used to confirm the wrapper passes
+// foundStore always returns a token. Used to confirm the wrapper passes
 // successful lookups through unchanged.
-type foundCache struct{ tok *oauth2.Token }
+type foundStore struct{ tok *oauth2.Token }
 
-func (c foundCache) Store(string, *oauth2.Token) error    { return nil }
-func (c foundCache) Lookup(string) (*oauth2.Token, error) { return c.tok, nil }
+func (s foundStore) Put(string, Entry) error      { return nil }
+func (s foundStore) Lookup(string) (Entry, error) { return Entry{Token: s.tok}, nil }
+func (s foundStore) Delete(string) error          { return nil }
 
-// boomCache returns a non-ErrNotFound error. The wrapper must not add a
+// boomStore returns a non-ErrNotFound error. The wrapper must not add a
 // "run auth login" hint here; the error is about something else.
-type boomCache struct{ err error }
+type boomStore struct{ err error }
 
-func (c boomCache) Store(string, *oauth2.Token) error    { return nil }
-func (c boomCache) Lookup(string) (*oauth2.Token, error) { return nil, c.err }
+func (s boomStore) Put(string, Entry) error      { return nil }
+func (s boomStore) Lookup(string) (Entry, error) { return Entry{}, s.err }
+func (s boomStore) Delete(string) error          { return nil }
 
 func writeLegacyStore(t *testing.T, path string, hasEntries bool) {
 	t.Helper()
@@ -47,76 +49,76 @@ func writeLegacyStore(t *testing.T, path string, hasEntries bool) {
 	require.NoError(t, os.WriteFile(path, body, 0o600))
 }
 
-func TestNotFoundHintCache_SecureWithLegacyEntries_UsesUpgradeMessage(t *testing.T) {
+func TestNotFoundHintStore_SecureWithLegacyEntries_UsesUpgradeMessage(t *testing.T) {
 	tmp := t.TempDir()
 	legacyPath := filepath.Join(tmp, tokenStoreFilePath)
 	writeLegacyStore(t, legacyPath, true)
 
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyStorePath: legacyPath}
+	c := &notFoundHintStore{inner: missingStore{}, mode: StorageModeSecure, legacyStorePath: legacyPath}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
-	assert.ErrorIs(t, err, cache.ErrNotFound)
+	assert.ErrorIs(t, err, ErrNotFound)
 	assert.Contains(t, err.Error(), "stored credentials from older CLI versions")
 	assert.Contains(t, err.Error(), "databricks auth login")
 	assert.Contains(t, err.Error(), "DATABRICKS_AUTH_STORAGE=plaintext")
 }
 
-func TestNotFoundHintCache_SecureWithEmptyLegacyFile_UsesGenericMessage(t *testing.T) {
+func TestNotFoundHintStore_SecureWithEmptyLegacyFile_UsesGenericMessage(t *testing.T) {
 	tmp := t.TempDir()
 	legacyPath := filepath.Join(tmp, tokenStoreFilePath)
 	writeLegacyStore(t, legacyPath, false)
 
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyStorePath: legacyPath}
+	c := &notFoundHintStore{inner: missingStore{}, mode: StorageModeSecure, legacyStorePath: legacyPath}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
-	assert.ErrorIs(t, err, cache.ErrNotFound)
+	assert.ErrorIs(t, err, ErrNotFound)
 	assert.Contains(t, err.Error(), "no cached credentials")
 	assert.NotContains(t, err.Error(), "stored credentials from older CLI versions")
 }
 
-func TestNotFoundHintCache_SecureNoLegacyFile_UsesGenericMessage(t *testing.T) {
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyStorePath: filepath.Join(t.TempDir(), "missing.json")}
+func TestNotFoundHintStore_SecureNoLegacyFile_UsesGenericMessage(t *testing.T) {
+	c := &notFoundHintStore{inner: missingStore{}, mode: StorageModeSecure, legacyStorePath: filepath.Join(t.TempDir(), "missing.json")}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
-	assert.ErrorIs(t, err, cache.ErrNotFound)
+	assert.ErrorIs(t, err, ErrNotFound)
 	assert.Contains(t, err.Error(), "no cached credentials")
 }
 
-func TestNotFoundHintCache_Plaintext_AlwaysGenericMessage(t *testing.T) {
+func TestNotFoundHintStore_Plaintext_AlwaysGenericMessage(t *testing.T) {
 	tmp := t.TempDir()
 	legacyPath := filepath.Join(tmp, tokenStoreFilePath)
 	writeLegacyStore(t, legacyPath, true)
 
 	// Even with a populated legacy file present, plaintext mode reads from
 	// that same file, so the upgrade copy would be misleading.
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModePlaintext, legacyStorePath: legacyPath}
+	c := &notFoundHintStore{inner: missingStore{}, mode: StorageModePlaintext, legacyStorePath: legacyPath}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
-	assert.ErrorIs(t, err, cache.ErrNotFound)
+	assert.ErrorIs(t, err, ErrNotFound)
 	assert.Contains(t, err.Error(), "no cached credentials")
 	assert.NotContains(t, err.Error(), "stored credentials from older CLI versions")
 }
 
-func TestNotFoundHintCache_NonErrNotFound_PassesThrough(t *testing.T) {
+func TestNotFoundHintStore_NonErrNotFound_PassesThrough(t *testing.T) {
 	boom := errors.New("backend blew up")
-	c := &notFoundHintCache{inner: boomCache{err: boom}, mode: StorageModeSecure, legacyStorePath: ""}
+	c := &notFoundHintStore{inner: boomStore{err: boom}, mode: StorageModeSecure, legacyStorePath: ""}
 	_, err := c.Lookup("anything")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
 	assert.NotContains(t, err.Error(), "no cached credentials")
 }
 
-func TestNotFoundHintCache_SuccessfulLookupUnchanged(t *testing.T) {
+func TestNotFoundHintStore_SuccessfulLookupUnchanged(t *testing.T) {
 	tok := &oauth2.Token{AccessToken: "abc"}
-	c := &notFoundHintCache{inner: foundCache{tok: tok}, mode: StorageModeSecure, legacyStorePath: ""}
+	c := &notFoundHintStore{inner: foundStore{tok: tok}, mode: StorageModeSecure, legacyStorePath: ""}
 	got, err := c.Lookup("anything")
 	require.NoError(t, err)
-	assert.Equal(t, tok, got)
+	assert.Equal(t, tok, got.Token)
 }
 
-func TestNotFoundHintCache_StoreIsDelegated(t *testing.T) {
-	c := &notFoundHintCache{inner: missingCache{}, mode: StorageModeSecure, legacyStorePath: ""}
-	require.NoError(t, c.Store("k", &oauth2.Token{AccessToken: "abc"}))
+func TestNotFoundHintStore_PutIsDelegated(t *testing.T) {
+	s := &notFoundHintStore{inner: missingStore{}, mode: StorageModeSecure, legacyStorePath: ""}
+	require.NoError(t, s.Put("k", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
 }
 
 func TestHintForNotFound(t *testing.T) {
@@ -125,9 +127,9 @@ func TestHintForNotFound(t *testing.T) {
 	})
 
 	t.Run("plain ErrNotFound returns empty", func(t *testing.T) {
-		// An unwrapped cache.ErrNotFound carries no hint, so the caller
+		// An unwrapped ErrNotFound carries no hint, so the caller
 		// (e.g. `auth token`) falls back to its default error path.
-		assert.Empty(t, HintForNotFound(cache.ErrNotFound))
+		assert.Empty(t, HintForNotFound(ErrNotFound))
 	})
 
 	t.Run("unrelated error returns empty", func(t *testing.T) {
@@ -140,7 +142,7 @@ func TestHintForNotFound(t *testing.T) {
 	})
 
 	t.Run("notFoundHint behind an fmt.Errorf wrap returns the hint", func(t *testing.T) {
-		// The SDK wraps every cache error with `cache: %w`, so the hint
+		// PersistentAuth wraps every store error with `cache: %w`, so the hint
 		// is one Unwrap away when it surfaces in callers. errors.As must
 		// still find it.
 		h := &notFoundHint{msg: "do the thing"}

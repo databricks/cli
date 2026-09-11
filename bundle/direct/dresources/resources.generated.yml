@@ -209,6 +209,8 @@ resources:
 
   # jobs: no api field behaviors
 
+  # model_services: no api field behaviors
+
   model_serving_endpoints:
 
     ignore_remote_changes:
@@ -369,6 +371,8 @@ resources:
         reason: spec:input_only
       - field: postgres_role
         reason: spec:input_only
+
+  # postgres_snapshot_schedules: no api field behaviors
 
   postgres_synced_tables:
 

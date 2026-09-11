@@ -145,7 +145,7 @@ func TestKeyringStore_Lookup_PropagatesOtherErrors(t *testing.T) {
 }
 
 // ErrNotFound has to pass through unwrapped because callers branch on it
-// (cache.ErrNotFound is the "no token, please log in" signal). Wrapping it
+// (ErrNotFound is the "no token, please log in" signal). Wrapping it
 // with the unreachability hint would mislead the user.
 func TestKeyringStore_Lookup_NotFoundIsNotWrapped(t *testing.T) {
 	backend := newFakeBackend()

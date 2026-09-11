@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 var errDelayed = errors.New("must be resolved after apply")
@@ -38,21 +39,28 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
-// ValidatePlanAgainstState validates that a plan's lineage and serial match the given state.
-// If the plan has no lineage (first deployment), validation is skipped.
+// ValidatePlanAgainstState rejects a saved plan that no longer matches the state it was built
+// against: its features, its lineage and its serial.
 func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.Plan) error {
-	if plan.Lineage == "" {
-		return nil
-	}
-
 	stateDB.AssertOpenedForReadOrWrite()
 
+	// A plan is built against a set of state features, and the stamps it carries follow from
+	// them, so applying it to a target with a different set would deploy the wrong shape.
+	// The state is the target's source of truth and carries its features even on a first
+	// recorded deploy (unlike the version ids, which are empty then).
+	if !maps.Equal(plan.Features, stateDB.StateFeatures()) {
+		return errors.New("this plan was created for a different set of state features than the target now has; run 'bundle plan' again")
+	}
+
+	// A plan taken before the first deploy carries no lineage, so both sides are empty then and this
+	// passes. If a deployment has happened since, the lineage no longer matches.
 	if plan.Lineage != stateDB.Data.Lineage {
 		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
 	}
 
-	if plan.Serial != stateDB.Data.Serial {
-		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	expected := stateDB.GetSerial()
+	if plan.Serial != expected {
+		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, expected)
 	}
 
 	return nil
@@ -113,6 +121,42 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
+// StampDeploymentIdForFirstVersion fills deploymentID into the plan's jobs and pipelines that still lack one, in
+// both the state cache the apply reads and the plan JSON. It is called after approval creates the
+// deployment, for a first deploy whose deployment_id did not exist at plan time.
+//
+// For subsequent deployments, the deployment_id is already stamped in the plan.
+func (b *DeploymentBundle) StampDeploymentIdForFirstVersion(deploymentID string) error {
+	for resourceKey, entry := range b.Plan.Plan {
+		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
+			continue
+		}
+		sv, ok := b.StateCache.Load(resourceKey)
+		if !ok {
+			continue
+		}
+		var stamped bool
+		switch v := sv.Value.(type) {
+		case *jobs.JobSettings:
+			if v.Deployment.DeploymentId == "" {
+				v.Deployment.DeploymentId = deploymentID
+				stamped = true
+			}
+		case *dresources.PipelineState:
+			if v.Deployment.DeploymentId == "" {
+				v.Deployment.DeploymentId = deploymentID
+				stamped = true
+			}
+		}
+		if stamped {
+			if err := sv.SyncToJSON(entry.NewState); err != nil {
+				return fmt.Errorf("%s: stamping deployment into plan: %w", resourceKey, err)
+			}
+		}
+	}
+	return nil
+}
+
 // CalculatePlan computes the deployment plan by comparing local config against remote state.
 // StateDB must already be open for read before calling this function.
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root) (*deployplan.Plan, error) {
@@ -127,6 +171,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	if err != nil {
 		return nil, fmt.Errorf("reading config: %w", err)
 	}
+
+	// The plan records the state it was built against so deploy --plan can reject a plan built for a
+	// target of a different shape or a state that has moved on since.
+	plan.Features = b.StateDB.StateFeatures()
+	plan.Serial = b.StateDB.GetSerial()
 
 	b.Plan = plan
 
@@ -433,10 +482,10 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
-		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+		} else if reason, ok := findMatchingRuleBidirectional(path, cfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
-		} else if reason, ok := findMatchingRule(path, generatedCfg.RecreateOnChanges); ok {
+		} else if reason, ok := findMatchingRuleBidirectional(path, generatedCfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
 		} else {
@@ -506,6 +555,32 @@ func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (
 		}
 	}
 	return "", false
+}
+
+// findMatchingRuleBidirectional matches rules in both directions: the usual
+// descendant match, plus a rule on foo.bar matching a change recorded at foo,
+// because a whole block added or removed is one block-level change and the field
+// the rule names is part of it. Callers must only use this for escalating actions
+// (currently recreate): a whole block that merely contains a leaf named by a
+// suppressing rule (ignore_remote/ignore_local, backend_default, normalize) is
+// still a real change, so those keep the descendant-only findMatchingRule.
+func findMatchingRuleBidirectional(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
+	for _, r := range rules {
+		if matchesFieldRuleBidirectional(path, r.Field) {
+			return r.Reason, true
+		}
+	}
+	return "", false
+}
+
+func matchesFieldRuleBidirectional(path *structpath.PathNode, pattern *structpath.PatternNode) bool {
+	if path.HasPatternPrefix(pattern) {
+		return true
+	}
+	if path.Len() < pattern.Len() {
+		return path.HasPatternPrefix(pattern.Prefix(path.Len()))
+	}
+	return false
 }
 
 func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
@@ -728,12 +803,6 @@ func splitResourcePath(path *structpath.PathNode) (string, *structpath.PathNode)
 }
 
 func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
-	// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-	// snapshot.Upload() — not by the direct engine. Return errDelayed so the
-	// template string is preserved in the plan output rather than causing an error.
-	if path.String() == "workspace.snapshot_path" {
-		return nil, errDelayed
-	}
 	targetResourceKey, fieldPath := splitResourcePath(path)
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 
@@ -791,9 +860,9 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	localConfig := sv.Value
 
-	adapter := b.Adapters[targetGroup]
-	if adapter == nil {
-		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
+	adapter, err := b.getAdapterForKey(targetResourceKey)
+	if err != nil {
+		return nil, fmt.Errorf("internal error: %s: %w", targetResourceKey, err)
 	}
 
 	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
@@ -967,7 +1036,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 	}
 
 	slices.Sort(nodes)
-
 	for _, node := range nodes {
 		delete(existingKeys, node)
 
@@ -1041,11 +1109,6 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 
 				targetNodeDP, _ := config.GetNodeAndType(targetPathParsed)
 				targetNode := targetNodeDP.String()
-				// ${workspace.snapshot_path} is resolved by the mutator pipeline after
-				// snapshot.Upload(), not by the direct engine — skip it here.
-				if targetPath == "workspace.snapshot_path" {
-					continue
-				}
 
 				fullRef := "${" + targetPath + "}"
 

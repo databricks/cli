@@ -5,9 +5,11 @@ Cloud = false
 # Record requests so we can assert the bootstrap job the CLI submits.
 RecordRequests = true
 
-# Stand-in release archives staged by the local run; not golden output.
+# Stand-in release archives staged by the local run, plus the host key the CLI pins under
+# known-hosts; not golden output.
 Ignore = [
   "releases",
+  "known-hosts",
 ]
 
 # The local run drives a real sshd, reliable only on Linux.

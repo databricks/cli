@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth/storage"
 	"golang.org/x/oauth2"
 )
 
@@ -59,7 +60,7 @@ const discoveryTargetAccount = "ACCOUNT"
 // the discovery OAuth flow. The OIDC authorize path with all OAuth query params
 // is URL-encoded as the destination_url parameter.
 func BuildDiscoveryAuthorizeURL(redirectAddr, state string, pkce PKCEParams, scopes []string) string {
-	return buildDiscoveryAuthorizeURL(defaultLoginDatabricksHost, redirectAddr, state, pkce, scopes, "")
+	return buildDiscoveryAuthorizeURL(defaultLoginDatabricksHost, redirectAddr, state, pkce, scopes, appClientID, "")
 }
 
 // buildDiscoveryAuthorizeURL builds the discovery authorize URL against the
@@ -68,10 +69,10 @@ func BuildDiscoveryAuthorizeURL(redirectAddr, state string, pkce PKCEParams, sco
 // non-empty it is set as the top-level `target` query parameter, which
 // login.databricks.com uses to route the user to a specific selector page
 // (e.g. "ACCOUNT" for the account selector).
-func buildDiscoveryAuthorizeURL(host, redirectAddr, state string, pkce PKCEParams, scopes []string, target string) string {
+func buildDiscoveryAuthorizeURL(host, redirectAddr, state string, pkce PKCEParams, scopes []string, clientID, target string) string {
 	// Build the nested OIDC authorize path with query parameters.
 	authParams := url.Values{}
-	authParams.Set("client_id", appClientID)
+	authParams.Set("client_id", clientID)
 	authParams.Set("redirect_uri", "http://"+redirectAddr)
 	authParams.Set("response_type", "code")
 	authParams.Set("scope", strings.Join(scopes, " "))
@@ -139,7 +140,7 @@ func (d *discoveryTokenSource) challenge() error {
 	if host == "" {
 		host = defaultLoginDatabricksHost
 	}
-	authorizeURL := buildDiscoveryAuthorizeURL(host, d.pa.redirectAddr, state, pkce, scopes, d.target)
+	authorizeURL := buildDiscoveryAuthorizeURL(host, d.pa.redirectAddr, state, pkce, scopes, d.pa.clientID, d.target)
 
 	code, returnedState, issuer, err := cb.handlerWithIssuer(authorizeURL)
 	if err != nil {
@@ -164,7 +165,7 @@ func (d *discoveryTokenSource) challenge() error {
 
 	// Exchange authorization code for tokens.
 	cfg := &oauth2.Config{
-		ClientID: appClientID,
+		ClientID: d.pa.clientID,
 		Endpoint: oauth2.Endpoint{
 			TokenURL:  tokenEndpoint,
 			AuthStyle: oauth2.AuthStyleInParams,
@@ -184,7 +185,7 @@ func (d *discoveryTokenSource) challenge() error {
 	}
 	discoveryArg.SetDiscoveredHost(discoveredHost)
 
-	if err := d.pa.cache.Store(d.pa.oAuthArgument.GetCacheKey(), token); err != nil {
+	if err := d.pa.store.Put(d.pa.oAuthArgument.GetCacheKey(), storage.Entry{Token: token}); err != nil {
 		return fmt.Errorf("storing token: %w", err)
 	}
 	return nil

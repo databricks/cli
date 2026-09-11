@@ -82,7 +82,7 @@ Examples:
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 				stats.Engine = stateDesc.Engine
-				stats.CollectStateStats(stateDesc)
+				stats.CollectStateStats(stateDesc, b.DeploymentBundle.StateDB.VersionID)
 
 				// Open the deployment state once and reuse it for both planning and
 				// selector resolution (avoids reading the terraform snapshot twice).

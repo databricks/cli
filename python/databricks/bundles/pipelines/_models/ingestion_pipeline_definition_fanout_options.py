@@ -26,6 +26,8 @@ class IngestionPipelineDefinitionFanoutOptions:
 
     fanout_by: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Column path or SQL expression whose value determines the destination table.
     Supports dotted paths (e.g. "value.event_name") and expressions
     (e.g. "value:event_name::string").
@@ -33,6 +35,8 @@ class IngestionPipelineDefinitionFanoutOptions:
 
     transforms: VariableOrList[Transformer] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Optional transforms applied to each route's DataFrame before writing
     to the destination table.
     """
@@ -50,6 +54,8 @@ class IngestionPipelineDefinitionFanoutOptionsDict(TypedDict, total=False):
 
     fanout_by: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Column path or SQL expression whose value determines the destination table.
     Supports dotted paths (e.g. "value.event_name") and expressions
     (e.g. "value:event_name::string").
@@ -57,6 +63,8 @@ class IngestionPipelineDefinitionFanoutOptionsDict(TypedDict, total=False):
 
     transforms: VariableOrList[TransformerParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Optional transforms applied to each route's DataFrame before writing
     to the destination table.
     """

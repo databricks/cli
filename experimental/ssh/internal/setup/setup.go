@@ -23,6 +23,13 @@ type SetupOptions struct {
 	AutoStartCluster bool
 	// Delay before shutting down the SSH tunnel, will be added as a --shutdown-delay flag to the ProxyCommand
 	ShutdownDelay time.Duration
+	// Maximum number of concurrent SSH clients the server accepts, will be added as a --max-clients
+	// flag to the ProxyCommand. Fixed when the server job is submitted, so the ProxyCommand is the
+	// only place it can be set for a host configured through setup.
+	MaxClients int
+	// Maximum lifetime of the SSH server, will be added as a --server-timeout flag to the ProxyCommand.
+	// Also fixed at submission time.
+	ServerTimeout time.Duration
 	// Optional path to the local ssh config. Defaults to ~/.ssh/config
 	SSHConfigPath string
 	// Optional path to the local directory to store SSH keys. Defaults to ~/.databricks/ssh-tunnel-keys
@@ -39,7 +46,20 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, proxyCommand)
+	// The ProxyCommand writes this file before the connection reaches host key
+	// verification, so it does not have to exist yet. It carries no directory override, so
+	// resolve the default one here as well.
+	knownHostsPath, err := sshconfig.GetKnownHostsPath(ctx, opts.ClusterID, "")
+	if err != nil {
+		return "", err
+	}
+
+	// The ProxyCommand pins the server's key under the cluster ID (the session ID for a
+	// dedicated cluster), but the block is written as `Host <opts.HostName>`. When the
+	// user-facing name differs from the cluster ID, ssh would look the key up under the name
+	// and fail strict checking, so pass the cluster ID as HostKeyAlias to match the pinned
+	// entry (DECO-27882).
+	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, knownHostsPath, opts.ClusterID, proxyCommand)
 	return hostConfig, nil
 }
 
@@ -66,6 +86,18 @@ func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.Works
 }
 
 func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOptions) error {
+	// Reject invalid server-lifecycle flag values before the cluster picker and
+	// cluster-access check: these values don't depend on cluster details.
+	if opts.MaxClients < 1 {
+		return fmt.Errorf("--max-clients must be at least 1, got %d", opts.MaxClients)
+	}
+	if opts.ServerTimeout < time.Second {
+		return fmt.Errorf("--server-timeout must be at least 1s, got %s", opts.ServerTimeout)
+	}
+	if opts.ShutdownDelay > opts.ServerTimeout {
+		return fmt.Errorf("--shutdown-delay (%s) cannot be longer than --server-timeout (%s)", opts.ShutdownDelay, opts.ServerTimeout)
+	}
+
 	if opts.ClusterID == "" {
 		id, err := clusterSelectionPrompt(ctx, client)
 		if err != nil {
@@ -90,7 +122,14 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		ClusterID:        opts.ClusterID,
 		AutoStartCluster: opts.AutoStartCluster,
 		ShutdownDelay:    opts.ShutdownDelay,
+		MaxClients:       opts.MaxClients,
+		ServerTimeout:    opts.ServerTimeout,
 		Profile:          opts.Profile,
+	}
+	// The ProxyCommand is persisted in the SSH config, so reject values that would produce a
+	// tunnel that can never work (e.g. --max-clients=0) here rather than at first `ssh <name>`.
+	if err := clientOpts.Validate(); err != nil {
+		return err
 	}
 	proxyCommand, err := clientOpts.ToProxyCommand()
 	if err != nil {

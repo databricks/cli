@@ -186,7 +186,7 @@ func TestBuildDiscoveryAuthorizeURL_HostOverride(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := buildDiscoveryAuthorizeURL(tc.host, "localhost:8020", "s", pkce, scopes, "")
+			got := buildDiscoveryAuthorizeURL(tc.host, "localhost:8020", "s", pkce, scopes, appClientID, "")
 			u, err := url.Parse(got)
 			if err != nil {
 				t.Fatalf("parsing URL: %v", err)
@@ -215,7 +215,7 @@ func TestBuildDiscoveryAuthorizeURL_Target(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := buildDiscoveryAuthorizeURL(defaultLoginDatabricksHost, "localhost:8020", "s", pkce, scopes, tc.target)
+			got := buildDiscoveryAuthorizeURL(defaultLoginDatabricksHost, "localhost:8020", "s", pkce, scopes, appClientID, tc.target)
 			u, err := url.Parse(got)
 			if err != nil {
 				t.Fatalf("parsing URL: %v", err)
@@ -273,6 +273,12 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 		if r.URL.Path != "/oidc/v1/token" {
 			t.Errorf("token server: want path /oidc/v1/token, got %s", r.URL.Path)
 		}
+		if err := r.ParseForm(); err != nil {
+			t.Fatalf("token server: parsing form: %v", err)
+		}
+		if got := r.Form.Get("client_id"); got != "custom-client-id" {
+			t.Errorf("token server: client_id = %q, want %q", got, "custom-client-id")
+		}
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{"access_token":"test-access-token","refresh_token":"test-refresh-token","token_type":"Bearer","expires_in":3600}`)
 	}))
@@ -288,7 +294,7 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 	}
 
 	storedTokens := map[string]*oauth2.Token{}
-	cacheMock := &tokenCacheMock{
+	cacheMock := &tokenStoreMock{
 		store: func(key string, tok *oauth2.Token) error {
 			storedTokens[key] = tok
 			return nil
@@ -302,12 +308,13 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 
 	p, err := NewPersistentAuth(
 		t.Context(),
-		WithTokenCache(cacheMock),
+		WithTokenStore(cacheMock),
 		WithBrowser(browserMock),
 		WithHttpClient(tokenServer.Client()),
 		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
 		WithOAuthArgument(arg),
 		WithDiscoveryLogin(),
+		WithClientID("custom-client-id"),
 	)
 	if err != nil {
 		t.Fatalf("NewPersistentAuth(): %v", err)
@@ -339,6 +346,9 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 		dest, err := url.Parse(destURL)
 		if err != nil {
 			t.Fatalf("parsing destination_url: %v", err)
+		}
+		if got := dest.Query().Get("client_id"); got != "custom-client-id" {
+			t.Errorf("authorize URL: client_id = %q, want %q", got, "custom-client-id")
 		}
 		state = dest.Query().Get("state")
 		if state == "" {

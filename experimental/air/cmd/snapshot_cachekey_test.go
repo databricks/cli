@@ -29,7 +29,7 @@ func TestComputeSnapshotCacheKeyGolden(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			assert.Equal(t, tc.CacheKey, computeSnapshotCacheKey(tc.CommitSHA, tc.IncludePaths))
+			assert.Equal(t, tc.CacheKey, computeSnapshotCacheKey(tc.CommitSHA, tc.IncludePaths, ""))
 		})
 	}
 }
@@ -41,21 +41,31 @@ func TestComputeSnapshotCacheKeyProperties(t *testing.T) {
 
 	// Order-independent: sorting means unsorted input yields the sorted key.
 	assert.Equal(t,
-		computeSnapshotCacheKey(sha, []string{"a", "b", "c"}),
-		computeSnapshotCacheKey(sha, []string{"c", "a", "b"}),
+		computeSnapshotCacheKey(sha, []string{"a", "b", "c"}, ""),
+		computeSnapshotCacheKey(sha, []string{"c", "a", "b"}, ""),
 	)
 
 	// nil and empty include_paths are equivalent (both contribute an empty line).
-	assert.Equal(t, computeSnapshotCacheKey(sha, nil), computeSnapshotCacheKey(sha, []string{}))
+	assert.Equal(t, computeSnapshotCacheKey(sha, nil, ""), computeSnapshotCacheKey(sha, []string{}, ""))
 
 	// Paths are trimmed before hashing.
 	assert.Equal(t,
-		computeSnapshotCacheKey(sha, []string{"research", "data"}),
-		computeSnapshotCacheKey(sha, []string{"  research  ", "  data "}),
+		computeSnapshotCacheKey(sha, []string{"research", "data"}, ""),
+		computeSnapshotCacheKey(sha, []string{"  research  ", "  data "}, ""),
 	)
 
 	// Duplicates are NOT collapsed — they are sorted and kept, matching Python.
-	assert.NotEqual(t, computeSnapshotCacheKey(sha, []string{"x", "y"}), computeSnapshotCacheKey(sha, []string{"x", "x", "y"}))
+	assert.NotEqual(t, computeSnapshotCacheKey(sha, []string{"x", "y"}, ""), computeSnapshotCacheKey(sha, []string{"x", "x", "y"}, ""))
+
+	// A subtree gets a distinct key while an empty prefix preserves repository-root
+	// keys. Different subtrees at one commit cannot collide, even if their root
+	// directories have the same base name.
+	rootKey := computeSnapshotCacheKey(sha, nil, "")
+	assert.NotEqual(t, rootKey, computeSnapshotCacheKey(sha, nil, "team_a/src"))
+	assert.NotEqual(t,
+		computeSnapshotCacheKey(sha, nil, "team_a/src"),
+		computeSnapshotCacheKey(sha, nil, "team_b/src"),
+	)
 
 	// The version constant participates: a different version is a different key.
 	assert.NotEqual(t, snapshotPackagingVersion, "")

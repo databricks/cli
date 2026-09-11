@@ -23,6 +23,7 @@ require (
 	github.com/hashicorp/terraform-json v0.28.0 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.10.0 // MIT
+	github.com/klauspost/pgzip v1.2.6 // MIT
 	github.com/mattn/go-isatty v0.0.24 // MIT
 	github.com/muesli/termenv v0.16.0 // MIT
 	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
@@ -31,11 +32,11 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.10.2 // Apache-2.0
 	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
-	github.com/stretchr/testify v1.12.0 // MIT
+	github.com/stretchr/testify v1.12.1 // MIT
 	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a // BSD-3-Clause
 	github.com/zalando/go-keyring v0.2.8 // MIT
 	go.yaml.in/yaml/v3 v3.0.5 // MIT AND Apache-2.0
-	golang.org/x/crypto v0.55.0 // BSD-3-Clause
+	golang.org/x/crypto v0.56.0 // BSD-3-Clause
 	golang.org/x/mod v0.40.0 // BSD-3-Clause
 	golang.org/x/net v0.58.0 // BSD-3-Clause
 	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
@@ -46,12 +47,12 @@ require (
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
-require github.com/databricks/sdk-go/core v0.0.1-dev // Apache-2.0
+require github.com/databricks/sdk-go/core v0.0.1-dev.1 // Apache-2.0
 
 require (
-	github.com/databricks/sdk-go/auth v0.0.0-dev // Apache-2.0
-	github.com/databricks/sdk-go/files v0.0.0-dev.1 // Apache-2.0
-	github.com/databricks/sdk-go/options v0.0.0-dev // Apache-2.0
+	github.com/databricks/sdk-go/auth v0.0.1-dev.1 // Apache-2.0
+	github.com/databricks/sdk-go/files v0.0.1-dev.1 // Apache-2.0
+	github.com/databricks/sdk-go/options v0.0.1-dev.1 // Apache-2.0
 )
 
 require (
@@ -87,6 +88,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect

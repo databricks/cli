@@ -5,9 +5,11 @@ Cloud = false
 # Assert the serverless GPU bootstrap job the CLI submits on a local run.
 RecordRequests = true
 
-# Local runs stage stand-in release archives here; not part of the golden output.
+# Local runs stage stand-in release archives here, and the CLI pins the server's host key
+# under known-hosts; neither is part of the golden output.
 Ignore = [
   "releases",
+  "known-hosts",
 ]
 
 # Linux-only: the local run drives a real sshd, reliable only there (and where

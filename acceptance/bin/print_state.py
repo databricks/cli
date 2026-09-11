@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """
-Print resources state from default target.
+Print resources state from default target, and handle DMS (deployment metadata service) interactions.
 
 Note, this intentionally has no logic on guessing what is the right state file (e.g. via DATABRICKS_BUNDLE_ENGINE),
 the goal is to record all states that are available.
 """
 
 import argparse
+import functools
 import glob
+import json
 import os
+import posixpath
+import subprocess
+
+from nostamp import scrub
 
 
 def print_file(filename):
@@ -53,14 +59,173 @@ def get_state_file(target, backup):
     return filtered[0] if filtered else result[0]
 
 
+# DMS (deployment metadata service) interaction helpers
+# https://go.databricks.com/dms-service
+
+CLI = os.environ.get("CLI", "databricks")
+DEPLOYMENT_NODE_NAME = "resources.deployment.json"  # Must match dms.DeploymentNodeName
+
+
+def run_json(cmd, allow_failure=False):
+    """Run cmd and parse its stdout, or return None if it fails and allow_failure is set.
+    stderr is captured rather than inherited: these lookups are plumbing, and a CLI warning
+    like "no files to sync" would otherwise land in the test output."""
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
+    if result.returncode != 0:
+        if allow_failure:
+            return None
+        raise SystemExit(f"{cmd} failed with code {result.returncode}\n{result.stdout}{result.stderr}".strip())
+    return json.loads(result.stdout)
+
+
+def get_remote_state_path(target):
+    """The bundle's remote state directory.
+
+    Preferred source is the sync snapshot, because it needs no CLI call: re-running the config
+    load would need whatever --var and flags the test deployed with, which a helper cannot know.
+    A bundle with no files to sync writes no snapshot, so fall back to asking the CLI - those
+    bundles are the ones with nothing to parameterize."""
+    target_dir = os.path.dirname(get_state_file(target, False))
+    snapshots = glob.glob(f"{target_dir}/sync-snapshots/*.json")
+    if snapshots:
+        # One snapshot per remote path, so a test that moved its root leaves several: the newest
+        # is the one the last deploy used.
+        newest = max(snapshots, key=os.path.getmtime)
+        remote_path = json.loads(open(newest).read())["remote_path"]
+        # state and files are siblings under the bundle root.
+        return posixpath.join(posixpath.dirname(remote_path), "state")
+
+    args = [CLI, "bundle", "validate", "--output", "json"]
+    if target:
+        args += ["-t", target]
+    return run_json(args)["workspace"]["state_path"]
+
+
+@functools.cache
+def get_deployment_id(target):
+    """The recorded deployment's id, or None when nothing is recorded.
+
+    Cached and shared: both the resource listing and the version lookup need it, and resolving it
+    costs a workspace round trip. No node means nothing has been recorded, the conclusion
+    dms.resolveDeploymentID also draws from a 404 - the deployment is gone once the bundle is
+    destroyed.
+    """
+    state_path = get_remote_state_path(target)
+    if not state_path:
+        return None
+    node = run_json([CLI, "workspace", "get-status", f"{state_path}/{DEPLOYMENT_NODE_NAME}"], allow_failure=True)
+    if not node or not node.get("object_id"):
+        return None
+    return node["object_id"]
+
+
+@functools.cache
+def get_resources(target):
+    """Map every recorded resource key ("jobs.foo") to its {"id", "state"}.
+
+    Empty when the bundle has no deployment recorded yet. Cached because a lookup costs three
+    round trips and a script asks for one resource at a time.
+    """
+    deployment_id = get_deployment_id(target)
+    if not deployment_id:
+        return {}
+
+    result = {}
+    # The service pages at 50 resources; the local fake returns everything at once.
+    page_token = None
+    while True:
+        url = f"/api/2.0/bundle/deployments/{deployment_id}/resources"
+        if page_token:
+            url += f"?page_token={page_token}"
+        listed = run_json([CLI, "api", "get", url])
+        for resource in listed.get("resources") or []:
+            # The service stores state as the opaque envelope the CLI wrote (dstate.RecordedState),
+            # so unwrap it to the resource state itself.
+            envelope = json.loads(resource["state"]) if resource.get("state") else {}
+            result[resource["resource_key"]] = {
+                "id": resource.get("resource_id"),
+                "state": envelope.get("state") or {},
+                "depends_on": envelope.get("depends_on") or [],
+            }
+        page_token = listed.get("next_page_token")
+        if not page_token:
+            return result
+
+
+def get_recorded_state(target):
+    """The recorded resources in the on-disk state file's `state` shape (resources.<key> ->
+    {__id__, state, depends_on}), so a recording run prints the same shape as a non-recording one."""
+    state = {}
+    for key, value in sorted(get_resources(target).items()):
+        entry = {"__id__": value["id"], "state": value["state"]}
+        if value["depends_on"]:
+            entry["depends_on"] = value["depends_on"]
+        state[f"resources.{key}"] = entry
+    return state
+
+
+def get_last_version_id(target):
+    """The version the service has recorded for this deployment, or None when nothing is recorded."""
+    deployment_id = get_deployment_id(target)
+    if not deployment_id:
+        return None
+    deployment = run_json([CLI, "api", "get", f"/api/2.0/bundle/deployments/{deployment_id}"])
+    return (deployment or {}).get("last_version_id")
+
+
+def print_recorded_state(filename, target):
+    """Print the state file with its resources filled in from the deployment metadata service.
+
+    While recording, the file itself carries only the header - the service holds the resources - so
+    printing it raw would show an empty state and differ from the same test's non-recording run.
+    """
+    data = json.loads(open(filename).read())
+    # Recording stamps each resource payload with the deployment and version; drop it here so the
+    # printed state matches a non-recording run without every caller piping through nostamp.
+    data["state"] = scrub(get_recorded_state(target))
+
+    # The service owns the version and the file persists no serial, so take it from the deployment.
+    # Rebuilt in header order, since the file has no serial key to overwrite in place.
+    last_version_id = get_last_version_id(target)
+    serial = int(last_version_id) if last_version_id else 0
+
+    # Recording itself is not what these tests assert, so drop the feature that marks it.
+    features = {k: v for k, v in (data.get("features") or {}).items() if k != "deployment_history"}
+
+    rebuilt = {}
+    for key in ("state_version", "cli_version", "lineage"):
+        if key in data:
+            rebuilt[key] = data[key]
+    rebuilt["serial"] = serial
+    if features:
+        rebuilt["features"] = features
+    for key, value in data.items():
+        if key not in rebuilt and key != "features":
+            rebuilt[key] = value
+    print(json.dumps(rebuilt, indent=1))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target")
     parser.add_argument("--backup", action="store_true")
+    parser.add_argument(
+        "--no-dms",
+        action="store_true",
+        help="Print resources.json as-is without fetching state from DMS. "
+        "Use in bundle/dms tests to assert the tombstone content of the file.",
+    )
     args = parser.parse_args()
 
     for filename in get_state_files(args.target, args.backup):
-        if os.path.exists(filename):
+        if not os.path.exists(filename):
+            continue
+        # Recording only applies to the direct engine, so a terraform run prints the file as-is.
+        recording = os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true"
+        terraform = os.environ.get("DATABRICKS_BUNDLE_ENGINE") == "terraform"
+        if recording and not terraform and not args.no_dms:
+            print_recorded_state(filename, args.target)
+        else:
             print_file(filename)
 
 

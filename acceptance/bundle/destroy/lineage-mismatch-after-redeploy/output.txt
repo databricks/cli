@@ -29,22 +29,22 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Error: lineage mismatch in state files
 
 Available state files:
-- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
+- resources.json: remote direct state serial=[SERIAL] lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=[SERIAL] lineage="[LINEAGE_A]"
 
 
 >>> musterr [CLI] bundle deploy
 Error: lineage mismatch in state files
 
 Available state files:
-- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
+- resources.json: remote direct state serial=[SERIAL] lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=[SERIAL] lineage="[LINEAGE_A]"
 
 
 >>> musterr [CLI] bundle destroy --auto-approve
 Error: lineage mismatch in state files
 
 Available state files:
-- resources.json: remote direct state serial=1 lineage="[LINEAGE_B]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[LINEAGE_A]"
+- resources.json: remote direct state serial=[SERIAL] lineage="[LINEAGE_B]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=[SERIAL] lineage="[LINEAGE_A]"
 

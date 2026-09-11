@@ -1,0 +1,7 @@
+# AI Gateway securables are only deployable via the direct deployment engine
+# (there is no Terraform provider path for them in bundles).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Lifecycle tests also run against a real workspace. Tests that inspect the
+# recorded request stream (e.g. basic) can't run on cloud and override this.
+Cloud = true
