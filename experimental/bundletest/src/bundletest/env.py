@@ -36,6 +36,9 @@ class ResourceHandle:
         return self._backend.get_resource(self.kind, self.name)
 
     def exists(self) -> bool:
+        """Whether the resource is DECLARED in the bundle config — not whether it is deployed.
+        Nothing is deployed on the local backend, and even on cloud this reflects the bundle's
+        declared resources, not live workspace state."""
         # get_resource does `...[name]`, which raises KeyError for an undeclared resource.
         try:
             self._backend.get_resource(self.kind, self.name)
@@ -103,8 +106,8 @@ class PipelineHandle(ResourceHandle):
 
     @property
     def schema(self) -> str | None:
-        # New pipelines set `schema`; `target` was the legacy (DLT) field for the same idea.
-        return self.config.get("schema")
+        # Newer pipelines set `schema`; older (DLT) pipelines set `target` for the same thing.
+        return self.config.get("schema") or self.config.get("target")
 
     def libraries(self) -> list[str]:
         """Notebook/file paths the pipeline runs, in declaration order."""
@@ -124,7 +127,7 @@ class DashboardHandle(ResourceHandle):
         super().__init__(backend, "dashboards", name)
 
     def source_tables(self) -> list[str]:
-        return _serialized_source_tables(self.name, self.config.get("serialized_dashboard"))
+        return _dashboard_source_tables(self.name, self.config.get("serialized_dashboard"))
 
 
 class GenieSpaceHandle(ResourceHandle):
@@ -134,7 +137,7 @@ class GenieSpaceHandle(ResourceHandle):
         super().__init__(backend, "genie_spaces", name)
 
     def source_tables(self) -> list[str]:
-        return _serialized_source_tables(self.name, self.config.get("serialized_space"))
+        return _genie_source_tables(self.name, self.config.get("serialized_space"))
 
 
 class QualityMonitorHandle(ResourceHandle):
@@ -189,6 +192,17 @@ class AppHandle(ResourceHandle):
         return self.config.get("source_code_path")
 
 
+def _load_serialized(name: str, serialized: Any) -> dict:
+    """Parse an inline serialized definition: a dict when inlined as YAML, or a JSON string.
+
+    A file_path-only resource carries no inline definition in databricks.yml, so it can't be
+    introspected locally — that's a loud skip, not a failure. (On the cloud backend
+    `bundle summary` inlines file_path into the serialized field, so it resolves there.)"""
+    if serialized is None:
+        raise LocalUnsupported(f"{name!r} defined by file_path — no inline definition to parse locally")
+    return serialized if isinstance(serialized, dict) else json.loads(serialized)
+
+
 # Tables a query reads: the qualified (dotted) identifier right after FROM / JOIN. Matching
 # only dotted names skips CTE names and aliases (which are unqualified); an outer backtick
 # pair is unwrapped. Good enough for wiring, not a SQL parser — it won't unwrap per-segment
@@ -196,15 +210,9 @@ class AppHandle(ResourceHandle):
 _FROM_JOIN = re.compile(r"\b(?:FROM|JOIN)\s+`?([A-Za-z_]\w*(?:\.\w+)+)`?", re.IGNORECASE)
 
 
-def _serialized_source_tables(name: str, serialized: Any) -> list[str]:
-    """Qualified source tables read by a dashboard/genie-space's dataset queries.
-
-    ``serialized`` is the inline definition: a dict when inlined as YAML, or a JSON string.
-    A file_path-only resource carries no inline queries in databricks.yml, so it can't be
-    introspected locally — that's a loud skip, not a failure."""
-    if serialized is None:
-        raise LocalUnsupported(f"{name!r} defined by file_path — no inline queries to parse locally")
-    spec = serialized if isinstance(serialized, dict) else json.loads(serialized)
+def _dashboard_source_tables(name: str, serialized: Any) -> list[str]:
+    """Qualified source tables read by a Lakeview dashboard's dataset queries."""
+    spec = _load_serialized(name, serialized)
     tables: list[str] = []
     for dataset in spec.get("datasets", []):
         # Lakeview stores a query as queryLines (current) or a single query string (older).
@@ -212,6 +220,20 @@ def _serialized_source_tables(name: str, serialized: Any) -> list[str]:
         for m in _FROM_JOIN.finditer(query):
             if m.group(1) not in tables:
                 tables.append(m.group(1))
+    return tables
+
+
+def _genie_source_tables(name: str, serialized: Any) -> list[str]:
+    """Source tables a Genie space is grounded on.
+
+    A space's serialized_space uses a different schema from a dashboard: it declares its
+    tables explicitly under data_sources.tables[].identifier rather than in SQL queries."""
+    spec = _load_serialized(name, serialized)
+    tables: list[str] = []
+    for table in spec.get("data_sources", {}).get("tables", []):
+        identifier = table.get("identifier")
+        if identifier and identifier not in tables:
+            tables.append(identifier)
     return tables
 
 

@@ -1,13 +1,13 @@
-"""Genie Space wiring — which tables the space's datasets read from.
+"""Genie Space wiring — which tables the space is grounded on.
 
-A Genie Space carries the same kind of inline serialized definition as a dashboard, so
-source_tables() reuses the same parser.
+A Genie space declares its tables explicitly under data_sources.tables[].identifier — a
+different serialized schema from a Lakeview dashboard, so it has its own parser.
 
 CAN test locally:
-- the source tables a space with an inline serialized_space reads from
+- the source tables a space with an inline serialized_space declares
 
 CANNOT test locally — needs the cloud backend:
-- a space defined only by file_path -> skips loudly (no inline queries in databricks.yml)
+- a space defined only by file_path -> skips loudly (no inline definition in databricks.yml)
 - asking the space a question / running its queries
 """
 
