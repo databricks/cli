@@ -18,9 +18,8 @@ type hostCacheKeyProvider interface {
 // This preserves the cross-SDK compatibility convention historically
 // implemented inside the SDK's PersistentAuth.dualWrite.
 //
-// Mirroring happens inside Store, so every U2M-internal write (Challenge,
-// refresh, discovery) dual-writes without requiring each call site to invoke
-// a helper explicitly.
+// Mirroring happens inside Put, so callers do not need a separate write for
+// the legacy host-based key.
 type DualWritingStore struct {
 	inner Store
 	arg   TokenKeyProvider
