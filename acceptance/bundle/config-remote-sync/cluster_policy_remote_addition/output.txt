@@ -17,9 +17,9 @@ Resource: resources.jobs.test_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -26,4 +26,6 @@
-             custom_tags:
-               PolicyTag: from-policy
+@@ -24,4 +24,6 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
 +            spark_conf:
 +              spark.sql.shuffle.partitions: "7"
            spark_python_task:
