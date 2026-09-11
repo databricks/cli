@@ -29,6 +29,7 @@ __all__ = [
     load_resources_from_package_module,
     mlflow_experiment_mutator,
     mlflow_model_mutator,
+    model_service_mutator,
     model_serving_endpoint_mutator,
     pipeline_mutator,
     postgres_snapshot_schedule_mutator,
@@ -100,6 +101,7 @@ class Resources:
     def add_location(self, path: tuple[str, ...], location: Location) -> None
     def add_mlflow_experiment(self, resource_name: str, mlflow_experiment: MlflowExperimentParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_model(self, resource_name: str, mlflow_model: MlflowModelParam, *, location: Union[Location, None] = None) -> None
+    def add_model_service(self, resource_name: str, model_service: ModelServiceParam, *, location: Union[Location, None] = None) -> None
     def add_model_serving_endpoint(self, resource_name: str, model_serving_endpoint: ModelServingEndpointParam, *, location: Union[Location, None] = None) -> None
     def add_pipeline(self, resource_name: str, pipeline: PipelineParam, *, location: Union[Location, None] = None) -> None
     def add_postgres_snapshot_schedule(self, resource_name: str, postgres_snapshot_schedule: PostgresSnapshotScheduleParam, *, location: Union[Location, None] = None) -> None
@@ -127,6 +129,7 @@ class Resources:
     @property instance_pools -> dict[str, InstancePool]
     @property job_runs -> dict[str, JobRun]
     @property jobs -> dict[str, Job]
+    @property model_services -> dict[str, ModelService]
     @property model_serving_endpoints -> dict[str, ModelServingEndpoint]
     @property models -> dict[str, MlflowModel]
     @property pipelines -> dict[str, Pipeline]
@@ -215,6 +218,10 @@ def mlflow_experiment_mutator(function: Callable) -> ResourceMutator[MlflowExper
 @overload def mlflow_model_mutator(function: Callable[[MlflowModel], MlflowModel]) -> ResourceMutator[MlflowModel]
 def mlflow_model_mutator(function: Callable) -> ResourceMutator[MlflowModel]
 
+@overload def model_service_mutator(function: Callable[[Bundle, ModelService], ModelService]) -> ResourceMutator[ModelService]
+@overload def model_service_mutator(function: Callable[[ModelService], ModelService]) -> ResourceMutator[ModelService]
+def model_service_mutator(function: Callable) -> ResourceMutator[ModelService]
+
 @overload def model_serving_endpoint_mutator(function: Callable[[Bundle, ModelServingEndpoint], ModelServingEndpoint]) -> ResourceMutator[ModelServingEndpoint]
 @overload def model_serving_endpoint_mutator(function: Callable[[ModelServingEndpoint], ModelServingEndpoint]) -> ResourceMutator[ModelServingEndpoint]
 def model_serving_endpoint_mutator(function: Callable) -> ResourceMutator[ModelServingEndpoint]
@@ -282,6 +289,7 @@ singular_name=job plural_name=jobs resource_type=Job
 singular_name=job_run plural_name=job_runs resource_type=JobRun
 singular_name=mlflow_experiment plural_name=experiments resource_type=MlflowExperiment
 singular_name=mlflow_model plural_name=models resource_type=MlflowModel
+singular_name=model_service plural_name=model_services resource_type=ModelService
 singular_name=model_serving_endpoint plural_name=model_serving_endpoints resource_type=ModelServingEndpoint
 singular_name=pipeline plural_name=pipelines resource_type=Pipeline
 singular_name=postgres_snapshot_schedule plural_name=postgres_snapshot_schedules resource_type=PostgresSnapshotSchedule
