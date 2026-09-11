@@ -14,3 +14,5 @@ trace $CLI repos update $path --branch update-by-path
 
 title "Delete by path resolves a Git CLI folder"
 trace $CLI repos delete $path
+
+trace print_requests.py --get //repos //workspace/get-status

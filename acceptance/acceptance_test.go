@@ -1028,15 +1028,12 @@ func runTest(t *testing.T,
 	formatOutput(out, err)
 	require.NoError(t, out.Close())
 
-	// Copy harness outputs from outputDir back into tmpDir so the comparison below
-	// (and ListDir) find them where the goldens expect. They were written outside
-	// tmpDir during the run to keep them out of the bundle sync; the sync is done now.
-	for _, name := range []string{"output.txt", "out.requests.txt"} {
-		src := filepath.Join(outputDir, name)
-		if _, err := os.Stat(src); err == nil {
-			require.NoError(t, copyFile(src, filepath.Join(tmpDir, name)))
-		}
-	}
+	// Copy output.txt from outputDir back into tmpDir so the comparison below (and
+	// ListDir) find it where the goldens expect. It was written outside tmpDir during
+	// the run to keep it out of the bundle sync; the sync is done now. out.requests.txt
+	// stays in outputDir and is never compared directly: tests assert on recorded
+	// requests through print_requests.py, not by committing the raw recording.
+	require.NoError(t, copyFile(filepath.Join(outputDir, "output.txt"), filepath.Join(tmpDir, "output.txt")))
 
 	loadScriptReplacements(t, &repls, replsPath, replsWritten)
 

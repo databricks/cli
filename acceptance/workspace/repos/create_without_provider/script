@@ -2,3 +2,5 @@ url=https://github.com/databricks/databricks-empty-ide-project.git
 path=/Repos/me@databricks.com/test-repo
 
 trace $CLI repos create $url --path $path
+
+trace print_requests.py --get //repos //workspace/get-status

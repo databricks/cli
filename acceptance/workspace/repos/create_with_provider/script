@@ -12,3 +12,5 @@ trace $CLI repos get $path -o json
 
 title "Delete by id should work"
 trace $CLI repos delete $repo_id
+
+trace print_requests.py --get //repos //workspace/get-status

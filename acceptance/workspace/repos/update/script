@@ -11,3 +11,5 @@ trace $CLI repos get $repo_id -o json
 trace $CLI repos update $path --branch update-by-path
 
 trace $CLI repos get $repo_id -o json
+
+trace print_requests.py --get //repos //workspace/get-status

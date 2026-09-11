@@ -9,3 +9,5 @@ trace $CLI repos get $path -o json
 trace $CLI repos delete $path
 
 trace $CLI repos get $path -o json
+
+trace print_requests.py --get //repos //workspace/get-status

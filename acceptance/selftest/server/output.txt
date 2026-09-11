@@ -19,3 +19,27 @@ response
 Error: Path (/a/b/c) doesn't exist.
 
 Exit code: 1
+
+>>> print_requests.py --get //
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "method": "GET",
+  "path": "/custom/endpoint",
+  "q": {
+    "query": "param"
+  }
+}
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/a/b/c"
+  }
+}
