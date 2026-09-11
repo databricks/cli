@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-mcp-service-test-[UNIQUE_NAME]/default/files...
+Created mcp_services.mcp
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] ai-gateway get-mcp-service mcp-services/main.default.test_mcp_[UNIQUE_NAME]
+{
+  "name": "mcp-services/main.default.test_mcp_[UNIQUE_NAME]",
+  "comment": "Points at a UC connection hosting an MCP server"
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.mcp_services.mcp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-mcp-service-test-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

@@ -2,6 +2,6 @@
 # (there is no Terraform provider path for them in bundles).
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-# Local only (Cloud defaults to false). An MCP service requires a pre-existing
-# UC connection hosting the MCP server (config.source_connection), which a
-# self-contained bundle test can't provision, so there is no real-workspace run.
+# Lifecycle tests also run against a real workspace. Tests that inspect the
+# recorded request stream (e.g. basic) can't run on cloud and override this.
+Cloud = true

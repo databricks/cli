@@ -1,3 +1,7 @@
+# Local only: simulates an out-of-band delete with a fixed resource name, so it
+# can't run against a real workspace.
+Cloud = false
+
 RecordRequests = false
 
 Ignore = [

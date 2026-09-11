@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CONN="mcp_conn_$UNIQUE_NAME"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    # Only created on cloud (see below); tolerate its absence locally.
+    if [ -n "$CLOUD_ENV" ]; then
+        $CLI connections delete "$CONN" >/dev/null 2>&1 || true
+    fi
+}
+trap cleanup EXIT
+
+# On a real workspace the MCP service must point at an existing UC connection.
+# The mock testserver doesn't validate source_connection, so the connection is
+# only created (and only creatable) on cloud. Bearer auth with a placeholder
+# host + token avoids the OAuth/DCR reachability probe the backend runs at
+# create time for MCP connections.
+if [ -n "$CLOUD_ENV" ]; then
+    $CLI connections create --json "{\"name\":\"$CONN\",\"connection_type\":\"HTTP\",\"options\":{\"host\":\"https://mcp-$UNIQUE_NAME.example.invalid\",\"port\":\"443\",\"base_path\":\"/mcp\",\"is_mcp_connection\":\"true\",\"bearer_token\":\"dummy-token\"}}" >/dev/null 2>&1
+fi
+
+trace $CLI bundle deploy
+
+MCP_ID=$($CLI bundle summary --output json | jq -r '.resources.mcp_services.mcp.id')
+
+trace $CLI ai-gateway get-mcp-service "mcp-services/$MCP_ID" | jq '{name, comment}'
+
+# Verify there is no drift right after deploy. Text plan (not -o json) keeps the
+# output identical between the mock and a real workspace: the server populates
+# output-only fields but the resource action stays "unchanged".
+trace $CLI bundle plan
