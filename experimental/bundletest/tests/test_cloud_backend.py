@@ -6,6 +6,7 @@ Statement Execution API's all-string results to native types (the base-compat tr
 literal/type rendering for seeding, namespace discovery, and volume-path resolution.
 """
 
+import io
 from types import SimpleNamespace
 
 import pytest
@@ -154,6 +155,18 @@ def test_volume_path_resolves_resource_name():
     assert be._volume_path("/Volumes/raw_data/orders.csv") == "/Volumes/shop/bronze/raw_data/orders.csv"
     # A nested path keeps its tail.
     assert be._volume_path("/Volumes/raw_data/sub/f.csv") == "/Volumes/shop/bronze/raw_data/sub/f.csv"
+
+
+def test_read_volume_file_parses_downloaded_bytes():
+    # Downloaded bytes are written to a temp dir and read by duckdb (not a reopened
+    # NamedTemporaryFile, which fails on Windows). No real workspace is touched.
+    be = CloudBackend()
+    be._summary = {"resources": {"volumes": {"raw": {"catalog_name": "c", "schema_name": "s", "name": "raw"}}}}
+    be._client = SimpleNamespace(
+        files=SimpleNamespace(download=lambda path: SimpleNamespace(contents=io.BytesIO(b"a,b\n1,x\n2,y\n")))
+    )
+    rows = be.read_volume_file("raw", "orders.csv")
+    assert rows == [{"a": 1, "b": "x"}, {"a": 2, "b": "y"}]
 
 
 def test_get_resource_keeps_inline_serialized_dashboard():
@@ -321,9 +334,9 @@ def test_seed_table_creates_with_inferred_types():
     assert len(submitted) == 2
     create_sql = submitted[0]
     assert "CREATE OR REPLACE TABLE main.default.scores" in create_sql
-    assert "id BIGINT" in create_sql
-    assert "name STRING" in create_sql
-    assert "score DOUBLE" in create_sql
+    assert "`id` BIGINT" in create_sql
+    assert "`name` STRING" in create_sql
+    assert "`score` DOUBLE" in create_sql
 
 
 def test_seed_table_inserts_with_escaped_literals():

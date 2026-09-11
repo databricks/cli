@@ -30,6 +30,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -150,10 +151,13 @@ class CloudBackend:
             raise ValueError(f"cannot seed {fqn!r} with no rows")
         self._ensure_schema(fqn)
         columns = list(rows[0].keys())
-        coldefs = ", ".join(f"{c} {_sql_type([r.get(c) for r in rows])}" for c in columns)
+        # Backtick-quote column identifiers so a reserved word (order, end) or special char
+        # works, matching the local backend's quoting.
+        coldefs = ", ".join(f"`{c}` {_sql_type([r.get(c) for r in rows])}" for c in columns)
         self.execute_sql(f"CREATE OR REPLACE TABLE {fqn} ({coldefs})")
         values = ", ".join("(" + ", ".join(_sql_literal(r.get(c)) for c in columns) + ")" for r in rows)
-        self.execute_sql(f"INSERT INTO {fqn} ({', '.join(columns)}) VALUES {values}")
+        collist = ", ".join(f"`{c}`" for c in columns)
+        self.execute_sql(f"INSERT INTO {fqn} ({collist}) VALUES {values}")
         self._seeded.add(fqn)
 
     # --- execution ---
@@ -243,12 +247,22 @@ class CloudBackend:
             resp = self._ws().files.download(path)
         except Exception as e:
             raise FileNotFoundError(f"no file {filename!r} in volume {volume!r}: {e}") from e
-        with tempfile.NamedTemporaryFile(suffix=suffix) as tmp:
-            tmp.write(resp.contents.read())
-            tmp.flush()
-            cur = duckdb.connect().execute(f"SELECT * FROM {reader}('{tmp.name}')")
-            cols = [d[0] for d in cur.description]
-            return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
+        # DuckDB re-opens the file by path, so write it into a temp dir and pass a forward-slash
+        # path: a NamedTemporaryFile can't be reopened while open on Windows, and its backslash
+        # path would break the SQL string literal.
+        tmp_dir = tempfile.mkdtemp(prefix="bundletest-vol-")
+        try:
+            local = Path(tmp_dir) / f"data{suffix}"
+            local.write_bytes(resp.contents.read())
+            con = duckdb.connect()
+            try:
+                cur = con.execute(f"SELECT * FROM {reader}('{local.as_posix()}')")
+                cols = [d[0] for d in cur.description]
+                return [dict(zip(cols, row, strict=True)) for row in cur.fetchall()]
+            finally:
+                con.close()
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
     # --- internals ---
     def _ws(self) -> Any:
@@ -287,14 +301,19 @@ class CloudBackend:
 
     def _ensure_job_schemas(self, name: str) -> None:
         """Create the schemas a job's SQL writes to, so its unmodified statements resolve —
-        the cloud analogue of the local backend's namespace preparation."""
+        the cloud analogue of the local backend's namespace preparation. Best-effort: a
+        non-file sql_task (query/alert) is skipped, and a misparsed reference (a struct field
+        read as catalog.schema) just fails to create — the real error, if any, surfaces on run."""
         for task in self._config.get("resources", {}).get("jobs", {}).get(name, {}).get("tasks", []):
-            sql_task = task.get("sql_task")
-            if not sql_task:
+            file = (task.get("sql_task") or {}).get("file")
+            if not file:
                 continue
-            sql = Path(self._bundle_path, sql_task["file"]["path"]).read_text()
+            sql = Path(self._bundle_path, file["path"]).read_text()
             for ns in _schemas_in(sql):
-                self.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {ns}")
+                try:
+                    self.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {ns}")
+                except Exception:
+                    pass
 
     def _volume_path(self, dst: str) -> str:
         """Resolve ``/Volumes/<resource_name>/<path...>`` to a real UC volume path.
