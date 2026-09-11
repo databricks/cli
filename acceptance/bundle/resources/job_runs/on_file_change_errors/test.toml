@@ -1,0 +1,2 @@
+# The bundle is never deployed here, so there are no requests worth recording.
+RecordRequests = false

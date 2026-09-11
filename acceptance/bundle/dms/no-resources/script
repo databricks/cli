@@ -29,4 +29,4 @@ trace MSYS_NO_PATHCONV=1 $CLI bundle-deployments list-resources "deployments/${d
 title "The raw recorded state after redeploy"
 trace print_state.py --no-dms
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

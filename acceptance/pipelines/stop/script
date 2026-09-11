@@ -1,6 +1,6 @@
 trace $CLI pipelines deploy
 trace $CLI pipelines run
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 title "Stopping pipeline"
 trace $CLI pipelines stop

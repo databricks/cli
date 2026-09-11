@@ -1,9 +1,9 @@
 trace $CLI bundle validate -o json | jq .resources.genie_spaces.foo.permissions
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 trace $CLI bundle deploy
 # Genie space IDs are random; normalize them in the recorded requests.
 replace_ids.py

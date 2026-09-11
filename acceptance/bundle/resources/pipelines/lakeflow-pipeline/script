@@ -3,10 +3,10 @@ trace $CLI bundle validate
 
 cleanup() {
   trace $CLI bundle destroy --auto-approve
-  rm out.requests.txt
+  rm "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 trace $CLI bundle deploy
 
-trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body' out.requests.txt | nostamp
-rm out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body' "$OUT_REQUESTS" | nostamp
+rm "$OUT_REQUESTS"

@@ -5,7 +5,7 @@ Created jobs.test_job
 Created jobs.test_job.permissions
 Created pipelines.test_pipeline
 Created pipelines.test_pipeline.permissions
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate
@@ -52,7 +52,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 4 unchanged
 
 >>> print_requests.py --get //jobs/get

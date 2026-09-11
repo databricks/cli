@@ -5,13 +5,13 @@ cleanup() {
    # The soft-delete case leaves a record in the trash; --purge clears it.
    $CLI postgres delete-project --purge "projects/test-pg-proj-hard-${UNIQUE_NAME}" 2>>LOG.delete-project || true
    $CLI postgres delete-project --purge "projects/test-pg-proj-soft-${UNIQUE_NAME}" 2>>LOG.delete-project || true
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 trace $CLI bundle validate
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 trace $CLI postgres get-project "projects/test-pg-proj-hard-${UNIQUE_NAME}" | project_fields

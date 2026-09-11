@@ -1,0 +1,9 @@
+trace $CLI bundle deploy
+
+title "Delete the resource out of band"
+trace $CLI ai-gateway delete-model-service model-services/main.myschema.myservice
+
+title "Plan should detect the resource is gone and re-create it"
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve

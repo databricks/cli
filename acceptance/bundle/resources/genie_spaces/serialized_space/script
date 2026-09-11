@@ -2,11 +2,11 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 # Capture the serialized_space sent to the Genie create API:
@@ -17,5 +17,5 @@ jq -s '[.[] | select(.method == "POST" and .path == "/api/2.0/genie/spaces")
         | {title: .body.title,
            serialized_space: .body.serialized_space,
            parsed: (.body.serialized_space | fromjson)}]
-       | sort_by(.title)' out.requests.txt > out.create_requests.json
-rm -f out.requests.txt
+       | sort_by(.title)' "$OUT_REQUESTS" > out.create_requests.json
+rm -f "$OUT_REQUESTS"

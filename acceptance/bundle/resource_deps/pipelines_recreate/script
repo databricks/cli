@@ -25,7 +25,7 @@ title "Fetch resource IDs and verify remote state"
 trace musterr $CLI pipelines get $foo_id
 trace $CLI pipelines get $foo_id_2 | nostamp
 trace $CLI jobs get $bar_id | nostamp| jq 'del(.settings.run_as)'
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 title "Follow up plan & deploy do nothing"
 trace $CLI bundle plan
@@ -39,4 +39,4 @@ trace print_requests.py --nostamp //jobs //pipelines '^//api/2.0/bundle'
 trace musterr $CLI pipelines get $foo_id
 trace musterr $CLI pipelines get $foo_id_2
 trace musterr $CLI jobs get $bar_id
-rm out.requests.txt
+rm "$OUT_REQUESTS"

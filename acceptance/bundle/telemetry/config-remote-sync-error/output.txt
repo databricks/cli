@@ -4,7 +4,7 @@ Error: state snapshot not available: resources state snapshot not found remotely
 
 Exit code: 1
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "engine": "terraform",
   "state_source": "local",

@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 
 title "Initial deployment"
 trace $CLI bundle deploy

@@ -7,7 +7,7 @@ cleanup() {
    $CLI postgres delete-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/test-endpoint-${UNIQUE_NAME}" 2>/dev/null || true
    $CLI postgres delete-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/test-endpoint-${UNIQUE_NAME}-v2" 2>/dev/null || true
 
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 

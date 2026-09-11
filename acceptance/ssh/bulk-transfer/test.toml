@@ -1,0 +1,18 @@
+Cloud = true
+
+# Staged release archives, the pinned host key, and the payload files: none are golden output.
+Ignore = [
+  "releases",
+  "known-hosts",
+  "received.bin",
+  "sent.bin",
+  "remote-count.txt",
+]
+
+# The local run drives a real sshd, reliable only on Linux. Absent GOOS keys default to enabled,
+# so the other OSes must be disabled explicitly.
+GOOS.linux = true
+GOOS.darwin = false
+GOOS.windows = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

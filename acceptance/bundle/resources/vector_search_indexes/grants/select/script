@@ -3,13 +3,13 @@ index_name="main.default.vs_index_${UNIQUE_NAME}"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 trace $CLI bundle plan
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 trace $CLI bundle plan

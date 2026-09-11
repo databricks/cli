@@ -28,4 +28,4 @@ title "Next deploy uses direct engine by default (no more mismatch warning)"
 trace $CLI bundle deploy 2>&1 | contains.py '!does not match the existing state'
 trace print_migration_telemetry
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

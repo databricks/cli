@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -19,7 +19,7 @@ trace $CLI bundle plan | contains.py "Plan: 0 to add, 1 to change, 0 to delete, 
 $CLI bundle plan --output json | nostamp | jq '{plan: .plan | map_values({action, changes})}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 title "Deploy restores target_qps to 1"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 trace print_requests.py '//vector-search/endpoints'
 

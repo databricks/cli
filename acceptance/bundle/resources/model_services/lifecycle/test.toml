@@ -1,0 +1,9 @@
+# Model service lifecycle also runs against a real workspace. It uses a minimal
+# pay-per-token destination to a system.ai foundation model, the smallest config
+# the backend accepts (a model service cannot be created with only a comment).
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

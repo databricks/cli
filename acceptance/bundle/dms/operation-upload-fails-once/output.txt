@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once-[UNIQUE_NAME]/default/files...
 Created schemas.foo
-Files: 6 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === The plan records the deployment_history feature and the schema
@@ -60,7 +60,7 @@ HTTP Status: 500 Internal Server Error
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 
 === The service lists the schema with the failure
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json

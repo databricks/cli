@@ -8,4 +8,4 @@ title "Native YAML definition serializes to compact JSON, preserving numbers and
 trace print_requests.py //policies/clusters
 
 trace $CLI bundle destroy --auto-approve
-rm out.requests.txt
+rm "$OUT_REQUESTS"

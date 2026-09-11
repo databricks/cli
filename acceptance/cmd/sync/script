@@ -8,7 +8,6 @@ touch "ignored-folder/script.py" "ignored-folder/folder1/script.py" "ignored-fol
 cat > .gitignore << EOF
 ignored-folder/
 script
-output.txt
 EOF
 
 cleanup() {

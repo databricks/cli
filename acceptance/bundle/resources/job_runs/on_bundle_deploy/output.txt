@@ -6,7 +6,7 @@ Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Created jobs.my_job
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> read_id.py my_job
@@ -30,21 +30,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle": {
-    "action": "recreate",
-    "reason": "immutable",
-    "old": {
-      "triggers": {
-        "on_bundle_deploy": "[UUID]"
-      }
-    },
-    "new": {
-      "triggers": {
-        "on_bundle_deploy": "[UUID]"
-      }
-    }
-  },
-  "lifecycle.triggers.on_bundle_deploy": {
+  "lifecycle.triggers_state.on_bundle_deploy": {
     "action": "recreate",
     "reason": "immutable",
     "old": "[UUID]",
@@ -63,7 +49,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
 Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
 Recreated job_runs.my_run
-Files: 3 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
 >>> [CLI] bundle summary
@@ -108,15 +94,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> jq .plan["resources.job_runs.my_run"].changes tmp.plan.json
 {
-  "lifecycle": {
-    "action": "skip",
-    "reason": "trigger removed",
-    "old": {
-      "triggers": {
-        "on_bundle_deploy": "[UUID]"
-      }
-    }
-  },
   "result_state": {
     "action": "skip",
     "reason": "remote_already_set",
@@ -127,7 +104,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-bundle-deploy/default/files...
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> print_requests.py //jobs/run-now

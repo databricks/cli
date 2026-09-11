@@ -20,4 +20,4 @@ trace print_requests.py //roles
 trace $CLI bundle plan
 
 trace $CLI bundle destroy --auto-approve
-rm out.requests.txt
+rm "$OUT_REQUESTS"
