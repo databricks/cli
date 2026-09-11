@@ -1,0 +1,1 @@
+$CLI bundle generate app --existing-app-name my_git_app --config-dir . --key out
