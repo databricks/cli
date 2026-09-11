@@ -62,6 +62,13 @@ type ServerOptions struct {
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) error {
 	ctx, logBuf := captureWarnLogs(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Filesystem registration is best-effort on compute without reachable daemons.
+	if err := registerFuseCredentials(ctx, client); err != nil {
+		log.Warnf(ctx, "Failed to register SSH filesystem credentials; file access may depend on the bootstrap notebook: %v", err)
+	}
 
 	port, err := findAvailablePort(opts.DefaultPort, opts.PortRange)
 	if err != nil {

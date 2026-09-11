@@ -156,3 +156,29 @@ The proxy-layer behaviors have unit tests that don't need a cluster:
 ```shell
 go test ./experimental/ssh/...
 ```
+
+## Filesystem access after the bootstrap notebook exits
+
+If SSH still connects but `/Workspace` or `/Volumes` operations return permission errors,
+check whether the tunnel server registered successfully. Its startup logs contain
+`Registered SSH server PID` for each filesystem daemon that accepted registration.
+`Failed to register SSH filesystem credentials` means at least one registration failed;
+the tunnel continues to run and retries in the background.
+
+From an SSH session, read the process used for workspace-file authorization:
+
+```sh
+cat /Workspace/.proc/self/metadata/pid
+ps -o pid,ppid,args -p <registered-pid>
+```
+
+On dedicated compute, the reported PID should identify the tunnel server. If it identifies
+the bootstrap Python process, workspace-file access still depends on that process.
+The server checks this every ten minutes and attempts to restore a lost registration.
+An unavailable daemon produces a warning rather than preventing SSH startup.
+
+This registration only covers the server and its descendants. A detached process that
+leaves that ancestry can still lose access. The compute can also terminate the server
+after the bootstrap notebook exits; registration does not extend either lifetime.
+An expired or revoked bootstrap credential cannot be repaired by re-registering it.
+In these cases, reconnect to start a new server after the existing server has stopped.
