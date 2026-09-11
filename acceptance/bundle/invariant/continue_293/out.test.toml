@@ -46,5 +46,6 @@ EnvMatrix.INPUT_CONFIG = [
   "uc_trailing_slash.yml.tmpl",
   "volume.yml.tmpl",
   "volume_external.yml.tmpl",
-  "volume_uppercase_name.yml.tmpl"
+  "volume_uppercase_name.yml.tmpl",
+  "model_service.yml.tmpl"
 ]

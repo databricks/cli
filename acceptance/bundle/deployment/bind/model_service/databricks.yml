@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  model_services:
+    ms1:
+      parent: schemas/main.myschema
+      model_service_id: mysvc
+      comment: bound service
