@@ -55,13 +55,12 @@ func TestResolveJobRunFileTriggersHashesThroughSyncRoot(t *testing.T) {
 // alone only knows the local flavour, so a Windows-rooted pattern used to pass
 // validation on POSIX and fail on Windows.
 func TestResolveJobRunFileTriggersRejectsRootedPatterns(t *testing.T) {
+	// Only genuinely absolute paths on this OS are rejected. A string that is
+	// rooted only on Windows (e.g. "c:foo" or "\foo") is a valid relative name on
+	// POSIX and is left to the sync-root containment check, so it is not listed
+	// here; on Windows filepath.IsAbs classifies those forms itself.
 	for _, pattern := range []string{
 		"/abs/watched.txt",
-		`C:\watched.txt`,
-		"C:/watched.txt",
-		"c:watched.txt",
-		`\\server\share\watched.txt`,
-		`\rooted.txt`,
 	} {
 		t.Run(pattern, func(t *testing.T) {
 			dir := t.TempDir()

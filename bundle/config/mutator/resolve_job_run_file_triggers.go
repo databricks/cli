@@ -161,11 +161,12 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc, pattern string) (string, 
 			Locations: b.Config.GetLocations(loc),
 		})
 	}
-	// filepath.IsAbs only recognises the host's flavour, so check both plus the
-	// Windows forms lexically. Otherwise "C:\watched.txt" is rejected on Windows
-	// but silently treated as a relative "C:" directory elsewhere, and the same
-	// bundle validates differently depending on where it is deployed from.
-	if filepath.IsAbs(pattern) || pathlib.IsAbs(pattern) || isWindowsAbs(pattern) {
+	// Reject a genuinely absolute path; Join would otherwise silently reinterpret it
+	// as relative to the bundle root. filepath.IsAbs is OS-aware and pathlib.IsAbs
+	// covers a POSIX path on Windows. A string that is rooted only on the other OS
+	// (e.g. "c:foo" or "\foo" on POSIX) is a valid relative name here and falls
+	// through to the sync-root containment check below.
+	if filepath.IsAbs(pattern) || pathlib.IsAbs(pattern) {
 		return "", diags.Append(diag.Diagnostic{
 			Severity:  diag.Error,
 			Summary:   fileTriggerPrefix + fmt.Sprintf("pattern %q must be relative to the defining YAML file", pattern),
@@ -194,20 +195,6 @@ func validateFileTriggerPattern(b *bundle.Bundle, loc, pattern string) (string, 
 		})
 	}
 	return relPattern, diags
-}
-
-// isWindowsAbs reports whether pattern is rooted in Windows terms - a drive
-// letter, a UNC share, or a leading separator - whatever the host OS is.
-func isWindowsAbs(pattern string) bool {
-	if strings.HasPrefix(pattern, `\`) {
-		return true
-	}
-	// "C:", "C:/x" and "C:\x", plus the drive-relative "C:x".
-	if len(pattern) < 2 || pattern[1] != ':' {
-		return false
-	}
-	c := pattern[0]
-	return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
 }
 
 func hashFile(root fs.FS, path string) (string, error) {
