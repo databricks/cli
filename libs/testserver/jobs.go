@@ -81,7 +81,10 @@ func jobValidationError(message string) *Response {
 // with. Every message here is the backend's own wording. Each check exists because the fake server
 // accepted a value a real workspace refuses, which showed up as a local run and a cloud run disagreeing
 // in bundle/direct/autotest.
-func validateJobSettings(gitSource *jobs.GitSource, environments []jobs.JobEnvironment, parameters []jobs.JobParameterDefinition, trigger *jobs.TriggerSettings) *Response {
+// validateJobSettings mirrors the Jobs API validation for the settings a job is created or reset with.
+// prefix is the field-path prefix the backend uses in a missing-required-field message: empty on
+// create, "new_settings." on reset, where the settings sit under that key.
+func validateJobSettings(prefix string, gitSource *jobs.GitSource, deployment *jobs.JobDeployment, environments []jobs.JobEnvironment, parameters []jobs.JobParameterDefinition, trigger *jobs.TriggerSettings) *Response {
 	if gitSource != nil {
 		if gitSource.GitProvider == "" {
 			return jobValidationError(missingJobGitProviderMessage)
@@ -89,6 +92,11 @@ func validateJobSettings(gitSource *jobs.GitSource, environments []jobs.JobEnvir
 		if gitSource.GitUrl == "" {
 			return jobValidationError("URL for the remote git repository must be valid")
 		}
+	}
+	// A deployment block has to say what kind it is. DABs stamps kind=BUNDLE on every job it deploys,
+	// so the field is effectively always present on a bundle-managed job and clearing it is refused.
+	if deployment != nil && deployment.Kind == "" {
+		return jobValidationError("Missing required field: " + prefix + "deployment.kind")
 	}
 	for _, environment := range environments {
 		if !jobEnvironmentKeyPattern.MatchString(environment.EnvironmentKey) {
@@ -100,8 +108,15 @@ func validateJobSettings(gitSource *jobs.GitSource, environments []jobs.JobEnvir
 			return jobValidationError("Job parameter requires name.")
 		}
 	}
-	if trigger != nil && trigger.Periodic != nil && trigger.Periodic.Interval < 1 {
-		return jobValidationError("Invalid periodic trigger interval: it must be greater than or equal to 1")
+	if trigger != nil && trigger.Periodic != nil {
+		// A periodic trigger carries both a unit and an interval; neither can be cleared once the block
+		// is there.
+		if trigger.Periodic.Unit == "" {
+			return jobValidationError("Missing required field: " + prefix + "trigger.periodic.unit")
+		}
+		if trigger.Periodic.Interval < 1 {
+			return jobValidationError("Invalid periodic trigger interval: it must be greater than or equal to 1")
+		}
 	}
 	return nil
 }
@@ -114,7 +129,7 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 			Body:       fmt.Sprintf("request parsing error: %s", err),
 		}
 	}
-	if response := validateJobSettings(request.GitSource, request.Environments, request.Parameters, request.Trigger); response != nil {
+	if response := validateJobSettings("", request.GitSource, request.Deployment, request.Environments, request.Parameters, request.Trigger); response != nil {
 		return *response
 	}
 
@@ -153,7 +168,7 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 			Body:       fmt.Sprintf("request parsing error: %s", err),
 		}
 	}
-	if response := validateJobSettings(request.NewSettings.GitSource, request.NewSettings.Environments, request.NewSettings.Parameters, request.NewSettings.Trigger); response != nil {
+	if response := validateJobSettings("new_settings.", request.NewSettings.GitSource, request.NewSettings.Deployment, request.NewSettings.Environments, request.NewSettings.Parameters, request.NewSettings.Trigger); response != nil {
 		return *response
 	}
 
@@ -580,7 +595,7 @@ func (s *FakeWorkspace) JobsSubmit(req Request) Response {
 			Body:       fmt.Sprintf("request parsing error: %s", err),
 		}
 	}
-	if response := validateJobSettings(request.GitSource, request.Environments, nil, nil); response != nil {
+	if response := validateJobSettings("", request.GitSource, nil, request.Environments, nil, nil); response != nil {
 		return *response
 	}
 
