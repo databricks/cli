@@ -30,11 +30,6 @@ func (s *FakeWorkspace) ModelServicesCreate(req Request) Response {
 		}
 	}
 
-	// A model service is created around its routing config; the backend refuses one without it.
-	if ms.Config == nil {
-		return modelServiceInvalidRequest("config is required")
-	}
-
 	schema := strings.TrimPrefix(req.URL.Query().Get("parent"), "schemas/")
 	key := schema + "." + req.URL.Query().Get("model_service_id")
 
@@ -70,10 +65,11 @@ func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 		}
 	}
 
-	// A model service always routes somewhere, so its destinations cannot be emptied: the backend
-	// refuses it and points at DeleteModelService instead. Only a change that leaves no destination is
-	// rejected -- setting or changing them is fine.
-	if incoming.Config == nil || incoming.Config.Routing == nil || len(incoming.Config.Routing.Destinations) == 0 {
+	// A model service that has routing destinations cannot have them emptied: the backend refuses it
+	// and points at DeleteModelService instead. Only a change that removes existing destinations is
+	// rejected -- setting or changing them is fine, and a service that never had any (no config block)
+	// is left alone.
+	if hasDestinations(existing) && !hasDestinations(incoming) {
 		return modelServiceInvalidRequest("destinations cannot be cleared; use DeleteModelService to remove the resource")
 	}
 
@@ -86,6 +82,11 @@ func (s *FakeWorkspace) ModelServicesUpdate(req Request, name string) Response {
 	return Response{
 		Body: existing,
 	}
+}
+
+// hasDestinations reports whether a model service's config names at least one routing destination.
+func hasDestinations(ms catalog.ModelService) bool {
+	return ms.Config != nil && ms.Config.Routing != nil && len(ms.Config.Routing.Destinations) > 0
 }
 
 // modelServiceInvalidRequest mirrors the backend's 400 for a model-service request it will not accept.
