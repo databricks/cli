@@ -1370,9 +1370,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		profile = w.Config.Profile
 	}
 
-	// Get selected plugins for generation. Dedupe resources shared by multiple
-	// features so the same resource isn't emitted twice into databricks.yml,
-	// .env, and app.yaml (e.g. "database" and "lakebase" share a postgres resource).
+	// Get selected plugins for generation, deduping resources shared by multiple features.
 	selectedPluginList := generator.DedupeResources(generator.GetSelectedPlugins(m, selectedPlugins))
 
 	log.Debugf(ctx, "Selected plugins: %v", selectedPlugins)

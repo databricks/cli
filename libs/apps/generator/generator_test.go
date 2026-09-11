@@ -1085,9 +1085,7 @@ func TestVolumeManifestPathFieldMapsToSpecId(t *testing.T) {
 	assert.Contains(t, res, "permission: WRITE_VOLUME")
 }
 
-// postgresResource mirrors the shared resource that both the "database" and
-// "lakebase" features declare (same type and key), which previously caused
-// duplicate variables, resource entries, and env vars across every output.
+// postgresResource is the shared resource that "database" and "lakebase" both declare.
 func postgresResource() manifest.Resource {
 	return manifest.Resource{
 		Type: "postgres", Alias: "Postgres", ResourceKey: "postgres", Permission: "CAN_CONNECT_AND_CREATE",
@@ -1127,10 +1125,14 @@ func TestDedupeResourcesSharedAcrossPlugins(t *testing.T) {
 
 	env := generator.GenerateDotEnv(deduped, cfg)
 	assert.Equal(t, 1, strings.Count(env, "PGBRANCH="))
+
+	target := generator.GenerateTargetVariables(deduped, cfg)
+	assert.Equal(t, 1, strings.Count(target, "postgres_branch:"))
+
+	example := generator.GenerateDotEnvExample(deduped)
+	assert.Equal(t, 1, strings.Count(example, "PGBRANCH="))
 }
 
-// A required declaration must win over an optional one for the same resource, so
-// a resource the app needs is never gated behind an unset optional value.
 func TestDedupeResourcesRequiredWinsOverOptional(t *testing.T) {
 	deduped := generator.DedupeResources([]manifest.Plugin{
 		{Name: "a", Resources: manifest.Resources{Optional: []manifest.Resource{postgresResource()}}},
