@@ -85,7 +85,7 @@ func TestConfigRuleMatches(t *testing.T) {
 		t.Run(tt.input+"_"+tt.packageName+"_"+tt.testcase, func(t *testing.T) {
 			rule, err := parseConfigRule(tt.input, tt.input)
 			require.NoError(t, err)
-			result := rule.matches(tt.packageName, tt.testcase)
+			result := rule.matches(strings.Split(tt.packageName, "/"), strings.Split(tt.testcase, "/"))
 			assert.Equal(t, tt.match, result)
 		})
 	}

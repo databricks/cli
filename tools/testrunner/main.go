@@ -267,8 +267,10 @@ type Config struct {
 }
 
 func (c *Config) matches(packageName, testName string) string {
+	pkg := strings.Split(packageName, "/")
+	test := strings.Split(testName, "/")
 	for _, rule := range c.rules {
-		if rule.matches(packageName, testName) {
+		if rule.matches(pkg, test) {
 			return rule.OriginalLine
 		}
 	}
@@ -341,9 +343,9 @@ func parseConfigRule(line, originalLine string) (ConfigRule, error) {
 	}, nil
 }
 
-func (r ConfigRule) matches(packageName, testName string) bool {
-	return matchSegments(r.PackagePattern, strings.Split(packageName, "/")) &&
-		matchSegments(r.TestPattern, strings.Split(testName, "/"))
+func (r ConfigRule) matches(packageName, testName []string) bool {
+	return matchSegments(r.PackagePattern, packageName) &&
+		matchSegments(r.TestPattern, testName)
 }
 
 // matchSegments reports whether name matches pattern segment by segment, where
