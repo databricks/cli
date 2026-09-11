@@ -104,6 +104,34 @@ func ApplySeqContext(ctx context.Context, b *Bundle, mutators ...Mutator) {
 	}
 }
 
+// ApplySeqInScopeContext applies mutators without opening a mutator scope per mutator,
+// reusing the caller's scope instead.
+//
+// [ApplyContext] converts the whole configuration tree between its typed and dynamic
+// representations on entry and exit (see [config.Root.MarkMutatorEntry]). That cost is
+// proportional to the size of the accumulated configuration, so applying N mutators this
+// way is quadratic in N. For a bundle with thousands of included files that dominates
+// load time, hence this variant.
+//
+// Only use it for mutators that modify the configuration through [config.Root.Mutate]
+// (which keeps both representations in sync). A mutator that assigns to a typed field
+// directly relies on the scope entry to carry that value into the dynamic tree, and
+// would lose it here.
+func ApplySeqInScopeContext(ctx context.Context, b *Bundle, mutators ...Mutator) {
+	for _, m := range mutators {
+		mctx := log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
+		log.Debugf(mctx, "Apply")
+
+		for _, d := range m.Apply(mctx, b) {
+			logdiag.LogDiag(mctx, d)
+		}
+
+		if logdiag.HasError(ctx) {
+			break
+		}
+	}
+}
+
 type funcMutator struct {
 	fn func(context.Context, *Bundle)
 }

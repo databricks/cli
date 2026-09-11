@@ -1,0 +1,7 @@
+# Every resource defined across the included files (two globs + the root file) must
+# appear in the plan exactly once, and the cross-file target override must merge into
+# job_a rather than be dropped.
+trace $CLI bundle plan
+
+title "job_a merged max_concurrent_runs from the override file\n"
+trace $CLI bundle validate -o json | jq '.resources.jobs.job_a.max_concurrent_runs'
