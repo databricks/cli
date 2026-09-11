@@ -44,6 +44,7 @@ func TestResolveNodeCount(t *testing.T) {
 		{"GPU_1xA10", 2, 2},
 		{"GPU_1xH100", 4, 4},
 		{"GPU_8xH100", 16, 2},
+		{"GPU_8xB300", 16, 2},
 	}
 	for _, tt := range tests {
 		n, err := resolveNodeCount(airRunWithCompute(tt.accelType, tt.count))

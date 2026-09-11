@@ -82,7 +82,7 @@ does not contact the workspace.`,
 		ctx := cmd.Context()
 		yamlPath := args[0]
 
-		cfg, err := loadRunConfig(yamlPath)
+		cfg, err := loadRunConfigWithOverrides(ctx, yamlPath, nil)
 		if err != nil {
 			return err
 		}
