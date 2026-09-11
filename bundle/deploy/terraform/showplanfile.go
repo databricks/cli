@@ -119,9 +119,34 @@ func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.
 			} else {
 				existing.Action = deployplan.GetHigherAction(existing.Action, actionType)
 			}
+			existing.StateOnly = isStateOnlyDelete(group, existing.Action)
 		} else {
-			plan.Plan[key] = &deployplan.PlanEntry{Action: actionType}
+			plan.Plan[key] = &deployplan.PlanEntry{
+				Action:    actionType,
+				StateOnly: isStateOnlyDelete(group, actionType),
+			}
 		}
+	}
+}
+
+// isStateOnlyDelete reports whether deleting a resource of this group has no
+// backend effect, so a planned Delete is a state-only cleanup. The direct engine
+// derives this from the resource omitting DoDelete (see dresources.Adapter.HasDoDelete
+// and PlanEntry.StateOnly); the terraform engine has no adapters here, so the set is
+// mirrored by group. TestStateOnlyGroupsMatchDirect guards the two against drift.
+//
+// Note this only suppresses these deletes from plan/deploy output and counts to keep
+// the two engines consistent — it does not change what terraform applies (terraform
+// still revokes grants / resets permissions on delete).
+func isStateOnlyDelete(group string, action deployplan.ActionType) bool {
+	if action != deployplan.Delete {
+		return false
+	}
+	switch group {
+	case "permissions", "grants", "secret_acls":
+		return true
+	default:
+		return false
 	}
 }
 

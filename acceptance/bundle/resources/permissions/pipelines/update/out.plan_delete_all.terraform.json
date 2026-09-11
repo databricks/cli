@@ -5,7 +5,8 @@
       "action": "skip"
     },
     "resources.pipelines.foo.permissions": {
-      "action": "delete"
+      "action": "delete",
+      "state_only": true
     }
   }
 }

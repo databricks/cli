@@ -88,9 +88,11 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (bool, error) {
 	deleteActions := plan.GetActions()
 
-	// Deletes of resources that are already gone remotely only clean up the state,
-	// so they don't count as destructive actions and are not listed as deletions.
-	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.Gone })
+	// Deletes that only clean up the state — the resource is already gone remotely
+	// (Gone) or has no delete operation (StateOnly) — are not destructive, so they
+	// are not listed as deletions and need no approval. In particular this makes
+	// prevent_destroy inert for state-only resources: nothing is destroyed.
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.Gone || a.StateOnly })
 
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
@@ -186,7 +188,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		// a destruction to report.
 		deleted := 0
 		for _, a := range plan.GetActions() {
-			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.Gone {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.Gone && !a.StateOnly {
 				deleted++
 			}
 		}

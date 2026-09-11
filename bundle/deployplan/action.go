@@ -12,6 +12,9 @@ type Action struct {
 	// Gone mirrors PlanEntry.Gone: the delete is a state-only cleanup because the
 	// resource no longer exists remotely.
 	Gone bool
+	// StateOnly mirrors PlanEntry.StateOnly: the delete is a state-only cleanup
+	// because the resource implements no DoDelete (deleting it has no backend effect).
+	StateOnly bool
 }
 
 func (a Action) String() string {

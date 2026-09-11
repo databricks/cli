@@ -1,6 +1,5 @@
 
 >>> [CLI] bundle plan
 delete secret_scopes.second
-delete secret_scopes.second.permissions
 
-Plan: 0 to add, 0 to change, 2 to delete, 2 unchanged
+Plan: 0 to add, 0 to change, 1 to delete, 3 unchanged

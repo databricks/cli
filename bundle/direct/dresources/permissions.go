@@ -264,14 +264,11 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 	return nil, err
 }
 
-// DoDelete is activated in 2 distinct cases:
+// ResourcePermissions intentionally implements no DoDelete (deleting is a state-only
+// cleanup, see PlanEntry.StateOnly). A delete would otherwise be activated in 2 cases:
 // 1) 'permissions' field is deleted in DABs config. In that case terraform would restore the default permissions (IS_OWNER for current user).
 // 2) the parent resource is deleted; in that case there is no need to do anything; parent resource deletion is enough.
-// Let's do nothing in both cases. If user no longer wishes to manage permissions with DABs they can go ahead and manage
+// We do nothing in both cases. If the user no longer wishes to manage permissions with DABs they can go ahead and manage
 // it themselves. Trying to fix permissions back requires
 // - making assumptions on what it should look like
 // - storing current user somewhere or storing original permissions somewhere
-func (r *ResourcePermissions) DoDelete(ctx context.Context, id string, _ *PermissionsState) error {
-	// intentional noop
-	return nil
-}

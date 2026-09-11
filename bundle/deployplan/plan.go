@@ -57,7 +57,13 @@ func (p *Plan) CountActions() ActionCounts {
 		case Update, UpdateWithID, Resize:
 			c.Change++
 		case Delete:
-			c.Delete++
+			// A state-only delete has no backend effect (it only drops the state
+			// entry), so it is not counted as a deletion.
+			if entry.StateOnly {
+				c.Unchanged++
+			} else {
+				c.Delete++
+			}
 		case Recreate:
 			// A recreate counts as both a delete and a create.
 			c.Delete++
@@ -122,7 +128,14 @@ type PlanEntry struct {
 	// Gone is set on Delete entries when planning confirmed the resource no longer
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
-	Gone        bool                     `json:"gone,omitempty"`
+	Gone bool `json:"gone,omitempty"`
+	// StateOnly is set on Delete entries for resources that implement no DoDelete:
+	// deleting them has no backend effect. Like Gone, applying such an entry only
+	// removes it from the state and it is excluded from destructive-action prompts,
+	// textual plan output and the deleted count — but unlike Gone it is a property of
+	// the resource type, not of the current remote state, so planning skips the
+	// remote read that Gone detection needs.
+	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
@@ -207,6 +220,7 @@ func (p *Plan) GetActions() []Action {
 			ResourceKey: key,
 			ActionType:  entry.Action,
 			Gone:        entry.Gone,
+			StateOnly:   entry.StateOnly,
 		})
 	}
 

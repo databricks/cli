@@ -58,9 +58,14 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error)
 	DoRead(ctx context.Context, id string) (remoteState any, e error)
 
-	// DoDelete deletes the resource. The state argument is the last-persisted
+	// [Optional] DoDelete deletes the resource. The state argument is the last-persisted
 	// state for the resource; resources that don't need it should accept it as
 	// _ to satisfy the interface.
+	// Omitting DoDelete declares that deleting the resource has no backend effect
+	// (e.g. grants, permissions): the engine then treats a planned Delete as a
+	// state-only cleanup (see PlanEntry.StateOnly) — it skips the remote read at
+	// plan time, issues no delete call at apply, and omits the resource from
+	// textual plan output and destructive-action prompts.
 	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string, _ *jobs.JobSettings) error
 	DoDelete(ctx context.Context, id string, state any) error
 
@@ -122,10 +127,10 @@ type Adapter struct {
 	prepareState *calladapt.BoundCaller
 	remapState   *calladapt.BoundCaller
 	doRefresh    *calladapt.BoundCaller
-	doDelete     *calladapt.BoundCaller
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
+	doDelete           *calladapt.BoundCaller
 	prepareInputConfig *calladapt.BoundCaller
 	isEmptyState       *calladapt.BoundCaller
 	doUpdate           *calladapt.BoundCaller
@@ -239,17 +244,19 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.doDelete, err = prepareCallRequired(resource, "DoDelete")
-	if err != nil {
-		return err
-	}
-
 	a.doCreate, err = prepareCallRequired(resource, "DoCreate")
 	if err != nil {
 		return err
 	}
 
 	// Optional methods with varying signatures:
+
+	// DoDelete is optional: a resource that omits it declares that deleting it has
+	// no backend effect, and the engine handles the Delete as a state-only cleanup.
+	a.doDelete, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoDelete")
+	if err != nil {
+		return err
+	}
 
 	a.prepareInputConfig, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "PrepareInputConfig")
 	if err != nil {
@@ -349,7 +356,11 @@ func (a *Adapter) validate() error {
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
 		"DoCreate newState", a.doCreate.InTypes[1], stateType,
-		"DoDelete state", a.doDelete.InTypes[2], stateType,
+	}
+
+	// DoDelete is optional; validate its state argument only when implemented.
+	if a.doDelete != nil {
+		validations = append(validations, "DoDelete state", a.doDelete.InTypes[2], stateType)
 	}
 
 	// If RemapState is implemented, validate its signature.
@@ -525,7 +536,17 @@ func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
 	return outs[0], nil
 }
 
+// HasDoDelete reports whether the resource implements DoDelete. When false, the
+// resource's delete has no backend effect and the engine treats a planned Delete
+// as a state-only cleanup.
+func (a *Adapter) HasDoDelete() bool {
+	return a.doDelete != nil
+}
+
 func (a *Adapter) DoDelete(ctx context.Context, id string, state any) error {
+	if a.doDelete == nil {
+		return nil // no-op: deleting this resource has no backend effect
+	}
 	_, err := a.doDelete.Call(ctx, id, state)
 	return err
 }
