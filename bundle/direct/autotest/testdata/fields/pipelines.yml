@@ -108,7 +108,6 @@ skip:
   clusters[*].azure_attributes.capacity_reservation_group: the API accepts the write and does not apply it
   clusters[*].gcp_attributes.confidential_compute_type: the API accepts the write and does not apply it
   clusters[*].gcp_attributes.first_on_demand: the API accepts the write and does not apply it
-  ingestion_definition.ingest_from_uc_foreign_catalog: the API accepts the write and does not apply it
   # An init script has to name a file that exists: a real workspace fails the cluster with "Init
   # scripts failed ... Tree node with path ... does not exist". This suite deliberately uploads no
   # bundle files -- a sync per permutation would dominate the run -- so no destination it could name
@@ -122,8 +121,14 @@ skip:
   clusters[*].driver_instance_pool_id: needs a second instance pool to exist
   clusters[*].policy_id: needs a cluster policy to exist
   gateway_definition: needs a UC connection to a source database
-  ingestion_definition.connection_name: needs a UC connection to a source database
-  ingestion_definition.ingestion_gateway_id: needs an ingestion gateway pipeline to exist
+  # The whole ingestion_definition subtree, not just its source fields. An ingestion pipeline must name
+  # exactly one source -- connection_name, ingestion_gateway_id, or ingest_from_uc_foreign_catalog -- and
+  # the backend refuses one with none ("Found unsupported source option ... unsupported source option:
+  # Empty"). All three need real UC infrastructure this suite does not provision (a connection to a
+  # source database, a gateway pipeline, a foreign catalog), so every leaf under ingestion_definition
+  # builds a sourceless block the API rejects. The mock server accepts it, which made the subtree look
+  # testable. Covering it needs a fixture that provisions a real ingestion source.
+  ingestion_definition.*: an ingestion source (connection, gateway, or foreign catalog) is required and needs UC infrastructure the suite does not provision
   # run_as must name a principal allowed to run the pipeline, which depends on the identity the
   # suite runs as -- a service principal on cloud.
   run_as: depends on the identity the suite runs as
