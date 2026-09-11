@@ -76,17 +76,17 @@ uv run pytest -v
 
 ### Run it on cloud
 
-The cloud backend needs the Databricks SDK (the `cloud` extra) and a real workspace:
+The cloud backend deploys to a real workspace. Example fixture `examples/cloud_orders/` contains two SQL jobs, a managed volume, and a file_path dashboard under `main.bundletest_cloud`:
 
 ```sh
-uv pip install -e ".[cloud]"
 export BUNDLETEST_BACKEND=cloud
-export BUNDLETEST_PROFILE=<auth-profile>       # from ~/.databrickscfg
-export BUNDLETEST_WAREHOUSE_ID=<sql-warehouse> # used for seeding + assertion queries
-# optional: BUNDLETEST_TARGET=<bundle-target>
-# bundle variables are read the normal DABs way, e.g. BUNDLE_VAR_warehouse_id=<id>
-uv run pytest -v
+export BUNDLETEST_PROFILE=<profile>              # from ~/.databrickscfg
+export BUNDLETEST_WAREHOUSE_ID=<sql-warehouse-id>  # used for seeding + assertion queries
+export BUNDLE_VAR_warehouse_id=<sql-warehouse-id>
+uv run --extra dev pytest examples/cloud_orders
 ```
+
+(`examples/orders_bundle/` is local static-config only, not deployable to cloud.)
 
 Seeded tables and job runs are real and cost money, so unlike the local backend (a fresh
 in-memory DuckDB per test) the cloud backend persists state within a run. `teardown()` drops
