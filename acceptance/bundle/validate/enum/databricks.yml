@@ -39,22 +39,6 @@ resources:
             node_type_id: "i3.xlarge"
             num_workers: 1
 
-    b300_valid:
-      tasks:
-        - task_key: "b300"
-          environment_key: "default"
-          ai_runtime_task:
-            experiment: "b300"
-            deployments:
-              - command_path: "/Workspace/train.sh"
-                compute:
-                  accelerator_type: "GPU_8xB300"
-                  accelerator_count: 8
-      environments:
-        - environment_key: "default"
-          spec:
-            environment_version: "6"
-
     my_job_invalid:
       tasks:
         - task_key: "task2"

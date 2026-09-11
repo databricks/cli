@@ -25,14 +25,5 @@ errcode trace $CLI experimental air run -f git-remote.yaml --dry-run
 title "invalid config is rejected"
 errcode trace $CLI experimental air run -f invalid.yaml --dry-run
 
-title "B300 with AI Runtime 6 passes local validation"
-trace $CLI experimental air run -f b300-v6.yaml --dry-run
-
-title "B300 with AI Runtime 5 fails local validation"
-musterr trace $CLI experimental air run -f b300-v5.yaml --dry-run
-
-title "B300 with the default AI Runtime 4 fails local validation"
-musterr trace DATABRICKS_DL_RUNTIME_IMAGE= $CLI experimental air run -f b300-default.yaml --dry-run
-
 title "missing --file"
 errcode trace $CLI experimental air run --dry-run

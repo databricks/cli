@@ -91,10 +91,11 @@ func TestBuildSubmitPayloadB300(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_8xB300", NumAccelerators: 8},
 	}
 
-	p := buildSubmitPayload(cfg, "/d/command.sh", "6", "", snapshotResult{}, nil)
+	p := buildSubmitPayload(cfg, "/d/command.sh", "databricks_ai_v6", "", snapshotResult{}, nil)
 	require.Len(t, p.Environments, 1)
 	require.NotNil(t, p.Environments[0].Spec)
-	assert.Equal(t, "6", p.Environments[0].Spec.EnvironmentVersion)
+	assert.Equal(t, "workspace-base-environments/databricks_ai_v6", p.Environments[0].Spec.BaseEnvironment)
+	assert.Empty(t, p.Environments[0].Spec.EnvironmentVersion)
 	require.Len(t, p.Tasks, 1)
 	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
 	require.Len(t, p.Tasks[0].AiRuntimeTask.Deployments, 1)

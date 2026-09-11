@@ -1149,17 +1149,6 @@ resources:
                 The email of an active workspace user. Non-admin users can only set this field to their own email.
         "tasks":
           "$fields":
-            "ai_runtime_task":
-              "$fields":
-                "deployments":
-                  "$fields":
-                    "compute":
-                      "$fields":
-                        "accelerator_type":
-                          "$type":
-                            "enum":
-                              - |-
-                                GPU_8xB300
             "alert_task":
               "$fields":
                 "subscribers":

@@ -71,7 +71,4 @@ func TestListFiltersMatches(t *testing.T) {
 			assert.Equal(t, c.want, c.f.matches(&run))
 		})
 	}
-
-	b300 := filterFields{GPUType: "GPU_8xB300", GPUCount: 8}
-	assert.True(t, (listFilters{AcceleratorType: "b300"}).matchesFields(b300))
 }

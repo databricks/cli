@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type EnumPatternInfo struct {
@@ -28,12 +27,6 @@ type EnumPatternInfo struct {
 	// List of valid enum values for the pattern. This field will be a string of the
 	// form `{value1, value2, ...}` representing a Go slice literal.
 	Values string
-}
-
-// additionalEnumValues contains values supported by the CLI before they are
-// published in the corresponding SDK enum.
-var additionalEnumValues = map[reflect.Type][]string{
-	reflect.TypeFor[jobs.ComputeSpecAcceleratorType](): {"GPU_8xB300"},
 }
 
 // isEnumType checks if a type is an enum (string type with a Values() method)
@@ -111,11 +104,6 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 	for i := range valuesSlice.Len() {
 		value := valuesSlice.Index(i)
 		enumStrings = append(enumStrings, value.String())
-	}
-	for _, value := range additionalEnumValues[typ] {
-		if !slices.Contains(enumStrings, value) {
-			enumStrings = append(enumStrings, value)
-		}
 	}
 
 	return enumStrings, nil

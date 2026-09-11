@@ -65,24 +65,6 @@ Tip: use the --debug flag to see more details and a trace of this error:
 
 Exit code: 1
 
-=== B300 with AI Runtime 6 passes local validation
->>> [CLI] experimental air run -f b300-v6.yaml --dry-run
-Dry run: configuration for "b300-v6" is valid; not submitting.
-
-=== B300 with AI Runtime 5 fails local validation
->>> [CLI] experimental air run -f b300-v5.yaml --dry-run
-Error: compute.accelerator_type GPU_8xB300 requires AI Runtime 6 or later, but the effective environment version is "5"; set environment.version to 6 or later
-
-Tip: use the --debug flag to see more details and a trace of this error:
-  databricks --debug experimental air run …
-
-=== B300 with the default AI Runtime 4 fails local validation
->>> DATABRICKS_DL_RUNTIME_IMAGE= [CLI] experimental air run -f b300-default.yaml --dry-run
-Error: compute.accelerator_type GPU_8xB300 requires AI Runtime 6 or later, but the effective environment version is "4"; set environment.version to 6 or later, or set DATABRICKS_DL_RUNTIME_IMAGE to CLIENT-GPU-6 or later
-
-Tip: use the --debug flag to see more details and a trace of this error:
-  databricks --debug experimental air run …
-
 === missing --file
 >>> [CLI] experimental air run --dry-run
 Error: required flag(s) "file" not set
