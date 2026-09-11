@@ -1,18 +1,5 @@
 
 >>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
-Error: Failed to load resources
-  in resources.py:4:1
-
-Traceback (most recent call last):
-  File "/Users/denis.bilenko/Library/Caches/uv/archive-v0/QxcHt7WC8ppfkFtFGFhPS/lib/python3.10/site-packages/databricks/bundles/build.py", line 320, in _load_resources
-    _load_resources_from_function(bundle, function)
-  File "/Users/denis.bilenko/Library/Caches/uv/archive-v0/QxcHt7WC8ppfkFtFGFhPS/lib/python3.10/site-packages/databricks/bundles/build.py", line 473, in _load_resources_from_function
-    resources = function()
-  File "[TEST_TMP_DIR]/resources.py", line 7, in load_resources
-    resources.add_model_service(
-AttributeError: 'Resources' object has no attribute 'add_model_service'
-
-
 {
   "experimental": {
     "python": {
@@ -27,12 +14,15 @@ AttributeError: 'Resources' object has no attribute 'add_model_service'
   "resources": {
     "model_services": {
       "my_model_service_1": {
-        "comment": "My model service",
+        "comment": "My model service (updated)",
         "model_service_id": "my_model_service_1",
+        "parent": "schemas/main.default"
+      },
+      "my_model_service_2": {
+        "comment": "My model service (2) (updated)",
+        "model_service_id": "my_model_service_2",
         "parent": "schemas/main.default"
       }
     }
   }
 }
-
-Exit code: 1
