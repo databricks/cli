@@ -72,6 +72,7 @@ EnvMatrix.INPUT_CONFIG = [
     "secret_scope_default_backend_type.yml.tmpl",
     "sql_warehouse.yml.tmpl",
     "synced_database_table.yml.tmpl",
+    "uc_trailing_slash.yml.tmpl",
     "vector_search_endpoint.yml.tmpl",
     "vector_search_index.yml.tmpl",
     "volume.yml.tmpl",
@@ -106,6 +107,9 @@ EnvMatrixExclude.no_catalog_optional_fields_on_cloud = ["CONFIG_Cloud=true", "IN
 EnvMatrixExclude.no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_location.yml.tmpl"]
 # External volumes reference external locations; excluded from cloud for the same reason
 EnvMatrixExclude.no_external_volume_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=volume_external.yml.tmpl"]
+# Trailing-slash config uses fake storage paths (and an external volume, see above),
+# so it only runs against the mock server that mimics UC's slash stripping.
+EnvMatrixExclude.no_uc_trailing_slash_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=uc_trailing_slash.yml.tmpl"]
 # Telemetry requires a real model, which cloud invariant tests do not provision.
 EnvMatrixExclude.no_model_serving_endpoint_telemetry_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]
 # Fake SQL endpoint for local tests
