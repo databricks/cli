@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+job_id=$(read_id.py test_job)
+
+edit_resource.py jobs "$job_id" <<'EOF'
+r["tasks"][0]["new_cluster"]["spark_conf"] = {"spark.sql.shuffle.partitions": "7"}
+EOF
+
+cp databricks.yml databricks.yml.backup
+trace $CLI bundle config-remote-sync --save
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
