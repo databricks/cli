@@ -1,13 +1,14 @@
-# BundleTest demo video
+# BundleTest hackathon video
 
-The demo is a paced, narrated walkthrough of the local feedback loop, failure output,
-changed-test selection, and cloud parity. It renders entirely with local tools, so it does
-not upload the transcript or source code.
+The 90-second demo tells the project story for a broad hackathon audience: what bundle
+testing gap exists, who feels it, why it matters, how BundleTest closes it, and the expected
+impact. It renders entirely with local tools, so it does not upload the transcript or source
+code.
 
 From `experimental/bundletest`:
 
 ```sh
-uv run python demo/render_demo.py --output /tmp/bundletest-demo.mp4
+uv run python demo/render_demo.py --output demo/bundletest-hackathon-demo.mp4
 ```
 
 The renderer needs Google Chrome and an FFmpeg build with the `flite` filter. Generate just

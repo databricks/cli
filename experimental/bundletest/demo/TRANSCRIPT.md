@@ -1,49 +1,48 @@
 # BundleTest demo transcript
 
-Target length: about 80 seconds at a natural presentation pace.
+Target length: about 90 seconds, including short pauses between scenes.
 
-## 1. Opening — 0:00
+## 1. Project title — 0:00–0:10
 
-> Databricks bundles are easy to declare, but today we often discover wiring bugs only after
-> a deploy and a real job run. BundleTest brings the pytest feedback loop to Databricks
-> bundles.
+> Meet BundleTest: a faster way to test Databricks bundles before deployment. It helps teams
+> catch broken connections and unexpected data results while fixes are still fast and cheap.
 
-## 2. The problem — 0:10
+## 2. What — 0:10–0:22
 
-> A unit test can prove that a transform function works. It cannot prove that the deployed
-> job points at the right SQL file, reads the right table, or writes the expected output.
-> Those mistakes turn a tiny bug into a multi-minute feedback loop.
+> A Databricks bundle packages jobs, pipelines, and their setup as code. Traditional tests can
+> verify one function, but they cannot prove the deployed job points to the right file, reads
+> the right table, or produces the expected result.
 
-## 3. One local command — 0:22
+## 3. Who — 0:22–0:33
 
-> Now I can run Databricks bundle test locally. Before pytest starts, BundleTest shows exactly
-> which tasks run in DuckDB, which need a workspace, and which resources support configuration
-> assertions.
+> That gap affects data engineers, analytics engineers, and platform teams: the people building
+> and reviewing production data workflows. Today, a tiny configuration mistake can wait until
+> a full deployment to appear.
 
-## 4. Test the real artifact — 0:33
+## 4. Why — 0:33–0:44
 
-> The test seeds the upstream boundary, runs the job's actual SQL artifact, and asserts on the
-> resulting table. The query body is never mocked or rewritten, so a wrong table name stays a
-> real failure.
+> That means minutes of waiting, cloud compute, slower pull requests, and less confidence in
+> every release. The earlier these bugs surface, the cheaper they are to understand and fix.
 
-## 5. Useful failures — 0:44
+## 5. How: one command — 0:44–0:57
 
-> When a run fails, the assertion includes the bundle resource, task, source file, backend,
-> run identifier when available, and the original engine error. The next debugging step is
-> visible immediately.
+> BundleTest adds one familiar command: Databricks bundle test. Before tests begin, it explains
+> what can run instantly on a laptop, what needs a real workspace, and which setup rules it can
+> verify, so every result has a clear meaning.
 
-## 6. Run only affected tests — 0:55
+## 6. How: test the real artifact — 0:57–1:09
 
-> For fast pull request checks, changed mode maps edited bundle files back to their resources
-> and selects tests through pytest markers. Changed YAML safely runs the complete suite.
+> A test supplies realistic input, runs the workflow's actual SQL without rewriting it, and
+> checks the real output. If a connection is wrong, the failure points to the exact resource,
+> task, source file, test environment, and original error.
 
-## 7. Same test, real workspace — 1:05
+## 7. How: two confidence levels — 1:09–1:20
 
-> When local fidelity is not enough, the same test runs on Databricks with an explicit profile.
-> Local runs provide speed, cloud runs provide full fidelity, and teams keep the pytest tools
-> they already know.
+> Developers get feedback in seconds, can focus on tests affected by their change, and then
+> reuse the same test in Databricks when they need real workspace behavior.
 
-## 8. Closing — 1:16
+## 8. Expected impact — 1:20–1:30
 
-> BundleTest catches bundle wiring and data contract bugs before they become slow deployment
-> failures. It is pytest for Databricks bundles.
+> The expected impact: fewer failed deployments, faster reviews, lower compute waste, and
+> stronger trust in bundle changes. BundleTest turns bundle validation from a late surprise
+> into an everyday feedback loop.

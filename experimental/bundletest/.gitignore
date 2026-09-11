@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 build/
 dist/
+demo/*.mp4
 
 # Generated behind the internal PyPI proxy; committing it trips check-lockfiles
 uv.lock
