@@ -27,6 +27,8 @@ resources:
   apps:
 
     ignore_remote_changes:
+      - field: git_repository.caller_credential_id
+        reason: spec:input_only
       - field: git_source
         reason: spec:input_only
       - field: source_code_path
@@ -129,6 +131,8 @@ resources:
         reason: spec:input_only
       - field: node_count
         reason: spec:input_only
+      - field: parent_instance_ref.lsn
+        reason: spec:input_only
       - field: retention_window_in_days
         reason: spec:input_only
       - field: stopped
@@ -156,6 +160,10 @@ resources:
         reason: spec:output_only
       - field: effective_custom_tags
         reason: spec:output_only
+      - field: effective_custom_tags[*].key
+        reason: spec:output_only
+      - field: effective_custom_tags[*].value
+        reason: spec:output_only
       - field: effective_enable_pg_native_login
         reason: spec:output_only
       - field: effective_enable_readable_secondaries
@@ -167,6 +175,10 @@ resources:
       - field: effective_stopped
         reason: spec:output_only
       - field: effective_usage_policy_id
+        reason: spec:output_only
+      - field: parent_instance_ref.effective_lsn
+        reason: spec:output_only
+      - field: parent_instance_ref.uid
         reason: spec:output_only
       - field: pg_version
         reason: spec:output_only
@@ -195,6 +207,18 @@ resources:
       - field: effective_enable_file_events
         reason: spec:output_only
       - field: effective_file_event_queue
+        reason: spec:output_only
+      - field: file_event_queue.managed_aqs.managed_resource_id
+        reason: spec:output_only
+      - field: file_event_queue.managed_pubsub.managed_resource_id
+        reason: spec:output_only
+      - field: file_event_queue.managed_sqs.managed_resource_id
+        reason: spec:output_only
+      - field: file_event_queue.provided_aqs.managed_resource_id
+        reason: spec:output_only
+      - field: file_event_queue.provided_pubsub.managed_resource_id
+        reason: spec:output_only
+      - field: file_event_queue.provided_sqs.managed_resource_id
         reason: spec:output_only
 
   genie_spaces:
