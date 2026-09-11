@@ -20,6 +20,7 @@ func TestSkillsOnlyNamesMatchesRegistry(t *testing.T) {
 	assert.Contains(t, names, "Pi")
 	assert.Contains(t, names, "Gemini CLI")
 	assert.Contains(t, names, "Goose")
+	assert.Contains(t, names, "Kiro")
 	assert.NotContains(t, names, "Claude Code")
 	for _, a := range Registry {
 		if a.Plugin != nil {
