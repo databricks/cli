@@ -35,6 +35,7 @@ func newRunCommand() *cobra.Command {
 		overrides      []string
 		dryRun         bool
 		idempotencyKey string
+		noCache        bool
 	)
 
 	cmd := &cobra.Command{
@@ -78,6 +79,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 	cmd.Flags().StringArrayVar(&overrides, "override", nil, "Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Validate the config without submitting")
 	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Return the existing run if this key was already used")
+	cmd.Flags().BoolVar(&noCache, "no-cache", false, "Bypass the local snapshot cache and re-pack the code tarball from scratch")
 	_ = cmd.MarkFlagRequired("file")
 
 	// --dry-run only validates the config locally, so it needs no workspace.
@@ -114,7 +116,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		}
 
 		w := cmdctx.WorkspaceClient(ctx)
-		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut)
+		runID, dashboardURL, err := submitWorkload(ctx, w, cfg, file, idempotencyKey, !jsonOut, noCache)
 		if err != nil {
 			return err
 		}

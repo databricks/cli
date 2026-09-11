@@ -62,10 +62,10 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 		return err
 	}
 	entries := make([]tarpack.Entry, len(files))
-	for i, rel := range files {
+	for i, f := range files {
 		entries[i] = tarpack.Entry{
-			Name: filepath.ToSlash(filepath.Join(dirName, rel)),
-			Path: filepath.Join(repoPath, rel),
+			Name: filepath.ToSlash(filepath.Join(dirName, f.rel)),
+			Path: filepath.Join(repoPath, f.rel),
 		}
 	}
 
@@ -95,7 +95,15 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, inc
 	return out.Close()
 }
 
-func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) ([]string, error) {
+// snapshotFile is a file selected for the snapshot: its repo-relative path (native
+// separators) with the size and mtime the warm cache uses to detect changes.
+type snapshotFile struct {
+	rel     string
+	size    int64
+	modTime int64 // Unix nanoseconds
+}
+
+func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) ([]snapshotFile, error) {
 	args := []string{"-C", repoPath, "ls-files", "-z", "--cached", "--others", "--exclude-standard"}
 	if !isGitRepo {
 		gitDir, err := os.MkdirTemp("", "air-snapshot-git-")
@@ -119,7 +127,7 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		return nil, fmt.Errorf("failed to evaluate git ignore rules: %w", err)
 	}
 
-	var files []string
+	var files []snapshotFile
 	for raw := range bytes.SplitSeq(output, []byte{0}) {
 		if len(raw) == 0 {
 			continue
@@ -129,14 +137,14 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		if name == ".git" || strings.HasPrefix(name, ".git/") || strings.HasPrefix(base, "._") {
 			continue
 		}
-		_, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
+		info, err := os.Lstat(filepath.Join(repoPath, filepath.FromSlash(name)))
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect snapshot path %q: %w", name, err)
 		}
-		files = append(files, filepath.FromSlash(name))
+		files = append(files, snapshotFile{rel: filepath.FromSlash(name), size: info.Size(), modTime: info.ModTime().UnixNano()})
 	}
 	return files, nil
 }
