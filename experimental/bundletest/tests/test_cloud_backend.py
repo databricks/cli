@@ -169,6 +169,24 @@ def test_read_volume_file_parses_downloaded_bytes():
     assert rows == [{"a": 1, "b": "x"}, {"a": 2, "b": "y"}]
 
 
+def test_get_deployed_dispatches_to_sdk_get():
+    # get_deployed reads the server object (not declared config); the job id from summary is
+    # coerced to int for jobs.get.
+    be = CloudBackend(warehouse_id="w")
+    be._summary = {"resources": {"jobs": {"j": {"id": "42"}}}}
+    be._client = SimpleNamespace(
+        jobs=SimpleNamespace(get=lambda job_id: SimpleNamespace(as_dict=lambda: {"job_id": job_id}))
+    )
+    assert be.get_deployed("jobs", "j") == {"job_id": 42}
+
+
+def test_get_deployed_unsupported_kind_raises():
+    be = CloudBackend()
+    be._summary = {"resources": {"clusters": {"c": {"id": "1"}}}}
+    with pytest.raises(ValueError, match="not implemented"):
+        be.get_deployed("clusters", "c")
+
+
 def test_get_resource_keeps_inline_serialized_dashboard():
     be = CloudBackend()
     inline = {"serialized_dashboard": {"datasets": []}, "id": "abc"}

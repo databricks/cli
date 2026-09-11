@@ -231,6 +231,23 @@ class CloudBackend:
         # serialized form source_tables() needs is already here — no workspace read needed.
         return self._resources()[kind][name]
 
+    def get_deployed(self, kind: str, name: str) -> dict[str, Any]:
+        """Read the resource back from the workspace as the server stored it — server shape,
+        with the values the server filled in or normalized. This differs from get_resource,
+        which returns the *declared* config; use this to validate what deployment actually did.
+
+        Cloud-only by nature (there is no server locally), so it lives only on this backend and
+        tests that call it must be ``@cloud_only``. Returns the SDK object as a dict."""
+        cfg = self.get_resource(kind, name)
+        if kind == "jobs":
+            return self._ws().jobs.get(int(cfg["id"])).as_dict()
+        if kind == "dashboards":
+            return self._ws().lakeview.get(cfg["id"]).as_dict()
+        if kind == "volumes":
+            fqn = f"{cfg['catalog_name']}.{cfg['schema_name']}.{cfg['name']}"
+            return self._ws().volumes.read(fqn).as_dict()
+        raise ValueError(f"get_deployed is not implemented for kind {kind!r} (have: jobs, dashboards, volumes)")
+
     def put_file(self, dst: str, src: str) -> None:
         if not os.path.exists(src):
             raise FileNotFoundError(f"upload source not found: {src}")

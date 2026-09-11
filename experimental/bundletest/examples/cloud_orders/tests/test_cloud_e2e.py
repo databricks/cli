@@ -64,3 +64,15 @@ def test_uploaded_csv_is_readable(env, tmp_path):
     assert orders.exists()
     assert orders.row_count() == 2
     assert "order_id" in orders.columns
+
+
+@pytest.mark.cloud_only
+def test_deployed_job_carries_server_filled_fields(env):
+    # get_deployed reads the workspace's stored object, so it carries values the server filled
+    # in or normalized that our databricks.yml never declared — what get_resource (the declared
+    # config) cannot show. This is the point of validating against real deployment.
+    deployed = env.backend.get_deployed("jobs", "transform_orders")
+    assert deployed["settings"]["name"] == "transform_orders"
+    assert deployed["settings"]["format"] == "MULTI_TASK"  # server-normalized
+    assert deployed["settings"]["max_concurrent_runs"] == 1  # server default
+    assert deployed["run_as_user_name"]  # server-assigned
