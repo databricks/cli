@@ -163,3 +163,266 @@ def test_get_resource_keeps_inline_serialized_dashboard():
     # Already inline -> returned as-is, no workspace call (client stays None).
     assert be.get_resource("dashboards", "d") is inline
     assert be._client is None
+
+
+def test_run_job_success_result_mapping():
+    from databricks.sdk.service.jobs import RunResultState
+
+    # Successful job run: succeeded=True, run_duration ms -> seconds conversion
+    be = CloudBackend(warehouse_id="w")
+    be._summary = {"resources": {"jobs": {"myjob": {"id": "123"}}}}
+    be._config = {"resources": {"jobs": {"myjob": {"tasks": []}}}}
+    # Mock the workspace client
+    be._client = SimpleNamespace(
+        jobs=SimpleNamespace(
+            run_now=lambda job_id, job_parameters=None: SimpleNamespace(
+                result=lambda: SimpleNamespace(
+                    state=SimpleNamespace(result_state=RunResultState.SUCCESS),
+                    run_duration=2000,
+                    run_id=456,
+                )
+            )
+        ),
+        statement_execution=_FakeStatements(_resp(StatementState.SUCCEEDED)),
+    )
+
+    result = be.run_job("myjob")
+    assert result.result_state == "SUCCESS"
+    assert result.succeeded is True
+    assert result.duration_seconds == 2.0
+    assert result.run_id == "456"
+    assert result.error == ""
+
+
+def test_run_job_failed_result_mapping():
+    from databricks.sdk.service.jobs import RunResultState
+
+    # Failed job run: succeeded=False, error populated, run_duration converted
+    be = CloudBackend(warehouse_id="w")
+    be._summary = {"resources": {"jobs": {"failing_job": {"id": "789"}}}}
+    be._config = {"resources": {"jobs": {"failing_job": {"tasks": []}}}}
+    be._client = SimpleNamespace(
+        jobs=SimpleNamespace(
+            run_now=lambda job_id, job_parameters=None: SimpleNamespace(
+                result=lambda: SimpleNamespace(
+                    state=SimpleNamespace(
+                        result_state=RunResultState.FAILED,
+                        state_message="Task failed: invalid syntax",
+                    ),
+                    run_duration=5000,
+                    run_id=999,
+                )
+            )
+        ),
+        statement_execution=_FakeStatements(_resp(StatementState.SUCCEEDED)),
+    )
+
+    result = be.run_job("failing_job")
+    assert result.result_state == "FAILED"
+    assert result.succeeded is False
+    assert result.duration_seconds == 5.0
+    assert result.run_id == "999"
+    assert result.error == "Task failed: invalid syntax"
+
+
+def test_run_job_failed_with_no_message():
+    from databricks.sdk.service.jobs import RunResultState
+
+    # Failed run with no state_message uses empty string
+    be = CloudBackend(warehouse_id="w")
+    be._summary = {"resources": {"jobs": {"job": {"id": "1"}}}}
+    be._config = {"resources": {"jobs": {"job": {"tasks": []}}}}
+    be._client = SimpleNamespace(
+        jobs=SimpleNamespace(
+            run_now=lambda job_id, job_parameters=None: SimpleNamespace(
+                result=lambda: SimpleNamespace(
+                    state=SimpleNamespace(
+                        result_state=RunResultState.FAILED,
+                        state_message=None,
+                    ),
+                    run_duration=0,
+                    run_id=111,
+                )
+            )
+        ),
+        statement_execution=_FakeStatements(_resp(StatementState.SUCCEEDED)),
+    )
+
+    result = be.run_job("job")
+    assert result.succeeded is False
+    assert result.error == ""
+
+
+def test_table_schema_filters_special_rows():
+    # DESCRIBE TABLE returns real columns, then blank name or '#'-prefixed rows;
+    # only return actual columns in the schema dict.
+    cols = [
+        _column("col_name", T.STRING),
+        _column("data_type", T.STRING),
+        _column("comment", T.STRING),
+    ]
+    first = _resp(
+        StatementState.SUCCEEDED,
+        columns=cols,
+        data=[
+            ["id", "LONG", ""],
+            ["name", "STRING", ""],
+            ["created_at", "STRING", ""],
+            ["", "", ""],  # blank col_name marks end of real columns
+            ["# Partition Information", "STRING", ""],
+        ],
+    )
+    be = _backend_with(_FakeStatements(first))
+
+    schema = be.table_schema("main.default.users")
+    assert schema == {"id": "LONG", "name": "STRING", "created_at": "STRING"}
+
+
+def test_table_schema_stops_at_hash_prefix():
+    # DESCRIBE can also have '#'-prefixed row as the break indicator.
+    cols = [
+        _column("col_name", T.STRING),
+        _column("data_type", T.STRING),
+        _column("comment", T.STRING),
+    ]
+    first = _resp(
+        StatementState.SUCCEEDED,
+        columns=cols,
+        data=[
+            ["x", "INT", ""],
+            ["#Partition", "STRING", ""],  # starts with '#', marks end
+            ["y", "INT", ""],
+        ],
+    )
+    be = _backend_with(_FakeStatements(first))
+
+    schema = be.table_schema("main.default.t")
+    assert schema == {"x": "INT"}
+
+
+def test_seed_table_creates_with_inferred_types():
+    # seed_table creates CREATE OR REPLACE with inferred types from rows.
+    submitted = []
+
+    def capture_execute(query):
+        submitted.append(query)
+        return []
+
+    be = CloudBackend(warehouse_id="w")
+    be.execute_sql = capture_execute
+    be._ensure_schema = lambda fqn: None
+
+    rows = [
+        {"id": 1, "name": "Alice", "score": 95.5},
+        {"id": 2, "name": "Bob", "score": 87.3},
+    ]
+    be.seed_table("main.default.scores", rows)
+
+    assert len(submitted) == 2
+    create_sql = submitted[0]
+    assert "CREATE OR REPLACE TABLE main.default.scores" in create_sql
+    assert "id BIGINT" in create_sql
+    assert "name STRING" in create_sql
+    assert "score DOUBLE" in create_sql
+
+
+def test_seed_table_inserts_with_escaped_literals():
+    # seed_table inserts with properly escaped string literals.
+    submitted = []
+
+    def capture_execute(query):
+        submitted.append(query)
+        return []
+
+    be = CloudBackend(warehouse_id="w")
+    be.execute_sql = capture_execute
+    be._ensure_schema = lambda fqn: None
+
+    rows = [
+        {"name": "Alice"},
+        {"name": "O'Brien"},  # single quote needs escaping
+        {"name": "Path\\to\\file"},  # backslash needs escaping
+    ]
+    be.seed_table("main.default.names", rows)
+
+    insert_sql = submitted[1]
+    assert "INSERT INTO main.default.names" in insert_sql
+    # Spark escapes with backslash: single quote -> \', backslash -> \\
+    assert "'Alice'" in insert_sql
+    assert "'O\\'Brien'" in insert_sql
+    assert "'Path\\\\to\\\\file'" in insert_sql
+
+
+def test_seed_table_tracks_fqn_for_teardown():
+    # seed_table adds fqn to be._seeded so teardown will drop it.
+    submitted = []
+
+    def capture_execute(query):
+        submitted.append(query)
+        return []
+
+    be = CloudBackend(warehouse_id="w")
+    be.execute_sql = capture_execute
+    be._ensure_schema = lambda fqn: None
+
+    rows = [{"x": 1}]
+    be.seed_table("catalog.schema.table_one", rows)
+    be.seed_table("catalog.schema.table_two", rows)
+
+    assert "catalog.schema.table_one" in be._seeded
+    assert "catalog.schema.table_two" in be._seeded
+
+
+def test_teardown_does_not_raise_on_execute_sql_failure():
+    # teardown is best-effort: does not raise when execute_sql fails.
+    be = CloudBackend()
+    be._seeded = {"main.default.t1", "main.default.t2"}
+
+    def fail_execute(query):
+        raise RuntimeError("warehouse down")
+
+    be.execute_sql = fail_execute
+
+    # Should not raise, even with both tables failing to drop
+    be.teardown()
+
+
+def test_teardown_does_not_raise_on_bundle_destroy_failure():
+    # teardown is best-effort: does not raise when bundle destroy fails.
+    be = CloudBackend()
+    be._seeded = set()  # no seeded tables
+
+    def fail_bundle(*args):
+        raise RuntimeError("bundle destroy failed")
+
+    be._bundle = fail_bundle
+
+    # Should not raise
+    be.teardown()
+
+
+def test_teardown_cleans_up_both_seeded_and_bundle():
+    # teardown calls DROP TABLE on each seeded table, then bundle destroy.
+    dropped = []
+    destroyed = []
+
+    def capture_execute(query):
+        dropped.append(query)
+        return []
+
+    def capture_bundle(*args):
+        destroyed.append(args)
+        return ""
+
+    be = CloudBackend()
+    be._seeded = {"main.default.t1", "main.default.t2"}
+    be.execute_sql = capture_execute
+    be._bundle = capture_bundle
+
+    be.teardown()
+
+    # All seeded tables should be dropped
+    assert len(dropped) == 2
+    assert all("DROP TABLE IF EXISTS" in q for q in dropped)
+    # Bundle destroy should be called
+    assert ("destroy", "--auto-approve") in destroyed
