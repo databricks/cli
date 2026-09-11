@@ -76,18 +76,30 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 
-		updateJSON, err := json.Marshal(updateReq.App)
-		if err != nil {
+		// Build the update map from the raw body, not by re-marshalling updateReq.App: unmarshalling
+		// an SDK struct does not repopulate ForceSendFields, so a re-marshal would drop a field the
+		// caller explicitly sent as empty. The raw body preserves whatever the caller actually sent.
+		var appBody struct {
+			App json.RawMessage `json:"app"`
+		}
+		if err := json.Unmarshal(req.Body, &appBody); err != nil {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 		var updateMap map[string]any
-		if err := json.Unmarshal(updateJSON, &updateMap); err != nil {
+		if err := json.Unmarshal(appBody.App, &updateMap); err != nil {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
 
+		// update_mask names the fields the caller is setting. A field in the mask but absent from the
+		// body is being cleared -- the engine drops a cleared field via omitempty rather than sending
+		// it as empty -- so it is deleted, not left at its old value. Leaving it was the bug that made
+		// clearing description or user_api_scopes read UPDATE_IGNORED locally where aws applied it.
 		for field := range strings.SplitSeq(updateReq.UpdateMask, ",") {
-			if v, ok := updateMap[strings.TrimSpace(field)]; ok {
-				existingMap[strings.TrimSpace(field)] = v
+			field = strings.TrimSpace(field)
+			if v, ok := updateMap[field]; ok {
+				existingMap[field] = v
+			} else {
+				delete(existingMap, field)
 			}
 		}
 
@@ -95,9 +107,22 @@ func (s *FakeWorkspace) AppsCreateUpdate(req Request, name string) Response {
 		if err != nil {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
+		// Unmarshal into a zero value, not the old struct: json.Unmarshal leaves a field absent from
+		// the JSON untouched, so a field the merge deleted (cleared) would otherwise keep its old
+		// value. existingMap already carries every field the app still has, so nothing is lost.
+		existing = apps.App{}
 		if err := json.Unmarshal(merged, &existing); err != nil {
 			return Response{Body: fmt.Sprintf("internal error: %s", err), StatusCode: http.StatusInternalServerError}
 		}
+
+		// Re-apply the backend defaults the platform re-stamps after any update, matching
+		// AppsUpsert. Without this, clearing compute_size above leaves it empty, where the real
+		// backend resets it to MEDIUM -- so the engine's backend_default/remote_already_set
+		// suppression fires on aws but not locally.
+		if existing.ComputeSize == "" {
+			existing.ComputeSize = "MEDIUM"
+		}
+		existing.ForwardUserAccessToken = true
 	}
 	setUcSecurableKinds(&existing)
 	s.Apps[name] = existing
