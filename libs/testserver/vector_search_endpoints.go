@@ -38,6 +38,15 @@ func (s *FakeWorkspace) VectorSearchEndpointCreate(req Request) Response {
 		}
 	}
 
+	// endpoint_type is required; the backend refuses an endpoint without one, which is how clearing it
+	// is rejected rather than storing a typeless endpoint.
+	if createReq.EndpointType == "" {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       map[string]string{"error_code": "INVALID_PARAMETER_VALUE", "message": "endpoint_type is required."},
+		}
+	}
+
 	if _, exists := s.VectorSearchEndpoints[createReq.Name]; exists {
 		return Response{
 			StatusCode: http.StatusConflict,
