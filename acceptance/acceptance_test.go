@@ -1040,7 +1040,7 @@ func runTest(t *testing.T,
 	// than relying on it turning up in the tmpDir scan below. out.requests.txt also
 	// stays in outputDir and is never compared: tests assert on recorded requests
 	// through print_requests.py, not by committing the raw recording.
-	doComparison(t, repls, dir, outputDir, "output.txt", &printedRepls)
+	doComparison(t, repls, sortLines, dir, outputDir, "output.txt", &printedRepls)
 
 	// Compare expected outputs
 	for relPath := range outputs {
