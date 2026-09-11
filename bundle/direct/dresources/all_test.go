@@ -1186,6 +1186,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	// (it is intrinsic to the branch), so DoRead still succeeds afterwards.
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "postgres_snapshot_schedules"
 	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
+
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
 	// A GET on the DELETING app returns the app, not 404 -- the testserver
