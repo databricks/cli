@@ -467,13 +467,13 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if action, reason, ok := classifyIDField(generatedCfg, path, ch); ok {
 			ch.Action = action
 			ch.Reason = reason
-		} else if reason, ok := shouldSkipRemoteAddition(cfg, path, ch, newState); ok {
-			ch.Action = deployplan.Skip
-			ch.Reason = reason
 		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
 		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipRemoteAddition(cfg, path, ch, newState); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
 		} else if reason, ok := shouldSkipNormalized(cfg, path, ch); ok {
