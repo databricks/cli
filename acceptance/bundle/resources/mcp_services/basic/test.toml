@@ -1,3 +1,7 @@
+# Local only: this test inspects the recorded request stream (print_requests),
+# which has no equivalent against a real workspace.
+Cloud = false
+
 Ignore = [
     ".databricks",
 ]

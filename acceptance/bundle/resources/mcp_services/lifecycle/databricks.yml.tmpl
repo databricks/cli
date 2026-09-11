@@ -1,0 +1,12 @@
+bundle:
+  name: deploy-mcp-service-test-$UNIQUE_NAME
+
+resources:
+  mcp_services:
+    mcp:
+      parent: schemas/main.default
+      mcp_service_id: test_mcp_$UNIQUE_NAME
+      comment: "Points at a UC connection hosting an MCP server"
+      config:
+        source_connection:
+          name: connections/mcp_conn_$UNIQUE_NAME
