@@ -233,7 +233,21 @@ resources:
 
   # jobs: no api field behaviors
 
-  # model_services: no api field behaviors
+  model_services:
+
+    ignore_remote_changes:
+      - field: config.inference_table.is_deleted
+        reason: spec:output_only
+      - field: config.inference_table.table
+        reason: spec:output_only
+      - field: config.routing.destinations[*].is_deleted
+        reason: spec:output_only
+      - field: config.routing.destinations[*].provisioned_throughput_config.model
+        reason: spec:output_only
+      - field: config.routing.fallback.destinations[*].is_deleted
+        reason: spec:output_only
+      - field: config.routing.fallback.destinations[*].provisioned_throughput_config.model
+        reason: spec:output_only
 
   model_serving_endpoints:
 
