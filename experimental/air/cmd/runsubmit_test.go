@@ -109,7 +109,7 @@ func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "", "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(42), runID)
 }
@@ -140,7 +140,7 @@ func TestSubmitRunInjectsPriorityClass(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL", "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(7), runID)
 }
@@ -294,6 +294,40 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	require.NotNil(t, at)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, 4, at.Deployments[0].Compute.AcceleratorCount)
+}
+
+func TestSubmitWorkloadSendsUnityCatalogImagePath(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var got map[string]any
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+`
+environment:
+  unity_catalog_image: main.air.training:prod
+`)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+
+	tasks, ok := got["tasks"].([]any)
+	require.True(t, ok)
+	require.Len(t, tasks, 1)
+	task, ok := tasks[0].(map[string]any)
+	require.True(t, ok)
+	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
 }
 
 // A working-tree code_source is packaged into a tarball, uploaded via DABs' artifact

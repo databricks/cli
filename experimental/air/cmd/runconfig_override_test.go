@@ -69,6 +69,7 @@ func TestValidateOverridePaths(t *testing.T) {
 	}{
 		{name: "known top-level field", path: "experiment_name"},
 		{name: "known nested field", path: "compute.num_accelerators"},
+		{name: "new unity catalog image field", path: "environment.unity_catalog_image"},
 		{name: "free-form sub-path", path: "env_variables.MY_VAR"},
 		{name: "deep free-form sub-path", path: "parameters.model.layers"},
 		{
@@ -143,6 +144,13 @@ func TestLoadRunConfigWithOverrides(t *testing.T) {
 		require.NotNil(t, cfg.Environment)
 		require.NotNil(t, cfg.Environment.DockerImage)
 		assert.Equal(t, "my/img:1", cfg.Environment.DockerImage.URL)
+	})
+
+	t.Run("unity catalog image override applies", func(t *testing.T) {
+		cfg, err := loadRunConfigWithOverrides(t.Context(), writeConfig(t, overrideBaseConfig), []string{"environment.unity_catalog_image=main.air.training:prod"})
+		require.NoError(t, err)
+		require.NotNil(t, cfg.Environment)
+		assert.Equal(t, "main.air.training:prod", cfg.Environment.UnityCatalogImage)
 	})
 
 	t.Run("unknown path errors before mutation", func(t *testing.T) {

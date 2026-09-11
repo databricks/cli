@@ -38,6 +38,11 @@ var gitRefRe = regexp.MustCompile(`^[\w./-]+$`)
 // is rejected up front with a hint pointing at usage_policy_name.
 var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
+// Unity Catalog image paths are submitted as <catalog>.<schema>.<image>:<tag>.
+// Keep validation structural only here: object existence and permissions are
+// workspace checks performed by the backend.
+var unityCatalogImageRe = regexp.MustCompile(`^[^.:\s]+\.[^.:\s]+\.[^.:\s]+:[^:\s]+$`)
+
 // runConfig is the top-level run YAML schema: experiment_name + compute /
 // environment / code_source plus the command and run options.
 type runConfig struct {
@@ -241,15 +246,21 @@ func validateSecretRefs(secrets map[string]string) error {
 	return nil
 }
 
-// environmentConfig is the `environment` block: dependencies and/or a custom
-// docker image.
+// environmentConfig is the `environment` block: dependencies and runtime image
+// settings.
 type environmentConfig struct {
-	Dependencies dependencies       `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside docker_image."`
-	Version      stringOrInt        `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
-	DockerImage  *dockerImageConfig `yaml:"docker_image" help:"Custom image supplying the whole runtime. Not allowed alongside dependencies or version."`
+	Dependencies      dependencies       `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside docker_image."`
+	Version           stringOrInt        `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
+	DockerImage       *dockerImageConfig `yaml:"docker_image" help:"Custom image supplying the whole runtime. Not allowed alongside dependencies or version."`
+	UnityCatalogImage string             `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside docker_image."`
 }
 
 func (e *environmentConfig) validate() error {
+	unityCatalogImage := e.UnityCatalogImage
+	if unityCatalogImage != "" && !unityCatalogImageRe.MatchString(unityCatalogImage) {
+		return fmt.Errorf("environment.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", e.UnityCatalogImage)
+	}
+
 	// docker_image is exclusive with dependencies/version: the image already pins
 	// the full runtime.
 	if e.DockerImage != nil {
@@ -259,6 +270,9 @@ func (e *environmentConfig) validate() error {
 		}
 		if e.Version.set {
 			conflicting = append(conflicting, "version")
+		}
+		if unityCatalogImage != "" {
+			conflicting = append(conflicting, "unity_catalog_image")
 		}
 		if len(conflicting) > 0 {
 			return fmt.Errorf("when 'docker_image' is specified under 'environment', these fields are not allowed: %s", strings.Join(conflicting, ", "))
