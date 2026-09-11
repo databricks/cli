@@ -142,7 +142,7 @@ type policyElement struct {
 // attribute, or nil if it materializes none. Mirrors the backend: "fixed" applies whether
 // or not the request sets apply_policy_default_values, "defaultValue" only when it does.
 // Pinned against a real workspace by
-// acceptance/bundle/resources/jobs/cluster_policy/policy_value_semantics.
+// acceptance/bundle/resources/jobs/cluster_policy (fixed_addition, default_flag).
 func (e policyElement) effectiveValue(applyDefaults bool) any {
 	if e.Type == "fixed" {
 		return e.Value
@@ -284,7 +284,7 @@ func applyPolicyDefaultValues(body []byte) bool {
 //
 // The Pipelines API does not expand cluster policies into the stored spec: a pipeline cluster
 // with a policy_id reads back exactly as authored, verified against a real workspace by
-// acceptance/bundle/resources/cluster_policies/policy_no_drift_variants. So there is
+// acceptance/bundle/resources/pipelines/cluster_policy. So there is
 // deliberately no pipeline equivalent.
 func (s *FakeWorkspace) applyJobClusterPolicies(settings *jobs.JobSettings) string {
 	for i := range settings.JobClusters {

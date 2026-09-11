@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    my_policy:
+      name: test-policy-$UNIQUE_NAME
+      definition:
+        custom_tags.CostCenter:
+          type: fixed
+          value: from-policy
+
+  clusters:
+    c:
+      cluster_name: test-cluster-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      # Shared pool avoids a cold boot; the policy tag under test is unaffected.
+      instance_pool_id: $TEST_INSTANCE_POOL_ID
+      num_workers: 1
+      policy_id: ${resources.cluster_policies.my_policy.id}

@@ -634,7 +634,7 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 // For cluster specs that gate is policy_id: an attached cluster policy supplies values
 // server-side — "fixed" elements always, "defaultValue" elements when the request sets
 // apply_policy_default_values — so the remote spec is legitimately a superset of what the
-// bundle declares. See acceptance/bundle/resources/jobs/cluster_policy/policy_value_semantics
+// bundle declares. See acceptance/bundle/resources/jobs/cluster_policy (fixed_addition, default_flag)
 // for the measured backend behavior.
 //
 // Suppressed values are never echoed back on write: an update sends the config spec as-is

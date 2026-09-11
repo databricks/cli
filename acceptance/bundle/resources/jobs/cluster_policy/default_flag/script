@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+job_id=$(read_id.py j)
+
+title "defaultValue is supplied only with apply_policy_default_values (flag_on), not flag_off\n"
+$CLI jobs get "$job_id" | gron.py | grep -E 'job_cluster_key|custom_tags'
+
+title "Neither is drift on a second plan\n"
+trace $CLI bundle plan

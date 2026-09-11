@@ -1,0 +1,14 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "A cluster policy tag on a standalone cluster is not drift; second plan is clean\n"
+trace $CLI bundle plan
+
+title "...and is classified remote_addition\n"
+trace $CLI bundle plan -o json | gron.py | grep custom_tags

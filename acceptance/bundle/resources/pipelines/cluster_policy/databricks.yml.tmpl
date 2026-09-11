@@ -1,0 +1,29 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    my_policy:
+      name: test-policy-$UNIQUE_NAME
+      definition:
+        custom_tags.CostCenter:
+          type: fixed
+          value: from-policy
+
+  # A pipeline cluster carries policy_id too, but the Pipelines API does not expand the policy
+  # into the stored spec: it reads back exactly as authored, so there is no addition to suppress
+  # and no ignore_remote_additions rule for pipelines. This records that it simply converges.
+  pipelines:
+    p:
+      name: test-pipeline-$UNIQUE_NAME
+      clusters:
+        - label: default
+          policy_id: ${resources.cluster_policies.my_policy.id}
+          node_type_id: $NODE_TYPE_ID
+          num_workers: 1
+      libraries:
+        - file:
+            path: ./hello_world.py
