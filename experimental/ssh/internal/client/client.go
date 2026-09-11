@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -493,7 +494,12 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	outcome.isSuccess = true
 
 	if opts.ProxyMode {
-		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
+		proxyErr := runSSHProxy(ctx, client, serverPort, clusterID, opts)
+		// isSuccess stays true - the tunnel was established - so the category is what says
+		// whether the session ran to completion or was cut short, and why. Without it a
+		// mid-session drop is indistinguishable from a clean exit in telemetry.
+		outcome.errorCategory = proxySessionEndCategory(proxyErr)
+		return proxyErr
 	} else if opts.IDE != "" {
 		return runIDE(ctx, client, userName, keyPath, knownHostsPath, serverPort, clusterID, opts)
 	} else {
@@ -973,13 +979,46 @@ func spawnSSHClient(ctx context.Context, client *databricks.WorkspaceClient, use
 }
 
 func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, clusterID string, opts ClientOptions) error {
-	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		return createWebsocketConnection(ctx, client, connID, clusterID, serverPort, opts.Liteswap)
+	resumable := serverSupportsResume(ctx, client, clusterID, serverPort, opts.Liteswap)
+	if !resumable {
+		log.Infof(ctx, "The SSH server does not support session resume, a dropped connection will end the session")
+	}
+	createConn := func(ctx context.Context, req proxy.DialRequest) (*websocket.Conn, error) {
+		req.ResumeCapable = resumable
+		return createWebsocketConnection(ctx, client, req, clusterID, serverPort, opts.Liteswap)
 	}
 	requestHandoverTick := func() <-chan time.Time {
 		return time.After(opts.HandoverTimeout)
 	}
-	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, opts.KeepaliveInterval, createConn)
+	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, opts.KeepaliveInterval, resumable, createConn)
+}
+
+// serverSupportsResume reports whether the running SSH server speaks the resume protocol.
+func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, liteswap string) bool {
+	req, err := newDriverProxyRequest(ctx, client, clusterID, serverPort, "capabilities", liteswap)
+	if err != nil {
+		log.Debugf(ctx, "Failed to build the server capabilities request: %v", err)
+		return false
+	}
+	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Debugf(ctx, "Failed to query the server capabilities: %v", err)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		log.Debugf(ctx, "The server does not serve /capabilities (status %d)", resp.StatusCode)
+		return false
+	}
+	var capabilities struct {
+		ResumeVersion int `json:"resume_version"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&capabilities); err != nil {
+		log.Debugf(ctx, "Failed to decode the server capabilities: %v", err)
+		return false
+	}
+	return capabilities.ResumeVersion == proxy.ResumeProtocolVersion
 }
 
 // accessModeUILabel maps a cluster's access mode to the name shown in the Databricks UI.
@@ -1351,11 +1390,22 @@ func sshExtensionErrorCategory(err error) protos.SshTunnelErrorCategory {
 	return protos.SshTunnelErrorCategoryUnknown
 }
 
-// category returns the error category to report. An interrupted attempt means the user gave
-// up, whichever call happened to observe it first, so it wins over the category recorded at
-// the failure site. An unattributed failure is reported as UNKNOWN so that it stays countable.
+// category returns the error category to report. Once the tunnel is up nothing that follows is a
+// connection failure, so an established session reports only how it ended, and only the proxy can
+// say that. For a connection attempt, an interruption means the user gave up, whichever call
+// happened to observe it first, so it wins over the category recorded at the failure site; an
+// unattributed attempt is reported as UNKNOWN so that it stays countable.
 func (o connectOutcome) category() protos.SshTunnelErrorCategory {
-	if o.isSuccess || o.err == nil {
+	if o.err == nil {
+		return protos.SshTunnelErrorCategoryUnspecified
+	}
+	if o.isSuccess {
+		// proxySessionEndCategory is the only thing that sets a category this late, so an empty
+		// one means the session simply ended: an interruption, an ordinary exit, or a non-zero
+		// exit from the ssh client or the user's own remote command. None is a tunnel failure.
+		if o.errorCategory != "" {
+			return o.errorCategory
+		}
 		return protos.SshTunnelErrorCategoryUnspecified
 	}
 	if errors.Is(o.ctxErr, context.Canceled) || errors.Is(o.err, context.Canceled) {
@@ -1365,6 +1415,27 @@ func (o connectOutcome) category() protos.SshTunnelErrorCategory {
 		return protos.SshTunnelErrorCategoryUnknown
 	}
 	return o.errorCategory
+}
+
+// proxySessionEndCategory attributes how a proxy-mode session ended. A dropped websocket is
+// checked first on purpose: a drop that lands during a handover surfaces from either the
+// receiving loop or the handover goroutine, whichever the errgroup records first, and it
+// should be counted as a drop in both cases. HANDOVER_FAILED is then only the handover's own
+// failures. An unrecognised error is left unattributed - normalizeProxyError already maps a
+// clean finish and a user interrupt to nil.
+func proxySessionEndCategory(err error) protos.SshTunnelErrorCategory {
+	switch {
+	case err == nil:
+		return ""
+	case errors.Is(err, proxy.ErrWebsocketDropped):
+		return protos.SshTunnelErrorCategoryWebsocketDropped
+	case errors.Is(err, proxy.ErrHandoverFailed):
+		return protos.SshTunnelErrorCategoryHandoverFailed
+	case errors.Is(err, proxy.ErrConnectFailed):
+		return protos.SshTunnelErrorCategoryWebsocketConnectFailed
+	default:
+		return ""
+	}
 }
 
 func logSshTunnelEvent(ctx context.Context, opts ClientOptions, outcome connectOutcome) {

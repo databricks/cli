@@ -2,17 +2,20 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
+	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/gorilla/websocket"
 )
 
-func createWebsocketConnection(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID string, serverPort int, liteswap string) (*websocket.Conn, error) {
-	proxyURL, err := getProxyURL(ctx, client, connID, clusterID, serverPort)
+func createWebsocketConnection(ctx context.Context, client *databricks.WorkspaceClient, dial proxy.DialRequest, clusterID string, serverPort int, liteswap string) (*websocket.Conn, error) {
+	proxyURL, err := getProxyURL(ctx, client, dial, clusterID, serverPort)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get proxy URL: %w", err)
 	}
@@ -30,27 +33,33 @@ func createWebsocketConnection(ctx context.Context, client *databricks.Workspace
 	}
 
 	// websocket connection manages lifecycle of the response object, no need to close the body
-	conn, _, err := websocket.DefaultDialer.Dial(req.URL.String(), req.Header) // nolint:bodyclose
+	conn, resp, err := websocket.DefaultDialer.DialContext(ctx, req.URL.String(), req.Header)
+	if resp != nil {
+		resp.Body.Close()
+	}
 	if err != nil {
+		if dial.Reattach && resp != nil && resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != http.StatusTooManyRequests {
+			return nil, errors.Join(proxy.ErrReattachRejected, fmt.Errorf("reattach failed (HTTP %d): %w", resp.StatusCode, err))
+		}
 		return nil, fmt.Errorf("failed to establish websocket connection: %w", err)
 	}
 
 	return conn, nil
 }
 
-func getProxyURL(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID string, serverPort int) (string, error) {
+func getProxyURL(ctx context.Context, client *databricks.WorkspaceClient, dial proxy.DialRequest, clusterID string, serverPort int) (string, error) {
 	workspaceID, err := auth.ResolveWorkspaceID(ctx, client)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current workspace ID: %w", err)
 	}
-	return buildProxyWebsocketURL(client.Config.Host, workspaceID, clusterID, serverPort, connID)
+	return buildProxyWebsocketURL(client.Config.Host, workspaceID, clusterID, serverPort, dial)
 }
 
 // buildProxyWebsocketURL builds the driver-proxy websocket URL for an SSH tunnel.
 //
 // The scheme follows the host (http -> ws, else wss) instead of being hardcoded to
 // wss, so the tunnel is also diallable against the plaintext local test server.
-func buildProxyWebsocketURL(host, workspaceID, clusterID string, serverPort int, connID string) (string, error) {
+func buildProxyWebsocketURL(host, workspaceID, clusterID string, serverPort int, dial proxy.DialRequest) (string, error) {
 	u, err := url.Parse(host)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse host %q: %w", host, err)
@@ -65,6 +74,16 @@ func buildProxyWebsocketURL(host, workspaceID, clusterID string, serverPort int,
 	// the driver-proxy endpoint and uses an "o" path segment regardless of
 	// whether the workspace ID itself is the legacy or new shape.
 	u.Path = fmt.Sprintf("/driver-proxy-api/o/%s/%s/%d/ssh", workspaceID, clusterID, serverPort)
-	u.RawQuery = url.Values{"id": {connID}}.Encode()
+	query := url.Values{"id": {dial.ConnID}}
+	if dial.ResumeCapable {
+		query.Set(proxy.ResumeVersionParameter, strconv.Itoa(proxy.ResumeProtocolVersion))
+		// Sending "delivered" at all is what tells the server this client speaks the resume
+		// protocol, so it buffers its own output for replay from the start of the session.
+		query.Set("delivered", strconv.FormatInt(dial.Delivered, 10))
+		if dial.Reattach {
+			query.Set("reattach", "1")
+		}
+	}
+	u.RawQuery = query.Encode()
 	return u.String(), nil
 }
