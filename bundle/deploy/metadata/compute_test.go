@@ -53,12 +53,14 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline-1": {
+						ID:           "3333",
 						BaseResource: resources.BaseResource{ID: "3333"},
 						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline One",
 						},
 					},
 					"my-pipeline-2": {
+						ID:           "4444",
 						BaseResource: resources.BaseResource{ID: "4444"},
 						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline Two",
@@ -161,6 +163,7 @@ func TestComputeMetadataMutatorStateOnlyResources(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"state-only-pipeline": {
+						ID:           "2222",
 						BaseResource: resources.BaseResource{ID: "2222"},
 					},
 				},

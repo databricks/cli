@@ -35,7 +35,12 @@ type AppEnvVar struct {
 
 type App struct {
 	BaseResource
-	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
+	apps.App //nolint:govet // apps.App.{Id,Url} and our depth-0 {ID,URL} fields carry the same json names; the depth-0 fields win
+	// ID and URL shadow the same-depth collisions between BaseResource.{ID,URL}
+	// and apps.App.{Id,Url} — both embed json:"id"/"url" at depth 1.
+	ID  string `json:"id,omitempty" bundle:"readonly"`
+	URL string `json:"url,omitempty" bundle:"internal"`
+
 	// Note: apps.App already includes GitRepository field from the SDK
 
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
