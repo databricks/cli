@@ -51,7 +51,7 @@ def test_invalid_bundle_yaml_has_concise_error(tmp_path, capsys):
     assert main(["--bundle", str(tmp_path)]) == 2
 
     error = capsys.readouterr().err
-    assert "bundletest: failed to parse" in error
+    assert "bundletest: offline bundle resolution failed" in error
     assert "Traceback" not in error
 
 

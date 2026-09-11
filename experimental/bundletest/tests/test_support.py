@@ -43,8 +43,8 @@ def test_support_report_classifies_local_and_cloud_tasks(tmp_path):
 
     assert report.bundle_name == "demo"
     assert [(entry.resource, entry.status) for entry in report.entries] == [
-        ("jobs.local_job", "local"),
         ("jobs.cloud_job", "cloud"),
+        ("jobs.local_job", "local"),
         ("jobs.notebook_job", "cloud"),
     ]
     assert report.config_only_resources == 1

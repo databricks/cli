@@ -63,3 +63,18 @@ def test_changed_yaml_runs_complete_suite(tmp_path):
 
     assert selection.run_all
     assert set(selection.resources) == {"jobs.transform", "jobs.aggregate", "dashboards.overview"}
+
+
+def test_changed_source_resolves_resources_from_included_files(tmp_path):
+    (tmp_path / "databricks.yml").write_text("bundle:\n  name: demo\ninclude:\n  - resources/*.yml\n")
+    resources = tmp_path / "resources"
+    resources.mkdir()
+    (resources / "jobs.yml").write_text(
+        "resources:\n  jobs:\n    transform:\n      tasks:\n"
+        "        - task_key: transform\n          sql_task:\n"
+        "            file:\n              path: src/transform.sql\n"
+    )
+
+    selection = select_changes(tmp_path, ["src/transform.sql"])
+
+    assert selection.resources == ("jobs.transform",)
