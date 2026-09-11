@@ -8508,12 +8508,14 @@
                   "enum": [
                     "GPU_1xA10",
                     "GPU_1xH100",
-                    "GPU_8xH100"
+                    "GPU_8xH100",
+                    "GPU_8xB300"
                   ],
                   "enumDescriptions": [
                     "[Public Preview]",
                     "[Public Preview]",
-                    "[Public Preview]"
+                    "[Public Preview]",
+                    ""
                   ]
                 },
                 {
