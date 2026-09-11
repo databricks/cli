@@ -2,7 +2,7 @@
 
 Exercises the seam methods that can only be verified on cloud: deploy, run_job on the
 deployed jobs, execute_sql/table_schema round-trips, get_resource off `bundle summary`
-(including hydrating a file_path dashboard's serialized form), and volume upload/read.
+(which inlines a file_path dashboard's serialized form), and volume upload/read.
 """
 
 import pytest
@@ -46,9 +46,9 @@ def test_job_is_wired_to_its_sql(env):
     assert job["tasks"][0]["sql_task"]["file"]["path"].endswith("transform_orders.sql")
 
 
-def test_dashboard_serialized_is_hydrated_from_file_path(env):
-    # The dashboard is defined by file_path, so its serialized form isn't in databricks.yml;
-    # the cloud backend must read it back from the deployed dashboard for source_tables().
+def test_dashboard_source_tables_from_file_path(env):
+    # The dashboard is defined by file_path, not inline, yet source_tables() still resolves:
+    # `bundle summary` inlines the file's serialized form at config-load, so get_resource has it.
     dashboard = env.dashboard("orders_overview")
     assert dashboard.exists()
     assert dashboard.source_tables() == [f"{SCHEMA}.order_summary"]
