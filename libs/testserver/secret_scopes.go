@@ -27,7 +27,8 @@ func (s *FakeWorkspace) SecretsCreateScope(req Request) Response {
 		return Response{
 			StatusCode: 400,
 			Body: map[string]string{
-				"message": fmt.Sprintf("Scope name must be non-empty and at most %d characters!", maxSecretScopeNameLength),
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    fmt.Sprintf("Scope name must be non-empty and at most %d characters!", maxSecretScopeNameLength),
 			},
 		}
 	}
