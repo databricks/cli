@@ -71,7 +71,14 @@ func loadRunConfig(path string) (*runConfig, error) {
 // once. ctx is used only to log applied overrides.
 func loadRunConfigWithOverrides(ctx context.Context, path string, overrides []string) (*runConfig, error) {
 	if len(overrides) == 0 {
-		return loadRunConfig(path)
+		cfg, err := loadRunConfig(path)
+		if err != nil {
+			return nil, err
+		}
+		if err := validateAcceleratorRuntimeVersion(ctx, cfg); err != nil {
+			return nil, err
+		}
+		return cfg, nil
 	}
 
 	entries, err := parseOverrides(overrides)
@@ -110,6 +117,9 @@ func loadRunConfigWithOverrides(ctx context.Context, path string, overrides []st
 	if err := validateRunConfig(cfg); err != nil {
 		return nil, err
 	}
+	if err := validateAcceleratorRuntimeVersion(ctx, cfg); err != nil {
+		return nil, err
+	}
 	return cfg, nil
 }
 
@@ -138,4 +148,37 @@ func validateRuntimeVersion(version, source string) (string, error) {
 		return "", fmt.Errorf("databricks_ai_v in %s requires AI Runtime version 5 or higher, got %q", source, version)
 	}
 	return databricksAIPrefix + numeric, nil
+}
+
+const minB300RuntimeVersion = 6
+
+// validateAcceleratorRuntimeVersion enforces accelerator-specific runtime
+// requirements after structural validation has normalized environment.version.
+func validateAcceleratorRuntimeVersion(ctx context.Context, cfg *runConfig) error {
+	if cfg.Compute == nil || gpuType(cfg.Compute.AcceleratorType) != gpuType8xB300 {
+		return nil
+	}
+
+	cfgVersion, explicitVersion := cfg.runtimeVersion()
+	effective := dlRuntimeImage(ctx, cfgVersion)
+	normalized, err := validateRuntimeVersion(effective, "effective environment version")
+	if err != nil {
+		return fmt.Errorf("compute.accelerator_type %s requires AI Runtime %d or later: %w", gpuType8xB300, minB300RuntimeVersion, err)
+	}
+
+	numeric := strings.TrimPrefix(normalized, databricksAIPrefix)
+	major, err := strconv.Atoi(numeric)
+	if err != nil {
+		return fmt.Errorf("failed to parse effective environment version %q: %w", effective, err)
+	}
+	if major < minB300RuntimeVersion {
+		hint := fmt.Sprintf("set environment.version to %d or later", minB300RuntimeVersion)
+		if cfg.dockerImage() != nil {
+			hint = fmt.Sprintf("set %s to CLIENT-GPU-%d or later", dlRuntimeImageEnv, minB300RuntimeVersion)
+		} else if !explicitVersion {
+			hint += fmt.Sprintf(", or set %s to CLIENT-GPU-%d or later", dlRuntimeImageEnv, minB300RuntimeVersion)
+		}
+		return fmt.Errorf("compute.accelerator_type %s requires AI Runtime %d or later, but the effective environment version is %q; %s", gpuType8xB300, minB300RuntimeVersion, effective, hint)
+	}
+	return nil
 }

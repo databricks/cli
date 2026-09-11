@@ -84,6 +84,23 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
+func TestBuildSubmitPayloadB300(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "b300",
+		Command:        new("nvidia-smi"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_8xB300", NumAccelerators: 8},
+	}
+
+	p := buildSubmitPayload(cfg, "/d/command.sh", "6", "", snapshotResult{}, nil)
+	require.Len(t, p.Environments, 1)
+	require.NotNil(t, p.Environments[0].Spec)
+	assert.Equal(t, "6", p.Environments[0].Spec.EnvironmentVersion)
+	require.Len(t, p.Tasks, 1)
+	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
+	require.Len(t, p.Tasks[0].AiRuntimeTask.Deployments, 1)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorType("GPU_8xB300"), AcceleratorCount: 8}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
+}
+
 func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)

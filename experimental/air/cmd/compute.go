@@ -14,10 +14,11 @@ const (
 	gpuType1xA10  gpuType = "GPU_1xA10"
 	gpuType8xH100 gpuType = "GPU_8xH100"
 	gpuType1xH100 gpuType = "GPU_1xH100"
+	gpuType8xB300 gpuType = "GPU_8xB300"
 )
 
 // gpuTypes lists every valid type. Used for validation error messages.
-var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100}
+var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100, gpuType8xB300}
 
 func validGPUTypesHint() string {
 	names := make([]string, len(gpuTypes))
@@ -31,7 +32,7 @@ func validGPUTypesHint() string {
 // exact: the server's lookup is case-sensitive.
 func parseGPUType(value string) (gpuType, error) {
 	switch gpuType(value) {
-	case gpuType1xA10, gpuType8xH100, gpuType1xH100:
+	case gpuType1xA10, gpuType8xH100, gpuType1xH100, gpuType8xB300:
 		return gpuType(value), nil
 	}
 	return "", fmt.Errorf("invalid GPU type %q: %s", value, validGPUTypesHint())
@@ -78,7 +79,7 @@ func gpusPerNode(g gpuType) (int, error) {
 	switch g {
 	case gpuType1xA10, gpuType1xH100:
 		return 1, nil
-	case gpuType8xH100:
+	case gpuType8xH100, gpuType8xB300:
 		return 8, nil
 	}
 	// Unreachable: callers resolve g through parseGPUType first, which rejects

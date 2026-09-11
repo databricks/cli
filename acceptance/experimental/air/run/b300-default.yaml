@@ -1,0 +1,5 @@
+experiment_name: b300-default
+command: python train.py
+compute:
+  accelerator_type: GPU_8xB300
+  num_accelerators: 8

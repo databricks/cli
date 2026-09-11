@@ -195,6 +195,57 @@ func TestLoadRunConfig_Errors(t *testing.T) {
 	}
 }
 
+func TestValidateAcceleratorRuntimeVersion(t *testing.T) {
+	t.Setenv(dlRuntimeImageEnv, "")
+
+	b300Config := func(version string) string {
+		environment := ""
+		if version != "" {
+			environment = "environment:\n  version: " + version + "\n  dependencies: []\n"
+		}
+		return "experiment_name: b300\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_8xB300\n  num_accelerators: 8\n" + environment
+	}
+
+	for _, version := range []string{"6", `"6"`, "databricks_ai_v6", "7", "databricks_ai_v7"} {
+		t.Run("accept "+version, func(t *testing.T) {
+			cfg, err := loadRunConfig(writeConfig(t, b300Config(version)))
+			require.NoError(t, err)
+			require.NoError(t, validateAcceleratorRuntimeVersion(t.Context(), cfg))
+		})
+	}
+
+	for _, version := range []string{"4", "5", `"5"`, "databricks_ai_v5"} {
+		t.Run("reject "+version, func(t *testing.T) {
+			cfg, err := loadRunConfig(writeConfig(t, b300Config(version)))
+			require.NoError(t, err)
+			err = validateAcceleratorRuntimeVersion(t.Context(), cfg)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "GPU_8xB300 requires AI Runtime 6 or later")
+		})
+	}
+
+	t.Run("omitted version rejects default", func(t *testing.T) {
+		cfg, err := loadRunConfig(writeConfig(t, b300Config("")))
+		require.NoError(t, err)
+		err = validateAcceleratorRuntimeVersion(t.Context(), cfg)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `effective environment version is "4"`)
+	})
+
+	t.Run("environment override is effective", func(t *testing.T) {
+		t.Setenv(dlRuntimeImageEnv, "CLIENT-GPU-6")
+		cfg, err := loadRunConfig(writeConfig(t, b300Config("")))
+		require.NoError(t, err)
+		require.NoError(t, validateAcceleratorRuntimeVersion(t.Context(), cfg))
+	})
+
+	t.Run("existing accelerator keeps default", func(t *testing.T) {
+		cfg, err := loadRunConfig(writeConfig(t, minimalConfig))
+		require.NoError(t, err)
+		require.NoError(t, validateAcceleratorRuntimeVersion(t.Context(), cfg))
+	})
+}
+
 // TestRunConfigValidate_FieldRules unit-tests validation rules directly, away
 // from YAML decoding, to keep each rule's failure mode explicit.
 func TestRunConfigValidate_FieldRules(t *testing.T) {

@@ -1,0 +1,8 @@
+experiment_name: b300-v5
+command: python train.py
+compute:
+  accelerator_type: GPU_8xB300
+  num_accelerators: 8
+environment:
+  version: 5
+  dependencies: []
