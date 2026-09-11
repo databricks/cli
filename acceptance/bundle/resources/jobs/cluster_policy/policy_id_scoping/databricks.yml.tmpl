@@ -1,0 +1,41 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    my_policy:
+      name: test-policy-$UNIQUE_NAME
+      definition:
+        custom_tags.CostCenter:
+          type: fixed
+          value: from-policy
+
+  # policy_id gates suppression per cluster spec, not per resource: the gated cluster's
+  # policy tag is skipped, while an out-of-band tag on the ungated sibling still surfaces.
+  jobs:
+    my_job:
+      name: test-job-$UNIQUE_NAME
+      job_clusters:
+        - job_cluster_key: gated
+          new_cluster:
+            policy_id: ${resources.cluster_policies.my_policy.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - job_cluster_key: ungated
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: on_gated
+          job_cluster_key: gated
+          spark_python_task:
+            python_file: ./hello_world.py
+        - task_key: on_ungated
+          job_cluster_key: ungated
+          spark_python_task:
+            python_file: ./hello_world.py

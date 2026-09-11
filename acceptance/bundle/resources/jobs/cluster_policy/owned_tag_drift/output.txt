@@ -1,0 +1,45 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created cluster_policies.my_policy
+Created jobs.my_job
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== An out-of-band change to a config-owned tag is drift, even with a policy attached
+
+>>> [CLI] bundle plan
+update jobs.my_job
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+=== Removing a config-owned tag is a change the user asked for, not a backend addition
+
+>>> update_file.py databricks.yml Mine: mine Other: other
+
+>>> [CLI] bundle plan -o json
+{
+  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['CostCenter']": {
+    "action": "skip",
+    "reason": "remote_addition",
+    "remote": "from-policy"
+  },
+  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['Mine']": {
+    "action": "update",
+    "old": "mine",
+    "remote": "changed-out-of-band"
+  },
+  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['Other']": {
+    "action": "update",
+    "new": "other"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.cluster_policies.my_policy
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 2 deleted
