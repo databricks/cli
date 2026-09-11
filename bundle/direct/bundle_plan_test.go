@@ -2,6 +2,7 @@ package direct
 
 import (
 	"bytes"
+	"maps"
 	"slices"
 	"testing"
 
@@ -419,19 +420,19 @@ type threeWayOuter struct {
 	Field *threeWayMid `json:"field,omitempty"`
 }
 
-// TestPrepareChangesWholeBlockOverlap documents the "whole block" bug at the
+// TestPrepareChangesWholeBlockOverlap documents the "whole block" overlap at the
 // three-way merge: local (saved-state vs config) and remote (remote vs config)
 // diffs cut the tree at different levels when the remote has a nil intermediate,
 // so prepareChanges keys them under different paths and emits a coarse parent
-// entry alongside the fine child entry instead of merging into leaves.
+// entry alongside the fine child entry.
 //
 // old:    field.a = {b: "old"}
 // new:    field.a = {b: "old", c: "newc"}   (c added locally)
 // remote: field.a = nil
 //
 // The local diff descends to the leaf (field.a.c); the remote diff stops at the
-// nil (field.a), so the two never merge. This test asserts the current (buggy)
-// key set; leaf-level decomposition must instead yield {field.a.b, field.a.c}.
+// nil (field.a), so prepareChanges keeps both. keepOneLevelPerSubtree then drops
+// the leaf under its block ancestor, leaving one level per subtree.
 func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
 	old := threeWayOuter{Field: &threeWayMid{A: &threeWayInner{B: "old"}}}
 	newState := threeWayOuter{Field: &threeWayMid{A: &threeWayInner{B: "old", C: "newc"}}}
@@ -445,15 +446,13 @@ func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
 	changes, err := prepareChanges(t.Context(), nil, localDiff, remoteDiff, old, remote)
 	require.NoError(t, err)
 
-	keys := make([]string, 0, len(changes))
-	for k := range changes {
-		keys = append(keys, k)
-	}
-	slices.Sort(keys)
+	// prepareChanges keeps both the block and the leaf; the overlap is collapsed later.
+	assert.ElementsMatch(t, []string{"field.a", "field.a.c"}, slices.Collect(maps.Keys(changes)))
 
-	// One level per subtree: the local diff produced the field.a.c leaf and the remote
-	// diff the whole field.a block; the block-level entry wins and the inner leaf is
-	// dropped, so the merged change set is just the block (which carries the full value).
-	assert.Equal(t, []string{"field.a"}, keys)
+	require.NoError(t, keepOneLevelPerSubtree(changes))
+
+	// One level per subtree: the block-level entry wins and the inner leaf is dropped,
+	// so the remaining change set is just the block (which carries the full value).
+	assert.Equal(t, []string{"field.a"}, slices.Collect(maps.Keys(changes)))
 	assert.Equal(t, threeWayInner{B: "old", C: "newc"}, changes["field.a"].New)
 }

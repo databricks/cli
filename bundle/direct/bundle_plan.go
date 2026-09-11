@@ -336,6 +336,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		if err := keepOneLevelPerSubtree(entry.Changes); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+
 		if remoteState == nil {
 			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
 			// because we know remote does not exist.
@@ -428,24 +433,34 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 		}
 	}
 
-	// Keep one level per subtree. A whole block added or removed on one side is recorded
-	// as a single block-level change (Old/New/Remote carry the whole block); the other
-	// diff may have descended to inner fields of the same subtree. The block-level entry
-	// already describes those, so drop any entry that has an ancestor entry in the map.
-	for pathStr := range m {
+	return m, nil
+}
+
+// keepOneLevelPerSubtree drops any change that has an ancestor change in the same map, so
+// the plan carries one level per subtree. A whole block added or removed on one side is
+// recorded as a single block-level change (Old/New/Remote carry the whole block) while the
+// other diff may have descended to inner fields of the same subtree; the block-level entry
+// already describes those.
+//
+// This runs after addPerFieldActions, on the classified, drop-pruned map: an entry the
+// resource dropped (a missing-in-remote bookkeeping block, say) is already gone, so it can
+// no longer shadow a real leaf change beneath it. A surviving block ancestor inherits a
+// descendant's recreate through findMatchingRuleBidirectional, so dropping the descendant
+// under it does not lose that action.
+func keepOneLevelPerSubtree(changes deployplan.Changes) error {
+	for pathStr := range changes {
 		node, err := structpath.ParsePath(pathStr)
 		if err != nil {
-			continue
+			return err
 		}
 		for ancestor := node.Parent(); ancestor != nil; ancestor = ancestor.Parent() {
-			if _, ok := m[ancestor.String()]; ok {
-				delete(m, pathStr)
+			if _, ok := changes[ancestor.String()]; ok {
+				delete(changes, pathStr)
 				break
 			}
 		}
 	}
-
-	return m, nil
+	return nil
 }
 
 func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
