@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 license = "Apache-2.0"
 dependencies = [
     "duckdb>=1.0",
+    "pytest>=7.0",
     "pyyaml>=6.0",
 ]
 
@@ -18,7 +19,10 @@ dependencies = [
 # The cloud backend talks to a real workspace through the Databricks SDK. Kept optional and
 # lazily imported so a local-only install (and its DuckDB backend) never pulls it in.
 cloud = ["databricks-sdk>=0.40"]
-dev = ["pytest>=7.0", "databricks-sdk>=0.40"]
+dev = ["databricks-sdk>=0.40"]
+
+[project.scripts]
+bundletest = "bundletest.cli:main"
 
 [project.entry-points.pytest11]
 bundletest = "bundletest.pytest_plugin"
