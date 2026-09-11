@@ -1186,6 +1186,17 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	// (it is intrinsic to the branch), so DoRead still succeeds afterwards.
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "postgres_snapshot_schedules"
 	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
+
+	// Guard: resources that omit DoDelete entirely (their delete is a state-only
+	// cleanup) must stay in sync with the terraform plan reader's isStateOnlyDelete
+	// (bundle/deploy/terraform/showplanfile.go), so both engines suppress these
+	// deletes from output identically. Adding a no-DoDelete resource requires
+	// mirroring it there (and vice versa).
+	if !adapter.HasDoDelete() {
+		isKnownNoDelete := strings.HasSuffix(group, ".permissions") || strings.HasSuffix(group, ".grants")
+		assert.True(t, isKnownNoDelete,
+			"resource %q omits DoDelete; mirror it in terraform's isStateOnlyDelete", group)
+	}
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
 	// A GET on the DELETING app returns the app, not 404 -- the testserver

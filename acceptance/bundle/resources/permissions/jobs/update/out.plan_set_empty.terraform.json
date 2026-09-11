@@ -5,7 +5,8 @@
       "action": "skip"
     },
     "resources.jobs.job_with_permissions.permissions": {
-      "action": "delete"
+      "action": "delete",
+      "state_only": true
     }
   }
 }

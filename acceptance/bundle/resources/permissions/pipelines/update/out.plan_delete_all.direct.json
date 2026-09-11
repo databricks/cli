@@ -39,19 +39,7 @@
         }
       ],
       "action": "delete",
-      "remote_state": {
-        "object_id": "/pipelines/[FOO_ID]",
-        "__embed__": [
-          {
-            "level": "CAN_MANAGE",
-            "user_name": "viewer@example.com"
-          },
-          {
-            "level": "IS_OWNER",
-            "user_name": "[USERNAME]"
-          }
-        ]
-      }
+      "state_only": true
     }
   }
 }
