@@ -247,13 +247,18 @@ func hasFailedSubtest(failed map[string]bool, key string) bool {
 // Where:
 // - Lines with whitespace only are ignored
 // - Everything after '#' is a comment and is ignored
-// - Both package and testcase can be '*' meaning any package or any testcase
-// - Both can end with '/' which means it's a prefix match
+// - Both package and testcase are matched segment by segment, split on '/'
+// - A '*' segment matches any number of segments (including zero), so a whole
+//   field of '*' matches anything and an interior '*' spans the segments
+//   between two fixed ones
+// - A trailing '/' makes the pattern a prefix: it matches the listed segments
+//   plus any number of segments below them
 //
 // Examples:
-//   "libs/ *"           - all packages starting with "libs/" and all testcases are allowed to fail
-//   "* TestAccept/"     - all testcases starting with "TestAccept/" are allowed to fail
-//   "bundle TestDeploy" - exact match for package "bundle" and testcase "TestDeploy"
+//   "libs/ *"                  - all packages under "libs/" and all testcases are allowed to fail
+//   "* TestAccept/"            - all testcases under "TestAccept/" are allowed to fail
+//   "bundle TestDeploy"        - exact match for package "bundle" and testcase "TestDeploy"
+//   "* TestAccept/*/DMS=true/" - every testcase with a "DMS=true" segment, at any depth
 //
 // Parse errors for individual lines are logged but do not abort processing.
 
@@ -271,10 +276,8 @@ func (c *Config) matches(packageName, testName string) string {
 }
 
 type ConfigRule struct {
-	PackagePattern string
-	TestPattern    string
-	PackagePrefix  bool
-	TestPrefix     bool
+	PackagePattern []string
+	TestPattern    []string
 	OriginalLine   string
 }
 
@@ -313,12 +316,16 @@ func parseConfig(content string) (*Config, error) {
 	return config, scanner.Err()
 }
 
-// parsePattern returns the pattern and whether it's a prefix match.
-func parsePattern(pattern string) (string, bool) {
-	if pattern == "*" {
-		return "", true
+// parsePattern splits a pattern field into segments. A trailing "/" marks a
+// prefix match, represented as a trailing "*" segment so it matches any number
+// of segments below the listed ones.
+func parsePattern(pattern string) []string {
+	prefix := strings.HasSuffix(pattern, "/")
+	segments := strings.Split(strings.TrimSuffix(pattern, "/"), "/")
+	if prefix {
+		segments = append(segments, "*")
 	}
-	return strings.CutSuffix(pattern, "/")
+	return segments
 }
 
 func parseConfigRule(line, originalLine string) (ConfigRule, error) {
@@ -327,50 +334,44 @@ func parseConfigRule(line, originalLine string) (ConfigRule, error) {
 		return ConfigRule{}, fmt.Errorf("expected 2 fields, got %d", len(parts))
 	}
 
-	packagePattern := parts[0]
-	testPattern := parts[1]
-
-	rule := ConfigRule{
-		PackagePattern: packagePattern,
-		TestPattern:    testPattern,
+	return ConfigRule{
+		PackagePattern: parsePattern(parts[0]),
+		TestPattern:    parsePattern(parts[1]),
 		OriginalLine:   strings.TrimSpace(originalLine),
-	}
-
-	// Check for wildcard or prefix
-	rule.PackagePattern, rule.PackagePrefix = parsePattern(packagePattern)
-	rule.TestPattern, rule.TestPrefix = parsePattern(testPattern)
-
-	return rule, nil
+	}, nil
 }
 
 func (r ConfigRule) matches(packageName, testName string) bool {
-	// Check package pattern
-	var packageMatch bool
-	if r.PackagePrefix {
-		packageMatch = matchesPathPrefix(packageName, r.PackagePattern)
-	} else {
-		packageMatch = packageName == r.PackagePattern
-	}
-
-	if !packageMatch {
-		return false
-	}
-
-	// Check test pattern
-	if r.TestPrefix {
-		return matchesPathPrefix(testName, r.TestPattern)
-	}
-	return testName == r.TestPattern
+	return matchSegments(r.PackagePattern, strings.Split(packageName, "/")) &&
+		matchSegments(r.TestPattern, strings.Split(testName, "/"))
 }
 
-// matchesPathPrefix returns true if s matches pattern or starts with pattern + "/"
-// If pattern is empty (wildcard "*"), it matches any string
-func matchesPathPrefix(s, prefix string) bool {
-	if prefix == "" {
-		return true
+// matchSegments reports whether name matches pattern segment by segment, where
+// a "*" pattern segment matches any number of name segments (including zero).
+// It is the standard linear wildcard match that backtracks on the latest "*".
+func matchSegments(pattern, name []string) bool {
+	pi, ni := 0, 0
+	star, match := -1, 0
+	for ni < len(name) {
+		switch {
+		case pi < len(pattern) && pattern[pi] == "*":
+			star = pi
+			match = ni
+			pi++
+		case pi < len(pattern) && pattern[pi] == name[ni]:
+			pi++
+			ni++
+		case star >= 0:
+			// Backtrack: let the last "*" consume one more name segment.
+			pi = star + 1
+			match++
+			ni = match
+		default:
+			return false
+		}
 	}
-	if s == prefix {
-		return true
+	for pi < len(pattern) && pattern[pi] == "*" {
+		pi++
 	}
-	return strings.HasPrefix(s, prefix+"/")
+	return pi == len(pattern)
 }

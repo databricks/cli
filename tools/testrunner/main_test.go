@@ -60,6 +60,25 @@ func TestConfigRuleMatches(t *testing.T) {
 		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic/x", true},
 		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations/classic", true},
 		{"acceptance TestAccept/bundle/templates/default-python/combinations/classic/", "acceptance", "TestAccept/bundle/templates/default-python/combinations", false},
+
+		// Interior "*" spans any number of path segments. This is the DMS=true
+		// use case: match every permutation that carries a DMS=true segment,
+		// regardless of the test name or engine segments preceding it.
+		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true/INPUT_CONFIG=job.yml.tmpl", true},
+		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept/bundle/invariant/migrate/DATABRICKS_BUNDLE_ENGINE=terraform/DMS=true", true},
+		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept/bundle/invariant/no_drift/DATABRICKS_BUNDLE_ENGINE=direct/DMS=/INPUT_CONFIG=job.yml.tmpl", false},
+		{"acceptance TestAccept/*/DMS=true/", "acceptance", "TestAccept", false},
+
+		// Interior "*" matching zero segments.
+		{"* TestAccept/*/leaf", "any", "TestAccept/leaf", true},
+		{"* a/*/b", "any", "a/b", true},
+		{"* a/*/b", "any", "a/x/y/b", true},
+		{"* a/*/b", "any", "a/x/b/c", false},
+
+		// Multiple interior wildcards.
+		{"* a/*/b/*/c", "any", "a/1/b/2/c", true},
+		{"* a/*/b/*/c", "any", "a/1/2/b/3/4/c", true},
+		{"* a/*/b/*/c", "any", "a/b/c", true},
 	}
 
 	for _, tt := range tests {
