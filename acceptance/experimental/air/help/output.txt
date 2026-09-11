@@ -38,7 +38,7 @@ Usage:
   databricks experimental air list [command]
 
 Available Commands:
-  provisioned_capacity List the pre-provisioned AI Runtime capacity reservations for the current workspace
+  provisioned-capacity List the pre-provisioned AI Runtime capacity reservations for the current workspace
 
 Flags:
       --all-status           Show runs in all states (default: active only)

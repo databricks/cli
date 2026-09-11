@@ -21,18 +21,18 @@ const capacityBasePath = "/api/2.0/ai-training/provisioned-capacities"
 
 func TestProvisionedCapacityCommandShape(t *testing.T) {
 	list := newListProvisionedCapacityCommand()
-	assert.Equal(t, "provisioned_capacity", list.Use)
+	assert.Equal(t, "provisioned-capacity", list.Use)
 	assert.NoError(t, list.Args(list, []string{}))
 	assert.Error(t, list.Args(list, []string{"x"}))
 
 	get := newGetProvisionedCapacityCommand()
-	assert.Equal(t, "provisioned_capacity PROVISIONED_CAPACITY_ID", get.Use)
+	assert.Equal(t, "provisioned-capacity PROVISIONED_CAPACITY_ID", get.Use)
 	assert.NoError(t, get.Args(get, []string{"cap-1"}))
 	assert.Error(t, get.Args(get, []string{}))
 
 	// The subcommands are wired under `air list` and `air get`.
-	assert.True(t, hasSubcommand(newListCommand(), "provisioned_capacity"))
-	assert.True(t, hasSubcommand(newGetCommand(), "provisioned_capacity"))
+	assert.True(t, hasSubcommand(newListCommand(), "provisioned-capacity"))
+	assert.True(t, hasSubcommand(newGetCommand(), "provisioned-capacity"))
 }
 
 func hasSubcommand(parent *cobra.Command, name string) bool {

@@ -80,7 +80,7 @@ type listProvisionedCapacitiesResponse struct {
 	NextPageToken         string                `json:"next_page_token"`
 }
 
-// capacityListData is the `air list provisioned_capacity` payload. Usage counts
+// capacityListData is the `air list provisioned-capacity` payload. Usage counts
 // are intentionally absent: the list endpoint does not populate them (they come
 // from `air get`).
 type capacityListData struct {
@@ -93,7 +93,7 @@ type capacityRow struct {
 	ReservedAccelerators int64  `json:"reserved_accelerators"`
 }
 
-// capacityDetailData is the `air get provisioned_capacity` payload. Usage is a
+// capacityDetailData is the `air get provisioned-capacity` payload. Usage is a
 // pointer because it is populated only when the reservation reports it.
 type capacityDetailData struct {
 	ID                   string `json:"provisioned_capacity_id"`
@@ -137,7 +137,7 @@ func listProvisionedCapacities(ctx context.Context, w *databricks.WorkspaceClien
 
 	var out []provisionedCapacity
 	pageToken := ""
-	for page := 0; page < capacityListMaxPages; page++ {
+	for range capacityListMaxPages {
 		// GET query params ride the request arg (the SDK serializes them for a
 		// GET), matching the sibling workflows call.
 		query := map[string]any{"page_size": capacityListPageSize}
@@ -172,7 +172,7 @@ func getProvisionedCapacity(ctx context.Context, w *databricks.WorkspaceClient, 
 
 func newListProvisionedCapacityCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provisioned_capacity",
+		Use:   "provisioned-capacity",
 		Args:  root.NoArgs,
 		Short: "List the pre-provisioned AI Runtime capacity reservations for the current workspace",
 	}
@@ -211,7 +211,7 @@ func newListProvisionedCapacityCommand() *cobra.Command {
 
 func newGetProvisionedCapacityCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provisioned_capacity PROVISIONED_CAPACITY_ID",
+		Use:   "provisioned-capacity PROVISIONED_CAPACITY_ID",
 		Args:  root.ExactArgs(1),
 		Short: "Show a pre-provisioned AI Runtime capacity reservation, including its accelerator usage",
 	}
@@ -239,7 +239,7 @@ func newGetProvisionedCapacityCommand() *cobra.Command {
 		if err != nil {
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
-					fmt.Errorf("provisioned capacity %q not found: check the id with `air list provisioned_capacity`", id))
+					fmt.Errorf("provisioned capacity %q not found: check the id with `air list provisioned-capacity`", id))
 			}
 			return capacityAPIError(ctx, cmd, fmt.Sprintf("get provisioned capacity %q", id), err)
 		}

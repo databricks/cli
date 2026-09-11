@@ -1,11 +1,11 @@
 title "list provisioned capacity (text)"
-trace $CLI experimental air list provisioned_capacity
+trace $CLI experimental air list provisioned-capacity
 
 title "list provisioned capacity (json)"
-trace $CLI experimental air list provisioned_capacity -o json
+trace $CLI experimental air list provisioned-capacity -o json
 
 title "get provisioned capacity (text)"
-trace $CLI experimental air get provisioned_capacity cap-8xh100-alpha
+trace $CLI experimental air get provisioned-capacity cap-8xh100-alpha
 
 title "get provisioned capacity (json)"
-trace $CLI experimental air get provisioned_capacity cap-8xh100-alpha -o json
+trace $CLI experimental air get provisioned-capacity cap-8xh100-alpha -o json
