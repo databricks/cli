@@ -1,0 +1,27 @@
+setup_docker_auth() {
+    export DATABRICKS_HOST_ORIG="$DATABRICKS_HOST"
+    sethome "./home"
+
+    unset DATABRICKS_ACCOUNT_ID
+    unset DATABRICKS_AUTH_TYPE
+    unset DATABRICKS_CLIENT_ID
+    unset DATABRICKS_CLIENT_SECRET
+    unset DATABRICKS_CONFIG_FILE
+    unset DATABRICKS_CONFIG_PROFILE
+    unset DATABRICKS_DISCOVERY_URL
+    unset DATABRICKS_HOST
+    unset DATABRICKS_TOKEN
+    unset DATABRICKS_WORKSPACE_ID
+
+    export DATABRICKS_AUTH_STORAGE=plaintext
+    export DATABRICKS_LOG_LEVEL=error
+    export DAR_REGISTRY_HOST=123456789.container.us-west-2.cloud.databricks.com
+
+    cat > "$HOME/.databrickscfg" <<ENDCFG
+[docker-test]
+host = $DATABRICKS_HOST_ORIG
+auth_type = databricks-cli
+workspace_id = 123456789
+ENDCFG
+
+}
