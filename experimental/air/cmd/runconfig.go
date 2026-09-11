@@ -249,10 +249,9 @@ func validateSecretRefs(secrets map[string]string) error {
 // environmentConfig is the `environment` block: dependencies and runtime image
 // settings.
 type environmentConfig struct {
-	Dependencies      dependencies       `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside docker_image."`
-	Version           stringOrInt        `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
-	DockerImage       *dockerImageConfig `yaml:"docker_image" help:"Custom image supplying the whole runtime. Not allowed alongside dependencies or version."`
-	UnityCatalogImage string             `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside docker_image."`
+	Dependencies      dependencies `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside unity_catalog_image."`
+	Version           stringOrInt  `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
+	UnityCatalogImage string       `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside dependencies or version."`
 }
 
 func (e *environmentConfig) validate() error {
@@ -261,9 +260,9 @@ func (e *environmentConfig) validate() error {
 		return fmt.Errorf("environment.unity_catalog_image must be in the format '<catalog>.<schema>.<image>:<tag>', got %q", e.UnityCatalogImage)
 	}
 
-	// docker_image is exclusive with dependencies/version: the image already pins
-	// the full runtime.
-	if e.DockerImage != nil {
+	// unity_catalog_image is exclusive with dependencies/version: the image already
+	// pins the full runtime.
+	if unityCatalogImage != "" {
 		var conflicting []string
 		if e.Dependencies.set {
 			conflicting = append(conflicting, "dependencies")
@@ -271,13 +270,10 @@ func (e *environmentConfig) validate() error {
 		if e.Version.set {
 			conflicting = append(conflicting, "version")
 		}
-		if unityCatalogImage != "" {
-			conflicting = append(conflicting, "unity_catalog_image")
-		}
 		if len(conflicting) > 0 {
-			return fmt.Errorf("when 'docker_image' is specified under 'environment', these fields are not allowed: %s", strings.Join(conflicting, ", "))
+			return fmt.Errorf("when 'unity_catalog_image' is specified under 'environment', these fields are not allowed: %s", strings.Join(conflicting, ", "))
 		}
-		return e.DockerImage.validate()
+		return nil
 	}
 
 	// version pins the client image version, which is only meaningful alongside an
@@ -327,57 +323,6 @@ func (s *stringOrInt) UnmarshalYAML(node *yaml.Node) error {
 	s.set = true
 	s.raw = node.Value
 	return nil
-}
-
-// dockerImageConfig is environment.docker_image.
-type dockerImageConfig struct {
-	URL string `yaml:"url" help:"Fully qualified image URL, e.g. myregistry.io/team/train:v3." required:"when environment.docker_image is set"`
-	// "latest" re-checks the registry for the tag's newest digest each run;
-	// "auto" (default) reuses the existing registration.
-	TagPolicy string `yaml:"tag_policy" help:"\"auto\" (default) reuses the existing registration; \"latest\" re-checks the registry for the tag's newest digest each run."`
-	// Credentials for a private image that "latest" re-resolves; discovered from
-	// the local Docker config when unset.
-	CredentialsScope string `yaml:"credentials_scope" help:"Secret scope holding registry credentials for a private image re-resolved under tag_policy \"latest\"; discovered from the local Docker config when unset."`
-	CredentialsKey   string `yaml:"credentials_key" help:"Secret key (paired with credentials_scope) for private-image registry credentials."`
-}
-
-const (
-	dockerTagPolicyAuto   = "auto"
-	dockerTagPolicyLatest = "latest"
-)
-
-func (d *dockerImageConfig) validate() error {
-	// Store the trimmed values: URL rides the submitted task, and the credential
-	// pairing check below must not treat blank-but-present as set.
-	d.URL = strings.TrimSpace(d.URL)
-	d.CredentialsScope = strings.TrimSpace(d.CredentialsScope)
-	d.CredentialsKey = strings.TrimSpace(d.CredentialsKey)
-
-	if d.URL == "" {
-		return errors.New("docker_image.url cannot be empty")
-	}
-
-	switch strings.ToLower(strings.TrimSpace(d.TagPolicy)) {
-	case "", dockerTagPolicyAuto, dockerTagPolicyLatest:
-	default:
-		return fmt.Errorf("invalid docker_image.tag_policy %q: must be %q or %q", d.TagPolicy, dockerTagPolicyAuto, dockerTagPolicyLatest)
-	}
-
-	if (d.CredentialsScope != "") != (d.CredentialsKey != "") {
-		return errors.New("docker_image.credentials_scope and docker_image.credentials_key must be provided together")
-	}
-
-	// Credentials are only consulted when re-resolving the tag, so accepting them
-	// under the default policy would silently ignore them.
-	if d.CredentialsScope != "" && !d.wantsLatest() {
-		return fmt.Errorf("docker_image.credentials_scope/credentials_key only apply with tag_policy %q; the image is otherwise used as already registered", dockerTagPolicyLatest)
-	}
-	return nil
-}
-
-// wantsLatest reports whether the image should be re-resolved before the run.
-func (d *dockerImageConfig) wantsLatest() bool {
-	return strings.EqualFold(strings.TrimSpace(d.TagPolicy), dockerTagPolicyLatest)
 }
 
 // codeSourceConfig is the `code_source` block. Only the "snapshot" type exists.

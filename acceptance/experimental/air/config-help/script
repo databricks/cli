@@ -22,7 +22,7 @@ title "leaf field"
 trace $CLI experimental air run -h config.compute.accelerator_type
 
 title "conditionally required leaf"
-trace $CLI experimental air run -h config.environment.docker_image.url
+trace $CLI experimental air run -h config.code_source.type
 
 title "union field reports both accepted shapes"
 trace $CLI experimental air run -h config.code_source.snapshot.git.remote

@@ -118,13 +118,9 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 	// idempotency_token is intentionally not mapped: it dedups a single runs/submit
 	// call, which has no analogue for a persistent, repeatedly-runnable bundle job.
 	//
-	// usage_policy_name resolution is not ported (mirrors the submit path), and
-	// docker images have no ai_runtime_task representation yet.
+	// usage_policy_name resolution is not ported (mirrors the submit path).
 	if cfg.UsagePolicyName != nil {
 		return nil, nil, errors.New("usage_policy_name is not yet supported by convert-to-dabs")
-	}
-	if cfg.Environment != nil && cfg.Environment.DockerImage != nil {
-		return nil, nil, errors.New("environment.docker_image is not yet supported by convert-to-dabs")
 	}
 	if snap := codeSnapshot(cfg); snap != nil {
 		// remote_volume points the code archive at a specific UC Volume. The bundle's
