@@ -87,11 +87,19 @@ func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, acce
 	return auth.IntrospectToken(ctx, host, accessToken, nil)
 }
 
-// storeLoginToken persists a token after login has finished building its profile.
+// storeLoginToken persists a token after login has finished any optional
+// profile update.
 func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage.StorageMode, arg u2m.OAuthArgument, token *oauth2.Token) error {
 	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
-	if err := tokenStore.Put(arg.GetCacheKey(), storage.Entry{Token: token}); err != nil {
-		return fmt.Errorf("store token: %w", err)
+	key := arg.GetCacheKey()
+	if err := tokenStore.Put(key, storage.Entry{Token: token}); err != nil {
+		storeErr := fmt.Errorf("store token: %w", err)
+		// The profile is already saved, but the old token may still be present.
+		// Delete it so later commands cannot use it with the updated profile.
+		if deleteErr := tokenStore.Delete(key); deleteErr != nil {
+			return errors.Join(storeErr, fmt.Errorf("delete stale token: %w", deleteErr))
+		}
+		return storeErr
 	}
 	storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
 	return nil
@@ -414,10 +422,12 @@ a new profile is created.
 			if err != nil {
 				return err
 			}
-			if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, token); err != nil {
-				return err
-			}
+		}
 
+		if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, token); err != nil {
+			return err
+		}
+		if profileName != "" {
 			cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		}
 

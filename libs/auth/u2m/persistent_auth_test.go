@@ -1021,17 +1021,10 @@ func TestChallenge(t *testing.T) {
 		browserOpened <- query.Get("state")
 		return nil
 	}
-	cache := &tokenStoreMock{
-		store: func(key string, tok *oauth2.Token) error {
-			if key != "https://accounts.cloud.databricks.test/oidc/accounts/xyz" {
-				t.Fatalf("store(): want key 'https://accounts.cloud.databricks.test/oidc/accounts/xyz', got %s", key)
-			}
-			if tok.AccessToken != "__THAT__" {
-				t.Fatalf("store(): want access token '__THAT__', got %s", tok.AccessToken)
-			}
-			if tok.RefreshToken != "__SOMETHING__" {
-				t.Fatalf("store(): want refresh token '__SOMETHING__', got %s", tok.RefreshToken)
-			}
+	storeWrites := 0
+	store := &tokenStoreMock{
+		store: func(string, *oauth2.Token) error {
+			storeWrites++
 			return nil
 		},
 	}
@@ -1042,7 +1035,7 @@ func TestChallenge(t *testing.T) {
 
 	p, err := NewPersistentAuth(
 		ctx,
-		WithTokenStore(cache),
+		WithTokenStore(store),
 		WithBrowser(browser),
 		WithHttpClient(&http.Client{
 			Transport: fixtures.SliceTransport{
@@ -1065,11 +1058,14 @@ func TestChallenge(t *testing.T) {
 	}
 	defer p.Close()
 
-	errc := make(chan error)
+	type challengeResult struct {
+		token *oauth2.Token
+		err   error
+	}
+	resultc := make(chan challengeResult)
 	go func() {
-		_, err := p.Challenge()
-		errc <- err
-		close(errc)
+		token, err := p.Challenge()
+		resultc <- challengeResult{token: token, err: err}
 	}()
 
 	state := <-browserOpened
@@ -1082,9 +1078,18 @@ func TestChallenge(t *testing.T) {
 		t.Fatalf("http.Get(): want status code 200, got %d", resp.StatusCode)
 	}
 
-	err = <-errc
-	if err != nil {
-		t.Fatalf("p.Challenge(): want no error, got %v", err)
+	result := <-resultc
+	if result.err != nil {
+		t.Fatalf("p.Challenge(): want no error, got %v", result.err)
+	}
+	if result.token.AccessToken != "__THAT__" {
+		t.Errorf("p.Challenge(): want access token '__THAT__', got %s", result.token.AccessToken)
+	}
+	if result.token.RefreshToken != "__SOMETHING__" {
+		t.Errorf("p.Challenge(): want refresh token '__SOMETHING__', got %s", result.token.RefreshToken)
+	}
+	if storeWrites != 0 {
+		t.Errorf("p.Challenge(): want no store writes, got %d", storeWrites)
 	}
 }
 
