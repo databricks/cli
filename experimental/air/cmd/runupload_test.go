@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.yaml.in/yaml/v3"
 )
 
 // fakeWriter records artifact writes in place of a workspace filer.
@@ -70,16 +69,21 @@ func TestBuildArtifacts_CommandAndConfig(t *testing.T) {
 }
 
 func TestBuildArtifacts_ParametersButNoRequirements(t *testing.T) {
-	cfg := &runConfig{
-		ExperimentName: "test",
-		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
-		Command:        new("echo hi"),
-		Environment: &environmentConfig{
-			Dependencies: dependencies{set: true, list: []string{"torch", "numpy"}},
-			Version:      stringOrInt{set: true, raw: "5"},
-		},
-		Parameters: map[string]any{"lr": 0.1},
-	}
+	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", `
+experiment_name: test
+compute:
+  num_accelerators: 1
+  accelerator_type: GPU_1xH100
+environment:
+  dependencies:
+    - torch
+    - numpy
+  version: 5
+command: echo hi
+parameters:
+  lr: 0.1
+`))
+	require.NoError(t, err)
 
 	// Inline deps are not uploaded, so the artifacts are config, command, and params.
 	items, err := buildArtifacts(cfg)
@@ -102,11 +106,18 @@ parameters:
 }
 
 func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
-	cfg := &runConfig{
-		Command:      new("echo hi"),
-		EnvVariables: map[string]string{"WANDB": "demo"},
-		Secrets:      map[string]string{"HF_TOKEN": "myscope/hf"},
-	}
+	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", `
+experiment_name: test
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+command: echo hi
+env_variables:
+  WANDB: demo
+secrets:
+  HF_TOKEN: myscope/hf
+`))
+	require.NoError(t, err)
 
 	items, err := buildArtifacts(cfg)
 	require.NoError(t, err)
@@ -120,8 +131,9 @@ func TestBuildArtifacts_EnvVarsAndSecrets(t *testing.T) {
 	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
 }
 
-func TestBuildArtifacts_FinalNormalizedConfigWithNestedOverrides(t *testing.T) {
+func TestBuildArtifacts_SourceOrderedConfigWithNestedOverrides(t *testing.T) {
 	path := writeConfigFile(t, "run.yaml", `
+# This comment is intentionally not retained.
 experiment_name: artifact-test
 command: python train.py
 compute:
@@ -132,6 +144,9 @@ parameters:
     hidden_size: 1024
   optimizer:
     name: adamw
+  empty_map: {}
+  empty_list: []
+  empty_value: null
 mlflow_artifact_location: /Volumes/main/default/artifacts
 `)
 	cfg, err := loadRunConfigWithOverrides(t.Context(), path, []string{
@@ -140,24 +155,33 @@ mlflow_artifact_location: /Volumes/main/default/artifacts
 		"parameters.optimizer.learning_rate=0.001",
 	})
 	require.NoError(t, err)
+	require.NotNil(t, cfg.MLflowArtifactLocation)
+	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", *cfg.MLflowArtifactLocation)
 
 	items, err := buildArtifacts(cfg)
 	require.NoError(t, err)
 
-	var uploaded map[string]any
-	require.NoError(t, yaml.Unmarshal(itemData(t, items, trainingConfigName), &uploaded))
-	assert.Equal(t, 4, uploaded["compute"].(map[string]any)["num_accelerators"])
-	parameters := uploaded["parameters"].(map[string]any)
-	assert.Equal(t, 2048, parameters["model"].(map[string]any)["hidden_size"])
-	assert.InDelta(t, 0.001, parameters["optimizer"].(map[string]any)["learning_rate"], 0)
-	assert.Equal(t, "adamw", parameters["optimizer"].(map[string]any)["name"])
-	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", uploaded["mlflow_artifact_location"])
+	assert.Equal(t, `experiment_name: artifact-test
+command: python train.py
+compute:
+    accelerator_type: GPU_1xH100
+    num_accelerators: 4
+parameters:
+    model:
+        hidden_size: 2048
+    optimizer:
+        name: adamw
+        learning_rate: 0.001
+    empty_map: {}
+    empty_list: []
+    empty_value: null
+mlflow_artifact_location: /Volumes/main/default/artifacts
+`, string(itemData(t, items, trainingConfigName)))
 }
 
 func TestBuildArtifacts_OversizeConfigRejected(t *testing.T) {
 	_, err := buildArtifacts(&runConfig{
-		Command:    new("x"),
-		Parameters: map[string]any{"value": strings.Repeat("a", maxConfigYAMLBytes+1)},
+		artifactYAML: []byte(strings.Repeat("a", maxConfigYAMLBytes+1)),
 	})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "over the 1 MB limit")

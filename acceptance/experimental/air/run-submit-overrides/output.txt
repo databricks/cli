@@ -12,8 +12,8 @@ Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
   databricks experimental air logs 555
 
-=== the uploaded config contains normalization and overrides
+=== the uploaded config preserves source order and contains overrides
 >>> print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique
 {"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/overrides-smoke/overrides-smoke_[RUN_ID]/command.sh", "q": {"overwrite": "true"}, "raw_body": "python train.py"}
 {"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/overrides-smoke/overrides-smoke_[RUN_ID]/hyperparameters.yaml", "q": {"overwrite": "true"}, "raw_body": "model:\n    hidden_size: 2048\noptimizer:\n    learning_rate: 0.001\n    name: adamw\n"}
-{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/overrides-smoke/overrides-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: overrides-smoke\ncompute:\n    num_accelerators: 2\n    accelerator_type: GPU_1xH100\ncommand: python train.py\nparameters:\n    model:\n        hidden_size: 2048\n    optimizer:\n        learning_rate: 0.001\n        name: adamw\nmlflow_artifact_location: dbfs:/Volumes/main/default/air-artifacts\n"}
+{"method": "POST", "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.air/cli_launch/overrides-smoke/overrides-smoke_[RUN_ID]/training_config.yaml", "q": {"overwrite": "true"}, "raw_body": "experiment_name: overrides-smoke\ncommand: python train.py\ncompute:\n    accelerator_type: GPU_1xH100\n    num_accelerators: 2\nparameters:\n    model:\n        hidden_size: 2048\n    optimizer:\n        name: adamw\n        learning_rate: 0.001\nmlflow_artifact_location: /Volumes/main/default/air-artifacts\n"}

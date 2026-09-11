@@ -1,5 +1,5 @@
-# A non-dry-run submit that verifies training_config.yaml contains the finalized
-# config after normalization and nested command-line overrides.
+# A non-dry-run submit that verifies training_config.yaml preserves source order
+# and contains nested command-line overrides.
 RecordRequests = true
 
 [[Server]]

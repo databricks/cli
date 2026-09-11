@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -48,9 +49,9 @@ type fileWriter interface {
 // Dependencies are not uploaded here; they ride inline on the serverless
 // environment's spec.dependencies (see buildSubmitPayload).
 func buildArtifacts(cfg *runConfig) ([]uploadItem, error) {
-	configData, err := yaml.Marshal(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to serialize config: %w", err)
+	configData := cfg.artifactYAML
+	if len(configData) == 0 {
+		return nil, errors.New("serialized config YAML is unavailable")
 	}
 	if len(configData) > maxConfigYAMLBytes {
 		return nil, fmt.Errorf("config YAML is %.2f MB, over the %d MB limit; reduce 'parameters' or 'command'",

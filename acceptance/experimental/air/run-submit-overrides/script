@@ -4,5 +4,5 @@ trace $CLI experimental air run -f run.yaml \
   --override parameters.model.hidden_size=2048 \
   --override parameters.optimizer.learning_rate=0.001
 
-title "the uploaded config contains normalization and overrides"
+title "the uploaded config preserves source order and contains overrides"
 trace print_requests.py //api/2.0/workspace-files/import-file --oneline --sort --unique
