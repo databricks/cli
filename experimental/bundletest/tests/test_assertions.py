@@ -5,7 +5,7 @@ routing: real bug -> red, dialect gap / notebook task / reserved catalog -> Loca
 """
 
 import pytest
-from bundletest import BundleEnv, DuckDBBackend, LocalUnsupported, bundle_env
+from bundletest import BundleEnv, DuckDBBackend, JobRunFailed, LocalUnsupported, bundle_env
 
 
 @pytest.fixture
@@ -71,9 +71,24 @@ def test_wrong_table_name_fails_red(tmp_path):
         "CREATE OR REPLACE TABLE app.gold.out AS SELECT * FROM app.bronze.does_not_exist;",
     )
     with bundle_env(str(tmp_path)) as env:
-        result = env.run_job("j")
+        # This job intentionally fails, so opt out of the raise-by-default and inspect it.
+        result = env.run_job("j", check=False)
         assert not result.succeeded
         assert "does_not_exist" in result.error
+
+
+def test_failing_job_raises_by_default(tmp_path):
+    # Without check=False, a failed run raises JobRunFailed carrying the RunResult.
+    _write_bundle(
+        tmp_path,
+        "resources:\n  jobs:\n    j:\n      tasks:\n        - task_key: t\n"
+        "          sql_task:\n            file:\n              path: job.sql\n",
+        "CREATE OR REPLACE TABLE app.gold.out AS SELECT * FROM app.bronze.does_not_exist;",
+    )
+    with bundle_env(str(tmp_path)) as env:
+        with pytest.raises(JobRunFailed) as excinfo:
+            env.run_job("j")
+        assert not excinfo.value.result.succeeded
 
 
 def test_notebook_task_skips(tmp_path):
