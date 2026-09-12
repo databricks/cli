@@ -1,7 +1,17 @@
 # Minimal illustrative bundle. The local backend runs a job's real sql_task artifact
 # against DuckDB; the cloud backend (follow-up PR) deploys and runs it on a real workspace.
+#
+# It also declares one instance of every user-authored resource kind so the example gallery
+# can show a handle for each. Only jobs run locally; every other kind is read (not run) for
+# static wiring assertions via env.resource(kind, name) / the typed env.<kind>() handles.
+# The dashboard, genie space, and quality monitor all reference shop.gold.order_summary —
+# the gold table aggregate_orders produces — so those doubles as cross-resource wiring checks.
 bundle:
   name: orders
+
+variables:
+  warehouse_id:
+    description: SQL warehouse the transform runs on
 
 resources:
   jobs:
@@ -33,6 +43,213 @@ resources:
           notebook_task:
             notebook_path: src/score_model
 
-variables:
-  warehouse_id:
-    description: SQL warehouse the transform runs on
+  pipelines:
+    # Lakeflow pipeline — declared for wiring assertions; running it is cloud-only.
+    enrich_orders:
+      name: enrich_orders
+      catalog: shop
+      schema: enriched
+      libraries:
+        - notebook:
+            path: src/enrich_orders
+
+  dashboards:
+    # Lakeview dashboard with an inline serialized definition (inlined as YAML), so
+    # source_tables() can read which tables its datasets query without a workspace.
+    orders_overview:
+      display_name: Orders Overview
+      warehouse_id: ${var.warehouse_id}
+      serialized_dashboard:
+        datasets:
+          - name: summary
+            displayName: Order summary
+            queryLines:
+              - "SELECT order_count, total_revenue\n"
+              - "FROM shop.gold.order_summary\n"
+        pages:
+          - name: main
+            displayName: Overview
+            layout: []
+
+  genie_spaces:
+    # Genie Space with an inline serialized definition. A space declares its tables
+    # explicitly under data_sources.tables[].identifier (a different schema from a dashboard).
+    orders_genie:
+      title: Orders Genie
+      warehouse_id: ${var.warehouse_id}
+      serialized_space:
+        version: 1
+        data_sources:
+          tables:
+            - identifier: shop.gold.order_summary
+
+  quality_monitors:
+    # Monitors the gold table the aggregate job produces.
+    orders_quality:
+      table_name: shop.gold.order_summary
+      output_schema_name: shop.monitoring
+      assets_dir: /Shared/orders/monitoring
+      snapshot: {}
+
+  vector_search_indexes:
+    orders_index:
+      name: shop.ml.orders_index
+      endpoint_name: orders-vs-endpoint
+      index_type: DELTA_SYNC
+      delta_sync_index_spec:
+        source_table: shop.gold.order_summary
+        pipeline_type: TRIGGERED
+
+  vector_search_endpoints:
+    orders_vs_endpoint:
+      name: orders-vs-endpoint
+      endpoint_type: STANDARD
+
+  model_serving_endpoints:
+    orders_model_endpoint:
+      name: orders-model-endpoint
+      config:
+        served_entities:
+          - name: orders
+            entity_name: shop.ml.orders_model
+            entity_version: "1"
+
+  apps:
+    orders_app:
+      name: orders-app
+      source_code_path: ./app
+      config:
+        command:
+          - python
+          - app.py
+
+  models:
+    orders_model:
+      name: orders_model
+
+  experiments:
+    orders_experiment:
+      name: /Shared/orders_experiment
+
+  registered_models:
+    orders_registered:
+      name: orders
+      catalog_name: shop
+      schema_name: ml
+
+  catalogs:
+    orders_catalog:
+      name: shop
+      grants:
+        - principal: users
+          privileges:
+            - USE_CATALOG
+
+  schemas:
+    orders_schema:
+      name: gold
+      catalog_name: shop
+
+  volumes:
+    raw_data:
+      name: raw_data
+      catalog_name: shop
+      schema_name: bronze
+      volume_type: MANAGED
+
+  external_locations:
+    orders_location:
+      name: orders_location
+      url: s3://example-bucket/orders
+      credential_name: orders_credential
+
+  clusters:
+    orders_cluster:
+      cluster_name: orders
+      spark_version: 15.4.x-scala2.12
+      node_type_id: i3.xlarge
+      num_workers: 2
+
+  instance_pools:
+    orders_pool:
+      instance_pool_name: orders-pool
+      node_type_id: i3.xlarge
+      idle_instance_autotermination_minutes: 10
+
+  secret_scopes:
+    orders_scope:
+      name: orders-scope
+
+  secrets:
+    orders_secret:
+      name: token
+      catalog_name: shop
+      schema_name: secrets
+
+  cluster_policies:
+    orders_policy:
+      name: orders-policy
+      definition: "{}"
+
+  sql_warehouses:
+    orders_warehouse:
+      name: orders-warehouse
+      cluster_size: Small
+      warehouse_type: PRO
+
+  alerts:
+    orders_alert:
+      display_name: Orders alert
+      query_id: q-orders-123
+
+  database_instances:
+    orders_db_instance:
+      name: orders-db-instance
+      capacity: CU_1
+
+  database_catalogs:
+    orders_db_catalog:
+      name: orders-db-catalog
+      database_instance_name: orders-db-instance
+
+  synced_database_tables:
+    orders_synced:
+      name: shop.gold.orders_synced
+
+  postgres_projects:
+    orders_pg_project:
+      project_id: orders-proj
+      display_name: Orders
+
+  postgres_branches:
+    orders_pg_branch:
+      branch_id: main
+      parent: projects/orders-proj
+
+  postgres_endpoints:
+    orders_pg_endpoint:
+      endpoint_id: ep1
+      parent: projects/orders-proj/branches/main
+
+  postgres_catalogs:
+    orders_pg_catalog:
+      catalog_id: shop_pg
+      database_connection_id: conn-1
+
+  postgres_databases:
+    orders_pg_database:
+      database_id: orders
+      parent: projects/orders-proj/branches/main
+
+  postgres_roles:
+    orders_pg_role:
+      role_id: app
+      parent: projects/orders-proj/branches/main
+
+  postgres_synced_tables:
+    orders_pg_synced:
+      synced_table_id: shop.gold.orders_synced_pg
+
+  postgres_snapshot_schedules:
+    orders_pg_snapshot:
+      branch: projects/orders-proj/branches/main
