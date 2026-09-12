@@ -137,6 +137,12 @@ def _transform_field(cls: Type[_T], field: Field, value: Any) -> _T:
 def _transform(cls: Type[_T], value: Any) -> _T:
     origin = get_origin(cls)
 
+    # interface{} fields are generated as `Any`: there is no schema to normalize
+    # against, so pass the value through unchanged. The bundle config mutators
+    # validate it (string or map) on the Go side.
+    if cls is Any:
+        return value  # type:ignore
+
     if is_dataclass(cls) and isinstance(value, cls):  # type:ignore
         return value
 

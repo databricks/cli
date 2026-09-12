@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 import pytest
 
@@ -62,6 +62,35 @@ def test_transform_str():
     out = _transform(Fake, {"field": "test"})
 
     assert out == Fake(field="test")
+
+
+def test_transform_any_passthrough():
+    # interface{} fields are generated as Any and pass through untransformed.
+    value = {"a": 1, "b": ["c", "d"]}
+
+    assert _transform(Any, value) is value  # type: ignore
+    assert _transform(Any, "raw string") == "raw string"  # type: ignore
+
+
+def test_transform_any_field():
+    @dataclass
+    class Fake:
+        field: VariableOrOptional[Any] = None
+
+    value = {"a": 1, "b": ["c", "d"]}
+    out = _transform(Fake, {"field": value})
+
+    assert out == Fake(field=value)
+
+
+def test_transform_any_field_variable():
+    @dataclass
+    class Fake:
+        field: VariableOrOptional[Any] = None
+
+    out = _transform(Fake, {"field": "${var.x}"})
+
+    assert out == Fake(field=Variable(path="var.x", type=Any))  # type: ignore
 
 
 def test_transform_str_list():

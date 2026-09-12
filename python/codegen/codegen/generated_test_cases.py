@@ -123,6 +123,10 @@ def _synth_scalar(name: str, hint: str) -> _Scalar:
     # duration.Duration is generated as a str; serialized as a seconds string.
     if name == "duration.Duration":
         return _Scalar('"3600s"', '"3600s"')
+    # interface{} is generated as Any; there is no schema to sample, so use a
+    # fixed inline dict. Both render paths use the same literal.
+    if name == "interface":
+        return _Scalar('{"key": "value"}', '{"key": "value"}')
 
     raise ValueError(f"Unknown primitive: {name}")
 

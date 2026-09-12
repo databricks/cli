@@ -1,0 +1,39 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_dashboard"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "dashboards": {
+      "my_dashboard_1": {
+        "display_name": "my_dashboard_1 (updated)",
+        "embed_credentials": false,
+        "parent_path": "/Workspace/Users/me",
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Main\",\"name\":\"main\"}]}",
+        "warehouse_id": "abc123"
+      },
+      "my_dashboard_2": {
+        "display_name": "my_dashboard_2 (updated)",
+        "embed_credentials": false,
+        "parent_path": "/Workspace/Users/me",
+        "serialized_dashboard": "{\"pages\": [{\"name\": \"main\", \"displayName\": \"Main\"}]}",
+        "warehouse_id": "abc123"
+      },
+      "my_dashboard_3": {
+        "display_name": "my_dashboard_3 (updated)",
+        "embed_credentials": false,
+        "parent_path": "/Workspace/Users/me",
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Main\",\"name\":\"main\"}]}",
+        "warehouse_id": "abc123"
+      }
+    }
+  }
+}
