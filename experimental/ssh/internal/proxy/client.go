@@ -163,11 +163,33 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 	case <-time.After(clientHandshakeTimeout):
 		// cancel() (deferred) unblocks what it can; the process exits and reclaims any goroutine
 		// still stuck on os.Stdin. ssh then fails fast instead of hanging on its ConnectTimeout.
+		if proxy.droppedConnections() > 0 {
+			// The tunnel connected and then kept dropping, so sshd is not the suspect: pointing
+			// the user at a missing openssh-server here sends them to the wrong place, and bills
+			// a network failure to the wrong telemetry category.
+			return errors.Join(ErrWebsocketDropped,
+				fmt.Errorf("the tunnel connection dropped %d time(s) before the SSH server responded", proxy.droppedConnections()))
+		}
 		return errHandshakeTimeout
 	case <-ctx.Done():
-		return nil
+		// proxy.start cancels this context from its own deferred cancel, so it always fires just
+		// before g.Wait delivers the session's outcome. Without waiting for that outcome, every
+		// session that ends before the SSH server's first byte - a drop during the handshake, a
+		// reattach the server refused - is reported as a clean exit: the user sees no reason and
+		// telemetry records no category. Bounded so a wedged loop still cannot hang the exit.
+		select {
+		case err := <-done:
+			return normalizeProxyError(err)
+		case <-time.After(proxyExitGrace):
+			return nil
+		}
 	}
 }
+
+// proxyExitGrace bounds how long the exit path waits for the session's outcome once the context is
+// cancelled. The outcome is already in flight by then, so this only matters if a proxy loop is
+// wedged, and then reporting nothing beats hanging.
+const proxyExitGrace = 5 * time.Second
 
 // normalizeProxyError treats a clean finish or a context cancellation (our own exit signal, or the
 // user interrupting) as success; anything else is a real proxy error.

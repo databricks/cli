@@ -993,6 +993,9 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, opts.KeepaliveInterval, resumable, createConn)
 }
 
+// capabilitiesProbeTimeout caps the pre-connect capabilities probe. A var so tests can shorten it.
+var capabilitiesProbeTimeout = 10 * time.Second
+
 // serverSupportsResume reports whether the running SSH server speaks the resume protocol.
 func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, liteswap string) bool {
 	req, err := newDriverProxyRequest(ctx, client, clusterID, serverPort, "capabilities", liteswap)
@@ -1000,7 +1003,10 @@ func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClien
 		log.Debugf(ctx, "Failed to build the server capabilities request: %v", err)
 		return false
 	}
-	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
+	// Bounded on its own: this probe runs before the tunnel is dialled, and resume is an
+	// optimisation, so a driver proxy that accepts the request and never answers must cost a
+	// bounded wait rather than the whole connect path.
+	httpClient := &http.Client{Transport: client.Config.HTTPTransport, Timeout: capabilitiesProbeTimeout}
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		log.Debugf(ctx, "Failed to query the server capabilities: %v", err)

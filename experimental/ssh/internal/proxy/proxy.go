@@ -91,6 +91,15 @@ const (
 	proxySessionFinished   = "finished"
 )
 
+// proxyEOFDrainTimeout bounds how long the source's EOF waits for the peer to acknowledge the tail
+// of the stream. A peer whose own receiving loop is wedged reads without ever acknowledging, and
+// waiting for it indefinitely outlives the ssh client that spawned us - on the server side it also
+// pins sshd and a client slot, which is what keeps the compute alive. The tail is at most one
+// replay window and acknowledgements are sent every proxyAckInterval, so this only expires when the
+// peer has genuinely stopped delivering. Long enough to cover a reattach that lands right at EOF.
+// A var so tests can shorten it.
+var proxyEOFDrainTimeout = proxyResumeGrace
+
 // resumeState is the per-connection bookkeeping a resumable transport needs. It is nil unless
 // both ends negotiated resume, in which case the proxy behaves exactly as it did before.
 type resumeState struct {
@@ -119,6 +128,9 @@ type resumeState struct {
 	gate sendGate
 	// Serializes inbound reattach attempts, including retiring the old socket.
 	reattachMu sync.Mutex
+	// How many times the connection has dropped, so the exit path can tell a tunnel that kept
+	// dropping apart from an SSH server that never answered. The two need different messages.
+	drops atomic.Int64
 	// Closed when the session stops, so an HTTP handler cannot revive it.
 	done  chan struct{}
 	grace time.Duration
@@ -255,6 +267,14 @@ func (pc *proxyConnection) resumable() bool {
 	return pc.resume != nil
 }
 
+// droppedConnections reports how many times this session's connection has dropped.
+func (pc *proxyConnection) droppedConnections() int64 {
+	if !pc.resumable() {
+		return 0
+	}
+	return pc.resume.drops.Load()
+}
+
 func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.Writer) error {
 	g, gCtx := errgroup.WithContext(ctx)
 	var finished atomic.Bool
@@ -372,10 +392,19 @@ func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) er
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
 				if pc.resumable() {
-					// EOF may accompany the last payload of a failed write. Keep the
-					// session alive until replay delivers and acknowledges those bytes.
-					if err := pc.resume.sendBuf.waitForSpace(ctx, proxyResumeBufferLimit); err != nil {
-						return err
+					// EOF may accompany the last payload of a failed write. Keep the session alive
+					// until replay delivers and acknowledges those bytes - but only for
+					// proxyEOFDrainTimeout: a peer that reads without ever acknowledging would
+					// otherwise hold the session open forever, long after the ssh client that
+					// spawned us is gone. Our own cancellation still ends it immediately.
+					drainCtx, cancel := context.WithTimeout(ctx, proxyEOFDrainTimeout)
+					err := pc.resume.sendBuf.waitForSpace(drainCtx, proxyResumeBufferLimit)
+					cancel()
+					if err != nil && ctx.Err() != nil {
+						return ctx.Err()
+					}
+					if err != nil {
+						log.Warnf(ctx, "The peer never acknowledged the last bytes of the session: %v", err)
 					}
 				}
 				return errors.Join(errProxyEOF, readErr)
@@ -536,6 +565,7 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 				// outlives the connection, so reattach instead of ending the session.
 				if pc.resumable() {
 					conn.Close()
+					pc.resume.drops.Add(1)
 					if resumeErr := pc.reattach(ctx); resumeErr != nil {
 						return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to reattach after the connection dropped: %w", resumeErr))
 					}
