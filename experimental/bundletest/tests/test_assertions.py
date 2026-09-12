@@ -70,7 +70,7 @@ def test_wrong_table_name_fails_red(tmp_path):
         "          sql_task:\n            file:\n              path: job.sql\n",
         "CREATE OR REPLACE TABLE app.gold.out AS SELECT * FROM app.bronze.does_not_exist;",
     )
-    with bundle_env(str(tmp_path)) as env:
+    with bundle_env(str(tmp_path), backend="local") as env:
         # This job intentionally fails, so opt out of the raise-by-default and inspect it.
         result = env.run_job("j", check=False)
         assert not result.succeeded
@@ -97,7 +97,7 @@ def test_notebook_task_skips(tmp_path):
         "resources:\n  jobs:\n    j:\n      tasks:\n        - task_key: t\n"
         "          notebook_task:\n            notebook_path: /nb\n",
     )
-    with bundle_env(str(tmp_path)) as env:
+    with bundle_env(str(tmp_path), backend="local") as env:
         with pytest.raises(LocalUnsupported):
             env.run_job("j")
 
@@ -109,7 +109,7 @@ def test_databricks_only_function_skips(tmp_path):
         "          sql_task:\n            file:\n              path: job.sql\n",
         "SELECT from_utc_timestamp(now(), 'UTC');",
     )
-    with bundle_env(str(tmp_path)) as env:
+    with bundle_env(str(tmp_path), backend="local") as env:
         with pytest.raises(LocalUnsupported):
             env.run_job("j")
 
