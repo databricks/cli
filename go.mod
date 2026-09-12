@@ -39,7 +39,7 @@ require (
 	golang.org/x/crypto v0.56.0 // BSD-3-Clause
 	golang.org/x/mod v0.40.0 // BSD-3-Clause
 	golang.org/x/net v0.58.0 // BSD-3-Clause
-	golang.org/x/oauth2 v0.36.0 // BSD-3-Clause
+	golang.org/x/oauth2 v0.37.0 // BSD-3-Clause
 	golang.org/x/sync v0.22.0 // BSD-3-Clause
 	golang.org/x/sys v0.47.0 // BSD-3-Clause
 	golang.org/x/term v0.45.0 // BSD-3-Clause
