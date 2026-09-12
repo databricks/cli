@@ -118,7 +118,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	if !opts.NoValidateRemotePath {
 		// Validation may already have recreated a deleted directory before upload.
 		// Compare its identity with the last successful sync, not just its existence.
-		if !snapshot.New && snapshot.RemoteObjectID != remoteObjectID {
+		if !snapshot.New && (remoteObjectID == 0 || snapshot.RemoteObjectID != remoteObjectID) {
 			log.Debugf(ctx, "Remote directory changed, discarding sync snapshot for %s", opts.RemotePath)
 			snapshot, err = newSnapshot(ctx, &opts)
 			if err != nil {

@@ -28,6 +28,7 @@ func TestSyncSnapshotDirectoryIdentity(t *testing.T) {
 		{name: "legacy snapshot", exists: true, legacy: true, wantUploads: 1},
 		{name: "replaced directory", exists: true, replaced: true, wantUploads: 1},
 		{name: "deleted directory", wantUploads: 1},
+		{name: "deleted directory with legacy snapshot", legacy: true, wantUploads: 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := t.Context()
