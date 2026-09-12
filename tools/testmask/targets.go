@@ -29,6 +29,52 @@ var commonTriggerPatterns = []string{
 	"tools/task/",
 }
 
+// inertFiles are repo-relative paths whose contents cannot affect any test
+// outcome, so a change touching only these (plus inertPrefixes) runs no tests.
+//
+// This list is deliberately narrow and must never include a file that a test
+// reads: NOTICE is verified by internal/build/notice_test.go, and the many
+// README.md files under acceptance/ and libs/template/ are test fixtures.
+// None of those are inert. TestInertPathsExcludeTestInputs guards this.
+var inertFiles = map[string]bool{
+	"README.md":                        true,
+	"SECURITY.md":                      true,
+	"CHANGELOG.md":                     true,
+	"CLAUDE.md":                        true,
+	"AGENTS.md":                        true,
+	"LICENSE":                          true,
+	".github/PULL_REQUEST_TEMPLATE.md": true,
+}
+
+// inertPrefixes are repo-relative directory prefixes that hold only
+// documentation or contributor metadata, never code or test inputs.
+//
+// .nextchanges/ holds per-PR changelog fragments. Their placement is validated
+// by `task check-changelog` in the `check` workflow, which runs on every PR
+// independently of testmask, so skipping the test suite for a fragment-only
+// change is safe.
+var inertPrefixes = []string{
+	"docs/",
+	".github/ISSUE_TEMPLATE/",
+	".nextchanges/",
+}
+
+// isInertPath reports whether a changed file is documentation or metadata that
+// cannot influence a test outcome. Matching is on exact repo-relative paths (or
+// the inertPrefixes directories), never bare basenames, so fixture files such
+// as acceptance/.../README.md are not misclassified as inert.
+func isInertPath(file string) bool {
+	if inertFiles[file] {
+		return true
+	}
+	for _, prefix := range inertPrefixes {
+		if strings.HasPrefix(file, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 type targetMapping struct {
 	prefixes []string
 	target   string
@@ -103,10 +149,22 @@ func sourceToPrefix(src string) string {
 
 // GetTargets matches files to targets based on patterns and returns the matched targets.
 func GetTargets(files []string, mappings []targetMapping) []string {
+	// No changed files were determined; fall back to the full test suite. The
+	// all-inert skip below requires at least one changed file, all inert.
+	if len(files) == 0 {
+		return []string{"test"}
+	}
+
 	targetSet := make(map[string]bool)
 	unmatchedFiles := []string{}
 
 	for _, file := range files {
+		if isInertPath(file) {
+			// Documentation/metadata: cannot affect any test outcome, so it
+			// neither selects a target nor counts as an unmatched file that
+			// would otherwise trigger the catch-all `test` target.
+			continue
+		}
 		matched := false
 		for _, mapping := range mappings {
 			for _, prefix := range mapping.prefixes {
@@ -126,8 +184,10 @@ func GetTargets(files []string, mappings []targetMapping) []string {
 		targetSet["test"] = true
 	}
 
+	// Every changed file was inert, so no test target is affected. Return an
+	// empty list; CI treats it as "skip all", including the integration tests.
 	if len(targetSet) == 0 {
-		return []string{"test"}
+		return []string{}
 	}
 
 	return slices.Sorted(maps.Keys(targetSet))
