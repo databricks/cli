@@ -1589,6 +1589,39 @@
                   }
                 ]
               },
+              "resources.McpService": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "comment": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.McpServiceConfig"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "mcp_service_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "parent",
+                      "mcp_service_id"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.MlflowExperiment": {
                 "oneOf": [
                   {
@@ -3959,6 +3992,9 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
                       "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs)."
                     },
+                    "mcp_services": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.McpService"
+                    },
                     "model_services": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelService"
                     },
@@ -5400,6 +5436,59 @@
                   "additionalProperties": false,
                   "required": [
                     "parent"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.McpServiceConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Operational configuration for an MCP service. Groups the source reference,\ntool selectors, and rate limit -- the fields that configure how the MCP\nservice behaves at invocation time.",
+                  "properties": {
+                    "include_tool_selectors": {
+                      "description": "[Beta] Glob or exact-match patterns selecting which tools from the MCP server\nto expose. Prefix match for patterns with `*`, exact match otherwise.\nAn empty list means all tools are included. Per-element max 256 chars.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    },
+                    "rate_limits": {
+                      "description": "[Beta] Per-principal rate limits applied to tool invocations routed through this\nMCP service. Repeated to support per-USER / USER_GROUP / SERVICE_PRINCIPAL\n/ SERVICE / USER_DEFAULT scopes simultaneously, mirroring the\n`ModelServiceConfig.rate_limits` shape. Empty when no rate limit is\nconfigured.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RateLimit",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    },
+                    "source_connection": {
+                      "description": "[Beta] UC Connection referencing the MCP server.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.McpServiceConfigSourceConnection",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.McpServiceConfigSourceConnection": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "UC Connection that hosts the MCP server. On create, provide `name` in the\nschema-scoped form `connections/{catalog}.{schema}.{connection}`. On read,\nthe service populates the resolved connection metadata and preserves a\ndangling source so callers can diagnose a deleted backing connection.",
+                  "properties": {
+                    "name": {
+                      "description": "[Beta] Name of the UC connection that hosts the MCP server, as\n`connections/{catalog}.{schema}.{connection}`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
                   ]
                 },
                 {
@@ -17154,6 +17243,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobRun"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.McpService": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.McpService"
                       }
                     },
                     {

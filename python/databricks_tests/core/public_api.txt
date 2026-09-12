@@ -27,6 +27,7 @@ __all__ = [
     load_resources_from_module,
     load_resources_from_modules,
     load_resources_from_package_module,
+    mcp_service_mutator,
     mlflow_experiment_mutator,
     mlflow_model_mutator,
     model_service_mutator,
@@ -99,6 +100,7 @@ class Resources:
     def add_job(self, resource_name: str, job: JobParam, *, location: Union[Location, None] = None) -> None
     def add_job_run(self, resource_name: str, job_run: JobRunParam, *, location: Union[Location, None] = None) -> None
     def add_location(self, path: tuple[str, ...], location: Location) -> None
+    def add_mcp_service(self, resource_name: str, mcp_service: McpServiceParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_experiment(self, resource_name: str, mlflow_experiment: MlflowExperimentParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_model(self, resource_name: str, mlflow_model: MlflowModelParam, *, location: Union[Location, None] = None) -> None
     def add_model_service(self, resource_name: str, model_service: ModelServiceParam, *, location: Union[Location, None] = None) -> None
@@ -129,6 +131,7 @@ class Resources:
     @property instance_pools -> dict[str, InstancePool]
     @property job_runs -> dict[str, JobRun]
     @property jobs -> dict[str, Job]
+    @property mcp_services -> dict[str, McpService]
     @property model_services -> dict[str, ModelService]
     @property model_serving_endpoints -> dict[str, ModelServingEndpoint]
     @property models -> dict[str, MlflowModel]
@@ -210,6 +213,10 @@ def load_resources_from_modules(modules: Iterable[module]) -> Resources
 
 def load_resources_from_package_module(package_module: module) -> Resources
 
+@overload def mcp_service_mutator(function: Callable[[Bundle, McpService], McpService]) -> ResourceMutator[McpService]
+@overload def mcp_service_mutator(function: Callable[[McpService], McpService]) -> ResourceMutator[McpService]
+def mcp_service_mutator(function: Callable) -> ResourceMutator[McpService]
+
 @overload def mlflow_experiment_mutator(function: Callable[[Bundle, MlflowExperiment], MlflowExperiment]) -> ResourceMutator[MlflowExperiment]
 @overload def mlflow_experiment_mutator(function: Callable[[MlflowExperiment], MlflowExperiment]) -> ResourceMutator[MlflowExperiment]
 def mlflow_experiment_mutator(function: Callable) -> ResourceMutator[MlflowExperiment]
@@ -287,6 +294,7 @@ singular_name=external_location plural_name=external_locations resource_type=Ext
 singular_name=instance_pool plural_name=instance_pools resource_type=InstancePool
 singular_name=job plural_name=jobs resource_type=Job
 singular_name=job_run plural_name=job_runs resource_type=JobRun
+singular_name=mcp_service plural_name=mcp_services resource_type=McpService
 singular_name=mlflow_experiment plural_name=experiments resource_type=MlflowExperiment
 singular_name=mlflow_model plural_name=models resource_type=MlflowModel
 singular_name=model_service plural_name=model_services resource_type=ModelService

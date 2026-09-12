@@ -177,6 +177,12 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		}
 		ms.Parent = resolveParent(b, ms.Parent)
 	}
+	for _, ms := range b.Config.Resources.McpServices {
+		if ms == nil {
+			continue
+		}
+		ms.Parent = resolveParent(b, ms.Parent)
+	}
 
 	// Schemas are resolved last because the schema catalog resolution modifies
 	// schema.CatalogName, and findSchema (used by resolveSchema above) matches

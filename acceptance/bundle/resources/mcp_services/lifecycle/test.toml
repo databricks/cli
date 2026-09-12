@@ -1,0 +1,13 @@
+# MCP service lifecycle also runs against a real workspace. An MCP service must
+# point at a pre-existing UC connection hosting the MCP server
+# (config.source_connection); there is no bundle `connections` resource to
+# deploy it as a dependency, so the script creates one out-of-band on cloud and
+# tears it down via trap. A bearer-auth connection with a placeholder host is
+# used: unlike an OAuth/DCR connection the backend does not probe the host at
+# create time.
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+    ".databricks",
+]

@@ -648,6 +648,22 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.ModelServices, req.Vars["name"])
 	})
 
+	server.Handle("POST", "/api/2.1/unity-catalog/mcp-services", func(req Request) any {
+		return req.Workspace.McpServicesCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
+		return req.Workspace.McpServicesUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/mcp-services/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
+	})
+
 	// Volumes:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
