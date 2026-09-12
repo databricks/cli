@@ -36,7 +36,27 @@ file with `StrictHostKeyChecking yes`. Tunnel host keys therefore never land in
 `~/.ssh/known_hosts`, where a name - unique only within one workspace - would collide with an
 entry left by other compute.
 
+### Filesystem access
+
+On dedicated compute, the tunnel server registers its own process with the filesystem
+daemons. SSH sessions that remain descendants of that server can keep accessing
+`/Workspace` and `/Volumes` if the bootstrap notebook exits and the server survives.
+This does not keep the compute or server alive, preserve detached processes that leave
+the server's process tree, or restore them after a server restart.
+
+The server checks its filesystem registration and current credential every ten minutes.
+It updates registration when the credential changes or the registered process is lost,
+and retries failed registrations. Unchanged registrations do not generate updates.
+The bootstrap supplies a fixed credential; checking it again cannot renew an expired or
+revoked credential. Registration entries may remain until compute shutdown. Matching
+the process start time prevents a reused PID from inheriting an old registration.
+
+Registration failures are warnings. On compute where the daemon APIs are unavailable,
+including serverless, the tunnel starts and file access continues to depend on the
+bootstrap notebook as before. See [filesystem troubleshooting](./FAILURE_MODES.md#filesystem-access-after-the-bootstrap-notebook-exits).
+
 ## Development
+
 ```shell
 ./task build snapshot-release
 ./cli ssh connect --cluster=<id> --releases-dir=./dist --debug # or modify ssh config accordingly
