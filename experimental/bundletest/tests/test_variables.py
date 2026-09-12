@@ -87,13 +87,11 @@ def test_included_file_is_resolved(tmp_path):
     # A resource defined in an included file, referencing a variable. The old single-file
     # resolver never read includes, so it couldn't see this job at all.
     (tmp_path / "databricks.yml").write_text(
-        "bundle:\n  name: b\ninclude:\n  - resources/*.yml\n"
-        "variables:\n  catalog:\n    default: shop\n"
+        "bundle:\n  name: b\ninclude:\n  - resources/*.yml\nvariables:\n  catalog:\n    default: shop\n"
     )
     (tmp_path / "resources").mkdir()
     (tmp_path / "resources" / "jobs.yml").write_text(
-        "resources:\n  jobs:\n    j:\n      name: ${var.catalog}_job\n"
-        "      tasks:\n        - task_key: t\n"
+        "resources:\n  jobs:\n    j:\n      name: ${var.catalog}_job\n      tasks:\n        - task_key: t\n"
     )
     with bundle_env(str(tmp_path)) as env:
         assert env.backend.get_resource("jobs", "j")["name"] == "shop_job"
