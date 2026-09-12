@@ -119,6 +119,24 @@ const (
 
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
 
+// MaxLogLines caps how many lines of each LOG.* file the harness echoes into the test
+// log. Some invariant tests write very large LOG.planjson files that otherwise drown out
+// the rest of the logs and overflow log viewers. Override with DATABRICKS_CLI_TEST_MAX_LOG;
+// a value <= 0 disables the limit.
+var MaxLogLines = func() int {
+	if v := os.Getenv("DATABRICKS_CLI_TEST_MAX_LOG"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			panic("invalid DATABRICKS_CLI_TEST_MAX_LOG=" + v + ": " + err.Error())
+		}
+		return n
+	}
+	if ApplyCITimeoutMultipler {
+		return 100
+	}
+	return 1000
+}()
+
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
 		return ".exe"
@@ -1071,6 +1089,7 @@ func runTest(t *testing.T,
 			prefix := relPath + ": "
 			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
 			messages = strings.TrimRight(messages, "\r\n \t")
+			messages = truncateLines(messages, MaxLogLines)
 			messages = prefix + strings.ReplaceAll(messages, "\n", "\n"+prefix)
 			if strings.Contains(messages, "\n") {
 				messages = "\n" + messages
@@ -1089,6 +1108,21 @@ func runTest(t *testing.T,
 	if len(unexpected) > 0 {
 		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
+}
+
+// truncateLines keeps at most maxLines lines of s, appending a note about how many were
+// dropped. maxLines <= 0 disables truncation.
+func truncateLines(s string, maxLines int) string {
+	if maxLines <= 0 {
+		return s
+	}
+	lines := strings.Split(s, "\n")
+	if len(lines) <= maxLines {
+		return s
+	}
+	dropped := len(lines) - maxLines
+	kept := strings.Join(lines[:maxLines], "\n")
+	return fmt.Sprintf("%s\n... (%d more lines truncated, raise DATABRICKS_CLI_TEST_MAX_LOG to see more)", kept, dropped)
 }
 
 // checkEnvFilters skips the test if any env filter doesn't match testEnv. Filters that
