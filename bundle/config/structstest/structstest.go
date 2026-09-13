@@ -342,6 +342,11 @@ func flatten(path *structpath.PathNode, typ reflect.Type, v any, out map[string]
 					}
 					if sf, _, ok := structaccess.FindStructFieldByKeyType(typ, key); ok {
 						memberType = sf.Type
+					} else {
+						// FindStructFieldByKeyType skips bundle:"internal"/"readonly" fields,
+						// but flatten needs the type for map-vs-struct path notation. Fall back
+						// to a raw field search that ignores bundle tags.
+						memberType = rawFieldType(typ, key)
 					}
 				}
 			}
@@ -443,13 +448,47 @@ func normalizeNumber(text string) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
 }
 
+// rawFieldType finds the type of a json-named field in a struct without filtering
+// by bundle tags, so flatten can determine map-vs-struct path notation for
+// fields that structaccess intentionally refuses (e.g. bundle:"internal").
+func rawFieldType(typ reflect.Type, key string) reflect.Type {
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	if typ.Kind() != reflect.Struct {
+		return nil
+	}
+	for sf := range typ.Fields() {
+		if sf.PkgPath != "" {
+			continue
+		}
+		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
+		if name == "" {
+			name = sf.Name
+		}
+		if name == key {
+			return sf.Type
+		}
+		if sf.Anonymous {
+			ft := sf.Type
+			for ft.Kind() == reflect.Pointer {
+				ft = ft.Elem()
+			}
+			if t := rawFieldType(ft, key); t != nil {
+				return t
+			}
+		}
+	}
+	return nil
+}
+
 // skippedByTag reports whether the last segment of path names a field structaccess
 // refuses on purpose. The lookup goes through embedded structs, so a field promoted from
 // BaseResource is recognised too.
 func skippedByTag(typ reflect.Type, path *structpath.PathNode) bool {
 	nodes := path.AsSlice()
 	cur := typ
-	for i, node := range nodes {
+	for _, node := range nodes {
 		for cur.Kind() == reflect.Pointer {
 			cur = cur.Elem()
 		}
@@ -460,8 +499,9 @@ func skippedByTag(typ reflect.Type, path *structpath.PathNode) bool {
 		sf, _, found := structaccess.FindStructFieldByKeyType(cur, key)
 		if !found {
 			// structaccess drops internal and readonly fields from the type-level
-			// lookup as well, so a miss on the last segment is the tag talking.
-			return i == len(nodes)-1 && taggedInternal(cur, key)
+			// lookup as well, so a miss on any segment is the tag talking — any
+			// path through an internal field is also internal.
+			return taggedInternal(cur, key)
 		}
 		cur = sf.Type
 	}
