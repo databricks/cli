@@ -58,16 +58,16 @@ Workspace:
 Resources:
   Postgres branches:
     main:
-      Name: 
+      Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/main
   Postgres databases:
     my_database:
-      Name: 
+      Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-database
   Postgres projects:
     my_project:
       Name: Test Project for Database
   Postgres roles:
     owner:
-      Name: 
+      Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
