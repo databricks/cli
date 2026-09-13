@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -16,6 +16,6 @@ title "Plan is a no-op after deploy (server-computed definition is not drift)"
 trace $CLI bundle plan
 
 title "Redeploy issues no edit"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 trace print_requests.py //policies/clusters/edit

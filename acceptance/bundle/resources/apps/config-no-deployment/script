@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 
 title "Deploy: app created with no_compute; config is not deployed until the app starts"
 trace $CLI bundle deploy

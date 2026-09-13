@@ -22,6 +22,7 @@ var resourceURLPatterns = map[string]string{
 	"jobs":                    "jobs/%s",
 	"models":                  "ml/models/%s",
 	"model_serving_endpoints": "ml/endpoints/%s",
+	"model_services":          "explore/data/model-services/%s",
 	"notebooks":               "#notebook/%s",
 	"pipelines":               "pipelines/%s",
 	"postgres_catalogs":       "explore/data/%s",
@@ -53,6 +54,7 @@ var resourceAliases = map[string]string{
 // requires slash-separated segments.
 var dotSeparatedResources = map[string]bool{
 	"catalogs":               true,
+	"model_services":         true,
 	"postgres_synced_tables": true,
 	"quality_monitors":       true,
 	"registered_models":      true,

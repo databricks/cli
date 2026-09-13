@@ -18,15 +18,12 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
   Postgres endpoints:
     custom:
       Name: 
-      URL:  (not deployed)
   Postgres projects:
     my_project:
       Name: Test Project for Endpoint
-      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default/files...
@@ -61,15 +58,12 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
   Postgres endpoints:
     custom:
       Name: 
-      URL:  (not deployed)
   Postgres projects:
     my_project:
       Name: Test Project for Endpoint
-      URL:  (not deployed)
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

@@ -47,10 +47,6 @@ func (s *SyncedDatabaseTable) GetName() string {
 	return s.Name
 }
 
-func (s *SyncedDatabaseTable) GetURL() string {
-	return s.URL
-}
-
 func (s *SyncedDatabaseTable) InitializeURL(baseURL url.URL) {
 	if s.Name == "" {
 		return

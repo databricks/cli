@@ -37,4 +37,4 @@ trace print_state.py --no-dms
 title "Destroy: the delete is recorded with the id and no state"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py --dms //api/2.0/bundle
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 
 title "Deploy without telemetry_config"
 trace $CLI bundle deploy

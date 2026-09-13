@@ -61,7 +61,3 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 func (j *Job) GetName() string {
 	return j.Name
 }
-
-func (j *Job) GetURL() string {
-	return j.URL
-}

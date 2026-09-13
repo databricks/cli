@@ -3,3 +3,16 @@
 Error: Job 1234 does not exist.
 
 Exit code: 1
+
+>>> print_requests.py --get //
+{
+  "method": "GET",
+  "path": "/.well-known/databricks-config"
+}
+{
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "1234"
+  }
+}

@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.my_job
-Files: 6 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> errcode [CLI] bundle deploy --fail-on-active-runs
@@ -12,7 +12,7 @@ Error: job [NUMID] is running
 Exit code: 1
 
 === Expecting only 1 delete request to artifact_path/.internal folder from the first deploy
->>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal")) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/workspace/delete",

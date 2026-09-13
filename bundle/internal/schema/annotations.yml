@@ -1035,7 +1035,10 @@ resources:
               "$fields":
                 "on_bundle_deploy":
                   "description": |-
-                    If true, re-fire the run on every bundle deploy. Incompatible with lifecycle.prevent_destroy.
+                    If true, re-fire the run on every bundle deploy.
+                "on_file_change":
+                  "description": |-
+                    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported.
         "python_named_params":
           "description": |-
             PLACEHOLDER
@@ -1191,6 +1194,25 @@ resources:
             "table_update":
               "description": |-
                 PLACEHOLDER
+    "model_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "model_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
     "model_serving_endpoints":
       "description": |-
         The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.

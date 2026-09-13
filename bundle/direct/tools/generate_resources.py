@@ -73,10 +73,14 @@ def get_field_behaviors(schemas, type_name, resource_name=None, array_element_ty
         array_element_types = {}
 
     def extract(schema, prefix, visited, depth, inherited):
-        # Bound recursion as a runaway guard only; `visited` already guarantees
-        # termination (each type is expanded at most once). Real fields reach depth 5
-        # (e.g. external_model.custom_provider_config.bearer_token_auth.token_plaintext),
-        # so keep ample headroom above that.
+        # `visited` holds the ref types on the path from the root to here, so a type
+        # that transitively references itself terminates the recursion. It is scoped
+        # to the current path (each branch gets its own copy via `visited | {ref}`),
+        # not global, so a type reused at sibling paths is expanded at each one — e.g.
+        # ModelServiceConfigDestinationConfig under both config.routing.destinations[*]
+        # and config.routing.fallback.destinations[*]. max_depth is a runaway guard
+        # only; real fields reach depth 5 (e.g.
+        # external_model.custom_provider_config.bearer_token_auth.token_plaintext).
         max_depth = 10
         if depth > max_depth:
             raise Exception(f"Nested field found at depth {depth} ({max_depth=})")
@@ -92,17 +96,17 @@ def get_field_behaviors(schemas, type_name, resource_name=None, array_element_ty
             if "ref" in prop:
                 ref = prop["ref"]
                 if ref in schemas and ref not in visited:
-                    visited.add(ref)
                     propagate = [b for b in behaviors if b in ("INPUT_ONLY", "OUTPUT_ONLY")]
-                    results.update(extract(schemas[ref], path, visited, depth + 1, propagate))
+                    results.update(extract(schemas[ref], path, visited | {ref}, depth + 1, propagate))
             elif resource_name is not None:
                 # For array fields with no ref in the schema, use the element type from
                 # out.fields.txt (e.g. App.resources[] -> AppResource).
                 elem_type = array_element_types.get((resource_name, path))
                 if elem_type and elem_type in schemas and elem_type not in visited:
-                    visited.add(elem_type)
                     propagate = [b for b in behaviors if b in ("INPUT_ONLY", "OUTPUT_ONLY")]
-                    results.update(extract(schemas[elem_type], f"{path}[*]", visited, depth + 1, propagate))
+                    results.update(
+                        extract(schemas[elem_type], f"{path}[*]", visited | {elem_type}, depth + 1, propagate)
+                    )
         return results
 
     # Find INPUT_ONLY/OUTPUT_ONLY from container types that reference this type

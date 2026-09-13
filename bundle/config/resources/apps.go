@@ -102,7 +102,3 @@ func (a *App) GetName() string {
 	}
 	return a.Name
 }
-
-func (a *App) GetURL() string {
-	return a.URL
-}

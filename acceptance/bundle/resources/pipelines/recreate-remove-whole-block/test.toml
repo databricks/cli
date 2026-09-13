@@ -1,5 +1,5 @@
-# Runs on both engines to show the difference: the direct engine plans this as
-# 'update' (see Badness), while terraform correctly recreates. The plan verdict
-# is the only divergent output, so it is routed to per-engine out.plan.*.txt.
-Badness = "On the direct engine, removing the whole ingestion_definition block is planned as 'update' instead of 'recreate': structdiff records one change at path 'ingestion_definition' instead of descending to 'ingestion_definition.connection_name', so the immutable recreate rule never matches. Terraform recreates as expected."
+# Runs on both engines: both recreate (connection_name is immutable). The direct
+# plan's per-engine "changes" map (out.plan.direct.json) shows the recreate keyed on
+# the ingestion_definition block via bidirectional rule matching; terraform's plan
+# JSON just carries the action.
 Ignore = ["foo.py", ".databricks"]

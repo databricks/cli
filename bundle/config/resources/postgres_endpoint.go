@@ -70,9 +70,9 @@ func (e *PostgresEndpoint) GetName() string {
 	return ""
 }
 
-func (e *PostgresEndpoint) GetURL() string {
+func (e *PostgresEndpoint) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (e *PostgresEndpoint) InitializeURL(_ url.URL) {

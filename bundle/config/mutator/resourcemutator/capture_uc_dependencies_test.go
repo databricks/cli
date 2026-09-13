@@ -131,6 +131,11 @@ func TestCaptureUCDependencies(t *testing.T) {
 						},
 					}},
 				},
+				ModelServices: map[string]*resources.ModelService{
+					"my_model_service": {ModelServiceConfig: resources.ModelServiceConfig{
+						Parent: "schemas/mycatalog.myschema", ModelServiceId: "myservice",
+					}},
+				},
 			},
 		},
 	}
@@ -163,6 +168,9 @@ func TestCaptureUCDependencies(t *testing.T) {
 	itc := b.Config.Resources.ModelServingEndpoints["my_endpoint"].AiGateway.InferenceTableConfig
 	assert.Equal(t, schemaRef, itc.SchemaName)
 	assert.Equal(t, catalogRef, itc.CatalogName)
+
+	// Model service (compound "schemas/{catalog}.{schema}" parent field).
+	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.ModelServices["my_model_service"].Parent)
 }
 
 // Pipeline schema and target are mutually exclusive; only the populated field

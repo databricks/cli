@@ -88,6 +88,23 @@ func resolveCatalog(b *bundle.Bundle, catalogName string) string {
 	return catalogName
 }
 
+// resolveParent rewrites a `schemas/{catalog}.{schema}` parent reference so that
+// a catalog or schema defined in the same bundle becomes an explicit deploy-time
+// dependency. AI Gateway securables address their parent schema with this
+// compound field rather than separate catalog/schema fields.
+func resolveParent(b *bundle.Bundle, parent string) string {
+	rest, ok := strings.CutPrefix(parent, "schemas/")
+	if !ok {
+		return parent
+	}
+	parts := strings.SplitN(rest, ".", 2)
+	if len(parts) != 2 {
+		return parent
+	}
+	catalogName, schemaName := parts[0], parts[1]
+	return "schemas/" + resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName)
+}
+
 func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Resolve resources that depend on schemas before resolving schemas themselves.
 	// The schema resolution below modifies schema.CatalogName, and findSchema
@@ -153,6 +170,12 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 			acc.SchemaName = resolveSchema(b, acc.CatalogName, acc.SchemaName)
 			acc.CatalogName = resolveCatalog(b, acc.CatalogName)
 		}
+	}
+	for _, ms := range b.Config.Resources.ModelServices {
+		if ms == nil {
+			continue
+		}
+		ms.Parent = resolveParent(b, ms.Parent)
 	}
 
 	// Schemas are resolved last because the schema catalog resolution modifies

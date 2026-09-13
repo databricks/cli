@@ -18,15 +18,12 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
   Postgres projects:
     my_project:
       Name: Test Project for Role
-      URL:  (not deployed)
   Postgres roles:
     my_role:
       Name: 
-      URL:  (not deployed)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-role-[UNIQUE_NAME]/default/files...
@@ -54,6 +51,9 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
+>>> musterr [CLI] bundle open my_role
+Error: this resource type does not have a URL
+
 >>> [CLI] bundle summary
 Name: deploy-postgres-role-[UNIQUE_NAME]
 Target: default
@@ -64,15 +64,12 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
   Postgres projects:
     my_project:
       Name: Test Project for Role
-      URL:  (not deployed)
   Postgres roles:
     my_role:
       Name: 
-      URL:  (not deployed)
 
 >>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

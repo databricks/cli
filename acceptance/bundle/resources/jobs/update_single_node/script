@@ -20,11 +20,11 @@ title "Fetch job ID and verify remote state"
 ppid=`read_id.py foo`
 
 trace $CLI jobs get $ppid | jq 'del(.settings.run_as, .settings.deployment.deployment_id, .settings.deployment.version_id)'
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 title "Destroy the job and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //jobs --nostamp
 
 trace musterr $CLI jobs get $ppid
-rm out.requests.txt
+rm "$OUT_REQUESTS"

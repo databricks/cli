@@ -1,0 +1,1 @@
+* Direct-engine bundles no longer flag phantom drift on server-populated nested fields under reused config types (e.g. `external_locations` file-event-queue resource IDs, `database_instances` parent-instance refs, `apps` git credential ID). ([#6618](https://github.com/databricks/cli/pull/6618))

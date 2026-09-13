@@ -37,6 +37,10 @@ from databricks.bundles.core._generated.job_runs import (
     job_run_mutator,
 )
 from databricks.bundles.core._generated.jobs import _JobResources, job_mutator
+from databricks.bundles.core._generated.model_services import (
+    _ModelServiceResources,
+    model_service_mutator,
+)
 from databricks.bundles.core._generated.model_serving_endpoints import (
     _ModelServingEndpointResources,
     model_serving_endpoint_mutator,
@@ -103,6 +107,7 @@ __all__ = [
     "job_run_mutator",
     "mlflow_experiment_mutator",
     "mlflow_model_mutator",
+    "model_service_mutator",
     "model_serving_endpoint_mutator",
     "pipeline_mutator",
     "postgres_snapshot_schedule_mutator",
@@ -131,6 +136,7 @@ class _GeneratedResources(
     _InstancePoolResources,
     _JobRunResources,
     _JobResources,
+    _ModelServiceResources,
     _ModelServingEndpointResources,
     _MlflowModelResources,
     _PipelineResources,
@@ -162,6 +168,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         instance_pools,
         job_runs,
         jobs,
+        model_services,
         model_serving_endpoints,
         models,
         pipelines,
@@ -190,6 +197,7 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         instance_pools._resource_type(),
         job_runs._resource_type(),
         jobs._resource_type(),
+        model_services._resource_type(),
         model_serving_endpoints._resource_type(),
         models._resource_type(),
         pipelines._resource_type(),

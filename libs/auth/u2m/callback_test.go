@@ -84,7 +84,7 @@ func TestCallbackServer_ExtractsIssuer(t *testing.T) {
 		browserOpened <- redirect
 		return nil
 	}
-	tokenCache := &tokenCacheMock{
+	tokenCache := &tokenStoreMock{
 		store: func(key string, tok *oauth2.Token) error {
 			return nil
 		},
@@ -96,7 +96,7 @@ func TestCallbackServer_ExtractsIssuer(t *testing.T) {
 
 	p, err := NewPersistentAuth(
 		ctx,
-		WithTokenCache(tokenCache),
+		WithTokenStore(tokenCache),
 		WithBrowser(browser),
 		WithHttpClient(&http.Client{
 			Transport: fixtures.SliceTransport{
@@ -147,7 +147,7 @@ func TestCallbackServer_ExtractsIssuer(t *testing.T) {
 func TestCallbackServer_NoIssuer(t *testing.T) {
 	ctx := t.Context()
 
-	tokenCache := &tokenCacheMock{
+	tokenCache := &tokenStoreMock{
 		store: func(key string, tok *oauth2.Token) error {
 			return nil
 		},
@@ -159,7 +159,7 @@ func TestCallbackServer_NoIssuer(t *testing.T) {
 
 	p, err := NewPersistentAuth(
 		ctx,
-		WithTokenCache(tokenCache),
+		WithTokenStore(tokenCache),
 		WithBrowser(func(string) error { return nil }),
 		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
 		WithOAuthArgument(arg),
@@ -196,7 +196,7 @@ func TestCallbackServer_NoIssuer(t *testing.T) {
 func TestCallbackServer_IssuerWithAccountPath(t *testing.T) {
 	ctx := t.Context()
 
-	tokenCache := &tokenCacheMock{
+	tokenCache := &tokenStoreMock{
 		store: func(key string, tok *oauth2.Token) error {
 			return nil
 		},
@@ -208,7 +208,7 @@ func TestCallbackServer_IssuerWithAccountPath(t *testing.T) {
 
 	p, err := NewPersistentAuth(
 		ctx,
-		WithTokenCache(tokenCache),
+		WithTokenStore(tokenCache),
 		WithBrowser(func(string) error { return nil }),
 		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
 		WithOAuthArgument(arg),

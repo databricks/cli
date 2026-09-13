@@ -23,14 +23,14 @@ Error: no such resource: schemas.my_schema.grants
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
 Created jobs.my_job.permissions
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 
 === bundle deploy --select schemas.my_schema
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/select-subnodes-[UNIQUE_NAME]/default/files...
 Created schemas.my_schema
 Created schemas.my_schema.grants
-Files: 3 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 
 >>> print_requests.py --sort //permissions

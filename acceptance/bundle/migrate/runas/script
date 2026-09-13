@@ -7,7 +7,7 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 
 cleanup() {
     trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 
 trap cleanup EXIT

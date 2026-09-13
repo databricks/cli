@@ -9,7 +9,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test
 Created jobs.test_job
 Created pipelines.test_pipeline
 Created volumes.test_volume
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate
@@ -32,7 +32,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 === Should show that it's already migrated
@@ -74,7 +74,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --get //jobs/get
@@ -112,7 +112,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
 Updated jobs.test_job
 Updated pipelines.test_pipeline
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 
 === Different target, still on terraform
@@ -122,7 +122,7 @@ Created jobs.test_job
 Created pipelines.test_pipeline
 Created schemas.test_schema
 Created volumes.test_volume
-Files: 10 uploaded, 0 deleted
+Files: 8 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod

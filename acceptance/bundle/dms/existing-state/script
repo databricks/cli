@@ -31,4 +31,4 @@ trace jq '{state_version, features}' .databricks/bundle/default/resources.json
 
 # The recorded requests are asserted above via print_requests.py; drop whatever the run added after
 # that (telemetry, and the state probes of the non-recording variant) so nothing is left to compare.
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

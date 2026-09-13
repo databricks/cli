@@ -2,7 +2,7 @@
 === First deploy of a bundle with no resources: the deployment is created, and its workspace node identifies it even though no resource state was written
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/files...
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle --get
@@ -59,7 +59,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 === Redeploy: the deployment is resolved from that node, so no second deployment is created
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[UNIQUE_NAME]/default/files...
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle --get

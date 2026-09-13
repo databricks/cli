@@ -69,11 +69,12 @@ func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, s
 	// than failing an otherwise-valid submission.
 	//
 	// The sidecars are deliberately NOT bundled into the code tarball. The git_archive
-	// tarball is content-addressed and cached by (commit, include_paths), so a second
-	// run at the same commit reuses it; but the sidecars vary per run (git_state's
-	// timestamp, and git_diff captures the working tree at submit time). Folding them
-	// in would force a distinct tarball per run (defeating the cache) or serve a prior
-	// run's stale provenance on a cache hit. They also live in the per-run launch dir,
+	// tarball is content-addressed and cached by (commit, include_paths, root_path
+	// subtree), so a second identical snapshot reuses it; but the sidecars vary per
+	// run (git_state's timestamp, and git_diff captures the working tree at submit
+	// time). Folding them in would force a distinct tarball per run (defeating the
+	// cache) or serve a prior run's stale provenance on a cache hit. They also live in
+	// the per-run launch dir,
 	// not the shared artifact dir, so they don't accumulate. Keep them out of the tar.
 	if uploadProvenanceSidecars && plan.isGitRepo {
 		result.GitStatePath, result.GitDiffPath = uploadSnapshotSidecars(ctx, sidecarStore, sidecarBase, newGitRepo(repoPath), plan)
@@ -130,13 +131,13 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 // snapshotTarName resolves the content-addressed upload filename for the snapshot and,
 // for plain_tar, the working-tree file listing used to build both the key and the tarball
 // (nil for git_archive, which lists nothing locally). The name is <dirName>_<key>.tar.gz,
-// keyed on (commit, include_paths) for git_archive and on the working-tree fingerprint
-// (path+size+mtime) for plain_tar, so an identical input reuses the same remote object
-// (see the skip in uploadSnapshotViaDABs).
+// keyed on (commit, include_paths, root_path subtree) for git_archive and on the
+// working-tree fingerprint (path+size+mtime) for plain_tar, so an identical input
+// reuses the same remote object (see the skip in uploadSnapshotViaDABs).
 func snapshotTarName(ctx context.Context, repoPath string, plan snapshotPlan) (string, []snapshotFile, error) {
 	dirName := filepath.Base(repoPath)
 	if plan.mode == modeGitArchive {
-		key := computeSnapshotCacheKey(plan.commitSHA, plan.includePaths)
+		key := computeSnapshotCacheKey(plan.commitSHA, plan.includePaths, plan.subtreePrefix)
 		return fmt.Sprintf("%s_%s.tar.gz", dirName, key[:16]), nil, nil
 	}
 	files, err := snapshotFiles(ctx, repoPath, plan.includePaths, plan.isGitRepo)
@@ -151,7 +152,7 @@ func snapshotTarName(ctx context.Context, repoPath string, plan snapshotPlan) (s
 // files (nil for git_archive).
 func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, files []snapshotFile, tarball string) error {
 	if plan.mode == modeGitArchive {
-		return createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, filepath.Base(repoPath), plan.includePaths)
+		return createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, filepath.Base(repoPath), plan.includePaths, plan.subtreePrefix)
 	}
 	return createPlainTarball(ctx, repoPath, tarball, files)
 }
@@ -162,10 +163,10 @@ func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, fi
 // the remote .internal path, and uploads the bytes. When remoteVolume is set the
 // tarball goes to that UC Volume; otherwise to the user's repo_snapshots dir.
 //
-// The tarball name is content-addressed — by (commit, include_paths) for git_archive and
-// by the working-tree fingerprint (path+size+mtime) for plain_tar — so if the identical
-// object is already uploaded we skip packaging and upload entirely and reuse the remote
-// path.
+// The tarball name is content-addressed — by (commit, include_paths, root_path subtree)
+// for git_archive and by the working-tree fingerprint (path+size+mtime) for plain_tar —
+// so if the identical object is already uploaded we skip packaging and upload entirely
+// and reuse the remote path.
 func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, remoteVolume string) (snapshotResult, error) {
 	// artifactPath is where DABs uploads the tarball; GetFilerForLibraries routes to
 	// a Workspace or Volume filer based on its prefix, then appends /.internal.

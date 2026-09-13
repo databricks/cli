@@ -23,6 +23,7 @@ require (
 	github.com/hashicorp/terraform-json v0.28.0 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
 	github.com/jackc/pgx/v5 v5.10.0 // MIT
+	github.com/klauspost/pgzip v1.2.6 // MIT
 	github.com/mattn/go-isatty v0.0.24 // MIT
 	github.com/muesli/termenv v0.16.0 // MIT
 	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
@@ -87,6 +88,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/lucasb-eyer/go-colorful v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect

@@ -13,4 +13,4 @@ title "Deploy so the bundle records state, then unbind is refused too"
 trace $CLI bundle deploy
 trace musterr $CLI bundle deployment unbind foo
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
