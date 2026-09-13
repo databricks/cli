@@ -330,7 +330,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+		err = addPerFieldActions(ctx, adapter, entry.Changes, sv.Value, remoteState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 			return false
@@ -431,7 +431,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 	return m, nil
 }
 
-func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
+func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, newState, remoteState any) error {
 	cfg := adapter.ResourceConfig()
 	generatedCfg := adapter.GeneratedResourceConfig()
 
@@ -466,6 +466,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			ch.Reason = reason
 		} else if action, reason, ok := classifyIDField(generatedCfg, path, ch); ok {
 			ch.Action = action
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipRemoteAddition(cfg, path, ch, newState); ok {
+			ch.Action = deployplan.Skip
 			ch.Reason = reason
 		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
@@ -642,6 +645,50 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	}
 	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		return reason, true
+	}
+	return "", false
+}
+
+// shouldSkipRemoteAddition skips a field the backend added to an object it co-owns.
+//
+// It fires only on an addition: absent from both old state and new config, present in the
+// remote. A disagreement between config and remote (New != nil) is left alone and still
+// reports an update, and so does a field the user removed from config (Old != nil) — that
+// is a deletion the user asked for, not a backend addition.
+//
+// The rule is gated on a field within the same object (ignore_remote_additions.when_set).
+// For cluster specs that gate is policy_id: an attached cluster policy supplies values
+// server-side — "fixed" elements always, "defaultValue" elements when the request sets
+// apply_policy_default_values — so the remote spec is legitimately a superset of what the
+// bundle declares. See acceptance/bundle/resources/jobs/cluster_policy (fixed_addition, default_flag)
+// for the measured backend behavior.
+//
+// Suppressed values are never echoed back on write: an update sends the config spec as-is
+// and the backend re-supplies the policy values.
+func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc, newState any) (string, bool) {
+	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
+		return "", false
+	}
+	for _, rule := range cfg.IgnoreRemoteAdditions {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		// Resolve the gate in two steps: the concrete object the rule matched, then the gate
+		// path relative to it. The wildcards in Field are filled in from the change path, so
+		// each object is gated on its own value.
+		object, err := structaccess.Get(newState, path.Prefix(rule.Field.Len()))
+		if err != nil {
+			// The gated object is absent from the config entirely (e.g. the remote grew a
+			// whole new_cluster the bundle does not declare), so there is no policy to gate
+			// on and the addition is real drift. Rule typos cannot reach here: the patterns
+			// are validated against the state type by TestResourcesYMLRemoteAdditionGates.
+			continue
+		}
+		value, err := structaccess.Get(object, rule.WhenSet)
+		if err != nil || allEmpty(value) {
+			continue
+		}
+		return deployplan.ReasonRemoteAddition, true
 	}
 	return "", false
 }

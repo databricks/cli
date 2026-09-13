@@ -153,6 +153,11 @@ const (
 	// ReasonMissingInRemote: field is not present in RemoteType (write-only / input-only).
 	// Remote always appears nil, so treat the absence as a no-op when there is no local change.
 	ReasonMissingInRemote = "missing_in_remote"
+	// ReasonRemoteAddition: the field is a remote-only addition (absent from config, present
+	// in the remote) inside an object whose gate is set (e.g. a cluster with a policy_id). The
+	// backend may extend such an object beyond what the bundle declares, so the addition is not
+	// treated as drift. We do not attribute the value to any particular source.
+	ReasonRemoteAddition = "remote_addition"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"
