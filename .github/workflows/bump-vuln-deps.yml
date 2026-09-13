@@ -75,6 +75,7 @@ jobs:
         run: git diff
 
       - name: Create pull request
+        id: cpr
         if: steps.bump.outputs.needed == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
@@ -95,3 +96,28 @@ jobs:
             If a bump promotes a new direct dependency, double-check its license annotation in `go.mod` and `NOTICE`.
           reviewers: simonfaltum,andrewnester,anton-107,denik,janniklasrose,pietern,shreyas-goenka
           labels: dependencies
+
+      # Add the changelog fragment as a follow-up commit on the PR branch: the
+      # fragment references the PR number, which only exists once the PR above
+      # has been created. The fixed branch is re-checked out on each daily run,
+      # so guard against re-committing when the fragment already exists.
+      - name: Add changelog fragment
+        if: steps.cpr.outputs.pull-request-number
+        env:
+          BRANCH: ${{ steps.cpr.outputs.pull-request-branch }}
+          PR: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |-
+          git fetch origin "$BRANCH"
+          git checkout -f -B "$BRANCH" FETCH_HEAD
+          fragment=".nextchanges/dependency-updates/${PR}.md"
+          echo "* Bump dependencies with known vulnerabilities. ([#${PR}](https://github.com/databricks/cli/pull/${PR}))" > "$fragment"
+          git add "$fragment"
+          # Skip commit if nothing changed (fragment already present on this branch).
+          if git diff --cached --quiet; then
+            echo "fragment already present"
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "Add changelog fragment"
+          git push origin "HEAD:$BRANCH"
