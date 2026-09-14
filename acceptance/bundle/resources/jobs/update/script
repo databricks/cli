@@ -1,7 +1,6 @@
 # The raw plans the replays read go under .databricks, which sync skips.
 mkdir -p .databricks
 
-echo "*" > .gitignore
 trace $CLI bundle plan
 $CLI bundle plan -o json > .databricks/tmp.plan_create.json
 nostamp < .databricks/tmp.plan_create.json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json

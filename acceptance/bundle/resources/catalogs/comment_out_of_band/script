@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 envsubst < databricks.yml.tmpl > databricks.yml
 
 CATALOG="test-catalog-${UNIQUE_NAME}"

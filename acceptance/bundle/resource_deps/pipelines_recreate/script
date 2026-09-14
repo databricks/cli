@@ -1,5 +1,4 @@
 
-echo "*" > .gitignore
 trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
