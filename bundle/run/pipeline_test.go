@@ -17,8 +17,7 @@ import (
 
 func TestPipelineRunnerCancel(t *testing.T) {
 	pipeline := &resources.Pipeline{
-		ID:           "123",
-		BaseResource: resources.BaseResource{ID: "123"},
+		ID: "123",
 	}
 
 	b := &bundle.Bundle{
@@ -53,8 +52,7 @@ func TestPipelineRunnerCancel(t *testing.T) {
 
 func TestPipelineRunnerRestart(t *testing.T) {
 	pipeline := &resources.Pipeline{
-		ID:           "123",
-		BaseResource: resources.BaseResource{ID: "123"},
+		ID: "123",
 	}
 
 	b := &bundle.Bundle{

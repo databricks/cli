@@ -39,13 +39,15 @@ func TestComputeMetadataMutator(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
-						BaseResource: resources.BaseResource{ID: "1111"},
+						ID: "1111",
+
 						JobSettings: jobs.JobSettings{
 							Name: "My Job One",
 						},
 					},
 					"my-job-2": {
-						BaseResource: resources.BaseResource{ID: "2222"},
+						ID: "2222",
+
 						JobSettings: jobs.JobSettings{
 							Name: "My Job Two",
 						},
@@ -53,15 +55,15 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline-1": {
-						ID:           "3333",
-						BaseResource: resources.BaseResource{ID: "3333"},
+						ID: "3333",
+
 						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline One",
 						},
 					},
 					"my-pipeline-2": {
-						ID:           "4444",
-						BaseResource: resources.BaseResource{ID: "4444"},
+						ID: "4444",
+
 						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline Two",
 						},
@@ -69,12 +71,14 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"my-dashboard-1": {
-						BaseResource:    resources.BaseResource{ID: "5555"},
+						ID: "5555",
+
 						DashboardConfig: resources.DashboardConfig{},
 						FilePath:        "i/h/g",
 					},
 					"my-dashboard-2": {
-						BaseResource:    resources.BaseResource{ID: "6666"},
+						ID: "6666",
+
 						DashboardConfig: resources.DashboardConfig{},
 						FilePath:        "l/k/j",
 					},
@@ -158,18 +162,17 @@ func TestComputeMetadataMutatorStateOnlyResources(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"state-only-job": {
-						BaseResource: resources.BaseResource{ID: "1111"},
+						ID: "1111",
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"state-only-pipeline": {
-						ID:           "2222",
-						BaseResource: resources.BaseResource{ID: "2222"},
+						ID: "2222",
 					},
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"state-only-dashboard": {
-						BaseResource: resources.BaseResource{ID: "3333"},
+						ID: "3333",
 					},
 				},
 			},
