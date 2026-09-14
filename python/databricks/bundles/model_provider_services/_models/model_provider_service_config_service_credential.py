@@ -14,19 +14,16 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigServiceCredential:
     """
-    ---- Provider configuration (nested; see the `provider` oneof below) ----
-    The customer-owned UC service credential a ModelProviderService uses to
-    authenticate to its provider, referenced by name.
+    The customer-owned Unity Catalog service credential a model provider service
+    uses to authenticate to its provider, referenced by name.
     """
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Resource name of the bound UC service credential, in the AIP-122 form
-    `credentials/{name}` (a metastore-level single-part credential name). On
-    create the caller supplies the name here. On read it reflects the
-    credential's current name at read time.
+    Resource name of the bound Unity Catalog service credential, in the form
+    `credentials/{name}`. Supply this field when creating the service or
+    rebinding its credential. On read, it reflects the credential's current
+    name.
     """
 
     @classmethod
@@ -44,12 +41,10 @@ class ModelProviderServiceConfigServiceCredentialDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Resource name of the bound UC service credential, in the AIP-122 form
-    `credentials/{name}` (a metastore-level single-part credential name). On
-    create the caller supplies the name here. On read it reflects the
-    credential's current name at read time.
+    Resource name of the bound Unity Catalog service credential, in the form
+    `credentials/{name}`. Supply this field when creating the service or
+    rebinding its credential. On read, it reflects the credential's current
+    name.
     """
 
 

@@ -22,8 +22,6 @@ __all__ = [
     "ModelProviderServiceConfigAnthropicProviderDirectConfigDict",
     "ModelProviderServiceConfigAnthropicProviderDirectConfigParam",
     "ModelProviderServiceConfigAnthropicProviderRelayedConfig",
-    "ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanType",
-    "ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanTypeParam",
     "ModelProviderServiceConfigAnthropicProviderRelayedConfigDict",
     "ModelProviderServiceConfigAnthropicProviderRelayedConfigParam",
     "ModelProviderServiceConfigAwsAccessKey",
@@ -131,10 +129,6 @@ from databricks.bundles.model_provider_services._models.model_provider_service_c
     ModelProviderServiceConfigAnthropicProviderRelayedConfig,
     ModelProviderServiceConfigAnthropicProviderRelayedConfigDict,
     ModelProviderServiceConfigAnthropicProviderRelayedConfigParam,
-)
-from databricks.bundles.model_provider_services._models.model_provider_service_config_anthropic_provider_relayed_config_anthropic_relayed_plan_type import (
-    ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanType,
-    ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanTypeParam,
 )
 from databricks.bundles.model_provider_services._models.model_provider_service_config_aws_access_key import (
     ModelProviderServiceConfigAwsAccessKey,

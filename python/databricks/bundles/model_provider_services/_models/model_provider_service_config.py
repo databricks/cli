@@ -58,8 +58,8 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfig:
     """
-    Behavioral configuration for a ModelProviderService: provider connection
-    (auth + provider-specific fields), the catalog of models this provider
+    Behavioral configuration for a ModelProviderService: provider authentication
+    and provider-specific fields, the catalog of models this provider
     service can route to, and the passthrough policy that governs how request
     headers, query parameters, and unmanaged subpaths cross the trust boundary
     to the upstream provider.
@@ -67,29 +67,23 @@ class ModelProviderServiceConfig:
 
     allow_all_targets: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] When true, accepts any model exposed by the upstream provider; `targets`
+    When true, accepts any model exposed by the upstream provider; `targets`
     is not required and does not restrict routability. When false, only
-    models listed in `targets` are routable.
+    models listed in `targets` are routable. Defaults to false.
     """
 
     amazon_bedrock: VariableOrOptional[
         ModelProviderServiceConfigAmazonBedrockProviderConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Amazon Bedrock provider configuration.
+    Amazon Bedrock provider configuration.
     """
 
     anthropic: VariableOrOptional[ModelProviderServiceConfigAnthropicProviderConfig] = (
         None
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Anthropic provider configuration. Exactly one of `direct` or `relayed` must
+    Anthropic provider configuration. Exactly one of `direct` or `relayed` must
     be set on Create; the two are mutually exclusive.
     """
 
@@ -97,120 +91,90 @@ class ModelProviderServiceConfig:
         ModelProviderServiceConfigAzureOpenAiProviderConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Azure OpenAI provider configuration.
+    Azure OpenAI provider configuration.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Custom provider configuration: arbitrary HTTP endpoint with bearer-token auth.
+    Custom OpenAI-compatible provider configuration with bearer-token
+    authentication.
     """
 
     forward_headers: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Whether to forward incoming request headers to the upstream provider.
-    Applies to managed (multi-model) requests as well as passthrough requests
-    served by this provider service. Governance-level decision by the provider
-    service owner; not selectable per inference call.
+    Whether to forward incoming HTTP headers to the upstream provider. Defaults
+    to false and is configured for the entire provider service, not per request.
+    Upstream authentication is configured separately in the provider-specific
+    configuration.
     """
 
     forward_query_parameters: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Whether to forward incoming request query parameters to the upstream
-    provider. Same trust-boundary semantics as `forward_headers`.
+    Whether to forward incoming query parameters to the upstream provider.
+    Defaults to false and is configured for the entire provider service, not
+    per request.
     """
 
     forward_unmanaged_paths: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Whether to forward request paths that fall outside this service's managed
-    API set to the upstream provider as opaque passthrough. When true,
-    requests addressed to subpaths not recognized by the managed API surface
-    are proxied to the upstream provider over the same provider connection.
-    When false, only managed-API paths are served. Governance-level decision
-    by the provider service owner; expanding this expands the trust boundary
-    that the ModelProviderService exposes.
+    Whether to proxy paths that AI Gateway does not recognize as configured
+    provider-native API types. Defaults to false. When true, these paths are
+    forwarded unchanged to the upstream provider. When false, only
+    recognized API paths are served. Enabling this broadens the upstream API
+    surface exposed through the provider service.
     """
 
     gemini_enterprise: VariableOrOptional[
         ModelProviderServiceConfigGeminiEnterpriseProviderConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Gemini Enterprise provider configuration.
+    Gemini Enterprise provider configuration.
     """
 
     inference_table: VariableOrOptional[InferenceTableConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Inference table configuration for payload logging when this provider
-    service is invoked directly. When it is invoked through a model service,
-    the model service's own inference table captures the invocation instead.
-    Mirrors `ModelServiceConfig.inference_table` /
-    `AgentServiceConfig.inference_table`.
+    Payload logging configuration for requests sent directly to this provider
+    service. Requests routed through a model service are captured by that model
+    service's inference table instead.
     """
 
     microsoft_foundry: VariableOrOptional[
         ModelProviderServiceConfigMicrosoftFoundryProviderConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Microsoft Foundry provider configuration.
+    Microsoft Foundry provider configuration.
     """
 
     openai: VariableOrOptional[ModelProviderServiceConfigOpenAiProviderConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] OpenAI provider configuration.
+    OpenAI provider configuration.
     """
 
     provider_type: VariableOrOptional[
         ModelProviderServiceConfigExternalModelProviderType
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Provider type discriminator. Required at create time; immutable after.
-    Determines which variant of the `provider` oneof must be set. May not be
-    changed via Update; attempts to include `config.provider_type` in
-    `UpdateModelProviderServiceRequest.update_mask` are rejected.
-    
-    Required on CreateModelProviderService and immutable thereafter.
+    External model provider. Required on Create and immutable thereafter. Set
+    the matching provider-specific configuration, such as `openai`,
+    `azure_openai`, or `amazon_bedrock`.
     """
 
     rate_limits: VariableOrList[RateLimit] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Rate limits applied when this provider service is invoked directly. When
-    it is invoked through a model service, the model service's own
-    `rate_limits` apply instead. Mirrors `ModelServiceConfig.rate_limits` /
-    `McpServiceConfig.rate_limits`.
+    Rate limits for requests sent directly to this provider service. Requests
+    routed through a model service use that model service's rate limits instead.
     """
 
     targets: VariableOrList[ModelProviderServiceConfigModelTargetConfig] = field(
         default_factory=list
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Routing targets this provider service exposes (provider-side model
-    identifier + unified API types per entry). Required (>=1) when
-    `allow_all_targets = false`; optional and additive when
-    `allow_all_targets = true`. References from `ExternalModelConfig.target`
-    must match an entry here unless `allow_all_targets = true`.
+    Models and provider-native API types exposed by this provider service. Each
+    entry must include at least one `native_api_types` value. When
+    `allow_all_targets` is false, at least one entry is required and model
+    service destinations can reference only listed models. When
+    `allow_all_targets` is true, any upstream model is routable; entries in
+    this list provide API-type metadata without restricting other models.
     """
 
     @classmethod
@@ -226,29 +190,23 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
 
     allow_all_targets: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] When true, accepts any model exposed by the upstream provider; `targets`
+    When true, accepts any model exposed by the upstream provider; `targets`
     is not required and does not restrict routability. When false, only
-    models listed in `targets` are routable.
+    models listed in `targets` are routable. Defaults to false.
     """
 
     amazon_bedrock: VariableOrOptional[
         ModelProviderServiceConfigAmazonBedrockProviderConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Amazon Bedrock provider configuration.
+    Amazon Bedrock provider configuration.
     """
 
     anthropic: VariableOrOptional[
         ModelProviderServiceConfigAnthropicProviderConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Anthropic provider configuration. Exactly one of `direct` or `relayed` must
+    Anthropic provider configuration. Exactly one of `direct` or `relayed` must
     be set on Create; the two are mutually exclusive.
     """
 
@@ -256,118 +214,88 @@ class ModelProviderServiceConfigDict(TypedDict, total=False):
         ModelProviderServiceConfigAzureOpenAiProviderConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Azure OpenAI provider configuration.
+    Azure OpenAI provider configuration.
     """
 
     custom: VariableOrOptional[ModelProviderServiceConfigCustomProviderConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Custom provider configuration: arbitrary HTTP endpoint with bearer-token auth.
+    Custom OpenAI-compatible provider configuration with bearer-token
+    authentication.
     """
 
     forward_headers: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Whether to forward incoming request headers to the upstream provider.
-    Applies to managed (multi-model) requests as well as passthrough requests
-    served by this provider service. Governance-level decision by the provider
-    service owner; not selectable per inference call.
+    Whether to forward incoming HTTP headers to the upstream provider. Defaults
+    to false and is configured for the entire provider service, not per request.
+    Upstream authentication is configured separately in the provider-specific
+    configuration.
     """
 
     forward_query_parameters: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Whether to forward incoming request query parameters to the upstream
-    provider. Same trust-boundary semantics as `forward_headers`.
+    Whether to forward incoming query parameters to the upstream provider.
+    Defaults to false and is configured for the entire provider service, not
+    per request.
     """
 
     forward_unmanaged_paths: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Whether to forward request paths that fall outside this service's managed
-    API set to the upstream provider as opaque passthrough. When true,
-    requests addressed to subpaths not recognized by the managed API surface
-    are proxied to the upstream provider over the same provider connection.
-    When false, only managed-API paths are served. Governance-level decision
-    by the provider service owner; expanding this expands the trust boundary
-    that the ModelProviderService exposes.
+    Whether to proxy paths that AI Gateway does not recognize as configured
+    provider-native API types. Defaults to false. When true, these paths are
+    forwarded unchanged to the upstream provider. When false, only
+    recognized API paths are served. Enabling this broadens the upstream API
+    surface exposed through the provider service.
     """
 
     gemini_enterprise: VariableOrOptional[
         ModelProviderServiceConfigGeminiEnterpriseProviderConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Gemini Enterprise provider configuration.
+    Gemini Enterprise provider configuration.
     """
 
     inference_table: VariableOrOptional[InferenceTableConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Inference table configuration for payload logging when this provider
-    service is invoked directly. When it is invoked through a model service,
-    the model service's own inference table captures the invocation instead.
-    Mirrors `ModelServiceConfig.inference_table` /
-    `AgentServiceConfig.inference_table`.
+    Payload logging configuration for requests sent directly to this provider
+    service. Requests routed through a model service are captured by that model
+    service's inference table instead.
     """
 
     microsoft_foundry: VariableOrOptional[
         ModelProviderServiceConfigMicrosoftFoundryProviderConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Microsoft Foundry provider configuration.
+    Microsoft Foundry provider configuration.
     """
 
     openai: VariableOrOptional[ModelProviderServiceConfigOpenAiProviderConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] OpenAI provider configuration.
+    OpenAI provider configuration.
     """
 
     provider_type: VariableOrOptional[
         ModelProviderServiceConfigExternalModelProviderTypeParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Provider type discriminator. Required at create time; immutable after.
-    Determines which variant of the `provider` oneof must be set. May not be
-    changed via Update; attempts to include `config.provider_type` in
-    `UpdateModelProviderServiceRequest.update_mask` are rejected.
-    
-    Required on CreateModelProviderService and immutable thereafter.
+    External model provider. Required on Create and immutable thereafter. Set
+    the matching provider-specific configuration, such as `openai`,
+    `azure_openai`, or `amazon_bedrock`.
     """
 
     rate_limits: VariableOrList[RateLimitParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Rate limits applied when this provider service is invoked directly. When
-    it is invoked through a model service, the model service's own
-    `rate_limits` apply instead. Mirrors `ModelServiceConfig.rate_limits` /
-    `McpServiceConfig.rate_limits`.
+    Rate limits for requests sent directly to this provider service. Requests
+    routed through a model service use that model service's rate limits instead.
     """
 
     targets: VariableOrList[ModelProviderServiceConfigModelTargetConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Routing targets this provider service exposes (provider-side model
-    identifier + unified API types per entry). Required (>=1) when
-    `allow_all_targets = false`; optional and additive when
-    `allow_all_targets = true`. References from `ExternalModelConfig.target`
-    must match an entry here unless `allow_all_targets = true`.
+    Models and provider-native API types exposed by this provider service. Each
+    entry must include at least one `native_api_types` value. When
+    `allow_all_targets` is false, at least one entry is required and model
+    service destinations can reference only listed models. When
+    `allow_all_targets` is true, any upstream model is routable; entries in
+    this list provide API-type metadata without restricting other models.
     """
 
 

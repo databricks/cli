@@ -18,24 +18,15 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigCustomProviderConfig:
     """
-    Custom provider configuration: arbitrary HTTP endpoint with bearer-token auth.
+    Custom OpenAI-compatible provider configuration with bearer-token
+    authentication.
     """
 
     direct: VariableOrOptional[ModelProviderServiceConfigCustomProviderDirectConfig] = (
         None
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct form of custom provider config.
-    
-    Authentication is one of two mutually exclusive modes, exactly one of which
-    must be supplied on Create:
-    - Bearer: set `api_key`, leave `header_auth` unset. The secret is
-    forwarded as `Authorization: Bearer <secret>`.
-    - Header: set `header_auth`, leave `api_key` unset. The secret is
-    forwarded as `<api_key_name>: <api_key_value>`.
-    Setting both modes or neither mode is rejected.
+    Endpoint and authentication configuration for the custom provider.
     """
 
     @classmethod
@@ -55,17 +46,7 @@ class ModelProviderServiceConfigCustomProviderConfigDict(TypedDict, total=False)
         ModelProviderServiceConfigCustomProviderDirectConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct form of custom provider config.
-    
-    Authentication is one of two mutually exclusive modes, exactly one of which
-    must be supplied on Create:
-    - Bearer: set `api_key`, leave `header_auth` unset. The secret is
-    forwarded as `Authorization: Bearer <secret>`.
-    - Header: set `header_auth`, leave `api_key` unset. The secret is
-    forwarded as `<api_key_name>: <api_key_value>`.
-    Setting both modes or neither mode is rejected.
+    Endpoint and authentication configuration for the custom provider.
     """
 
 

@@ -25,14 +25,7 @@ class ModelProviderServiceConfigGeminiEnterpriseProviderConfig:
         ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct form of Gemini Enterprise provider config.
-    
-    Authentication is one of two mutually exclusive modes; exactly one must be
-    supplied on Create:
-    - API key: set `api_key`, leave `service_credential` unset.
-    - UC service credential: set `service_credential`, leave `api_key` unset.
+    Gemini Enterprise project, region, and authentication configuration.
     """
 
     @classmethod
@@ -54,14 +47,7 @@ class ModelProviderServiceConfigGeminiEnterpriseProviderConfigDict(
         ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct form of Gemini Enterprise provider config.
-    
-    Authentication is one of two mutually exclusive modes; exactly one must be
-    supplied on Create:
-    - API key: set `api_key`, leave `service_credential` unset.
-    - UC service credential: set `service_credential`, leave `api_key` unset.
+    Gemini Enterprise project, region, and authentication configuration.
     """
 
 

@@ -25,9 +25,7 @@ class ModelProviderServiceConfigOpenAiProviderConfig:
         None
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct (inline-credentials) form of the OpenAI provider config.
+    OpenAI configuration with an API key supplied in the request.
     """
 
     @classmethod
@@ -47,9 +45,7 @@ class ModelProviderServiceConfigOpenAiProviderConfigDict(TypedDict, total=False)
         ModelProviderServiceConfigOpenAiProviderDirectConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct (inline-credentials) form of the OpenAI provider config.
+    OpenAI configuration with an API key supplied in the request.
     """
 
 

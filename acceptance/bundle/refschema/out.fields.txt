@@ -2120,7 +2120,6 @@ resources.model_provider_services.*.config.anthropic.direct	*catalog.ModelProvid
 resources.model_provider_services.*.config.anthropic.direct.api_key	*catalog.ModelProviderServiceConfigProviderSecret	ALL
 resources.model_provider_services.*.config.anthropic.direct.api_key.plaintext	string	ALL
 resources.model_provider_services.*.config.anthropic.relayed	*catalog.ModelProviderServiceConfigAnthropicProviderRelayedConfig	ALL
-resources.model_provider_services.*.config.anthropic.relayed.plan_type	catalog.ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanType	ALL
 resources.model_provider_services.*.config.azure_openai	*catalog.ModelProviderServiceConfigAzureOpenAiProviderConfig	ALL
 resources.model_provider_services.*.config.azure_openai.direct	*catalog.ModelProviderServiceConfigAzureOpenAiProviderDirectConfig	ALL
 resources.model_provider_services.*.config.azure_openai.direct.api_key	*catalog.ModelProviderServiceConfigProviderSecret	ALL
@@ -2148,7 +2147,6 @@ resources.model_provider_services.*.config.gemini_enterprise.direct.api_key.plai
 resources.model_provider_services.*.config.gemini_enterprise.direct.project_id	string	ALL
 resources.model_provider_services.*.config.gemini_enterprise.direct.region	string	ALL
 resources.model_provider_services.*.config.inference_table	*catalog.InferenceTableConfig	ALL
-resources.model_provider_services.*.config.inference_table.disabled	bool	ALL
 resources.model_provider_services.*.config.inference_table.is_deleted	bool	ALL
 resources.model_provider_services.*.config.inference_table.parent	string	ALL
 resources.model_provider_services.*.config.inference_table.table	string	ALL
@@ -2177,8 +2175,6 @@ resources.model_provider_services.*.config.rate_limits[*]	catalog.RateLimit	ALL
 resources.model_provider_services.*.config.rate_limits[*].key	catalog.RateLimitRateLimitKey	ALL
 resources.model_provider_services.*.config.rate_limits[*].principal	string	ALL
 resources.model_provider_services.*.config.rate_limits[*].renewal_period	catalog.RateLimitRateLimitRenewalPeriod	ALL
-resources.model_provider_services.*.config.rate_limits[*].request_tag_key	string	ALL
-resources.model_provider_services.*.config.rate_limits[*].request_tag_value	string	ALL
 resources.model_provider_services.*.config.rate_limits[*].requests	int64	ALL
 resources.model_provider_services.*.config.rate_limits[*].tokens	int64	ALL
 resources.model_provider_services.*.config.targets	[]catalog.ModelProviderServiceConfigModelTargetConfig	ALL

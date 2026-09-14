@@ -23,25 +23,19 @@ class ModelProviderServiceConfigOpenAiProviderDirectConfig:
 
     api_key: VariableOrOptional[ModelProviderServiceConfigProviderSecret] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] OpenAI API key. Required on Create. Supplied as inline plaintext via
-    `ProviderSecret.plaintext`.
+    OpenAI API key. Required when creating the service. Supply the value in
+    `api_key.plaintext`.
     """
 
     base_url: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional custom base URL. Defaults to `https://api.openai.com/v1`. Use for
+    Optional custom base URL. Defaults to `https://api.openai.com/v1`. Use for
     OpenAI-API-compatible third-party endpoints or in-network proxies.
     """
 
     organization: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional OpenAI organization ID. When set, the platform forwards it as
+    Optional OpenAI organization ID. When set, the platform forwards it as
     the `OpenAI-Organization` header.
     """
 
@@ -60,25 +54,19 @@ class ModelProviderServiceConfigOpenAiProviderDirectConfigDict(TypedDict, total=
 
     api_key: VariableOrOptional[ModelProviderServiceConfigProviderSecretParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] OpenAI API key. Required on Create. Supplied as inline plaintext via
-    `ProviderSecret.plaintext`.
+    OpenAI API key. Required when creating the service. Supply the value in
+    `api_key.plaintext`.
     """
 
     base_url: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional custom base URL. Defaults to `https://api.openai.com/v1`. Use for
+    Optional custom base URL. Defaults to `https://api.openai.com/v1`. Use for
     OpenAI-API-compatible third-party endpoints or in-network proxies.
     """
 
     organization: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Optional OpenAI organization ID. When set, the platform forwards it as
+    Optional OpenAI organization ID. When set, the platform forwards it as
     the `OpenAI-Organization` header.
     """
 

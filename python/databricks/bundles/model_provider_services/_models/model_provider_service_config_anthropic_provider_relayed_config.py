@@ -5,11 +5,6 @@ from typing import TYPE_CHECKING, TypedDict
 
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
-from databricks.bundles.core._variable import VariableOrOptional
-from databricks.bundles.model_provider_services._models.model_provider_service_config_anthropic_provider_relayed_config_anthropic_relayed_plan_type import (
-    ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanType,
-    ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanTypeParam,
-)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -18,22 +13,9 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigAnthropicProviderRelayedConfig:
     """
-    Relayed form of Anthropic provider config: no credential is stored.
-    Authentication is the caller's own OAuth token, forwarded to Anthropic on
-    outbound requests, so there is no persisted secret. Presence of this variant
-    is the signal that the provider service uses relayed auth; `plan_type`
-    further distinguishes which Anthropic subscription tier the token belongs to.
-    """
-
-    plan_type: VariableOrOptional[
-        ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanType
-    ] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Which Anthropic subscription tier the relayed token belongs to. Optional;
-    when unset the MPS gets the full governance surface (see TEAM_ENTERPRISE).
-    Immutable after Create, so the tier cannot be flipped in place.
+    Relayed Anthropic provider configuration. Each inference request supplies
+    the caller's OAuth token, which is forwarded to Anthropic. No Anthropic
+    credential is stored.
     """
 
     @classmethod
@@ -50,17 +32,6 @@ class ModelProviderServiceConfigAnthropicProviderRelayedConfigDict(
     TypedDict, total=False
 ):
     """"""
-
-    plan_type: VariableOrOptional[
-        ModelProviderServiceConfigAnthropicProviderRelayedConfigAnthropicRelayedPlanTypeParam
-    ]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Which Anthropic subscription tier the relayed token belongs to. Optional;
-    when unset the MPS gets the full governance surface (see TEAM_ENTERPRISE).
-    Immutable after Create, so the tier cannot be flipped in place.
-    """
 
 
 ModelProviderServiceConfigAnthropicProviderRelayedConfigParam = (

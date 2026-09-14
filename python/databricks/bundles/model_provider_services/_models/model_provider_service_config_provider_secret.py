@@ -22,11 +22,9 @@ class ModelProviderServiceConfigProviderSecret:
 
     plaintext: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Inline plaintext credential. INPUT_ONLY: the value never round-trips on
-    reads. Get and List responses omit `plaintext`; the field's presence in
-    the read shape only indicates that a secret is configured.
+    Inline plaintext credential. INPUT_ONLY: the value never round-trips on
+    reads. Get and List responses omit `plaintext`; the enclosing secret
+    object remains present to indicate that a secret is configured.
     """
 
     @classmethod
@@ -42,11 +40,9 @@ class ModelProviderServiceConfigProviderSecretDict(TypedDict, total=False):
 
     plaintext: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Inline plaintext credential. INPUT_ONLY: the value never round-trips on
-    reads. Get and List responses omit `plaintext`; the field's presence in
-    the read shape only indicates that a secret is configured.
+    Inline plaintext credential. INPUT_ONLY: the value never round-trips on
+    reads. Get and List responses omit `plaintext`; the enclosing secret
+    object remains present to indicate that a secret is configured.
     """
 
 

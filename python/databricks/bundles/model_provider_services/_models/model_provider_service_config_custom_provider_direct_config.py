@@ -18,31 +18,19 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigCustomProviderDirectConfig:
     """
-    Direct form of custom provider config.
-
-    Authentication is one of two mutually exclusive modes, exactly one of which
-    must be supplied on Create:
-    - Bearer: set `api_key`, leave `header_auth` unset. The secret is
-    forwarded as `Authorization: Bearer <secret>`.
-    - Header: set `header_auth`, leave `api_key` unset. The secret is
-    forwarded as `<api_key_name>: <api_key_value>`.
-    Setting both modes or neither mode is rejected.
+    Direct form of a custom provider configuration. Set `api_key` to the bearer
+    token sent in the `Authorization` header.
     """
 
     api_key: VariableOrOptional[ModelProviderServiceConfigProviderSecret] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Bearer token forwarded as the `Authorization: Bearer ...` header on
-    outbound requests. Supplied as inline plaintext via
-    `ProviderSecret.plaintext`. Set this for bearer-token auth.
+    Bearer token forwarded in the `Authorization` header. Supply the value
+    in `api_key.plaintext`.
     """
 
     base_url: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Endpoint URL of the OpenAI-compatible service (e.g.,
+    Endpoint URL of the OpenAI-compatible service (e.g.,
     `https://api.example.com/v1`). Required on Create.
     """
 
@@ -61,18 +49,13 @@ class ModelProviderServiceConfigCustomProviderDirectConfigDict(TypedDict, total=
 
     api_key: VariableOrOptional[ModelProviderServiceConfigProviderSecretParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Bearer token forwarded as the `Authorization: Bearer ...` header on
-    outbound requests. Supplied as inline plaintext via
-    `ProviderSecret.plaintext`. Set this for bearer-token auth.
+    Bearer token forwarded in the `Authorization` header. Supply the value
+    in `api_key.plaintext`.
     """
 
     base_url: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Endpoint URL of the OpenAI-compatible service (e.g.,
+    Endpoint URL of the OpenAI-compatible service (e.g.,
     `https://api.example.com/v1`). Required on Create.
     """
 

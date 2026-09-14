@@ -27,25 +27,23 @@ class ModelProviderServiceConfigAmazonBedrockProviderDirectConfig:
     Authentication is one of two mutually exclusive modes, exactly one of which
     must be supplied on Create:
     - Access keys: set `aws_access_key`, leave `service_credential` unset.
-    - UC service credential: set `service_credential.name` to the AIP-122
-    resource-name form `credentials/{name}`, leave `aws_access_key` unset. The
-    credential value lives in UC and is referenced by name, not held on this
-    message.
+    - Unity Catalog service credential: set `service_credential.name` to the
+    resource name `credentials/{name}`, leave `aws_access_key` unset. The
+    credential value lives in Unity Catalog and is referenced by name, not
+    held on this message.
     Setting more than one mode is rejected.
     """
 
     aws_access_key: VariableOrOptional[ModelProviderServiceConfigAwsAccessKey] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] AWS access-key-pair auth. Mutually exclusive with `service_credential`.
+    AWS access-key-pair authentication. Set `access_key_id` and
+    `secret_access_key.plaintext`. Mutually exclusive with
+    `service_credential`.
     """
 
     region: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] AWS region where the Bedrock endpoint is hosted (e.g., `us-east-1`).
+    AWS region where the Bedrock endpoint is hosted (e.g., `us-east-1`).
     Required on Create.
     """
 
@@ -53,16 +51,12 @@ class ModelProviderServiceConfigAmazonBedrockProviderDirectConfig:
         ModelProviderServiceConfigServiceCredential
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Reference to a UC service credential authorizing Bedrock requests. On
-    Create the caller supplies `service_credential.name` in the AIP-122
-    resource-name form `credentials/{name}`. Required on Create when using
-    UC-service-credential auth; mutually exclusive with `aws_access_key`. The
-    credential is referenced by name; its value is not carried here. On read the
-    resolved `id` and `is_deleted` are also populated. Only supported on AWS-hosted
-    workspaces; Create requests from other clouds are rejected with
-    INVALID_PARAMETER_VALUE.
+    Reference to a Unity Catalog service credential authorizing Bedrock
+    requests. On Create, supply `service_credential.name` in the form
+    `credentials/{name}`. Required on Create when using service-credential
+    authentication; mutually exclusive with `aws_access_key`. The credential
+    is referenced by name; its value is not carried here. Only
+    supported on AWS-hosted workspaces.
     """
 
     @classmethod
@@ -84,16 +78,14 @@ class ModelProviderServiceConfigAmazonBedrockProviderDirectConfigDict(
 
     aws_access_key: VariableOrOptional[ModelProviderServiceConfigAwsAccessKeyParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] AWS access-key-pair auth. Mutually exclusive with `service_credential`.
+    AWS access-key-pair authentication. Set `access_key_id` and
+    `secret_access_key.plaintext`. Mutually exclusive with
+    `service_credential`.
     """
 
     region: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] AWS region where the Bedrock endpoint is hosted (e.g., `us-east-1`).
+    AWS region where the Bedrock endpoint is hosted (e.g., `us-east-1`).
     Required on Create.
     """
 
@@ -101,16 +93,12 @@ class ModelProviderServiceConfigAmazonBedrockProviderDirectConfigDict(
         ModelProviderServiceConfigServiceCredentialParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Reference to a UC service credential authorizing Bedrock requests. On
-    Create the caller supplies `service_credential.name` in the AIP-122
-    resource-name form `credentials/{name}`. Required on Create when using
-    UC-service-credential auth; mutually exclusive with `aws_access_key`. The
-    credential is referenced by name; its value is not carried here. On read the
-    resolved `id` and `is_deleted` are also populated. Only supported on AWS-hosted
-    workspaces; Create requests from other clouds are rejected with
-    INVALID_PARAMETER_VALUE.
+    Reference to a Unity Catalog service credential authorizing Bedrock
+    requests. On Create, supply `service_credential.name` in the form
+    `credentials/{name}`. Required on Create when using service-credential
+    authentication; mutually exclusive with `aws_access_key`. The credential
+    is referenced by name; its value is not carried here. Only
+    supported on AWS-hosted workspaces.
     """
 
 

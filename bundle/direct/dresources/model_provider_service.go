@@ -75,7 +75,6 @@ func modelProviderServiceBody(config *resources.ModelProviderServiceConfig) cata
 		Etag:            "",
 		MetastoreId:     "",
 		Name:            "",
-		Owner:           "",
 		UpdateTime:      nil,
 		UpdatedBy:       "",
 		ForceSendFields: nil,

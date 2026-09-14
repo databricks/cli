@@ -18,33 +18,25 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigEntraServicePrincipal:
     """
-    Entra ID (Azure AD) service-principal auth: AI Gateway exchanges the
-    `tenant_id` + `client_id` identify the service principal, and the `credential`
-    oneof proves that identity, exchanged for an Entra bearer token on outbound
-    requests via the OAuth2 client-credentials grant. Shared by the Azure OpenAI
-    and Microsoft Foundry provider configs.
+    Entra ID (Azure AD) service-principal authentication. The `tenant_id` and
+    `client_id` identify the service principal, and `client_secret` authenticates
+    it. AI Gateway exchanges these credentials for an Entra bearer token for
+    requests to Azure OpenAI or Microsoft Foundry.
     """
 
     client_id: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Entra ID client (application) ID. Required on Create.
+    Entra ID client (application) ID. Required on Create.
     """
 
     client_secret: VariableOrOptional[ModelProviderServiceConfigProviderSecret] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Entra ID client secret. Supplied as inline plaintext via
-    `ProviderSecret.plaintext`.
+    Entra ID client secret. Supply the value in `client_secret.plaintext`.
     """
 
     tenant_id: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Entra ID (Azure AD) tenant ID. Required on Create.
+    Entra ID (Azure AD) tenant ID. Required on Create.
     """
 
     @classmethod
@@ -62,24 +54,17 @@ class ModelProviderServiceConfigEntraServicePrincipalDict(TypedDict, total=False
 
     client_id: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Entra ID client (application) ID. Required on Create.
+    Entra ID client (application) ID. Required on Create.
     """
 
     client_secret: VariableOrOptional[ModelProviderServiceConfigProviderSecretParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Entra ID client secret. Supplied as inline plaintext via
-    `ProviderSecret.plaintext`.
+    Entra ID client secret. Supply the value in `client_secret.plaintext`.
     """
 
     tenant_id: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Entra ID (Azure AD) tenant ID. Required on Create.
+    Entra ID (Azure AD) tenant ID. Required on Create.
     """
 
 

@@ -30,22 +30,17 @@ class ModelProviderServiceConfigAnthropicProviderConfig:
         ModelProviderServiceConfigAnthropicProviderDirectConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct (inline-credentials) form: caller supplies the API key in the
-    request body. Required on Create unless `relayed` is set.
+    Direct authentication with an API key supplied in
+    `direct.api_key.plaintext`. Required unless `relayed` is set.
     """
 
     relayed: VariableOrOptional[
         ModelProviderServiceConfigAnthropicProviderRelayedConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Relayed (credential-less) form: no Anthropic credential is stored. Each
-    inference request instead carries the caller's own OAuth token, which the
-    platform forwards to Anthropic on outbound requests. Mutually exclusive
-    with `direct`; no `api_key` is required or persisted.
+    Relayed authentication. Each inference request supplies the caller's
+    OAuth token, which is forwarded to Anthropic. No Anthropic credential is
+    stored. Mutually exclusive with `direct`.
     """
 
     @classmethod
@@ -65,22 +60,17 @@ class ModelProviderServiceConfigAnthropicProviderConfigDict(TypedDict, total=Fal
         ModelProviderServiceConfigAnthropicProviderDirectConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct (inline-credentials) form: caller supplies the API key in the
-    request body. Required on Create unless `relayed` is set.
+    Direct authentication with an API key supplied in
+    `direct.api_key.plaintext`. Required unless `relayed` is set.
     """
 
     relayed: VariableOrOptional[
         ModelProviderServiceConfigAnthropicProviderRelayedConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Relayed (credential-less) form: no Anthropic credential is stored. Each
-    inference request instead carries the caller's own OAuth token, which the
-    platform forwards to Anthropic on outbound requests. Mutually exclusive
-    with `direct`; no `api_key` is required or persisted.
+    Relayed authentication. Each inference request supplies the caller's
+    OAuth token, which is forwarded to Anthropic. No Anthropic credential is
+    stored. Mutually exclusive with `direct`.
     """
 
 

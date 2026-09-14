@@ -23,9 +23,7 @@ class ModelProviderServiceConfigAwsAccessKey:
 
     access_key_id: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] AWS access key ID. Required on Create when using access-key auth. Treated as
+    AWS access key ID. Required on Create when using access-key auth. Treated as
     username-equivalent (not a secret value): round-trips on reads and is
     scrubbed from audit logs.
     """
@@ -34,11 +32,9 @@ class ModelProviderServiceConfigAwsAccessKey:
         None
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] AWS secret access key paired with `access_key_id`. Required on Create when
-    using access-key auth. Supplied as inline plaintext via
-    `ProviderSecret.plaintext`.
+    AWS secret access key paired with `access_key_id`. Required when creating
+    a service with access-key authentication. Supply the value in
+    `secret_access_key.plaintext`.
     """
 
     @classmethod
@@ -54,20 +50,16 @@ class ModelProviderServiceConfigAwsAccessKeyDict(TypedDict, total=False):
 
     access_key_id: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] AWS access key ID. Required on Create when using access-key auth. Treated as
+    AWS access key ID. Required on Create when using access-key auth. Treated as
     username-equivalent (not a secret value): round-trips on reads and is
     scrubbed from audit logs.
     """
 
     secret_access_key: VariableOrOptional[ModelProviderServiceConfigProviderSecretParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] AWS secret access key paired with `access_key_id`. Required on Create when
-    using access-key auth. Supplied as inline plaintext via
-    `ProviderSecret.plaintext`.
+    AWS secret access key paired with `access_key_id`. Required when creating
+    a service with access-key authentication. Supply the value in
+    `secret_access_key.plaintext`.
     """
 
 

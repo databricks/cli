@@ -25,24 +25,7 @@ class ModelProviderServiceConfigMicrosoftFoundryProviderConfig:
         ModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct form of Microsoft Foundry provider config.
-    
-    Authentication is one of three mutually exclusive modes, exactly one of which
-    must be supplied on Create:
-    - API key: set `api_key`, leave `entra_service_principal` and
-    `service_credential` unset.
-    - Entra ID (service principal): set `entra_service_principal`, leave
-    `api_key` and `service_credential` unset. AI Gateway exchanges these for
-    an Entra bearer token on outbound requests via the OAuth2
-    client-credentials grant.
-    - UC service credential: set `service_credential.name` to the AIP-122
-    resource-name form `credentials/{name}`, leave `api_key` and
-    `entra_service_principal` unset. The credential value lives in UC and is
-    referenced by name, not held on this message. Only supported on
-    Azure-hosted workspaces.
-    Setting more than one mode is rejected.
+    Microsoft Foundry endpoint and authentication configuration.
     """
 
     @classmethod
@@ -64,24 +47,7 @@ class ModelProviderServiceConfigMicrosoftFoundryProviderConfigDict(
         ModelProviderServiceConfigMicrosoftFoundryProviderDirectConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct form of Microsoft Foundry provider config.
-    
-    Authentication is one of three mutually exclusive modes, exactly one of which
-    must be supplied on Create:
-    - API key: set `api_key`, leave `entra_service_principal` and
-    `service_credential` unset.
-    - Entra ID (service principal): set `entra_service_principal`, leave
-    `api_key` and `service_credential` unset. AI Gateway exchanges these for
-    an Entra bearer token on outbound requests via the OAuth2
-    client-credentials grant.
-    - UC service credential: set `service_credential.name` to the AIP-122
-    resource-name form `credentials/{name}`, leave `api_key` and
-    `entra_service_principal` unset. The credential value lives in UC and is
-    referenced by name, not held on this message. Only supported on
-    Azure-hosted workspaces.
-    Setting more than one mode is rejected.
+    Microsoft Foundry endpoint and authentication configuration.
     """
 
 

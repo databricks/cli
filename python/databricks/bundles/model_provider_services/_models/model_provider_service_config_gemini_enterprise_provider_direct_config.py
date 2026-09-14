@@ -18,35 +18,24 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig:
     """
-    Direct form of Gemini Enterprise provider config.
-
-    Authentication is one of two mutually exclusive modes; exactly one must be
-    supplied on Create:
-    - API key: set `api_key`, leave `service_credential` unset.
-    - UC service credential: set `service_credential`, leave `api_key` unset.
+    Direct Gemini Enterprise provider configuration. An API key is required
+    when creating the service.
     """
 
     api_key: VariableOrOptional[ModelProviderServiceConfigProviderSecret] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Google Gemini Enterprise API key. Required on Create when using API-key
-    auth; mutually exclusive with `service_credential`. Supplied as inline
-    plaintext via `ProviderSecret.plaintext`.
+    Google Gemini Enterprise API key. Required when creating the service.
+    Supply the value in `api_key.plaintext`.
     """
 
     project_id: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] GCP project ID hosting the Gemini Enterprise endpoint. Required on Create.
+    GCP project ID hosting the Gemini Enterprise endpoint. Required on Create.
     """
 
     region: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`).
+    GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`).
     Required on Create.
     """
 
@@ -69,25 +58,18 @@ class ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfigDict(
 
     api_key: VariableOrOptional[ModelProviderServiceConfigProviderSecretParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Google Gemini Enterprise API key. Required on Create when using API-key
-    auth; mutually exclusive with `service_credential`. Supplied as inline
-    plaintext via `ProviderSecret.plaintext`.
+    Google Gemini Enterprise API key. Required when creating the service.
+    Supply the value in `api_key.plaintext`.
     """
 
     project_id: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] GCP project ID hosting the Gemini Enterprise endpoint. Required on Create.
+    GCP project ID hosting the Gemini Enterprise endpoint. Required on Create.
     """
 
     region: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`).
+    GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`).
     Required on Create.
     """
 

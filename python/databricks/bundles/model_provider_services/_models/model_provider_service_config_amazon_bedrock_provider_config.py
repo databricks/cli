@@ -25,18 +25,7 @@ class ModelProviderServiceConfigAmazonBedrockProviderConfig:
         ModelProviderServiceConfigAmazonBedrockProviderDirectConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct form of Amazon Bedrock provider config.
-    
-    Authentication is one of two mutually exclusive modes, exactly one of which
-    must be supplied on Create:
-    - Access keys: set `aws_access_key`, leave `service_credential` unset.
-    - UC service credential: set `service_credential.name` to the AIP-122
-    resource-name form `credentials/{name}`, leave `aws_access_key` unset. The
-    credential value lives in UC and is referenced by name, not held on this
-    message.
-    Setting more than one mode is rejected.
+    Amazon Bedrock region and authentication configuration.
     """
 
     @classmethod
@@ -56,18 +45,7 @@ class ModelProviderServiceConfigAmazonBedrockProviderConfigDict(TypedDict, total
         ModelProviderServiceConfigAmazonBedrockProviderDirectConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Direct form of Amazon Bedrock provider config.
-    
-    Authentication is one of two mutually exclusive modes, exactly one of which
-    must be supplied on Create:
-    - Access keys: set `aws_access_key`, leave `service_credential` unset.
-    - UC service credential: set `service_credential.name` to the AIP-122
-    resource-name form `credentials/{name}`, leave `aws_access_key` unset. The
-    credential value lives in UC and is referenced by name, not held on this
-    message.
-    Setting more than one mode is rejected.
+    Amazon Bedrock region and authentication configuration.
     """
 
 
