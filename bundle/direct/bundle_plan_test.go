@@ -584,3 +584,23 @@ func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
 	// The coarse parent entry carries the whole sub-block rather than a leaf value.
 	assert.Equal(t, threeWayInner{B: "old", C: "newc"}, changes["field.a"].New)
 }
+
+// TestLadderBackendDefaultBeforeRemoteAddition guards the ladder order in addPerFieldActions.
+// The clusters resource has BOTH a root-level ignore_remote_additions rule (when_set: policy_id)
+// and backend_defaults (enable_elastic_disk). On a policy-gated cluster a config-absent backend
+// default matches both; it must keep reason backend_default, not remote_addition, so that
+// config-remote-sync excludes it (it captures remote_addition but filters known defaults).
+// Reordering the two classifiers reintroduces #6631.
+func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
+	adapter, err := dresources.NewAdapter(dresources.SupportedResources["clusters"], "clusters", nil)
+	require.NoError(t, err)
+
+	newState := &dresources.ClusterState{ClusterSpec: compute.ClusterSpec{PolicyId: "p1"}}
+	changes := deployplan.Changes{
+		// config-absent (Old==New==nil), present in remote: matches both rules.
+		"enable_elastic_disk": &deployplan.ChangeDesc{Remote: true},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
+	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
+	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
+}

@@ -473,6 +473,11 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
+		// backend_default MUST precede remote_addition: the cluster remote_addition rule is
+		// root-level, so it matches every backend default too. Keeping backend defaults under
+		// their own reason lets config-remote-sync exclude them (it captures remote_addition
+		// but filters known defaults), while remote_addition stays the catch-all for genuine
+		// additions the policy supplied. Reordering these reintroduces #6631.
 		} else if reason, ok := shouldSkipRemoteAddition(cfg, path, ch, newState); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
