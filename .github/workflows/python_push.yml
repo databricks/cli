@@ -66,6 +66,26 @@ jobs:
       - name: Run lint
         run: go tool -modfile=tools/task/go.mod task pydabs-lint
 
+  bundletest:
+    name: bundletest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: "3.12"
+          version: "0.6.5"
+
+      # Nothing runs the experimental/bundletest suite otherwise. uv.lock is gitignored
+      # (internal-proxy URLs), so this resolves fresh against pypi.org on the runner.
+      - name: Run bundletest
+        working-directory: experimental/bundletest
+        run: uv run --extra dev pytest -v
+
   python_docs:
     name: docs
     runs-on: ubuntu-latest
