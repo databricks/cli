@@ -262,8 +262,11 @@ func (p *Pipeline) run(ctx context.Context) error {
 	// instead of spending a doomed Python install and sync. The constraints are
 	// already on disk (diskMutated=true), which the extension's recovery flow relies
 	// on, and the failure is attributed to the provision phase it stands in for.
-	// Gating on the CLI's own merge detection keeps the code precise (no stderr
-	// matching, and no false positive on an unrelated sync failure).
+	// Gating this pre-sync check on the CLI's own merge detection keeps it
+	// structural for the direct-pin case: it reports the conflict before a doomed
+	// sync and never false-positives on an unrelated failure. Transitive conflicts
+	// the merge phase cannot see are classified later, from uv's stderr, in
+	// uvManager.Provision (see isUvResolutionConflict).
 	p.report(ctx, PhaseProvision)
 	if p.hasConstraintConflictWarning() {
 		return p.fail(PhaseProvision, true, NewError(ErrProvisionConflict, nil,
