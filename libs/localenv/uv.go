@@ -172,17 +172,25 @@ func (m *uvManager) Provision(ctx context.Context, projectDir, python string) er
 // defensive fallback) rather than an unrelated failure such as a network error
 // or a wheel build failure, which uv reports with different wording.
 //
-// Known imprecision: uv reuses the "No solution found ... unsatisfiable" banner
-// for a few non-conflict resolution failures too — a missing/typoed package, an
-// offline index, or a requires-python mismatch — so those are also reported as
-// E_PROVISION_CONFLICT. This is accepted: all are user-actionable resolution
-// failures, and the error message carries uv's verbatim stderr, so the code is
-// only a coarse hint for consumers (telemetry, the extension's recovery flow),
-// never the sole diagnostic. uv exposes no machine-readable signal to separate
-// them (it exits with the same generic code for every failure class).
+// Transport/reachability failures (VPN block, unreachable index, DNS) fail
+// before the resolver with different wording ("Failed to fetch", "Connection
+// refused"), so they already stay E_PROVISION. The one exception is an offline
+// cache miss, which uv reports with the resolver banner AND a "network was
+// disabled" hint — that is a reachability problem, not a dependency conflict, so
+// exclude it explicitly.
+//
+// Remaining accepted imprecision: uv reuses the banner for a genuinely
+// nonexistent/typoed package and a requires-python mismatch, which are still
+// reported as E_PROVISION_CONFLICT. Accepted — both are user-actionable
+// dependency problems, and the error message carries uv's verbatim stderr, so
+// the code is only a coarse hint for consumers (telemetry, the extension's
+// recovery flow), never the sole diagnostic.
 // https://docs.astral.sh/uv/reference/resolver-internals/
 func isUvResolutionConflict(stderr string) bool {
 	s := strings.ToLower(stderr)
+	if strings.Contains(s, "network was disabled") {
+		return false // offline cache miss, not a dependency problem
+	}
 	return strings.Contains(s, "no solution found") || strings.Contains(s, "are unsatisfiable")
 }
 

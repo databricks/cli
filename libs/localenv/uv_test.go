@@ -392,6 +392,10 @@ func TestIsUvResolutionConflict(t *testing.T) {
 	assert.False(t, isUvResolutionConflict("error: Failed to build `foo==1.0`"))
 	assert.False(t, isUvResolutionConflict("error: No interpreter found for Python 3.12"))
 	assert.False(t, isUvResolutionConflict(""))
+	// An offline cache miss carries the resolver banner ("... was not found in the
+	// cache ... No solution found") but is a reachability problem, not a dependency
+	// conflict; the "network was disabled" hint keeps it E_PROVISION.
+	assert.False(t, isUvResolutionConflict("× No solution found when resolving dependencies:\n  ╰─▶ Because foo was not found in the cache ...\nhint: Packages were unavailable because the network was disabled"))
 }
 
 func TestProvisionClassifiesResolutionConflict(t *testing.T) {
