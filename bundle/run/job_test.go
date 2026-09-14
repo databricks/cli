@@ -141,7 +141,6 @@ func TestJobRunnerRestart(t *testing.T) {
 	} {
 		job := &resources.Job{
 			ID: "123",
-
 			JobSettings: jobSettings,
 		}
 		b := &bundle.Bundle{
@@ -243,7 +242,6 @@ func TestJobRunnerRunNoWaitGetRunFails(t *testing.T) {
 func TestJobRunnerRestartForContinuousUnpausedJobs(t *testing.T) {
 	job := &resources.Job{
 		ID: "123",
-
 		JobSettings: jobs.JobSettings{
 			Continuous: &jobs.Continuous{
 				PauseStatus: jobs.PauseStatusUnpaused,

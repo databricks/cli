@@ -2,8 +2,8 @@ package resources
 
 // BaseResource is a struct that contains the base settings for a resource.
 type BaseResource struct {
-	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	URL            string         `json:"url,omitempty" bundle:"internal"`
+	ModifiedStatus ModifiedStatus `json:"modified_status,omitempty" bundle:"internal"`
 	Lifecycle      Lifecycle      `json:"lifecycle,omitempty"`
 }
 

@@ -131,9 +131,10 @@ var knownSameDepthCollisions = map[string][]string{
 
 func TestNoSameDepthJSONShadows(t *testing.T) {
 	rt := reflect.TypeFor[Resources]()
-	var newCollisions []string
+	var collisions []string
 
-	for f := range rt.Fields() {
+	for i := range rt.NumField() {
+		f := rt.Field(i)
 		et := f.Type.Elem()
 		for et.Kind() == reflect.Pointer {
 			et = et.Elem()
@@ -142,35 +143,50 @@ func TestNoSameDepthJSONShadows(t *testing.T) {
 			continue
 		}
 		group := structtag.JSONTag(f.Tag.Get("json")).Name()
-
 		for _, c := range sameDepthCollisions(et) {
-			known := slices.Contains(knownSameDepthCollisions[group], c.name)
-			if !known {
-				newCollisions = append(newCollisions,
-					fmt.Sprintf("%s (%s): json name %q declared by %s and %s at the same embedding depth",
-						group, et, c.name, c.typeA, c.typeB))
-			}
+			collisions = append(collisions,
+				fmt.Sprintf("%s: json name %q declared by %s and %s at the same embedding depth",
+					group, c.name, c.typeA, c.typeB))
 		}
 	}
 
-	assert.Empty(t, newCollisions,
-		"NEW same-depth json name collisions found — encoding/json calls these ambiguous "+
-			"and serializes neither; structaccess cannot read or write them either. "+
-			"Fix by adding an explicit depth-0 field on the resource struct, or add to knownSameDepthCollisions.")
+	assert.Empty(t, collisions,
+		"same-depth json name collisions found — encoding/json calls these ambiguous "+
+			"and serializes neither; structaccess cannot read or write them either")
 }
 
 type collision struct {
 	name, typeA, typeB string
 }
 
-// sameDepthCollisions returns the json names declared at the same embedding
-// depth by two or more anonymous embedded structs inside t.
+// sameDepthCollisions returns json names declared at the same embedding depth
+// by two or more anonymous embedded structs that are NOT already shadowed by a
+// direct field on t itself. A same-depth collision is only a problem when there
+// is no depth-0 field that resolves the ambiguity; if one exists (e.g. App.URL
+// at depth 0 shadows both BaseResource.URL and apps.App.Url at depth 1),
+// encoding/json and structaccess both use the depth-0 field correctly.
 func sameDepthCollisions(t reflect.Type) []collision {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct {
 		return nil
+	}
+
+	// Depth-0 direct fields shadow any same-depth collision at deeper levels.
+	depth0 := map[string]bool{}
+	for i := range t.NumField() {
+		sf := t.Field(i)
+		if sf.PkgPath != "" || sf.Anonymous || sf.Name == "ForceSendFields" {
+			continue
+		}
+		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
+		if name == "" {
+			name = sf.Name
+		}
+		if name != "-" {
+			depth0[name] = true
+		}
 	}
 
 	var result []collision
@@ -195,7 +211,7 @@ func sameDepthCollisions(t reflect.Type) []collision {
 			}
 		}
 		for name, types := range nameToTypes {
-			if len(types) > 1 {
+			if len(types) > 1 && !depth0[name] {
 				result = append(result, collision{name: name, typeA: types[0], typeB: types[1]})
 			}
 		}
@@ -229,4 +245,52 @@ func embeddedTypes(t reflect.Type) []reflect.Type {
 		}
 	}
 	return out
+}
+
+// TestResourceIDFieldTags asserts that every resource type exposes the bundle
+// tracking ID with exactly the right json and bundle tags. The field must be
+// json:"id,omitempty" (so it round-trips through the bundle state file) and
+// bundle:"readonly" (so users can reference ${resources.<key>.id} but cannot
+// set it). It must be a direct depth-0 field, not promoted from BaseResource
+// or an SDK embed, to avoid same-depth collisions.
+func TestResourceIDFieldTags(t *testing.T) {
+	rt := reflect.TypeFor[Resources]()
+	for i := range rt.NumField() {
+		f := rt.Field(i)
+		et := f.Type.Elem()
+		for et.Kind() == reflect.Pointer {
+			et = et.Elem()
+		}
+		if et.Kind() != reflect.Struct {
+			continue
+		}
+		group := structtag.JSONTag(f.Tag.Get("json")).Name()
+
+		// Skip resource types that don't embed BaseResource (internal infra types
+		// like Snapshot have no user-facing ID).
+		hasBaseResource := false
+		for j := range et.NumField() {
+			if et.Field(j).Anonymous && et.Field(j).Type.Name() == "BaseResource" {
+				hasBaseResource = true
+				break
+			}
+		}
+		if !hasBaseResource {
+			continue
+		}
+
+		t.Run(group, func(t *testing.T) {
+			// The ID field must be declared directly on the resource struct,
+			// not promoted from an anonymous embed.
+			sf, ok := et.FieldByName("ID")
+			require.True(t, ok, "%s must have a direct ID field", group)
+			assert.False(t, sf.Anonymous, "%s.ID must not be anonymous", group)
+			assert.Empty(t, sf.Index[1:], "%s.ID must be at depth 0 (got index %v)", group, sf.Index)
+
+			assert.Equal(t, "id,omitempty", sf.Tag.Get("json"),
+				"%s.ID json tag must be \"id,omitempty\"", group)
+			assert.Equal(t, "readonly", sf.Tag.Get("bundle"),
+				"%s.ID bundle tag must be \"readonly\"", group)
+		})
+	}
 }
