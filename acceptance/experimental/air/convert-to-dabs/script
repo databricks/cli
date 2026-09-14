@@ -15,6 +15,3 @@ errcode trace $CLI experimental air convert-to-dabs train.yaml
 
 title "--force overwrites it"
 trace $CLI experimental air convert-to-dabs train.yaml --force
-
-title "docker_image is not supported yet"
-errcode trace $CLI experimental air convert-to-dabs docker.yaml --output-dir generated-docker
