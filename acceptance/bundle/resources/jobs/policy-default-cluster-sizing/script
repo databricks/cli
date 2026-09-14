@@ -1,0 +1,17 @@
+trace $CLI bundle deploy
+
+job_id="$(read_id.py sample_job)"
+edit_resource.py jobs "$job_id" <<'EOF'
+for task in r["tasks"]:
+    if task["task_key"] == "task_policy_defaults":
+        task["new_cluster"]["autoscale"] = {"min_workers": 1, "max_workers": 4}
+
+for cluster in r["job_clusters"]:
+    if cluster["job_cluster_key"] == "policy_defaults":
+        cluster["new_cluster"]["autoscale"] = {"min_workers": 1, "max_workers": 4}
+EOF
+
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace print_requests.py //jobs
+rm out.requests.txt

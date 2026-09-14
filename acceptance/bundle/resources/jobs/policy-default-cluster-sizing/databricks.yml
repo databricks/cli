@@ -1,0 +1,51 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    sample_job:
+      name: sample_job
+
+      tasks:
+        - task_key: task_policy_defaults
+          notebook_task:
+            notebook_path: sample_notebook.py
+            source: WORKSPACE
+          new_cluster:
+            policy_id: policy-id
+            apply_policy_default_values: true
+
+      job_clusters:
+        - job_cluster_key: policy_defaults
+          new_cluster:
+            policy_id: policy-id
+            apply_policy_default_values: true
+
+        - job_cluster_key: policy_defaults_autoscale
+          new_cluster:
+            policy_id: policy-id
+            apply_policy_default_values: true
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+
+        - job_cluster_key: policy_defaults_num_workers_zero
+          new_cluster:
+            policy_id: policy-id
+            apply_policy_default_values: true
+            num_workers: 0
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: local[*]
+            custom_tags:
+              ResourceClass: SingleNode
+
+        - job_cluster_key: policy_defaults_disabled
+          new_cluster:
+            policy_id: policy-id
+            apply_policy_default_values: false
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: local[*]
+            custom_tags:
+              ResourceClass: SingleNode
