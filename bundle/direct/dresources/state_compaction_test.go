@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,16 +40,22 @@ func requireTooSmallToHash(t *testing.T, content string) {
 		"fixture must be at most %d bytes to be persisted raw; shrink it", stateHashPlaceholderLen)
 }
 
-// TestHashedFieldsAreTopLevel guards the shallow-copy assumption in CompactState:
-// every hashed_fields path declared in resources.yml must be a top-level field. A nested
-// path would be mutated through memory shared with the deploy value (see CompactState), so
-// this fails CI the moment such a declaration is added instead of corrupting state at runtime.
-func TestHashedFieldsAreTopLevel(t *testing.T) {
+// TestHashedFieldsAreValid checks every hashed_fields path in resources.yml is a top-level
+// field (CompactState's shallow copy only isolates those) and a real field on the state type
+// (a typo parses fine but resolves to nothing, so CompactState silently skips it).
+func TestHashedFieldsAreValid(t *testing.T) {
 	for name, rc := range MustLoadConfig().Resources {
+		if len(rc.HashedFields) == 0 {
+			continue
+		}
+		adapter, err := NewAdapter(SupportedResources[name], name, nil)
+		require.NoError(t, err, "%s: failed to create adapter", name)
 		for _, field := range rc.HashedFields {
 			path, err := structpath.ParsePath(field)
 			require.NoError(t, err, "%s: hashed_fields field %q", name, field)
 			assert.Equal(t, 1, path.Len(), "%s: hashed_fields field %q must be a top-level field", name, field)
+			assert.NoError(t, structaccess.ValidatePath(adapter.StateType(), path),
+				"%s: hashed_fields field %q must be an actual field on the state type", name, field)
 		}
 	}
 }
