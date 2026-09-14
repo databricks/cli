@@ -60,6 +60,7 @@ type AllResources struct {
 	DisableLegacyFeaturesSetting                 ResourceDisableLegacyFeaturesSetting                 `json:"databricks_disable_legacy_features_setting,omitempty"`
 	DisasterRecoveryFailoverGroup                ResourceDisasterRecoveryFailoverGroup                `json:"databricks_disaster_recovery_failover_group,omitempty"`
 	DisasterRecoveryStableUrl                    ResourceDisasterRecoveryStableUrl                    `json:"databricks_disaster_recovery_stable_url,omitempty"`
+	Domain                                       ResourceDomain                                       `json:"databricks_domain,omitempty"`
 	Endpoint                                     ResourceEndpoint                                     `json:"databricks_endpoint,omitempty"`
 	EnhancedSecurityMonitoringWorkspaceSetting   ResourceEnhancedSecurityMonitoringWorkspaceSetting   `json:"databricks_enhanced_security_monitoring_workspace_setting,omitempty"`
 	Entitlements                                 ResourceEntitlements                                 `json:"databricks_entitlements,omitempty"`
@@ -138,6 +139,7 @@ type AllResources struct {
 	Repo                                         ResourceRepo                                         `json:"databricks_repo,omitempty"`
 	RestrictWorkspaceAdminsSetting               ResourceRestrictWorkspaceAdminsSetting               `json:"databricks_restrict_workspace_admins_setting,omitempty"`
 	RfaAccessRequestDestinations                 ResourceRfaAccessRequestDestinations                 `json:"databricks_rfa_access_request_destinations,omitempty"`
+	Sandbox                                      ResourceSandbox                                      `json:"databricks_sandbox,omitempty"`
 	Schema                                       ResourceSchema                                       `json:"databricks_schema,omitempty"`
 	Secret                                       ResourceSecret                                       `json:"databricks_secret,omitempty"`
 	SecretAcl                                    ResourceSecretAcl                                    `json:"databricks_secret_acl,omitempty"`

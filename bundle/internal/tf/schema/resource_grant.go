@@ -23,6 +23,7 @@ type ResourceGrant struct {
 	Privileges           []string                     `json:"privileges"`
 	Recipient            string                       `json:"recipient,omitempty"`
 	Schema               string                       `json:"schema,omitempty"`
+	Secret               string                       `json:"secret,omitempty"`
 	Share                string                       `json:"share,omitempty"`
 	StorageCredential    string                       `json:"storage_credential,omitempty"`
 	Table                string                       `json:"table,omitempty"`

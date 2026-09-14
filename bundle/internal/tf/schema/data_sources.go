@@ -74,6 +74,8 @@ type DataSources struct {
 	DisasterRecoveryFailoverGroups              map[string]any `json:"databricks_disaster_recovery_failover_groups,omitempty"`
 	DisasterRecoveryStableUrl                   map[string]any `json:"databricks_disaster_recovery_stable_url,omitempty"`
 	DisasterRecoveryStableUrls                  map[string]any `json:"databricks_disaster_recovery_stable_urls,omitempty"`
+	Domain                                      map[string]any `json:"databricks_domain,omitempty"`
+	Domains                                     map[string]any `json:"databricks_domains,omitempty"`
 	Endpoint                                    map[string]any `json:"databricks_endpoint,omitempty"`
 	Endpoints                                   map[string]any `json:"databricks_endpoints,omitempty"`
 	EntityTagAssignment                         map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
@@ -145,6 +147,8 @@ type DataSources struct {
 	RegisteredModel                             map[string]any `json:"databricks_registered_model,omitempty"`
 	RegisteredModelVersions                     map[string]any `json:"databricks_registered_model_versions,omitempty"`
 	RfaAccessRequestDestinations                map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
+	Sandbox                                     map[string]any `json:"databricks_sandbox,omitempty"`
+	Sandboxes                                   map[string]any `json:"databricks_sandboxes,omitempty"`
 	Schema                                      map[string]any `json:"databricks_schema,omitempty"`
 	Schemas                                     map[string]any `json:"databricks_schemas,omitempty"`
 	SecretUc                                    map[string]any `json:"databricks_secret_uc,omitempty"`
@@ -270,6 +274,8 @@ func NewDataSources() *DataSources {
 		DisasterRecoveryFailoverGroups:       make(map[string]any),
 		DisasterRecoveryStableUrl:            make(map[string]any),
 		DisasterRecoveryStableUrls:           make(map[string]any),
+		Domain:                               make(map[string]any),
+		Domains:                              make(map[string]any),
 		Endpoint:                             make(map[string]any),
 		Endpoints:                            make(map[string]any),
 		EntityTagAssignment:                  make(map[string]any),
@@ -341,6 +347,8 @@ func NewDataSources() *DataSources {
 		RegisteredModel:                             make(map[string]any),
 		RegisteredModelVersions:                     make(map[string]any),
 		RfaAccessRequestDestinations:                make(map[string]any),
+		Sandbox:                                     make(map[string]any),
+		Sandboxes:                                   make(map[string]any),
 		Schema:                                      make(map[string]any),
 		Schemas:                                     make(map[string]any),
 		SecretUc:                                    make(map[string]any),
