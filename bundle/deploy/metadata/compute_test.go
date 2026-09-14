@@ -67,12 +67,12 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"my-dashboard-1": {
-						ID: "5555",
+						ID:              "5555",
 						DashboardConfig: resources.DashboardConfig{},
 						FilePath:        "i/h/g",
 					},
 					"my-dashboard-2": {
-						ID: "6666",
+						ID:              "6666",
 						DashboardConfig: resources.DashboardConfig{},
 						FilePath:        "l/k/j",
 					},

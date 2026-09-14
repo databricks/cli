@@ -110,31 +110,11 @@ func zeroValueScalars(t reflect.Type, depth int, seen map[reflect.Type]bool) dyn
 	return dyn.V(m)
 }
 
-// knownSameDepthCollisions lists the existing same-depth json name collisions.
-// These are bugs — encoding/json calls the name ambiguous and neither field is
-// reachable — but fixing them requires a breaking change to the bundle YAML
-// format, so they are listed here rather than silently tolerated. Every entry
-// must describe where the collision comes from; fixing one removes its entry.
-//
-// Fix: add an explicit depth-0 field on the resource type that shadows both
-// embedded declarations (e.g. `ID string \`json:"id,omitempty" bundle:"readonly"\“
-// directly on the resource struct).
-var knownSameDepthCollisions = map[string][]string{
-	// BaseResource.ID and pipelines.CreatePipeline.Id both carry json:"id".
-	"pipelines": {"id"},
-	// BaseResource.ID and apps.App.Id carry json:"id";
-	// BaseResource.URL and apps.App.Url carry json:"url".
-	"apps": {"id", "url"},
-	// BaseResource.ID and sql.AlertV2.Id carry json:"id".
-	"alerts": {"id"},
-}
-
 func TestNoSameDepthJSONShadows(t *testing.T) {
 	rt := reflect.TypeFor[Resources]()
 	var collisions []string
 
-	for i := range rt.NumField() {
-		f := rt.Field(i)
+	for f := range rt.Fields() {
 		et := f.Type.Elem()
 		for et.Kind() == reflect.Pointer {
 			et = et.Elem()
@@ -175,8 +155,7 @@ func sameDepthCollisions(t reflect.Type) []collision {
 
 	// Depth-0 direct fields shadow any same-depth collision at deeper levels.
 	depth0 := map[string]bool{}
-	for i := range t.NumField() {
-		sf := t.Field(i)
+	for sf := range t.Fields() {
 		if sf.PkgPath != "" || sf.Anonymous || sf.Name == "ForceSendFields" {
 			continue
 		}
@@ -255,8 +234,7 @@ func embeddedTypes(t reflect.Type) []reflect.Type {
 // or an SDK embed, to avoid same-depth collisions.
 func TestResourceIDFieldTags(t *testing.T) {
 	rt := reflect.TypeFor[Resources]()
-	for i := range rt.NumField() {
-		f := rt.Field(i)
+	for f := range rt.Fields() {
 		et := f.Type.Elem()
 		for et.Kind() == reflect.Pointer {
 			et = et.Elem()

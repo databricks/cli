@@ -25,25 +25,25 @@ func TestInitializeURLs(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						ID: "1",
+						ID:          "1",
 						JobSettings: jobs.JobSettings{Name: "job1"},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						ID: "3",
+						ID:             "3",
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1"},
 					},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {
-						ID: "4",
+						ID:               "4",
 						CreateExperiment: ml.CreateExperiment{Name: "experiment1"},
 					},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model1": {
-						ID: "a model uses its name for identifier",
+						ID:                 "a model uses its name for identifier",
 						CreateModelRequest: ml.CreateModelRequest{Name: "a model uses its name for identifier"},
 					},
 				},
@@ -136,7 +136,7 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						ID: "1",
+						ID:          "1",
 						JobSettings: jobs.JobSettings{Name: "job1"},
 					},
 				},
