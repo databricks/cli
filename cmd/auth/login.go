@@ -348,9 +348,24 @@ a new profile is created.
 
 		// At this point, an OAuth token has been successfully minted. The rest of
 		// the command focuses on:
-		// 1. Workspace selection for SPOG hosts (best-effort);
-		// 2. Configuring cluster and serverless;
-		// 3. Saving the profile.
+		// 1. Switching to the account's primary provisioned (SPOG) URL;
+		// 2. Workspace selection for SPOG hosts (best-effort);
+		// 3. Configuring cluster and serverless;
+		// 4. Saving the profile.
+
+		// Look up the account's primary provisioned URL (its SPOG host) by
+		// account ID and switch the profile to it, so the saved profile targets
+		// the unified host. The token cache key is the profile name (see
+		// authArguments.Profile above), so replacing the host here does not
+		// orphan the token stored below. Best-effort: failures never block login.
+		if authArguments.AccountID != "" {
+			spogURL, err := auth.LookupPrimaryProvisionedURL(ctx, authArguments.Host, authArguments.AccountID, token.AccessToken, nil)
+			if err != nil {
+				log.Warnf(ctx, "Primary provisioned URL lookup failed: %v", err)
+			} else if spogURL != "" {
+				authArguments.Host = strings.TrimSuffix(spogURL, "/")
+			}
+		}
 
 		if shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace) {
 			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, tokenSource)
