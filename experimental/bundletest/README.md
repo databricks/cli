@@ -47,8 +47,9 @@ The same test runs against either backend, chosen by the `BUNDLETEST_BACKEND` en
   DuckDB's dialect, type system, and semantics differ, so a green local run means "the SQL
   is portable and structurally sound," not "this passes on Databricks." Genuinely
   dialect-dependent checks belong on cloud.
-- **`cloud`** — deco-provisioned real workspace. Real fidelity. *(Arrives as a stacked PR
-  on top of this base.)*
+- **`cloud`** — a real workspace. Real fidelity: `databricks bundle deploy` + real job runs
+  and SQL through the Databricks SDK. Slower (deploys take minutes) and costs real compute,
+  so it's the gated tier. The `cloud_only` assertions run here instead of skipping.
 
 ### How the local backend stays honest
 
@@ -75,3 +76,23 @@ uv venv --python 3.12
 uv pip install -e ".[dev]"
 uv run pytest -v
 ```
+
+### Run it on cloud
+
+The cloud backend deploys to a real workspace. Example fixture `examples/cloud_orders/` contains two SQL jobs, a managed volume, and a file_path dashboard under `main.bundletest_cloud`:
+
+```sh
+export BUNDLETEST_BACKEND=cloud
+export BUNDLETEST_PROFILE=<profile>              # from ~/.databrickscfg
+export BUNDLETEST_WAREHOUSE_ID=<sql-warehouse-id>  # used for seeding + assertion queries
+export BUNDLE_VAR_warehouse_id=<sql-warehouse-id>
+uv run --extra dev pytest examples/cloud_orders
+```
+
+(`examples/orders_bundle/` is local static-config only, not deployable to cloud.)
+
+Seeded tables and job runs are real and cost money, so unlike the local backend (a fresh
+in-memory DuckDB per test) the cloud backend persists state within a run. `teardown()` drops
+the tables it seeded and runs `bundle destroy`, but the tests still share a workspace — prefer
+a **module-scoped** `env` fixture (deploy once per module) and an isolated namespace per run
+over the local backend's function-scoped, throwaway one.
