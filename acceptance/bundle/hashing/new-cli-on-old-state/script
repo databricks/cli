@@ -1,0 +1,16 @@
+export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+add_repl warehouse-1234 TEST_DEFAULT_WAREHOUSE_ID
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() { $CLI bundle destroy --auto-approve &> LOG.destroy; }
+trap cleanup EXIT
+
+title "Old CLI (predates hashing) deploys: state holds the full serialized_dashboard\n"
+$CLI_LATEST bundle deploy &> LOG.deploy_old
+contains.py '!panic' '!internal error' < LOG.deploy_old > /dev/null
+print_state.py | gron.py | grep serialized_dashboard
+
+# The current CLI hashes the stored full content on read, so it compares equal to the config
+# and reports no phantom update.
+title "Current CLI reads the old state without a phantom update"
+trace $CLI bundle plan | contains.py "0 to add, 0 to change, 0 to delete"

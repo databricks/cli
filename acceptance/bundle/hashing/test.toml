@@ -1,0 +1,7 @@
+# Cross-version state compat for direct-engine content hashing: $CLI hashes serialized_dashboard
+# in state; $CLI_LATEST (latest release) predates hashed_fields and stores it verbatim.
+# Direct-only and local, so the state reads are deterministic.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DMS = []
+
+Ignore = ["databricks.yml"]
