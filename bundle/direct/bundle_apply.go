@@ -126,7 +126,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
 			}
-			if reportApplied {
+			// A state-only delete performs no backend operation, so don't report it,
+			// consistent with the summary (CountActions excludes it) and the terraform
+			// path in logDeploySummary.
+			if reportApplied && !entry.StateOnly {
 				cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
 			}
 			return true
