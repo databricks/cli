@@ -51,6 +51,7 @@ func (c GenieSpaceConfig) MarshalJSON() ([]byte, error) {
 
 type GenieSpace struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	GenieSpaceConfig
 
 	Permissions []Permission `json:"permissions,omitempty"`

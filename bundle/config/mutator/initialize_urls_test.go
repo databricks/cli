@@ -25,32 +25,36 @@ func TestInitializeURLs(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						BaseResource: resources.BaseResource{ID: "1"},
-						JobSettings:  jobs.JobSettings{Name: "job1"},
+						ID: "1",
+
+						JobSettings: jobs.JobSettings{Name: "job1"},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {
-						ID:             "3",
-						BaseResource:   resources.BaseResource{ID: "3"},
+						ID: "3",
+
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1"},
 					},
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {
-						BaseResource:     resources.BaseResource{ID: "4"},
+						ID: "4",
+
 						CreateExperiment: ml.CreateExperiment{Name: "experiment1"},
 					},
 				},
 				Models: map[string]*resources.MlflowModel{
 					"model1": {
-						BaseResource:       resources.BaseResource{ID: "a model uses its name for identifier"},
+						ID: "a model uses its name for identifier",
+
 						CreateModelRequest: ml.CreateModelRequest{Name: "a model uses its name for identifier"},
 					},
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {
-						BaseResource: resources.BaseResource{ID: "my_serving_endpoint"},
+						ID: "my_serving_endpoint",
+
 						CreateServingEndpoint: serving.CreateServingEndpoint{
 							Name: "my_serving_endpoint",
 						},
@@ -58,7 +62,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {
-						BaseResource: resources.BaseResource{ID: "8"},
+						ID: "8",
+
 						CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 							Name: "my_registered_model",
 						},
@@ -72,7 +77,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 					"vectorsearchindex1": {
-						BaseResource: resources.BaseResource{ID: "catalog.schema.vectorsearchindex1"},
+						ID: "catalog.schema.vectorsearchindex1",
+
 						CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
 							Name: "catalog.schema.vectorsearchindex1",
 						},
@@ -80,7 +86,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						BaseResource: resources.BaseResource{ID: "catalog.schema"},
+						ID: "catalog.schema",
+
 						CreateSchema: catalog.CreateSchema{
 							Name: "schema",
 						},
@@ -88,7 +95,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Clusters: map[string]*resources.Cluster{
 					"cluster1": {
-						BaseResource: resources.BaseResource{ID: "1017-103929-vlr7jzcf"},
+						ID: "1017-103929-vlr7jzcf",
+
 						ClusterSpec: compute.ClusterSpec{
 							ClusterName: "cluster1",
 						},
@@ -96,7 +104,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
-						BaseResource: resources.BaseResource{ID: "01ef8d56871e1d50ae30ce7375e42478"},
+						ID: "01ef8d56871e1d50ae30ce7375e42478",
+
 						DashboardConfig: resources.DashboardConfig{
 							DisplayName: "My special dashboard",
 						},
@@ -137,8 +146,9 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						BaseResource: resources.BaseResource{ID: "1"},
-						JobSettings:  jobs.JobSettings{Name: "job1"},
+						ID: "1",
+
+						JobSettings: jobs.JobSettings{Name: "job1"},
 					},
 				},
 			},
