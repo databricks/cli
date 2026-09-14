@@ -34,8 +34,8 @@ type Metadata struct {
 // among them: the service derives the deployment's from the version that carried it.
 var deploymentFields = []string{"display_name", "target_name", "deployment_mode", "workspace_info"}
 
-// deployment renders the metadata the deployment owns.
-func (m Metadata) deployment() bundledeployments.Deployment {
+// Deployment renders the metadata the deployment owns.
+func (m Metadata) Deployment() bundledeployments.Deployment {
 	return bundledeployments.Deployment{
 		DisplayName:    m.DisplayName,
 		TargetName:     m.TargetName,
@@ -51,7 +51,7 @@ func (m Metadata) StaleFields(current *bundledeployments.Deployment) string {
 		return strings.Join(deploymentFields, ",")
 	}
 
-	want := m.deployment()
+	want := m.Deployment()
 	var stale []string
 	if want.DisplayName != current.DisplayName {
 		stale = append(stale, "display_name")
@@ -79,4 +79,54 @@ func NextVersion(lastVersionID string) (int, error) {
 		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", lastVersionID, err)
 	}
 	return last + 1, nil
+}
+
+// DeploymentNodeName is the workspace node DMS creates per deployment. Must
+// match DeploymentWhsClient.DEPLOYMENT_NODE_NAME on the service side.
+const DeploymentNodeName = "resources.deployment.json"
+
+// DeploymentName and VersionName are the two resource-name formats the service uses, so a
+// caller only ever passes ids.
+func DeploymentName(deploymentID string) string {
+	return "deployments/" + deploymentID
+}
+
+func VersionName(deploymentID string, version int) string {
+	return fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version)
+}
+
+// DeploymentIDFromName extracts the deployment ID from a DMS resource name of
+// the form "deployments/{deployment_id}".
+func DeploymentIDFromName(name string) (string, error) {
+	id, ok := strings.CutPrefix(name, DeploymentName(""))
+	if !ok || id == "" {
+		return "", fmt.Errorf("unexpected deployment name %q from the deployment history service", name)
+	}
+	return id, nil
+}
+
+// DeploymentUpdate builds the deployment carrying exactly the masked fields, empty ones
+// included: the service requires every masked field to be present in the body and reads an empty
+// value as a clear (a target that stops setting mode clears deployment_mode). ForceSendFields
+// keeps those empty values on the wire, which omitempty would drop.
+func DeploymentUpdate(metadata Metadata, mask string) bundledeployments.Deployment {
+	full := metadata.Deployment()
+	var dep bundledeployments.Deployment
+	for path := range strings.SplitSeq(mask, ",") {
+		switch path {
+		case "display_name":
+			dep.DisplayName = full.DisplayName
+			dep.ForceSendFields = append(dep.ForceSendFields, "DisplayName")
+		case "target_name":
+			dep.TargetName = full.TargetName
+			dep.ForceSendFields = append(dep.ForceSendFields, "TargetName")
+		case "deployment_mode":
+			dep.DeploymentMode = full.DeploymentMode
+			dep.ForceSendFields = append(dep.ForceSendFields, "DeploymentMode")
+		case "workspace_info":
+			dep.WorkspaceInfo = full.WorkspaceInfo
+			dep.ForceSendFields = append(dep.ForceSendFields, "WorkspaceInfo")
+		}
+	}
+	return dep
 }

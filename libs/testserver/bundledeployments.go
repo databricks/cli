@@ -355,8 +355,9 @@ func (s *FakeWorkspace) Heartbeat() Response {
 	return Response{Body: bundledeployments.HeartbeatResponse{}}
 }
 
-// operationBody renders an operation the way the service does: sequence_id as a
-// JSON string, which the SDK struct cannot express (it types the field int64).
+// operationBody renders an operation the way the service does: sequence_id as a JSON string. The
+// SDK reads it back into its int64 field through its number-or-string normalizer, so the fake
+// keeps emitting a string to mirror the real service's proto3 JSON.
 func operationBody(op *bundledeployments.Operation) (map[string]any, error) {
 	raw, err := json.Marshal(op)
 	if err != nil {
@@ -377,26 +378,16 @@ func operationBody(op *bundledeployments.Operation) (map[string]any, error) {
 // UpdateOperation applies a later write for a resource already recorded in this
 // version. sequence_id is the concurrency precondition and increments on success.
 func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, resourceKey string) Response {
-	// sequence_id arrives as a string, which the SDK struct cannot hold (it types the
-	// field int64), so read the body twice: once for the typed fields with that key
-	// removed, and once for the precondition alone.
+	// raw records which fields the body carried, which the update_mask rules turn on: a masked
+	// path with no value is how a field is cleared.
 	var raw map[string]json.RawMessage
 	if err := json.Unmarshal(req.Body, &raw); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
-	var precondition struct {
-		SequenceId string `json:"sequence_id"`
-	}
-	if err := json.Unmarshal(req.Body, &precondition); err != nil {
-		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
-	}
-	delete(raw, "sequence_id")
-	typedBody, err := json.Marshal(raw)
-	if err != nil {
-		return Response{StatusCode: 500, Body: map[string]string{"message": err.Error()}}
-	}
+	// The SDK sends sequence_id as a JSON number and the real service as a string; Operation reads
+	// either into its int64 field, so the whole body decodes straight into it.
 	var op bundledeployments.Operation
-	if err := json.Unmarshal(typedBody, &op); err != nil {
+	if err := json.Unmarshal(req.Body, &op); err != nil {
 		return Response{StatusCode: 400, Body: map[string]string{"message": err.Error()}}
 	}
 
@@ -461,7 +452,7 @@ func (s *FakeWorkspace) UpdateOperation(req Request, deploymentID, versionID, re
 	if !ok {
 		return dmsNotFound("operation " + opName)
 	}
-	if precondition.SequenceId != strconv.FormatInt(existing.SequenceId, 10) {
+	if op.SequenceId != existing.SequenceId {
 		return dmsAborted("sequence_id is outdated; the operation is at " + strconv.FormatInt(existing.SequenceId, 10))
 	}
 
