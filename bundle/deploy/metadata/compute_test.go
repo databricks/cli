@@ -40,14 +40,12 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
 						ID: "1111",
-
 						JobSettings: jobs.JobSettings{
 							Name: "My Job One",
 						},
 					},
 					"my-job-2": {
 						ID: "2222",
-
 						JobSettings: jobs.JobSettings{
 							Name: "My Job Two",
 						},
@@ -56,14 +54,12 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline-1": {
 						ID: "3333",
-
 						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline One",
 						},
 					},
 					"my-pipeline-2": {
 						ID: "4444",
-
 						CreatePipeline: pipelines.CreatePipeline{
 							Name: "My Pipeline Two",
 						},
@@ -72,13 +68,11 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Dashboards: map[string]*resources.Dashboard{
 					"my-dashboard-1": {
 						ID: "5555",
-
 						DashboardConfig: resources.DashboardConfig{},
 						FilePath:        "i/h/g",
 					},
 					"my-dashboard-2": {
 						ID: "6666",
-
 						DashboardConfig: resources.DashboardConfig{},
 						FilePath:        "l/k/j",
 					},
