@@ -1,0 +1,9 @@
+Error: no deployed jobs resource with id [MY_JOB_ID]; deployed jobs ids in state: [NUMID]
+
+Exit code: 1
+Error: state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found
+
+Exit code: 1
+Error: state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found
+
+Exit code: 1

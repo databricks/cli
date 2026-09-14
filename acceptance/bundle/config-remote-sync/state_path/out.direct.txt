@@ -1,0 +1,9 @@
+Error: no deployed jobs resource with id [MY_JOB_ID]; deployed jobs ids in state: [NUMID]
+
+Exit code: 1
+Error: no deployed jobs resource with id [MY_JOB_ID]; the deployment state contains no resources with ids (the bundle may not be deployed, or its resource state is missing)
+
+Exit code: 1
+Error: no deployed jobs resource with id [MY_JOB_ID]; the deployment state contains no resources with ids (the bundle may not be deployed, or its resource state is missing)
+
+Exit code: 1
