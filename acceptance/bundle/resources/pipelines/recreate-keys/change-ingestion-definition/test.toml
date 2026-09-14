@@ -1,2 +1,4 @@
+Badness = "The create request diverges between engines: the terraform provider injects edition/channel defaults for ingestion pipelines on its own. Fix: https://github.com/databricks/terraform-provider-databricks/pull/5783"
+
 Env.CONFIG_UPDATE = "my_connection my_new_connection"
 Env.ING_KEY = "ingestion_definition"
