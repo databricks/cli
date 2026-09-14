@@ -19,6 +19,7 @@ CANNOT test locally — needs the cloud backend:
 import pytest
 
 
+@pytest.mark.bundle_resource("jobs.transform_orders")
 def test_transform_dedupes(env):
     env.seed(
         "shop.bronze.raw_orders",
@@ -43,6 +44,7 @@ def test_transform_dedupes(env):
 
 
 @pytest.mark.cloud_only
+@pytest.mark.bundle_resource("jobs.transform_orders")
 def test_price_type_is_databricks_decimal(env):
     env.seed("shop.bronze.raw_orders", [{"order_id": 1, "total_price": 10.0}])
     env.run_job("transform_orders")
