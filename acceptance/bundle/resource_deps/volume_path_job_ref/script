@@ -1,10 +1,14 @@
 envsubst < databricks.yml.tmpl > databricks.yml
+mkdir -p .databricks
 trace $CLI bundle validate -o json | nostamp | jq '.resources.jobs, .resources.volumes'
 
 # The job's data_path default references the volume's computed volume_path.
 # Record the JSON plan per engine to confirm the reference is resolved into the
 # planned new_state rather than left as ${resources...}.
-trace errcode $CLI bundle plan -o json &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+# Untraced: with &> the trace header lands in the file, leaving it unfilterable. Capture the raw
+# plan aside and stamp it out into the golden instead.
+errcode $CLI bundle plan -o json &> .databricks/tmp.plan.json
+nostamp < .databricks/tmp.plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Deploy and inspect the create-job request: the parameter default sent to
 # the Jobs API must be the interpolated volume_path.

@@ -3,11 +3,11 @@
 Uploading whl/source.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.job
-Files: 6 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Expecting 2 wheels in libraries section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 [
   {
     "existing_cluster_id": "0717-132531-5opeqon1",
@@ -50,7 +50,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Expecting environment dependencies to be updated
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments [OUTPUT_DIR]/out.requests.txt
 [
   {
     "environment_key": "test_env",
@@ -65,7 +65,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 ]
 
 === Expecting wheel to be uploaded
->>> jq -s .[] | select(.path=="/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl") out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl") [OUTPUT_DIR]/out.requests.txt
 {
   "method": "PUT",
   "path": "/api/2.0/fs/files/Volumes/foo/bar/artifacts/.internal/source.whl",

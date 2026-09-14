@@ -33,6 +33,43 @@ func newTestStore() storage.Store {
 	return &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
 }
 
+type putErrorStore struct {
+	storage.Store
+	err error
+}
+
+func (s *putErrorStore) Put(string, storage.Entry) error {
+	return s.err
+}
+
+type countingStore struct {
+	storage.Store
+	putCalls int
+}
+
+func (s *countingStore) Put(key string, entry storage.Entry) error {
+	s.putCalls++
+	return s.Store.Put(key, entry)
+}
+
+func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
+	const profileName = "TEST"
+	inner := storage.NewMemoryStore()
+	require.NoError(t, inner.Put(profileName, storage.Entry{
+		Token: &oauth2.Token{AccessToken: "old-token"},
+	}))
+	storeErr := errors.New("put failed")
+	store := &putErrorStore{Store: inner, err: storeErr}
+	arg, err := u2m.NewProfileWorkspaceOAuthArgument("https://workspace.example.test", profileName)
+	require.NoError(t, err)
+
+	err = storeLoginToken(t.Context(), store, storage.StorageModeSecure, arg, &oauth2.Token{AccessToken: "new-token"})
+
+	assert.ErrorIs(t, err, storeErr)
+	_, err = inner.Lookup(profileName)
+	assert.ErrorIs(t, err, storage.ErrNotFound)
+}
+
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
 type logBuffer struct {
 	mu  sync.Mutex
@@ -61,18 +98,10 @@ func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *pro
 type fakeDiscoveryPersistentAuth struct {
 	token        *oauth2.Token
 	challengeErr error
-	tokenErr     error
 }
 
-func (f *fakeDiscoveryPersistentAuth) Challenge() error {
-	return f.challengeErr
-}
-
-func (f *fakeDiscoveryPersistentAuth) Token() (*oauth2.Token, error) {
-	if f.tokenErr != nil {
-		return nil, f.tokenErr
-	}
-	return f.token, nil
+func (f *fakeDiscoveryPersistentAuth) Challenge() (*oauth2.Token, error) {
+	return f.token, f.challengeErr
 }
 
 func (f *fakeDiscoveryPersistentAuth) Close() error {
@@ -458,6 +487,35 @@ func TestSplitScopes(t *testing.T) {
 	}
 }
 
+func TestU2MClientIDFromProfile(t *testing.T) {
+	tests := []struct {
+		name    string
+		profile *profile.Profile
+		want    string
+	}{
+		{name: "no profile"},
+		{
+			name:    "implicit auth type",
+			profile: &profile.Profile{ClientID: "custom-client-id"},
+		},
+		{
+			name:    "M2M auth type",
+			profile: &profile.Profile{AuthType: "oauth-m2m", ClientID: "custom-client-id"},
+		},
+		{
+			name:    "U2M auth type",
+			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, ClientID: "custom-client-id"},
+			want:    "custom-client-id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, u2mClientIDFromProfile(tt.profile))
+		})
+	}
+}
+
 func TestRunHostDiscovery_NoHost(t *testing.T) {
 	ctx := t.Context()
 	args := &auth.AuthArguments{}
@@ -806,6 +864,38 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Empty(t, savedProfile.WorkspaceID)
 }
 
+func TestDiscoveryLogin_ProfileSaveFailureDoesNotStoreToken(t *testing.T) {
+	tmpDir := t.TempDir()
+	parentFile := filepath.Join(tmpDir, "not-a-directory")
+	require.NoError(t, os.WriteFile(parentFile, nil, 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(parentFile, ".databrickscfg"))
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.test")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection failed"),
+	}
+	store := &countingStore{Store: storage.NewMemoryStore()}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  store,
+	})
+
+	require.ErrorContains(t, err, "saving profile")
+	assert.Zero(t, store.putCalls)
+}
+
 func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".databrickscfg")
@@ -952,9 +1042,11 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 	}
 
 	existingProfile := &profile.Profile{
-		Name:   "DISCOVERY",
-		Host:   "https://old-workspace.example.com",
-		Scopes: "sql,clusters",
+		Name:     "DISCOVERY",
+		Host:     "https://old-workspace.example.com",
+		Scopes:   "sql,clusters",
+		AuthType: authTypeDatabricksCLI,
+		ClientID: "custom-client-id",
 	}
 
 	// No --scopes flag (empty string), should fall back to existing profile scopes.
@@ -963,6 +1055,7 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 		dc:              dc,
 		profileName:     "DISCOVERY",
 		timeout:         time.Second,
+		clientID:        existingProfile.ClientID,
 		existingProfile: existingProfile,
 		browserFunc:     func(string) error { return nil },
 		tokenStore:      newTestStore(),
@@ -974,6 +1067,51 @@ func TestDiscoveryLogin_ReloginPreservesExistingProfileScopes(t *testing.T) {
 	require.NotNil(t, savedProfile)
 	assert.Equal(t, "https://workspace.example.com", savedProfile.Host)
 	assert.Equal(t, "sql,clusters", savedProfile.Scopes)
+	assert.Equal(t, "custom-client-id", savedProfile.ClientID)
+}
+
+func TestDiscoveryLogin_ExplicitClientIDOverridesExistingProfile(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(""), 0o600)
+	require.NoError(t, err)
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.com")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection failed"),
+	}
+
+	existingProfile := &profile.Profile{
+		Name:     "DISCOVERY",
+		Host:     "https://old-workspace.example.com",
+		AuthType: authTypeDatabricksCLI,
+		ClientID: "profile-client-id",
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:              dc,
+		profileName:     "DISCOVERY",
+		timeout:         time.Second,
+		clientID:        "flag-client-id",
+		existingProfile: existingProfile,
+		browserFunc:     func(string) error { return nil },
+		tokenStore:      newTestStore(),
+	})
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "flag-client-id", savedProfile.ClientID)
 }
 
 func TestDiscoveryLogin_ExplicitScopesOverrideExistingProfile(t *testing.T) {

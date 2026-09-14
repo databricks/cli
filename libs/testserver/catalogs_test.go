@@ -17,8 +17,8 @@ func TestCatalogsCreate_RejectsEmptyName(t *testing.T) {
 	response := workspace.CatalogsCreate(Request{Body: []byte(`{"name": ""}`)})
 	assert.Equal(t, 400, response.StatusCode)
 
-	// A stored-but-unreadable catalog is the original bug. Asserted before the
-	// require below so it is still reported when the rejection is missing.
+	// A stored-but-unreadable catalog under the empty key is the original bug. Asserted
+	// before the require below so it is still reported when the rejection is missing.
 	assert.Empty(t, workspace.Catalogs)
 
 	body, ok := response.Body.(map[string]string)

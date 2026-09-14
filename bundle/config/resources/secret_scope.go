@@ -104,9 +104,9 @@ func (s SecretScope) GetName() string {
 	return s.Name
 }
 
-func (s SecretScope) GetURL() string {
+func (s SecretScope) GetURL() (string, bool) {
 	// Secret scopes do not have a URL
-	return ""
+	return "", false
 }
 
 func (s SecretScope) InitializeURL(_ url.URL) {

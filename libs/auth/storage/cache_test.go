@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -502,8 +501,7 @@ func TestWrapForOAuthArgument(t *testing.T) {
 		host       = "https://example.com"
 		profileKey = "myprofile"
 	)
-	arg, err := u2m.NewProfileWorkspaceOAuthArgument(host, profileKey)
-	require.NoError(t, err)
+	arg := hostArg{key: profileKey, hostKey: host}
 
 	cases := []struct {
 		name        string
@@ -520,11 +518,11 @@ func TestWrapForOAuthArgument(t *testing.T) {
 			inner := newMemStore()
 			got := WrapForOAuthArgument(t.Context(), inner, tc.mode, arg)
 
-			_, wrapped := got.(*DualWritingTokenCache)
+			_, wrapped := got.(*DualWritingStore)
 			assert.Equal(t, tc.wantWrap, wrapped, "wrapper presence")
 
 			tok := &oauth2.Token{AccessToken: "abc"}
-			require.NoError(t, got.Store(profileKey, tok))
+			require.NoError(t, got.Put(profileKey, Entry{Token: tok}))
 
 			primary, err := inner.Lookup(profileKey)
 			require.NoError(t, err, "primary key must always be written")

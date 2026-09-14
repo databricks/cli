@@ -49,10 +49,6 @@ func (d *DatabaseInstance) GetName() string {
 	return d.Name
 }
 
-func (d *DatabaseInstance) GetURL() string {
-	return d.URL
-}
-
 func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {
 	if d.ModifiedStatus == ModifiedStatusCreated {
 		return

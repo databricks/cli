@@ -2,21 +2,21 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 print_requests() {
     local name=$1
     trace print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 
 title "Initial deployment"
 trace $CLI bundle validate
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 print_requests create
@@ -28,7 +28,7 @@ trace $CLI postgres get-project "${project_name}" | project_fields
 title "Verify no changes"
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 print_requests no_change
@@ -39,7 +39,7 @@ trace cat databricks.yml
 
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 print_requests update
@@ -51,7 +51,7 @@ title "Restore display_name to original value"
 trace update_file.py databricks.yml "Updated Name" "Original Name"
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 print_requests restore

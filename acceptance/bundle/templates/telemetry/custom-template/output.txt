@@ -2,7 +2,7 @@
 >>> [CLI] bundle init . --config-file input.json --output-dir output
 ✨ Successfully initialized template
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "frontend_log_event_id": "[UUID]",
   "entry": {

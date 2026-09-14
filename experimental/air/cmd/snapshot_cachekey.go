@@ -15,9 +15,10 @@ import (
 const snapshotPackagingVersion = "v1"
 
 // computeSnapshotCacheKey returns a stable cache key for a snapshot tarball: the
-// SHA-256 digest of (commitSHA, normalized includePaths, snapshotPackagingVersion).
-// Changing any input yields a different entry.
-func computeSnapshotCacheKey(commitSHA string, includePaths []string) string {
+// SHA-256 digest of (commitSHA, normalized includePaths, snapshotPackagingVersion,
+// subtreePrefix). Changing any input yields a different entry. An empty subtree
+// prefix keeps repository-root keys byte-identical to prior versions.
+func computeSnapshotCacheKey(commitSHA string, includePaths []string, subtreePrefix string) string {
 	var normalizedPaths string
 	if len(includePaths) > 0 {
 		trimmed := make([]string, len(includePaths))
@@ -29,6 +30,9 @@ func computeSnapshotCacheKey(commitSHA string, includePaths []string) string {
 	}
 
 	keyMaterial := commitSHA + "\n" + normalizedPaths + "\n" + snapshotPackagingVersion
+	if subtreePrefix != "" {
+		keyMaterial += "\n" + subtreePrefix
+	}
 	sum := sha256.Sum256([]byte(keyMaterial))
 	return hex.EncodeToString(sum[:])
 }

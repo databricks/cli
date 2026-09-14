@@ -443,6 +443,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	if base, _, found := strings.Cut(cliVersion, "+"); found {
 		repls.Set(base, "[CLI_VERSION]")
 	}
+	// A dev build may embed a +<git-sha> that the base-version replacement above leaves
+	// behind (e.g. "[CLI_VERSION]+abc123def456"), which would otherwise bake into a
+	// regenerated golden. Strip any such trailing suffix so goldens stay sha-independent.
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile(`\[CLI_VERSION\]\+[0-9a-f]{7,40}`), New: "[CLI_VERSION]"})
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementTfProviderVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
@@ -832,6 +836,15 @@ func runTest(t *testing.T,
 		tmpDir = t.TempDir()
 	}
 
+	// Harness-written output files (output.txt, out.requests.txt) live outside the
+	// test dir so the bundle sync doesn't upload them as bundle sources. They are
+	// written here during the run and copied into tmpDir afterwards for comparison.
+	// Otherwise these continuously-rewritten files perturb the deploy "Files: N" count.
+	// Register this repl before [TEST_TMP_DIR] so it wins: outputDir is a sibling of
+	// tmpDir, so the [TEST_TMP_DIR]_PARENT repl would otherwise match it first.
+	outputDir := t.TempDir()
+	repls.SetPath(outputDir, "[OUTPUT_DIR]")
+
 	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
 	scriptContents := readMergedScriptContents(t, dir)
@@ -867,7 +880,7 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, outputDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
@@ -884,6 +897,9 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
+	// Forward slashes: scripts pass $OUT_REQUESTS straight to bash tools, and a
+	// backslash Windows path would be mangled inside double quotes in Git Bash.
+	cmd.Env = append(cmd.Env, "OUT_REQUESTS="+filepath.ToSlash(filepath.Join(outputDir, "out.requests.txt")))
 
 	replsPath := filepath.Join(t.TempDir(), ReplsEnvVar)
 	cmd.Env = append(cmd.Env, ReplsEnvVar+"="+replsPath)
@@ -997,7 +1013,7 @@ func runTest(t *testing.T,
 	}
 	cmd.Dir = tmpDir
 
-	outputPath := filepath.Join(tmpDir, "output.txt")
+	outputPath := filepath.Join(outputDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
 	defer out.Close()
@@ -1018,8 +1034,19 @@ func runTest(t *testing.T,
 
 	pathFilter := preparePathFilter(config, customEnv)
 
+	// output.txt lives in outputDir, not tmpDir, so the bundle sync never uploads it;
+	// compare it from there. Every run produces it, so compare it explicitly rather
+	// than relying on it turning up in the tmpDir scan below. out.requests.txt also
+	// stays in outputDir and is never compared: tests assert on recorded requests
+	// through print_requests.py, not by committing the raw recording.
+	doComparison(t, repls, dir, outputDir, "output.txt", &printedRepls)
+
 	// Compare expected outputs
 	for relPath := range outputs {
+		if relPath == "output.txt" {
+			// Handled above: it is produced in outputDir, not tmpDir.
+			continue
+		}
 		if shouldSkip(pathFilter, relPath) {
 			continue
 		}
@@ -1078,7 +1105,7 @@ func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
 // matrix key ends up in the variant's test name, so a long one makes every name that carries
 // it hard to read. Tests may still name the variable itself; the alias is only shorter.
 var envAliases = map[string]string{
-	"DMS": "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY",
+	"DMS": "DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY",
 }
 
 // buildTestEnv builds the test environment from config.Env and customEnv.

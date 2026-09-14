@@ -2,20 +2,20 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 title "Initial deployment with STANDARD endpoint_type"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 title "Change endpoint_type (recreates endpoint; index recreate cascade is not yet implemented)"
 trace update_file.py databricks.yml "endpoint_type: STANDARD" "endpoint_type: STORAGE_OPTIMIZED"
 
 trace $CLI bundle plan
-trace $CLI bundle plan --output json
-rm -f out.requests.txt
+trace $CLI bundle plan --output json | nostamp
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy --auto-approve
 
 # Verify final state of both resources.

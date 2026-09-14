@@ -78,13 +78,14 @@ func (b *PostgresBranch) ResourceDescription() ResourceDescription {
 }
 
 func (b *PostgresBranch) GetName() string {
-	// Branches don't have a user-visible name field
-	return ""
+	// Branches have no name field of their own; the resource name is the ID
+	// ("projects/{project_id}/branches/{branch_id}").
+	return b.ID
 }
 
-func (b *PostgresBranch) GetURL() string {
+func (b *PostgresBranch) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (b *PostgresBranch) InitializeURL(_ url.URL) {

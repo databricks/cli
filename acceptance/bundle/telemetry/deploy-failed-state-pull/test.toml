@@ -1,0 +1,13 @@
+# A deploy that fails while pulling the deployment state - before the state's engine
+# is known - still emits a bundle_deploy_event via the deferred LogDeployTelemetry.
+# b.Metrics.StateEngine is set from the requested engine as soon as it is resolved
+# (before the state pull), so resources_metadata reports the engine here too. Without
+# that early assignment state_engine was empty on this path, which the dashboard
+# surfaced as engine="unknown".
+#
+# The committed .databricks/bundle/default/resources.json holds invalid JSON, so the
+# local state read fails to parse and the pull errors out before the state's engine is
+# determined. The engine reported is the requested one, which the acceptance matrix
+# varies, so resources_metadata is captured per-engine.
+Cloud = false
+Ignore = [".databricks"]

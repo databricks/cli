@@ -64,7 +64,3 @@ func (e *VectorSearchIndex) InitializeURL(baseURL url.URL) {
 func (e *VectorSearchIndex) GetName() string {
 	return e.Name
 }
-
-func (e *VectorSearchIndex) GetURL() string {
-	return e.URL
-}

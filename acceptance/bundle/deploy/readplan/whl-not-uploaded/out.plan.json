@@ -2,7 +2,6 @@
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
-  "serial": 2,
   "plan": {
     "resources.jobs.my_job": {
       "action": "create",

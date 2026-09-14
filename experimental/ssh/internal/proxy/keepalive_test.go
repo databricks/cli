@@ -109,25 +109,34 @@ func startKeepaliveTestServer(t *testing.T) (*httptest.Server, <-chan struct{}) 
 }
 
 // keepaliveTestDialer returns a connection factory for RunClientProxy. onNetConn, when set, receives
-// each connection's underlying socket so a test can control how its writes behave.
+// each connection's underlying socket — the initial one and each one a handover creates — once its
+// websocket handshake has completed, so a test can control how its writes behave.
 func keepaliveTestDialer(serverURL string, onNetConn func(*pausableConn)) createWebsocketConnectionFunc {
 	wsURL := "ws" + serverURL[4:]
-	dialer := websocket.Dialer{
-		NetDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			conn, err := net.Dial(network, addr)
-			if err != nil {
-				return nil, err
-			}
-			wrapped := newPausableConn(conn)
-			if onNetConn != nil {
-				onNetConn(wrapped)
-			}
-			return wrapped, nil
-		},
-	}
-	return func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
-		conn, _, err := dialer.DialContext(ctx, fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
-		return conn, err
+	return func(ctx context.Context, connID string) (*websocket.Conn, error) {
+		var wrapped *pausableConn
+		dialer := websocket.Dialer{
+			NetDialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				conn, err := net.Dial(network, addr)
+				if err != nil {
+					return nil, err
+				}
+				wrapped = newPausableConn(conn)
+				return wrapped, nil
+			},
+		}
+		conn, _, err := dialer.DialContext(ctx, fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+		if err != nil {
+			return nil, err
+		}
+		// Hand the socket to the test only after the handshake succeeds. The socket is dialed
+		// before gorilla writes the upgrade request, so exposing it any earlier lets a test that
+		// flips it to a failing mode poison the handshake itself — which fails connect() before the
+		// proxy loops start, leaving nothing to drain the caller's src pipe.
+		if onNetConn != nil {
+			onNetConn(wrapped)
+		}
+		return conn, nil
 	}
 }
 
@@ -143,7 +152,7 @@ func TestKeepalivePingReachesServer(t *testing.T) {
 	src, _ := io.Pipe()
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond, false, keepaliveTestDialer(server.URL, nil))
+		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond, keepaliveTestDialer(server.URL, nil))
 	}()
 
 	select {
@@ -167,7 +176,7 @@ func TestKeepalivePingFailureDoesNotEndSession(t *testing.T) {
 	src, _ := io.Pipe()
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond, false,
+		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond,
 			keepaliveTestDialer(server.URL, func(c *pausableConn) { socket.Store(c) }))
 	}()
 
@@ -241,7 +250,7 @@ func TestKeepalivePingFailureDoesNotHangTheSession(t *testing.T) {
 	src, srcWriter := io.Pipe()
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond, false,
+		done <- RunClientProxy(ctx, src, io.Discard, neverTick, 20*time.Millisecond,
 			keepaliveTestDialer(server.URL, func(c *pausableConn) { socket.Store(c) }))
 	}()
 
@@ -252,8 +261,10 @@ func TestKeepalivePingFailureDoesNotHangTheSession(t *testing.T) {
 
 	// The session ends the way it would without a keepalive at all: the next write fails and the
 	// sending loop reports it. Before, the teardown could not close the connection and this hung.
-	_, err := srcWriter.Write([]byte("keystroke"))
-	require.NoError(t, err)
+	// Write from a goroutine: src is an unbuffered pipe the sending loop drains, so if the session
+	// has already ended (nothing draining it) the write blocks forever — doing it concurrently
+	// leaves the select below free to fail fast instead of wedging the whole package on the write.
+	go func() { srcWriter.Write([]byte("keystroke")) }() // nolint:errcheck
 
 	select {
 	case err := <-done:

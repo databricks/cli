@@ -27,6 +27,9 @@ trace $CLI experimental air run -h config.environment.docker_image.url
 title "union field reports both accepted shapes"
 trace $CLI experimental air run -h config.code_source.snapshot.git.remote
 
+title "git-pinned subdirectory snapshots document root_path scoping"
+trace $CLI experimental air run -h config.code_source.snapshot.root_path
+
 title "the config. prefix is optional"
 trace $CLI experimental air run -h compute.num_accelerators
 

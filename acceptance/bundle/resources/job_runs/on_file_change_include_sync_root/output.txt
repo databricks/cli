@@ -1,0 +1,77 @@
+
+=== first deploy
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-include-sync-root/default/files...
+Output from job_runs.my_run: id=[NUMID]: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Output from job_runs.my_run: id=[NUMID]: SUCCESS
+Created job_runs.my_run
+Created jobs.my_job
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> file_triggers
+{
+  "bundle/resources/watched-resources.txt": "[FILE_HASH][0]",
+  "bundle/watched-bundle.txt": "[FILE_HASH][1]",
+  "shared.txt": "[FILE_HASH][2]"
+}
+
+=== editing the file next to the included YAML re-fires
+>>> changes
+{
+  "lifecycle.triggers_state.on_file_change['bundle/resources/watched-resources.txt']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "[FILE_HASH][0]",
+    "new": "[FILE_HASH][3]"
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+=== editing the file at the bundle root re-fires
+>>> changes
+{
+  "lifecycle.triggers_state.on_file_change['bundle/watched-bundle.txt']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "[FILE_HASH][1]",
+    "new": "[FILE_HASH][4]"
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+=== editing the file at the sync root re-fires
+>>> changes
+{
+  "lifecycle.triggers_state.on_file_change['shared.txt']": {
+    "action": "recreate",
+    "reason": "immutable",
+    "old": "[FILE_HASH][2]",
+    "new": "[FILE_HASH][5]"
+  },
+  "result_state": {
+    "action": "skip",
+    "reason": "remote_already_set",
+    "new": "SUCCESS",
+    "remote": "SUCCESS"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.job_runs.my_run
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-on-file-change-include-sync-root/default
+
+Destroy: 2 deleted

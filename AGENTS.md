@@ -93,6 +93,12 @@ GIT_EDITOR=true GIT_SEQUENCE_EDITOR=true VISUAL=true GIT_PAGER=cat git rebase or
 - Use `./task test-update` to regenerate acceptance test outputs after changes.
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name.
 
+**Stale golangci-lint cache across worktrees.** Triggered by `task lint` or a direct `go tool ... golangci-lint` run reporting issues in files under a *different* or deleted worktree, often with `no such file or directory` warnings. Fix — clear the cache and re-run, don't investigate the reported issues:
+
+```sh
+go tool -modfile=tools/go.mod golangci-lint cache clean
+```
+
 # Common Mistakes
 
 **RULE: When adding a direct Go dependency, annotate its license in `go.mod` and update `NOTICE`.** Before picking the SPDX identifier, read `internal/build/license_test.go` to see the current allowlist (the `spdxLicenses` map). That test is the source of truth and will fail CI if a direct `require` line lacks a matching SPDX suffix comment (e.g. `// MIT`). Also add a corresponding entry to `NOTICE` under the matching license section. If a dep's license isn't on the allowlist, discuss before adding.

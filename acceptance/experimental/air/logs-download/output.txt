@@ -9,8 +9,8 @@ Error: invalid --node 5: run has 2 node(s), indexed 0 to 1
 
 Exit code: 1
 
-=== download-to cannot be combined with --lines
->>> [CLI] experimental air logs 123 --download-to dl-logs --lines 50
-Error: --download-to writes complete logs, so it cannot be combined with --lines or --minutes
+=== download-to cannot be combined with --tail
+>>> [CLI] experimental air logs 123 --download-to dl-logs --tail 50
+Error: --download-to writes complete logs, so it cannot be combined with --tail or --minutes
 
 Exit code: 1
