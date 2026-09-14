@@ -246,7 +246,9 @@ func withSpinner(ctx context.Context, show bool, msg string, fn func() error) er
 
 // stageRunArtifacts uploads the launch files and optional code snapshot in
 // parallel. It returns only after both branches complete, so callers can safely
-// build and submit a payload that references their remote paths.
+// build and submit a payload that references their remote paths. Snapshot
+// sidecar writes must keep CreateParentDirectories because launch-directory
+// creation is concurrent, not ordered before snapshot staging.
 func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []uploadItem, uploadSnapshot func(context.Context) (snapshotResult, error)) (snapshotResult, error) {
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
@@ -349,9 +351,11 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// code_source leaves it empty. Snapshot is the only code_source type.
 	var uploadSnapshot func(context.Context) (snapshotResult, error)
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
-		// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
+		// Default snapshot tarballs land in the user's shared repo_snapshots dir;
+		// snapshotViaDABsUpload replaces this when remote_volume is configured.
 		snapshotArtifactPath := path.Join(base, ".air", "repo_snapshots")
 		uploadSnapshot = func(ctx context.Context) (snapshotResult, error) {
+			// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
 			return snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir)
 		}
 	}
