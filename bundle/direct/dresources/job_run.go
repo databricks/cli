@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -13,8 +14,10 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/cli/libs/workspaceurls"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -25,6 +28,10 @@ import (
 
 // jobRunTimeout matches the timeout `bundle run` allows a run (bundle/run/job.go).
 const jobRunTimeout = 24 * time.Hour
+
+// on_value_change fingerprints are keyed by the watched expression; the planner
+// resolves references at this path, so it is kept as a parsed node.
+var jobRunOnValueChangePath = structpath.MustParsePath("lifecycle.triggers_state.on_value_change")
 
 // JobRunLifecycleState is the local-only trigger fingerprint.
 type JobRunLifecycleState struct {
@@ -96,6 +103,8 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	var ts resources.JobRunTriggersState
 	if input.Lifecycle != nil && input.Lifecycle.TriggersState != nil {
 		ts = *input.Lifecycle.TriggersState
+		// Fingerprinting below rewrites value-trigger entries.
+		ts.OnValueChange = maps.Clone(ts.OnValueChange)
 	}
 	if input.HasOnBundleDeploy() {
 		ts.OnBundleDeploy = uuid.NewString()
@@ -104,6 +113,22 @@ func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 		state.Lifecycle = &JobRunLifecycleState{TriggersState: &ts}
 	}
 	return state
+}
+
+// PrepareInputConfig maps unresolved watches to state paths so the deploy graph
+// tracks their resource references.
+func (*ResourceJobRun) PrepareInputConfig(input *resources.JobRun, _ string) (*structvar.StructVar, error) {
+	refs := map[string]string{}
+	if input.Lifecycle == nil || input.Lifecycle.TriggersState == nil {
+		return &structvar.StructVar{Value: input, Refs: refs}, nil
+	}
+	for expr, value := range input.Lifecycle.TriggersState.OnValueChange {
+		if !dynvar.ContainsVariableReference(value) {
+			continue
+		}
+		refs[structpath.NewBracketString(jobRunOnValueChangePath, expr).String()] = value
+	}
+	return &structvar.StructVar{Value: input, Refs: refs}, nil
 }
 
 // makeJobRunRemote maps the GetRun response into the RunNow-shaped remote: GET
@@ -383,10 +408,10 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		if change.New == nil || change.New == "" {
 			change.Reason = deployplan.ReasonDrop
 		}
-	case "lifecycle.triggers_state.on_file_change":
-		// As above: an emptied map is a removal, and pattern entries classify a map
-		// that still has both sides.
-		if isEmptyFileTriggerMap(change.New) || change.Old != nil {
+	case "lifecycle.triggers_state.on_file_change", "lifecycle.triggers_state.on_value_change":
+		// An emptied map is a removal; a map with both sides present has its
+		// per-key entries (below) classify the change.
+		if isEmptyTriggerMap(change.New) || change.Old != nil {
 			change.Reason = deployplan.ReasonDrop
 		}
 	case "result_state":
@@ -397,12 +422,15 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 		change.Action = deployplan.Skip
 		change.Reason = "run in progress"
 	default:
-		// A single on_file_change pattern entry, e.g.
-		// lifecycle.triggers_state.on_file_change['seed.txt']. Removing one pattern
+		// A single on_file_change pattern or on_value_change expression entry, e.g.
+		// lifecycle.triggers_state.on_file_change['seed.txt']. Removing one entry
 		// drops its change and leaves the last fingerprint in state.
-		if parent := path.Parent(); parent != nil && parent.String() == "lifecycle.triggers_state.on_file_change" {
-			if change.New == nil {
-				change.Reason = deployplan.ReasonDrop
+		if parent := path.Parent(); parent != nil {
+			switch parent.String() {
+			case "lifecycle.triggers_state.on_file_change", "lifecycle.triggers_state.on_value_change":
+				if change.New == nil {
+					change.Reason = deployplan.ReasonDrop
+				}
 			}
 		}
 	}
@@ -444,7 +472,7 @@ func (r *ResourceJobRun) cancelRun(ctx context.Context, runID int64) error {
 	return nil
 }
 
-func isEmptyFileTriggerMap(v any) bool {
+func isEmptyTriggerMap(v any) bool {
 	if v == nil {
 		return true
 	}
