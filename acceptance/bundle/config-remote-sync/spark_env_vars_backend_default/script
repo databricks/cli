@@ -1,0 +1,37 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Simulate a cluster policy injecting spark_env_vars"
+echo
+echo "spark_env_vars the user did not set are backend defaults and must not be synced back."
+echo "A change to a user-declared key and an unrelated edit still sync."
+edit_resource.py jobs $job_id <<'EOF'
+r["max_concurrent_runs"] = 5
+
+for task in r.get("tasks", []):
+    cluster = task["new_cluster"]
+    if "spark_env_vars" in cluster:
+        cluster["spark_env_vars"]["PYSPARK_PYTHON"] = "/databricks/python3/bin/python3.11"
+        cluster["spark_env_vars"]["INJECTED_VAR"] = "backend-value"
+    else:
+        cluster["spark_env_vars"] = {"INJECTED_VAR": "backend-value"}
+EOF
+
+title "Detect and save all changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

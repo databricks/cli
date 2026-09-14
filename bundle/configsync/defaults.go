@@ -60,13 +60,17 @@ var serverSideDefaults = map[string]any{
 	"resources.jobs.*.tasks[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
 	"resources.jobs.*.tasks[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
 	"resources.jobs.*.tasks[*].new_cluster.single_user_name":    alwaysSkip,
-	// custom_tags and cluster_log_conf are commonly injected by cluster policies
-	// when the user omits them, so they exist only remotely. Syncing them back leaks
-	// one environment's policy values into (often shared) config and breaks deploys in
-	// other environments. TODO: move to backend_defaults in resources.yml once
-	// configsync filtering is migrated to the direct engine lifecycle metadata.
-	"resources.jobs.*.tasks[*].new_cluster.custom_tags":      backendDefault,
-	"resources.jobs.*.tasks[*].new_cluster.cluster_log_conf": backendDefault,
+	// custom_tags, cluster_log_conf and spark_env_vars are commonly injected by
+	// cluster policies when the user omits them, so they exist only remotely.
+	// Syncing them back leaks one environment's policy values into (often shared)
+	// config and breaks deploys in other environments; spark_env_vars may also carry
+	// credentials. The "[*]" variants cover per-key injection into an existing block.
+	// TODO: move to backend_defaults in resources.yml once configsync filtering is
+	// migrated to the direct engine lifecycle metadata.
+	"resources.jobs.*.tasks[*].new_cluster.custom_tags":       backendDefault,
+	"resources.jobs.*.tasks[*].new_cluster.cluster_log_conf":  backendDefault,
+	"resources.jobs.*.tasks[*].new_cluster.spark_env_vars":    backendDefault,
+	"resources.jobs.*.tasks[*].new_cluster.spark_env_vars[*]": backendDefault,
 
 	// Cluster fields (job_clusters)
 	"resources.jobs.*.job_clusters[*].new_cluster.aws_attributes":      alwaysSkip,
@@ -77,6 +81,8 @@ var serverSideDefaults = map[string]any{
 	"resources.jobs.*.job_clusters[*].new_cluster.single_user_name":    alwaysSkip,
 	"resources.jobs.*.job_clusters[*].new_cluster.custom_tags":         backendDefault, // see tasks[*].new_cluster.custom_tags
 	"resources.jobs.*.job_clusters[*].new_cluster.cluster_log_conf":    backendDefault, // see tasks[*].new_cluster.cluster_log_conf
+	"resources.jobs.*.job_clusters[*].new_cluster.spark_env_vars":      backendDefault, // see tasks[*].new_cluster.spark_env_vars
+	"resources.jobs.*.job_clusters[*].new_cluster.spark_env_vars[*]":   backendDefault, // see tasks[*].new_cluster.spark_env_vars
 
 	// Standalone cluster fields
 	"resources.clusters.*.aws_attributes":      alwaysSkip,
@@ -88,6 +94,8 @@ var serverSideDefaults = map[string]any{
 	"resources.clusters.*.single_user_name":    alwaysSkip,
 	"resources.clusters.*.custom_tags":         backendDefault, // see jobs.*.tasks[*].new_cluster.custom_tags
 	"resources.clusters.*.cluster_log_conf":    backendDefault, // see jobs.*.tasks[*].new_cluster.cluster_log_conf
+	"resources.clusters.*.spark_env_vars":      backendDefault, // see jobs.*.tasks[*].new_cluster.spark_env_vars
+	"resources.clusters.*.spark_env_vars[*]":   backendDefault, // see jobs.*.tasks[*].new_cluster.spark_env_vars
 
 	// Experiment fields
 	"resources.experiments.*.artifact_location": alwaysSkip,
