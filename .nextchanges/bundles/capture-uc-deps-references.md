@@ -1,1 +1,1 @@
-* Preserve existing `${resources...}` references when capturing implicit UC catalog and schema dependencies, and still capture a literal schema when its catalog is written as a reference.
+* Preserve existing `${resources...}` references when capturing implicit UC catalog and schema dependencies, and still capture a literal schema when its catalog is written as a reference. ([#6667](https://github.com/databricks/cli/pull/6667))
