@@ -81,18 +81,10 @@ job_runs my_run id='[MY_RUN_ID]' result_state=None
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
 
-Destroy: 2 deleted
+Destroy: 1 deleted
 
 >>> print_requests.py //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [MY_RUN_ID]
-  }
-}

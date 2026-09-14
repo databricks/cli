@@ -118,15 +118,8 @@ Resources:
       Name: my-job
       URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
 
-=== the config change deleted the previous run and triggered a second, different run
+=== the config change triggered a second, different run and left the previous one alone
 >>> print_requests.py --keep //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [MY_RUN_ID]
-  }
-}
 
 >>> print_requests.py //jobs/run-now
 {
@@ -143,9 +136,8 @@ Resources:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
 
-Destroy: 2 deleted
+Destroy: 1 deleted

@@ -44,9 +44,8 @@ Resources:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-job-parameters/default
 
-Destroy: 2 deleted
+Destroy: 1 deleted
