@@ -1196,6 +1196,7 @@ resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].command_path	string	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].compute	jobs.ComputeSpec	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].compute.accelerator_count	int	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].compute.accelerator_type	jobs.ComputeSpecAcceleratorType	ALL
+resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].compute.provisioned_capacity_id	string	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.deployments[*].name	string	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.docker_image_url	string	ALL
 resources.jobs.*.tasks[*].ai_runtime_task.experiment	string	ALL
@@ -1284,6 +1285,7 @@ resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].comm
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute	jobs.ComputeSpec	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute.accelerator_count	int	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute.accelerator_type	jobs.ComputeSpecAcceleratorType	ALL
+resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].compute.provisioned_capacity_id	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.deployments[*].name	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.docker_image_url	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.ai_runtime_task.experiment	string	ALL
@@ -2083,7 +2085,6 @@ resources.jobs.*.permissions[*].user_name	string	ALL
 resources.model_services.*.comment	string	ALL
 resources.model_services.*.config	*catalog.ModelServiceConfig	ALL
 resources.model_services.*.config.inference_table	*catalog.InferenceTableConfig	ALL
-resources.model_services.*.config.inference_table.disabled	bool	ALL
 resources.model_services.*.config.inference_table.is_deleted	bool	ALL
 resources.model_services.*.config.inference_table.parent	string	ALL
 resources.model_services.*.config.inference_table.table	string	ALL
@@ -2093,8 +2094,6 @@ resources.model_services.*.config.rate_limits[*]	catalog.RateLimit	ALL
 resources.model_services.*.config.rate_limits[*].key	catalog.RateLimitRateLimitKey	ALL
 resources.model_services.*.config.rate_limits[*].principal	string	ALL
 resources.model_services.*.config.rate_limits[*].renewal_period	catalog.RateLimitRateLimitRenewalPeriod	ALL
-resources.model_services.*.config.rate_limits[*].request_tag_key	string	ALL
-resources.model_services.*.config.rate_limits[*].request_tag_value	string	ALL
 resources.model_services.*.config.rate_limits[*].requests	int64	ALL
 resources.model_services.*.config.rate_limits[*].tokens	int64	ALL
 resources.model_services.*.config.routing	*catalog.ModelServiceConfigRoutingConfig	ALL
@@ -2133,8 +2132,6 @@ resources.model_services.*.config.routing.fallback.destinations[*].provisioned_t
 resources.model_services.*.config.routing.fallback.destinations[*].provisioned_throughput_config.model	string	ALL
 resources.model_services.*.config.routing.fallback.destinations[*].provisioned_throughput_config.model_serving_endpoint	string	ALL
 resources.model_services.*.config.routing.fallback.destinations[*].traffic_percentage	int	ALL
-resources.model_services.*.config.routing.first_token_timeout	*duration.Duration	ALL
-resources.model_services.*.config.routing.traffic_splitting	*catalog.ModelServiceConfigRoutingConfigTrafficSplitting	ALL
 resources.model_services.*.id	string	INPUT
 resources.model_services.*.lifecycle	resources.Lifecycle	INPUT
 resources.model_services.*.lifecycle.prevent_destroy	bool	INPUT

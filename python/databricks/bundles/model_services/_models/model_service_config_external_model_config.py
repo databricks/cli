@@ -26,9 +26,7 @@ class ModelServiceConfigExternalModelConfig:
 
     model_provider_service: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Resource name of the governed ModelProviderService that owns provider
+    Resource name of the governed ModelProviderService that owns provider
     auth and provider-specific configuration. The referenced
     ModelProviderService also carries the provider type, so this message
     does not surface it directly.
@@ -38,9 +36,7 @@ class ModelServiceConfigExternalModelConfig:
 
     target: VariableOr[ModelProviderServiceConfigModelTargetConfig]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Routing target for the destination: the provider-side model selected from
+    Routing target for the destination: the provider-side model selected from
     the referenced ModelProviderService's `targets` catalog, plus the unified
     API types the platform should translate to/from at request time.
     """
@@ -58,9 +54,7 @@ class ModelServiceConfigExternalModelConfigDict(TypedDict, total=False):
 
     model_provider_service: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Resource name of the governed ModelProviderService that owns provider
+    Resource name of the governed ModelProviderService that owns provider
     auth and provider-specific configuration. The referenced
     ModelProviderService also carries the provider type, so this message
     does not surface it directly.
@@ -70,9 +64,7 @@ class ModelServiceConfigExternalModelConfigDict(TypedDict, total=False):
 
     target: VariableOr[ModelProviderServiceConfigModelTargetConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Routing target for the destination: the provider-side model selected from
+    Routing target for the destination: the provider-side model selected from
     the referenced ModelProviderService's `targets` catalog, plus the unified
     API types the platform should translate to/from at request time.
     """

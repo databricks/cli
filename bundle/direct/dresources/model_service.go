@@ -80,7 +80,6 @@ func modelServiceBody(config *resources.ModelServiceConfig) catalog.ModelService
 		Etag:              "",
 		MetastoreId:       "",
 		Name:              "",
-		Owner:             "",
 		SupportedApiTypes: nil,
 		UpdateTime:        nil,
 		UpdatedBy:         "",

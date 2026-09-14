@@ -14,46 +14,25 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class InferenceTableConfig:
     """
-    Inference table configuration for payload logging on a model service.
-
-    `parent` is always REQUIRED when the sub-message is set; the destination
-    UC schema is needed to construct or rebind the payload TABLE regardless of
-    whether payload logging is currently active. Payload logging is active by
-    default; set `disabled = true` to pause runtime logging without dropping the
-    table or the binding.
+    Configuration for logging request and response payloads to a Unity Catalog
+    inference table. When this configuration is present, payload logging is
+    enabled by default.
     """
 
     parent: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Parent UC schema where the inference table is created.
-    Format: `schemas/{catalog}.{schema}`. Set at create time and immutable
-    thereafter; changing it on an existing service is rejected.
-    """
-
-    disabled: VariableOrOptional[bool] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Indicates whether payload logging is disabled (opt-out). Unset means that
-    payload logging is active (the on-by-default state coincides with the proto
-    zero-value, so the server never fills this field for a client that leaves it
-    unset). Set `disabled = true` to pause runtime logging while keeping the
-    sub-message attached (preserving `parent` and `table_name_prefix` for a
-    later flip back to active). `parent` remains required either way.
+    Parent Unity Catalog schema where the inference table is created, in the
+    form `schemas/{catalog}.{schema}`. Required when configuring an inference
+    table. After the inference table is created, this field cannot be changed.
     """
 
     table_name_prefix: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Prefix for the inference-table's UC-registered name. The actual leaf name UC
-    stores is `<table_name_prefix>_payload`; the `_payload` suffix is appended
-    automatically. To find the actual UC table after Create, read the `table`
-    field on the response. Defaults to `<model_service_name>_payload` when unset.
-    Set at create time and immutable thereafter; changing it on an existing
-    service is rejected.
+    Prefix used to form the inference table's registered name. AI Gateway
+    appends `_payload`; for example, `table_name_prefix = "orders"` creates
+    `orders_payload`. If unset, the prefix defaults to the service name. Read
+    `table` from the response for the resulting resource name. After the
+    inference table is created, this field cannot be changed.
     """
 
     @classmethod
@@ -69,35 +48,18 @@ class InferenceTableConfigDict(TypedDict, total=False):
 
     parent: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Parent UC schema where the inference table is created.
-    Format: `schemas/{catalog}.{schema}`. Set at create time and immutable
-    thereafter; changing it on an existing service is rejected.
-    """
-
-    disabled: VariableOrOptional[bool]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Indicates whether payload logging is disabled (opt-out). Unset means that
-    payload logging is active (the on-by-default state coincides with the proto
-    zero-value, so the server never fills this field for a client that leaves it
-    unset). Set `disabled = true` to pause runtime logging while keeping the
-    sub-message attached (preserving `parent` and `table_name_prefix` for a
-    later flip back to active). `parent` remains required either way.
+    Parent Unity Catalog schema where the inference table is created, in the
+    form `schemas/{catalog}.{schema}`. Required when configuring an inference
+    table. After the inference table is created, this field cannot be changed.
     """
 
     table_name_prefix: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Prefix for the inference-table's UC-registered name. The actual leaf name UC
-    stores is `<table_name_prefix>_payload`; the `_payload` suffix is appended
-    automatically. To find the actual UC table after Create, read the `table`
-    field on the response. Defaults to `<model_service_name>_payload` when unset.
-    Set at create time and immutable thereafter; changing it on an existing
-    service is rejected.
+    Prefix used to form the inference table's registered name. AI Gateway
+    appends `_payload`; for example, `table_name_prefix = "orders"` creates
+    `orders_payload`. If unset, the prefix defaults to the service name. Read
+    `table` from the response for the resulting resource name. After the
+    inference table is created, this field cannot be changed.
     """
 
 
