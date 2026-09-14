@@ -244,16 +244,11 @@ func TestResourceIDFieldTags(t *testing.T) {
 		}
 		group := structtag.JSONTag(f.Tag.Get("json")).Name()
 
-		// Skip resource types that don't embed BaseResource (internal infra types
-		// like Snapshot have no user-facing ID).
-		hasBaseResource := false
-		for __sf := range et.Fields() {
-			if __sf.Anonymous && __sf.Type.Name() == "BaseResource" {
-				hasBaseResource = true
-				break
-			}
-		}
-		if !hasBaseResource {
+		// Snapshot is an internal infrastructure type with no user-facing ID.
+		// Add entries here only for resource types that genuinely have no
+		// deployment-tracking ID; every other resource must pass the tag checks.
+		const noIDField = "internal_immutable_snapshots"
+		if group == noIDField {
 			continue
 		}
 
