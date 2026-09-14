@@ -1,0 +1,13 @@
+bundle:
+  name: state_size_limit
+
+experimental:
+  record_deployment_history: true
+
+resources:
+  jobs:
+    oversized:
+      name: oversized
+      # DESCRIPTION is generated in 'script' to keep this fixture readable. It is
+      # large enough to push the recorded state past the 64 KiB limit.
+      description: $DESCRIPTION

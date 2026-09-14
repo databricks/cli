@@ -1,0 +1,7 @@
+# A description over the 64 KiB state limit, generated so the fixture stays small.
+export DESCRIPTION=$(printf 'x%.0s' $(seq 1 70000))
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle validate
+
+rm databricks.yml
