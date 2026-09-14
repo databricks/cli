@@ -141,11 +141,10 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	return nil, err
 }
 
-func (r *ResourceGrants) DoDelete(ctx context.Context, id string, _ *GrantsState) error {
-	// Similar to permissions, we do nothing there.
-	// We could delete all grants there, but it would be confusing to explain wrt permissions.
-	return nil
-}
+// ResourceGrants intentionally implements no DoDelete: removing grants from the
+// bundle does nothing to the backend. We could revoke all grants here, but it would
+// be confusing to explain wrt permissions. Deleting the resource is a state-only
+// cleanup (see PlanEntry.StateOnly).
 
 func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removedPrincipals []string) []catalog.PermissionsChange {
 	changes := make([]catalog.PermissionsChange, 0, len(desiredAssignments)+len(removedPrincipals))
