@@ -1,0 +1,4 @@
+
+>>> [CLI_PREV] --version
+Databricks CLI v[CLI_PREV_VERSION]
+INPUT_CONFIG_OK
