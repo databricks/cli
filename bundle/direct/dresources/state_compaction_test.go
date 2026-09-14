@@ -129,127 +129,178 @@ func TestCompactStateMigratesLegacyFullContent(t *testing.T) {
 	assert.True(t, strings.HasPrefix(legacyHash.(string), stateHashPrefix))
 }
 
-// TestHashStateValue verifies hashStateValue adds the state hash prefix and produces
-// a stable placeholder: the same content always hashes to the same value and
-// different content differs.
-func TestHashStateValue(t *testing.T) {
+// TestStateHashing verifies, per fixture, that hashStateValue maps content to the exact
+// expected value (a hardcoded sha256:<hex> placeholder when hashing pays off, the content
+// itself otherwise), that isStateHashPlaceholder recognizes only the strings this package
+// produces, and that CompactState of a dashboard's serialized_dashboard yields the same.
+func TestStateHashing(t *testing.T) {
 	requireLargeEnoughToHash(t, largeDashboard)
+	requireTooSmallToHash(t, smallDashboard)
 
-	stringHash := hashStateValue(largeDashboard)
-	assert.True(t, strings.HasPrefix(stringHash, stateHashPrefix))
-	assert.Equal(t, stringHash, hashStateValue(largeDashboard))
-
-	other := hashStateValue(strings.Replace(largeDashboard, "p1", "p2", 1))
-	assert.NotEqual(t, stringHash, other)
-}
-
-// TestHashStateValueContentAgnostic verifies hashStateValue hashes any string content, not
-// just dashboard JSON, since a hashed_fields field may hold arbitrary serialized content
-// (YAML, scripts, SQL). It also checks that content no larger than a placeholder stays raw,
-// and that hashing is deterministic and idempotent.
-func TestHashStateValueContentAgnostic(t *testing.T) {
-	// A raw string of exactly stateHashPlaceholderLen bytes sits at the limit; one more
-	// tips it over.
+	// A raw string of exactly stateHashPlaceholderLen bytes sits at the limit; one more tips
+	// it over. hex64 is a valid digest body; placeholder is a full, valid placeholder.
 	atLimit := strings.Repeat("x", stateHashPlaceholderLen)
+	hex64 := strings.Repeat("a", sha256.Size*2)
+	placeholder := stateHashPrefix + hex64
 
 	cases := []struct {
-		name    string
-		content string
-		hashed  bool
+		name          string
+		content       string
+		want          string
+		isPlaceholder bool
 	}{
-		{name: "yaml", content: "resources:\n  jobs:\n    nightly:\n      name: nightly-etl\n      tasks:\n        - task_key: main\n          notebook_task:\n            notebook_path: ./main.py\n", hashed: true},
-		{name: "bash_script", content: "#!/usr/bin/env bash\nset -euo pipefail\nfor f in ./logs/*.log; do\n  echo \"processing $f\"\n  grep -c ERROR \"$f\" || true\ndone\n", hashed: true},
-		{name: "python_script", content: "import sys\n\ndef main() -> None:\n    for line in sys.stdin:\n        print(line.rstrip().upper())\n\nif __name__ == \"__main__\":\n    main()\n", hashed: true},
-		{name: "sql", content: "SELECT user_id, COUNT(*) AS n FROM events WHERE ts > current_date - INTERVAL 7 DAYS GROUP BY user_id ORDER BY n DESC LIMIT 100", hashed: true},
-		{name: "markdown", content: "# Weekly report\n\nThis summarizes **activity** across all regions.\n\n- signups\n- active users\n- churn\n\nSee the appendix for methodology.\n", hashed: true},
-		{name: "json_array", content: `[{"id":1,"tags":["a","b"]},{"id":2,"tags":["c","d"]},{"id":3,"tags":["e","f"]}]`, hashed: true},
-		{name: "small_stays_raw", content: smallDashboard, hashed: false},
-		{name: "at_size_limit", content: atLimit, hashed: false},
-		{name: "over_size_limit", content: atLimit + "x", hashed: true},
+		{
+			name: "yaml",
+			content: `
+resources:
+  jobs:
+    nightly:
+      name: nightly-etl
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: ./main.py
+`,
+			want: "sha256:78cf91ea7a1ca46850ef3890e8c643c05085503aeac50c8fbaaa7c6d689c559f",
+		},
+		{
+			name: "bash_script",
+			content: `
+#!/usr/bin/env bash
+set -euo pipefail
+for f in ./logs/*.log; do
+  echo "processing $f"
+  grep -c ERROR "$f" || true
+done
+`,
+			want: "sha256:64b29fe188c091714c55cdf32595e0d466ca328144b53f049e560874c578665e",
+		},
+		{
+			name: "python_script",
+			content: `
+import sys
+
+def main() -> None:
+    for line in sys.stdin:
+        print(line.rstrip().upper())
+
+if __name__ == "__main__":
+    main()
+`,
+			want: "sha256:3b55ae071cec980c7d10d23545eea134c2ba4ce7243566abcb4bb06d458bddbd",
+		},
+		{
+			name:    "sql",
+			content: "SELECT user_id, COUNT(*) AS n FROM events WHERE ts > current_date - INTERVAL 7 DAYS GROUP BY user_id ORDER BY n DESC LIMIT 100",
+			want:    "sha256:493f4b0b2f4d20f5232d181a7b568992a0a569c3ca7291b4bfca040346030abd",
+		},
+		{
+			name: "markdown",
+			content: `
+# Weekly report
+
+This summarizes **activity** across all regions.
+
+- signups
+- active users
+- churn
+
+See the appendix for methodology.
+`,
+			want: "sha256:bc2d357a7f72df265f196b25d4931d177290f8560b07172050ea9170026da045",
+		},
+		{
+			name:    "json_array",
+			content: `[{"id":1,"tags":["a","b"]},{"id":2,"tags":["c","d"]},{"id":3,"tags":["e","f"]}]`,
+			want:    "sha256:4a9d3e782a50d7d9eed4ee2d20c65138b69ad21fe64f61032fbf338952453822",
+		},
+		{
+			name:    "large_dashboard",
+			content: largeDashboard,
+			want:    "sha256:a1aa00318292865fb69b5e99fe14b29e43e707c23f4badce8dcefc3d728fea90",
+		},
+		{
+			name:    "over_size_limit",
+			content: atLimit + "x",
+			want:    "sha256:5bd2fd7019be4014a135cbc4fc4aecc894861782ec797467a7cd0909e98f76f2",
+		},
+		{
+			// Shares the prefix but is one byte too long to be a placeholder, so it hashes.
+			name:    "too_long",
+			content: stateHashPrefix + strings.Repeat("a", 65),
+			want:    "sha256:ee9921c0587e224847f0833ce1ef61f0d92295bc283a268caff458cf98e87cf3",
+		},
+		{
+			name:          "valid_placeholder",
+			content:       placeholder,
+			want:          placeholder,
+			isPlaceholder: true,
+		},
+		{
+			name:    "empty",
+			content: "",
+			want:    "",
+		},
+		{
+			name:    "small_stays_raw",
+			content: smallDashboard,
+			want:    smallDashboard,
+		},
+		{
+			name:    "at_size_limit",
+			content: atLimit,
+			want:    atLimit,
+		},
+		{
+			name:    "prefix_only",
+			content: stateHashPrefix,
+			want:    stateHashPrefix,
+		},
+		{
+			name:    "too_short",
+			content: stateHashPrefix + strings.Repeat("a", 63),
+			want:    stateHashPrefix + strings.Repeat("a", 63),
+		},
+		{
+			name:    "uppercase",
+			content: stateHashPrefix + strings.Repeat("A", 64),
+			want:    stateHashPrefix + strings.Repeat("A", 64),
+		},
+		{
+			name:    "non_hex",
+			content: stateHashPrefix + strings.Repeat("g", 64),
+			want:    stateHashPrefix + strings.Repeat("g", 64),
+		},
+		{
+			name:    "no_prefix",
+			content: hex64,
+			want:    hex64,
+		},
+		{
+			name:    "content_like",
+			content: `{"pages":[]}`,
+			want:    `{"pages":[]}`,
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := hashStateValue(tc.content)
-
-			if tc.hashed {
-				assert.True(t, isStateHashPlaceholder(out))
-				assert.Len(t, out, stateHashPlaceholderLen)
-			} else {
-				assert.Equal(t, tc.content, out)
+			got := hashStateValue(tc.content)
+			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.isPlaceholder, isStateHashPlaceholder(tc.content))
+			// Idempotent: re-hashing the output is a no-op, so re-compacting never double-hashes.
+			assert.Equal(t, tc.want, hashStateValue(got))
+			if got != tc.content {
+				// Hashing only ever happens when it shrinks the value.
+				assert.Less(t, len(got), len(tc.content))
 			}
 
-			// Deterministic: same content -> same result.
-			assert.Equal(t, out, hashStateValue(tc.content))
-			// Idempotent: re-hashing the result is a no-op, so re-compacting an
-			// already-compact state does not double-hash.
-			assert.Equal(t, out, hashStateValue(out))
+			// CompactState delegates to hashStateValue, so a dashboard's serialized_dashboard
+			// compacts to the same value.
+			state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: tc.content}}
+			out, err := CompactState(GetResourceConfig("dashboards"), state)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, out.(*DashboardState).SerializedDashboard)
 		})
 	}
-}
-
-// TestIsStateHashPlaceholder verifies the guard matches ^sha256:[a-f0-9]{64}$ exactly,
-// so a string that merely shares the prefix is not treated as already-hashed.
-func TestIsStateHashPlaceholder(t *testing.T) {
-	hex64 := strings.Repeat("a", sha256.Size*2)
-	assert.True(t, isStateHashPlaceholder(stateHashPrefix+hex64))
-
-	for name, s := range map[string]string{
-		"prefix_only":  stateHashPrefix,
-		"too_short":    stateHashPrefix + strings.Repeat("a", 63),
-		"too_long":     stateHashPrefix + strings.Repeat("a", 65),
-		"uppercase":    stateHashPrefix + strings.Repeat("A", 64),
-		"non_hex":      stateHashPrefix + strings.Repeat("g", 64),
-		"no_prefix":    hex64,
-		"empty":        "",
-		"content_like": `{"pages":[]}`,
-	} {
-		t.Run(name, func(t *testing.T) {
-			assert.False(t, isStateHashPlaceholder(s))
-		})
-	}
-}
-
-// TestCompactStateSkipsSmallField verifies the size check reaches CompactState, so a
-// small field stays raw in the state it saves and on every side of the diff it compacts.
-// Persisting it raw is what keeps the state smaller than a hash placeholder would.
-func TestCompactStateSkipsSmallField(t *testing.T) {
-	requireTooSmallToHash(t, smallDashboard)
-
-	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: smallDashboard}}
-
-	cfg := GetResourceConfig("dashboards")
-	out, err := CompactState(cfg, state)
-	require.NoError(t, err)
-	assert.Equal(t, smallDashboard, out.(*DashboardState).SerializedDashboard)
-
-	// Compacting the already-raw state again leaves it alone, so repeated saves and every
-	// side of the diff keep comparing content against content.
-	out2, err := CompactState(cfg, out)
-	require.NoError(t, err)
-	assert.Equal(t, smallDashboard, out2.(*DashboardState).SerializedDashboard)
-}
-
-// TestCompactStateHashesLargeField is the counterpart of TestCompactStateSkipsSmallField:
-// once the content outgrows a placeholder, compaction replaces it and the state shrinks.
-func TestCompactStateHashesLargeField(t *testing.T) {
-	requireLargeEnoughToHash(t, largeDashboard)
-
-	state := &DashboardState{DashboardConfig: resources.DashboardConfig{SerializedDashboard: largeDashboard}}
-
-	out, err := CompactState(GetResourceConfig("dashboards"), state)
-	require.NoError(t, err)
-	compacted := out.(*DashboardState).SerializedDashboard
-	require.IsType(t, "", compacted)
-	assert.True(t, strings.HasPrefix(compacted.(string), stateHashPrefix))
-	assert.Len(t, compacted, stateHashPlaceholderLen)
-
-	// The whole point of hashing: the persisted form is smaller than the raw content.
-	assert.Less(t, len(compacted.(string)), len(largeDashboard))
-}
-
-// TestHashStateValueEmpty verifies an empty string passes through unchanged, since there is
-// nothing to hash.
-func TestHashStateValueEmpty(t *testing.T) {
-	assert.Empty(t, hashStateValue(""))
 }
