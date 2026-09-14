@@ -372,8 +372,24 @@ func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 			continue
 		}
 
+		// A {{skip}} directive can name a directory the walk has already
+		// visited, because the directive lives in a file processed later.
+		// walk() only tests the patterns known when it reaches a directory, so
+		// re-test the accumulated set here; otherwise the directory is created
+		// even though it was explicitly skipped. This leaves directories whose
+		// files merely happened to be skipped untouched, since those patterns
+		// match the files rather than the directory itself.
+		match, err := isSkipped(dir, r.skipPatterns)
+		if err != nil {
+			return err
+		}
+		if match {
+			log.Infof(r.ctx, "skipping directory: %s", dir)
+			continue
+		}
+
 		// Check if directory already exists (may have been created during file writes)
-		_, err := out.Stat(ctx, dir)
+		_, err = out.Stat(ctx, dir)
 		if err == nil {
 			// Directory already exists, nothing to do
 			continue
