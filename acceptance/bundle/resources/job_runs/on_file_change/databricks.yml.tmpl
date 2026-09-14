@@ -1,0 +1,28 @@
+bundle:
+  name: job-runs-on-file-change-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      name: test-job-$UNIQUE_NAME
+      tasks:
+        # Serverless keeps the run short.
+        - task_key: main
+          spark_python_task:
+            python_file: ./hello.py
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"
+
+  job_runs:
+    my_run:
+      job_id: ${resources.jobs.my_job.id}
+      lifecycle:
+        triggers:
+          - on_file_change: seed.txt

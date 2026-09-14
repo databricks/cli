@@ -1,8 +1,20 @@
+# Runs the job for real. Serverless needs Unity Catalog.
+Cloud = true
+
 # Deploy both by re-planning and from a plan saved on disk, so the hashes
 # computed during planning survive plan serialization.
 EnvMatrix.READPLAN = ["", "1"]
 
-Ignore = ["tmp.*.*"]
+Ignore = ["tmp.*.*", "databricks.yml"]
+
+# The host and workspace selector in the run URL differ per workspace.
+[[Repls]]
+Old = 'Run URL: .*'
+New = 'Run URL: [RUN_URL]'
+
+[[Repls]]
+Old = '"run_page_url": ".*"'
+New = '"run_page_url": "[RUN_URL]"'
 
 # Content hashes are stable but unreadable, and the parent's `\d{8,}` rule
 # mangles any digit run inside them. Order=1 runs before it; Distinct keeps
