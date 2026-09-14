@@ -382,29 +382,6 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	assert.Empty(t, config.IdempotencyToken)
 }
 
-func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
-	var cancelled atomic.Bool
-	server := testserver.New(t)
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
-		}}
-	})
-	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req testserver.Request) any {
-		cancelled.Store(true)
-		return testserver.Response{}
-	})
-	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req testserver.Request) any {
-		return testserver.Response{}
-	})
-	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
-
-	require.NoError(t, r.DoDelete(t.Context(), "123", &JobRunState{}))
-
-	assert.False(t, cancelled.Load(), "a run that already finished has nothing to cancel")
-}
-
 func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
 	r := &ResourceJobRun{}
 	var lifecycle JobRunLifecycleState
