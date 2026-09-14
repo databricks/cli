@@ -140,7 +140,7 @@ func TestJobRunnerRestart(t *testing.T) {
 		},
 	} {
 		job := &resources.Job{
-			ID: "123",
+			ID:          "123",
 			JobSettings: jobSettings,
 		}
 		b := &bundle.Bundle{
