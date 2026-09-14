@@ -41,6 +41,15 @@ func (c *runConfig) dockerImage() *dockerImageConfig {
 	return c.Environment.DockerImage
 }
 
+// unityCatalogImagePath returns the configured Unity Catalog image reference,
+// or "" when none is set.
+func (c *runConfig) unityCatalogImagePath() string {
+	if c.Environment == nil {
+		return ""
+	}
+	return c.Environment.UnityCatalogImage
+}
+
 // inlineDependencies returns the inline package list from
 // environment.dependencies, and whether it was set.
 func (c *runConfig) inlineDependencies() ([]string, bool) {

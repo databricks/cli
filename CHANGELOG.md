@@ -1,5 +1,41 @@
 # Version changelog
 
+## Release v1.16.1 (2026-09-10)
+
+### CLI
+
+ * Revert tunnel resume layer to fix SSH transfer regression in v1.16.0 affecting transfers larger than 1 MiB. ([#6608](https://github.com/databricks/cli/pull/6608), [#6612](https://github.com/databricks/cli/pull/6612))
+
+
+## Release v1.16.0 (2026-09-09)
+
+### CLI
+
+ * `aitools install` now registers the official Claude marketplace if it is missing before installing the Databricks Claude plugin. ([#6485](https://github.com/databricks/cli/pull/6485))
+ * `databricks aitools install --output json` now reports an `error_category` for a failed or skipped install (per agent, and at the top level for a failure with no per-agent entry), giving coding agents and CI a stable classification of why an install did not complete. ([#6482](https://github.com/databricks/cli/pull/6482))
+ * `databricks aitools install` honors `--output json`, emitting a structured `{scope, agents[...]}` document that reports each agent's delivery and install status so coding agents and CI can consume the result without scraping the text output. JSON mode requires `--scope` and `--agents` so the command runs without interactive prompts. ([#6481](https://github.com/databricks/cli/pull/6481))
+ * `databricks bundle sync` now prints sync progress (`Action: PUT`, `Uploaded ...`) by default, matching `databricks sync`. Previously it was silent unless `--output` was passed. Use `--output json` for machine-readable output. ([#6568](https://github.com/databricks/cli/pull/6568))
+ * Support major-only DBR runtime versions such as `19.x-scala2.13` in the cluster picker used by `databricks auth login --configure-cluster` and `databricks labs`. ([#6574](https://github.com/databricks/cli/pull/6574))
+ * Deprecated the `databricks environments setup-local --constraints-only` flag in favour of the orthogonal `--no-dbconnect`; the flag still works as a hidden alias but is hidden from `--help` and prints a one-line deprecation notice, and will be removed in a later release. ([#6470](https://github.com/databricks/cli/pull/6470))
+ * Add orthogonal `--no-constraints` and `--no-dbconnect` flags to `databricks environments setup-local`: `--no-constraints` skips writing the remote Python-version and dependency pins, and `--no-dbconnect` skips the databricks-connect dependency. ([#6464](https://github.com/databricks/cli/pull/6464))
+ * `databricks environments setup-local` now reports a distinct `E_PROVISION_CONFLICT` error code in `--output json` when the project's dependencies conflict with the pins written for the target environment, making the requirements unsatisfiable (the same conflict surfaced as a `W_USER_CONSTRAINT_CONFLICT` warning); it is reported after the project files are written, without attempting the doomed provisioning, while other provisioning failures continue to report `E_PROVISION`. ([#6479](https://github.com/databricks/cli/pull/6479))
+ * `databricks ssh connect` and `ssh setup` now verify the tunnel's SSH host key against the key the workspace published for the connection, recorded in `~/.databricks/ssh-tunnel-known-hosts/<name>` instead of `~/.ssh/known_hosts`. Reconnecting with a name used before no longer fails with `Host key verification failed` when the compute behind that name changed, and no longer needs a manual `ssh-keygen -R`; host blocks written by an earlier `databricks ssh setup` pick this up once you re-run it. ([#6557](https://github.com/databricks/cli/pull/6557))
+ * Stop `databricks ssh connect --ide` from adding a duplicate entry to the IDE's Remote Explorer on every connect: the remote authority is now the SSH host alias alone, instead of embedding the per-instance remote OS user. ([#6550](https://github.com/databricks/cli/pull/6550))
+ * Add `--max-clients` and `--server-timeout` flags to `databricks ssh setup`, and `--server-timeout` to `databricks ssh connect`. Both are fixed when the SSH tunnel server job is submitted, so `ssh setup` now serializes them into the generated `ProxyCommand` instead of falling back to the built-in defaults. ([#6547](https://github.com/databricks/cli/pull/6547))
+ * `ssh connect` sessions no longer end when the tunnel's websocket connection is lost. The CLI reattaches to the running session and replays the bytes that were missed, so the shell and everything running in it stay intact, and a transient failure to open a replacement connection for the periodic auth refresh is retried rather than ending the session. Reattaching requires an SSH server started by a CLI that supports it; against an older server the connection behaves as before. ([#6558](https://github.com/databricks/cli/pull/6558))
+
+### Bundles
+
+ * Added PyDABs (Python) support for secrets: `Resources.add_secret` and the `secret_mutator` decorator. ([#6553](https://github.com/databricks/cli/pull/6553))
+ * Fix job and pipeline environment dependencies with a `*` version wildcard (e.g. `numpy==2.5.*`) being treated as local file paths. ([#6555](https://github.com/databricks/cli/pull/6555))
+ * Add the `postgres_snapshot_schedules` bundle resource for managing a Lakebase Postgres branch's automatic-snapshot schedule (direct deployment engine only). ([#6449](https://github.com/databricks/cli/pull/6449))
+
+### Dependency Updates
+
+ * Bump `github.com/databricks/databricks-sdk-go` from v0.175.0 to v0.177.0. ([#6448](https://github.com/databricks/cli/pull/6448))
+ * Bump Terraform provider from v1.128.0 to v1.131.0. ([#6544](https://github.com/databricks/cli/pull/6544))
+
+
 ## Release v1.15.0 (2026-09-03)
 
 ### CLI

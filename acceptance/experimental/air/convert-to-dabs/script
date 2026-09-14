@@ -1,7 +1,7 @@
 title "convert an AIR run YAML into a DABs bundle (in place, next to the source)"
 trace $CLI experimental air convert-to-dabs train.yaml
 
-title "emitted databricks.yml (code_source_path points at ./src; no code is copied)"
+title "emitted databricks.yml (code_source packaged as a tgz artifact; no code is copied)"
 trace cat databricks.yml
 
 title "the generated command.sh carries the run command"

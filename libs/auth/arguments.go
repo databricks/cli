@@ -1,8 +1,8 @@
 package auth
 
 import (
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 )
 
 // WorkspaceIDNone is a sentinel value persisted to .databrickscfg when the

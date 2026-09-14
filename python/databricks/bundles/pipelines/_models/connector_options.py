@@ -46,6 +46,10 @@ from databricks.bundles.pipelines._models.outlook_options import (
     OutlookOptions,
     OutlookOptionsParam,
 )
+from databricks.bundles.pipelines._models.rabbitmq_options import (
+    RabbitmqOptions,
+    RabbitmqOptionsParam,
+)
 from databricks.bundles.pipelines._models.reddit_ads_options import (
     RedditAdsOptions,
     RedditAdsOptionsParam,
@@ -107,11 +111,15 @@ class ConnectorOptions:
 
     jira_options: VariableOrOptional[JiraConnectorOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Jira specific options for ingestion
     """
 
     kafka_options: VariableOrOptional[KafkaOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta]
     """
 
@@ -134,6 +142,8 @@ class ConnectorOptions:
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
     """
 
@@ -142,6 +152,16 @@ class ConnectorOptions:
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Outlook specific options for ingestion
+    """
+
+    rabbitmq_options: VariableOrOptional[RabbitmqOptions] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] RabbitMQ specific options for ingestion.
+    Performance tuning options (consumers_per_task, max_messages_per_fetch, etc.)
+    are intentionally not exposed in the public API. The managed connector uses
+    sensible defaults internally. These can be added later if user demand arises.
     """
 
     reddit_ads_options: VariableOrOptional[RedditAdsOptions] = None
@@ -218,11 +238,15 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     jira_options: VariableOrOptional[JiraConnectorOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Jira specific options for ingestion
     """
 
     kafka_options: VariableOrOptional[KafkaOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta]
     """
 
@@ -245,6 +269,8 @@ class ConnectorOptionsDict(TypedDict, total=False):
 
     meta_ads_options: VariableOrOptional[MetaMarketingOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Meta Marketing (Meta Ads) specific options for ingestion
     """
 
@@ -253,6 +279,16 @@ class ConnectorOptionsDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     [Private Preview] Outlook specific options for ingestion
+    """
+
+    rabbitmq_options: VariableOrOptional[RabbitmqOptionsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Beta] RabbitMQ specific options for ingestion.
+    Performance tuning options (consumers_per_task, max_messages_per_fetch, etc.)
+    are intentionally not exposed in the public API. The managed connector uses
+    sensible defaults internally. These can be added later if user demand arises.
     """
 
     reddit_ads_options: VariableOrOptional[RedditAdsOptionsParam]

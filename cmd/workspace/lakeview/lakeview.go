@@ -90,7 +90,9 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create dashboard.`
 	cmd.Long = `Create dashboard.
 
-  Create a draft dashboard.`
+  Create a draft dashboard.
+
+  Requires the Databricks SQL access entitlement.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -467,6 +469,8 @@ func newGet() *cobra.Command {
 
   Get a draft dashboard.
 
+  Requires the Databricks SQL access entitlement.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -525,6 +529,9 @@ func newGetPublished() *cobra.Command {
 	cmd.Long = `Get published dashboard.
 
   Get the current published dashboard.
+
+  Requires one of the following entitlements: Workspace access, Databricks SQL
+  access, or Consumer access.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
@@ -716,7 +723,11 @@ func newList() *cobra.Command {
 
 	cmd.Use = "list"
 	cmd.Short = `List dashboards.`
-	cmd.Long = `List dashboards.`
+	cmd.Long = `List dashboards.
+
+  List dashboards.
+
+  Requires the Databricks SQL access entitlement.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1016,6 +1027,8 @@ func newPublish() *cobra.Command {
 
   Publish the current draft dashboard.
 
+  Requires the Databricks SQL access entitlement.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard to be published.`
 
@@ -1090,6 +1103,8 @@ func newRevert() *cobra.Command {
 
   Revert a dashboard's definition in draft mode to the last published version.
 
+  Requires the Databricks SQL access entitlement.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1161,6 +1176,8 @@ func newTrash() *cobra.Command {
 
   Trash a dashboard.
 
+  Requires the Databricks SQL access entitlement.
+
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`
 
@@ -1218,6 +1235,8 @@ func newUnpublish() *cobra.Command {
 	cmd.Long = `Unpublish dashboard.
 
   Unpublish the dashboard.
+
+  Requires the Databricks SQL access entitlement.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
@@ -1286,6 +1305,8 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update dashboard.
 
   Update a draft dashboard.
+
+  Requires the Databricks SQL access entitlement.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the dashboard.`

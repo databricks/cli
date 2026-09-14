@@ -58,7 +58,3 @@ func (e *VectorSearchEndpoint) InitializeURL(baseURL url.URL) {
 func (e *VectorSearchEndpoint) GetName() string {
 	return e.Name
 }
-
-func (e *VectorSearchEndpoint) GetURL() string {
-	return e.URL
-}

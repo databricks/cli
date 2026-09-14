@@ -1,0 +1,5 @@
+title "submit with a Databricks AI environment"
+trace $CLI experimental air run -f run.yaml
+
+title "submit accepts a Databricks AI environment version"
+trace print_requests.py //api/2.2/jobs/runs/submit

@@ -28,16 +28,12 @@ import (
 // env_vars.json / secret_env_vars.json / hyperparameters.yaml sidecars into
 // generated_artifacts/. It does NOT package, snapshot, or upload anything.
 //
-// code_source_path is emitted as the source directory relative to the bundle (the
-// bundle root defaults to the YAML's directory, which contains it). At deploy the
-// aicode mutator (bundle/config/mutator/aicode) packages that directory and uploads
-// it — so convert never touches the code. Dependencies are folded into the job's
-// environments[] spec, which the runtime installs from directly; no requirements.yaml
-// is emitted.
-//
-// When the snapshot pins a git ref or narrows to include_paths, convert instead emits
-// a `tgz` artifact (the DABs artifact snapshotter): DABs builds the tarball from that
-// ref/subset at deploy, and code_source_path points at the built tarball.
+// The code_source is emitted as a `tgz` artifact (the DABs artifact snapshotter):
+// DABs builds the tarball from the source directory at deploy and code_source_path
+// points at the built tarball — so convert never touches the code. A git ref or
+// include_paths just add `git` / a narrowed `include` to the same artifact.
+// Dependencies are folded into the job's environments[] spec, which the runtime
+// installs from directly; no requirements.yaml is emitted.
 
 // dabsTargetName is the single default target emitted; a development-mode target
 // is the conventional starting point for a generated bundle.
@@ -92,10 +88,9 @@ does not contact the workspace.`,
 		}
 
 		// Default the bundle to the input YAML's directory. The bundle's sync root
-		// must contain the code_source so `code_source_path` resolves within it (the
-		// deploy-time aicode mutator packages the source in place), and root_path is
-		// resolved relative to the YAML, so the YAML's dir is the natural bundle root.
-		// An explicit --output-dir overrides.
+		// must contain the code_source so the `tgz` artifact can package it, and
+		// root_path is resolved relative to the YAML, so the YAML's dir is the natural
+		// bundle root. An explicit --output-dir overrides.
 		dir := outputDir
 		if dir == "" {
 			dir = filepath.Dir(yamlPath)
@@ -118,7 +113,7 @@ does not contact the workspace.`,
 // mapping is unit-testable in isolation. Returns the bundle root as a
 // map[string]dyn.Value (ready for yamlsaver) and the loose artifacts (command.sh +
 // env/secret/param sidecars) to write under generated_artifacts/. It does not touch the
-// code_source; the deploy-time aicode mutator packages it in place.
+// code_source; the emitted `tgz` artifact packages it at deploy.
 func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir string) (map[string]dyn.Value, []uploadItem, error) {
 	// idempotency_token is intentionally not mapped: it dedups a single runs/submit
 	// call, which has no analogue for a persistent, repeatedly-runnable bundle job.
@@ -140,9 +135,8 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 		}
 	}
 
-	// The source dir relative to the bundle. It becomes code_source_path directly in
-	// the plain case, or the `tgz` artifact's `path` when a git ref / include_paths is
-	// pinned (see codeArtifactFor).
+	// The source dir relative to the bundle, used as the `tgz` artifact's `path`
+	// (see codeArtifactFor); code_source_path points at the tarball the artifact builds.
 	codeDirPath, err := bundleCodeSourcePath(ctx, cfg, configPath, bundleDir)
 	if err != nil {
 		return nil, nil, err
@@ -189,11 +183,12 @@ type codeArtifact struct {
 	gitCommit *string
 }
 
-// codeArtifactFor returns the artifact to emit when the snapshot pins a git ref or
-// narrows to include_paths, else nil — the plain directory case, packaged by the
-// deploy-time aicode mutator. It errors when the code dir resolves to the bundle root
-// (no basename to nest under). codeDirPath is the source dir relative to the bundle
-// ("./"-prefixed).
+// codeArtifactFor returns the `tgz` artifact to emit for a code_source, or nil when
+// there is no code_source. Every code_source is packaged as a `tgz` artifact and built
+// and uploaded through the standard artifact path; a git ref / include_paths just add
+// `git` / narrowed `include` to the same artifact. It errors when the code dir resolves
+// to the bundle root (no basename to nest under). codeDirPath is the source dir relative
+// to the bundle ("./"-prefixed).
 //
 // The artifact snapshotter names entries relative to `path`, and the runtime extracts
 // to /databricks/code_source/<dir>, so the code dir's basename must be the top-level
@@ -201,7 +196,7 @@ type codeArtifact struct {
 // subpaths, so entries come out as "<basename>/..." — the layout the air CLI produced.
 func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) {
 	snap := codeSnapshot(cfg)
-	if snap == nil || (snap.Git == nil && len(snap.IncludePaths) == 0) {
+	if snap == nil {
 		return nil, nil
 	}
 	codeDirRel := strings.TrimPrefix(codeDirPath, "./")
@@ -211,7 +206,7 @@ func codeArtifactFor(cfg *runConfig, codeDirPath string) (*codeArtifact, error) 
 	// generated_artifacts/, the output tarball) into it. Reject rather than emit that;
 	// the user should point root_path at a subdirectory.
 	if codeDirRel == "." {
-		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root; convert-to-dabs cannot translate a git or include_paths snapshot there (no code directory to package under %s/<dir>). Point root_path at a subdirectory", snap.RootPath, runtimeCodeSourceRoot)
+		return nil, fmt.Errorf("code_source root_path %q resolves to the bundle root; convert-to-dabs cannot package code there (no code directory to nest under %s/<dir>). Point root_path at a subdirectory", snap.RootPath, runtimeCodeSourceRoot)
 	}
 	dirName := path.Base(codeDirRel)
 	art := &codeArtifact{
@@ -241,9 +236,9 @@ func codeSnapshot(cfg *runConfig) *snapshotSourceConfig {
 }
 
 // bundleCodeSourcePath resolves the code_source directory to a "./"-prefixed path
-// relative to the bundle dir, for emission as ai_runtime_task.code_source_path.
-// Returns "" when the config has no code_source. The path must be inside the bundle
-// (the deploy-time mutator packages it in place and only handles in-bundle dirs).
+// relative to the bundle dir, used as the `tgz` artifact's `path`. Returns "" when the
+// config has no code_source. The path must be inside the bundle (the artifact
+// snapshotter only packages in-bundle dirs).
 func bundleCodeSourcePath(ctx context.Context, cfg *runConfig, configPath, bundleDir string) (string, error) {
 	snap := codeSnapshot(cfg)
 	if snap == nil {
@@ -306,8 +301,8 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	}
 	line := 3
 	if codeSourcePath != "" {
-		// The source dir relative to the bundle; the aicode mutator packages it at
-		// deploy and rewrites this field to the uploaded workspace path.
+		// Points at the `tgz` artifact's built tarball; deploy uploads it and rewrites
+		// this to the uploaded workspace path.
 		aiRuntimeTask["code_source_path"] = nv(codeSourcePath, line)
 		line++
 	}
@@ -335,10 +330,10 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	}
 	task["ai_runtime_task"] = nv(aiRuntimeTask, taskLine)
 
-	// environments[]: version + the dependency set. The aicode.SynthesizeRequirements
-	// mutator regenerates requirements.yaml from this spec at deploy time, so the full
-	// dependency set (whether authored inline or in a requirements file) must live
-	// here — convert emits no requirements.yaml of its own. Resolve the version
+	// environments[]: version + the dependency set. The runtime installs deps from this
+	// spec directly, so the full dependency set (whether authored inline or in a
+	// requirements file) must live here — convert emits no requirements.yaml of its
+	// own. Resolve the version
 	// through the same path `air run` uses (config, else env override, else the
 	// default channel) so a config without an explicit version still pins the version
 	// the workload would have run with — not an empty spec.
@@ -378,8 +373,8 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 			"name": nv(name, 1),
 		}, 1),
 		// sync.paths replaces the default of syncing the whole bundle root. The code
-		// directory is omitted deliberately: deploy still packages it into the
-		// snapshot tarball, so syncing it too would upload the tree twice.
+		// directory is omitted deliberately: the `tgz` artifact packages it, so syncing
+		// it too would upload the tree twice.
 		"sync": nv(map[string]dyn.Value{
 			"paths": nv([]dyn.Value{nv(generatedArtifactsDir, 1)}, 1),
 		}, 2),
@@ -395,14 +390,14 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 			}, 1),
 		}, 5),
 	}
-	// The `tgz` artifact snapshotter, when the snapshot pins a git ref / include_paths.
+	// The `tgz` artifact that packages the code_source (nil only when there is none).
 	if art != nil {
 		rootValue["artifacts"] = nv(buildArtifactsValue(art), 3)
 	}
 	return rootValue
 }
 
-// buildArtifactsValue builds the `artifacts` block for a git/include snapshot: a
+// buildArtifactsValue builds the `artifacts` block for the code_source: a
 // single `tgz` artifact whose `path` is the code-source root, carrying the git ref
 // and/or include subpaths, and whose `files` output is the tarball code_source_path
 // points at.
@@ -437,10 +432,9 @@ func buildArtifactsValue(art *codeArtifact) map[string]dyn.Value {
 }
 
 // bundleEnvironmentDeps resolves the runtime version and the inline dependency
-// list to emit in the bundle's environments[] spec. The aicode mutator synthesizes
-// requirements.yaml from that spec at deploy, so the whole set must be here.
-// Dependencies are inline-only (a requirements-file path is rejected at config
-// load), so an unset list yields no dependencies.
+// list to emit in the bundle's environments[] spec. The runtime installs deps from
+// that spec, so the whole set must be here. Dependencies are inline-only (a
+// requirements-file path is rejected at config load), so an unset list yields none.
 func bundleEnvironmentDeps(ctx context.Context, cfg *runConfig) (version string, deps []string) {
 	cfgVersion, _ := cfg.runtimeVersion()
 	version = dlRuntimeImage(ctx, cfgVersion)
@@ -522,7 +516,7 @@ func buildPermissionsValue(perms []permission) dyn.Value {
 
 // writeBundle writes the bundle into dir: databricks.yml plus the loose launch
 // artifacts (command.sh + env/secret/param sidecars). It does not touch the code
-// source — the deploy-time aicode mutator packages it in place. Unless force is set
+// source — the emitted `tgz` artifact packages it at deploy. Unless force is set
 // it refuses to overwrite existing files, so a re-run can't silently clobber a
 // bundle the user has edited. Returns the relative paths written, for the
 // next-steps message.

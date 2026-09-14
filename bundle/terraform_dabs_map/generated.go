@@ -12,7 +12,7 @@ package terraform_dabs_map
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
 // jobs / databricks_job: 7 dabs-only
-// jobs / databricks_job: 259 tf-only
+// jobs / databricks_job: 261 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
@@ -338,6 +338,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"driver_instance_pool_id": {}, // databricks_job.*.new_cluster.driver_instance_pool_id
 			"driver_node_type_flexibility": {
 				"alternate_node_type_ids": {}, // databricks_job.*.new_cluster.driver_node_type_flexibility.alternate_node_type_ids
+				"aws_context_id":          {}, // databricks_job.*.new_cluster.driver_node_type_flexibility.aws_context_id
 			},
 			"driver_node_type_id":          {}, // databricks_job.*.new_cluster.driver_node_type_id
 			"enable_elastic_disk":          {}, // databricks_job.*.new_cluster.enable_elastic_disk
@@ -422,6 +423,7 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"use_ml_runtime":                 {}, // databricks_job.*.new_cluster.use_ml_runtime
 			"worker_node_type_flexibility": {
 				"alternate_node_type_ids": {}, // databricks_job.*.new_cluster.worker_node_type_flexibility.alternate_node_type_ids
+				"aws_context_id":          {}, // databricks_job.*.new_cluster.worker_node_type_flexibility.aws_context_id
 			},
 			"workload_type": {
 				"clients": {
@@ -623,6 +625,7 @@ var DABsToTerraformWrapperFields = map[string]FieldSet{
 		"source_branch":      {},
 		"source_branch_lsn":  {},
 		"source_branch_time": {},
+		"source_snapshot":    {},
 		"ttl":                {},
 	},
 	"postgres_catalogs": {

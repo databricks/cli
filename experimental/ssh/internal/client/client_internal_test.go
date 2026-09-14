@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
+	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
@@ -318,20 +319,24 @@ func TestHostKeyChangedHint(t *testing.T) {
 		hostName       string
 		knownHostsFile string
 		wantContains   []string
+		wantOmits      []string
 		wantEmpty      bool
 	}{
 		{
-			name:         "host key failure",
-			stderr:       hostKeyFailureStderr,
-			hostName:     "databricks-cpu-6e7644d0",
-			wantContains: []string{"databricks-cpu-6e7644d0", "ssh-keygen -R databricks-cpu-6e7644d0"},
-		},
-		{
-			name:           "host key failure with custom known_hosts file",
+			name:           "host key failure names the host and the pinned file",
 			stderr:         hostKeyFailureStderr,
 			hostName:       "databricks-cpu-6e7644d0",
 			knownHostsFile: "/tmp/known_hosts",
-			wantContains:   []string{"ssh-keygen -R databricks-cpu-6e7644d0 -f /tmp/known_hosts"},
+			wantContains:   []string{"databricks-cpu-6e7644d0", "/tmp/known_hosts"},
+		},
+		{
+			// The stale-entry advice this hint used to give no longer applies: the CLI
+			// rewrites the entry from the workspace before every connection.
+			name:           "host key failure does not blame a stale local entry",
+			stderr:         hostKeyFailureStderr,
+			hostName:       "databricks-cpu-6e7644d0",
+			knownHostsFile: "/tmp/known_hosts",
+			wantOmits:      []string{"ssh-keygen -R"},
 		},
 		{
 			name:      "unrelated failure",
@@ -349,6 +354,9 @@ func TestHostKeyChangedHint(t *testing.T) {
 			}
 			for _, want := range tt.wantContains {
 				assert.Contains(t, got, want)
+			}
+			for _, unwanted := range tt.wantOmits {
+				assert.NotContains(t, got, unwanted)
 			}
 		})
 	}
@@ -377,7 +385,7 @@ func TestBuildRemoteShellArgs(t *testing.T) {
 }
 
 func TestBuildSSHArgsSetsServerAliveInterval(t *testing.T) {
-	args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{})
+	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{})
 
 	// ssh stops parsing options at the destination, so an option placed after the host would be
 	// treated as part of the remote command rather than as an ssh option.
@@ -385,6 +393,21 @@ func TestBuildSSHArgsSetsServerAliveInterval(t *testing.T) {
 	require.NotEqual(t, -1, optIdx, "ssh must be asked to send keepalives")
 	require.Equal(t, "-o", args[optIdx-1])
 	assert.Less(t, optIdx, slices.Index(args, "myhost"), "the option must precede the destination host")
+}
+
+func TestBuildSSHArgsPinsHostKey(t *testing.T) {
+	args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{})
+
+	// The pinned file is the whole point of strict checking here: without it ssh would
+	// fall back to ~/.ssh/known_hosts, where an entry for this name may be left over from
+	// other compute (DECO-27882).
+	hostIdx := slices.Index(args, "myhost")
+	for _, want := range []string{"StrictHostKeyChecking=yes", "UserKnownHostsFile=/pins/myhost"} {
+		optIdx := slices.Index(args, want)
+		require.NotEqual(t, -1, optIdx, "%s must be passed to ssh", want)
+		require.Equal(t, "-o", args[optIdx-1])
+		assert.Less(t, optIdx, hostIdx, "the option must precede the destination host")
+	}
 }
 
 func TestBuildSSHArgsPTYPlacement(t *testing.T) {
@@ -398,7 +421,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	}
 
 	t.Run("interactive forces a PTY before the destination", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
+		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "/Workspace/Users/me@example.com", ClientOptions{})
 		ptyIdx := indexOf(args, "-t")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, ptyIdx, "-t must be present for interactive sessions")
@@ -410,7 +433,7 @@ func TestBuildSSHArgsPTYPlacement(t *testing.T) {
 	})
 
 	t.Run("non-interactive does not force a PTY", func(t *testing.T) {
-		args := buildSSHArgs("user", "/key", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
+		args := buildSSHArgs("user", "/key", "/pins/myhost", "proxy command", "myhost", "", ClientOptions{AdditionalArgs: []string{"ls", "-la"}})
 		assert.Equal(t, -1, indexOf(args, "-t"), "no PTY for non-interactive passthrough")
 		hostIdx := indexOf(args, "myhost")
 		require.NotEqual(t, -1, hostIdx)
@@ -549,11 +572,87 @@ func TestConnectOutcomeCategory(t *testing.T) {
 			},
 			want: protos.SshTunnelErrorCategoryUserAborted,
 		},
+		{
+			// A step that shells out reports a killed child as *exec.ExitError, which does not
+			// wrap context.Canceled, so the cancelled context is the only evidence left. Without
+			// this branch a Ctrl-C during the extension install counts as a rejected install and
+			// pollutes the bucket that is supposed to mean "the marketplace or a policy blocked
+			// it" -- one of only two reachable under --auto-approve.
+			name: "interruption wins over the category set at the failure site",
+			outcome: connectOutcome{
+				ctxErr:        context.Canceled,
+				errorCategory: protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed,
+				err:           errors.New("signal: killed"),
+			},
+			want: protos.SshTunnelErrorCategoryUserAborted,
+		},
+		{
+			// Only a cancellation is the user giving up. No ancestor of the connect context
+			// carries a deadline today, so this is unreachable; matching the cause rather than
+			// testing ctxErr for non-nil keeps it that way if one is ever added.
+			name: "an expired deadline is not a user abort",
+			outcome: connectOutcome{
+				ctxErr:        context.DeadlineExceeded,
+				errorCategory: protos.SshTunnelErrorCategoryServerStartTimeout,
+				err:           errFailed,
+			},
+			want: protos.SshTunnelErrorCategoryServerStartTimeout,
+		},
+		{
+			// Interrupting an established tunnel is not a connection failure.
+			name:    "interruption after a successful connection reports no category",
+			outcome: connectOutcome{isSuccess: true, ctxErr: context.Canceled, err: errFailed},
+			want:    protos.SshTunnelErrorCategoryUnspecified,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, tt.outcome.category())
+		})
+	}
+}
+
+// The four Remote SSH extension outcomes were reported as one category until they were split,
+// which left the largest IDE-mode failure bucket unattributable. Pin the mapping, including the
+// wrapping, since CheckIDESSHExtension returns its sentinels wrapped in a message.
+func TestSshExtensionErrorCategory(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want protos.SshTunnelErrorCategory
+	}{
+		{
+			name: "list failure",
+			err:  fmt.Errorf("%w in VS Code: %w", vscode.ErrSSHExtensionListFailed, errors.New("exit 4")),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionListFailed,
+		},
+		{
+			name: "install failure",
+			err:  fmt.Errorf("%w: %w", vscode.ErrSSHExtensionInstallFailed, errors.New("exit 3")),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallFailed,
+		},
+		{
+			name: "user declined the install",
+			err:  fmt.Errorf("%w: install it with ...", vscode.ErrSSHExtensionInstallDeclined),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallDeclined,
+		},
+		{
+			name: "no way to ask for consent",
+			err:  fmt.Errorf("%w: install it with ...", vscode.ErrSSHExtensionInstallUnavailable),
+			want: protos.SshTunnelErrorCategoryIDESSHExtensionInstallUnavailable,
+		},
+		{
+			// Only reachable if a new failure path forgets its sentinel.
+			name: "unsentinelled failure falls back to UNKNOWN",
+			err:  errors.New("something else"),
+			want: protos.SshTunnelErrorCategoryUnknown,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, sshExtensionErrorCategory(tt.err))
 		})
 	}
 }

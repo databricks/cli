@@ -1,0 +1,18 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_vector_search_index"
+
+resources:
+  vector_search_indexes:
+    my_index_1:
+      name: "my_index_1"
+      endpoint_name: "my_endpoint"
+      primary_key: "id"
+      index_type: "DELTA_SYNC"

@@ -1,10 +1,10 @@
 mkdir -p .databricks/bundle/default
 
-title "a version-3 state recording a feature is rejected (this CLI records no features yet)"
+title "a state depending on a feature this CLI does not recognize is rejected"
 cp resources.with_feature.json .databricks/bundle/default/resources.json
 trace errcode $CLI bundle plan 2>&1 | contains.py "requires features this CLI does not support: future_feature" "upgrade to the latest CLI version" "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features"
 
-title "a version-3 state with an empty features map is accepted, and a deploy keeps it at version 3 (no flip to 2)"
+title "a state with an empty features map is accepted, and a deploy keeps it at version 2"
 cp resources.empty_features.json .databricks/bundle/default/resources.json
 trace $CLI bundle plan | contains.py "Plan:"
 trace $CLI bundle deploy

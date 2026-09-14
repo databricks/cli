@@ -127,6 +127,7 @@ type AllResources struct {
 	PostgresEndpoint                             ResourcePostgresEndpoint                             `json:"databricks_postgres_endpoint,omitempty"`
 	PostgresProject                              ResourcePostgresProject                              `json:"databricks_postgres_project,omitempty"`
 	PostgresRole                                 ResourcePostgresRole                                 `json:"databricks_postgres_role,omitempty"`
+	PostgresSnapshotSchedule                     ResourcePostgresSnapshotSchedule                     `json:"databricks_postgres_snapshot_schedule,omitempty"`
 	PostgresSyncedTable                          ResourcePostgresSyncedTable                          `json:"databricks_postgres_synced_table,omitempty"`
 	Provider                                     ResourceProvider                                     `json:"databricks_provider,omitempty"`
 	QualityMonitor                               ResourceQualityMonitor                               `json:"databricks_quality_monitor,omitempty"`

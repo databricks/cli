@@ -94,7 +94,8 @@ const (
 	ErrWrite              ErrorCode = "E_WRITE"               // merge: greenfield write failed
 	ErrMerge              ErrorCode = "E_MERGE"               // merge: existing-project merge failed
 	ErrPythonInstall      ErrorCode = "E_PYTHON_INSTALL"      // provision: uv python install failed
-	ErrProvision          ErrorCode = "E_PROVISION"           // provision: uv sync failed
+	ErrProvision          ErrorCode = "E_PROVISION"           // provision: uv sync failed (generic)
+	ErrProvisionConflict  ErrorCode = "E_PROVISION_CONFLICT"  // provision: merge detected an unsatisfiable version conflict
 	ErrValidate           ErrorCode = "E_VALIDATE"            // validate: post-provision version mismatch
 
 	// ErrCanceled is not in the spec's error-code table: it reports a user/parent
@@ -317,11 +318,16 @@ type Result struct {
 	// fallback, named in the text summary so the user can tell which interpreter
 	// backs the venv. Not serialized: the structured result stays categorical via
 	// PythonResolution (a path would leak machine layout to JSON consumers).
-	PythonInterpreter string         `json:"-"`
-	Phases            []PhaseStatus  `json:"phases"`
-	Warnings          []Warning      `json:"warnings"`
-	Error             *PipelineError `json:"error"`
-	BackupPath        string         `json:"backupPath,omitempty"`
+	PythonInterpreter string `json:"-"`
+	// SkipConstraints records whether --no-constraints was set. Not serialized: it
+	// is not part of the --output json contract, but the telemetry event reads it to
+	// distinguish a --no-constraints run from a plain one (Mode only records the
+	// databricks-connect axis).
+	SkipConstraints bool           `json:"-"`
+	Phases          []PhaseStatus  `json:"phases"`
+	Warnings        []Warning      `json:"warnings"`
+	Error           *PipelineError `json:"error"`
+	BackupPath      string         `json:"backupPath,omitempty"`
 	// DurationMs is the pipeline's wall time in milliseconds (spec §6). It covers the
 	// CLI pipeline only; the extension measures its own end-to-end latency (process
 	// spawn, interpreter adoption) separately.

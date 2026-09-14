@@ -59,10 +59,10 @@ Usage:
 Flags:
       --download-to string   Download all logs to this directory instead of printing
   -h, --help                 help for logs
-      --lines int            For completed runs, print the last N lines (default 10000)
       --minutes int          Fetch only logs from the last N minutes
       --node int             Fetch logs from this node
       --retry int            View logs from a specific retry attempt; -1 means latest (default -1)
+      --tail int             For completed runs, print the last N log lines (default 10000)
 
 Global Flags:
       --debug            enable debug logging

@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -255,6 +257,39 @@ func TestJobRunWaitAbandonedLinksTheRun(t *testing.T) {
 	require.ErrorContains(t, err, testRunPageLink)
 }
 
+func TestJobRunStateOmitsEmptyLifecycle(t *testing.T) {
+	var state JobRunState
+
+	require.NoError(t, json.Unmarshal([]byte(`{}`), &state))
+
+	assert.Nil(t, state.Lifecycle)
+	serialized, err := json.Marshal(state)
+	require.NoError(t, err)
+	assert.NotContains(t, string(serialized), `"lifecycle"`)
+}
+
+func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
+	enabled := true
+	triggers := &resources.JobRunTriggersState{
+		OnFileChange: map[string]string{"*.txt": "hash"},
+	}
+	input := &resources.JobRun{
+		Lifecycle: &resources.JobRunLifecycle{
+			Triggers:      []resources.JobRunTrigger{{OnBundleDeploy: &enabled}},
+			TriggersState: triggers,
+		},
+	}
+
+	state := (&ResourceJobRun{}).PrepareState(input)
+
+	require.NotNil(t, state.Lifecycle)
+	require.NotNil(t, state.Lifecycle.TriggersState)
+	assert.NotSame(t, triggers, state.Lifecycle.TriggersState)
+	assert.Equal(t, triggers.OnFileChange, state.Lifecycle.TriggersState.OnFileChange)
+	assert.NotEmpty(t, state.Lifecycle.TriggersState.OnBundleDeploy)
+	assert.Empty(t, triggers.OnBundleDeploy)
+}
+
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
 // that did not end in SUCCESS has to surface as a difference on result_state.
 func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
@@ -270,6 +305,7 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 			state := (&ResourceJobRun{}).RemapState(remote)
 
 			assert.Equal(t, outcome, state.ResultState)
+			assert.Nil(t, state.Lifecycle)
 		})
 	}
 }
@@ -367,4 +403,129 @@ func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
 	require.NoError(t, r.DoDelete(t.Context(), "123", &JobRunState{}))
 
 	assert.False(t, cancelled.Load(), "a run that already finished has nothing to cancel")
+}
+
+func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {
+	r := &ResourceJobRun{}
+	var lifecycle JobRunLifecycleState
+	for _, tt := range []struct {
+		name   string
+		path   string
+		old    any
+		new    any
+		action deployplan.ActionType
+		reason string
+	}{
+		{
+			name:   "cleared lifecycle",
+			path:   "lifecycle",
+			old:    lifecycle,
+			new:    nil,
+			action: deployplan.Recreate,
+			reason: deployplan.ReasonDrop,
+		},
+		{
+			name:   "added lifecycle",
+			path:   "lifecycle",
+			old:    nil,
+			new:    lifecycle,
+			action: deployplan.Recreate,
+			reason: "",
+		},
+		{
+			name:   "changed lifecycle",
+			path:   "lifecycle",
+			old:    lifecycle,
+			new:    lifecycle,
+			action: deployplan.Recreate,
+			reason: deployplan.ReasonDrop,
+		},
+		{
+			name:   "cleared on_bundle_deploy string",
+			path:   "lifecycle.triggers_state.on_bundle_deploy",
+			old:    "uuid",
+			new:    "",
+			action: deployplan.Recreate,
+			reason: deployplan.ReasonDrop,
+		},
+		{
+			name:   "nil on_bundle_deploy",
+			path:   "lifecycle.triggers_state.on_bundle_deploy",
+			old:    "uuid",
+			new:    nil,
+			action: deployplan.Recreate,
+			reason: deployplan.ReasonDrop,
+		},
+		{
+			name:   "rotated on_bundle_deploy",
+			path:   "lifecycle.triggers_state.on_bundle_deploy",
+			old:    "old-uuid",
+			new:    "new-uuid",
+			action: deployplan.Recreate,
+			reason: "",
+		},
+		{
+			name:   "cleared on_file_change",
+			path:   "lifecycle.triggers_state.on_file_change",
+			old:    map[string]string{"*.txt": "hash"},
+			new:    nil,
+			action: deployplan.Recreate,
+			reason: deployplan.ReasonDrop,
+		},
+		{
+			name:   "empty on_file_change maps",
+			path:   "lifecycle.triggers_state.on_file_change",
+			old:    map[string]string{},
+			new:    map[string]string{},
+			action: deployplan.Recreate,
+			reason: deployplan.ReasonDrop,
+		},
+		{
+			name:   "added on_file_change map",
+			path:   "lifecycle.triggers_state.on_file_change",
+			old:    nil,
+			new:    map[string]string{"*.txt": "hash"},
+			action: deployplan.Recreate,
+			reason: "",
+		},
+		{
+			name:   "changed on_file_change map",
+			path:   "lifecycle.triggers_state.on_file_change",
+			old:    map[string]string{"*.txt": "old"},
+			new:    map[string]string{"*.txt": "new"},
+			action: deployplan.Recreate,
+			reason: deployplan.ReasonDrop,
+		},
+		{
+			name:   "cleared on_file_change pattern",
+			path:   "lifecycle.triggers_state.on_file_change['*.txt']",
+			old:    "hash",
+			new:    nil,
+			action: deployplan.Recreate,
+			reason: deployplan.ReasonDrop,
+		},
+		{
+			name:   "changed on_file_change pattern",
+			path:   "lifecycle.triggers_state.on_file_change['*.txt']",
+			old:    "old",
+			new:    "new",
+			action: deployplan.Recreate,
+			reason: "",
+		},
+		{
+			name:   "result_state with unreadable remote",
+			path:   "result_state",
+			old:    jobs.RunResultStateSuccess,
+			new:    nil,
+			action: deployplan.Recreate,
+			reason: "",
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			change := &ChangeDesc{Action: deployplan.Recreate, Old: tt.old, New: tt.new}
+			require.NoError(t, r.OverrideChangeDesc(t.Context(), structpath.MustParsePath(tt.path), change, nil))
+			assert.Equal(t, tt.action, change.Action)
+			assert.Equal(t, tt.reason, change.Reason)
+		})
+	}
 }

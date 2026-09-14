@@ -371,6 +371,10 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOpti
 	SubjectFilter    []string `json:"subject_filter,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRabbitmqOptions struct {
+	Queue string `json:"queue"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptionsCustomReportOptions struct {
 	Breakdowns []string `json:"breakdowns,omitempty"`
 	Fields     []string `json:"fields,omitempty"`
@@ -446,6 +450,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions struct {
 	MarketoOptions            *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMarketoOptions            `json:"marketo_options,omitempty"`
 	MetaAdsOptions            *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsMetaAdsOptions            `json:"meta_ads_options,omitempty"`
 	OutlookOptions            *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsOutlookOptions            `json:"outlook_options,omitempty"`
+	RabbitmqOptions           *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRabbitmqOptions           `json:"rabbitmq_options,omitempty"`
 	RedditAdsOptions          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsRedditAdsOptions          `json:"reddit_ads_options,omitempty"`
 	SharepointOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSharepointOptions         `json:"sharepoint_options,omitempty"`
 	SmartsheetOptions         *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsSmartsheetOptions         `json:"smartsheet_options,omitempty"`
@@ -516,7 +521,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchema struct {
 	DestinationCatalog string                                                              `json:"destination_catalog"`
 	DestinationSchema  string                                                              `json:"destination_schema"`
 	SourceCatalog      string                                                              `json:"source_catalog,omitempty"`
-	SourceSchema       string                                                              `json:"source_schema"`
+	SourceSchema       string                                                              `json:"source_schema,omitempty"`
 	ConnectorOptions   *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions   `json:"connector_options,omitempty"`
 	FanoutOptions      *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptions      `json:"fanout_options,omitempty"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration `json:"table_configuration,omitempty"`
@@ -665,6 +670,10 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptio
 	SubjectFilter    []string `json:"subject_filter,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRabbitmqOptions struct {
+	Queue string `json:"queue"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptionsCustomReportOptions struct {
 	Breakdowns []string `json:"breakdowns,omitempty"`
 	Fields     []string `json:"fields,omitempty"`
@@ -740,6 +749,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions struct {
 	MarketoOptions            *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMarketoOptions            `json:"marketo_options,omitempty"`
 	MetaAdsOptions            *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsMetaAdsOptions            `json:"meta_ads_options,omitempty"`
 	OutlookOptions            *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsOutlookOptions            `json:"outlook_options,omitempty"`
+	RabbitmqOptions           *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRabbitmqOptions           `json:"rabbitmq_options,omitempty"`
 	RedditAdsOptions          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsRedditAdsOptions          `json:"reddit_ads_options,omitempty"`
 	SharepointOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSharepointOptions         `json:"sharepoint_options,omitempty"`
 	SmartsheetOptions         *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsSmartsheetOptions         `json:"smartsheet_options,omitempty"`
@@ -792,7 +802,7 @@ type ResourcePipelineIngestionDefinitionObjectsTable struct {
 	DestinationTable   string                                                             `json:"destination_table,omitempty"`
 	SourceCatalog      string                                                             `json:"source_catalog,omitempty"`
 	SourceSchema       string                                                             `json:"source_schema,omitempty"`
-	SourceTable        string                                                             `json:"source_table"`
+	SourceTable        string                                                             `json:"source_table,omitempty"`
 	ConnectorOptions   *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptions   `json:"connector_options,omitempty"`
 	TableConfiguration *ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration `json:"table_configuration,omitempty"`
 }

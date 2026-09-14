@@ -110,10 +110,11 @@ const pep440Regex = `(?P<epoch>\d+!)?(?P<release>\d+(\.\d+)*)(?P<pre>[-_.]?(a|b|
 // ^[a-zA-Z0-9\-_]+: Matches the package name, allowing alphanumeric characters, dashes (-), and underscores (_).
 // \[.*\])?: Optionally matches any extras specified in square brackets, e.g., [security].
 // ((==|!=|<=|>=|~=|>|<)\s?pep440Regex): Optionally matches version specifiers, supporting various operators (==, !=, etc.) followed by a version number as per PEP440 spec.
+// (\.\*)?: Optionally matches a trailing ".*" wildcard for prefix matching, e.g. "numpy==2.5.*" (valid with == and != per PEP 440).
 // ,?: Optionally matches a comma (,) at the end of the specifier which is used to separate multiple specifiers.
 // There can be multiple version specifiers separated by commas or no specifiers.
 // Spec for package name and version specifier: https://pip.pypa.io/en/stable/reference/requirement-specifiers/
-var packageRegex = regexp.MustCompile(fmt.Sprintf(`^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?%s,?)*$`, pep440Regex))
+var packageRegex = regexp.MustCompile(fmt.Sprintf(`^[a-zA-Z0-9\-_]+\s?(\[.*\])?\s?((==|!=|<=|>=|~=|==|>|<)\s?%s(\.\*)?,?)*$`, pep440Regex))
 
 func isPackage(name string) bool {
 	if packageRegex.MatchString(name) {

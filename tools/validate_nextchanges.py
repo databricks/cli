@@ -72,14 +72,22 @@ def fragment_format_problem(text):
     starts with ``"* "`` and ends with ``"."``. An optional trailing PR link
     group (``([#N](pull-url))``, or a comma-separated list) may follow the period.
 
+    Valid fragments (with or without a trailing PR link) return None:
+
     >>> fragment_format_problem("* Added the `foo` command.")
     >>> fragment_format_problem("* Fixed a bug. ([#6208](https://github.com/databricks/cli/pull/6208))")
+
+    Each structural problem returns its own message:
+
     >>> fragment_format_problem("Added the `foo` command.")
     'must start with a "* " bullet marker'
+
     >>> fragment_format_problem("* Added the `foo` command")
     'must end with a period'
+
     >>> fragment_format_problem("* First entry.\n* Second entry.")
     'must be a single entry on one line'
+
     >>> fragment_format_problem("   ")
     'empty fragment'
     """
@@ -106,11 +114,20 @@ def link_problem(text):
     (which GitHub would auto-link in the rendered CHANGELOG.md) is rejected. A PR
     link's text number and URL number must also agree.
 
+    A fully-linked entry is fine (returns None):
+
     >>> link_problem("* Fixed a bug. ([#5](https://github.com/databricks/cli/pull/5))")
+
+    A bare or paren-wrapped reference is rejected:
+
     >>> link_problem("* Fixed a bug (#5).")
     'unexpanded reference #5: write it as a markdown link, e.g. [#5](https://github.com/databricks/cli/pull/5)'
+
     >>> link_problem("* Reverts #7 for now.")
     'unexpanded reference #7: write it as a markdown link, e.g. [#7](https://github.com/databricks/cli/pull/7)'
+
+    A link whose text and URL numbers disagree is rejected:
+
     >>> link_problem("* Oops. ([#5](https://github.com/databricks/cli/pull/9))")
     'PR link text #5 does not match its URL (pull/9)'
     """
@@ -134,17 +151,32 @@ def pr_link_problem(text, require_pr_link, expected_pr):
     the group mandatory — set whenever the change is associated with a PR (see
     ``main``). Text/URL number agreement is checked by ``link_problem``.
 
+    When no link is required, a link-less entry is fine:
+
     >>> pr_link_problem("* A change.", False, None)
+
+    When a link is required but absent, the message names the expected PR (or a
+    placeholder when it is unknown):
+
     >>> pr_link_problem("* A change.", True, "5")
     'missing trailing PR link: end with ([#5](https://github.com/databricks/cli/pull/5))'
+
     >>> pr_link_problem("* A change.", True, None)
     'missing trailing PR link: end with ([#<PR>](https://github.com/databricks/cli/pull/<PR>))'
+
+    A malformed PR link is reported as such:
+
     >>> pr_link_problem("* A change. ([#6177](https://github.com/databricks/cli/6177))", True, "6177")
     'malformed trailing PR link "[#6177](https://github.com/databricks/cli/6177)": expected [#N](https://github.com/databricks/cli/pull/N)'
+
+    The expected PR must appear among the linked PRs (follow-ups may also be listed):
+
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", True, "5")
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5), [#9](https://github.com/databricks/cli/pull/9))", True, "9")
+
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", True, "9")
     'trailing PR link #5 must include the PR that added this fragment (#9)'
+
     >>> pr_link_problem("* A change. ([#5](https://github.com/databricks/cli/pull/5))", False, None)
     """
     m = TRAILING_GROUP_RE.search(text.strip())
@@ -165,15 +197,18 @@ def pr_link_problem(text, require_pr_link, expected_pr):
     return None
 
 
-def infer_expected_pr(path, fallback_pr, root):
+def infer_expected_pr(path, fallback_pr, base_ref, root):
     """Return the PR number that introduced the fragment at ``path``.
 
     databricks/cli squash-merges end the commit subject with ``(#N)``, so the
     commit that most recently added the file names its PR. A fragment not yet on
     main (added on the current branch, or uncommitted) has no such commit, so
-    ``fallback_pr`` — the current PR — is used. ``git`` runs in ``root`` so the
-    repo being validated is queried even when ``--root`` differs from the process
-    CWD. Requires full git history (the workflow checks out with
+    ``fallback_pr`` — the current PR — is used, unless the fragment already exists
+    on the PR's base branch: a gh-stacked PR carries the fragments of the PRs it is
+    stacked on, which keep their own link, so ``None`` is returned for those and no
+    specific PR is imposed (see ``fragment_on_base``). ``git`` runs in ``root`` so
+    the repo being validated is queried even when ``--root`` differs from the
+    process CWD. Requires full git history (the workflow checks out with
     ``fetch-depth: 0``); best-effort, so any git failure falls back rather than
     erroring."""
     try:
@@ -190,7 +225,36 @@ def infer_expected_pr(path, fallback_pr, root):
         m = re.search(r"\(#(\d+)\)\s*$", result.stdout.strip())
         if m:
             return m.group(1)
+    if base_ref and fragment_on_base(path, base_ref, root):
+        return None
     return fallback_pr
+
+
+def fragment_on_base(path, base_ref, root):
+    """Whether the fragment at ``path`` already exists on the PR's base branch.
+
+    A stacked PR inherits the fragments of the PRs below it; those already live on
+    the base branch and carry their own PR link, so they are not attributed to the
+    current PR. The base is looked up as the remote-tracking ``origin/<base_ref>``
+    (CI's checkout), falling back to a local branch ``<base_ref>``. Best-effort: any
+    git failure returns ``False``, attributing the fragment to the current PR as
+    before."""
+    rel = path.relative_to(root).as_posix()
+    for ref in (f"origin/{base_ref}", base_ref):
+        try:
+            result = subprocess.run(
+                ["git", "cat-file", "-e", f"{ref}:{rel}"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                cwd=root,
+            )
+        except (OSError, subprocess.SubprocessError) as e:
+            print(f"git cat-file failed: {e}", file=sys.stderr)
+            return False
+        if result.returncode == 0:
+            return True
+    return False
 
 
 def is_shallow(root):
@@ -210,6 +274,38 @@ def is_shallow(root):
     return result.returncode == 0 and result.stdout.strip() == "true"
 
 
+def is_valid_semver(version_str):
+    """Check if a string is a valid semantic version.
+
+    Valid formats (bare or v-prefixed, with optional pre-release/metadata):
+    >>> is_valid_semver("1.0.0")
+    True
+    >>> is_valid_semver("v1.0.0")
+    True
+    >>> is_valid_semver("1.2.3-alpha")
+    True
+    >>> is_valid_semver("1.2.3+build")
+    True
+    >>> is_valid_semver("1.2.3-rc.1+build.123")
+    True
+
+    Invalid formats:
+    >>> is_valid_semver("1.0")
+    False
+    >>> is_valid_semver("v1.0")
+    False
+    >>> is_valid_semver("not-a-version")
+    False
+    >>> is_valid_semver("")
+    False
+
+    Whitespace is stripped, so "1.0.0" with leading/trailing whitespace is valid:
+    >>> is_valid_semver("  1.0.0  ")
+    True
+    """
+    return bool(SEMVER_RE.match(version_str.strip()) if version_str else False)
+
+
 def load_sections(root):
     """Return the section slugs from .codegen.json, in changelog order.
 
@@ -225,13 +321,15 @@ def load_sections(root):
     return tuple(sections)
 
 
-def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=None, root=None):
+def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=None, base_ref=None, root=None):
     """Return a list of ``(path, message)`` for anything unexpected under
     ``.nextchanges/``: files that aren't a section fragment or known scaffolding,
     malformed fragments, a trailing PR link that is missing or names the wrong
     PR, and a missing/malformed version file. ``require_pr_link`` and
     ``fallback_pr`` drive the PR-link checks (set in CI / from the branch's PR,
-    see ``main``); ``root`` is the repo the PR inference queries via git."""
+    see ``main``); ``base_ref`` is the PR's base branch, so fragments inherited
+    from an earlier PR in a stack aren't attributed to the current PR (see
+    ``infer_expected_pr``). ``root`` is the repo the PR inference queries via git."""
     problems = []
     known_sections = set(sections)
     # A shallow clone (e.g. the merge queue's checkout) makes every fragment look
@@ -268,7 +366,7 @@ def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=No
                 if problem is None:
                     # Infer the expected PR (a git call) only for a structurally
                     # valid fragment, and only with full history — see `shallow`.
-                    expected_pr = None if shallow else infer_expected_pr(path, fallback_pr, root)
+                    expected_pr = None if shallow else infer_expected_pr(path, fallback_pr, base_ref, root)
                     problem = pr_link_problem(text, require_pr_link, expected_pr)
                 if problem:
                     problems.append((path, problem))
@@ -280,7 +378,7 @@ def find_problems(changelog_dir, sections, require_pr_link=False, fallback_pr=No
     version_path = changelog_dir / VERSION_FILE
     if not version_path.is_file():
         problems.append((version_path, "missing; expected the next release version (e.g. 1.4.0)"))
-    elif not SEMVER_RE.match(version_path.read_text(encoding="utf-8").strip()):
+    elif not is_valid_semver(version_path.read_text(encoding="utf-8")):
         problems.append((version_path, "not a valid semver version (e.g. 1.4.0)"))
     return problems
 
@@ -332,6 +430,43 @@ def detect_current_pr(root):
     return current_branch_pr(root)
 
 
+def current_branch_base(root):
+    """Best-effort base branch of the current branch's PR (via ``gh``), or ``None``.
+
+    A local convenience mirroring ``current_branch_pr``; CI uses the authoritative
+    event base instead (see ``detect_base_ref``). Any ``gh`` failure returns
+    ``None`` so local runs never hard-fail on tooling."""
+    try:
+        result = subprocess.run(
+            ["gh", "pr", "view", "--json", "baseRefName", "-q", ".baseRefName"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            cwd=root,
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        print(f"gh pr view failed: {e}", file=sys.stderr)
+        return None
+    out = result.stdout.strip()
+    return out if result.returncode == 0 and out else None
+
+
+def detect_base_ref(root):
+    """Base branch of the PR being validated, or ``None``.
+
+    In CI, the authoritative event base (``BASE_REF``, set from
+    ``github.event.pull_request.base.ref``); empty on a push to main. Locally, a
+    best-effort ``gh`` lookup of the branch's PR. Used to spare a stacked PR's
+    inherited fragments from being attributed to the current PR (see
+    ``infer_expected_pr``)."""
+    base = os.environ.get("BASE_REF", "").strip()
+    if base:
+        return base
+    if in_ci():
+        return None
+    return current_branch_base(root)
+
+
 def has_fragments(changelog_dir):
     """Whether any *.md fragment (excluding README.md) exists under a section."""
     return any(p.name != README for p in changelog_dir.glob("*/*.md"))
@@ -349,10 +484,18 @@ def fixed_fragment(text, pr):
     no trailing link group is changed; anything else is returned unchanged for the
     linter to report, so the fix never guesses at a malformed entry.
 
+    A well-formed fragment with no link gets one appended:
+
     >>> fixed_fragment("* Added a thing.\n", "42")
     '* Added a thing. ([#42](https://github.com/databricks/cli/pull/42))\n'
+
+    An already-linked fragment is unchanged:
+
     >>> fixed_fragment("* Already linked. ([#7](https://github.com/databricks/cli/pull/7))\n", "42")
     '* Already linked. ([#7](https://github.com/databricks/cli/pull/7))\n'
+
+    A malformed fragment is left for the linter to report:
+
     >>> fixed_fragment("No bullet.\n", "42")
     'No bullet.\n'
     """
@@ -403,11 +546,13 @@ def main(argv=None):
     # only when there are fragments, to avoid a `gh` call on unrelated runs.
     require_pr_link = False
     fallback_pr = None
+    base_ref = None
     if has_fragments(changelog_dir):
         fallback_pr = detect_current_pr(args.root)
+        base_ref = detect_base_ref(args.root)
         require_pr_link = in_ci() or fallback_pr is not None
 
-    problems = find_problems(changelog_dir, sections, require_pr_link, fallback_pr, args.root)
+    problems = find_problems(changelog_dir, sections, require_pr_link, fallback_pr, base_ref, args.root)
     if problems:
         for path, msg in problems:
             print(f"{path}: {msg}", file=sys.stderr)

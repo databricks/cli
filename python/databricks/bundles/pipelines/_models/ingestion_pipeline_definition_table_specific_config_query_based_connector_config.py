@@ -40,6 +40,8 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig:
 
     hard_deletion_sync_min_interval_in_seconds: VariableOrOptional[int] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Specifies the minimum interval (in seconds) between snapshots on primary keys
     for detecting and synchronizing hard deletions—i.e., rows that have been
     physically removed from the source table.
@@ -91,6 +93,8 @@ class IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfigDic
 
     hard_deletion_sync_min_interval_in_seconds: VariableOrOptional[int]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Specifies the minimum interval (in seconds) between snapshots on primary keys
     for detecting and synchronizing hard deletions—i.e., rows that have been
     physically removed from the source table.

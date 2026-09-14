@@ -65,7 +65,3 @@ func (sw *SqlWarehouse) InitializeURL(baseURL url.URL) {
 func (sw *SqlWarehouse) GetName() string {
 	return sw.Name
 }
-
-func (sw *SqlWarehouse) GetURL() string {
-	return sw.URL
-}

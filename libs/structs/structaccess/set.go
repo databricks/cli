@@ -130,7 +130,7 @@ func setFieldOrMapValue(parentVal reflect.Value, key string, valueVal reflect.Va
 
 // setStructField sets a field in a struct and handles ForceSendFields
 func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.Value) error {
-	fv, sf, embeddedIndex, ok := findStructFieldByKey(parentVal, fieldName)
+	fv, sf, owner, ok := findStructFieldByKey(parentVal, fieldName)
 	if !ok {
 		return fmt.Errorf("field %q not found in %s", fieldName, parentVal.Type())
 	}
@@ -155,9 +155,9 @@ func setStructField(parentVal reflect.Value, fieldName string, valueVal reflect.
 	if !valueVal.IsValid() {
 		// Setting nil: the field is being made absent, which convertValue renders as the zero
 		// value. Pass the invalid value through so it is removed from ForceSendFields.
-		return updateForceSendFields(parentVal, sf.Name, embeddedIndex, valueVal, sf)
+		return updateForceSendFields(owner, sf.Name, valueVal, sf)
 	}
-	return updateForceSendFields(parentVal, sf.Name, embeddedIndex, converted, sf)
+	return updateForceSendFields(owner, sf.Name, converted, sf)
 }
 
 // setMapValue sets a value in a map
@@ -314,7 +314,7 @@ func convertValue(valueVal reflect.Value, targetType reflect.Type) (reflect.Valu
 // - If setting nil: remove field from ForceSendFields
 // - If setting empty value: add field to ForceSendFields (if not already present)
 // Only applies to fields with omitempty tag
-func updateForceSendFields(parentVal reflect.Value, fieldName string, embeddedIndex int, valueVal reflect.Value, structField reflect.StructField) error {
+func updateForceSendFields(owner reflect.Value, fieldName string, valueVal reflect.Value, structField reflect.StructField) error {
 	isSettingNil := !valueVal.IsValid()
 	isSettingEmptyValue := valueVal.IsValid() && isEmptyForOmitEmpty(valueVal)
 
@@ -330,8 +330,8 @@ func updateForceSendFields(parentVal reflect.Value, fieldName string, embeddedIn
 		return nil
 	}
 
-	// Find the appropriate ForceSendFields slice to modify
-	forceSendFieldsSlice := findForceSendFieldsForSetting(parentVal, embeddedIndex)
+	// Only the struct that declares the field tracks it.
+	forceSendFieldsSlice := forceSendFields(owner)
 	if !forceSendFieldsSlice.IsValid() {
 		// No ForceSendFields to update
 		return nil
@@ -346,60 +346,6 @@ func updateForceSendFields(parentVal reflect.Value, fieldName string, embeddedIn
 	}
 
 	return nil
-}
-
-// findForceSendFieldsForSetting finds the correct ForceSendFields slice to modify
-// This should match the logic in get.go's getForceSendFieldsForFromTyped
-// Only the struct that contains the ForceSendFields can manage its own fields
-// embeddedIndex: -1 for direct fields, or the index of the embedded struct
-func findForceSendFieldsForSetting(parentVal reflect.Value, embeddedIndex int) reflect.Value {
-	if embeddedIndex == -1 {
-		// Direct field - check if parent struct has its own ForceSendFields
-		// We need to check the struct type directly, not through field promotion
-		parentType := parentVal.Type()
-		for i := range parentType.NumField() {
-			field := parentType.Field(i)
-			if field.Name == "ForceSendFields" && !field.Anonymous {
-				// Parent has direct ForceSendFields
-				return parentVal.Field(i)
-			}
-		}
-		// Parent struct has no direct ForceSendFields, so no management possible
-		return reflect.Value{}
-	} else {
-		// Embedded field - look for ForceSendFields in the embedded struct
-		embeddedField := parentVal.Field(embeddedIndex)
-		embeddedStruct := getEmbeddedStructForSetting(embeddedField)
-		if !embeddedStruct.IsValid() {
-			return reflect.Value{}
-		}
-		fsf := embeddedStruct.FieldByName("ForceSendFields")
-		if fsf.IsValid() {
-			return fsf
-		}
-		// Embedded struct has no ForceSendFields, so no management possible
-		return reflect.Value{}
-	}
-}
-
-// getEmbeddedStructForSetting gets the embedded struct for setting operations
-// Creates nil pointers if needed
-func getEmbeddedStructForSetting(fieldValue reflect.Value) reflect.Value {
-	if fieldValue.Kind() == reflect.Pointer {
-		if fieldValue.IsNil() {
-			// Create new instance if needed
-			if fieldValue.CanSet() {
-				fieldValue.Set(reflect.New(fieldValue.Type().Elem()))
-			} else {
-				return reflect.Value{}
-			}
-		}
-		fieldValue = fieldValue.Elem()
-	}
-	if fieldValue.Kind() == reflect.Struct {
-		return fieldValue
-	}
-	return reflect.Value{}
 }
 
 // removeFromForceSendFields removes fieldName from the ForceSendFields slice

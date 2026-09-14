@@ -87,7 +87,7 @@ func renderResult(ctx context.Context, cmd *cobra.Command, res *libslocalenv.Res
 	return nil
 }
 
-// renderSuccess prints the friendly post-provision summary (DECO-27977).
+// renderSuccess prints the friendly post-provision summary.
 //
 // It runs only on a non-dry-run success (renderResult returns earlier for JSON,
 // failures, and dry runs), so res.VenvPath is always set: the validate phase — the

@@ -78,7 +78,12 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 			for {
 				select {
 				case <-gCtx.Done():
-					return gCtx.Err()
+					// Return nil, not gCtx.Err(): this helper loop does not decide the session's
+					// outcome, proxy.start does. proxy.start's goroutine below cancels the context
+					// (its deferred cancel) before the errgroup records proxy.start's return value,
+					// so a gCtx.Err() here can be recorded as the group's first error and mask that
+					// real error — which normalizeProxyError would then swallow into a silent nil.
+					return nil
 				case <-requestHandoverTick():
 					if err := proxy.initiateHandover(gCtx); err != nil {
 						return err
@@ -95,7 +100,9 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 			for {
 				select {
 				case <-gCtx.Done():
-					return gCtx.Err()
+					// nil, not gCtx.Err(): see the handover loop above — a helper stopping must
+					// not mask proxy.start's error as the errgroup's first error.
+					return nil
 				case <-ticker.C:
 					// A ping that ticks during a handover goes to the connection being replaced and
 					// may simply fail. Harmless: a handover establishes a fresh connection, which

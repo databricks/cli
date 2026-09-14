@@ -108,6 +108,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {CreateServingEndpoint: serving.CreateServingEndpoint{Name: "servingendpoint1"}},
 				},
+				ModelServices: map[string]*resources.ModelService{
+					"modelservice1": {ModelServiceConfig: resources.ModelServiceConfig{Parent: "schemas/main.default", ModelServiceId: "modelservice1"}},
+				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
@@ -305,6 +308,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+					"postgres_snapshot_schedule1": {
+						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+							Branch: "projects/project1/branches/branch1",
+						},
+					},
+				},
 				VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 					"vs_endpoint1": {
 						CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -321,6 +331,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 							PrimaryKey:   "id",
 							IndexType:    vectorsearch.VectorIndexTypeDeltaSync,
 						},
+					},
+				},
+				Snapshots: map[string]*resources.Snapshot{
+					"snapshot1": {
+						BundleID: "bundle1",
+						ACL:      nil,
 					},
 				},
 			},
@@ -352,7 +368,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 
 	// Experiment 1

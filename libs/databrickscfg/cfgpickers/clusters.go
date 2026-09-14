@@ -17,7 +17,7 @@ import (
 var minUcRuntime = canonicalVersion("v12.0")
 
 var (
-	dbrVersionRegex         = regexp.MustCompile(`^(\d+\.\d+)\.x-.*`)
+	dbrVersionRegex         = regexp.MustCompile(`^(\d+(?:\.\d+)?)\.x-.*`)
 	dbrSnapshotVersionRegex = regexp.MustCompile(`^(\d+)\.x-snapshot.*`)
 )
 
@@ -26,16 +26,16 @@ func canonicalVersion(v string) string {
 }
 
 func GetRuntimeVersion(cluster compute.ClusterDetails) (string, bool) {
-	match := dbrVersionRegex.FindStringSubmatch(cluster.SparkVersion)
-	if len(match) < 1 {
-		match = dbrSnapshotVersionRegex.FindStringSubmatch(cluster.SparkVersion)
-		if len(match) > 1 {
-			// we return 14.999 for 14.x-snapshot for semver.Compare() to work properly
-			return match[1] + ".999", true
-		}
-		return "", false
+	// Snapshots are checked first: dbrVersionRegex now matches major-only versions
+	// like "14.x-...", which would otherwise swallow "14.x-snapshot-..." here.
+	if match := dbrSnapshotVersionRegex.FindStringSubmatch(cluster.SparkVersion); len(match) > 1 {
+		// we return 14.999 for 14.x-snapshot for semver.Compare() to work properly
+		return match[1] + ".999", true
 	}
-	return match[1], true
+	if match := dbrVersionRegex.FindStringSubmatch(cluster.SparkVersion); len(match) > 1 {
+		return match[1], true
+	}
+	return "", false
 }
 
 func IsCompatibleWithUC(cluster compute.ClusterDetails, minVersion string) bool {

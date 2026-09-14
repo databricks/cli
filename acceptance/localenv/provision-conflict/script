@@ -1,0 +1,6 @@
+# The user pins pip==24.0 while the remote environment constraints pin pip<24, a
+# provably disjoint range. The merge phase detects that (W_USER_CONSTRAINT_CONFLICT)
+# and setup-local reports E_PROVISION_CONFLICT right away — with the merged pins
+# already written to disk (diskMutated=true), the contract the extension's recovery
+# flow depends on — instead of spending a doomed Python install and uv sync.
+musterr $CLI environments setup-local --serverless-version 4 --output json

@@ -7,3 +7,7 @@ Cloud = false
 
 # bind/deploy are engine-agnostic here; run on direct for a single stable output.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# bind and unbind refuse to run when deployment history recording is on, so the
+# escape hatch this test covers is not available there yet.
+EnvMatrix.DMS = [""]

@@ -1,0 +1,24 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+# UC strips a trailing slash from storage URLs on create. The direct engine saves
+# local config to state, so without normalize_slash handling the next plan sees the
+# original slash against the normalized remote value and plans a spurious recreate.
+# Covers catalog storage_root, schema storage_root, and external volume storage_location.
+resources:
+  catalogs:
+    foo:
+      name: test-catalog-$UNIQUE_NAME
+      storage_root: s3://test-bucket/catalog/
+  schemas:
+    bar:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
+      storage_root: s3://test-bucket/schema/
+  volumes:
+    baz:
+      name: test-volume-$UNIQUE_NAME
+      catalog_name: main
+      schema_name: default
+      volume_type: EXTERNAL
+      storage_location: s3://test-bucket/volume/

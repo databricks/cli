@@ -11,7 +11,7 @@ replace_ids.py
 title "Plan should still contain foo and bar"
 trace $CLI bundle plan
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 musterr $CLI bundle deploy &> out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
 title "Expecting no difference in the output between first and second deploy"
 diff.py out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt

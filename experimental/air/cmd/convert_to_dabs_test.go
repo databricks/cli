@@ -141,9 +141,17 @@ environment:
 	art := task + ".ai_runtime_task"
 	assert.Equal(t, name, get(t, root, art+".experiment").MustString())
 	assert.Equal(t, "run-42", get(t, root, art+".mlflow_run").MustString())
-	// code_source_path is the source dir relative to the bundle; the deploy-time
-	// aicode mutator packages it in place.
-	assert.Equal(t, "./src", get(t, root, art+".code_source_path").MustString())
+	// code_source is packaged as a `tgz` artifact; code_source_path points at the
+	// built tarball, and the artifact packs the code dir (path = its parent, include =
+	// its basename, so entries nest under "src/").
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, art+".code_source_path").MustString())
+	codeArt := "artifacts." + codeSourceArtifactKey
+	assert.Equal(t, "tgz", get(t, root, codeArt+".type").MustString())
+	assert.Equal(t, ".", get(t, root, codeArt+".path").MustString())
+	codeInc := get(t, root, codeArt+".include").MustSequence()
+	require.Len(t, codeInc, 1)
+	assert.Equal(t, "src", codeInc[0].MustString())
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, codeArt+".files[0].source").MustString())
 
 	dep := art + ".deployments[0]"
 	assert.Equal(t, "./"+generatedArtifactsDir+"/"+commandScriptName, get(t, root, dep+".command_path").MustString())
@@ -168,8 +176,8 @@ environment:
 // Optional fields are omitted rather than emitted empty: no code_source means no
 // code_source_path; unset retries/timeout means no wrapper fields.
 // sync.paths lists only the generated-artifacts dir. The code directory must be
-// absent: deploy packages it into the snapshot tarball, so syncing it as loose
-// files too would upload the whole tree a second time.
+// absent: the `tgz` artifact packages it, so syncing it as loose files too would
+// upload the whole tree a second time.
 func TestConvertToDabsSyncPathsExcludesCodeDir(t *testing.T) {
 	cfg := minimalConfig + `
 code_source:
@@ -189,9 +197,10 @@ code_source:
 	require.Len(t, paths, 1)
 	assert.Equal(t, generatedArtifactsDir, paths[0].MustString())
 
-	// The task still points at the code dir; only the sync set omits it.
+	// The task points at the built `tgz` artifact; the code dir is packaged through the
+	// artifact path, so the sync set omits it.
 	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
-	assert.Equal(t, "./src", get(t, root, task+".code_source_path").MustString())
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, task+".code_source_path").MustString())
 }
 
 func TestConvertToDabsOmitsUnsetFields(t *testing.T) {
@@ -282,9 +291,9 @@ parameters:
 	assert.False(t, has(root, art+".secrets"))
 }
 
-// code_source_path is emitted as the source dir relative to the bundle and no code
-// is copied — the deploy-time mutator packages it in place. writeBundle produces
-// only databricks.yml + launch artifacts, not a code_source copy.
+// code_source_path points at the built `tgz` artifact and no code is copied — the
+// artifact snapshotter packages the source dir at deploy. writeBundle produces only
+// databricks.yml + launch artifacts, not a code_source copy.
 func TestConvertToDabsDoesNotCopyCode(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "src"), 0o700))
@@ -301,11 +310,11 @@ func TestConvertToDabsDoesNotCopyCode(t *testing.T) {
 	written, err := writeBundle(t.Context(), loaded, path, dir, false)
 	require.NoError(t, err)
 
-	// code_source_path points at the existing source dir; nothing is copied.
+	// code_source_path points at the built tarball; nothing is copied.
 	root, _, err := convertToDabs(t.Context(), loaded, path, dir)
 	require.NoError(t, err)
 	art := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
-	assert.Equal(t, "./src", get(t, root, art+".code_source_path").MustString())
+	assert.Equal(t, "./dist/code_source.tgz", get(t, root, art+".code_source_path").MustString())
 	assert.NotContains(t, written, "code_source/")
 }
 
@@ -360,8 +369,8 @@ func TestConvertToDabsGitPinEmitsArtifact(t *testing.T) {
 }
 
 // A requirements-FILE dependency set (environment.dependencies is a path) is folded
-// into the environments[] spec so the deploy-time aicode mutator can regenerate
-// requirements.yaml from it. Convert emits no requirements.yaml artifact of its own.
+// into the environments[] spec, which the runtime installs deps from directly.
+// Convert emits no requirements.yaml artifact of its own.
 // usage_policy_id is a resolved budget policy id and maps to the job's
 // budget_policy_id (usage_policy_name, which needs resolution, is rejected).
 func TestConvertToDabsMapsUsagePolicyID(t *testing.T) {

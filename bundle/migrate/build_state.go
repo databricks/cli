@@ -212,7 +212,7 @@ func BuildStateFromTF(
 			return warningsSeen, fmt.Errorf("%s: compacting state: %w", node, err)
 		}
 
-		if err := stateDB.SaveState(node, id, compacted, dependsOn); err != nil {
+		if err := stateDB.SaveState(ctx, node, id, compacted, dependsOn); err != nil {
 			return warningsSeen, fmt.Errorf("%s: SaveState: %w", node, err)
 		}
 	}
