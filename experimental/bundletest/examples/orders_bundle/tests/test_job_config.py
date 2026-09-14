@@ -12,8 +12,8 @@ CANNOT test locally — needs the cloud backend:
 - that the workspace actually accepted / deployed the config
 - server-defaulted or normalized values
 
-NOTE: only 'jobs' exist in this bundle today; the same get_resource call works for any
-resource kind (pipelines, volumes, ...) once they're added.
+NOTE: env.resource(kind, name) wraps this same get_resource call for any resource kind, and
+the typed handles (env.pipeline, env.dashboard, ...) add resource-specific accessors on top.
 """
 
 
