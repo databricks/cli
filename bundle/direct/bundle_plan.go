@@ -226,6 +226,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
+			if !adapter.HasDoDelete() {
+				// Deleting this resource has no backend effect, so applying the
+				// Delete only drops the state entry. The remote read below exists
+				// solely to detect an already-deleted/gone resource and skip the
+				// delete call — pointless when there is no delete call — so skip it
+				// and mark the entry state-only.
+				entry.StateOnly = true
+				return true
+			}
+
 			remoteState, err := retryOnTransient(ctx, func() (any, error) {
 				return adapter.DoRead(ctx, id)
 			})
