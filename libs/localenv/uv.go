@@ -154,9 +154,27 @@ func (m *uvManager) findInstalledPython(ctx context.Context, minor string) (stri
 func (m *uvManager) Provision(ctx context.Context, projectDir, python string) error {
 	args := append([]string{m.bin}, m.syncArgs(python)...)
 	if err := m.runUv(ctx, args, projectDir); err != nil {
-		return uvFailure(ErrProvision, err, "uv sync")
+		// A transitive dependency conflict is only discoverable by uv's resolver, so
+		// unlike a direct pin conflict (caught pre-sync as W_USER_CONSTRAINT_CONFLICT)
+		// it surfaces here. Report the same E_PROVISION_CONFLICT code so both conflict
+		// shapes are attributed alike; other sync failures stay generic E_PROVISION.
+		code := ErrProvision
+		if isUvResolutionConflict(uvStderr(err)) {
+			code = ErrProvisionConflict
+		}
+		return uvFailure(code, err, "uv sync")
 	}
 	return nil
+}
+
+// isUvResolutionConflict reports whether uv's stderr is a dependency-resolution
+// failure rather than an unrelated failure such as a network error or a wheel
+// build failure. These are uv's two resolver-failure headlines; every other
+// failure class uses different wording, so the match stays precise.
+// https://docs.astral.sh/uv/reference/resolver-internals/
+func isUvResolutionConflict(stderr string) bool {
+	s := strings.ToLower(stderr)
+	return strings.Contains(s, "no solution found") || strings.Contains(s, "are unsatisfiable")
 }
 
 // venvPython returns the path to the virtualenv's Python interpreter,
