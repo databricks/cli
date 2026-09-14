@@ -112,7 +112,7 @@ func (r *ResourceModelService) DoCreate(ctx context.Context, config *resources.M
 }
 
 // DoUpdate sends update_mask "*" on every update. name, parent and
-// model_service_id are immutable (recreate_on_changes in resources.yml), so the
+// model_service_id are immutable (recreate_on_changes in model_services.yml), so the
 // wildcard replaces every client-settable field (comment + a full config
 // replace), matching the mask the Terraform provider generates.
 //
