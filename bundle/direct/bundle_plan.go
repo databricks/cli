@@ -473,10 +473,6 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
-			// NOTE: backend_default must stay ahead of remote_addition below; see shouldSkipRemoteAddition.
-		} else if reason, ok := shouldSkipRemoteAddition(cfg, path, ch, newState); ok {
-			ch.Action = deployplan.Skip
-			ch.Reason = reason
 		} else if reason, ok := shouldSkipNormalized(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
@@ -486,6 +482,14 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
+			// remote_addition is the broadest skip (any config-absent remote field inside a gated
+			// object), so it runs after every more specific skip classifier above. It MUST stay
+			// above recreate: a policy-supplied field must not trigger a delete+create. And after
+			// backend_default (both share the Old==nil,New==nil,Remote!=nil shape) so known defaults
+			// keep their own reason for config-remote-sync (#6631). See shouldSkipRemoteAddition.
+		} else if reason, ok := shouldSkipRemoteAddition(cfg, path, ch, newState); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
 		} else if reason, ok := findMatchingRuleBidirectional(path, cfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
@@ -667,11 +671,15 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 // Suppressed values are never echoed back on write: an update sends the config spec as-is
 // and the backend re-supplies the policy values.
 //
-// Order in the ladder: this MUST run after shouldSkipBackendDefault. The cluster rule is
-// root-level (matches every field), so it also matches known backend defaults; classifying
-// those as backend_default first keeps remote_addition to genuine, unrecognized additions.
-// config-remote-sync relies on this: it captures remote_addition entries but excludes backend
-// defaults, so mislabeling a default as remote_addition would sync it into config (#6631).
+// Order in the ladder: this is the broadest skip (any config-absent remote field inside a
+// gated object), so it runs last among the skip classifiers — after backend_default,
+// normalized, and missing_in_remote (all mutually exclusive with it or more specific), and
+// before recreate (a policy-supplied field must not trigger a delete+create). The
+// after-backend_default part is load-bearing: the cluster rule is root-level so it also
+// matches known backend defaults; classifying those as backend_default first keeps
+// remote_addition to genuine, unrecognized additions. config-remote-sync relies on this — it
+// captures remote_addition entries but excludes backend defaults, so mislabeling a default as
+// remote_addition would sync it into config (#6631).
 func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc, newState any) (string, bool) {
 	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
 		return "", false
