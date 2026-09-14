@@ -3,6 +3,9 @@ bundle:
 
 # Tests implicit dependency detection for vector search indexes:
 # - name (format "catalog.schema.index") should resolve the catalog and schema parts
+# - a name that already spells the catalog as a ${resources...} reference keeps that
+#   reference and still captures the literal schema (catalog_ref_index)
+# - a fully referenced name is left untouched (full_ref_index)
 resources:
   catalogs:
     my_catalog:
@@ -14,6 +17,20 @@ resources:
   vector_search_indexes:
     my_index:
       name: mycatalog.myschema.myindex
+      endpoint_name: my-endpoint
+      primary_key: id
+      index_type: DIRECT_ACCESS
+      direct_access_index_spec:
+        schema_json: '{"id":"integer","vector":"array<float>"}'
+    catalog_ref_index:
+      name: ${resources.catalogs.my_catalog.name}.myschema.myindex
+      endpoint_name: my-endpoint
+      primary_key: id
+      index_type: DIRECT_ACCESS
+      direct_access_index_spec:
+        schema_json: '{"id":"integer","vector":"array<float>"}'
+    full_ref_index:
+      name: ${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.myindex
       endpoint_name: my-endpoint
       primary_key: id
       index_type: DIRECT_ACCESS
