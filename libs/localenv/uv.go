@@ -168,9 +168,18 @@ func (m *uvManager) Provision(ctx context.Context, projectDir, python string) er
 }
 
 // isUvResolutionConflict reports whether uv's stderr is a dependency-resolution
-// failure rather than an unrelated failure such as a network error or a wheel
-// build failure. These are uv's two resolver-failure headlines; every other
-// failure class uses different wording, so the match stays precise.
+// failure (uv's "No solution found" resolver header, with "unsatisfiable" as a
+// defensive fallback) rather than an unrelated failure such as a network error
+// or a wheel build failure, which uv reports with different wording.
+//
+// Known imprecision: uv reuses the "No solution found ... unsatisfiable" banner
+// for a few non-conflict resolution failures too — a missing/typoed package, an
+// offline index, or a requires-python mismatch — so those are also reported as
+// E_PROVISION_CONFLICT. This is accepted: all are user-actionable resolution
+// failures, and the error message carries uv's verbatim stderr, so the code is
+// only a coarse hint for consumers (telemetry, the extension's recovery flow),
+// never the sole diagnostic. uv exposes no machine-readable signal to separate
+// them (it exits with the same generic code for every failure class).
 // https://docs.astral.sh/uv/reference/resolver-internals/
 func isUvResolutionConflict(stderr string) bool {
 	s := strings.ToLower(stderr)
