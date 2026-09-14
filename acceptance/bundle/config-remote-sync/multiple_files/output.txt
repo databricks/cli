@@ -22,7 +22,6 @@ Resource: resources.jobs.job_one
 Resource: resources.jobs.job_two
   max_concurrent_runs: replace
   tasks[task_key='extra_task']: replace
-  tasks[task_key='extra_task'].new_cluster: add
   tasks[task_key='run_pipeline']: remove
   tasks[task_key='run_pipeline_renamed']: add
 

@@ -37,19 +37,12 @@ Detected changes in 1 resource(s):
 
 Resource: resources.pipelines.split_pipeline
   clusters: replace
-  clusters[1].num_workers: remove
 
 
 
 === The top-level cluster is untouched; the target entry is left as a remnant
 
 >>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -28,3 +28,2 @@
-           clusters:
-             - label: maintenance
--              num_workers: 3
 
 >>> grep -c label: default databricks.yml
 1
@@ -58,7 +51,7 @@ Resource: resources.pipelines.split_pipeline
 1
 
 >>> grep -c num_workers databricks.yml
-1
+2
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
