@@ -122,7 +122,7 @@ func addTaskTypeKeys(task jobs.Task, out map[string]bool) {
 	t := v.Type()
 	for i := range t.NumField() {
 		field := v.Field(i)
-		if field.Kind() != reflect.Ptr || field.IsNil() {
+		if field.Kind() != reflect.Pointer || field.IsNil() {
 			continue
 		}
 		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
