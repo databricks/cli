@@ -1,0 +1,10 @@
+bundle:
+  name: dangling-resource-refs
+
+resources:
+  jobs:
+    my_job:
+      name: my_job
+      permissions:
+        - level: CAN_VIEW
+          group_name: ${resources.jobs.does_not_exist.id}
