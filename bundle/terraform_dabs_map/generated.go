@@ -12,7 +12,7 @@ package terraform_dabs_map
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
 // jobs / databricks_job: 7 dabs-only
-// jobs / databricks_job: 261 tf-only
+// jobs / databricks_job: 263 tf-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
@@ -473,8 +473,22 @@ var TerraformOnlyFields = map[string]FieldSet{
 			"parameters": {}, // databricks_job.*.spark_submit_task.parameters
 		},
 		"task": {
+			"ai_runtime_task": {
+				"deployments": {
+					"compute": {
+						"provisioned_capacity_id": {}, // databricks_job.*.task.ai_runtime_task.deployments.compute.provisioned_capacity_id
+					},
+				},
+			},
 			"for_each_task": {
 				"task": {
+					"ai_runtime_task": {
+						"deployments": {
+							"compute": {
+								"provisioned_capacity_id": {}, // databricks_job.*.task.for_each_task.task.ai_runtime_task.deployments.compute.provisioned_capacity_id
+							},
+						},
+					},
 					"new_cluster": {
 						"cluster_id": {}, // databricks_job.*.task.for_each_task.task.new_cluster.cluster_id
 						"cluster_mount_info": {
