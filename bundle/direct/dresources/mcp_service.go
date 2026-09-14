@@ -75,7 +75,6 @@ func mcpServiceBody(config *resources.McpServiceConfig) catalog.McpService {
 		Etag:            "",
 		MetastoreId:     "",
 		Name:            "",
-		Owner:           "",
 		UpdateTime:      nil,
 		UpdatedBy:       "",
 		ForceSendFields: nil,

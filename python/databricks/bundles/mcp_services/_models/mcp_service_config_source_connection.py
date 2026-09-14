@@ -14,18 +14,17 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class McpServiceConfigSourceConnection:
     """
-    UC Connection that hosts the MCP server. On create, provide `name` in the
-    schema-scoped form `connections/{catalog}.{schema}.{connection}`. On read,
-    the service populates the resolved connection metadata and preserves a
-    dangling source so callers can diagnose a deleted backing connection.
+    Unity Catalog connection that points to the MCP server. On Create, provide
+    `name` in the schema-scoped form
+    `connections/{catalog}.{schema}.{connection}`. On read, the service
+    populates the resolved connection metadata. If the connection is deleted,
+    its reference remains visible so you can identify the broken dependency.
     """
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Name of the UC connection that hosts the MCP server, as
-    `connections/{catalog}.{schema}.{connection}`.
+    Resource name of the Unity Catalog connection used to access the MCP
+    server, in the form `connections/{catalog}.{schema}.{connection}`.
     """
 
     @classmethod
@@ -41,10 +40,8 @@ class McpServiceConfigSourceConnectionDict(TypedDict, total=False):
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Name of the UC connection that hosts the MCP server, as
-    `connections/{catalog}.{schema}.{connection}`.
+    Resource name of the Unity Catalog connection used to access the MCP
+    server, in the form `connections/{catalog}.{schema}.{connection}`.
     """
 
 

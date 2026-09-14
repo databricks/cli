@@ -2091,8 +2091,6 @@ resources.mcp_services.*.config.rate_limits[*]	catalog.RateLimit	ALL
 resources.mcp_services.*.config.rate_limits[*].key	catalog.RateLimitRateLimitKey	ALL
 resources.mcp_services.*.config.rate_limits[*].principal	string	ALL
 resources.mcp_services.*.config.rate_limits[*].renewal_period	catalog.RateLimitRateLimitRenewalPeriod	ALL
-resources.mcp_services.*.config.rate_limits[*].request_tag_key	string	ALL
-resources.mcp_services.*.config.rate_limits[*].request_tag_value	string	ALL
 resources.mcp_services.*.config.rate_limits[*].requests	int64	ALL
 resources.mcp_services.*.config.rate_limits[*].tokens	int64	ALL
 resources.mcp_services.*.config.source_connection	*catalog.McpServiceConfigSourceConnection	ALL

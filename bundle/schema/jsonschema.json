@@ -5443,22 +5443,22 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Operational configuration for an MCP service. Groups the source reference,\ntool selectors, and rate limit -- the fields that configure how the MCP\nservice behaves at invocation time.",
+                  "description": "Operational configuration for an MCP service. Groups the source reference,\ntool selectors, and rate limits -- the fields that configure how the MCP\nservice behaves at invocation time.",
                   "properties": {
                     "include_tool_selectors": {
-                      "description": "[Beta] Glob or exact-match patterns selecting which tools from the MCP server\nto expose. Prefix match for patterns with `*`, exact match otherwise.\nAn empty list means all tools are included. Per-element max 256 chars.",
+                      "description": "Tool names or prefix patterns to expose from the MCP server. Use exact\ntool names or prefix patterns such as `read_*`. An empty list exposes all\ntools. At most 1,024 selectors are allowed, and each selector can contain\nat most 256 characters.",
                       "$ref": "#/$defs/slice/string",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "rate_limits": {
-                      "description": "[Beta] Per-principal rate limits applied to tool invocations routed through this\nMCP service. Repeated to support per-USER / USER_GROUP / SERVICE_PRINCIPAL\n/ SERVICE / USER_DEFAULT scopes simultaneously, mirroring the\n`ModelServiceConfig.rate_limits` shape. Empty when no rate limit is\nconfigured.",
+                      "description": "Rate limits for tool invocations. Supported scopes are user, group, service\nprincipal, the service as a whole, and each user by default. Request and\ntoken limits are supported. Empty when no rate limit is configured.",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RateLimit",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     },
                     "source_connection": {
-                      "description": "[Beta] UC Connection referencing the MCP server.",
+                      "description": "Unity Catalog connection referencing the MCP server. Required on Create.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.McpServiceConfigSourceConnection",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false
@@ -5473,12 +5473,12 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "UC Connection that hosts the MCP server. On create, provide `name` in the\nschema-scoped form `connections/{catalog}.{schema}.{connection}`. On read,\nthe service populates the resolved connection metadata and preserves a\ndangling source so callers can diagnose a deleted backing connection.",
+                  "description": "Unity Catalog connection that points to the MCP server. On Create, provide\n`name` in the schema-scoped form\n`connections/{catalog}.{schema}.{connection}`. On read, the service\npopulates the resolved connection metadata. If the connection is deleted,\nits reference remains visible so you can identify the broken dependency.",
                   "properties": {
                     "name": {
-                      "description": "[Beta] Name of the UC connection that hosts the MCP server, as\n`connections/{catalog}.{schema}.{connection}`.",
+                      "description": "Resource name of the Unity Catalog connection used to access the MCP\nserver, in the form `connections/{catalog}.{schema}.{connection}`.",
                       "$ref": "#/$defs/string",
-                      "x-databricks-launch-stage": "PUBLIC_BETA"
+                      "x-databricks-launch-stage": "GA"
                     }
                   },
                   "additionalProperties": false,
