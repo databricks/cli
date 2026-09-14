@@ -37,6 +37,25 @@ async function isTeamMember(github, org, teamSlug, login, core) {
 }
 
 /**
+ * Reduce a PR's review history to each reviewer's current standing.
+ *
+ * The API returns every review ever submitted, in chronological order, so a
+ * reviewer who approves and later requests changes appears twice. Only their
+ * last review counts. COMMENTED reviews carry no approval state and leave the
+ * previous standing intact, matching how GitHub itself resolves the reviewers
+ * list.
+ */
+function latestReviews(reviews) {
+  const byReviewer = new Map();
+  for (const review of reviews) {
+    const login = review.user?.login;
+    if (!login || review.state === "COMMENTED") continue;
+    byReviewer.set(login.toLowerCase(), review);
+  }
+  return Array.from(byReviewer.values());
+}
+
+/**
  * Find which approver (if any) satisfies a group's ownership requirement.
  * Returns the login of the first matching approver, or null.
  */
@@ -461,11 +480,12 @@ module.exports = async ({ github, context, core }) => {
     name: STATUS_CONTEXT,
   };
 
-  const reviews = await github.paginate(github.rest.pulls.listReviews, {
+  const reviewHistory = await github.paginate(github.rest.pulls.listReviews, {
     owner: context.repo.owner,
     repo: context.repo.repo,
     pull_number: context.issue.number,
   });
+  const reviews = latestReviews(reviewHistory);
 
   // Maintainer approval -> success with simple comment
   const maintainerApproval = reviews.find(
