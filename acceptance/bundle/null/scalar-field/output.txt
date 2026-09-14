@@ -1,0 +1,36 @@
+
+>>> [CLI] bundle validate -o json -t dev-null
+Warning: expected a string value, found null
+  at targets.dev-null.workspace.root_path
+  in databricks.yml:13:17
+
+{
+  "workspace": {
+    "root_path": "/Workspace/Users/base-root"
+  }
+}
+
+>>> [CLI] bundle validate -o json -t dev-empty
+Warning: expected a string value, found null
+  at targets.dev-null.workspace.root_path
+  in databricks.yml:13:17
+
+{
+  "workspace": {
+    "root_path": "/Workspace/Users/base-root"
+  }
+}
+
+>>> [CLI] bundle deploy -t dev-null
+Warning: expected a string value, found null
+  at targets.dev-null.workspace.root_path
+  in databricks.yml:13:17
+
+Uploading bundle files to /Workspace/Users/base-root/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+null-in-targets true
+null-in-targets-scalar true

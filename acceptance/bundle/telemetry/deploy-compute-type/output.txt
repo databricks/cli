@@ -34,6 +34,8 @@ local.cache.attempt true
 local.cache.attempt true
 local.cache.hit true
 local.cache.miss true
+null-in-targets false
+null-in-targets false
 permissions_section_set false
 permissions_section_set false
 presets_name_prefix_is_set false

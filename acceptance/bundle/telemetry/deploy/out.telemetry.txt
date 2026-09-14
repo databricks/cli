@@ -43,6 +43,10 @@
           "target_count": 1,
           "bool_values": [
             {
+              "key": "null-in-targets",
+              "value": false
+            },
+            {
               "key": "local.cache.attempt",
               "value": true
             },

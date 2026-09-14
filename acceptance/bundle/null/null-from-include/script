@@ -1,0 +1,6 @@
+trace $CLI bundle validate -o json -t dev | jq '{workspace: {root_path: .workspace.root_path}}'
+
+trace $CLI bundle deploy -t dev
+trace print_telemetry_bool_values | grep null-in-targets
+
+rm -f out.requests.txt
