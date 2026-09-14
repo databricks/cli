@@ -247,8 +247,8 @@ func TestResourceIDFieldTags(t *testing.T) {
 		// Skip resource types that don't embed BaseResource (internal infra types
 		// like Snapshot have no user-facing ID).
 		hasBaseResource := false
-		for j := range et.NumField() {
-			if et.Field(j).Anonymous && et.Field(j).Type.Name() == "BaseResource" {
+		for __sf := range et.Fields() {
+			if __sf.Anonymous && __sf.Type.Name() == "BaseResource" {
 				hasBaseResource = true
 				break
 			}
