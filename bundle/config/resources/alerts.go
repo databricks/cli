@@ -13,10 +13,8 @@ import (
 
 type Alert struct {
 	BaseResource
-	sql.AlertV2 //nolint:govet // AlertV2.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
-	// ID shadows the same-depth collision between BaseResource.ID and
-	// AlertV2.Id — both embed json:"id" at depth 1.
-	ID string `json:"id,omitempty" bundle:"readonly"`
+	sql.AlertV2        //nolint:govet // AlertV2.Id and our depth-0 ID field both carry json:"id"; the depth-0 field wins
+	ID          string `json:"id,omitempty" bundle:"readonly"`
 
 	Permissions []Permission `json:"permissions,omitempty"`
 
