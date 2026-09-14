@@ -34,9 +34,6 @@ __all__ = [
     "ModelServiceConfigRoutingConfig",
     "ModelServiceConfigRoutingConfigDict",
     "ModelServiceConfigRoutingConfigParam",
-    "ModelServiceConfigRoutingConfigTrafficSplitting",
-    "ModelServiceConfigRoutingConfigTrafficSplittingDict",
-    "ModelServiceConfigRoutingConfigTrafficSplittingParam",
     "ModelServiceDict",
     "ModelServiceParam",
     "Privilege",
@@ -112,11 +109,6 @@ from databricks.bundles.model_services._models.model_service_config_routing_conf
     ModelServiceConfigRoutingConfig,
     ModelServiceConfigRoutingConfigDict,
     ModelServiceConfigRoutingConfigParam,
-)
-from databricks.bundles.model_services._models.model_service_config_routing_config_traffic_splitting import (
-    ModelServiceConfigRoutingConfigTrafficSplitting,
-    ModelServiceConfigRoutingConfigTrafficSplittingDict,
-    ModelServiceConfigRoutingConfigTrafficSplittingParam,
 )
 from databricks.bundles.model_services._models.privilege import (
     Privilege,

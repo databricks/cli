@@ -1204,12 +1204,6 @@ resources:
         "config":
           "description": |-
             PLACEHOLDER
-          "$fields":
-            "source_connection":
-              "$fields":
-                "is_deleted":
-                  "description": |-
-                    PLACEHOLDER
         "grants":
           "description": |-
             PLACEHOLDER
