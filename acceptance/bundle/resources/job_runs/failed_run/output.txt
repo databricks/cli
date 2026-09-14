@@ -2,6 +2,7 @@
 === a run that finishes FAILED fails the deploy
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created jobs.my_job
 Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [RUN_URL]
 Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
 task "main": RuntimeError: intentional failure
