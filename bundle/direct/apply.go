@@ -84,7 +84,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.compactAndSaveState(ctx, db, newID, newState, d.DependsOn)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -177,7 +177,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = d.compactAndSaveState(ctx, db, id, newState, d.DependsOn)
+		err = d.saveState(ctx, db, id, newState, d.DependsOn)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -222,7 +222,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = d.compactAndSaveState(ctx, db, newID, newState, d.DependsOn)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -312,7 +312,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = d.compactAndSaveState(ctx, db, id, newState, d.DependsOn)
+	err = d.saveState(ctx, db, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -320,11 +320,11 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-// compactAndSaveState compacts the state (replacing fields declared in hashed_fields
+// saveState compacts the state (replacing fields declared in hashed_fields
 // with content hashes, see dresources.CompactState) before persisting it. Fields already
 // smaller than a hash placeholder are persisted as is. Sensitive fields are replaced by a
 // placeholder value so secrets are never written to disk in plaintext.
-func (d *DeploymentUnit) compactAndSaveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), state)
 	if err != nil {
 		return fmt.Errorf("compacting state: %w", err)
