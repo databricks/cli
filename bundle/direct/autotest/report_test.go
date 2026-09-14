@@ -98,7 +98,7 @@ const (
 	// The API refused to remove the field and the bundle schema does not mark it required. One of the
 	// two is wrong: either the schema is missing a required annotation, or the API is stricter than it
 	// means to be. Worth a look, which is why it is a separate word from the one above.
-	verdictCannotDeleteNotRequired verdict = "CANNOT_DELETE_NOT_REQUIRED"
+	verdictCannotDeleteNotRequired verdict = "CANNOT_DELETE"
 	// The run could not put a field back, so it kept the state the API had taken and every later field
 	// of this type was measured from there. The baseline keeps the verdicts honest, but the config the
 	// later fields deploy still carries this field, so it rides along in their update masks too.
