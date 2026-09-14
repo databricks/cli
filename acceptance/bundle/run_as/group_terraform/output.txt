@@ -1,0 +1,40 @@
+
+=== Terraform rejects inherited group identities before planning or deploying
+>>> musterr [CLI] bundle plan
+Error: run_as.group_name is only supported in direct deployment mode
+  at resources.jobs.inherited.run_as.group_name
+
+Set 'bundle.engine: direct' in your databricks.yml or set DATABRICKS_BUNDLE_ENGINE=direct. For an existing Terraform deployment, run 'databricks bundle migrate' first. Alternatively, set run_as.user_name or run_as.service_principal_name on this job
+
+
+>>> musterr [CLI] bundle deploy
+Error: run_as.group_name is only supported in direct deployment mode
+  at resources.jobs.inherited.run_as.group_name
+
+Set 'bundle.engine: direct' in your databricks.yml or set DATABRICKS_BUNDLE_ENGINE=direct. For an existing Terraform deployment, run 'databricks bundle migrate' first. Alternatively, set run_as.user_name or run_as.service_principal_name on this job
+
+
+=== Terraform rejects explicit job group identities
+>>> musterr [CLI] bundle plan -t resource_group
+Error: run_as.group_name is only supported in direct deployment mode
+  at resources.jobs.inherited.run_as.group_name
+  in databricks.yml:28:25
+
+Set 'bundle.engine: direct' in your databricks.yml or set DATABRICKS_BUNDLE_ENGINE=direct. For an existing Terraform deployment, run 'databricks bundle migrate' first. Alternatively, set run_as.user_name or run_as.service_principal_name on this job
+
+
+=== Terraform accepts explicit user and service principal overrides
+>>> [CLI] bundle plan -t user_override
+create jobs.inherited
+create jobs.sp_override
+create jobs.user_override
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== Direct engine accepts group identities
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+create jobs.inherited
+create jobs.sp_override
+create jobs.user_override
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged

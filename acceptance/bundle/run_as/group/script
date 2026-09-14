@@ -1,0 +1,7 @@
+for target in default group user sp production; do
+  trace $CLI bundle validate -t "$target" -o json | gron.py | grep -F .run_as
+done
+
+title "Target group replaces a bundle user"
+update_file.py databricks.yml "group_name: bundle_group" "user_name: bundle_user"
+trace $CLI bundle validate -t group -o json | gron.py | grep -F .run_as
