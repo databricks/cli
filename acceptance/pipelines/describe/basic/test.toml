@@ -1,0 +1,39 @@
+Cloud = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# describe by PIPELINE_ID fetches the pipeline, then its most recent update.
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}"
+Response.Body = '''
+{
+  "pipeline_id": "3fb8e5a1-0d2c-4a6b-9f1e-2c7d8e9f0a1b",
+  "name": "My Pipeline",
+  "state": "IDLE",
+  "health": "HEALTHY",
+  "creator_user_name": "alice@example.com",
+  "run_as_user_name": "alice@example.com",
+  "latest_updates": [ { "update_id": "upd-9" } ],
+  "spec": {
+    "catalog": "main",
+    "schema": "sales",
+    "development": true,
+    "serverless": true,
+    "channel": "CURRENT"
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/updates/{update_id}"
+Response.Body = '''
+{
+  "update": {
+    "update_id": "upd-9",
+    "state": "COMPLETED",
+    "creation_time": 1640995200000,
+    "refresh_selection": ["orders", "customers"],
+    "cause": "API_CALL"
+  }
+}
+'''
