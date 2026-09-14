@@ -3,6 +3,7 @@ package tableview
 import (
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,41 @@ func TestRenderTableLinesEmpty(t *testing.T) {
 	require.GreaterOrEqual(t, len(lines), 2)
 	assert.Contains(t, lines[0], "id")
 	assert.Contains(t, lines[1], "──")
+}
+
+func TestTruncateCell(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"short", "abc", "abc"},
+		{"exactly max", strings.Repeat("x", maxCellWidth), strings.Repeat("x", maxCellWidth)},
+		{"over max", strings.Repeat("x", maxCellWidth+10), strings.Repeat("x", maxCellWidth-3) + "..."},
+		{"many bytes few runes", strings.Repeat("é", 200), strings.Repeat("é", 200)},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, truncateCell(tc.in))
+		})
+	}
+}
+
+func TestTruncateCellMultibyteBoundary(t *testing.T) {
+	got := truncateCell(strings.Repeat("é", maxCellWidth+10))
+	assert.True(t, utf8.ValidString(got))
+	assert.True(t, strings.HasSuffix(got, "..."))
+}
+
+func TestRenderTableLinesTruncatesLongCell(t *testing.T) {
+	long := strings.Repeat("x", 10_000)
+	lines := renderTableLines([]string{"blob"}, [][]string{{long}})
+	require.GreaterOrEqual(t, len(lines), 3)
+	dataRow := lines[2]
+	assert.LessOrEqual(t, len(dataRow), maxCellWidth)
+	assert.Contains(t, dataRow, "...")
+	assert.NotContains(t, dataRow, long)
 }
 
 func TestFindMatches(t *testing.T) {
