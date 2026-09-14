@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 envsubst < databricks.yml.tmpl > databricks.yml
 
 SCHEMA="main.test-schema-${UNIQUE_NAME}"
