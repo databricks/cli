@@ -13,7 +13,7 @@
     }
   },
   "vector_search_indexes": {
-    "catalog_ref_index": {
+    "full_ref_index": {
       "direct_access_index_spec": {
         "schema_json": "{\"id\":\"integer\",\"vector\":\"array<float>\"}"
       },
@@ -22,13 +22,13 @@
       "name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.myindex",
       "primary_key": "id"
     },
-    "full_ref_index": {
+    "mixed_ref_index": {
       "direct_access_index_spec": {
         "schema_json": "{\"id\":\"integer\",\"vector\":\"array<float>\"}"
       },
       "endpoint_name": "my-endpoint",
       "index_type": "DIRECT_ACCESS",
-      "name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.myindex",
+      "name": "${resources.catalogs.my_catalog.name}.myschema.myindex",
       "primary_key": "id"
     },
     "my_index": {

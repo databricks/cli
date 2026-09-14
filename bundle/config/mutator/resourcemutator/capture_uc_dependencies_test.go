@@ -60,8 +60,6 @@ func TestResolveSchema(t *testing.T) {
 		{"empty_catalog", "", "foobar", "foobar"},
 		{"empty_schema", "catalog1", "", ""},
 		{"both_empty", "", "", ""},
-		{"schema_reference_passthrough", "catalog1", "${resources.schemas.schema1.name}", "${resources.schemas.schema1.name}"},
-		{"catalog_reference_unresolved", "${resources.catalogs.x.name}", "foobar", "foobar"},
 	}
 
 	for _, tc := range tests {
@@ -83,7 +81,6 @@ func TestResolveCatalog(t *testing.T) {
 		{"match_catalog2", "catalog2", "${resources.catalogs.prod_catalog.name}"},
 		{"no_match", "catalogX", "catalogX"},
 		{"empty", "", ""},
-		{"reference_passthrough", "${resources.catalogs.dev_catalog.name}", "${resources.catalogs.dev_catalog.name}"},
 	}
 
 	for _, tc := range tests {
@@ -357,52 +354,29 @@ func TestSplitUCName(t *testing.T) {
 		input    string
 		n        int
 		expected []string
+		ok       bool
 	}{
-		{"three_part", "catalog.schema.index", 3, []string{"catalog", "schema", "index"}},
-		{"two_part", "catalog.schema", 2, []string{"catalog", "schema"}},
-		{"extra_dots_kept_in_last", "a.b.c.d", 3, []string{"a", "b", "c.d"}},
-		{"fewer_parts_than_n", "a.b", 3, []string{"a", "b"}},
-		{"single_component", "a", 3, []string{"a"}},
-		{"empty", "", 3, []string{""}},
-		{"reference_catalog_atomic", "${resources.catalogs.c.name}.schema.index", 3, []string{"${resources.catalogs.c.name}", "schema", "index"}},
-		{"reference_catalog_and_schema_atomic", "${resources.catalogs.c.name}.${resources.schemas.s.name}.index", 3, []string{"${resources.catalogs.c.name}", "${resources.schemas.s.name}", "index"}},
-		{"reference_in_two_part", "${resources.catalogs.c.name}.schema", 2, []string{"${resources.catalogs.c.name}", "schema"}},
+		{"three_part", "catalog.schema.index", 3, []string{"catalog", "schema", "index"}, true},
+		{"two_part", "catalog.schema", 2, []string{"catalog", "schema"}, true},
+		{"too_many_components", "a.b.c.d", 3, nil, false},
+		{"too_few_components", "a.b", 3, nil, false},
+		{"single_component", "a", 3, nil, false},
+		{"empty", "", 3, nil, false},
+		{"reference_over_counts", "${resources.catalogs.c.name}.schema.index", 3, nil, false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, splitUCName(tc.input, tc.n))
+			parts, ok := splitUCName(tc.input, tc.n)
+			assert.Equal(t, tc.ok, ok)
+			assert.Equal(t, tc.expected, parts)
 		})
 	}
 }
 
-func TestLiteralCatalogName(t *testing.T) {
-	b := bundleWithCatalogs()
-
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{"literal", "catalog1", "catalog1"},
-		{"reference_resolves", "${resources.catalogs.dev_catalog.name}", "catalog1"},
-		{"reference_missing_catalog", "${resources.catalogs.unknown.name}", ""},
-		{"reference_wrong_resource_type", "${resources.schemas.dev_catalog.name}", ""},
-		{"impure_reference", "prefix-${resources.catalogs.dev_catalog.name}", ""},
-		{"empty", "", ""},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, literalCatalogName(b, tc.input))
-		})
-	}
-}
-
-// A UC name that already contains ${resources...} references is left intact, while
-// any literal catalog/schema component is still captured. This covers the mixed case
-// where the catalog is a reference but the sibling schema is a literal, in both
-// directions (a bundle schema may itself carry its catalog as a literal or reference).
+// A vector search index name that already contains a ${resources...} reference is left
+// untouched: a mix of references and literals is not supported. Only a fully literal name
+// with exactly three components has its catalog and schema captured.
 func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 	newBundle := func(indexName string) *bundle.Bundle {
 		return &bundle.Bundle{
@@ -412,8 +386,7 @@ func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 						"dev_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
 					},
 					Schemas: map[string]*resources.Schema{
-						"schema_lit": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "foobar"}},
-						"schema_ref": {CreateSchema: catalog.CreateSchema{CatalogName: "${resources.catalogs.dev_catalog.name}", Name: "barbaz"}},
+						"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "myschema"}},
 					},
 					VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
 						"idx": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: indexName}},
@@ -429,34 +402,24 @@ func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
 		expected string
 	}{
 		{
-			"catalog_reference_literal_schema",
-			"${resources.catalogs.dev_catalog.name}.foobar.my_index",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.schema_lit.name}.my_index",
+			"all_literal_captured",
+			"catalog1.myschema.myindex",
+			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
 		},
 		{
-			"catalog_reference_schema_whose_catalog_is_a_reference",
-			"${resources.catalogs.dev_catalog.name}.barbaz.my_index",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.schema_ref.name}.my_index",
+			"catalog_reference_with_literal_schema_unsupported",
+			"${resources.catalogs.dev_catalog.name}.myschema.myindex",
+			"${resources.catalogs.dev_catalog.name}.myschema.myindex",
 		},
 		{
-			"fully_referenced_passthrough",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.schema_lit.name}.my_index",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.schema_lit.name}.my_index",
+			"fully_referenced_unchanged",
+			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
+			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
 		},
 		{
-			"all_literal",
-			"catalog1.foobar.my_index",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.schema_lit.name}.my_index",
-		},
-		{
-			"literal_catalog_schema_whose_catalog_is_a_reference",
-			"catalog1.barbaz.my_index",
-			"${resources.catalogs.dev_catalog.name}.${resources.schemas.schema_ref.name}.my_index",
-		},
-		{
-			"reference_to_unknown_catalog_unchanged",
-			"${resources.catalogs.unknown.name}.foobar.my_index",
-			"${resources.catalogs.unknown.name}.foobar.my_index",
+			"more_than_three_components_skipped",
+			"catalog1.myschema.my.index",
+			"catalog1.myschema.my.index",
 		},
 	}
 

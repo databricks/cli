@@ -41,35 +41,13 @@ func catalogNameRef(key string) string {
 	return fmt.Sprintf("${resources.catalogs.%s.name}", key)
 }
 
-// literalCatalogName returns the concrete catalog name for a catalog value that is
-// either a literal name or a ${resources.catalogs.<key>.name} reference to a catalog
-// defined in the bundle. A reference that does not resolve to a bundle catalog yields
-// "", so an unresolvable reference never accidentally matches a schema by name.
-func literalCatalogName(b *bundle.Bundle, catalogName string) string {
-	if !dynvar.ContainsVariableReference(catalogName) {
-		return catalogName
-	}
-	p, ok := dynvar.PureReferenceToPath(catalogName)
-	if !ok || len(p) != 4 || p[0].Key() != "resources" || p[1].Key() != "catalogs" || p[3].Key() != "name" {
-		return ""
-	}
-	if c := b.Config.Resources.Catalogs[p[2].Key()]; c != nil {
-		return c.Name
-	}
-	return ""
-}
-
 func findSchema(b *bundle.Bundle, catalogName, schemaName string) (string, *resources.Schema) {
-	// A bundle catalog can be addressed either by literal name or by a
-	// ${resources.catalogs.<key>.name} reference; normalize both sides to the literal
-	// name so a schema is matched regardless of which form its catalog uses.
-	catalogName = literalCatalogName(b, catalogName)
 	if catalogName == "" || schemaName == "" {
 		return "", nil
 	}
 
 	for k, s := range b.Config.Resources.Schemas {
-		if s != nil && literalCatalogName(b, s.CatalogName) == catalogName && s.Name == schemaName {
+		if s != nil && s.CatalogName == catalogName && s.Name == schemaName {
 			return k, s
 		}
 	}
@@ -94,11 +72,6 @@ func findCatalog(b *bundle.Bundle, catalogName string) (string, *resources.Catal
 // unchanged. Must be called before resolveCatalog on the same resource since
 // findSchema needs the original (unmutated) catalogName.
 func resolveSchema(b *bundle.Bundle, catalogName, schemaName string) string {
-	// A schema already written as an explicit reference is left as is; it need not
-	// (and cannot) be matched to a bundle schema by name.
-	if dynvar.ContainsVariableReference(schemaName) {
-		return schemaName
-	}
 	k, s := findSchema(b, catalogName, schemaName)
 	if s != nil {
 		return schemaNameRef(k)
@@ -109,10 +82,6 @@ func resolveSchema(b *bundle.Bundle, catalogName, schemaName string) string {
 // resolveCatalog returns the explicit catalog reference if catalogName matches
 // a catalog defined in the bundle. Otherwise returns catalogName unchanged.
 func resolveCatalog(b *bundle.Bundle, catalogName string) string {
-	// A catalog already written as an explicit reference is left as is.
-	if dynvar.ContainsVariableReference(catalogName) {
-		return catalogName
-	}
 	k, c := findCatalog(b, catalogName)
 	if c != nil {
 		return catalogNameRef(k)
@@ -120,31 +89,16 @@ func resolveCatalog(b *bundle.Bundle, catalogName string) string {
 	return catalogName
 }
 
-// splitUCName splits a UC identifier on "." into at most n parts, like
-// strings.SplitN, but treats a ${...} reference as atomic so the dots inside a
-// reference (e.g. ${resources.catalogs.c.name}) do not create extra splits.
-func splitUCName(name string, n int) []string {
-	var parts []string
-	depth, start := 0, 0
-	for i := range len(name) {
-		if len(parts) == n-1 {
-			break
-		}
-		switch name[i] {
-		case '{':
-			depth++
-		case '}':
-			if depth > 0 {
-				depth--
-			}
-		case '.':
-			if depth == 0 {
-				parts = append(parts, name[start:i])
-				start = i + 1
-			}
-		}
+// splitUCName splits a compound UC identifier into exactly n dot-separated
+// components, returning false if it has a different number of components. Callers
+// skip names containing a ${...} reference beforehand, so this is a plain split:
+// a reference would push the component count past n and be rejected here anyway.
+func splitUCName(name string, n int) ([]string, bool) {
+	parts := strings.Split(name, ".")
+	if len(parts) != n {
+		return nil, false
 	}
-	return append(parts, name[start:])
+	return parts, true
 }
 
 // resolveParent rewrites a `schemas/{catalog}.{schema}` parent reference so that
@@ -156,8 +110,8 @@ func resolveParent(b *bundle.Bundle, parent string) string {
 	if !ok {
 		return parent
 	}
-	parts := splitUCName(rest, 2)
-	if len(parts) != 2 {
+	parts, ok := splitUCName(rest, 2)
+	if !ok {
 		return parent
 	}
 	catalogName, schemaName := parts[0], parts[1]
@@ -203,9 +157,14 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if qm == nil || qm.OutputSchemaName == "" {
 			continue
 		}
+		// A name that already contains a reference is left as is: we only rewrite a
+		// fully literal name and do not support a mix of references and literals.
+		if dynvar.ContainsVariableReference(qm.OutputSchemaName) {
+			continue
+		}
 		// OutputSchemaName is a compound "catalog.schema" string.
-		parts := splitUCName(qm.OutputSchemaName, 2)
-		if len(parts) != 2 {
+		parts, ok := splitUCName(qm.OutputSchemaName, 2)
+		if !ok {
 			continue
 		}
 		catalogName, schemaName := parts[0], parts[1]
@@ -218,9 +177,14 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if idx == nil {
 			continue
 		}
+		// A name that already contains a reference is left as is; a mix of
+		// references and literals is not supported.
+		if dynvar.ContainsVariableReference(idx.Name) {
+			continue
+		}
 		// Name is a three-part "catalog.schema.index" UC identifier.
-		parts := splitUCName(idx.Name, 3)
-		if len(parts) != 3 {
+		parts, ok := splitUCName(idx.Name, 3)
+		if !ok {
 			continue
 		}
 		catalogName, schemaName := parts[0], parts[1]
@@ -244,6 +208,11 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 	}
 	for _, ms := range b.Config.Resources.ModelServices {
 		if ms == nil {
+			continue
+		}
+		// A parent that already contains a reference is left as is; a mix of
+		// references and literals is not supported.
+		if dynvar.ContainsVariableReference(ms.Parent) {
 			continue
 		}
 		ms.Parent = resolveParent(b, ms.Parent)
