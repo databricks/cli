@@ -49,6 +49,9 @@ type Snapshot struct {
 	// Path in workspace for project repo
 	RemotePath string `json:"remote_path"`
 
+	// RemoteObjectID identifies the directory whose files this snapshot tracks.
+	RemoteObjectID int64 `json:"remote_object_id,omitempty"`
+
 	*SnapshotState
 }
 
