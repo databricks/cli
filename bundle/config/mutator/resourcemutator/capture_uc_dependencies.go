@@ -13,13 +13,13 @@ import (
 type captureUCDependencies struct{}
 
 // If a user defines a UC schema in the bundle, they can refer to it in SDP pipelines,
-// UC Volumes, Registered Models, Quality Monitors, or Model Serving Endpoints using the
-// `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows TF to capture
-// the deploy time dependency this resource has on the schema and deploy changes to the
-// schema before deploying the dependent resource.
+// UC Volumes, Registered Models, Quality Monitors, Model Serving Endpoints, or Vector Search
+// Indexes using the `${resources.schemas.<schema_key>.name}` syntax. Using this syntax allows
+// TF to capture the deploy time dependency this resource has on the schema and deploy changes
+// to the schema before deploying the dependent resource.
 //
 // Similarly, if a user defines a UC catalog in the bundle, they can refer to it in UC schemas,
-// UC Volumes, Registered Models, or Model Serving Endpoints using the
+// UC Volumes, Registered Models, Model Serving Endpoints, or Vector Search Indexes using the
 // `${resources.catalogs.<catalog_key>.name}` syntax. This captures the deploy time
 // dependency the resource has on the catalog.
 //
@@ -154,6 +154,18 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if resolved != qm.OutputSchemaName {
 			qm.OutputSchemaName = resolved
 		}
+	}
+	for _, idx := range b.Config.Resources.VectorSearchIndexes {
+		if idx == nil {
+			continue
+		}
+		// Name is a three-part "catalog.schema.index" UC identifier.
+		parts := strings.SplitN(idx.Name, ".", 3)
+		if len(parts) != 3 {
+			continue
+		}
+		catalogName, schemaName := parts[0], parts[1]
+		idx.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
 	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
 		if mse == nil {

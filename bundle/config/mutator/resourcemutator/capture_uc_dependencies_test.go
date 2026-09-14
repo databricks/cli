@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -136,6 +137,11 @@ func TestCaptureUCDependencies(t *testing.T) {
 						Parent: "schemas/mycatalog.myschema", ModelServiceId: "myservice",
 					}},
 				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"my_index": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+						Name: "mycatalog.myschema.myindex",
+					}},
+				},
 			},
 		},
 	}
@@ -171,6 +177,9 @@ func TestCaptureUCDependencies(t *testing.T) {
 
 	// Model service (compound "schemas/{catalog}.{schema}" parent field).
 	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.ModelServices["my_model_service"].Parent)
+
+	// Vector search index (three-part "catalog.schema.index" name).
+	assert.Equal(t, catalogRef+"."+schemaRef+".myindex", b.Config.Resources.VectorSearchIndexes["my_index"].Name)
 }
 
 // Pipeline schema and target are mutually exclusive; only the populated field
@@ -287,6 +296,37 @@ func TestCaptureUCDependenciesModelServingEndpointEdgeCases(t *testing.T) {
 	assert.Nil(t, b.Config.Resources.ModelServingEndpoints["nil_endpoint"])
 }
 
+func TestCaptureUCDependenciesVectorSearchIndexEdgeCases(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"my_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "mycatalog"}},
+				},
+				Schemas: map[string]*resources.Schema{
+					"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "mycatalog", Name: "myschema"}},
+				},
+				VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+					"catalog_only": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "mycatalog.other.myindex"}},
+					"no_match":     {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "other.other.myindex"}},
+					"empty":        {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: ""}},
+					"two_part":     {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: "mycatalog.myschema"}},
+					"nil_index":    nil,
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+	require.Nil(t, d)
+
+	assert.Equal(t, "${resources.catalogs.my_catalog.name}.other.myindex", b.Config.Resources.VectorSearchIndexes["catalog_only"].Name)
+	assert.Equal(t, "other.other.myindex", b.Config.Resources.VectorSearchIndexes["no_match"].Name)
+	assert.Empty(t, b.Config.Resources.VectorSearchIndexes["empty"].Name)
+	assert.Equal(t, "mycatalog.myschema", b.Config.Resources.VectorSearchIndexes["two_part"].Name)
+	assert.Nil(t, b.Config.Resources.VectorSearchIndexes["nil_index"])
+}
+
 // Nil and empty resources should not panic.
 func TestCaptureUCDependenciesNilResources(t *testing.T) {
 	b := &bundle.Bundle{
@@ -299,6 +339,7 @@ func TestCaptureUCDependenciesNilResources(t *testing.T) {
 				Pipelines:             map[string]*resources.Pipeline{"nil": nil, "empty": {}},
 				QualityMonitors:       map[string]*resources.QualityMonitor{"nil": nil, "empty": {}},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{"nil": nil, "empty": {}},
+				VectorSearchIndexes:   map[string]*resources.VectorSearchIndex{"nil": nil, "empty": {}},
 			},
 		},
 	}

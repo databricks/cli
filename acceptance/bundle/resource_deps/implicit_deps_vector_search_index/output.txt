@@ -1,0 +1,26 @@
+
+>>> [CLI] bundle validate -t dev -o json
+{
+  "catalogs": {
+    "my_catalog": {
+      "name": "mycatalog"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "${resources.catalogs.my_catalog.name}",
+      "name": "dev_[USERNAME]_myschema"
+    }
+  },
+  "vector_search_indexes": {
+    "my_index": {
+      "direct_access_index_spec": {
+        "schema_json": "{\"id\":\"integer\",\"vector\":\"array<float>\"}"
+      },
+      "endpoint_name": "my-endpoint",
+      "index_type": "DIRECT_ACCESS",
+      "name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}.myindex",
+      "primary_key": "id"
+    }
+  }
+}
