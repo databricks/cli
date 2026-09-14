@@ -32,6 +32,17 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 		request.SingleUserName = s.CurrentUser().UserName
 	}
 
+	// Apply the attached cluster policy before computing defaults, matching the backend:
+	// policy values feed the defaults below (e.g. driver_node_type_id from node_type_id).
+	if msg := s.applyClusterPolicy(&request, request.PolicyId, applyPolicyDefaultValues(req.Body)); msg != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    msg,
+			},
+		}
+	}
 	clusterFixUps(&request)
 
 	// The cluster GET API returns apply_policy_default_values only under .spec, not at the top
@@ -113,6 +124,17 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	// Preserve runtime-only fields that the Edit API request doesn't include.
 	request.State = existing.State
 	request.ClusterId = existing.ClusterId
+	// Apply the attached cluster policy before computing defaults, matching the backend:
+	// policy values feed the defaults below (e.g. driver_node_type_id from node_type_id).
+	if msg := s.applyClusterPolicy(&request, request.PolicyId, applyPolicyDefaultValues(req.Body)); msg != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    msg,
+			},
+		}
+	}
 	clusterFixUps(&request)
 	// Refresh the .spec snapshot from the new settings, matching cloud behavior on edit.
 	request.Spec = specSnapshot(req.Body)

@@ -148,3 +148,35 @@ func TestResourcesYMLActionCategoriesExclusive(t *testing.T) {
 		}
 	}
 }
+
+// TestResourcesYMLRemoteAdditionGates validates every ignore_remote_additions rule against
+// the resource's state type: the field pattern must resolve, and so must the when_set gate
+// relative to it. Without this a typo produces a rule that silently never matches.
+func TestResourcesYMLRemoteAdditionGates(t *testing.T) {
+	for resourceType, rc := range MustLoadConfig().Resources {
+		adapter, err := NewAdapter(SupportedResources[resourceType], resourceType, nil)
+		require.NoError(t, err)
+
+		for _, rule := range rc.IgnoreRemoteAdditions {
+			field := rule.Field
+			require.False(t, rule.WhenSet.IsRoot(),
+				"%s: ignore_remote_additions entry %q needs a when_set", resourceType, field.String())
+
+			if !field.IsRoot() {
+				assert.NoError(t, structaccess.ValidatePattern(adapter.StateType(), field),
+					"%s: ignore_remote_additions field %q does not resolve in the state type", resourceType, field.String())
+			}
+			gate, err := structpath.ParsePattern(joinPattern(field, rule.WhenSet.String()))
+			require.NoError(t, err)
+			assert.NoError(t, structaccess.ValidatePattern(adapter.StateType(), gate),
+				"%s: ignore_remote_additions when_set %q does not resolve under %q", resourceType, rule.WhenSet, field.String())
+		}
+	}
+}
+
+func joinPattern(prefix *structpath.PatternNode, field string) string {
+	if prefix.IsRoot() {
+		return field
+	}
+	return prefix.String() + "." + field
+}
