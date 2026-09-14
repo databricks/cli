@@ -1,0 +1,20 @@
+
+>>> [CLI] workspace mkdirs /Workspace/tmp/remote_file_path/dir
+
+>>> [CLI] workspace import /Workspace/tmp/remote_file_path/file --format AUTO --file ./databricks.yml
+
+=== file_path is a directory: valid destination
+
+>>> [CLI] bundle validate -t ok
+Name: remote_file_path
+Target: ok
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/remote_file_path/ok
+
+Validation OK!
+
+=== file_path is a file: invalid destination
+Error: /Workspace/tmp/remote_file_path/file points to a file
+Error: /Workspace/tmp/remote_file_path/file points to a file
+Found 2 errors
