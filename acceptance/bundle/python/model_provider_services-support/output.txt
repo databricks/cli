@@ -1,0 +1,28 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_model_provider_service"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "model_provider_services": {
+      "my_model_provider_service_1": {
+        "comment": "My model provider service (updated)",
+        "model_provider_service_id": "my_model_provider_service_1",
+        "parent": "schemas/main.default"
+      },
+      "my_model_provider_service_2": {
+        "comment": "My model provider service (2) (updated)",
+        "model_provider_service_id": "my_model_provider_service_2",
+        "parent": "schemas/main.default"
+      }
+    }
+  }
+}

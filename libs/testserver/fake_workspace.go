@@ -206,6 +206,7 @@ type FakeWorkspace struct {
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
 	ModelServices         map[string]catalog.ModelService
 	McpServices           map[string]catalog.McpService
+	ModelProviderServices map[string]catalog.ModelProviderService
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
@@ -468,25 +469,26 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:                map[int64]jobs.Job{},
-		JobRuns:             map[int64]jobs.Run{},
-		JobRunOutputs:       map[int64]jobs.RunOutput{},
-		JobRunIdempotency:   map[string]int64{},
-		Grants:              map[string][]catalog.PrivilegeAssignment{},
-		Pipelines:           map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:     map[string]bool{},
-		Monitors:            map[string]catalog.MonitorInfo{},
-		Apps:                map[string]apps.App{},
-		Catalogs:            map[string]catalog.CatalogInfo{},
-		ExternalLocations:   map[string]catalog.ExternalLocationInfo{},
-		Schemas:             map[string]catalog.SchemaInfo{},
-		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
-		ModelServices:       map[string]catalog.ModelService{},
-		McpServices:         map[string]catalog.McpService{},
-		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
-		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
-		GenieSpaces:         map[string]dashboards.GenieSpace{},
+		Jobs:                  map[int64]jobs.Job{},
+		JobRuns:               map[int64]jobs.Run{},
+		JobRunOutputs:         map[int64]jobs.RunOutput{},
+		JobRunIdempotency:     map[string]int64{},
+		Grants:                map[string][]catalog.PrivilegeAssignment{},
+		Pipelines:             map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:       map[string]bool{},
+		Monitors:              map[string]catalog.MonitorInfo{},
+		Apps:                  map[string]apps.App{},
+		Catalogs:              map[string]catalog.CatalogInfo{},
+		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},
+		Schemas:               map[string]catalog.SchemaInfo{},
+		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
+		ModelServices:         map[string]catalog.ModelService{},
+		McpServices:           map[string]catalog.McpService{},
+		ModelProviderServices: map[string]catalog.ModelProviderService{},
+		Volumes:               map[string]catalog.VolumeInfo{},
+		Dashboards:            NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
+		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
+		GenieSpaces:           map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,

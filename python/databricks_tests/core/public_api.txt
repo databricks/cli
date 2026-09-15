@@ -30,6 +30,7 @@ __all__ = [
     mcp_service_mutator,
     mlflow_experiment_mutator,
     mlflow_model_mutator,
+    model_provider_service_mutator,
     model_service_mutator,
     model_serving_endpoint_mutator,
     pipeline_mutator,
@@ -103,6 +104,7 @@ class Resources:
     def add_mcp_service(self, resource_name: str, mcp_service: McpServiceParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_experiment(self, resource_name: str, mlflow_experiment: MlflowExperimentParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_model(self, resource_name: str, mlflow_model: MlflowModelParam, *, location: Union[Location, None] = None) -> None
+    def add_model_provider_service(self, resource_name: str, model_provider_service: ModelProviderServiceParam, *, location: Union[Location, None] = None) -> None
     def add_model_service(self, resource_name: str, model_service: ModelServiceParam, *, location: Union[Location, None] = None) -> None
     def add_model_serving_endpoint(self, resource_name: str, model_serving_endpoint: ModelServingEndpointParam, *, location: Union[Location, None] = None) -> None
     def add_pipeline(self, resource_name: str, pipeline: PipelineParam, *, location: Union[Location, None] = None) -> None
@@ -132,6 +134,7 @@ class Resources:
     @property job_runs -> dict[str, JobRun]
     @property jobs -> dict[str, Job]
     @property mcp_services -> dict[str, McpService]
+    @property model_provider_services -> dict[str, ModelProviderService]
     @property model_services -> dict[str, ModelService]
     @property model_serving_endpoints -> dict[str, ModelServingEndpoint]
     @property models -> dict[str, MlflowModel]
@@ -225,6 +228,10 @@ def mlflow_experiment_mutator(function: Callable) -> ResourceMutator[MlflowExper
 @overload def mlflow_model_mutator(function: Callable[[MlflowModel], MlflowModel]) -> ResourceMutator[MlflowModel]
 def mlflow_model_mutator(function: Callable) -> ResourceMutator[MlflowModel]
 
+@overload def model_provider_service_mutator(function: Callable[[Bundle, ModelProviderService], ModelProviderService]) -> ResourceMutator[ModelProviderService]
+@overload def model_provider_service_mutator(function: Callable[[ModelProviderService], ModelProviderService]) -> ResourceMutator[ModelProviderService]
+def model_provider_service_mutator(function: Callable) -> ResourceMutator[ModelProviderService]
+
 @overload def model_service_mutator(function: Callable[[Bundle, ModelService], ModelService]) -> ResourceMutator[ModelService]
 @overload def model_service_mutator(function: Callable[[ModelService], ModelService]) -> ResourceMutator[ModelService]
 def model_service_mutator(function: Callable) -> ResourceMutator[ModelService]
@@ -297,6 +304,7 @@ singular_name=job_run plural_name=job_runs resource_type=JobRun
 singular_name=mcp_service plural_name=mcp_services resource_type=McpService
 singular_name=mlflow_experiment plural_name=experiments resource_type=MlflowExperiment
 singular_name=mlflow_model plural_name=models resource_type=MlflowModel
+singular_name=model_provider_service plural_name=model_provider_services resource_type=ModelProviderService
 singular_name=model_service plural_name=model_services resource_type=ModelService
 singular_name=model_serving_endpoint plural_name=model_serving_endpoints resource_type=ModelServingEndpoint
 singular_name=pipeline plural_name=pipelines resource_type=Pipeline
