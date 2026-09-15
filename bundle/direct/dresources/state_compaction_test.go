@@ -151,12 +151,33 @@ func TestStateHashing(t *testing.T) {
 		{
 			name: "multiline",
 			content: `
-first line of content
-second line of content
-third line of content
-fourth line of content
+{
+  "datasets": [
+    {
+      "name": "sales",
+      "displayName": "Sales",
+      "query": "SELECT region, SUM(amount) AS total FROM sales GROUP BY region"
+    }
+  ],
+  "pages": [
+    {
+      "name": "overview",
+      "displayName": "Sales Overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "by_region",
+            "queries": [{"name": "main", "query": {"datasetName": "sales"}}],
+            "spec": {"version": 3, "widgetType": "bar"}
+          },
+          "position": {"x": 0, "y": 0, "width": 6, "height": 6}
+        }
+      ]
+    }
+  ]
+}
 `,
-			want: "sha256:c74674070e73f13131f1611d89ecf2ff74c7adf5f998da1321b026a7f154bf1e",
+			want: "sha256:4c937eec7bb545672fca3b17176fcbb70046bc20ad8e7a1e1cf819cb8ea373f1",
 		},
 		{
 			name:    "over_size_limit",
