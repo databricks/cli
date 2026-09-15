@@ -19,7 +19,7 @@ def print_resource_terraform(group, name, *attrs):
     # A missing state file (e.g. after destroy removes it) means the resource's
     # state is not there, same as a missing entry within the file.
     if not os.path.exists(filename):
-        print(f"State not found for {group}.{name}")
+        print(f"State not found for {group}.{name} in {filename}")
         return
     raw = open(filename).read()
     data = json.loads(raw)
@@ -38,7 +38,7 @@ def print_resource_terraform(group, name, *attrs):
                 print(group, name, " ".join(values))
                 found += 1
     if not found:
-        print(f"State not found for {group}.{name}")
+        print(f"State not found for {group}.{name} in {filename}")
 
 
 def print_resource_direct(group, name, *attrs):
@@ -46,7 +46,7 @@ def print_resource_direct(group, name, *attrs):
     # A missing state file (e.g. after destroy removes it) means the resource's
     # state is not there, same as a missing entry within the file.
     if not os.path.exists(filename):
-        print(f"State not found for {group}.{name}")
+        print(f"State not found for {group}.{name} in {filename}")
         return
     raw = open(filename).read()
     data = json.loads(raw)
@@ -54,7 +54,7 @@ def print_resource_direct(group, name, *attrs):
     result = state_map.get(f"resources.{group}.{name}")
 
     if result is None:
-        print(f"State not found for {group}.{name}")
+        print(f"State not found for {group}.{name} in {filename}")
         return
 
     state = result.get("state", {})
@@ -66,7 +66,9 @@ def print_resource_direct(group, name, *attrs):
 def print_resource_recorded(group, name, *attrs):
     result = get_resources(None).get(f"{group}.{name}")
     if result is None:
-        print(f"State not found for {group}.{name}")
+        # Recorded state lives in deployment history, not on disk, so name that rather than a
+        # file (the Repl normalizes it to match the file-based variants).
+        print(f"State not found for {group}.{name} in deployment history")
         return
 
     state = dict(result["state"])
