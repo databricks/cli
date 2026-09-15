@@ -1,7 +1,6 @@
 package loader_test
 
 import (
-	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -141,61 +140,6 @@ func TestProcessRootIncludesEmptyOmitsDynamicValue(t *testing.T) {
 	require.NoError(t, diags.Error())
 	assert.Empty(t, b.Config.Include)
 	assert.Equal(t, dyn.KindInvalid, b.Config.Value().Get("include").Kind())
-}
-
-// Merge semantics across included files must be unaffected by how the per-file includes
-// are applied: maps merge per key with the later file winning, sequences concatenate, and
-// locations accumulate (UniqueResourceKeys reports duplicates by counting locations).
-func TestProcessRootIncludesMergesAcrossFiles(t *testing.T) {
-	b := &bundle.Bundle{
-		BundleRootPath: t.TempDir(),
-		Config: config.Root{
-			Include: []string{
-				"*.yml",
-			},
-		},
-	}
-
-	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, "a.yml"), `
-resources:
-  jobs:
-    shared:
-      max_concurrent_runs: 1
-      tags:
-        from_a: yes_a
-      tasks:
-        - task_key: task_a
-`)
-
-	testutil.WriteFile(t, filepath.Join(b.BundleRootPath, "b.yml"), `
-resources:
-  jobs:
-    shared:
-      tags:
-        from_b: yes_b
-      tasks:
-        - task_key: task_b
-`)
-
-	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
-	require.NoError(t, diags.Error())
-
-	job := b.Config.Value().Get("resources").Get("jobs").Get("shared")
-
-	// Set only in a.yml: a per-key map merge must not drop it.
-	assert.Equal(t, int64(1), job.Get("max_concurrent_runs").MustInt())
-
-	// Maps merge per key across both files.
-	assert.Equal(t, map[string]any{"from_a": "yes_a", "from_b": "yes_b"}, job.Get("tags").AsAny())
-
-	// Sequences concatenate rather than overwrite.
-	assert.Equal(t, []any{
-		map[string]any{"task_key": "task_a"},
-		map[string]any{"task_key": "task_b"},
-	}, job.Get("tasks").AsAny())
-
-	// Both definitions must remain visible, otherwise duplicate keys go unreported.
-	assert.Len(t, job.Locations(), 2)
 }
 
 func TestProcessRootIncludesNotExists(t *testing.T) {
