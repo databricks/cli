@@ -25,6 +25,9 @@ type PipelineOptions struct {
 
 	// Perform an update to validate graph correctness.
 	ValidateOnly bool
+
+	// Run the update in development mode.
+	Development bool
 }
 
 func (o *PipelineOptions) Define(fs *flag.FlagSet) {
@@ -33,6 +36,7 @@ func (o *PipelineOptions) Define(fs *flag.FlagSet) {
 	fs.BoolVar(&o.FullRefreshAll, "full-refresh-all", false, "Perform a full graph reset and recompute.")
 	fs.StringSliceVar(&o.FullRefresh, "full-refresh", nil, "List of tables to reset and recompute.")
 	fs.BoolVar(&o.ValidateOnly, "validate-only", false, "Perform an update to validate graph correctness.")
+	fs.BoolVar(&o.Development, "development", false, "Run the update in development mode.")
 }
 
 // Validate returns if the combination of options is valid.
@@ -70,6 +74,12 @@ func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID str
 		FullRefresh:          o.FullRefreshAll,
 		FullRefreshSelection: o.FullRefresh,
 		ValidateOnly:         o.ValidateOnly,
+		Development:          o.Development,
+
+		// Force-send Development so the resolved per-update value always wins.
+		// The pipelines API falls back to the pipeline-level development property
+		// when this field is omitted, and `omitempty` would drop a false value.
+		ForceSendFields: []string{"Development"},
 	}
 	return payload, nil
 }

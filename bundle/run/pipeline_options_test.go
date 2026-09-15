@@ -50,6 +50,29 @@ func TestPipelineOptionsValidateOnly(t *testing.T) {
 	assert.True(t, opts.ValidateOnly)
 }
 
+func TestPipelineOptionsDevelopment(t *testing.T) {
+	args := map[string]bool{
+		"--development":       true,
+		"--development=false": false,
+	}
+	for arg, want := range args {
+		fs, opts := setupPipelineOptions(t)
+		err := fs.Parse([]string{arg})
+		require.NoError(t, err, arg)
+		assert.Equal(t, want, opts.Development, arg)
+	}
+}
+
+func TestPipelineOptionsToPayloadForceSendsDevelopment(t *testing.T) {
+	for _, development := range []bool{true, false} {
+		opts := &PipelineOptions{Development: development}
+		payload, err := opts.toPayload(nil, "123")
+		require.NoError(t, err)
+		assert.Equal(t, development, payload.Development)
+		assert.Contains(t, payload.ForceSendFields, "Development")
+	}
+}
+
 func TestPipelineOptionsValidateSuccessWithSingleOption(t *testing.T) {
 	args := []string{
 		`--refresh-all`,

@@ -200,6 +200,13 @@ Example usage:
 					return err
 				}
 
+				// When --development is not set explicitly, default it from the
+				// target mode: development-mode targets run updates in development
+				// mode, all others in production mode.
+				if !cmd.Flags().Changed("development") {
+					runOptions.Pipeline.Development = b.Config.Bundle.Mode == config.Development
+				}
+
 				runOptions.NoWait = noWait
 				var runOutput output.RunOutput
 				if restart {
