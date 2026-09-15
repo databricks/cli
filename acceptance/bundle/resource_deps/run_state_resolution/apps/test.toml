@@ -1,1 +1,0 @@
-Badness = "Same bug via an app target. Apps legitimately need bundle run's state resolution (the app's ${resources.jobs.bar.id} reference must be concrete before deploy), but the resolution runs over EVERY resource, so an unrelated not-deployed run_job_task reference resolves to \"\" in an int field and fails the app run with 'expected an int, found a string'."

@@ -3,8 +3,15 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created apps.foo
 Created jobs.bar
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 
 >>> [CLI] bundle run foo
-Error: [TEST_TMP_DIR]/databricks.yml:23:21: expected an int, found a string
+✓ Getting the status of the app foo
+✓ App is in UNAVAILABLE state
+✓ App compute is in STOPPED state
+✓ Starting the app foo
+✓ App is starting...
+✓ App is started!
+✓ Deployment succeeded
+You can access the app at foo-123.cloud.databricksapps.com

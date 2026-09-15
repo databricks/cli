@@ -2,8 +2,11 @@
 >>> [CLI] bundle deploy --select jobs.foo --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.foo
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
 
 >>> [CLI] bundle run foo
-Error: [TEST_TMP_DIR]/databricks.yml:15:21: expected an int, found a string
+Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+
+[TIMESTAMP] "foo" RUNNING
+[TIMESTAMP] "foo" TERMINATED SUCCESS

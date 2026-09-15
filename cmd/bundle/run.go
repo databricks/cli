@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/execv"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
@@ -172,16 +173,22 @@ Example usage:
 				return nil
 			},
 			PostStateFunc: func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
-				// Resolve ${resources.*} references so runners see concrete values (e.g. an
-				// app's env vars referencing another resource, or its source_code_path
-				// pointing at the immutable snapshot's full_path, which lives only in the
-				// deployed state). Safe for both engines: with terraform the state DB is
-				// closed and references resolve from config alone.
-				if err := b.DeploymentBundle.ResolveConfigAgainstState(&b.Config); err != nil {
+				ref, err := resources.Lookup(b, key, run.IsRunnable)
+				if err != nil {
 					return err
 				}
 
-				runner, err := keyToRunner(b, key)
+				// Resolve ${resources.*} references within the resource being run so its
+				// runner sees concrete values (e.g. an app's env vars referencing another
+				// resource, or its source_code_path pointing at the immutable snapshot's
+				// full_path, which lives only in the deployed state). Safe for both engines:
+				// with terraform the state DB is closed and references resolve from config.
+				target := dyn.NewPath(dyn.Key("resources"), dyn.Key(ref.Description.PluralName), dyn.Key(ref.Key))
+				if err := b.DeploymentBundle.ResolveConfigAgainstState(&b.Config, target); err != nil {
+					return err
+				}
+
+				runner, err := run.ToRunner(b, ref)
 				if err != nil {
 					return err
 				}

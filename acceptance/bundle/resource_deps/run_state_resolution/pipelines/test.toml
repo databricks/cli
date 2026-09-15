@@ -1,1 +1,0 @@
-Badness = "Same as ../jobs but the run target is a pipeline: bundle run's state resolution runs over every resource, so an unrelated not-deployed run_job_task reference fails the pipeline run with 'expected an int, found a string'. Confirms the bug is not specific to the resource being run."

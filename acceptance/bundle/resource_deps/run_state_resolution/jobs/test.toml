@@ -1,1 +1,0 @@
-Badness = "bundle run resolves ${resources.*} refs against state for ALL resources, not just the one being run. An unrelated, not-deployed job whose run_job_task.job_id references another not-deployed job resolves to \"\" in the int field and fails run with 'expected an int, found a string'. Reported by a user (Zalando) on v1.16.1; still on main."
