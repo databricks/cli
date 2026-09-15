@@ -3,7 +3,7 @@ package aircmd
 // Warm snapshot cache for the plain_tar path (working tree, no git ref). The Python
 // CLI and the git_archive path re-pack the whole tree every run; for a large repo the
 // file walk + read + gzip dominates submit latency. This keeps a warm, uncompressed
-// tar of the tree on local disk plus a manifest of each member's identity (size+mtime)
+// tar of the tree on local disk plus a manifest of each member's metadata identity
 // and byte range. On the next run we stat the file set, and rebuild the tarball by
 // copying unchanged members verbatim from the warm tar — reading only changed files
 // from disk — before gzipping the upload. Nothing changed is the degenerate case: we
@@ -33,7 +33,7 @@ import (
 
 const (
 	// snapshotCacheVersion invalidates on-disk caches when the layout below changes.
-	snapshotCacheVersion      = "v1"
+	snapshotCacheVersion      = "v2"
 	snapshotCacheManifestName = "manifest.json"
 	// snapshotTarPrefix begins each warm tar's filename; the rest is a per-build random
 	// id (snapshot.<id>.tar). A build never overwrites another build's tar, so a manifest
@@ -51,14 +51,16 @@ const (
 // embed a trailer between members).
 var tarTrailer = make([]byte, 2*512)
 
-// cacheEntry records a member's identity for change detection (size+mtime) and its
+// cacheEntry records a member's identity for change detection and its
 // byte range within the warm snapshot.tar, so an unchanged member can be copied
 // verbatim instead of re-read from disk.
 type cacheEntry struct {
-	Size    int64 `json:"size"`
-	ModTime int64 `json:"mtime_ns"`
-	Offset  int64 `json:"offset"`
-	Length  int64 `json:"length"`
+	Size       int64  `json:"size"`
+	ModTime    int64  `json:"mtime_ns"`
+	Mode       uint32 `json:"mode"`
+	LinkTarget string `json:"link_target,omitempty"`
+	Offset     int64  `json:"offset"`
+	Length     int64  `json:"length"`
 }
 
 // snapshotManifest is the on-disk index of a warm snapshot tar. TarName binds it to the
@@ -144,7 +146,7 @@ func packagePlainTarWithCache(ctx context.Context, repoPath, configPath string, 
 }
 
 // snapshotChanged reports whether the current file set differs from the manifest by
-// any add, delete, or modification (mtime+size). Equal length plus every current file
+// any add, delete, or metadata modification. Equal length plus every current file
 // matching an entry means the sets are identical.
 func snapshotChanged(files []snapshotFile, old *snapshotManifest) bool {
 	if len(files) != len(old.Entries) {
@@ -152,7 +154,7 @@ func snapshotChanged(files []snapshotFile, old *snapshotManifest) bool {
 	}
 	for _, f := range files {
 		e, ok := old.Entries[filepath.ToSlash(f.rel)]
-		if !ok || e.Size != f.size || e.ModTime != f.modTime {
+		if !ok || e.Size != f.size || e.ModTime != f.modTime || e.Mode != f.mode || e.LinkTarget != f.linkTarget {
 			return true
 		}
 	}
@@ -239,7 +241,7 @@ func writeGzOnly(repoPath, dirName string, files []snapshotFile, outputTarball s
 
 // writeSnapshot streams every member (sorted for determinism) to gzDst, and to tarDst
 // too when non-nil, returning the manifest that indexes each member's byte range in
-// the tarDst stream. When old+oldTar are set, an unchanged member (matching size+mtime)
+// the tarDst stream. When old+oldTar are set, an unchanged member (matching metadata)
 // is copied verbatim from oldTar rather than re-read from disk.
 func writeSnapshot(repoPath, dirName string, files []snapshotFile, old *snapshotManifest, oldTar io.ReaderAt, tarDst, gzDst io.Writer) (snapshotManifest, error) {
 	dst := gzDst
@@ -260,7 +262,7 @@ func writeSnapshot(repoPath, dirName string, files []snapshotFile, old *snapshot
 
 		reused := false
 		if old != nil && oldTar != nil {
-			if e, ok := old.Entries[rel]; ok && e.Size == f.size && e.ModTime == f.modTime {
+			if e, ok := old.Entries[rel]; ok && e.Size == f.size && e.ModTime == f.modTime && e.Mode == f.mode && e.LinkTarget == f.linkTarget {
 				if _, err := io.Copy(cw, io.NewSectionReader(oldTar, e.Offset, e.Length)); err != nil {
 					return snapshotManifest{}, fmt.Errorf("failed to copy cached member %q: %w", rel, err)
 				}
@@ -272,7 +274,14 @@ func writeSnapshot(repoPath, dirName string, files []snapshotFile, old *snapshot
 				return snapshotManifest{}, err
 			}
 		}
-		entries[rel] = cacheEntry{Size: f.size, ModTime: f.modTime, Offset: start, Length: cw.n - start}
+		entries[rel] = cacheEntry{
+			Size:       f.size,
+			ModTime:    f.modTime,
+			Mode:       f.mode,
+			LinkTarget: f.linkTarget,
+			Offset:     start,
+			Length:     cw.n - start,
+		}
 	}
 	if _, err := cw.Write(tarTrailer); err != nil {
 		return snapshotManifest{}, err

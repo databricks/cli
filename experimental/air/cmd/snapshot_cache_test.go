@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,9 +40,21 @@ func statFiles(t *testing.T, repo string, rels ...string) []snapshotFile {
 	t.Helper()
 	var files []snapshotFile
 	for _, rel := range rels {
-		info, err := os.Lstat(filepath.Join(repo, filepath.FromSlash(rel)))
+		fullPath := filepath.Join(repo, filepath.FromSlash(rel))
+		info, err := os.Lstat(fullPath)
 		require.NoError(t, err)
-		files = append(files, snapshotFile{rel: filepath.FromSlash(rel), size: info.Size(), modTime: info.ModTime().UnixNano()})
+		linkTarget := ""
+		if info.Mode()&os.ModeSymlink != 0 {
+			linkTarget, err = os.Readlink(fullPath)
+			require.NoError(t, err)
+		}
+		files = append(files, snapshotFile{
+			rel:        filepath.FromSlash(rel),
+			size:       info.Size(),
+			modTime:    info.ModTime().UnixNano(),
+			mode:       uint32(info.Mode()),
+			linkTarget: linkTarget,
+		})
 	}
 	return files
 }
@@ -77,6 +90,26 @@ func TestSnapshotChanged(t *testing.T) {
 
 	added := append(append([]snapshotFile(nil), unchanged...), snapshotFile{rel: "c.txt", size: 3, modTime: 300})
 	assert.True(t, snapshotChanged(added, old), "addition detected")
+}
+
+func TestSnapshotChangedDetectsModeAndSymlinkTarget(t *testing.T) {
+	old := &snapshotManifest{Entries: map[string]cacheEntry{
+		"run.sh": {Size: 1, ModTime: 100, Mode: 0o644},
+		"model":  {Size: 6, ModTime: 200, Mode: uint32(os.ModeSymlink | 0o777), LinkTarget: "v1.bin"},
+	}}
+	unchanged := []snapshotFile{
+		{rel: "run.sh", size: 1, modTime: 100, mode: 0o644},
+		{rel: "model", size: 6, modTime: 200, mode: uint32(os.ModeSymlink | 0o777), linkTarget: "v1.bin"},
+	}
+	assert.False(t, snapshotChanged(unchanged, old))
+
+	modeChanged := slices.Clone(unchanged)
+	modeChanged[0].mode = 0o755
+	assert.True(t, snapshotChanged(modeChanged, old))
+
+	linkChanged := slices.Clone(unchanged)
+	linkChanged[1].linkTarget = "v2.bin"
+	assert.True(t, snapshotChanged(linkChanged, old))
 }
 
 // warmTarPath returns the warm tar the cache's manifest currently points at.
@@ -129,7 +162,7 @@ func TestWarmSnapshotReusesUnchangedFromCache(t *testing.T) {
 	oldTarPath := filepath.Join(cacheDir, old.TarName)
 
 	// Delete keep.py from disk but keep it in the file list with its original
-	// size+mtime: a correct rebuild must copy its bytes from the warm tar, proving
+	// cached metadata: a correct rebuild must copy its bytes from the warm tar, proving
 	// unchanged members are not re-read from disk.
 	require.NoError(t, os.Remove(filepath.Join(repo, "keep.py")))
 

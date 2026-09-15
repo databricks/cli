@@ -131,7 +131,7 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 // for plain_tar, the working-tree file listing used to build both the key and the tarball
 // (nil for git_archive, which lists nothing locally). The name is <dirName>_<key>.tar.gz,
 // keyed on (commit, include_paths, root_path subtree) for git_archive and on the
-// working-tree fingerprint (path+size+mtime) for plain_tar, so an identical input
+// working-tree metadata fingerprint for plain_tar, so an identical input
 // reuses the same remote object (see the skip in uploadSnapshotViaDABs).
 func snapshotTarName(ctx context.Context, repoPath string, plan snapshotPlan) (string, []snapshotFile, error) {
 	dirName := filepath.Base(repoPath)
@@ -139,10 +139,16 @@ func snapshotTarName(ctx context.Context, repoPath string, plan snapshotPlan) (s
 		key := computeSnapshotCacheKey(plan.commitSHA, plan.includePaths, plan.subtreePrefix)
 		return fmt.Sprintf("%s_%s.tar.gz", dirName, key[:16]), nil, nil
 	}
+	start := time.Now()
 	files, err := snapshotFiles(ctx, repoPath, plan.includePaths, plan.isGitRepo)
 	if err != nil {
 		return "", nil, err
 	}
+	var totalBytes int64
+	for _, file := range files {
+		totalBytes += file.size
+	}
+	log.Debugf(ctx, "air snapshot listing: files=%d uncompressed_bytes=%d duration=%s", len(files), totalBytes, time.Since(start))
 	return fmt.Sprintf("%s_%s.tar.gz", dirName, computePlainTarKey(files)[:16]), files, nil
 }
 
@@ -166,7 +172,7 @@ func packageSnapshot(ctx context.Context, repoPath, configPath string, plan snap
 // already-resolved user's repo_snapshots directory or a configured UC Volume.
 //
 // The tarball name is content-addressed — by (commit, include_paths, root_path subtree)
-// for git_archive and by the working-tree fingerprint (path+size+mtime) for plain_tar —
+// for git_archive and by the working-tree metadata fingerprint for plain_tar —
 // so if the identical object is already uploaded we skip packaging and upload entirely
 // and reuse the remote path.
 func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, repoPath, configPath string, plan snapshotPlan, artifactPath string, noCache bool) (snapshotResult, error) {
@@ -218,6 +224,11 @@ func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, r
 	f, uploadPath, diags := libraries.GetFilerForLibraries(ctx, b)
 	if diags.HasError() {
 		return snapshotResult{}, diags.Error()
+	}
+	if result, handled, err := maybeUploadSnapshotOverlay(
+		ctx, f, uploadPath, repoPath, configPath, plan, files, tmp, artifactPath, noCache,
+	); handled {
+		return result, err
 	}
 	exists, err := snapshotExists(ctx, f, tarName)
 	if err != nil {

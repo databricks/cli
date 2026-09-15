@@ -378,7 +378,7 @@ func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false, false)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "failed to create launch directory")
 	assert.Zero(t, submitCalls.Load())
@@ -439,7 +439,7 @@ environment:
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false, false)
 	require.NoError(t, err)
 
 	tasks, ok := got["tasks"].([]any)

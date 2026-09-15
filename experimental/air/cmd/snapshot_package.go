@@ -91,11 +91,13 @@ func createPlainTarball(ctx context.Context, repoPath, outputTarball string, fil
 }
 
 // snapshotFile is a file selected for the snapshot: its repo-relative path (native
-// separators) plus the size and mtime used by content addressing and the warm cache.
+// separators) plus metadata used by content addressing, overlays, and the warm cache.
 type snapshotFile struct {
-	rel     string
-	size    int64
-	modTime int64 // Unix nanoseconds
+	rel        string
+	size       int64
+	modTime    int64 // Unix nanoseconds
+	mode       uint32
+	linkTarget string
 }
 
 func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, isGitRepo bool) ([]snapshotFile, error) {
@@ -139,7 +141,25 @@ func snapshotFiles(ctx context.Context, repoPath string, includePaths []string, 
 		if err != nil {
 			return nil, fmt.Errorf("failed to inspect snapshot path %q: %w", name, err)
 		}
-		files = append(files, snapshotFile{rel: filepath.FromSlash(name), size: info.Size(), modTime: info.ModTime().UnixNano()})
+		// tarpack omits directories and other special files. Filter them from the
+		// manifest too, so an overlay describes exactly the full archive's contents.
+		if !info.Mode().IsRegular() && info.Mode()&os.ModeSymlink == 0 {
+			continue
+		}
+		linkTarget := ""
+		if info.Mode()&os.ModeSymlink != 0 {
+			linkTarget, err = os.Readlink(filepath.Join(repoPath, filepath.FromSlash(name)))
+			if err != nil {
+				return nil, fmt.Errorf("failed to inspect snapshot symlink %q: %w", name, err)
+			}
+		}
+		files = append(files, snapshotFile{
+			rel:        filepath.FromSlash(name),
+			size:       info.Size(),
+			modTime:    info.ModTime().UnixNano(),
+			mode:       uint32(info.Mode()),
+			linkTarget: linkTarget,
+		})
 	}
 	return files, nil
 }

@@ -20,8 +20,8 @@ const (
 	// root_path subtree).
 	modeGitArchive snapshotMode = iota
 	// modePlainTar packages the working tree (including uncommitted changes) via
-	// `tar`. Content-addressed by the working-tree fingerprint (path+size+mtime), so an
-	// unchanged tree reuses the uploaded tarball; a same-size, same-mtime edit is missed.
+	// `tar`. Content-addressed by the working-tree metadata fingerprint, so an
+	// unchanged tree reuses the uploaded tarball; a same-size, same-mtime regular-file edit is missed.
 	modePlainTar
 )
 
