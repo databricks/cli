@@ -21,9 +21,9 @@
 acceptance TestAccept/ssh/connection
 
 # DMS failures due to missing enum values
-acceptance TestAccept/bundle/resources/postgres_snapshot_schedules/basic/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true
-acceptance TestAccept/bundle/resources/postgres_snapshot_schedules/out-of-band/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true
 acceptance TestAccept/bundle/resources/model_services/lifecycle/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true
+acceptance TestAccept/bundle/resources/mcp_services/lifecycle/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true
+acceptance TestAccept/bundle/resources/model_provider_services/lifecycle/DATABRICKS_BUNDLE_ENGINE=direct/DMS=true
 # DMS failures due to workspace clean-up issues
 # (enable only after # https://github.com/databricks/cli/pull/6627 is merged)
 # acceptance TestAccept/bundle/*/DMS=true/
