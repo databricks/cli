@@ -37,11 +37,7 @@ add_repl "$LINEAGE_B" LINEAGE_B
 rm -rf .databricks
 mv .databricks.machineA .databricks
 
-# The mismatch error names the engine-specific state file (resources.json vs
-# terraform.tfstate), so record it per engine and keep the shared output.txt identical.
 title "Machine A with a lingering local state: any command that pulls remote state now fails\n"
-{
-    trace musterr $CLI bundle plan
-    trace musterr $CLI bundle deploy
-    trace musterr $CLI bundle destroy --auto-approve
-} &>out.mismatch.$DATABRICKS_BUNDLE_ENGINE.txt
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace musterr $CLI bundle destroy --auto-approve
