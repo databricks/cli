@@ -32,10 +32,12 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfig struct {
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTableSource struct {
-	DataframeSchema   string `json:"dataframe_schema,omitempty"`
-	FilterCondition   string `json:"filter_condition,omitempty"`
-	FullName          string `json:"full_name"`
-	TransformationSql string `json:"transformation_sql,omitempty"`
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns,omitempty"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSource struct {
@@ -44,10 +46,12 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSource struct {
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigBackfillSourceDeltaTableSource struct {
-	DataframeSchema   string `json:"dataframe_schema,omitempty"`
-	FilterCondition   string `json:"filter_condition,omitempty"`
-	FullName          string `json:"full_name"`
-	TransformationSql string `json:"transformation_sql,omitempty"`
+	DataframeSchema   string   `json:"dataframe_schema,omitempty"`
+	EntityColumns     []string `json:"entity_columns,omitempty"`
+	FilterCondition   string   `json:"filter_condition,omitempty"`
+	FullName          string   `json:"full_name"`
+	TimeseriesColumn  string   `json:"timeseries_column,omitempty"`
+	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigBackfillSource struct {
@@ -62,10 +66,12 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigIngestio
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfig struct {
 	BackfillJobId        int                                                                                      `json:"backfill_job_id,omitempty"`
 	BackfillSource       *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigBackfillSource       `json:"backfill_source,omitempty"`
+	BudgetPolicyId       string                                                                                   `json:"budget_policy_id,omitempty"`
 	DeduplicationColumns []string                                                                                 `json:"deduplication_columns,omitempty"`
 	IngestionDestination *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigIngestionDestination `json:"ingestion_destination,omitempty"`
 	IngestionJobId       int                                                                                      `json:"ingestion_job_id,omitempty"`
 	IngestionPipelineId  string                                                                                   `json:"ingestion_pipeline_id,omitempty"`
+	Tags                 map[string]string                                                                        `json:"tags,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchemaProtoSchema struct {

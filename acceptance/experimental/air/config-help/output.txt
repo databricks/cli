@@ -94,7 +94,7 @@ config.compute.priority_class
 
 >>> [CLI] experimental air run -h config.environment.dependencies
 config.environment.dependencies
-  Inline list of packages to install. Not allowed alongside docker_image.
+  Inline list of packages to install. Not allowed alongside unity_catalog_image.
 
   Type:     list of strings
   Required: no
@@ -108,12 +108,12 @@ config.compute.accelerator_type
   Required: no
 
 === conditionally required leaf
->>> [CLI] experimental air run -h config.environment.docker_image.url
-config.environment.docker_image.url
-  Fully qualified image URL, e.g. myregistry.io/team/train:v3.
+>>> [CLI] experimental air run -h config.code_source.type
+config.code_source.type
+  Kind of code source. Must be "snapshot", the only supported type.
 
   Type:     string
-  Required: when environment.docker_image is set
+  Required: when code_source is set
 
 === union field reports both accepted shapes
 >>> [CLI] experimental air run -h config.code_source.snapshot.git.remote

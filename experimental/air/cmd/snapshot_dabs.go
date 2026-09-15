@@ -38,7 +38,7 @@ const uploadProvenanceSidecars = false
 // not reimplement workspace/volume upload. A minimal in-memory bundle carries the
 // local tarball path as code_source_path; ReplaceWithRemotePath rewrites it to the
 // artifact .internal path and Upload pushes the bytes.
-func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath string, sidecarStore filer.Filer, sidecarBase string) (snapshotResult, error) {
+func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath, snapshotArtifactPath string, sidecarStore filer.Filer, sidecarBase string) (snapshotResult, error) {
 	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
 	if err != nil {
 		return snapshotResult{}, err
@@ -54,11 +54,10 @@ func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, s
 
 	// remote_volume, when set, is a UC Volume path; DABs' artifact uploader handles
 	// /Volumes destinations natively (GetFilerForLibraries → filerForVolume).
-	remoteVolume := ""
 	if snap.RemoteVolume != nil {
-		remoteVolume = *snap.RemoteVolume
+		snapshotArtifactPath = *snap.RemoteVolume
 	}
-	result, err := uploadSnapshotViaDABs(ctx, w, repoPath, plan, remoteVolume)
+	result, err := uploadSnapshotViaDABs(ctx, w, repoPath, plan, snapshotArtifactPath)
 	if err != nil {
 		return snapshotResult{}, err
 	}
@@ -160,27 +159,16 @@ func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, fi
 // uploadSnapshotViaDABs uploads the snapshot through DABs' artifact-upload machinery
 // and returns its remote code_source_path. It builds a minimal bundle whose only
 // artifact is the tarball (as a file-valued code_source_path), rewrites the field to
-// the remote .internal path, and uploads the bytes. When remoteVolume is set the
-// tarball goes to that UC Volume; otherwise to the user's repo_snapshots dir.
+// the remote .internal path, and uploads the bytes. artifactPath is either the
+// already-resolved user's repo_snapshots directory or a configured UC Volume.
 //
 // The tarball name is content-addressed — by (commit, include_paths, root_path subtree)
 // for git_archive and by the working-tree metadata fingerprint for plain_tar —
 // so if the identical object is already uploaded we skip packaging and upload entirely
 // and reuse the remote path.
-func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, remoteVolume string) (snapshotResult, error) {
+func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, artifactPath string) (snapshotResult, error) {
 	// artifactPath is where DABs uploads the tarball; GetFilerForLibraries routes to
 	// a Workspace or Volume filer based on its prefix, then appends /.internal.
-	artifactPath := remoteVolume
-	if artifactPath == "" {
-		base, err := userWorkspaceDir(ctx, w)
-		if err != nil {
-			return snapshotResult{}, err
-		}
-		// The user's repo_snapshots dir (not the default bundle artifact_path, which a
-		// deploy would clean up).
-		artifactPath = path.Join(base, ".air", "repo_snapshots")
-	}
-
 	tmp, err := os.MkdirTemp("", "air-snapshot-*")
 	if err != nil {
 		return snapshotResult{}, err

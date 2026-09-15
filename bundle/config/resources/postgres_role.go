@@ -71,8 +71,9 @@ func (r *PostgresRole) ResourceDescription() ResourceDescription {
 }
 
 func (r *PostgresRole) GetName() string {
-	// Roles don't have a user-visible name field.
-	return ""
+	// Roles have no name field of their own; the resource name is the ID
+	// ("projects/{project_id}/branches/{branch_id}/roles/{role_id}").
+	return r.ID
 }
 
 func (r *PostgresRole) GetURL() (string, bool) {

@@ -97,7 +97,8 @@ func newCreate() *cobra.Command {
       *shared_catalog*.*shared_schema*.*asset_name*
 
       For notebooks, the name is the notebook file name. For jar analyses, the
-      name is the jar analysis name.
+      name is the jar analysis name. For Genie spaces, the name is derived from
+      the clean room; the caller does not choose it.
     ASSET_TYPE: The type of the asset.
       Supported values: [
         FOREIGN_TABLE,
@@ -544,7 +545,8 @@ func newUpdate() *cobra.Command {
       *shared_catalog*.*shared_schema*.*asset_name*
 
       For notebooks, the name is the notebook file name. For jar analyses, the
-      name is the jar analysis name.`
+      name is the jar analysis name. For Genie spaces, the name is derived from
+      the clean room; the caller does not choose it.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

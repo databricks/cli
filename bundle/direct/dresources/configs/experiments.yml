@@ -1,0 +1,15 @@
+# TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
+recreate_on_changes:
+  - field: artifact_location
+    reason: immutable
+backend_defaults:
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/mlflow/resource_mlflow_experiment.go#L34
+  # SetForceNew().SetSuppressDiff(): backend generates artifact_location when not set by user
+  - field: artifact_location
+ignore_remote_changes:
+  # Tags updates are not supported by TF. This mirrors that behaviour.
+  - field: tags
+    reason: terraform_compat
+ignore_local_changes:
+  - field: tags
+    reason: terraform_compat

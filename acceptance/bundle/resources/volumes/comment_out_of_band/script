@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 envsubst < databricks.yml.tmpl > databricks.yml
 
 VOLUME="main.test-schema-${UNIQUE_NAME}.test-volume-${UNIQUE_NAME}"

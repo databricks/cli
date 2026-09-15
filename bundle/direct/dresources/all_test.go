@@ -106,6 +106,22 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"mcp_services": &resources.McpService{
+		McpServiceConfig: resources.McpServiceConfig{
+			Parent:       "schemas/main.default",
+			McpServiceId: "my_mcp_service",
+			Comment:      "Test mcp service",
+		},
+	},
+
+	"model_provider_services": &resources.ModelProviderService{
+		ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+			Parent:                 "schemas/main.default",
+			ModelProviderServiceId: "my_model_provider_service",
+			Comment:                "Test model provider service",
+		},
+	},
+
 	"registered_models": &resources.RegisteredModel{
 		CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{
 			Name:            "my_registered_model",
@@ -750,6 +766,39 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"model_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_service",
+			FullName:      "main.myschema.mymodelservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"mcp_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "mcp_service",
+			FullName:      "main.myschema.mymcpservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"model_provider_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_provider_service",
+			FullName:      "main.myschema.myproviderservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
@@ -1181,10 +1230,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	// postgres_snapshot_schedules has no delete endpoint: DoDelete disables the
-	// schedule by setting an empty cadence set, and the schedule remains readable
-	// (it is intrinsic to the branch), so DoRead still succeeds afterwards.
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "postgres_snapshot_schedules"
+	// A resource that implements no DoDelete (permissions, grants, job_runs)
+	// leaves the resource in place, so DoRead still succeeds afterwards.
+	// postgres_snapshot_schedules does implement DoDelete but has no delete
+	// endpoint: it disables the schedule by setting an empty cadence set, and the
+	// schedule remains readable (it is intrinsic to the branch).
+	deleteIsNoop := !adapter.HasDoDelete() || group == "postgres_snapshot_schedules"
 	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.

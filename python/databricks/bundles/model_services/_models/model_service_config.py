@@ -31,23 +31,17 @@ class ModelServiceConfig:
 
     inference_table: VariableOrOptional[InferenceTableConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Inference table config for payload logging.
+    Inference table configuration for payload logging.
     """
 
     rate_limits: VariableOrList[RateLimit] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Rate limits applied to requests routed through this model service.
+    Rate limits applied to requests routed through this model service.
     """
 
     routing: VariableOrOptional[ModelServiceConfigRoutingConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Routing configuration: destinations, routing strategy, and fallback.
+    Routing configuration: destinations and fallback.
     """
 
     @classmethod
@@ -63,23 +57,17 @@ class ModelServiceConfigDict(TypedDict, total=False):
 
     inference_table: VariableOrOptional[InferenceTableConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Inference table config for payload logging.
+    Inference table configuration for payload logging.
     """
 
     rate_limits: VariableOrList[RateLimitParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Rate limits applied to requests routed through this model service.
+    Rate limits applied to requests routed through this model service.
     """
 
     routing: VariableOrOptional[ModelServiceConfigRoutingConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Routing configuration: destinations, routing strategy, and fallback.
+    Routing configuration: destinations and fallback.
     """
 
 

@@ -125,11 +125,6 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			if !jsonOut {
 				out := cmd.OutOrStdout()
 				printSubmitResult(ctx, out, runIDStr, dashboardURL)
-				// Append the MLflow links only if they resolve; a bare submit is not
-				// blocked on them since the confirmation above is already printed.
-				if ids := resolveMLflowIDsForRun(ctx, w, runID); ids != nil {
-					printMLflowLinks(ctx, out, w.Config.Host, ids)
-				}
 				printPostSubmitGuidance(out, w.Config.Profile, runIDStr)
 				return nil
 			}
@@ -250,8 +245,7 @@ func handleWatchResult(out io.Writer, profile, runID string, err error) error {
 	return root.ErrAlreadyPrinted
 }
 
-// printSubmitResult writes the green success line and Job Run link. These don't
-// depend on the MLflow IDs, so they print before any MLflow poll. The link is
+// printSubmitResult writes the green success line and Job Run link. The link is
 // styled (blue, underlined) and clickable, matching the `air get` view, and
 // degrades to plain text on non-rich terminals.
 func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardURL string) {
@@ -260,18 +254,6 @@ func printSubmitResult(ctx context.Context, out io.Writer, runIDStr, dashboardUR
 
 	fmt.Fprintln(out, p.green.Render("Submitted workload with Job Run ID: "+runIDStr))
 	fmt.Fprintln(out, "View job run at: "+link(colorOn, p.blue, dashboardURL, dashboardURL))
-}
-
-// printMLflowLinks appends the styled, clickable MLflow run and experiment links
-// once their IDs are resolved.
-func printMLflowLinks(ctx context.Context, out io.Writer, host string, ids *mlflowIdentifiers) {
-	renderer, colorOn := cmdio.NewRenderer(ctx, out)
-	p := newPalette(renderer)
-
-	runURL := mlflowRunURL(host, ids)
-	expURL := mlflowExperimentURL(host, ids)
-	fmt.Fprintln(out, "View MLflow run at: "+link(colorOn, p.blue, runURL, runURL))
-	fmt.Fprintln(out, "View MLflow experiment at: "+link(colorOn, p.blue, expURL, expURL))
 }
 
 // logsDividerWidth is the total display width of the --watch logs divider.

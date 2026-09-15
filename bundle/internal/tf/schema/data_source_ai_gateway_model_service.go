@@ -3,7 +3,6 @@
 package schema
 
 type DataSourceAiGatewayModelServiceConfigInferenceTable struct {
-	Disabled        bool   `json:"disabled,omitempty"`
 	IsDeleted       bool   `json:"is_deleted,omitempty"`
 	Parent          string `json:"parent"`
 	Table           string `json:"table,omitempty"`
@@ -11,13 +10,11 @@ type DataSourceAiGatewayModelServiceConfigInferenceTable struct {
 }
 
 type DataSourceAiGatewayModelServiceConfigRateLimits struct {
-	Key             string `json:"key"`
-	Principal       string `json:"principal,omitempty"`
-	RenewalPeriod   string `json:"renewal_period"`
-	RequestTagKey   string `json:"request_tag_key,omitempty"`
-	RequestTagValue string `json:"request_tag_value,omitempty"`
-	Requests        int    `json:"requests,omitempty"`
-	Tokens          int    `json:"tokens,omitempty"`
+	Key           string `json:"key"`
+	Principal     string `json:"principal,omitempty"`
+	RenewalPeriod string `json:"renewal_period"`
+	Requests      int    `json:"requests,omitempty"`
+	Tokens        int    `json:"tokens,omitempty"`
 }
 
 type DataSourceAiGatewayModelServiceConfigRoutingDestinationsExternalModelConfigTarget struct {
@@ -82,13 +79,9 @@ type DataSourceAiGatewayModelServiceConfigRoutingFallback struct {
 	Destinations []DataSourceAiGatewayModelServiceConfigRoutingFallbackDestinations `json:"destinations,omitempty"`
 }
 
-type DataSourceAiGatewayModelServiceConfigRoutingTrafficSplitting struct{}
-
 type DataSourceAiGatewayModelServiceConfigRouting struct {
-	Destinations      []DataSourceAiGatewayModelServiceConfigRoutingDestinations    `json:"destinations,omitempty"`
-	Fallback          *DataSourceAiGatewayModelServiceConfigRoutingFallback         `json:"fallback,omitempty"`
-	FirstTokenTimeout string                                                        `json:"first_token_timeout,omitempty"`
-	TrafficSplitting  *DataSourceAiGatewayModelServiceConfigRoutingTrafficSplitting `json:"traffic_splitting,omitempty"`
+	Destinations []DataSourceAiGatewayModelServiceConfigRoutingDestinations `json:"destinations,omitempty"`
+	Fallback     *DataSourceAiGatewayModelServiceConfigRoutingFallback      `json:"fallback,omitempty"`
 }
 
 type DataSourceAiGatewayModelServiceConfig struct {
@@ -110,7 +103,6 @@ type DataSourceAiGatewayModelService struct {
 	Etag              string                                         `json:"etag,omitempty"`
 	MetastoreId       string                                         `json:"metastore_id,omitempty"`
 	Name              string                                         `json:"name"`
-	Owner             string                                         `json:"owner,omitempty"`
 	ProviderConfig    *DataSourceAiGatewayModelServiceProviderConfig `json:"provider_config,omitempty"`
 	SupportedApiTypes []string                                       `json:"supported_api_types,omitempty"`
 	UpdateTime        string                                         `json:"update_time,omitempty"`

@@ -1,0 +1,15 @@
+# The committed pyproject has no direct-pin conflict, so the merge phase succeeds
+# (no W_USER_CONSTRAINT_CONFLICT). uv sync then fails to resolve a transitive
+# conflict — here a fake uv on PATH (see acceptance/cmd/psql for the pattern)
+# stands in for the network-dependent resolve — and the CLI now classifies that
+# resolver failure as E_PROVISION_CONFLICT, the same code the merge-phase
+# direct-pin conflict uses. The merged pins are already on disk (diskMutated=true).
+mv fake-uv.sh uv
+chmod +x uv
+cleanup() {
+  rm -f uv
+}
+trap cleanup EXIT
+export PATH="$(pwd):$PATH"
+
+musterr $CLI environments setup-local --serverless-version 4 --output json
