@@ -4,6 +4,3 @@ EnvMatrix.DMS = [""]
 
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
-
-# The restored terraform deploy leaves terraform provider artifacts behind.
-Ignore = [".databricks"]
