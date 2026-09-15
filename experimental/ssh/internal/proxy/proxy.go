@@ -108,7 +108,7 @@ type resumeState struct {
 	// Total payload bytes received from the peer and written to sshd's stdin on the server or
 	// stdout on the client. The peer replays from this offset, so it only advances after a
 	// successful write.
-	handled atomic.Int64
+	delivered atomic.Int64
 	// The delivered count we last told the peer about, so an ack is only sent once the number
 	// has actually moved.
 	acked atomic.Int64
@@ -469,7 +469,7 @@ func (pc *proxyConnection) sendControlMessage(delivered int64) error {
 // ackDelivered queues an acknowledgment without blocking reads. A synchronous
 // write here deadlocks with a handover waiting for this loop to read a close frame.
 func (pc *proxyConnection) ackDelivered() {
-	delivered := pc.resume.handled.Load()
+	delivered := pc.resume.delivered.Load()
 	if delivered-pc.resume.acked.Load() < proxyAckThreshold {
 		return
 	}
@@ -494,12 +494,12 @@ func (pc *proxyConnection) runAckLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if pc.resume.handled.Load() == pc.resume.acked.Load() {
+			if pc.resume.delivered.Load() == pc.resume.acked.Load() {
 				continue
 			}
 		case <-pc.resume.ackNeeded:
 		}
-		delivered := pc.resume.handled.Load()
+		delivered := pc.resume.delivered.Load()
 		if err := pc.sendControlMessage(delivered); err != nil {
 			log.Debugf(ctx, "Failed to acknowledge %d delivered bytes: %v", delivered, err)
 			continue
@@ -600,7 +600,7 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 		if pc.resumable() {
 			// Only count what actually reached the destination: this is the offset the peer
 			// replays from, so counting an unwritten byte would silently lose it.
-			pc.resume.handled.Add(int64(len(data)))
+			pc.resume.delivered.Add(int64(len(data)))
 			pc.ackDelivered()
 		}
 	}

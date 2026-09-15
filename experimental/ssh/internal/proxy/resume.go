@@ -129,7 +129,7 @@ func (pc *proxyConnection) deliveredCount() int64 {
 	if !pc.resumable() {
 		return 0
 	}
-	return pc.resume.handled.Load()
+	return pc.resume.delivered.Load()
 }
 
 // sendGate throttles the sending loop while a reattach is in progress.
@@ -239,7 +239,7 @@ func (pc *proxyConnection) redial(ctx context.Context) (*websocket.Conn, int64, 
 	for {
 		conn, err := pc.createWebsocketConnection(ctx, DialRequest{
 			ConnID:        pc.connID,
-			Delivered:     pc.resume.handled.Load(),
+			Delivered:     pc.resume.delivered.Load(),
 			Reattach:      true,
 			ResumeCapable: true,
 		})
@@ -404,7 +404,7 @@ func (pc *proxyConnection) prepareReplay(peerDelivered int64) error {
 // connection, so the peer knows where to replay from. Written directly rather than through
 // sendMessage: the connection is not installed yet, and this must not be recorded as payload.
 func (pc *proxyConnection) sendResumeHandshake(conn *websocket.Conn) error {
-	payload, err := json.Marshal(controlMessage{Delivered: pc.resume.handled.Load()})
+	payload, err := json.Marshal(controlMessage{Delivered: pc.resume.delivered.Load()})
 	if err != nil {
 		return err
 	}
