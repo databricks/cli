@@ -18,15 +18,11 @@ import (
 // Computed by Build and consumed by Deploy to upload the right files.
 type LibLocationMap map[string][]libraries.LocationToUpdate
 
-// Build runs the build phase, which builds artifacts.
-func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
-	log.Info(ctx, "Phase: build")
-
+// resolveLibraries runs variable resolution, glob expansion, path rewriting,
+// and wheel-task transformation to produce the local→remote upload map.
+// It is the shared tail of both Build and FindLibraries.
+func resolveLibraries(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 	bundle.ApplySeqContext(ctx, b,
-		scripts.Execute(config.ScriptPreBuild),
-		artifacts.Build(),
-		scripts.Execute(config.ScriptPostBuild),
-
 		mutator.ResolveVariableReferencesWithoutResources(
 			"artifacts",
 		),
@@ -40,8 +36,6 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		// mutator is part of the deploy step rather than validate.
 		libraries.ExpandGlobReferences(),
 		libraries.CheckForSameNameLibraries(),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
 	)
 
 	if logdiag.HasError(ctx) {
@@ -54,4 +48,32 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 	}
 	bundle.ApplyContext(ctx, b, trampoline.TransformWheelTask())
 	return libs
+}
+
+// Build runs the build phase, which builds artifacts.
+func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
+	log.Info(ctx, "Phase: build")
+
+	bundle.ApplySeqContext(ctx, b,
+		scripts.Execute(config.ScriptPreBuild),
+		artifacts.Build(),
+		scripts.Execute(config.ScriptPostBuild),
+		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
+		libraries.SwitchToPatchedWheels(),
+	)
+
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
+	return resolveLibraries(ctx, b)
+}
+
+// FindLibraries discovers which local library files need uploading by reading
+// the bundle config (glob expansion and path rewriting) without running any
+// build commands. Used when applying a saved plan: artifacts were already built
+// at plan time and the plan's new_state carries the correct remote paths.
+func FindLibraries(ctx context.Context, b *bundle.Bundle) LibLocationMap {
+	log.Info(ctx, "Phase: find libraries")
+	return resolveLibraries(ctx, b)
 }
