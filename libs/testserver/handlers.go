@@ -761,7 +761,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// SQL Statement Execution lifecycle. Tests program these by registering
-	// matchers via Server.HandleSQL / HandleSQLPattern (see statements.go).
+	// matchers via Server.HandleSQL (see statements.go).
 	// They live here, not in New, so they act as overridable defaults: a test
 	// that needs raw control over a SQL endpoint (malformed body, transport
 	// error, custom status) can register its own handler for the same pattern
