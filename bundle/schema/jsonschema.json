@@ -1589,6 +1589,39 @@
                   }
                 ]
               },
+              "resources.McpService": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "comment": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.McpServiceConfig"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "mcp_service_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "parent",
+                      "mcp_service_id"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.MlflowExperiment": {
                 "oneOf": [
                   {
@@ -1737,6 +1770,39 @@
                     "additionalProperties": false,
                     "required": [
                       "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.ModelProviderService": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "comment": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "config": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfig"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "model_provider_service_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "parent",
+                      "model_provider_service_id"
                     ]
                   },
                   {
@@ -3959,6 +4025,12 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
                       "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs)."
                     },
+                    "mcp_services": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.McpService"
+                    },
+                    "model_provider_services": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelProviderService"
+                    },
                     "model_services": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelService"
                     },
@@ -5403,6 +5475,538 @@
                 }
               ]
             },
+            "catalog.McpServiceConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Operational configuration for an MCP service. Groups the source reference,\ntool selectors, and rate limits -- the fields that configure how the MCP\nservice behaves at invocation time.",
+                  "properties": {
+                    "include_tool_selectors": {
+                      "description": "Tool names or prefix patterns to expose from the MCP server. Use exact\ntool names or prefix patterns such as `read_*`. An empty list exposes all\ntools. At most 1,024 selectors are allowed, and each selector can contain\nat most 256 characters.",
+                      "$ref": "#/$defs/slice/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "rate_limits": {
+                      "description": "Rate limits for tool invocations. Supported scopes are user, group, service\nprincipal, the service as a whole, and each user by default. Request and\ntoken limits are supported. Empty when no rate limit is configured.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RateLimit",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "source_connection": {
+                      "description": "Unity Catalog connection referencing the MCP server. Required on Create.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.McpServiceConfigSourceConnection",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.McpServiceConfigSourceConnection": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Unity Catalog connection that points to the MCP server. On Create, provide\n`name` in the schema-scoped form\n`connections/{catalog}.{schema}.{connection}`. On read, the service\npopulates the resolved connection metadata. If the connection is deleted,\nits reference remains visible so you can identify the broken dependency.",
+                  "properties": {
+                    "name": {
+                      "description": "Resource name of the Unity Catalog connection used to access the MCP\nserver, in the form `connections/{catalog}.{schema}.{connection}`.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Behavioral configuration for a ModelProviderService: provider authentication\nand provider-specific fields, the catalog of models this provider\nservice can route to, and the passthrough policy that governs how request\nheaders, query parameters, and unmanaged subpaths cross the trust boundary\nto the upstream provider.",
+                  "properties": {
+                    "allow_all_targets": {
+                      "description": "When true, accepts any model exposed by the upstream provider; `targets`\nis not required and does not restrict routability. When false, only\nmodels listed in `targets` are routable. Defaults to false.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "amazon_bedrock": {
+                      "description": "Amazon Bedrock provider configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "anthropic": {
+                      "description": "Anthropic provider configuration. Exactly one of `direct` or `relayed` must\nbe set on Create; the two are mutually exclusive.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAnthropicProviderConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "azure_openai": {
+                      "description": "Azure OpenAI provider configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAzureOpenAiProviderConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "custom": {
+                      "description": "Custom OpenAI-compatible provider configuration with bearer-token\nauthentication.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigCustomProviderConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "forward_headers": {
+                      "description": "Whether to forward incoming HTTP headers to the upstream provider. Defaults\nto false and is configured for the entire provider service, not per request.\nUpstream authentication is configured separately in the provider-specific\nconfiguration.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "forward_query_parameters": {
+                      "description": "Whether to forward incoming query parameters to the upstream provider.\nDefaults to false and is configured for the entire provider service, not\nper request.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "forward_unmanaged_paths": {
+                      "description": "Whether to proxy paths that AI Gateway does not recognize as configured\nprovider-native API types. Defaults to false. When true, these paths are\nforwarded unchanged to the upstream provider. When false, only\nrecognized API paths are served. Enabling this broadens the upstream API\nsurface exposed through the provider service.",
+                      "$ref": "#/$defs/bool",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "gemini_enterprise": {
+                      "description": "Gemini Enterprise provider configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigGeminiEnterpriseProviderConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "inference_table": {
+                      "description": "Payload logging configuration for requests sent directly to this provider\nservice. Requests routed through a model service are captured by that model\nservice's inference table instead.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.InferenceTableConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "microsoft_foundry": {
+                      "description": "Microsoft Foundry provider configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigMicrosoftFoundryProviderConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "openai": {
+                      "description": "OpenAI provider configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigOpenAiProviderConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "provider_type": {
+                      "description": "External model provider. Required on Create and immutable thereafter. Set\nthe matching provider-specific configuration, such as `openai`,\n`azure_openai`, or `amazon_bedrock`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigExternalModelProviderType",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "rate_limits": {
+                      "description": "Rate limits for requests sent directly to this provider service. Requests\nrouted through a model service use that model service's rate limits instead.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RateLimit",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "targets": {
+                      "description": "Models and provider-native API types exposed by this provider service. Each\nentry must include at least one `native_api_types` value. When\n`allow_all_targets` is false, at least one entry is required and model\nservice destinations can reference only listed models. When\n`allow_all_targets` is true, any upstream model is routable; entries in\nthis list provide API-type metadata without restricting other models.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigModelTargetConfig",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigAmazonBedrockProviderConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Amazon Bedrock provider configuration.",
+                  "properties": {
+                    "direct": {
+                      "description": "Amazon Bedrock region and authentication configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAmazonBedrockProviderDirectConfig",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigAmazonBedrockProviderDirectConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Direct form of Amazon Bedrock provider config.\n\nAuthentication is one of two mutually exclusive modes, exactly one of which\nmust be supplied on Create:\n- Access keys: set `aws_access_key`, leave `service_credential` unset.\n- Unity Catalog service credential: set `service_credential.name` to the\nresource name `credentials/{name}`, leave `aws_access_key` unset. The\ncredential value lives in Unity Catalog and is referenced by name, not\nheld on this message.\nSetting more than one mode is rejected.",
+                  "properties": {
+                    "aws_access_key": {
+                      "description": "AWS access-key-pair authentication. Set `access_key_id` and\n`secret_access_key.plaintext`. Mutually exclusive with\n`service_credential`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAwsAccessKey",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "region": {
+                      "description": "AWS region where the Bedrock endpoint is hosted (e.g., `us-east-1`).\nRequired on Create.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "service_credential": {
+                      "description": "Reference to a Unity Catalog service credential authorizing Bedrock\nrequests. On Create, supply `service_credential.name` in the form\n`credentials/{name}`. Required on Create when using service-credential\nauthentication; mutually exclusive with `aws_access_key`. The credential\nis referenced by name; its value is not carried here. Only\nsupported on AWS-hosted workspaces.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigServiceCredential",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigAnthropicProviderConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Anthropic provider configuration. Exactly one of `direct` or `relayed` must\nbe set on Create; the two are mutually exclusive.",
+                  "properties": {
+                    "direct": {
+                      "description": "Direct authentication with an API key supplied in\n`direct.api_key.plaintext`. Required unless `relayed` is set.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAnthropicProviderDirectConfig",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "relayed": {
+                      "description": "Relayed authentication. Each inference request supplies the caller's\nOAuth token, which is forwarded to Anthropic. No Anthropic credential is\nstored. Mutually exclusive with `direct`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAnthropicProviderRelayedConfig",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigAnthropicProviderDirectConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Direct form of Anthropic provider config.",
+                  "properties": {
+                    "api_key": {
+                      "description": "Anthropic API key. Required when creating the service. Supply the value\nin `api_key.plaintext`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigAnthropicProviderRelayedConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Relayed Anthropic provider configuration. Each inference request supplies\nthe caller's OAuth token, which is forwarded to Anthropic. No Anthropic\ncredential is stored.",
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigAwsAccessKey": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "AWS access-key-pair auth for Amazon Bedrock: a SigV4-signing key pair.",
+                  "properties": {
+                    "access_key_id": {
+                      "description": "AWS access key ID. Required on Create when using access-key auth. Treated as\nusername-equivalent (not a secret value): round-trips on reads and is\nscrubbed from audit logs.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "secret_access_key": {
+                      "description": "AWS secret access key paired with `access_key_id`. Required when creating\na service with access-key authentication. Supply the value in\n`secret_access_key.plaintext`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigAzureOpenAiProviderConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Azure OpenAI provider configuration.",
+                  "properties": {
+                    "direct": {
+                      "description": "Azure OpenAI endpoint and authentication configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigAzureOpenAiProviderDirectConfig",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigAzureOpenAiProviderDirectConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Direct form of Azure OpenAI provider config. Exactly one of three\nmutually-exclusive auth modes must be supplied on Create:\n- API key: set `api_key`, leave `entra_service_principal` and\n`service_credential` unset.\n- Entra ID (service principal): set `entra_service_principal`, leave\n`api_key` and `service_credential` unset.\n- Unity Catalog service credential: set `service_credential.name` to the\nresource name `credentials/{name}`, leave `api_key` and\n`entra_service_principal` unset. The credential value lives in Unity\nCatalog and is referenced by name, not held on this message. Only\nsupported on Azure-hosted workspaces.\nSetting more than one mode is rejected.",
+                  "properties": {
+                    "api_key": {
+                      "description": "Azure OpenAI API key. Supply the value in `api_key.plaintext`. Mutually\nexclusive with Entra ID and Unity Catalog service credential\nauthentication.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "base_url": {
+                      "description": "Full Azure OpenAI endpoint base URL, e.g.\n`https://myresource.openai.azure.com`. Required on Create.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "entra_service_principal": {
+                      "description": "Entra ID service-principal authentication. Set `tenant_id`, `client_id`,\nand `client_secret.plaintext`. Mutually exclusive with `api_key` and\n`service_credential`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigEntraServicePrincipal",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "service_credential": {
+                      "description": "Reference to a Unity Catalog service credential authorizing Azure OpenAI\nrequests. On Create, supply `service_credential.name` in the form\n`credentials/{name}`. Required on Create when using service-credential\nauthentication; mutually exclusive with `api_key` and\n`entra_service_principal`. The credential is referenced by name; its value\nis not carried here. Only supported on Azure-hosted workspaces.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigServiceCredential",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigCustomProviderConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Custom OpenAI-compatible provider configuration with bearer-token\nauthentication.",
+                  "properties": {
+                    "direct": {
+                      "description": "Endpoint and authentication configuration for the custom provider.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigCustomProviderDirectConfig",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigCustomProviderDirectConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Direct form of a custom provider configuration. Set `api_key` to the bearer\ntoken sent in the `Authorization` header.",
+                  "properties": {
+                    "api_key": {
+                      "description": "Bearer token forwarded in the `Authorization` header. Supply the value\nin `api_key.plaintext`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "base_url": {
+                      "description": "Endpoint URL of the OpenAI-compatible service (e.g.,\n`https://api.example.com/v1`). Required on Create.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigEntraServicePrincipal": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Entra ID (Azure AD) service-principal authentication. The `tenant_id` and\n`client_id` identify the service principal, and `client_secret` authenticates\nit. AI Gateway exchanges these credentials for an Entra bearer token for\nrequests to Azure OpenAI or Microsoft Foundry.",
+                  "properties": {
+                    "client_id": {
+                      "description": "Entra ID client (application) ID. Required on Create.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "client_secret": {
+                      "description": "Entra ID client secret. Supply the value in `client_secret.plaintext`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "tenant_id": {
+                      "description": "Entra ID (Azure AD) tenant ID. Required on Create.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigExternalModelProviderType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "External LLM provider for an EXTERNAL_FOUNDATION_MODEL destination.",
+                  "enum": [
+                    "EXTERNAL_MODEL_PROVIDER_TYPE_OPENAI",
+                    "EXTERNAL_MODEL_PROVIDER_TYPE_AZURE_OPENAI",
+                    "EXTERNAL_MODEL_PROVIDER_TYPE_ANTHROPIC",
+                    "EXTERNAL_MODEL_PROVIDER_TYPE_AMAZON_BEDROCK",
+                    "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
+                    "EXTERNAL_MODEL_PROVIDER_TYPE_MICROSOFT_FOUNDRY",
+                    "EXTERNAL_MODEL_PROVIDER_TYPE_GEMINI_ENTERPRISE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigGeminiEnterpriseProviderConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Gemini Enterprise provider configuration.",
+                  "properties": {
+                    "direct": {
+                      "description": "Gemini Enterprise project, region, and authentication configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigGeminiEnterpriseProviderDirectConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Direct Gemini Enterprise provider configuration. An API key is required\nwhen creating the service.",
+                  "properties": {
+                    "api_key": {
+                      "description": "Google Gemini Enterprise API key. Required when creating the service.\nSupply the value in `api_key.plaintext`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "project_id": {
+                      "description": "GCP project ID hosting the Gemini Enterprise endpoint. Required on Create.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "region": {
+                      "description": "GCP region of the Gemini Enterprise endpoint (e.g., `us-central1`).\nRequired on Create.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigMicrosoftFoundryProviderConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Microsoft Foundry provider configuration.",
+                  "properties": {
+                    "direct": {
+                      "description": "Microsoft Foundry endpoint and authentication configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigMicrosoftFoundryProviderDirectConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Direct form of Microsoft Foundry provider config.\n\nAuthentication is one of three mutually exclusive modes, exactly one of which\nmust be supplied on Create:\n- API key: set `api_key`, leave `entra_service_principal` and\n`service_credential` unset.\n- Entra ID (service principal): set `entra_service_principal`, leave\n`api_key` and `service_credential` unset. AI Gateway exchanges these for\nan Entra bearer token on outbound requests via the OAuth2\nclient-credentials grant.\n- Unity Catalog service credential: set `service_credential.name` to the\nresource name `credentials/{name}`, leave `api_key` and\n`entra_service_principal` unset. The credential value lives in Unity\nCatalog and is referenced by name, not held on this message. Only\nsupported on Azure-hosted workspaces.\nSetting more than one mode is rejected.",
+                  "properties": {
+                    "api_key": {
+                      "description": "Microsoft Foundry API key. Supply the value in `api_key.plaintext`.\nMutually exclusive with Entra ID and Unity Catalog service credential\nauthentication.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "base_url": {
+                      "description": "Microsoft Foundry endpoint URL. Required on Create.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "entra_service_principal": {
+                      "description": "Entra ID service-principal authentication. Set `tenant_id`, `client_id`,\nand `client_secret.plaintext`. Mutually exclusive with `api_key` and\n`service_credential`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigEntraServicePrincipal",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "service_credential": {
+                      "description": "Reference to a Unity Catalog service credential authorizing Microsoft\nFoundry requests. On Create, supply `service_credential.name` in the form\n`credentials/{name}`. Required on Create when using service-credential\nauthentication; mutually exclusive with `api_key` and\n`entra_service_principal`. The credential is referenced by name; its value\nis not carried here. Only supported on Azure-hosted workspaces.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigServiceCredential",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "catalog.ModelProviderServiceConfigModelTargetConfig": {
               "oneOf": [
                 {
@@ -5423,6 +6027,99 @@
                   "additionalProperties": false,
                   "required": [
                     "model"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigOpenAiProviderConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "OpenAI provider configuration.",
+                  "properties": {
+                    "direct": {
+                      "description": "OpenAI configuration with an API key supplied in the request.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigOpenAiProviderDirectConfig",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigOpenAiProviderDirectConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Direct (inline-credentials) form of the OpenAI provider config.",
+                  "properties": {
+                    "api_key": {
+                      "description": "OpenAI API key. Required when creating the service. Supply the value in\n`api_key.plaintext`.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "base_url": {
+                      "description": "Optional custom base URL. Defaults to `https://api.openai.com/v1`. Use for\nOpenAI-API-compatible third-party endpoints or in-network proxies.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    },
+                    "organization": {
+                      "description": "Optional OpenAI organization ID. When set, the platform forwards it as\nthe `OpenAI-Organization` header.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigProviderSecret": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "A secret value supplied as part of an inline provider config. The caller\nsupplies the value as inline `plaintext` on writes; the platform stores it\nencrypted. The `plaintext` field is `INPUT_ONLY` and never round-trips on\nreads.",
+                  "properties": {
+                    "plaintext": {
+                      "description": "Inline plaintext credential. INPUT_ONLY: the value never round-trips on\nreads. Get and List responses omit `plaintext`; the enclosing secret\nobject remains present to indicate that a secret is configured.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.ModelProviderServiceConfigServiceCredential": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "The customer-owned Unity Catalog service credential a model provider service\nuses to authenticate to its provider, referenced by name.",
+                  "properties": {
+                    "name": {
+                      "description": "Resource name of the bound Unity Catalog service credential, in the form\n`credentials/{name}`. Supply this field when creating the service or\nrebinding its credential. On read, it reflects the credential's current\nname.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
                   ]
                 },
                 {
@@ -17169,6 +17866,20 @@
                     }
                   ]
                 },
+                "resources.McpService": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.McpService"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.MlflowExperiment": {
                   "oneOf": [
                     {
@@ -17189,6 +17900,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.MlflowModel"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.ModelProviderService": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ModelProviderService"
                       }
                     },
                     {
@@ -17864,6 +18589,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "catalog.ModelProviderServiceConfigModelTargetConfig": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigModelTargetConfig"
                     }
                   },
                   {

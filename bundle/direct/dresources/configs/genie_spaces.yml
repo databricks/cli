@@ -1,0 +1,5 @@
+ignore_remote_changes:
+  # serialized_space locally (structured YAML) and remotely (JSON string) will differ
+  # textually, so we cannot meaningfully compare them for drift.
+  - field: serialized_space
+    reason: etag_based

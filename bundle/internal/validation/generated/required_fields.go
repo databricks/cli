@@ -203,6 +203,18 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*]":                                      {"id"},
 	"resources.jobs.*.webhook_notifications.on_success[*]":                                                         {"id"},
 
+	"resources.mcp_services.*":                          {"parent", "mcp_service_id"},
+	"resources.mcp_services.*.config.rate_limits[*]":    {"key", "renewal_period"},
+	"resources.mcp_services.*.config.source_connection": {"name"},
+
+	"resources.model_provider_services.*":                                                    {"parent", "model_provider_service_id"},
+	"resources.model_provider_services.*.config.amazon_bedrock.direct.service_credential":    {"name"},
+	"resources.model_provider_services.*.config.azure_openai.direct.service_credential":      {"name"},
+	"resources.model_provider_services.*.config.inference_table":                             {"parent"},
+	"resources.model_provider_services.*.config.microsoft_foundry.direct.service_credential": {"name"},
+	"resources.model_provider_services.*.config.rate_limits[*]":                              {"key", "renewal_period"},
+	"resources.model_provider_services.*.config.targets[*]":                                  {"model"},
+
 	"resources.model_services.*":                                                                       {"parent", "model_service_id"},
 	"resources.model_services.*.config.inference_table":                                                {"parent"},
 	"resources.model_services.*.config.rate_limits[*]":                                                 {"key", "renewal_period"},

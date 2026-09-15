@@ -16,7 +16,7 @@ import (
 // family has its definition computed from the family and returned on read, even
 // though the config never sets definition. One fixed key is enough to reproduce a
 // non-empty server-computed definition so tests exercise the backend_defaults
-// suppression for definition (see resources.yml cluster_policies).
+// suppression for definition (see cluster_policies.yml).
 func policyFamilyDefinition(familyID string) string {
 	return fmt.Sprintf(`{"policy_family":{"type":"fixed","value":%q}}`, familyID)
 }
