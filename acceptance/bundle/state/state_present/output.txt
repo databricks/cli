@@ -66,8 +66,27 @@ Migrated 1 resource to direct deployment engine.
 
 >>> print_requests.py //api/2.1/unity-catalog/schemas
 "databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
-contains error: 'terraform' was not expected: '"databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"'
-contains error: 'tf-provider' was not expected: '"databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"'
-contains error: 'engine/direct' not found in the output.
 
-Exit code: 1
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py --get //api/2.1/unity-catalog/schemas
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+
+>>> print_state.py
+7
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=7 lineage="test-lineage"
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
+resources.json: remote direct state serial=7 lineage="test-lineage"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=7 lineage="test-lineage"
