@@ -1,0 +1,7 @@
+Name: run_as
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as/default
+
+Validation OK!
