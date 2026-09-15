@@ -337,7 +337,7 @@ func TestSubmitWorkload(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	runID, dashboardURL, err := submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false, false)
 	require.NoError(t, err)
 	assert.Equal(t, int64(777), runID)
 	assert.Contains(t, dashboardURL, "/jobs/runs/777")
@@ -378,7 +378,7 @@ func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false, false)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "failed to create launch directory")
 	assert.Zero(t, submitCalls.Load())
@@ -408,7 +408,7 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	cfg, err := loadRunConfigWithOverrides(t.Context(), cfgPath, []string{"compute.num_accelerators=4"})
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false, false)
 	require.NoError(t, err)
 
 	require.Len(t, got.Tasks, 1)
@@ -439,7 +439,7 @@ environment:
 	cfg, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false, false)
 	require.NoError(t, err)
 
 	tasks, ok := got["tasks"].([]any)
@@ -490,7 +490,7 @@ code_source:
 
 	// The DABs upload path logs via cmdio; the real `air run` context carries it.
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false, false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -535,7 +535,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false, false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -555,14 +555,28 @@ func testSidecarStore(t *testing.T, w *databricks.WorkspaceClient) (filer.Filer,
 
 const testSnapshotArtifactPath = "/Workspace/Users/tester@databricks.com/.air/repo_snapshots"
 
-// A plain-tar (working-tree) snapshot is uploaded under a unique, timestamped name so
-// two concurrent submissions of the same root_path don't clobber each other's upload.
-func TestSubmitWorkloadPlainTarNameIsUnique(t *testing.T) {
+// A plain-tar (working-tree) snapshot is content-addressed by its file fingerprint
+// (path+size+mtime): submitting the same unchanged tree twice reuses the already-uploaded
+// tarball and skips the second upload, resolving to the identical remote path.
+func TestSubmitWorkloadPlainTarContentAddressed(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	// Count snapshot import-file calls, preserving fake-workspace persistence so the
+	// second submit's existence Stat sees the first upload. A count (not a set keyed by
+	// path) is what proves the skip: both submits resolve to the same content-addressed
+	// name, so a set could not tell a skipped second submit from one that re-uploaded to
+	// that same path.
+	snapshotUploads := 0
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		p := req.Vars["path"]
+		if strings.Contains(p, "/.air/repo_snapshots/") {
+			snapshotUploads++
+		}
+		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -584,14 +598,24 @@ code_source:
 	loaded, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	// The uploaded name carries a discriminator (timestamp), not the bare dir name.
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
-	base := path.Base(snap.CodeSourcePath)
-	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be unique, not the bare dir name")
-	assert.Regexp(t, `^src_\d{8}_\d{6}\.tar\.gz$`, base)
+	require.NotZero(t, snapshotUploads, "first submit should upload the tarball")
+	afterFirst := snapshotUploads
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
+	require.NoError(t, err)
+
+	// Content-addressed name: not the bare dir, but a 16-hex-char fingerprint.
+	base := path.Base(first.CodeSourcePath)
+	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be content-addressed, not the bare dir name")
+	assert.Regexp(t, `^src_[0-9a-f]{16}\.tar\.gz$`, base)
+
+	// Same unchanged tree → identical remote path, and the second submit moved no bytes:
+	// zero new import-file calls (a real skip), not a re-upload to the same name.
+	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
+	assert.Equal(t, afterFirst, snapshotUploads, "unchanged plain_tar should skip the second upload")
 }
 
 // A git_archive snapshot is content-addressed by (commit, include_paths): submitting
@@ -639,9 +663,9 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 
 	// Same pinned commit → identical content-addressed remote path, uploaded once
@@ -683,7 +707,7 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase, false)
 	require.NoError(t, err)
 
 	assert.Empty(t, snap.GitStatePath)
@@ -732,7 +756,7 @@ code_source:
 	require.NoError(t, err)
 
 	ctx := cmdio.MockDiscard(t.Context())
-	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
+	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false, false)
 	require.NoError(t, err)
 
 	at := got.Tasks[0].AiRuntimeTask
@@ -767,7 +791,7 @@ func TestSubmitWorkloadGuards(t *testing.T) {
 
 		cfg := *base
 		cfg.UsagePolicyName = new("nope")
-		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false)
+		_, _, err = submitWorkload(t.Context(), pw, &cfg, cfgPath, "", false, false)
 		require.ErrorContains(t, err, `no usage policy named "nope"`)
 		for _, p := range paths {
 			assert.NotContains(t, p, "/workspace/", "no workspace write may precede policy resolution")
@@ -804,7 +828,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false, false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})
@@ -815,7 +839,7 @@ func TestSubmitWorkloadSendsUsagePolicy(t *testing.T) {
 		cfg, err := loadRunConfig(cfgPath)
 		require.NoError(t, err)
 
-		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false)
+		_, _, err = submitWorkload(cmdio.MockDiscard(t.Context()), w, cfg, cfgPath, "idem", false, false)
 		require.NoError(t, err)
 		assert.Equal(t, policyID, got.BudgetPolicyId)
 	})

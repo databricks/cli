@@ -273,7 +273,7 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL. showProgress enables the stderr
 // staging spinner (text mode only).
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress, noCache bool) (int64, string, error) {
 	// Compute the launch dir and command_path up front — a read-only workspace lookup plus a
 	// local path build, no writes yet — so the pre-flight validates the real command_path. The
 	// same path is reused for the upload and submit below, so the validated path is the submitted
@@ -346,7 +346,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		snapshotArtifactPath := path.Join(base, ".air", "repo_snapshots")
 		uploadSnapshot = func(ctx context.Context) (snapshotResult, error) {
 			// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
-			return snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir)
+			return snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir, noCache)
 		}
 	}
 

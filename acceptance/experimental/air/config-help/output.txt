@@ -22,6 +22,7 @@ Flags:
   -f, --file string              Path to the workload YAML config
   -h, --help                     help for run
       --idempotency-key string   Return the existing run if this key was already used
+      --no-cache                 Bypass the local snapshot cache and re-pack the code tarball from scratch
       --override stringArray     Override a YAML field, e.g. compute.num_accelerators=8 (repeatable)
       --watch                    Stream logs until the run completes
 
