@@ -1600,6 +1600,9 @@
                       "config": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.McpServiceConfig"
                       },
+                      "grants": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
@@ -1789,6 +1792,9 @@
                       "config": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfig"
                       },
+                      "grants": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
@@ -1821,6 +1827,9 @@
                       },
                       "config": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelServiceConfig"
+                      },
+                      "grants": {
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.PrivilegeAssignment"
                       },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"

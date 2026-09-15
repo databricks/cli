@@ -1204,6 +1204,9 @@ resources:
         "config":
           "description": |-
             PLACEHOLDER
+        "grants":
+          "description": |-
+            PLACEHOLDER
         "lifecycle":
           "description": |-
             PLACEHOLDER
@@ -1223,6 +1226,9 @@ resources:
         "config":
           "description": |-
             PLACEHOLDER
+        "grants":
+          "description": |-
+            PLACEHOLDER
         "lifecycle":
           "description": |-
             PLACEHOLDER
@@ -1240,6 +1246,9 @@ resources:
           "description": |-
             PLACEHOLDER
         "config":
+          "description": |-
+            PLACEHOLDER
+        "grants":
           "description": |-
             PLACEHOLDER
         "lifecycle":

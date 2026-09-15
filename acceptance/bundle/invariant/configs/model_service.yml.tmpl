@@ -7,3 +7,7 @@ resources:
       parent: schemas/main.default
       model_service_id: test-model-service-$UNIQUE_NAME
       comment: test model service
+      grants:
+        - principal: account users
+          privileges:
+            - APPLY_TAG
