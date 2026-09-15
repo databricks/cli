@@ -54,11 +54,6 @@ func transformDevelopmentMode(ctx context.Context, b *bundle.Bundle) {
 	if t.TriggerPauseStatus == "" {
 		t.TriggerPauseStatus = config.Paused
 	}
-
-	if !config.IsExplicitlyDisabled(t.PipelinesDevelopment) {
-		enabled := true
-		t.PipelinesDevelopment = &enabled
-	}
 }
 
 func (m *applyTargetMode) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {

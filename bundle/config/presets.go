@@ -9,9 +9,6 @@ type Presets struct {
 	// NamePrefix to prepend to all resource names.
 	NamePrefix string `json:"name_prefix,omitempty"`
 
-	// PipelinesDevelopment is the default value for the development field of pipelines.
-	PipelinesDevelopment *bool `json:"pipelines_development,omitempty"`
-
 	// TriggerPauseStatus is the default value for the pause status of all triggers and schedules.
 	// Either config.Paused, config.Unpaused, or empty.
 	TriggerPauseStatus string `json:"trigger_pause_status,omitempty"`

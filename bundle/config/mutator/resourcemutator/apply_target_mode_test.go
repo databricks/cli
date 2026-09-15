@@ -375,7 +375,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
-	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].Development)
+	// Development mode no longer stamps the pipeline-level development property;
+	// dev-vs-prod is decided per update by `bundle run --development`.
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 
 	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
@@ -660,15 +662,4 @@ func TestJobsMaxConcurrentRunsDisabled(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, 1, b.Config.Resources.Jobs["job1"].MaxConcurrentRuns)
-}
-
-func TestPipelinesDevelopmentDisabled(t *testing.T) {
-	b := mockBundle(config.Development)
-	notEnabled := false
-	b.Config.Presets.PipelinesDevelopment = &notEnabled
-
-	diags := bundle.ApplySeq(t.Context(), b, ApplyTargetMode(), ApplyPresets())
-	require.NoError(t, diags.Error())
-
-	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 }

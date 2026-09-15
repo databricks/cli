@@ -1,0 +1,1 @@
+* Development mode no longer sets the pipeline-level `development` property on deployed pipelines, and the `presets.pipelines_development` setting has been removed; use `databricks bundle run --development` to control development mode per update.
