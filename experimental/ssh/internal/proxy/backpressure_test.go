@@ -23,8 +23,9 @@ import (
 func TestResumeBackpressure(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
-	const window = 1 << 20
-	payload := bytes.Repeat([]byte("0123456789abcdef"), window/2)
+	const window = 8 << 20
+	pattern := []byte("0123456789abcdef")
+	payload := bytes.Repeat(pattern, 2*window/len(pattern))
 	received := make(chan []byte, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upgrader := websocket.Upgrader{}
