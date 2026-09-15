@@ -20,13 +20,15 @@ const snapshotPackagingVersion = "v1"
 // with a git_archive key) and lets us invalidate it if the fingerprint scheme changes.
 // computePlainTarKey also folds in the shared snapshotPackagingVersion, so a
 // packaging-logic bump invalidates both modes' keys.
-const plainTarKeyVersion = "plaintar-v1"
+const plainTarKeyVersion = "plaintar-v2"
 
 // computePlainTarKey returns a content-addressed key for a working-tree snapshot: the
-// SHA-256 over every file's path, size and mtime (sorted for stability). An unchanged
+// SHA-256 over every file's path, size, mtime, mode, and symlink target (sorted for
+// stability). An unchanged
 // tree yields the same key, so an already-uploaded tarball can be reused instead of
-// re-packaged and re-uploaded. The fingerprint is size+mtime, not content — the same
-// trade-off DABs file-sync makes — so an edit preserving both size and mtime is not seen.
+// re-packaged and re-uploaded. Regular-file content detection is size+mtime, not
+// content — the same trade-off DABs file-sync makes — so an edit preserving both is
+// not seen.
 func computePlainTarKey(files []snapshotFile) string {
 	sorted := slices.Clone(files)
 	slices.SortFunc(sorted, func(a, b snapshotFile) int {
@@ -35,7 +37,8 @@ func computePlainTarKey(files []snapshotFile) string {
 
 	h := sha256.New()
 	for _, f := range sorted {
-		fmt.Fprintf(h, "%s\x00%d\x00%d\n", filepath.ToSlash(f.rel), f.size, f.modTime)
+		fmt.Fprintf(h, "%s\x00%d\x00%d\x00%d\x00%s\n",
+			filepath.ToSlash(f.rel), f.size, f.modTime, f.mode, f.linkTarget)
 	}
 	fmt.Fprintf(h, "%s\x00%s", plainTarKeyVersion, snapshotPackagingVersion)
 	return hex.EncodeToString(h.Sum(nil))

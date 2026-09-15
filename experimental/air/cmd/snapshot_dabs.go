@@ -132,7 +132,7 @@ func uploadSnapshotSidecars(ctx context.Context, sidecarStore filer.Filer, sidec
 // for plain_tar, the working-tree file listing used to build both the key and the tarball
 // (nil for git_archive, which lists nothing locally). The name is <dirName>_<key>.tar.gz,
 // keyed on (commit, include_paths, root_path subtree) for git_archive and on the
-// working-tree fingerprint (path+size+mtime) for plain_tar, so an identical input
+// working-tree metadata fingerprint for plain_tar, so an identical input
 // reuses the same remote object (see the skip in uploadSnapshotViaDABs).
 func snapshotTarName(ctx context.Context, repoPath string, plan snapshotPlan) (string, []snapshotFile, error) {
 	dirName := filepath.Base(repoPath)
@@ -164,7 +164,7 @@ func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, fi
 // tarball goes to that UC Volume; otherwise to the user's repo_snapshots dir.
 //
 // The tarball name is content-addressed — by (commit, include_paths, root_path subtree)
-// for git_archive and by the working-tree fingerprint (path+size+mtime) for plain_tar —
+// for git_archive and by the working-tree metadata fingerprint for plain_tar —
 // so if the identical object is already uploaded we skip packaging and upload entirely
 // and reuse the remote path.
 func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, remoteVolume string) (snapshotResult, error) {

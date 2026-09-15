@@ -72,23 +72,27 @@ func TestComputeSnapshotCacheKeyProperties(t *testing.T) {
 }
 
 // TestComputePlainTarKeyProperties pins the working-tree fingerprint behavior: it is
-// order-independent and reacts to any change in a file's path, size, or mtime.
+// order-independent and reacts to any change in a file's metadata identity.
 func TestComputePlainTarKeyProperties(t *testing.T) {
 	base := []snapshotFile{
 		{rel: "a.txt", size: 10, modTime: 100},
 		{rel: "src/b.py", size: 20, modTime: 200},
+		{rel: "model", size: 6, modTime: 300, mode: uint32(os.ModeSymlink | 0o777), linkTarget: "v1.bin"},
 	}
 
 	// Order-independent: the files are sorted by path before hashing.
 	assert.Equal(t,
 		computePlainTarKey(base),
-		computePlainTarKey([]snapshotFile{base[1], base[0]}),
+		computePlainTarKey([]snapshotFile{base[2], base[1], base[0]}),
 	)
 
-	// A changed size, mtime, or path each yields a different key.
-	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "a.txt", size: 11, modTime: 100}, base[1]}))
-	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "a.txt", size: 10, modTime: 101}, base[1]}))
-	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "renamed.txt", size: 10, modTime: 100}, base[1]}))
+	// A changed size, mtime, path, mode, or symlink target each yields a different key.
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "a.txt", size: 11, modTime: 100}, base[1], base[2]}))
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "a.txt", size: 10, modTime: 101}, base[1], base[2]}))
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "renamed.txt", size: 10, modTime: 100}, base[1], base[2]}))
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "a.txt", size: 10, modTime: 100, mode: 0o755}, base[1], base[2]}))
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{{rel: "a.txt", size: 10, modTime: 100, mode: uint32(os.ModeSymlink | 0o777), linkTarget: "target"}, base[1], base[2]}))
+	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey([]snapshotFile{base[0], base[1], {rel: "model", size: 6, modTime: 300, mode: uint32(os.ModeSymlink | 0o777), linkTarget: "v2.bin"}}))
 
 	// Adding or dropping a file changes the key.
 	assert.NotEqual(t, computePlainTarKey(base), computePlainTarKey(base[:1]))

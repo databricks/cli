@@ -224,3 +224,28 @@ func TestCreatePlainTarball_SkipsDeletedTrackedFiles(t *testing.T) {
 	assert.Contains(t, entries, dirName+"/keep.txt")
 	assert.NotContains(t, entries, dirName+"/deleted.txt")
 }
+
+func TestSnapshotFilesCapturesModeTypeAndSymlinkTarget(t *testing.T) {
+	repo := t.TempDir()
+	writeRepoFile(t, repo, "run.sh", "#!/bin/sh\n")
+	require.NoError(t, os.Chmod(filepath.Join(repo, "run.sh"), 0o755))
+	require.NoError(t, os.Symlink("run.sh", filepath.Join(repo, "current")))
+
+	files, err := snapshotFiles(t.Context(), repo, nil, false)
+	require.NoError(t, err)
+	byName := make(map[string]snapshotFile, len(files))
+	for _, file := range files {
+		byName[filepath.ToSlash(file.rel)] = file
+	}
+
+	runInfo, err := os.Lstat(filepath.Join(repo, "run.sh"))
+	require.NoError(t, err)
+	assert.Equal(t, uint32(runInfo.Mode()), byName["run.sh"].mode)
+	assert.Empty(t, byName["run.sh"].linkTarget)
+
+	linkInfo, err := os.Lstat(filepath.Join(repo, "current"))
+	require.NoError(t, err)
+	assert.Equal(t, uint32(linkInfo.Mode()), byName["current"].mode)
+	assert.NotZero(t, os.FileMode(byName["current"].mode)&os.ModeSymlink)
+	assert.Equal(t, "run.sh", byName["current"].linkTarget)
+}
