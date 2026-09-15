@@ -89,11 +89,15 @@ type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowSawto
 }
 
 type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowSliding struct {
+	Delay          string `json:"delay,omitempty"`
+	Offset         string `json:"offset,omitempty"`
 	SlideDuration  string `json:"slide_duration"`
 	WindowDuration string `json:"window_duration,omitempty"`
 }
 
 type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowTumbling struct {
+	Delay          string `json:"delay,omitempty"`
+	Offset         string `json:"offset,omitempty"`
 	WindowDuration string `json:"window_duration"`
 }
 
@@ -102,6 +106,7 @@ type ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindow stru
 	Rolling    *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowRolling    `json:"rolling,omitempty"`
 	Sawtooth   *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowSawtooth   `json:"sawtooth,omitempty"`
 	Sliding    *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowSliding    `json:"sliding,omitempty"`
+	StartTime  string                                                                            `json:"start_time,omitempty"`
 	Tumbling   *ResourceFeatureEngineeringFeatureFunctionAggregationFunctionTimeWindowTumbling   `json:"tumbling,omitempty"`
 }
 
@@ -199,6 +204,10 @@ type ResourceFeatureEngineeringFeatureSourceKafkaSource struct {
 	TimeseriesColumnIdentifier *ResourceFeatureEngineeringFeatureSourceKafkaSourceTimeseriesColumnIdentifier `json:"timeseries_column_identifier,omitempty"`
 }
 
+type ResourceFeatureEngineeringFeatureSourceLateness struct {
+	SettlingDelay string `json:"settling_delay,omitempty"`
+}
+
 type ResourceFeatureEngineeringFeatureSourceRequestSourceFlatSchemaFields struct {
 	DataType string `json:"data_type"`
 	Name     string `json:"name"`
@@ -222,6 +231,7 @@ type ResourceFeatureEngineeringFeatureSourceStreamSource struct {
 type ResourceFeatureEngineeringFeatureSource struct {
 	DeltaTableSource *ResourceFeatureEngineeringFeatureSourceDeltaTableSource `json:"delta_table_source,omitempty"`
 	KafkaSource      *ResourceFeatureEngineeringFeatureSourceKafkaSource      `json:"kafka_source,omitempty"`
+	Lateness         *ResourceFeatureEngineeringFeatureSourceLateness         `json:"lateness,omitempty"`
 	RequestSource    *ResourceFeatureEngineeringFeatureSourceRequestSource    `json:"request_source,omitempty"`
 	StreamSource     *ResourceFeatureEngineeringFeatureSourceStreamSource     `json:"stream_source,omitempty"`
 }
@@ -242,11 +252,15 @@ type ResourceFeatureEngineeringFeatureTimeWindowSawtooth struct {
 }
 
 type ResourceFeatureEngineeringFeatureTimeWindowSliding struct {
+	Delay          string `json:"delay,omitempty"`
+	Offset         string `json:"offset,omitempty"`
 	SlideDuration  string `json:"slide_duration"`
 	WindowDuration string `json:"window_duration,omitempty"`
 }
 
 type ResourceFeatureEngineeringFeatureTimeWindowTumbling struct {
+	Delay          string `json:"delay,omitempty"`
+	Offset         string `json:"offset,omitempty"`
 	WindowDuration string `json:"window_duration"`
 }
 
@@ -255,6 +269,7 @@ type ResourceFeatureEngineeringFeatureTimeWindow struct {
 	Rolling    *ResourceFeatureEngineeringFeatureTimeWindowRolling    `json:"rolling,omitempty"`
 	Sawtooth   *ResourceFeatureEngineeringFeatureTimeWindowSawtooth   `json:"sawtooth,omitempty"`
 	Sliding    *ResourceFeatureEngineeringFeatureTimeWindowSliding    `json:"sliding,omitempty"`
+	StartTime  string                                                 `json:"start_time,omitempty"`
 	Tumbling   *ResourceFeatureEngineeringFeatureTimeWindowTumbling   `json:"tumbling,omitempty"`
 }
 

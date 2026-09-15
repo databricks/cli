@@ -77,17 +77,12 @@ func TestConvertDashboardSerializedDashboardString(t *testing.T) {
 	})
 }
 
-func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
+func TestConvertDashboardDropsFilePath(t *testing.T) {
+	// ConfigureDashboardSerializedDashboard reads file_path into serialized_dashboard
+	// but keeps file_path around, so the converter sees both and must drop file_path.
 	src := resources.Dashboard{
 		DashboardConfig: resources.DashboardConfig{
-			SerializedDashboard: map[string]any{
-				"pages": []map[string]any{
-					{
-						"displayName": "New Page",
-						"layout":      []map[string]any{},
-					},
-				},
-			},
+			SerializedDashboard: `{"pages":[{"displayName":"New Page","layout":[]}]}`,
 		},
 		FilePath: "some/path/to/dashboard.lvdash.json",
 	}

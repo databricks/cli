@@ -31,6 +31,11 @@ if not destination_url:
 dest_parsed = urllib.parse.urlparse(destination_url)
 dest_params = urllib.parse.parse_qs(dest_parsed.query)
 
+expected_client_id = os.environ.get("DATABRICKS_TEST_CLIENT_ID")
+if expected_client_id and dest_params.get("client_id") != [expected_client_id]:
+    sys.stderr.write(f"Expected client_id {expected_client_id!r}, got {dest_params.get('client_id')!r}\n")
+    sys.exit(1)
+
 redirect_uri = dest_params.get("redirect_uri", [None])[0]
 state = dest_params.get("state", [None])[0]
 

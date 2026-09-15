@@ -7,6 +7,6 @@ update_file.py databricks.yml "test job" "locally edited job name"
 
 trace $CLI bundle config-remote-sync --save
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null)'
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

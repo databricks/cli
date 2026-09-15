@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -63,6 +64,12 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		}
 		ctx := cmd.Context()
 
+		if b.IsImmutableFolder() {
+			bundle.ApplyContext(ctx, b, snapshot.PlanUpload(snapshot.PlanUploadOptions{Clean: true}))
+			if logdiag.HasError(ctx) {
+				return root.ErrAlreadyPrinted
+			}
+		}
 		plan := phases.RunPlan(ctx, b, stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
@@ -80,6 +87,11 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
 					if action.ActionType == deployplan.Skip {
+						continue
+					}
+					// A state-only delete has no backend effect; keep it in the JSON
+					// plan but omit it from the human-readable action list.
+					if action.IsStateOnlyDelete() {
 						continue
 					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")

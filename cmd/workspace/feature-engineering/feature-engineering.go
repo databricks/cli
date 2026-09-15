@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	"github.com/databricks/databricks-sdk-go/experimental/api"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
 )
@@ -37,6 +39,8 @@ func New() *cobra.Command {
 	cmd.Annotations["launch_stage_display"] = "Private Preview"
 
 	// Add methods
+	cmd.AddCommand(newBackfillFeatures())
+	cmd.AddCommand(newCancelOperation())
 	cmd.AddCommand(newCreateFeature())
 	cmd.AddCommand(newCreateKafkaConfig())
 	cmd.AddCommand(newCreateMaterializedFeature())
@@ -48,11 +52,13 @@ func New() *cobra.Command {
 	cmd.AddCommand(newGetFeature())
 	cmd.AddCommand(newGetKafkaConfig())
 	cmd.AddCommand(newGetMaterializedFeature())
+	cmd.AddCommand(newGetOperation())
 	cmd.AddCommand(newGetStream())
 	cmd.AddCommand(newListFeatures())
 	cmd.AddCommand(newListKafkaConfigs())
 	cmd.AddCommand(newListMaterializedFeatures())
 	cmd.AddCommand(newListStreams())
+	cmd.AddCommand(newPurgeFeatureEntities())
 	cmd.AddCommand(newUpdateFeature())
 	cmd.AddCommand(newUpdateKafkaConfig())
 	cmd.AddCommand(newUpdateMaterializedFeature())
@@ -61,6 +67,170 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start backfill-features command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var backfillFeaturesOverrides []func(
+	*cobra.Command,
+	*ml.BackfillFeaturesRequest,
+)
+
+func newBackfillFeatures() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var backfillFeaturesReq ml.BackfillFeaturesRequest
+	var backfillFeaturesJson flags.JsonFlag
+
+	var backfillFeaturesSkipWait bool
+	var backfillFeaturesTimeout time.Duration
+
+	cmd.Flags().BoolVar(&backfillFeaturesSkipWait, "no-wait", backfillFeaturesSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&backfillFeaturesTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&backfillFeaturesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&backfillFeaturesReq.RequestId, "request-id", backfillFeaturesReq.RequestId, `Idempotency token for the request.`)
+
+	cmd.Use = "backfill-features"
+	cmd.Short = `Backfill features.`
+	cmd.Long = `Backfill features.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := backfillFeaturesJson.Unmarshal(&backfillFeaturesReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case backfillFeaturesSkipWait:
+			wait, err := w.FeatureEngineering.BackfillFeatures(ctx, backfillFeaturesReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.FeatureEngineering.BackfillFeatures(ctx, backfillFeaturesReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for backfill-features to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(backfillFeaturesTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range backfillFeaturesOverrides {
+		fn(cmd, &backfillFeaturesReq)
+	}
+
+	return cmd
+}
+
+// start cancel-operation command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cancelOperationOverrides []func(
+	*cobra.Command,
+	*ml.CancelOperationRequest,
+)
+
+func newCancelOperation() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var cancelOperationReq ml.CancelOperationRequest
+
+	cmd.Use = "cancel-operation NAME"
+	cmd.Short = `Cancel an operation.`
+	cmd.Long = `Cancel an operation.
+
+  Arguments:
+    NAME: The name of the operation resource to be cancelled.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		cancelOperationReq.Name = args[0]
+
+		err = w.FeatureEngineering.CancelOperation(ctx, cancelOperationReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range cancelOperationOverrides {
+		fn(cmd, &cancelOperationReq)
 	}
 
 	return cmd
@@ -86,7 +256,7 @@ func newCreateFeature() *cobra.Command {
 
 	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature.`)
 	// TODO: array: entities
-	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `Deprecated: Use DeltaTableSource.filter_condition or KafkaSource.filter_condition instead.`)
+	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, ``)
 	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
@@ -308,7 +478,8 @@ func newCreateMaterializedFeature() *cobra.Command {
 
 	cmd.Flags().Var(&createMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
+	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", createMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
+	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", createMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
 	// TODO: complex arg: cron_schedule_trigger
 	cmd.Flags().StringVar(&createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", createMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
@@ -316,6 +487,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
+	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "create-materialized-feature FEATURE_NAME"
 	cmd.Short = `Create a materialized feature.`
@@ -400,6 +572,8 @@ func newCreateStream() *cobra.Command {
 	cmd.Flags().Var(&createStreamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createStreamReq.Stream.Description, "description", createStreamReq.Stream.Description, `User-provided description.`)
+	// TODO: array: excluded_columns
+	cmd.Flags().StringVar(&createStreamReq.Stream.RecordTypeFilter, "record-type-filter", createStreamReq.Stream.RecordTypeFilter, `Optional SQL predicate to filter which record types from a streaming channel (e.g.`)
 
 	cmd.Use = "create-stream NAME SOURCE_CONFIG CONNECTION_CONFIG SCHEMA_CONFIG INGESTION_CONFIG"
 	cmd.Short = `Create a Stream.`
@@ -911,6 +1085,63 @@ func newGetMaterializedFeature() *cobra.Command {
 	return cmd
 }
 
+// start get-operation command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOperationOverrides []func(
+	*cobra.Command,
+	*ml.GetOperationRequest,
+)
+
+func newGetOperation() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getOperationReq ml.GetOperationRequest
+
+	cmd.Use = "get-operation NAME"
+	cmd.Short = `Get an operation.`
+	cmd.Long = `Get an operation.
+
+  Arguments:
+    NAME: The name of the operation resource.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getOperationReq.Name = args[0]
+
+		response, err := w.FeatureEngineering.GetOperation(ctx, getOperationReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOperationOverrides {
+		fn(cmd, &getOperationReq)
+	}
+
+	return cmd
+}
+
 // start get-stream command
 
 // Slice with functions to override default command behavior.
@@ -1259,6 +1490,116 @@ func newListStreams() *cobra.Command {
 	return cmd
 }
 
+// start purge-feature-entities command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var purgeFeatureEntitiesOverrides []func(
+	*cobra.Command,
+	*ml.PurgeFeatureEntitiesRequest,
+)
+
+func newPurgeFeatureEntities() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var purgeFeatureEntitiesReq ml.PurgeFeatureEntitiesRequest
+	var purgeFeatureEntitiesJson flags.JsonFlag
+
+	var purgeFeatureEntitiesSkipWait bool
+	var purgeFeatureEntitiesTimeout time.Duration
+
+	cmd.Flags().BoolVar(&purgeFeatureEntitiesSkipWait, "no-wait", purgeFeatureEntitiesSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&purgeFeatureEntitiesTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&purgeFeatureEntitiesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&purgeFeatureEntitiesReq.RequestId, "request-id", purgeFeatureEntitiesReq.RequestId, `Optional UUID4 idempotency token for the request.`)
+
+	cmd.Use = "purge-feature-entities"
+	cmd.Short = `Purge feature values for entities.`
+	cmd.Long = `Purge feature values for entities.
+
+  Purge materialized feature values for specified entities.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-operation command.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := purgeFeatureEntitiesJson.Unmarshal(&purgeFeatureEntitiesReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case purgeFeatureEntitiesSkipWait:
+			wait, err := w.FeatureEngineering.PurgeFeatureEntities(ctx, purgeFeatureEntitiesReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.FeatureEngineering.GetOperation(ctx, ml.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.FeatureEngineering.PurgeFeatureEntities(ctx, purgeFeatureEntitiesReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("Waiting for purge-feature-entities to complete...")
+
+			// Wait for completion.
+			opts := api.WithTimeout(purgeFeatureEntitiesTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			sp.Close()
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range purgeFeatureEntitiesOverrides {
+		fn(cmd, &purgeFeatureEntitiesReq)
+	}
+
+	return cmd
+}
+
 // start update-feature command
 
 // Slice with functions to override default command behavior.
@@ -1279,7 +1620,7 @@ func newUpdateFeature() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
 	// TODO: array: entities
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `Deprecated: Use DeltaTableSource.filter_condition or KafkaSource.filter_condition instead.`)
+	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, ``)
 	// TODO: array: inputs
 	// TODO: complex arg: lineage_context
 	// TODO: complex arg: time_window
@@ -1504,7 +1845,8 @@ func newUpdateMaterializedFeature() *cobra.Command {
 
 	cmd.Flags().Var(&updateMaterializedFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, `The quartz cron expression that defines the schedule of the materialization pipeline.`)
+	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, "budget-policy-id", updateMaterializedFeatureReq.MaterializedFeature.BudgetPolicyId, `The ID of the budget policy used to attribute the serverless compute cost of this materialization.`)
+	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, "cron-schedule", updateMaterializedFeatureReq.MaterializedFeature.CronSchedule, ``)
 	// TODO: complex arg: cron_schedule_trigger
 	cmd.Flags().StringVar(&updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, "materialized-feature-id", updateMaterializedFeatureReq.MaterializedFeature.MaterializedFeatureId, `Server-assigned unique identifier for the materialized feature.`)
 	// TODO: complex arg: offline_store_config
@@ -1512,6 +1854,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 	// TODO: complex arg: streaming_mode
 	// TODO: complex arg: table_trigger
+	// TODO: map via StringToStringVar: tags
 
 	cmd.Use = "update-materialized-feature MATERIALIZED_FEATURE_ID UPDATE_MASK FEATURE_NAME"
 	cmd.Short = `Update a materialized feature.`
@@ -1603,6 +1946,8 @@ func newUpdateStream() *cobra.Command {
 	cmd.Flags().Var(&updateStreamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateStreamReq.Stream.Description, "description", updateStreamReq.Stream.Description, `User-provided description.`)
+	// TODO: array: excluded_columns
+	cmd.Flags().StringVar(&updateStreamReq.Stream.RecordTypeFilter, "record-type-filter", updateStreamReq.Stream.RecordTypeFilter, `Optional SQL predicate to filter which record types from a streaming channel (e.g.`)
 
 	cmd.Use = "update-stream NAME UPDATE_MASK SOURCE_CONFIG CONNECTION_CONFIG SCHEMA_CONFIG INGESTION_CONFIG"
 	cmd.Short = `Update a Stream.`

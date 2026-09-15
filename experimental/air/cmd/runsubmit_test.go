@@ -1,12 +1,17 @@
 package aircmd
 
 import (
+	"context"
 	"encoding/json"
+	"io"
 	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
@@ -48,9 +53,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 		MLflowRunName:             new("run-v2"),
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
 		MLflowArtifactLocation:    new("dbfs:/Volumes/main/default/artifacts"),
-		Environment: &environmentConfig{DockerImage: &dockerImageConfig{
-			URL: "registry.example.com/team/image:tag",
-		}},
 	}
 
 	p := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
@@ -78,7 +80,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "run-v2", at.MlflowRun)
 	assert.Equal(t, "/Workspace/Users/me/exp", at.MlflowExperimentDirectory)
 	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", at.MlflowArtifactLocation)
-	assert.Equal(t, "registry.example.com/team/image:tag", at.DockerImageUrl)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
@@ -109,9 +110,40 @@ func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "", "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(42), runID)
+}
+
+func TestSubmitRunInjectsPriorityClass(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		var body map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &body))
+		tasks := body["tasks"].([]any)
+		task := tasks[0].(map[string]any)
+		airTask := task["ai_runtime_task"].(map[string]any)
+		// priority_class rides directly on the ai_runtime_task, next to
+		// provisioned_capacity_id on the deployment compute.
+		assert.Equal(t, "CRITICAL", airTask["priority_class"])
+		deployment := airTask["deployments"].([]any)[0].(map[string]any)
+		compute := deployment["compute"].(map[string]any)
+		assert.Equal(t, "capacity-1", compute["provisioned_capacity_id"])
+		return jobs.SubmitRunResponse{RunId: 7}
+	})
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token", WorkspaceID: "123"})
+	require.NoError(t, err)
+	payload := buildSubmitPayload(&runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
+	}, "/command.sh", "4", "", snapshotResult{}, nil)
+
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL", "")
+	require.NoError(t, err)
+	assert.Equal(t, int64(7), runID)
 }
 
 func TestBuildSubmitPayloadDefaultRetries(t *testing.T) {
@@ -171,6 +203,22 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 	}
 }
 
+func TestBuildSubmitPayloadDatabricksAIEnvironment(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+	}
+
+	spec := buildSubmitPayload(cfg, "/d/command.sh", "databricks_ai_v5", "", snapshotResult{}, []string{"accelerate"}).Environments[0].Spec
+	b, err := json.Marshal(spec)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"base_environment": "workspace-base-environments/databricks_ai_v5",
+		"dependencies": ["accelerate"]
+	}`, string(b))
+}
+
 func TestSubmitToken(t *testing.T) {
 	cfg := &runConfig{IdempotencyToken: new("from-config")}
 
@@ -189,6 +237,84 @@ func TestSubmitToken(t *testing.T) {
 	// An over-long token errors instead of being truncated.
 	_, err = submitToken(strings.Repeat("a", 65), cfg)
 	require.ErrorContains(t, err, "64 characters or less")
+}
+
+type blockingLaunchWriter struct {
+	started       chan struct{}
+	release       chan struct{}
+	finished      chan struct{}
+	signalStarted func()
+}
+
+func (w *blockingLaunchWriter) Mkdir(ctx context.Context, name string) error { return nil }
+
+func (w *blockingLaunchWriter) Write(ctx context.Context, name string, reader io.Reader, mode ...filer.WriteMode) error {
+	w.signalStarted()
+	select {
+	case <-w.release:
+		close(w.finished)
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func TestStageRunArtifactsOverlapsLaunchAndSnapshot(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+
+	launch := &blockingLaunchWriter{
+		started:  make(chan struct{}),
+		release:  make(chan struct{}),
+		finished: make(chan struct{}),
+	}
+	launch.signalStarted = sync.OnceFunc(func() { close(launch.started) })
+	snapshotStarted := make(chan struct{})
+	snapshotRelease := make(chan struct{})
+	done := make(chan struct {
+		snap snapshotResult
+		err  error
+	}, 1)
+
+	go func() {
+		snap, err := stageRunArtifacts(ctx, launch, []uploadItem{{commandScriptName, []byte("cmd")}}, func(ctx context.Context) (snapshotResult, error) {
+			close(snapshotStarted)
+			select {
+			case <-snapshotRelease:
+				return snapshotResult{CodeSourcePath: "/snapshot.tar.gz"}, nil
+			case <-ctx.Done():
+				return snapshotResult{}, ctx.Err()
+			}
+		})
+		done <- struct {
+			snap snapshotResult
+			err  error
+		}{snap: snap, err: err}
+	}()
+
+	// Both branches must start before either is released, proving they overlap.
+	select {
+	case <-launch.started:
+	case <-ctx.Done():
+		t.Fatal("launch staging did not start")
+	}
+	select {
+	case <-snapshotStarted:
+	case <-ctx.Done():
+		t.Fatal("snapshot staging did not overlap the launch upload")
+	}
+	close(launch.release)
+	<-launch.finished
+	select {
+	case <-done:
+		t.Fatal("staging returned before the snapshot completed")
+	default:
+	}
+	close(snapshotRelease)
+
+	result := <-done
+	require.NoError(t, result.err)
+	assert.Equal(t, "/snapshot.tar.gz", result.snap.CodeSourcePath)
 }
 
 func TestSubmitWorkload(t *testing.T) {
@@ -231,6 +357,33 @@ func TestSubmitWorkload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xH100, AcceleratorCount: 1}, d.Compute)
 }
 
+func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var submitCalls atomic.Int32
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		submitCalls.Add(1)
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	server.Handle("POST", "/api/2.0/workspace/mkdirs", func(req testserver.Request) any {
+		return testserver.Response{StatusCode: 500, Body: map[string]string{"message": "mkdir failed"}}
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to create launch directory")
+	assert.Zero(t, submitCalls.Load())
+}
+
 // TestSubmitWorkloadHonorsOverride proves a --override reaches the actual
 // runs/submit payload on a real submit, not just dry-run validation: the config
 // pins num_accelerators=1, the override bumps it to 4, and the recorded request
@@ -265,6 +418,40 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	assert.Equal(t, 4, at.Deployments[0].Compute.AcceleratorCount)
 }
 
+func TestSubmitWorkloadSendsUnityCatalogImagePath(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var got map[string]any
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+`
+environment:
+  unity_catalog_image: main.air.training:prod
+`)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+
+	tasks, ok := got["tasks"].([]any)
+	require.True(t, ok)
+	require.Len(t, tasks, 1)
+	task, ok := tasks[0].(map[string]any)
+	require.True(t, ok)
+	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
+}
+
 // A working-tree code_source is packaged into a tarball, uploaded via DABs' artifact
 // plumbing, and its remote code_source_path attached to the submitted task.
 func TestSubmitWorkloadWithCodeSource(t *testing.T) {
@@ -276,6 +463,11 @@ func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		require.NoError(t, json.Unmarshal(req.Body, &got))
 		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	var meCalls atomic.Int32
+	server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
+		meCalls.Add(1)
+		return req.Workspace.MeUser(req.Token)
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -306,6 +498,7 @@ code_source:
 	// rewritten to it.
 	assert.Contains(t, at.CodeSourcePath, "/.air/repo_snapshots/.internal/")
 	assert.True(t, strings.HasSuffix(at.CodeSourcePath, ".tar.gz"), at.CodeSourcePath)
+	assert.Equal(t, int32(1), meCalls.Load(), "code-source submission should resolve the workspace base once")
 }
 
 // A git-pinned code_source is git-archived at the commit, uploaded via DABs' artifact
@@ -360,14 +553,30 @@ func testSidecarStore(t *testing.T, w *databricks.WorkspaceClient) (filer.Filer,
 	return f, base
 }
 
-// A plain-tar (working-tree) snapshot is uploaded under a unique, timestamped name so
-// two concurrent submissions of the same root_path don't clobber each other's upload.
-func TestSubmitWorkloadPlainTarNameIsUnique(t *testing.T) {
+const testSnapshotArtifactPath = "/Workspace/Users/tester@databricks.com/.air/repo_snapshots"
+
+// A plain-tar (working-tree) snapshot is content-addressed by its file fingerprint
+// (working-tree metadata): submitting the same unchanged tree twice reuses the already-uploaded
+// tarball and skips the second upload, resolving to the identical remote path.
+func TestSubmitWorkloadPlainTarContentAddressed(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
 		return jobs.SubmitRunResponse{RunId: 555}
+	})
+	// Count snapshot import-file calls, preserving fake-workspace persistence so the
+	// second submit's existence Stat sees the first upload. A count (not a set keyed by
+	// path) is what proves the skip: both submits resolve to the same content-addressed
+	// name, so a set could not tell a skipped second submit from one that re-uploaded to
+	// that same path.
+	snapshotUploads := 0
+	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
+		p := req.Vars["path"]
+		if strings.Contains(p, "/.air/repo_snapshots/") {
+			snapshotUploads++
+		}
+		return req.Workspace.WorkspaceFilesImportFile(p, req.Body, req.URL.Query().Get("overwrite") == "true")
 	})
 	stubValidateConfig(server)
 	testserver.AddDefaultHandlers(server)
@@ -389,14 +598,24 @@ code_source:
 	loaded, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	// The uploaded name carries a discriminator (timestamp), not the bare dir name.
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
-	base := path.Base(snap.CodeSourcePath)
-	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be unique, not the bare dir name")
-	assert.Regexp(t, `^src_\d{8}_\d{6}\.tar\.gz$`, base)
+	require.NotZero(t, snapshotUploads, "first submit should upload the tarball")
+	afterFirst := snapshotUploads
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	require.NoError(t, err)
+
+	// Content-addressed name: not the bare dir, but a 16-hex-char fingerprint.
+	base := path.Base(first.CodeSourcePath)
+	assert.NotEqual(t, "src.tar.gz", base, "plain-tar name must be content-addressed, not the bare dir name")
+	assert.Regexp(t, `^src_[0-9a-f]{16}\.tar\.gz$`, base)
+
+	// Same unchanged tree → identical remote path, and the second submit moved no bytes:
+	// zero new import-file calls (a real skip), not a re-upload to the same name.
+	assert.Equal(t, first.CodeSourcePath, second.CodeSourcePath)
+	assert.Equal(t, afterFirst, snapshotUploads, "unchanged plain_tar should skip the second upload")
 }
 
 // A git_archive snapshot is content-addressed by (commit, include_paths): submitting
@@ -444,9 +663,9 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
+	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
+	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	// Same pinned commit → identical content-addressed remote path, uploaded once
@@ -488,7 +707,7 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, sidecarStore, sidecarBase)
+	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	assert.Empty(t, snap.GitStatePath)

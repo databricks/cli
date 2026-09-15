@@ -14,8 +14,13 @@ resources:
             source: WORKSPACE
             base_parameters:
               # An escaped reference that looks like a resource path must not become a
-              # dependency on jobs.bar: foo has no depends_on and the API receives the
-              # literal "${resources.jobs.bar.id}".
+              # dependency on jobs.bar: foo's only depends_on edge comes from "real"
+              # below, and the API receives the literal "${resources.jobs.bar.id}".
               escaped: $${resources.jobs.bar.id}
-              # A real reference next to it still resolves.
+              # A real reference still resolves.
               real: ${resources.jobs.bar.id}
+              # Both in one string: the literal survives and the real one resolves.
+              mixed: $${runtime} ${resources.jobs.bar.id}
+              # Same name escaped and real in one string: substitution must not hit the
+              # escaped occurrence just because it appears first.
+              same_name: $${resources.jobs.bar.id} ${resources.jobs.bar.id}

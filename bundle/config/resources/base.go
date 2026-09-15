@@ -12,3 +12,9 @@ type BaseResource struct {
 func (b *BaseResource) GetLifecycle() LifecycleConfig {
 	return b.Lifecycle
 }
+
+// GetURL returns the resource's workspace URL and true. Resource types whose
+// IDs don't map to a web UI page override this to return ("", false).
+func (b *BaseResource) GetURL() (string, bool) {
+	return b.URL, true
+}

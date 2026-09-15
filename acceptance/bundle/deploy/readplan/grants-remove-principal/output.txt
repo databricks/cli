@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created schemas.myschema
 Created schemas.myschema.grants
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //unity-catalog/permissions --sort
@@ -43,7 +43,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 }
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated schemas.myschema.grants
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //unity-catalog/permissions --sort

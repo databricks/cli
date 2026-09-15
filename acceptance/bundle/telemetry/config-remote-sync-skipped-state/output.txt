@@ -7,7 +7,7 @@
   "changes": {}
 }
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "engine": "terraform",
   "state_source": "local",

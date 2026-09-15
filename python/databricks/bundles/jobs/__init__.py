@@ -77,6 +77,8 @@ __all__ = [
     "DashboardTaskParam",
     "DataSecurityMode",
     "DataSecurityModeParam",
+    "DayOfWeek",
+    "DayOfWeekParam",
     "DbfsStorageInfo",
     "DbfsStorageInfoDict",
     "DbfsStorageInfoParam",
@@ -179,6 +181,9 @@ __all__ = [
     "LogAnalyticsInfo",
     "LogAnalyticsInfoDict",
     "LogAnalyticsInfoParam",
+    "MaintenanceWindow",
+    "MaintenanceWindowDict",
+    "MaintenanceWindowParam",
     "MavenLibrary",
     "MavenLibraryDict",
     "MavenLibraryParam",
@@ -456,6 +461,7 @@ from databricks.bundles.jobs._models.data_security_mode import (
     DataSecurityMode,
     DataSecurityModeParam,
 )
+from databricks.bundles.jobs._models.day_of_week import DayOfWeek, DayOfWeekParam
 from databricks.bundles.jobs._models.dbfs_storage_info import (
     DbfsStorageInfo,
     DbfsStorageInfoDict,
@@ -613,6 +619,11 @@ from databricks.bundles.jobs._models.log_analytics_info import (
     LogAnalyticsInfo,
     LogAnalyticsInfoDict,
     LogAnalyticsInfoParam,
+)
+from databricks.bundles.jobs._models.maintenance_window import (
+    MaintenanceWindow,
+    MaintenanceWindowDict,
+    MaintenanceWindowParam,
 )
 from databricks.bundles.jobs._models.maven_library import (
     MavenLibrary,

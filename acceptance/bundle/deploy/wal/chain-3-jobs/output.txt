@@ -1,6 +1,6 @@
 === First deploy (crashes on job_03) ===
 
->>> errcode [CLI] bundle deploy
+>>> errcode [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files...
 [PROCESS_KILLED]
 

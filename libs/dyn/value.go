@@ -73,24 +73,6 @@ func (v Value) AppendLocationsFromValue(w Value) Value {
 	}
 }
 
-// IsSensitive reports whether this value holds a sensitive string.
-// Sensitivity is encoded in the type of v.v (secretString vs plain string),
-// so it is preserved automatically whenever v.v is copied.
-func (v Value) IsSensitive() bool {
-	_, ok := v.v.(secretString)
-	return ok
-}
-
-// MarkSensitive returns a copy of this value marked as sensitive.
-// If the value is already a KindString, its content is re-wrapped as a
-// secretString; otherwise the value is returned unchanged.
-func (v Value) MarkSensitive() Value {
-	if s, ok := v.v.(string); ok {
-		v.v = secretString{s}
-	}
-	return v
-}
-
 func (v Value) Kind() Kind {
 	return v.k
 }
@@ -138,10 +120,6 @@ func (v Value) AsAny() any {
 	case KindNil:
 		return v.v
 	case KindString:
-		// secretString holds a sensitive value; return the redaction placeholder.
-		if _, ok := v.v.(secretString); ok {
-			return SensitiveValueRedacted
-		}
 		return v.v
 	case KindBool:
 		return v.v

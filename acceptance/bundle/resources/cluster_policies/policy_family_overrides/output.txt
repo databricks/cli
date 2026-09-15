@@ -23,7 +23,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Created cluster_policies.json_string
 Created cluster_policies.multiline
 Created cluster_policies.yaml
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 === Create bodies carry policy_family_id and overrides as a JSON string (YAML normalized, JSON preserved)

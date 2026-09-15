@@ -5,7 +5,7 @@ trace print_requests.py --nostamp //jobs/ > out.requests_create.json
 job_id="$(read_id.py job_with_permissions)"
 
 trace $CLI permissions get jobs "$job_id"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Delete permissions remotely"
 trace $CLI permissions set jobs "$job_id" --json @remote_delete.json
@@ -16,4 +16,4 @@ trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs/ > out.requests_restore.json
 
 trace $CLI permissions get jobs "$job_id"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

@@ -29,6 +29,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
+	"github.com/databricks/cli/acceptance/internal/selection"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
@@ -89,7 +90,7 @@ func init() {
 }
 
 const (
-	EntryPointScript = "script"
+	EntryPointScript = selection.EntryPointScript
 	CleanupScript    = "script.cleanup"
 	PrepareScript    = "script.prepare"
 	MaxFileSize      = 1_000_000
@@ -116,7 +117,25 @@ const (
 	ReplsEnvVar = "ACC_REPLS"
 )
 
-var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
+var IsRunningOnCI = os.Getenv("GITHUB_WORKFLOW") != ""
+
+// MaxLogLines caps how many lines of each LOG.* file the harness echoes into the test
+// log. Some invariant tests write very large LOG.planjson files that otherwise drown out
+// the rest of the logs and overflow log viewers. Override with DATABRICKS_CLI_TEST_MAX_LOG;
+// a value <= 0 disables the limit.
+var MaxLogLines = func() int {
+	if v := os.Getenv("DATABRICKS_CLI_TEST_MAX_LOG"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			panic("invalid DATABRICKS_CLI_TEST_MAX_LOG=" + v + ": " + err.Error())
+		}
+		return n
+	}
+	if IsRunningOnCI {
+		return 100
+	}
+	return 1000
+}()
 
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
@@ -132,7 +151,7 @@ var Scripts = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
-	testAccept(t, InprocessMode, "")
+	testAccept(t, InprocessMode, nil, false)
 }
 
 func TestInprocessMode(t *testing.T) {
@@ -142,13 +161,23 @@ func TestInprocessMode(t *testing.T) {
 	if os.Getenv("CLOUD_ENV") != "" {
 		t.Skip("No need to run this as integration test.")
 	}
+	if os.Getenv(selection.EnvVar) != "" {
+		// The two selftests below only run if this branch changed them, so the
+		// assertions on the returned count do not hold under test selection.
+		t.Skip("Disabled via " + selection.EnvVar)
+	}
 
 	// Uncomment to load  ~/.databricks/debug-env.json to debug integration tests
 	// testutil.LoadDebugEnvIfRunFromIDE(t, "workspace")
 	// Run the "deco env flip workspace" command to configure a workspace.
 
-	require.Equal(t, 1, testAccept(t, true, "selftest/basic"))
-	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
+	// Keep this to a single cheap test: it only needs to catch in-process mode
+	// rotting, and every testAccept call redoes the whole setup. This used to run
+	// selftest/server too, which meant a second setup after StartDefaultServer had
+	// pointed HOME at an empty temp dir, so building yamlfmt there re-downloaded the
+	// entire module cache: 44s on Linux CI, 140s on Windows. Tool builds are skipped
+	// for the same reason - selftest/basic uses neither terraform, the wheel, nor yamlfmt.
+	require.Equal(t, 1, testAccept(t, true, []string{"selftest/basic"}, true))
 }
 
 // Configure replacements for environment variables we read from test environments.
@@ -219,7 +248,11 @@ func requirePrerequisites(t *testing.T) bool {
 	})
 }
 
-func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
+// selectedTests, when non-empty, limits the run to those test directories.
+// skipToolBuilds skips building the tools that the selected tests do not use
+// (terraform, the databricks-bundles wheel, yamlfmt); it must stay false for a
+// full run.
+func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipToolBuilds bool) int {
 	if testdiff.OverwriteMode && !hasRunFilter() {
 		Subset = true
 	}
@@ -274,7 +307,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
-	if !WorkspaceTmpDir {
+	if !WorkspaceTmpDir && !skipToolBuilds {
 		setupTerraform(t, cwd, buildDir, &repls)
 	}
 
@@ -287,7 +320,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("UV_FIND_LINKS", vendoredPyPackages)
 	t.Setenv("UV_OFFLINE", "true")
 
-	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
+	wheelPath := ""
+	if !skipToolBuilds {
+		wheelPath = buildDatabricksBundlesWheel(t, buildDir)
+	}
 	if wheelPath != "" {
 		t.Setenv("DATABRICKS_BUNDLES_WHEEL", wheelPath)
 		repls.SetPath(wheelPath, "[DATABRICKS_BUNDLES_WHEEL]")
@@ -346,12 +382,18 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Skip building yamlfmt when running on workspace filesystem (DBR).
 	// This fails today on DBR. Can be looked into and fixed as a follow-up
 	// as and when needed.
-	if !WorkspaceTmpDir {
+	if !WorkspaceTmpDir && !skipToolBuilds {
 		BuildYamlfmt(t)
 	}
 
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
+
+	// Built here rather than run with "go run" from a test: tests run with a sandboxed
+	// HOME, which has no module cache, so building inside one fails to resolve imports.
+	selectionPath := buildSelectionCmd(t, buildDir)
+	t.Setenv("SELECTION", selectionPath)
+	repls.SetPath(selectionPath, "[SELECTION]")
 
 	if !inprocessMode {
 		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
@@ -419,6 +461,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if base, _, found := strings.Cut(cliVersion, "+"); found {
 		repls.Set(base, "[CLI_VERSION]")
 	}
+	// A dev build may embed a +<git-sha> that the base-version replacement above leaves
+	// behind (e.g. "[CLI_VERSION]+abc123def456"), which would otherwise bake into a
+	// regenerated golden. Strip any such trailing suffix so goldens stay sha-independent.
+	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile(`\[CLI_VERSION\]\+[0-9a-f]{7,40}`), New: "[CLI_VERSION]"})
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
 	testdiff.PrepareReplacementTfProviderVersion(t, &repls)
 	testdiff.PrepareReplacementsGoVersion(t, &repls)
@@ -452,30 +498,44 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		testDirsSet[d] = true
 	}
 
-	skipLocalMode := os.Getenv(SkipLocalEnvVar)
 	subset := newSubsetSelector(t, testdiff.OverwriteMode, Forcerun)
 
-	switch skipLocalMode {
-	case "", SkipLocalWithChanged:
-	default:
-		t.Fatalf("Unsupported %s=%q, expected %q", SkipLocalEnvVar, skipLocalMode, SkipLocalWithChanged)
+	changedLimit, err := selection.ParseLimit(os.Getenv(selection.EnvVar))
+	require.NoError(t, err)
+	selectChanged := changedLimit > 0
+	if !selectChanged && subset.enabled {
+		changedLimit = subsetChangedLimit
 	}
-	skipLocalWithChanged := skipLocalMode == SkipLocalWithChanged
 
-	// changedTests maps test dir to extra env filters for added/modified tests; nil
-	// filters means all variants of that dir changed. Both SkipLocalWithChanged and the
-	// subset selector keep these tests, so detect them at most once here.
+	// changedTests maps test dir to extra env filters for changed tests; nil filters
+	// means all variants of that dir changed. Both selection.EnvVar and the subset
+	// selector keep these tests, so detect them at most once here.
 	var changedTests map[string][]string
-	if skipLocalWithChanged || subset.enabled {
-		changedTests = selectChangedLocalTests(t, testDirsSet)
+	if changedLimit > 0 {
+		// A failed selection (e.g. no origin/main in a shallow checkout) must fail the
+		// run: treating it as "nothing changed" would silently skip new tests.
+		result, err := selection.FromGit(".", testDirsSet, changedLimit)
+		require.NoError(t, err)
+		t.Log(result.Summary())
+		changedTests = result.Tests()
 	}
 	subset.changed = changedTests
 
-	if singleTest != "" {
-		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
-			return n != singleTest
+	// Drop the tests that were not selected instead of skipping them per dir: a skip
+	// per dir buries the run in a thousand SKIP lines and hides the selection summary.
+	// Their out.test.toml is left alone, which is what a partial run should do.
+	if selectChanged {
+		testDirs = slices.DeleteFunc(testDirs, func(dir string) bool {
+			_, ok := changedTests[dir]
+			return !ok
 		})
-		require.NotEmpty(t, testDirs, "singleTest=%#v did not match any tests\n%#v", singleTest, testDirs)
+	}
+
+	if len(selectedTests) > 0 {
+		testDirs = slices.DeleteFunc(testDirs, func(n string) bool {
+			return !slices.Contains(selectedTests, n)
+		})
+		require.Len(t, testDirs, len(selectedTests), "selectedTests=%#v did not match all tests\n%#v", selectedTests, testDirs)
 	}
 
 	skippedDirs := 0
@@ -519,7 +579,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
-			skipReason := getSkipReason(&config, configPath, dir, skipLocalMode, changedTests)
+			skipReason := getSkipReason(&config, configPath)
 			if skipReason != "" {
 				skippedDirs += 1
 				t.Skip(skipReason)
@@ -573,9 +633,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 						if runParallel {
 							t.Parallel()
 						}
-						// Under SkipLocalWithChanged, an invariant dir re-enabled by a
+						// Under selection.EnvVar, an invariant dir re-enabled by a
 						// specific config change runs only its matching variants.
-						if skipLocalWithChanged {
+						if selectChanged {
 							if variantFilters := changedTests[dir]; variantFilters != nil {
 								checkEnvFilters(t, envset, variantFilters)
 							}
@@ -626,23 +686,9 @@ func getEnvFilters(t *testing.T) []string {
 }
 
 func getTests(t *testing.T) []string {
-	testDirs := make([]string, 0, 128)
-
-	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		name := filepath.Base(path)
-		if name == EntryPointScript {
-			// Presence of 'script' marks a test case in this directory
-			testName := filepath.ToSlash(filepath.Dir(path))
-			testDirs = append(testDirs, testName)
-		}
-		return nil
-	})
+	// Tests are discovered relative to the acceptance dir, which is the working directory.
+	testDirs, err := selection.FindTestDirs(".")
 	require.NoError(t, err)
-
-	slices.Sort(testDirs)
 	return testDirs
 }
 
@@ -655,15 +701,7 @@ func validateTestPhase(phase int) error {
 }
 
 // Return a reason to skip the test. Empty string means "don't skip".
-// skipLocalMode is the value of DATABRICKS_TEST_SKIPLOCAL read once at startup.
-// changedTests maps test dirs to extra env filters; nil map means feature is off.
-func getSkipReason(config *internal.TestConfig, configPath, dir, skipLocalMode string, changedTests map[string][]string) string {
-	if skipLocalMode == SkipLocalWithChanged {
-		if _, ok := changedTests[dir]; !ok {
-			return "Disabled via DATABRICKS_TEST_SKIPLOCAL=" + SkipLocalWithChanged + " in " + configPath
-		}
-	}
-
+func getSkipReason(config *internal.TestConfig, configPath string) string {
 	if Forcerun {
 		return ""
 	}
@@ -816,6 +854,15 @@ func runTest(t *testing.T,
 		tmpDir = t.TempDir()
 	}
 
+	// Harness-written output files (output.txt, out.requests.txt) live outside the
+	// test dir so the bundle sync doesn't upload them as bundle sources. They are
+	// written here during the run and copied into tmpDir afterwards for comparison.
+	// Otherwise these continuously-rewritten files perturb the deploy "Files: N" count.
+	// Register this repl before [TEST_TMP_DIR] so it wins: outputDir is a sibling of
+	// tmpDir, so the [TEST_TMP_DIR]_PARENT repl would otherwise match it first.
+	outputDir := t.TempDir()
+	repls.SetPath(outputDir, "[OUTPUT_DIR]")
+
 	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
 	scriptContents := readMergedScriptContents(t, dir)
@@ -842,7 +889,7 @@ func runTest(t *testing.T,
 		timeout = max(timeout, config.TimeoutCloud)
 	}
 
-	if ApplyCITimeoutMultipler {
+	if IsRunningOnCI {
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
@@ -851,7 +898,7 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, outputDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
@@ -868,6 +915,9 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
+	// Forward slashes: scripts pass $OUT_REQUESTS straight to bash tools, and a
+	// backslash Windows path would be mangled inside double quotes in Git Bash.
+	cmd.Env = append(cmd.Env, "OUT_REQUESTS="+filepath.ToSlash(filepath.Join(outputDir, "out.requests.txt")))
 
 	replsPath := filepath.Join(t.TempDir(), ReplsEnvVar)
 	cmd.Env = append(cmd.Env, ReplsEnvVar+"="+replsPath)
@@ -981,7 +1031,7 @@ func runTest(t *testing.T,
 	}
 	cmd.Dir = tmpDir
 
-	outputPath := filepath.Join(tmpDir, "output.txt")
+	outputPath := filepath.Join(outputDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
 	defer out.Close()
@@ -1001,14 +1051,26 @@ func runTest(t *testing.T,
 	printedRepls := false
 
 	pathFilter := preparePathFilter(config, customEnv)
+	sortLines := compileSortLines(t, config)
+
+	// output.txt lives in outputDir, not tmpDir, so the bundle sync never uploads it;
+	// compare it from there. Every run produces it, so compare it explicitly rather
+	// than relying on it turning up in the tmpDir scan below. out.requests.txt also
+	// stays in outputDir and is never compared: tests assert on recorded requests
+	// through print_requests.py, not by committing the raw recording.
+	doComparison(t, repls, sortLines, dir, outputDir, "output.txt", &printedRepls)
 
 	// Compare expected outputs
 	for relPath := range outputs {
+		if relPath == "output.txt" {
+			// Handled above: it is produced in outputDir, not tmpDir.
+			continue
+		}
 		if shouldSkip(pathFilter, relPath) {
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1028,6 +1090,7 @@ func runTest(t *testing.T,
 			prefix := relPath + ": "
 			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
 			messages = strings.TrimRight(messages, "\r\n \t")
+			messages = truncateLines(messages, MaxLogLines)
 			messages = prefix + strings.ReplaceAll(messages, "\n", "\n"+prefix)
 			if strings.Contains(messages, "\n") {
 				messages = "\n" + messages
@@ -1039,7 +1102,7 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
@@ -1048,18 +1111,28 @@ func runTest(t *testing.T,
 	}
 }
 
-// checkEnvFilters skips the test if any env filter doesn't match testEnv.
-func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
-	envMap := make(map[string]string, len(testEnv))
-	for _, kv := range testEnv {
-		key, value, _ := strings.Cut(kv, "=")
-		envMap[key] = value
+// truncateLines keeps at most maxLines lines of s, appending a note about how many were
+// dropped. maxLines <= 0 disables truncation.
+func truncateLines(s string, maxLines int) string {
+	if maxLines <= 0 {
+		return s
 	}
-	for i, filter := range envFilters {
-		key, expected, _ := strings.Cut(filter, "=")
-		if actual, ok := envMap[key]; ok && actual != expected {
-			t.Skipf("Skipping because test environment %s=%s does not match ENVFILTER#%d: %s", key, actual, i, filter)
-		}
+	lines := strings.Split(s, "\n")
+	if len(lines) <= maxLines {
+		return s
+	}
+	dropped := len(lines) - maxLines
+	kept := strings.Join(lines[:maxLines], "\n")
+	return fmt.Sprintf("%s\n... (%d more lines truncated, raise DATABRICKS_CLI_TEST_MAX_LOG to see more)", kept, dropped)
+}
+
+// checkEnvFilters skips the test if any env filter doesn't match testEnv. Filters that
+// share a key are alternatives, so INPUT_CONFIG=a together with INPUT_CONFIG=b runs both
+// variants rather than neither (see selection.MatchesFilters).
+func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
+	if !selection.MatchesFilters(testEnv, envFilters) {
+		t.Skipf("Skipping because test environment (%s) does not match filters (%s)",
+			strings.Join(testEnv, " "), strings.Join(envFilters, " "))
 	}
 }
 
@@ -1067,7 +1140,7 @@ func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
 // matrix key ends up in the variant's test name, so a long one makes every name that carries
 // it hard to read. Tests may still name the variable itself; the alias is only shorter.
 var envAliases = map[string]string{
-	"DMS": "DATABRICKS_BUNDLE_RECORD_DEPLOYMENT_HISTORY",
+	"DMS": "DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY",
 }
 
 // buildTestEnv builds the test environment from config.Env and customEnv.
@@ -1129,7 +1202,24 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+// compileSortLines compiles the enabled SortLines patterns from the test config.
+// Patterns are returned in name order so the result does not depend on map iteration.
+func compileSortLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp {
+	result := make([]*regexp.Regexp, 0, len(config.SortLines))
+	for _, name := range slices.Sorted(maps.Keys(config.SortLines)) {
+		if on, ok := config.SortLinesOn[name]; ok && !on {
+			continue
+		}
+		re, err := regexp.Compile(config.SortLines[name])
+		if err != nil {
+			t.Fatalf("Invalid SortLines pattern %s = %#v: %s", name, config.SortLines[name], err)
+		}
+		result = append(result, re)
+	}
+	return result
+}
+
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines []*regexp.Regexp, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -1146,6 +1236,14 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The reference value is stored after applying replacements.
 	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
+	}
+
+	// Canonicalize line runs whose order the command does not guarantee. Applied to
+	// the reference too so a hand-edited golden compares the same way; sorting is
+	// idempotent, so a stored reference is unaffected.
+	for _, re := range sortLines {
+		valueRef = testdiff.SortLineRuns(valueRef, re)
+		valueNew = testdiff.SortLineRuns(valueNew, re)
 	}
 
 	// In update mode, regenerating the reference files is the goal: each branch below
@@ -1297,6 +1395,23 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 	}
 
 	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
+	return execPath
+}
+
+// buildSelectionCmd builds the test selection command, so a test can run it the way a
+// developer does.
+func buildSelectionCmd(t *testing.T, buildDir string) string {
+	execPath := filepath.Join(buildDir, "selection"+exeSuffix)
+
+	args := []string{"go", "build", "-o", execPath}
+	if runtime.GOOS == "windows" {
+		// See BuildCLI: VCS stamping fails on Windows.
+		args = append(args, "-buildvcs=false")
+	}
+	// The package path goes last: go build reads anything after it as another package.
+	args = append(args, "./internal/selection/cmd")
+	RunCommand(t, args, ".", nil)
+
 	return execPath
 }
 

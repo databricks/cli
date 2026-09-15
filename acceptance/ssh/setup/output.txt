@@ -1,0 +1,18 @@
+
+=== ProxyCommand written by setup --max-clients=25 --server-timeout=48h
+ssh connect --proxy --cluster=[TEST_DEFAULT_CLUSTER_ID] --auto-start-cluster=true --shutdown-delay=10m0s --max-clients=25 --server-timeout=48h0m0s
+
+=== A shutdown delay beyond the default lifetime raises it, no --server-timeout needed
+ssh connect --proxy --cluster=[TEST_DEFAULT_CLUSTER_ID] --auto-start-cluster=true --shutdown-delay=48h0m0s --max-clients=10 --server-timeout=48h0m0s
+
+=== Rejects a server that would refuse every connection
+>>> [CLI] ssh setup --name=broken --cluster=[TEST_DEFAULT_CLUSTER_ID] --max-clients=0
+Error: --max-clients must be at least 1, got 0
+
+=== Rejects a shutdown delay the server can never reach
+>>> [CLI] ssh setup --name=broken --cluster=[TEST_DEFAULT_CLUSTER_ID] --shutdown-delay=48h --server-timeout=24h
+Error: --shutdown-delay (48h0m0s) cannot be longer than --server-timeout (24h0m0s)
+
+=== No host config is written for the rejected setups
+home/.databricks/ssh-tunnel-configs/long-delay
+home/.databricks/ssh-tunnel-configs/my-cluster

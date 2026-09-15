@@ -20,12 +20,16 @@ class CronTriggerConfiguration:
 
     quartz_cron_expression: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A Cron expression using Quartz syntax that describes the schedule for this trigger. See
     [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details.
     """
 
     timezone_id: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A Java timezone ID. The schedule is resolved with respect to this timezone. See
     [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details.
     """
@@ -43,12 +47,16 @@ class CronTriggerConfigurationDict(TypedDict, total=False):
 
     quartz_cron_expression: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A Cron expression using Quartz syntax that describes the schedule for this trigger. See
     [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html) for details.
     """
 
     timezone_id: VariableOr[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] A Java timezone ID. The schedule is resolved with respect to this timezone. See
     [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details.
     """

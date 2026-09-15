@@ -1,0 +1,16 @@
+mkdir "project-folder"
+touch "project-folder/app.py" "project-folder/query.sql"
+cat > .gitignore << EOF
+script
+output.txt
+EOF
+
+cleanup() {
+  rm .gitignore
+  rm -rf project-folder .git .databricks
+}
+trap cleanup EXIT
+
+# bundle sync installs a text output handler by default (no --output flag),
+# matching the standalone sync command. See issue #6499.
+trace $CLI bundle sync | sort

@@ -200,6 +200,9 @@ __all__ = [
     "PostgresSlotConfig",
     "PostgresSlotConfigDict",
     "PostgresSlotConfigParam",
+    "RabbitmqOptions",
+    "RabbitmqOptionsDict",
+    "RabbitmqOptionsParam",
     "RedditAdsOptions",
     "RedditAdsOptionsDict",
     "RedditAdsOptionsParam",
@@ -609,6 +612,11 @@ from databricks.bundles.pipelines._models.postgres_slot_config import (
     PostgresSlotConfig,
     PostgresSlotConfigDict,
     PostgresSlotConfigParam,
+)
+from databricks.bundles.pipelines._models.rabbitmq_options import (
+    RabbitmqOptions,
+    RabbitmqOptionsDict,
+    RabbitmqOptionsParam,
 )
 from databricks.bundles.pipelines._models.reddit_ads_options import (
     RedditAdsOptions,

@@ -1,0 +1,3 @@
+# Local only: the recreate's create failure is injected with fault.py, which only the fake
+# server honors, so this case cannot be reproduced against a real workspace.
+Cloud = false

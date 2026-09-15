@@ -281,17 +281,8 @@ tasks:
     cmds:
       - "uv run --script tools/validate_whitespace.py --fix"
 
-  links:
-    desc: Update GitHub links in CHANGELOG.md and .nextchanges/ fragments
-    sources:
-      - CHANGELOG.md
-      - ".nextchanges/**/*.md"
-      - tools/update_github_links.py
-    cmds:
-      - "uv run --script tools/update_github_links.py"
-
   check-changelog:
-    desc: Validate .nextchanges fragment placement
+    desc: Validate .nextchanges fragment placement and links
     cmds:
       - "uv run --script tools/validate_nextchanges.py"
 
@@ -322,17 +313,22 @@ tasks:
     cmds:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
+  check-agents-setup:
+    desc: Check every agent's config setup is in sync with AGENTS.md/.agents; fails if anything was out of sync
+    cmds:
+      - "uv run --script tools/validate_agents_setup.py"
+
   checks:
-    desc: Run quick checks (tidy, whitespace, links, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles, agent setup)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
-    # touching more paths should not race with whitespace/link scanners.
+    # touching more paths should not race with the whitespace scanner.
     cmds:
       - task: tidy
       - task: ws
-      - task: links
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles
+      - task: check-agents-setup
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
@@ -471,6 +467,11 @@ tasks:
     generates:
       - test-output-unit-root.json
     cmds:
+      # Unit packages default to a far shorter per-package timeout than the acceptance
+      # suite (test-acc keeps 60m for the single, legitimately long ./acceptance binary).
+      # The slowest unit package observed across Linux/macOS/Windows is ~83s, so 10m is
+      # ample headroom while a hung package (e.g. a wedged goroutine) fails in minutes
+      # instead of burning the full hour. LOCAL_TIMEOUT still overrides when needed.
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
@@ -478,7 +479,7 @@ tasks:
           --jsonfile test-output-unit-root.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-unit-tools:
     desc: Run unit tests in tools/ module
@@ -502,7 +503,7 @@ tasks:
           --jsonfile test-output-unit-tools.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-unit-codegen:
     desc: Run unit tests in bundle/internal/tf/codegen module
@@ -522,7 +523,7 @@ tasks:
           --jsonfile test-output-unit-codegen.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-acc:
     desc: Run acceptance tests
@@ -539,10 +540,10 @@ tasks:
       # acceptance/install_terraform.py parses the provider version from this file.
       - bundle/internal/tf/codegen/schema/version.go
       - acceptance/**
-      # Pydabs wheel is built in-process by TestInprocessMode (cd python && uv build).
+      # Pydabs wheel is built in-process by TestAccept (cd python && uv build).
       - python/**
       - libs/vendored_py_packages/**
-      # TestInprocessMode builds yamlfmt via tools/go.mod.
+      # TestAccept builds yamlfmt via tools/go.mod.
       - tools/go.mod
       - tools/go.sum
       - go.mod
@@ -562,6 +563,15 @@ tasks:
           --rerun-fails \
           --packages ./acceptance/... \
           -- -timeout=${LOCAL_TIMEOUT:-60m}{{if .ACCEPTANCE_TEST_FILTER}} -run "{{.ACCEPTANCE_TEST_FILTER}}"{{end}}
+
+  local-select:
+    desc: Run selection of local tests (tests changed in this branch)
+    # Local counterpart of cloud-select: the same DATABRICKS_TEST_SELECT_CHANGED selection,
+    # against the testserver instead of a real workspace. -v to show the selection summary
+    # and the tests that ran; no sources/generates because the selection depends on the git
+    # diff, which Task cannot checksum.
+    cmds:
+      - "DATABRICKS_TEST_SELECT_CHANGED=${DATABRICKS_TEST_SELECT_CHANGED:-50} go test ./acceptance -run '^TestAccept$' -v -timeout=${LOCAL_TIMEOUT:-60m}"
 
   test-update:
     desc: Update acceptance test output (local)
@@ -772,12 +782,16 @@ tasks:
           --packages "./acceptance ./integration/..." \
           -- -parallel 4 -timeout=12h -short
 
-  integration-short-skiplocal:
-    desc: Run integration tests for PRs (skips CloudSlow and tests with testserver coverage)
+  cloud-select:
+    desc: Run selection of integration tests (tests changed in this branch)
+    # The alias is the name the eng-dev-ecosystem CI job dispatches (cli-isolated-pr.yml
+    # passes it as integration_task, and cli-isolated-tests.yml greps Taskfile.yml for it
+    # and falls back to integration-short, the full cloud suite, if it is missing).
+    aliases: [integration-short-skiplocal]
     deps: [install-pythons]
     cmds:
       - |
-        DATABRICKS_TEST_SKIPLOCAL=withchanged VERBOSE_TEST=1 \
+        DATABRICKS_TEST_SELECT_CHANGED=50 VERBOSE_TEST=1 \
         go run -modfile=tools/go.mod ./tools/testrunner/main.go \
           {{.GO_TOOL}} gotestsum \
           --format github-actions \
@@ -1042,9 +1056,9 @@ tasks:
       - bundle/direct/dresources/apitypes.yml
       - acceptance/bundle/refschema/out.fields.txt
     generates:
-      - bundle/direct/dresources/resources.generated.yml
+      - bundle/direct/dresources/configs/*.generated.yml
     cmds:
-      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt bundle/direct/dresources/configs"
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 

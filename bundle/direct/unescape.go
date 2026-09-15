@@ -5,14 +5,11 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 )
-
-// escapedRefPrefix is the escape for a literal "${...}" in bundle configuration:
-// the leading "$" tells the bundle not to treat what follows as a reference.
-const escapedRefPrefix = "$${"
 
 // unescapeRefs rewrites "$${" to "${" in every string field of state, in place.
 // Configs use "$${...}" for placeholders that the Databricks runtime interprets,
@@ -23,11 +20,11 @@ func unescapeRefs(state any) error {
 
 	err := structwalk.Walk(state, func(path *structpath.PathNode, val any, _ *reflect.StructField) {
 		s, ok := val.(string)
-		if !ok || !strings.Contains(s, escapedRefPrefix) {
+		if !ok || !strings.Contains(s, "$${") {
 			return
 		}
 		paths = append(paths, path)
-		values = append(values, strings.ReplaceAll(s, escapedRefPrefix, "${"))
+		values = append(values, dynvar.Unescape(s))
 	})
 	if err != nil {
 		return err

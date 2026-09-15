@@ -8,15 +8,18 @@ import codegen.packages as packages
 
 
 class LaunchStage:
-    # Mirrors clijson.LaunchStage in the Go code. jsonschema.json only carries
-    # x-databricks-launch-stage for private-preview fields (the Go schema
-    # generator emits it only there, to mark them experimental and exclude them
-    # from the generated documentation), but the full set is mirrored here for
-    # completeness.
+    # Mirrors clijson.LaunchStage in the Go code.
     GA = "GA"
     PUBLIC_PREVIEW = "PUBLIC_PREVIEW"
     PUBLIC_BETA = "PUBLIC_BETA"
     PRIVATE_PREVIEW = "PRIVATE_PREVIEW"
+
+
+def is_experimental_stage(stage: Optional[str]) -> bool:
+    # Beta and private preview may still change; GA and public preview are frozen.
+    # Since PyDABs is typed so field behavior can change in experimental stages,
+    # this can lead to breaking changes hence these fields are declared experimental.
+    return stage in (LaunchStage.PUBLIC_BETA, LaunchStage.PRIVATE_PREVIEW)
 
 
 @dataclass

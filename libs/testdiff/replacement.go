@@ -22,9 +22,7 @@ const (
 )
 
 var (
-	uuidRegex        = regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
-	numIdRegex       = regexp.MustCompile(`[0-9]{3,}`)
-	privatePathRegex = regexp.MustCompile(`(/tmp|/private)(/.*)/([a-zA-Z0-9]+)`)
+	uuidRegex = regexp.MustCompile(`[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}`)
 	// Matches databricks-sdk-go/0.90.0
 	sdkVersionRegex = regexp.MustCompile(`databricks-sdk-go/[0-9]+\.[0-9]+\.[0-9]+`)
 	// Matches databricks-tf-provider/1.121.0
@@ -232,16 +230,6 @@ func PrepareReplacementsUser(t testutil.TestingT, r *ReplacementsContext, u iam.
 func PrepareReplacementsUUID(t testutil.TestingT, r *ReplacementsContext) {
 	t.Helper()
 	r.append(uuidRegex, "[UUID]", 0)
-}
-
-func PrepareReplacementsNumber(t testutil.TestingT, r *ReplacementsContext) {
-	t.Helper()
-	r.append(numIdRegex, "[NUMID]", 0)
-}
-
-func PrepareReplacementsTemporaryDirectory(t testutil.TestingT, r *ReplacementsContext) {
-	t.Helper()
-	r.append(privatePathRegex, "/tmp/.../$3", 0)
 }
 
 func PrepareReplacementSdkVersion(t testutil.TestingT, r *ReplacementsContext) {

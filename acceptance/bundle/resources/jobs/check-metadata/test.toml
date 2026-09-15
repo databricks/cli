@@ -2,6 +2,7 @@ Cloud = true
 RecordRequests = false
 
 Ignore = [
+    ".databricks",
     "databricks.yml",
     "a/b/resources.yml",
     "metadata.json",

@@ -102,7 +102,11 @@ class Pipeline(Resource):
 
     continuous: VariableOrOptional[bool] = None
     """
-    Whether the pipeline is continuous or triggered. This replaces `trigger`.
+    [DEPRECATED] Whether the pipeline is continuous or triggered. This replaces `trigger`.
+    
+    Deprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage
+    of job-level settings such as performance mode. When the pipeline is started by a continuous
+    job, the job's setting takes precedence and this field is ignored.
     """
 
     development: VariableOrOptional[bool] = None
@@ -169,6 +173,8 @@ class Pipeline(Resource):
 
     parameters: VariableOrDict[str] = field(default_factory=dict)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Key/value map of default parameters to use for pipeline execution.
     Maximum total size: 10k characters (JSON format)
     """
@@ -293,7 +299,11 @@ class PipelineDict(TypedDict, total=False):
 
     continuous: VariableOrOptional[bool]
     """
-    Whether the pipeline is continuous or triggered. This replaces `trigger`.
+    [DEPRECATED] Whether the pipeline is continuous or triggered. This replaces `trigger`.
+    
+    Deprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage
+    of job-level settings such as performance mode. When the pipeline is started by a continuous
+    job, the job's setting takes precedence and this field is ignored.
     """
 
     development: VariableOrOptional[bool]
@@ -360,6 +370,8 @@ class PipelineDict(TypedDict, total=False):
 
     parameters: VariableOrDict[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Key/value map of default parameters to use for pipeline execution.
     Maximum total size: 10k characters (JSON format)
     """

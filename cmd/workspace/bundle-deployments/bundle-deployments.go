@@ -48,6 +48,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newListOperations())
 	cmd.AddCommand(newListResources())
 	cmd.AddCommand(newListVersions())
+	cmd.AddCommand(newUpdateDeployment())
 	cmd.AddCommand(newUpdateOperation())
 
 	// Apply optional overrides to this command.
@@ -176,8 +177,11 @@ func newCreateDeployment() *cobra.Command {
 
 	cmd.Flags().Var(&createDeploymentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().Var(&createDeploymentReq.Deployment.DeploymentMode, "deployment-mode", `Bundle target deployment mode (development or production). Supported values: [DEPLOYMENT_MODE_DEVELOPMENT, DEPLOYMENT_MODE_PRODUCTION]`)
+	cmd.Flags().StringVar(&createDeploymentReq.Deployment.DisplayName, "display-name", createDeploymentReq.Deployment.DisplayName, `Human-readable name for the deployment, up to 256 characters.`)
 	// TODO: complex arg: git_info
 	cmd.Flags().StringVar(&createDeploymentReq.Deployment.InitialParentPath, "initial-parent-path", createDeploymentReq.Deployment.InitialParentPath, `The workspace path of the existing folder where the deployment is initially created.`)
+	cmd.Flags().StringVar(&createDeploymentReq.Deployment.TargetName, "target-name", createDeploymentReq.Deployment.TargetName, `The bundle target name associated with this deployment.`)
 	// TODO: complex arg: workspace_info
 
 	cmd.Use = "create-deployment"
@@ -254,6 +258,7 @@ func newCreateVersion() *cobra.Command {
 	cmd.Flags().Var(&createVersionReq.Version.DeploymentMode, "deployment-mode", `Bundle target deployment mode (development or production), captured at the time of this version. Supported values: [DEPLOYMENT_MODE_DEVELOPMENT, DEPLOYMENT_MODE_PRODUCTION]`)
 	cmd.Flags().StringVar(&createVersionReq.Version.DisplayName, "display-name", createVersionReq.Version.DisplayName, `Display name for the deployment, captured at the time of this version.`)
 	// TODO: complex arg: git_info
+	// TODO: array: operations
 	cmd.Flags().StringVar(&createVersionReq.Version.PreviousVersionId, "previous-version-id", createVersionReq.Version.PreviousVersionId, `The version_id this version was created on top of — the deployment's most recent version at creation time.`)
 	cmd.Flags().StringVar(&createVersionReq.Version.TargetName, "target-name", createVersionReq.Version.TargetName, `Target name of the deployment, captured at the time of this version.`)
 	// TODO: complex arg: workspace_info
@@ -1013,6 +1018,83 @@ func newListVersions() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listVersionsOverrides {
 		fn(cmd, &listVersionsReq)
+	}
+
+	return cmd
+}
+
+// start update-deployment command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateDeploymentOverrides []func(
+	*cobra.Command,
+	*bundledeployments.UpdateDeploymentRequest,
+)
+
+func newUpdateDeployment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateDeploymentReq bundledeployments.UpdateDeploymentRequest
+	updateDeploymentReq.Deployment = bundledeployments.Deployment{}
+	var updateDeploymentJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateDeploymentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "update-deployment NAME"
+	cmd.Short = `Update a deployment.`
+	cmd.Long = `Update a deployment.
+
+  Updates a deployment.
+
+  Arguments:
+    NAME: Resource name of the deployment. Format: deployments/{deployment_id}`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
+	cmd.Annotations["launch_stage_display"] = "Private Preview"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateDeploymentJson.Unmarshal(&updateDeploymentReq.Deployment)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return errors.New("please provide command input in JSON format by specifying the --json flag")
+		}
+		updateDeploymentReq.Name = args[0]
+
+		response, err := w.BundleDeployments.UpdateDeployment(ctx, updateDeploymentReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateDeploymentOverrides {
+		fn(cmd, &updateDeploymentReq)
 	}
 
 	return cmd

@@ -119,7 +119,7 @@ jobs:
           git fetch origin "$BRANCH"
           git checkout -f -B "$BRANCH" FETCH_HEAD
           fragment=".nextchanges/dependency-updates/go-toolchain-${TOOLCHAIN}.md"
-          echo "Bump Go toolchain to ${TOOLCHAIN#go} ([#${PR}](https://github.com/databricks/cli/pull/${PR}))." > "$fragment"
+          echo "* Bump Go toolchain to ${TOOLCHAIN#go}. ([#${PR}](https://github.com/databricks/cli/pull/${PR}))" > "$fragment"
           git add "$fragment"
           git -c user.name='github-actions[bot]' \
               -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \

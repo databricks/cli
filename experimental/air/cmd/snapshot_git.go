@@ -62,6 +62,28 @@ func (g gitRepo) isRepository(ctx context.Context) bool {
 	return strings.TrimSpace(out) == "true"
 }
 
+// repoRelativePrefix returns the path from the repository root to g.path. Git
+// emits a trailing slash for subdirectories and an empty string at the root.
+func (g gitRepo) repoRelativePrefix(ctx context.Context) (string, error) {
+	out, err := g.run(ctx, "rev-parse", "--show-prefix")
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve repository-relative path for %s: %w", g.path, err)
+	}
+	out = strings.TrimSuffix(out, "\n")
+	out = strings.TrimSuffix(out, "\r")
+	return strings.TrimSuffix(out, "/"), nil
+}
+
+// repositoryRoot returns the top-level directory of the work tree containing
+// g.path.
+func (g gitRepo) repositoryRoot(ctx context.Context) (string, error) {
+	out, err := g.run(ctx, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve repository root for %s: %w", g.path, err)
+	}
+	return strings.TrimSpace(out), nil
+}
+
 // headSHA returns the current HEAD commit SHA.
 func (g gitRepo) headSHA(ctx context.Context) (string, error) {
 	out, err := g.run(ctx, "rev-parse", "HEAD")
@@ -164,6 +186,23 @@ func (g gitRepo) mergeBaseWithUpstream(ctx context.Context, remoteName string) s
 	return ""
 }
 
+// validateSubtreeExists checks that subtreePrefix is a directory at commitSHA.
+func (g gitRepo) validateSubtreeExists(ctx context.Context, commitSHA, subtreePrefix string) error {
+	if subtreePrefix == "" {
+		return nil
+	}
+
+	treeish := commitSHA + ":" + subtreePrefix
+	out, err := g.run(ctx, "cat-file", "-t", treeish)
+	if err != nil {
+		return fmt.Errorf("root_path %q does not exist at commit %s: %w", subtreePrefix, shortSHA(commitSHA), err)
+	}
+	if strings.TrimSpace(out) != "tree" {
+		return fmt.Errorf("root_path %q is not a directory at commit %s", subtreePrefix, shortSHA(commitSHA))
+	}
+	return nil
+}
+
 // validateIncludePathsExist checks that every include path exists at commitSHA.
 // `git ls-tree` (without -d, so both blobs and trees count) reports an entry when the
 // path exists; empty output means missing.
@@ -258,7 +297,7 @@ func nilIfEmpty(s string) *string {
 // buildGitStateSidecar gathers git provenance. pinnedTip overrides the HEAD-derived
 // tip for git_archive (the tarball reflects that commit, not HEAD); pass "" for
 // plain_tar. Metadata is best-effort — unavailable fields become null.
-func buildGitStateSidecar(ctx context.Context, git gitRepo, packagingMode, pinnedTip string, now time.Time) (gitStateSidecar, error) {
+func buildGitStateSidecar(ctx context.Context, git gitRepo, packagingMode, pinnedTip string, dirty bool, now time.Time) (gitStateSidecar, error) {
 	tip := pinnedTip
 	if tip == "" {
 		head, err := git.headSHA(ctx)
@@ -266,11 +305,6 @@ func buildGitStateSidecar(ctx context.Context, git gitRepo, packagingMode, pinne
 			return gitStateSidecar{}, err
 		}
 		tip = head
-	}
-
-	dirty, err := git.hasUncommittedChanges(ctx)
-	if err != nil {
-		return gitStateSidecar{}, err
 	}
 
 	return gitStateSidecar{
@@ -295,11 +329,16 @@ func (s gitStateSidecar) marshal() ([]byte, error) {
 // captureDirtyDiff runs `git diff HEAD` over the repo subtree, returning a diff_status
 // and the diff bytes (non-nil only when captured): clean (no changes or diff failed),
 // captured (under the cap), size_exceeded, or timeout.
-func captureDirtyDiff(ctx context.Context, git gitRepo, sizeCapBytes int, timeout time.Duration) (string, []byte) {
+func captureDirtyDiff(ctx context.Context, git gitRepo, includePaths []string, sizeCapBytes int, timeout time.Duration) (string, []byte) {
 	diffCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	out, err := git.runBytes(diffCtx, "diff", "HEAD", "--", ".")
+	pathspecs := includePaths
+	if len(pathspecs) == 0 {
+		pathspecs = []string{"."}
+	}
+	args := append([]string{"diff", "HEAD", "--"}, pathspecs...)
+	out, err := git.runBytes(diffCtx, args...)
 	if err != nil {
 		if errors.Is(diffCtx.Err(), context.DeadlineExceeded) {
 			return diffStatusTimeout, nil
