@@ -40,7 +40,7 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 		Owner:       model.Owner,
 
 		// Output only fields. Remote changes to these are ignored via
-		// ignore_remote_changes in resources.yml rather than zeroed here.
+		// ignore_remote_changes in registered_models.yml rather than zeroed here.
 		CreatedAt: model.CreatedAt,
 		CreatedBy: model.CreatedBy,
 		UpdatedAt: model.UpdatedAt,
