@@ -78,7 +78,6 @@ type ProcessOptions struct {
 	FastValidate    bool
 	Validate        bool
 	Build           bool
-	FindLibraries   bool
 	PreDeployChecks bool
 	Deploy          bool
 
@@ -356,7 +355,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	var plan *deployplan.Plan
-
+	var findLibraries bool
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
@@ -369,8 +368,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// FindLibraries) so the correct local files are found and uploaded to the
 		// remote paths the plan references.
 		opts.Build = false
-		opts.FindLibraries = true
 		opts.PreDeployChecks = false
+		findLibraries = true
 
 		var err error
 		plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
@@ -433,7 +432,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
-	} else if opts.FindLibraries {
+	} else if findLibraries {
 		t2 := time.Now()
 		libs = phases.FindLibraries(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
