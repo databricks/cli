@@ -104,7 +104,9 @@ type logRequest struct {
 	// past retry of an active run: that attempt's logs are immutable, so streaming
 	// would poll forever waiting for the run (not the attempt) to finish.
 	staticView bool
-	jsonOutput bool
+	// tailInitialLogs bounds existing output before following an active run.
+	tailInitialLogs bool
+	jsonOutput      bool
 	// onStatusChange, when set, is called on each lifecycle transition while
 	// following the run (current, previous display states). Used by
 	// `air run --watch -o json` to emit STATUS events.
@@ -406,13 +408,12 @@ func (st *bricklensStreamer) run() (bool, error) {
 			statusRefreshCounter++
 		}
 
-		// A run already terminal on the first iteration renders as a tail (most
-		// recent N lines). An active run streams everything with dedup, so a run
-		// that terminates while we watch doesn't re-print the boundary second.
+		// `air logs` starts an active attachment with a bounded tail; subsequent
+		// polls follow live with dedup so the overlap does not re-print it.
 		var emitted int
 		var err error
-		if firstIteration && terminal {
-			err = st.drainTail(toSec)
+		if firstIteration && (terminal || st.req.tailInitialLogs) {
+			err = st.drainTail(toSec, !terminal)
 		} else {
 			emitted, err = st.drainPages(toSec)
 		}
@@ -483,7 +484,7 @@ func sleepOrCancel(ctx context.Context, d time.Duration) error {
 // drainStatic renders a single tail pass without following the run. Success
 // reflects the run's current result state (empty while active).
 func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
-	if err := st.drainTail(toSec); err != nil {
+	if err := st.drainTail(toSec, false); err != nil {
 		return false, err
 	}
 	if !st.firstLogSeen {
@@ -508,7 +509,7 @@ func (req logRequest) tailTarget() int {
 // drainTail emits the most-recent `target` records oldest-first. Bricklens
 // returns records newest-first, so it pages until it has `target`, keeps the
 // newest `target`, and reverses to chronological order.
-func (st *bricklensStreamer) drainTail(toSec int64) error {
+func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
 	target := st.req.tailTarget()
 	if target <= 0 {
 		return nil
@@ -534,6 +535,13 @@ func (st *bricklensStreamer) drainTail(toSec int64) error {
 	}
 	for _, c := range slices.Backward(collected) {
 		st.emit(c.Body)
+		if remember {
+			st.seen.add(c)
+			st.lastNano = max(st.lastNano, c.nano())
+		}
+	}
+	if remember && st.lastNano != 0 {
+		st.fromSec = max(st.streamStartSec, st.lastNano/1_000_000_000-int64(bricklensLogLookback/time.Second))
 	}
 	return nil
 }

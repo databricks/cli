@@ -244,7 +244,7 @@ func TestDrainPagesEmitsLateRecordsWithinLookback(t *testing.T) {
 	require.NoError(t, err)
 	_, err = st.drainPages(0)
 	require.NoError(t, err)
-	assert.Equal(t, "same\nsame\nlate\n", buf.String())
+	assert.Equal(t, "same\n", buf.String())
 }
 
 func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
@@ -259,11 +259,17 @@ func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
 			logRequests++
 			switch logRequests {
 			case 1:
-				_, _ = w.Write([]byte(`{"log_records":[{"record_id":"new","time_unix_nano":50000000000,"body":"new"}]}`))
+				assert.Equal(t, "2", r.URL.Query().Get("page_size"))
+				assert.Equal(t, "false", r.URL.Query().Get("ascending"))
+				_, _ = w.Write([]byte(`{"log_records":[
+					{"record_id":"third","time_unix_nano":50000000000,"body":"third"},
+					{"record_id":"second","time_unix_nano":40000000000,"body":"second"}
+				]}`))
 			case 3:
 				_, _ = w.Write([]byte(`{"log_records":[
 					{"record_id":"late","time_unix_nano":30000000000,"body":"late"},
-					{"record_id":"new","time_unix_nano":50000000000,"body":"new"}
+					{"record_id":"second","time_unix_nano":40000000000,"body":"second"},
+					{"record_id":"third","time_unix_nano":50000000000,"body":"third"}
 				]}`))
 			default:
 				_, _ = w.Write([]byte(`{"log_records":[]}`))
@@ -278,12 +284,13 @@ func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
 
 	var buf bytes.Buffer
 	ok, err := streamBricklensLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &buf,
-		logRequest{runID: 1, node: 0, attempt: -1, jsonOutput: true},
+		logRequest{runID: 1, node: 0, attempt: -1, tailLines: 2, tailInitialLogs: true, jsonOutput: true},
 		logRunStatus{lifeCycleState: "RUNNING", startTimeMs: 10_000})
 	require.NoError(t, err)
 	assert.True(t, ok)
 	assert.Equal(t, bricklensTerminalEmptyPolls+3, logRequests)
-	assert.Contains(t, buf.String(), `"line":"new"`)
+	assert.Contains(t, buf.String(), `"line":"second"`)
+	assert.Contains(t, buf.String(), `"line":"third"`)
 	assert.Contains(t, buf.String(), `"line":"late"`)
 }
 
