@@ -16,11 +16,17 @@ import (
 const currentPlanVersion = 2
 
 type Plan struct {
-	PlanVersion int                   `json:"plan_version,omitempty"`
-	CLIVersion  string                `json:"cli_version,omitempty"`
-	Lineage     string                `json:"lineage,omitempty"`
-	Serial      int                   `json:"serial,omitempty"`
-	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
+	PlanVersion int    `json:"plan_version,omitempty"`
+	CLIVersion  string `json:"cli_version,omitempty"`
+	Lineage     string `json:"lineage,omitempty"`
+	Serial      int    `json:"serial,omitempty"`
+
+	// Features are the state feature flags this plan was built against, mirroring the state
+	// file's own "features" field. The stamps above exist because of a feature being set, so
+	// deploy --plan rejects a plan whose features differ from the target's (see process.go).
+	Features map[string]struct{} `json:"features,omitempty"`
+
+	Plan map[string]*PlanEntry `json:"plan,omitzero"`
 
 	// NotSelected is the number of resources removed by FilterToSelected via the
 	// --select flag. Serialized so the summary survives a deploy from a plan file
@@ -51,6 +57,12 @@ func (p *Plan) CountActions() ActionCounts {
 		case Update, UpdateWithID, Resize:
 			c.Change++
 		case Delete:
+			// A state-only delete touches nothing in the backend and only drops the
+			// state entry, so it is not a real action: leave it out of the tally
+			// entirely rather than misreport it as deleted or unchanged.
+			if entry.StateOnly {
+				continue
+			}
 			c.Delete++
 		case Recreate:
 			// A recreate counts as both a delete and a create.
@@ -116,7 +128,14 @@ type PlanEntry struct {
 	// Gone is set on Delete entries when planning confirmed the resource no longer
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
-	Gone        bool                     `json:"gone,omitempty"`
+	Gone bool `json:"gone,omitempty"`
+	// StateOnly is set on Delete entries for resources that implement no DoDelete:
+	// deleting them has no backend effect. Like Gone, applying such an entry only
+	// removes it from the state and it is excluded from destructive-action prompts,
+	// textual plan output and the deleted count — but unlike Gone it is a property of
+	// the resource type, not of the current remote state, so planning skips the
+	// remote read that Gone detection needs.
+	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
@@ -147,6 +166,11 @@ const (
 	// ReasonMissingInRemote: field is not present in RemoteType (write-only / input-only).
 	// Remote always appears nil, so treat the absence as a no-op when there is no local change.
 	ReasonMissingInRemote = "missing_in_remote"
+	// ReasonRemoteAddition: the field is a remote-only addition (absent from config, present
+	// in the remote) inside an object whose gate is set (e.g. a cluster with a policy_id). The
+	// backend may extend such an object beyond what the bundle declares, so the addition is not
+	// treated as drift. We do not attribute the value to any particular source.
+	ReasonRemoteAddition = "remote_addition"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"
@@ -201,6 +225,7 @@ func (p *Plan) GetActions() []Action {
 			ResourceKey: key,
 			ActionType:  entry.Action,
 			Gone:        entry.Gone,
+			StateOnly:   entry.StateOnly,
 		})
 	}
 

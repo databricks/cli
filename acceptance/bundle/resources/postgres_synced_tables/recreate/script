@@ -12,7 +12,7 @@ cleanup() {
     echo "Cleaning up temporary source table"
     $CLI tables delete main.source_$UNIQUE_NAME.trips_source || true
     $CLI schemas delete main.source_$UNIQUE_NAME || true
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 

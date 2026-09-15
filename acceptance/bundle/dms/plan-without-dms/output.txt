@@ -1,0 +1,13 @@
+
+=== Generate and save plan WITHOUT DMS recording
+>>> jq {features}
+{
+  "features": null
+}
+
+=== Enable DMS recording and try to deploy the non-DMS plan
+>>> musterr [CLI] bundle deploy --plan tmp.plan.json
+Error: this plan was created for a different set of state features than the target now has; run 'bundle plan' again
+
+
+>>> print_requests.py //api/2.0/bundle --get

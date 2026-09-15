@@ -129,7 +129,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 // "none of them" - the negotiation this endpoint exists for.
 func serveCapabilities(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]bool{"resume": true}); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]int{proxy.ResumeVersionParameter: proxy.ResumeProtocolVersion}); err != nil {
 		http.Error(w, "Failed to write capabilities", http.StatusInternalServerError)
 	}
 }

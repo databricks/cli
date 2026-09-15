@@ -2,13 +2,13 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 print_app_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps")) and (.path | contains("/api/2.0/bundle") | not)) | del(.body.url)' < out.requests.txt
-    rm out.requests.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/apps")) and (.path | contains("/api/2.0/bundle") | not)) | del(.body.url)' < "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 title "Deploy with started=false: app created without compute (no_compute=true)"

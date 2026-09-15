@@ -13,10 +13,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// errSendWindowExhausted means the peer has not acknowledged anything for a full buffer's worth
-// of payload. The connection cannot be resumed past this point, because the bytes the peer would
-// need replayed are the ones we would have to discard to make room.
-var errSendWindowExhausted = errors.New("resume send buffer is full: the peer stopped acknowledging")
+// errSendWindowExhausted prevents overwriting unacknowledged bytes. The sending
+// loop waits for room before appending, without holding the websocket write lock.
+var errSendWindowExhausted = errors.New("resume send buffer is full")
 
 // errReplayUnavailable means the peer asked to resume from an offset we no longer hold. It can
 // only happen if the peer acknowledged those bytes and then asked for them again, so it is a
@@ -40,14 +39,36 @@ type sendBuffer struct {
 	acked int64
 	buf   []byte
 	limit int
+	space chan struct{}
 }
 
 func newSendBuffer(limit int) *sendBuffer {
-	return &sendBuffer{limit: limit}
+	return &sendBuffer{limit: limit, space: make(chan struct{}, 1)}
 }
 
-// append records payload as sent. It fails once the unacknowledged window would outgrow the
-// limit, which means the peer has stopped acknowledging and the stream can no longer be repaired.
+// waitForSpace applies backpressure to the sole payload producer. Acknowledgments
+// can still arrive, and a reattach can still acquire the websocket write lock.
+func (b *sendBuffer) waitForSpace(ctx context.Context, size int) error {
+	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		b.mu.Lock()
+		available := b.limit - len(b.buf)
+		b.mu.Unlock()
+		if size <= available {
+			return nil
+		}
+		select {
+		case <-b.space:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
+// append records payload before its websocket write, while the caller holds the
+// same lock used to install a replacement connection and its replay.
 func (b *sendBuffer) append(payload []byte) error {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -70,6 +91,10 @@ func (b *sendBuffer) ack(delivered int64) {
 	}
 	b.buf = b.buf[delivered-b.acked:]
 	b.acked = delivered
+	select {
+	case b.space <- struct{}{}:
+	default:
+	}
 }
 
 // replayFrom returns the bytes the peer is missing: everything from the offset it last delivered
@@ -185,7 +210,7 @@ func (pc *proxyConnection) dialReattach(ctx context.Context) error {
 	defer cancel()
 
 	log.Warnf(ctx, "SSH tunnel connection dropped, reattaching to the session...")
-	conn, err := pc.redial(budgetCtx)
+	conn, serverDelivered, err := pc.redial(budgetCtx)
 	if err != nil {
 		return err
 	}
@@ -193,21 +218,23 @@ func (pc *proxyConnection) dialReattach(ctx context.Context) error {
 	// The server's first frame says how much of our output it wrote, which is where we replay
 	// from. It replays what we are missing right after, and those frames wait in the socket
 	// until the receiving loop picks the new connection up.
-	serverDelivered, err := readResumeHandshake(conn)
-	if err != nil {
-		conn.Close()
-		return err
-	}
-	if err := pc.replayTo(conn, serverDelivered); err != nil {
+	if err := pc.prepareReplay(serverDelivered); err != nil {
 		conn.Close()
 		return err
 	}
 	pc.conn.Store(conn)
+	select {
+	case <-pc.resume.done:
+		conn.Close()
+		return ErrReattachRejected
+	default:
+	}
+	pc.requestAck()
 	log.Warnf(ctx, "SSH tunnel connection reattached, the session continues")
 	return nil
 }
 
-func (pc *proxyConnection) redial(ctx context.Context) (*websocket.Conn, error) {
+func (pc *proxyConnection) redial(ctx context.Context) (*websocket.Conn, int64, error) {
 	var lastErr error
 	for {
 		conn, err := pc.createWebsocketConnection(ctx, DialRequest{
@@ -217,13 +244,21 @@ func (pc *proxyConnection) redial(ctx context.Context) (*websocket.Conn, error) 
 			ResumeCapable: true,
 		})
 		if err == nil {
-			return conn, nil
+			var delivered int64
+			delivered, err = readResumeHandshake(ctx, conn)
+			if err == nil {
+				return conn, delivered, nil
+			}
+			conn.Close()
+		}
+		if errors.Is(err, ErrReattachRejected) {
+			return nil, 0, err
 		}
 		lastErr = err
 		log.Debugf(ctx, "Reattach dial failed, retrying: %v", err)
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("gave up reattaching after %v: %w", proxyResumeBudget, lastErr)
+			return nil, 0, fmt.Errorf("gave up reattaching: %w", errors.Join(lastErr, ctx.Err()))
 		case <-time.After(proxyResumeRetryBackoff):
 		}
 	}
@@ -236,7 +271,7 @@ func (pc *proxyConnection) redial(ctx context.Context) (*websocket.Conn, error) 
 // stable for acceptReattach to report. Both channels are buffered, so a client that reattaches
 // before this side has even noticed the drop is picked up rather than missed.
 func (pc *proxyConnection) awaitReattach(ctx context.Context) error {
-	log.Infof(ctx, "Connection dropped, holding the session for up to %v for the client to reattach", proxyResumeGrace)
+	log.Infof(ctx, "Connection dropped, holding the session for up to %v for the client to reattach", pc.resume.grace)
 	select {
 	case pc.resume.parked <- struct{}{}:
 	default:
@@ -248,8 +283,8 @@ func (pc *proxyConnection) awaitReattach(ctx context.Context) error {
 		// acceptReattach has already replayed and installed the new connection.
 		log.Info(ctx, "Client reattached to the session")
 		return nil
-	case <-time.After(proxyResumeGrace):
-		return fmt.Errorf("the client did not reattach within %v", proxyResumeGrace)
+	case <-time.After(pc.resume.grace):
+		return fmt.Errorf("the client did not reattach within %v", pc.resume.grace)
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -266,6 +301,8 @@ func (pc *proxyConnection) awaitParked(ctx context.Context) error {
 	select {
 	case <-pc.resume.parked:
 		return nil
+	case <-pc.resume.done:
+		return ErrReattachRejected
 	case <-time.After(proxyResumeHandshakeTimeout):
 		return fmt.Errorf("the receiving loop did not stop delivering within %v", proxyResumeHandshakeTimeout)
 	case <-ctx.Done():
@@ -278,8 +315,12 @@ func (pc *proxyConnection) awaitParked(ctx context.Context) error {
 //
 // Called from the HTTP handler goroutine, so it takes the write lock the loops use.
 func (pc *proxyConnection) acceptReattach(ctx context.Context, w http.ResponseWriter, r *http.Request, clientDelivered int64) error {
+	pc.resume.reattachMu.Lock()
+	defer pc.resume.reattachMu.Unlock()
 	select {
 	case <-pc.ready:
+	case <-pc.resume.done:
+		return ErrReattachRejected
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -295,9 +336,22 @@ func (pc *proxyConnection) acceptReattach(ctx context.Context, w http.ResponseWr
 	if err := pc.awaitParked(ctx); err != nil {
 		return err
 	}
+	installed := false
+	defer func() {
+		if !installed {
+			// A failed upgrade or handshake leaves the receiver parked. Let the
+			// next attempt use that same stable delivered offset.
+			pc.resume.parked <- struct{}{}
+		}
+	}()
 
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()
+	select {
+	case <-pc.resume.done:
+		return ErrReattachRejected
+	default:
+	}
 
 	conn, err := pc.acceptWebsocketConnection(w, r)
 	if err != nil {
@@ -309,32 +363,41 @@ func (pc *proxyConnection) acceptReattach(ctx context.Context, w http.ResponseWr
 		conn.Close()
 		return err
 	}
-	if err := pc.replayTo(conn, clientDelivered); err != nil {
+	if err := pc.prepareReplay(clientDelivered); err != nil {
 		conn.Close()
 		return err
 	}
 	pc.conn.Store(conn)
+	// Teardown can run while the handshake holds the write lock. If it closed
+	// the old socket before this store, this handler must close the replacement.
+	select {
+	case <-pc.resume.done:
+		conn.Close()
+		return ErrReattachRejected
+	default:
+	}
+	pc.requestAck()
 
 	select {
 	case pc.resume.resumed <- conn:
-	default:
-		// The loop already gave up, or a previous signal is still queued. Either way the session
-		// is past saving; the loop's own grace timer reports it.
-		log.Warnf(ctx, "Reattach signal could not be delivered to the receiving loop")
+		installed = true
+	case <-pc.resume.done:
+		conn.Close()
+		return ErrReattachRejected
 	}
 	return nil
 }
 
-// replayTo sends the peer everything it is missing, given how much it says it delivered.
-func (pc *proxyConnection) replayTo(conn *websocket.Conn, peerDelivered int64) error {
+// prepareReplay queues missing bytes under the write lock. Replaying here would
+// deadlock when both peers fill their socket buffers before returning to reads.
+func (pc *proxyConnection) prepareReplay(peerDelivered int64) error {
 	missing, err := pc.resume.sendBuf.replayFrom(peerDelivered)
 	if err != nil {
 		return err
 	}
-	if len(missing) == 0 {
-		return nil
-	}
-	return conn.WriteMessage(websocket.BinaryMessage, missing)
+	pc.resume.sendBuf.ack(peerDelivered)
+	pc.resume.replay = missing
+	return nil
 }
 
 // sendResumeHandshake announces our delivered count as the first frame of a reattached
@@ -350,7 +413,9 @@ func (pc *proxyConnection) sendResumeHandshake(conn *websocket.Conn) error {
 
 // readResumeHandshake reads the delivered count the peer sends as the first frame of a reattached
 // connection. The deadline bounds the wait: the connection is new, but the peer may be wedged.
-func readResumeHandshake(conn *websocket.Conn) (int64, error) {
+func readResumeHandshake(ctx context.Context, conn *websocket.Conn) (int64, error) {
+	stop := context.AfterFunc(ctx, func() { conn.Close() })
+	defer stop()
 	if err := conn.SetReadDeadline(time.Now().Add(proxyResumeHandshakeTimeout)); err != nil {
 		return 0, err
 	}

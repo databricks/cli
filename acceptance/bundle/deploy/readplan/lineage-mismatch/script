@@ -1,2 +1,14 @@
+# The plan is committed rather than generated, so it must match the shape of the target it is fed
+# to: a recorded target's state carries the deployment_history feature, and validatePlan rejects a
+# plan whose features differ before it looks at lineage.
+plan=plan.direct.json
+if [ "$DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY" = "true" ]; then
+    plan=plan.dms.json
+fi
+
+# Copy to one name so the traced command line is the same in both variants.
+cp $plan plan.json
+
 # Try to deploy with mismatched lineage (should fail)
-$CLI bundle deploy --plan plan.json
+trace musterr $CLI bundle deploy --plan plan.json
+rm plan.json

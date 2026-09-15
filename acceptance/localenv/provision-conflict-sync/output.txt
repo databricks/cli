@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "command": "environments setup-local",
+  "ok": false,
+  "mode": "default",
+  "dryRun": false,
+  "compute": {
+    "source": "serverless",
+    "serverlessVersion": "v4",
+    "envKey": "serverless/serverless-v4"
+  },
+  "resolved": {
+    "pythonVersion": "3.12",
+    "dbconnectVersion": "17.2.0",
+    "artifactSource": "network"
+  },
+  "greenfield": false,
+  "pythonResolution": "uv_install_succeeded",
+  "phases": [
+    {
+      "phase": "preflight",
+      "status": "ok"
+    },
+    {
+      "phase": "resolve",
+      "status": "ok"
+    },
+    {
+      "phase": "fetch",
+      "status": "ok"
+    },
+    {
+      "phase": "merge",
+      "status": "ok"
+    },
+    {
+      "phase": "provision",
+      "status": "error"
+    },
+    {
+      "phase": "validate",
+      "status": "pending"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "W_DBCONNECT_PIN_OVERRIDDEN",
+      "message": "databricks-connect \"databricks-connect~=16.0.0\" is replaced by the environment's \"databricks-connect~=17.2.0\""
+    }
+  ],
+  "error": {
+    "code": "E_PROVISION_CONFLICT",
+    "failurePhase": "provision",
+    "message": "uv sync failed: error: No solution found when resolving dependencies:\n  Because the project's requirements are unsatisfiable, we cannot proceed.: [TEST_TMP_DIR]/uv sync --python 3.12: exit status 1",
+    "diskMutated": true
+  },
+  "backupPath": "[TEST_TMP_DIR]/pyproject.toml.bak",
+  "durationMs": [DURATION_MS]
+}

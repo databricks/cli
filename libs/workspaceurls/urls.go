@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -21,6 +22,7 @@ var resourceURLPatterns = map[string]string{
 	"jobs":                    "jobs/%s",
 	"models":                  "ml/models/%s",
 	"model_serving_endpoints": "ml/endpoints/%s",
+	"model_services":          "explore/data/model-services/%s",
 	"notebooks":               "#notebook/%s",
 	"pipelines":               "pipelines/%s",
 	"postgres_catalogs":       "explore/data/%s",
@@ -52,6 +54,7 @@ var resourceAliases = map[string]string{
 // requires slash-separated segments.
 var dotSeparatedResources = map[string]bool{
 	"catalogs":               true,
+	"model_services":         true,
 	"postgres_synced_tables": true,
 	"quality_monitors":       true,
 	"registered_models":      true,
@@ -69,6 +72,22 @@ func ResourceTypes() []string {
 	}
 	slices.Sort(names)
 	return names
+}
+
+// DeploymentURL returns the workspace URL for a bundle deployment:
+// <host>/deployments/<deploymentID>?version=<version>. Version pins the page to the deploy that produced it.
+func DeploymentURL(baseURL url.URL, deploymentID string, version int) string {
+	if deploymentID == "" {
+		return ""
+	}
+
+	baseURL.Path = "deployments/" + deploymentID
+	if version > 0 {
+		values := baseURL.Query()
+		values.Set("version", strconv.Itoa(version))
+		baseURL.RawQuery = values.Encode()
+	}
+	return baseURL.String()
 }
 
 // JobRunPath returns the modern workspace path for a job run, of the form

@@ -1,5 +1,3 @@
-
->>> errcode [CLI] bundle plan -o json
 {
   "cli_version": "[CLI_VERSION]",
   "plan": {

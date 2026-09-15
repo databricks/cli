@@ -76,7 +76,6 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	if cfg.MLflowArtifactLocation != nil {
 		task.MlflowArtifactLocation = *cfg.MLflowArtifactLocation
 	}
-	task.DockerImageUrl = cfg.dockerImageURL()
 
 	maxRetries := cfg.maxRetries()
 	st := jobs.SubmitTask{
@@ -95,7 +94,12 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	// Carry the user's declared deps inline on spec.dependencies; the AI Runtime
 	// backend installs them via --deps-config. The SDK marshaler drops nil and empty
 	// slices, so a no-deps run omits the key.
-	envSpec := &compute.Environment{EnvironmentVersion: dlImage}
+	envSpec := &compute.Environment{}
+	if strings.HasPrefix(dlImage, databricksAIPrefix) {
+		envSpec.BaseEnvironment = "workspace-base-environments/" + dlImage
+	} else {
+		envSpec.EnvironmentVersion = dlImage
+	}
 	if len(deps) > 0 {
 		envSpec.Dependencies = deps
 	}
@@ -114,12 +118,12 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	}
 }
 
-func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, provisionedCapacityID, priorityClass string) (int64, error) {
-	// Neither reservation field is modeled by the SDK's AiRuntimeTask, so a run
-	// that sets either has to go through the raw /api/2.2 body. priority_class only
+func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, provisionedCapacityID, priorityClass, unityCatalogImagePath string) (int64, error) {
+	// None of these fields are modeled by the SDK's AiRuntimeTask, so a run that
+	// sets any of them has to go through the raw /api/2.2 body. priority_class only
 	// ever appears alongside a reservation (validation enforces it), but route on
-	// both so it can never be silently dropped.
-	if provisionedCapacityID == "" && priorityClass == "" {
+	// all of them so none can be silently dropped.
+	if provisionedCapacityID == "" && priorityClass == "" && unityCatalogImagePath == "" {
 		wait, err := w.Jobs.Submit(ctx, payload)
 		if err != nil {
 			return 0, err
@@ -139,6 +143,13 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 	}
 	if err := injectReservationFields(body, provisionedCapacityID, priorityClass); err != nil {
 		return 0, err
+	}
+	if unityCatalogImagePath != "" {
+		aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
+		if err != nil {
+			return 0, err
+		}
+		aiRuntimeTask["unity_catalog_image_path"] = unityCatalogImagePath
 	}
 
 	apiClient, err := client.New(w.Config)
@@ -289,15 +300,6 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	// After the cheap validations but before any upload: verify the custom image is
-	// registered (and, under tag_policy=latest, re-resolve it — a refresh can block
-	// for minutes), so a bad or unregistered image wastes no artifact work.
-	if img := cfg.dockerImage(); img != nil {
-		if err := prepareDockerImage(ctx, w, img); err != nil {
-			return 0, "", err
-		}
-	}
-
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)
 	if err != nil {
 		return 0, "", err
@@ -341,7 +343,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		priorityClass = *cfg.Compute.PriorityClass
 	}
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
-	runID, err := submitRun(ctx, w, payload, provisionedCapacityID, priorityClass)
+	runID, err := submitRun(ctx, w, payload, provisionedCapacityID, priorityClass, cfg.unityCatalogImagePath())
 	if err != nil {
 		return 0, "", err
 	}

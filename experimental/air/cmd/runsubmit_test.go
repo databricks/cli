@@ -48,9 +48,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 		MLflowRunName:             new("run-v2"),
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
 		MLflowArtifactLocation:    new("dbfs:/Volumes/main/default/artifacts"),
-		Environment: &environmentConfig{DockerImage: &dockerImageConfig{
-			URL: "registry.example.com/team/image:tag",
-		}},
 	}
 
 	p := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
@@ -78,7 +75,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "run-v2", at.MlflowRun)
 	assert.Equal(t, "/Workspace/Users/me/exp", at.MlflowExperimentDirectory)
 	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", at.MlflowArtifactLocation)
-	assert.Equal(t, "registry.example.com/team/image:tag", at.DockerImageUrl)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
@@ -109,7 +105,7 @@ func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "", "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(42), runID)
 }
@@ -140,7 +136,7 @@ func TestSubmitRunInjectsPriorityClass(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL", "")
 	require.NoError(t, err)
 	assert.Equal(t, int64(7), runID)
 }
@@ -200,6 +196,22 @@ func TestBuildSubmitPayloadInlineDependencies(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotContains(t, string(b), "dependencies")
 	}
+}
+
+func TestBuildSubmitPayloadDatabricksAIEnvironment(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "exp",
+		Command:        new("x"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_1xA10", NumAccelerators: 1},
+	}
+
+	spec := buildSubmitPayload(cfg, "/d/command.sh", "databricks_ai_v5", "", snapshotResult{}, []string{"accelerate"}).Environments[0].Spec
+	b, err := json.Marshal(spec)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"base_environment": "workspace-base-environments/databricks_ai_v5",
+		"dependencies": ["accelerate"]
+	}`, string(b))
 }
 
 func TestSubmitToken(t *testing.T) {
@@ -294,6 +306,40 @@ func TestSubmitWorkloadHonorsOverride(t *testing.T) {
 	require.NotNil(t, at)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, 4, at.Deployments[0].Compute.AcceleratorCount)
+}
+
+func TestSubmitWorkloadSendsUnityCatalogImagePath(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var got map[string]any
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig+`
+environment:
+  unity_catalog_image: main.air.training:prod
+`)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+
+	tasks, ok := got["tasks"].([]any)
+	require.True(t, ok)
+	require.Len(t, tasks, 1)
+	task, ok := tasks[0].(map[string]any)
+	require.True(t, ok)
+	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
 }
 
 // A working-tree code_source is packaged into a tarball, uploaded via DABs' artifact

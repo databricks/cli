@@ -2,6 +2,7 @@ package direct
 
 import (
 	"bytes"
+	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -9,8 +10,10 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
@@ -78,8 +81,8 @@ resources:
 }
 
 func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
-	// Rules mirror the schemas backend_defaults in resources.yml, but the test is
-	// deliberately self-contained so that edits to resources.yml don't break it.
+	// Rules mirror the schemas backend_defaults in schemas.yml, but the test is
+	// deliberately self-contained so that edits to schemas.yml don't break it.
 	// The real wiring is covered by acceptance/bundle/resources/schemas/drift.
 	managedDefaults, err := structpath.ParsePattern("properties['unity.catalog.managed.*.defaults.*']")
 	require.NoError(t, err)
@@ -256,7 +259,7 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 			adapter, ok := adapters[tt.resource]
 			require.True(t, ok)
 			changes := deployplan.Changes{tt.field: tt.ch}
-			err := addPerFieldActions(t.Context(), adapter, changes, nil)
+			err := addPerFieldActions(t.Context(), adapter, changes, nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
@@ -323,7 +326,7 @@ func jobRunResultStateAction(t *testing.T, state *jobs.RunState) *deployplan.Cha
 		Remote: state.ResultState,
 	}}
 
-	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, remote))
+	require.NoError(t, addPerFieldActions(t.Context(), adapters["job_runs"], changes, nil, remote))
 	return changes["result_state"]
 }
 
@@ -400,4 +403,204 @@ func bundleWithSkippedJobRun(t *testing.T, remote *dresources.JobRunRemote) *Dep
 	b.StateCache.Store(jobRunKey, structvar.NewStructVar(state, nil))
 	b.RemoteStateCache.Store(jobRunKey, remote)
 	return b
+}
+
+func TestShouldSkipRemoteAddition(t *testing.T) {
+	// Rules mirror clusters/jobs ignore_remote_additions in clusters.yml and jobs.yml, but the
+	// test is deliberately self-contained so edits to those files don't break it. The real wiring
+	// is covered by acceptance/bundle/resources/cluster_policies/*.
+	jobCluster, err := structpath.ParsePattern("job_clusters[*].new_cluster")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		IgnoreRemoteAdditions: []dresources.RemoteAdditionRule{
+			{Field: jobCluster, WhenSet: structpath.MustParsePath("policy_id")},
+		},
+	}
+
+	withPolicy := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
+		JobClusterKey: "small",
+		NewCluster:    &compute.ClusterSpec{PolicyId: "p1"},
+	}}}
+	withoutPolicy := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
+		JobClusterKey: "small",
+		NewCluster:    &compute.ClusterSpec{},
+	}}}
+	// when_set resolves against the concrete object the rule matched, so two clusters in one
+	// job are gated independently.
+	mixed := &jobs.JobSettings{JobClusters: []jobs.JobCluster{
+		{JobClusterKey: "gated", NewCluster: &compute.ClusterSpec{PolicyId: "p1"}},
+		{JobClusterKey: "plain", NewCluster: &compute.ClusterSpec{}},
+	}}
+
+	const tagPath = "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']"
+
+	tests := []struct {
+		name     string
+		path     string
+		state    *jobs.JobSettings
+		change   deployplan.ChangeDesc
+		expected bool
+	}{
+		{
+			name:     "policy attached, backend added a tag",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: true,
+		},
+		{
+			name:     "policy attached, whole map added by backend",
+			path:     "job_clusters[job_cluster_key='small'].new_cluster.custom_tags",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: map[string]string{"CostCenter": "dev-1234"}},
+			expected: true,
+		},
+		{
+			name:     "no policy attached: an addition is still drift",
+			path:     tagPath,
+			state:    withoutPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "config disagrees with remote: still an update",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{New: "mine", Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "user removed the field from config: still an update",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Old: "mine", Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "remote has nothing: not an addition",
+			path:     tagPath,
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{},
+			expected: false,
+		},
+		{
+			name:     "outside the gated object: not covered",
+			path:     "tags['CostCenter']",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "sibling cluster with a policy does not gate one without",
+			path:     "job_clusters[job_cluster_key='plain'].new_cluster.custom_tags['CostCenter']",
+			state:    mixed,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			name:     "the cluster with the policy is gated on its own policy_id",
+			path:     "job_clusters[job_cluster_key='gated'].new_cluster.custom_tags['CostCenter']",
+			state:    mixed,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: true,
+		},
+		{
+			// The remote grew a whole cluster the config does not declare: there is no
+			// policy_id to gate on, so this is real drift rather than a policy addition.
+			name:     "gated object absent from config: still drift",
+			path:     "job_clusters[job_cluster_key='other'].new_cluster.custom_tags['CostCenter']",
+			state:    withPolicy,
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := structpath.ParsePath(tt.path)
+			require.NoError(t, err)
+
+			change := tt.change
+			reason, ok := shouldSkipRemoteAddition(cfg, path, &change, tt.state)
+			assert.Equal(t, tt.expected, ok)
+			if tt.expected {
+				assert.Equal(t, deployplan.ReasonRemoteAddition, reason)
+			}
+		})
+	}
+}
+
+// Types for TestPrepareChangesWholeBlockOverlap: two levels of nesting under an
+// optional pointer.
+type threeWayInner struct {
+	B string `json:"b,omitempty"`
+	C string `json:"c,omitempty"`
+}
+
+type threeWayMid struct {
+	A *threeWayInner `json:"a,omitempty"`
+}
+
+type threeWayOuter struct {
+	Field *threeWayMid `json:"field,omitempty"`
+}
+
+// TestPrepareChangesWholeBlockOverlap documents the "whole block" bug at the
+// three-way merge: local (saved-state vs config) and remote (remote vs config)
+// diffs cut the tree at different levels when the remote has a nil intermediate,
+// so prepareChanges keys them under different paths and emits a coarse parent
+// entry alongside the fine child entry instead of merging into leaves.
+//
+// old:    field.a = {b: "old"}
+// new:    field.a = {b: "old", c: "newc"}   (c added locally)
+// remote: field.a = nil
+//
+// The local diff descends to the leaf (field.a.c); the remote diff stops at the
+// nil (field.a), so the two never merge. This test asserts the current (buggy)
+// key set; leaf-level decomposition must instead yield {field.a.b, field.a.c}.
+func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
+	old := threeWayOuter{Field: &threeWayMid{A: &threeWayInner{B: "old"}}}
+	newState := threeWayOuter{Field: &threeWayMid{A: &threeWayInner{B: "old", C: "newc"}}}
+	remote := threeWayOuter{Field: &threeWayMid{A: nil}}
+
+	localDiff, err := structdiff.GetStructDiff(old, newState, nil)
+	require.NoError(t, err)
+	remoteDiff, err := structdiff.GetStructDiff(remote, newState, nil)
+	require.NoError(t, err)
+
+	changes, err := prepareChanges(t.Context(), nil, localDiff, remoteDiff, old, remote)
+	require.NoError(t, err)
+
+	keys := make([]string, 0, len(changes))
+	for k := range changes {
+		keys = append(keys, k)
+	}
+	slices.Sort(keys)
+
+	// Unexpected: a coarse "field.a" entry overlaps the fine "field.a.c" entry.
+	// Probably should be: []string{"field.a.b", "field.a.c"}.
+	assert.Equal(t, []string{"field.a", "field.a.c"}, keys)
+
+	// The coarse parent entry carries the whole sub-block rather than a leaf value.
+	assert.Equal(t, threeWayInner{B: "old", C: "newc"}, changes["field.a"].New)
+}
+
+// TestLadderBackendDefaultBeforeRemoteAddition guards the ladder order in addPerFieldActions.
+// The clusters resource has BOTH a root-level ignore_remote_additions rule (when_set: policy_id)
+// and backend_defaults (enable_elastic_disk). On a policy-gated cluster a config-absent backend
+// default matches both; it must keep reason backend_default, not remote_addition, so that
+// config-remote-sync excludes it (it captures remote_addition but filters known defaults).
+// Reordering the two classifiers reintroduces #6631.
+func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
+	adapter, err := dresources.NewAdapter(dresources.SupportedResources["clusters"], "clusters", nil)
+	require.NoError(t, err)
+
+	newState := &dresources.ClusterState{ClusterSpec: compute.ClusterSpec{PolicyId: "p1"}}
+	changes := deployplan.Changes{
+		// config-absent (Old==New==nil), present in remote: matches both rules.
+		"enable_elastic_disk": &deployplan.ChangeDesc{Remote: true},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, newState, nil))
+	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
+	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
 }

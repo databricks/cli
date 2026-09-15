@@ -1,0 +1,4 @@
+# Also deploy from the saved plan (not just compute it), so recorded deploy --plan is covered by the
+# standard readplan option rather than a dedicated test. The saved plan is raw (not nostamp.py'd) so
+# it carries the DMS fields the replay needs.
+EnvMatrix.READPLAN = ["", "1"]

@@ -32,6 +32,10 @@ type ResourcePolicyInfoColumnMask struct {
 	Using        []ResourcePolicyInfoColumnMaskUsing `json:"using,omitempty"`
 }
 
+type ResourcePolicyInfoDeny struct {
+	Privileges []string `json:"privileges"`
+}
+
 type ResourcePolicyInfoGrant struct {
 	Privileges []string `json:"privileges"`
 }
@@ -79,6 +83,7 @@ type ResourcePolicyInfo struct {
 	Comment             string                            `json:"comment,omitempty"`
 	CreatedAt           int                               `json:"created_at,omitempty"`
 	CreatedBy           string                            `json:"created_by,omitempty"`
+	Deny                *ResourcePolicyInfoDeny           `json:"deny,omitempty"`
 	ExceptPrincipals    []string                          `json:"except_principals,omitempty"`
 	ForSecurableType    string                            `json:"for_securable_type"`
 	Grant               *ResourcePolicyInfoGrant          `json:"grant,omitempty"`

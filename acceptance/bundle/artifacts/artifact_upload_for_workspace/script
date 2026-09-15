@@ -5,18 +5,18 @@ echo "test wheel content" > whl/source.whl
 trace $CLI bundle deploy
 
 title "Expecting 2 wheels in libraries section in /jobs/create"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' "$OUT_REQUESTS"
 
 title "Expecting wheel to be uploaded"
-trace jq .path < out.requests.txt | grep import | grep whl | sort
+trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
 
 title "Expecting environment dependencies to be updated"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' "$OUT_REQUESTS"
 
 title "Expecting delete request to artifact_path/.internal folder"
-trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' "$OUT_REQUESTS"
 
 title "Expecting mkdirs request to artifact_path/.internal folder"
-trace jq -s '.[] | select(.path=="/api/2.0/workspace/mkdirs") | select(.body.path | test(".*/artifacts/.internal"))' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.0/workspace/mkdirs") | select(.body.path | test(".*/artifacts/.internal"))' "$OUT_REQUESTS"
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

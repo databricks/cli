@@ -62,10 +62,6 @@ func (c *PostgresCatalog) GetName() string {
 	return c.CatalogId
 }
 
-func (c *PostgresCatalog) GetURL() string {
-	return c.URL
-}
-
 func (c *PostgresCatalog) InitializeURL(baseURL url.URL) {
 	if c.CatalogId == "" {
 		return

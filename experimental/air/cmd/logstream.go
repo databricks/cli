@@ -23,7 +23,7 @@ const (
 	// before falling back to MLflow.
 	maxTransientFailures = 5
 	// defaultCompletedRunTailLines caps a completed run's output when neither
-	// --lines nor --minutes is set.
+	// --tail nor --minutes is set.
 	defaultCompletedRunTailLines = 10000
 	// seenRecordsCap bounds the dedup set, evicting oldest-inserted entries first.
 	seenRecordsCap = 100000
@@ -89,7 +89,7 @@ type logRequest struct {
 	// windowMinutes, when > 0, restricts the fetch to the last N minutes.
 	windowMinutes int
 	// tailLines caps a completed run's output to the last N lines. Negative means
-	// --lines was unset (use the default cap); 0 prints nothing.
+	// --tail was unset (use the default cap); 0 prints no log lines.
 	tailLines int
 	// downloadTo, when set, writes logs to that directory instead of stdout.
 	downloadTo string
@@ -462,8 +462,8 @@ func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
 }
 
 // tailTarget is the number of lines a tail keeps. A negative tailLines means
-// --lines was unset, so use the default cap; 0 or more is taken literally (an
-// explicit --lines 0 prints nothing).
+// --tail was unset, so use the default cap; 0 or more is taken literally (an
+// explicit --tail 0 prints no log lines).
 func (req logRequest) tailTarget() int {
 	if req.tailLines < 0 {
 		return defaultCompletedRunTailLines

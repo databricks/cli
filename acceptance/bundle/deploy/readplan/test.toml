@@ -1,3 +1,0 @@
-# Saved plans don't carry the deployment stamp. Applying one plans an update on the next run.
-# See dms_no_readplan in acceptance/bundle/test.toml.
-EnvMatrix.DMS = [""]
