@@ -1,3 +1,8 @@
+# The dashboards test.toml sets MSYS_NO_PATHCONV=1 so the CLI receives unmangled
+# /Users paths; unset it here so Windows Git Bash still converts the .py helper paths
+# (print_state.py, gron.py) it passes to python3. Matches unpublish-out-of-band.
+unset MSYS_NO_PATHCONV
+
 cleanup() {
     trace $CLI bundle destroy --auto-approve
     rm "$OUT_REQUESTS"
