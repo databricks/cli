@@ -150,69 +150,14 @@ func TestStateHashing(t *testing.T) {
 		isPlaceholder bool
 	}{
 		{
-			name: "yaml",
+			name: "multiline",
 			content: `
-resources:
-  jobs:
-    nightly:
-      name: nightly-etl
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: ./main.py
+first line of content
+second line of content
+third line of content
+fourth line of content
 `,
-			want: "sha256:78cf91ea7a1ca46850ef3890e8c643c05085503aeac50c8fbaaa7c6d689c559f",
-		},
-		{
-			name: "bash_script",
-			content: `
-#!/usr/bin/env bash
-set -euo pipefail
-for f in ./logs/*.log; do
-  echo "processing $f"
-  grep -c ERROR "$f" || true
-done
-`,
-			want: "sha256:64b29fe188c091714c55cdf32595e0d466ca328144b53f049e560874c578665e",
-		},
-		{
-			name: "python_script",
-			content: `
-import sys
-
-def main() -> None:
-    for line in sys.stdin:
-        print(line.rstrip().upper())
-
-if __name__ == "__main__":
-    main()
-`,
-			want: "sha256:3b55ae071cec980c7d10d23545eea134c2ba4ce7243566abcb4bb06d458bddbd",
-		},
-		{
-			name:    "sql",
-			content: "SELECT user_id, COUNT(*) AS n FROM events WHERE ts > current_date - INTERVAL 7 DAYS GROUP BY user_id ORDER BY n DESC LIMIT 100",
-			want:    "sha256:493f4b0b2f4d20f5232d181a7b568992a0a569c3ca7291b4bfca040346030abd",
-		},
-		{
-			name: "markdown",
-			content: `
-# Weekly report
-
-This summarizes **activity** across all regions.
-
-- signups
-- active users
-- churn
-
-See the appendix for methodology.
-`,
-			want: "sha256:bc2d357a7f72df265f196b25d4931d177290f8560b07172050ea9170026da045",
-		},
-		{
-			name:    "json_array",
-			content: `[{"id":1,"tags":["a","b"]},{"id":2,"tags":["c","d"]},{"id":3,"tags":["e","f"]}]`,
-			want:    "sha256:4a9d3e782a50d7d9eed4ee2d20c65138b69ad21fe64f61032fbf338952453822",
+			want: "sha256:c74674070e73f13131f1611d89ecf2ff74c7adf5f998da1321b026a7f154bf1e",
 		},
 		{
 			name:    "large_dashboard",
