@@ -36,7 +36,7 @@ func newLogsCommand() *cobra.Command {
 	}
 
 	cmd.Flags().IntVar(&node, "node", 0, "Fetch logs from this node")
-	cmd.Flags().IntVar(&tail, "tail", 0, "For completed runs, print the last N log lines (default 10000)")
+	cmd.Flags().IntVar(&tail, "tail", 0, "Print the last N existing lines before following, or from a completed run (default 10000)")
 	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
 	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing")
@@ -116,14 +116,15 @@ func newLogsCommand() *cobra.Command {
 		}
 
 		err = runLogs(streamCtx, cmd, logRequest{
-			runID:         runID,
-			node:          node,
-			nodeSet:       cmd.Flags().Changed("node"),
-			attempt:       retry,
-			windowMinutes: minutes,
-			tailLines:     tailLines,
-			downloadTo:    downloadTo,
-			jsonOutput:    root.OutputType(cmd) == flags.OutputJSON,
+			runID:            runID,
+			node:             node,
+			nodeSet:          cmd.Flags().Changed("node"),
+			attempt:          retry,
+			windowMinutes:    minutes,
+			tailLines:        tailLines,
+			boundInitialLogs: minutes == 0,
+			downloadTo:       downloadTo,
+			jsonOutput:       root.OutputType(cmd) == flags.OutputJSON,
 		})
 		if downloadTo != "" || root.OutputType(cmd) == flags.OutputJSON {
 			return err
