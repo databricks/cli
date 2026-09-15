@@ -1,0 +1,10 @@
+# fault.py registers its rule on the fake server, which a real workspace does not have.
+Cloud = false
+
+# The summary-on-error path lives in destroyCore and is engine-agnostic, but a failed
+# resource delete only surfaces as a destroy error under the recording (DMS) engine, so
+# pin that variant to exercise the error path deterministically.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DMS = ["true"]
+
+Ignore = [".databricks"]

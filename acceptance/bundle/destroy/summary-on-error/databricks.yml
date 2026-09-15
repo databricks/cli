@@ -1,0 +1,7 @@
+bundle:
+  name: test-destroy-summary-on-error
+
+resources:
+  jobs:
+    my:
+      name: test-job

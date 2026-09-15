@@ -1,0 +1,10 @@
+title "Deploy a job"
+trace $CLI bundle deploy
+
+title "Destroy: the delete fails, but the summary still prints"
+# The delete fails, so destroyCore returns on the error before its normal summary line.
+# logDestroySummary runs from a defer, so the summary still prints (the count is the
+# planned deletions; an accurate partial count is a follow-up). Without the defer the
+# error return would skip it entirely.
+trace fault.py "POST /api/2.2/jobs/delete" 400 0 1 INVALID_PARAMETER_VALUE
+trace musterr $CLI bundle destroy --auto-approve

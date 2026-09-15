@@ -1,0 +1,25 @@
+
+=== Deploy a job
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-destroy-summary-on-error/default/files...
+Created jobs.my
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Destroy: the delete fails, but the summary still prints
+>>> fault.py POST /api/2.2/jobs/delete 400 0 1 INVALID_PARAMETER_VALUE
+
+>>> musterr [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-destroy-summary-on-error/default
+
+Error: cannot delete resources.jobs.my: deleting id=[NUMID]: Fault injected by test. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/delete
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Fault injected by test.
+
+Destroy: 1 deleted
