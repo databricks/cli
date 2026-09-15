@@ -422,7 +422,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		}
 
 		if terminal {
-			if !firstIteration && st.status.endTimeMs > 0 {
+			if !firstIteration {
 				if emitted == 0 {
 					terminalEmptyPolls++
 				} else {
@@ -565,8 +565,8 @@ func (st *bricklensStreamer) drainPages(toSec int64) (int, error) {
 			}
 			st.emit(rec.Body)
 			emitted++
+			maximumEvictedNano = max(maximumEvictedNano, st.seen.add(rec))
 			if nano != 0 {
-				maximumEvictedNano = max(maximumEvictedNano, st.seen.add(rec))
 				st.lastNano = max(st.lastNano, nano)
 			}
 		}

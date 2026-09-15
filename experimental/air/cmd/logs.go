@@ -122,7 +122,7 @@ func newLogsCommand() *cobra.Command {
 			attempt:         retry,
 			windowMinutes:   minutes,
 			tailLines:       tailLines,
-			tailInitialLogs: true,
+			tailInitialLogs: minutes == 0,
 			downloadTo:      downloadTo,
 			jsonOutput:      root.OutputType(cmd) == flags.OutputJSON,
 		})

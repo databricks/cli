@@ -212,7 +212,8 @@ func TestDrainPagesEmitsLateRecordsWithinLookback(t *testing.T) {
 			assert.Equal(t, "10", r.URL.Query().Get("from"))
 			_, _ = w.Write([]byte(`{"log_records":[
 				{"record_id":"first","time_unix_nano":50000000000,"body":"same"},
-				{"record_id":"second","time_unix_nano":50000000000,"body":"same"}
+				{"record_id":"second","time_unix_nano":50000000000,"body":"same"},
+				{"record_id":"untimed","body":"untimed"}
 			]}`))
 			return
 		}
@@ -220,7 +221,8 @@ func TestDrainPagesEmitsLateRecordsWithinLookback(t *testing.T) {
 		_, _ = w.Write([]byte(`{"log_records":[
 			{"record_id":"late","time_unix_nano":30000000000,"body":"late"},
 			{"record_id":"first","time_unix_nano":51000000000,"body":"same"},
-			{"record_id":"second","time_unix_nano":51000000000,"body":"same"}
+			{"record_id":"second","time_unix_nano":51000000000,"body":"same"},
+			{"record_id":"untimed","body":"untimed"}
 		]}`))
 	}))
 	t.Cleanup(srv.Close)
@@ -244,7 +246,7 @@ func TestDrainPagesEmitsLateRecordsWithinLookback(t *testing.T) {
 	require.NoError(t, err)
 	_, err = st.drainPages(0)
 	require.NoError(t, err)
-	assert.Equal(t, "same\n", buf.String())
+	assert.Equal(t, "same\nsame\nuntimed\nlate\n", buf.String()) //nolint:dupword
 }
 
 func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
@@ -275,7 +277,7 @@ func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
 				_, _ = w.Write([]byte(`{"log_records":[]}`))
 			}
 		case r.URL.Path == "/api/2.2/jobs/runs/get":
-			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"end_time":60000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"}}`))
+			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"}}`))
 		default:
 			_, _ = w.Write([]byte(`{}`))
 		}
