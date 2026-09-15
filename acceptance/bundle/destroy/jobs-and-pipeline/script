@@ -16,11 +16,11 @@ cleanup() {
   title "Assert job is deleted:\n"
   errcode $CLI jobs get "${JOB_ID}" 2>&1
 
-  title "Assert snapshot file is deleted: "
-  if [ -d ${SNAPSHOTS_DIR} ] && [ -z "$(ls -A ${SNAPSHOTS_DIR})" ]; then
-      echo "Directory exists and is empty"
+  title "Assert snapshot directory is removed: "
+  if [ ! -d ${SNAPSHOTS_DIR} ]; then
+      echo "Directory does not exist"
   else
-      echo "Directory either does not exist or is not empty. This is unexpected by this test"
+      echo "Directory still exists. This is unexpected by this test"
   fi
 
   title "Assert bundle deployment path is deleted"

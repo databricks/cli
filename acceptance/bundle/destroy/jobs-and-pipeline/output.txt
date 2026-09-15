@@ -72,7 +72,7 @@ Error: Job [NUMID] does not exist.
 
 Exit code: 1
 
-=== Assert snapshot file is deleted: Directory exists and is empty
+=== Assert snapshot directory is removed: Directory does not exist
 
 === Assert bundle deployment path is deleted
 >>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
