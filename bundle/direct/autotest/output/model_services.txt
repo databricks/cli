@@ -22,9 +22,9 @@ parent                                       y          absent     BASE_ERROR  u
 parent                                       y          x          BASE_ERROR  unexpected model service name "model-services/y.test-model-service-[UNIQUE_NAME]" (want three dot-separated components)
 
 === summary
-OK                         74
+OK                         70
 OK_RECREATE                6
-SUPPRESSED                 3
+SUPPRESSED                 1
 NOT_OBSERVABLE             1
 BACKEND_ERROR              2
 SKIPPED                    7
