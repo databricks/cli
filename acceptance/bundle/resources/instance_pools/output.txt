@@ -33,12 +33,12 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created instance_pools.test_instance_pool
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Verify the create request
->>> jq select(.method == "POST" and (.path | contains("/instance-pools/create"))) out.requests.txt
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/create"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/instance-pools/create",
@@ -68,12 +68,12 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Updated instance_pools.test_instance_pool
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify the update request
->>> jq select(.method == "POST" and (.path | contains("/instance-pools/edit"))) out.requests.txt
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/edit"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/instance-pools/edit",
@@ -106,11 +106,10 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_instance_pool/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
 === Verify the destroy request
->>> jq select(.method == "POST" and (.path | contains("/instance-pools/delete"))) out.requests.txt
+>>> jq select(.method == "POST" and (.path | contains("/instance-pools/delete"))) [OUTPUT_DIR]/out.requests.txt
 {
   "method": "POST",
   "path": "/api/2.0/instance-pools/delete",

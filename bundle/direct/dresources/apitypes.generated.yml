@@ -6,6 +6,8 @@ apps: apps.App
 
 catalogs: catalog.CreateCatalog
 
+cluster_policies: compute.CreatePolicy
+
 clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard
@@ -26,6 +28,12 @@ job_runs: jobs.RunNow
 
 jobs: jobs.JobSettings
 
+mcp_services: catalog.CreateMcpServiceRequest
+
+model_provider_services: catalog.CreateModelProviderServiceRequest
+
+model_services: catalog.CreateModelServiceRequest
+
 model_serving_endpoints: serving.CreateServingEndpoint
 
 models: ml.CreateModelRequest
@@ -43,6 +51,8 @@ postgres_endpoints: postgres.EndpointSpec
 postgres_projects: postgres.ProjectStatus
 
 postgres_roles: postgres.RoleRoleStatus
+
+postgres_snapshot_schedules: postgres.UpdateBranchRequest
 
 postgres_synced_tables: postgres.SyncedTableSyncedTableSpec
 

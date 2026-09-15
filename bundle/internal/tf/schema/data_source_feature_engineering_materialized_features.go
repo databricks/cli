@@ -4,6 +4,7 @@ package schema
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesCronScheduleTrigger struct {
 	CronExpression string `json:"cron_expression,omitempty"`
+	Mode           string `json:"mode,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOfflineStoreConfig struct {
@@ -24,17 +25,20 @@ type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesProvide
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesStreamingMode struct {
-	Mode string `json:"mode,omitempty"`
+	FreshnessTarget string `json:"freshness_target,omitempty"`
+	Mode            string `json:"mode,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesTableTrigger struct{}
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures struct {
+	BudgetPolicyId          string                                                                                   `json:"budget_policy_id,omitempty"`
 	CronSchedule            string                                                                                   `json:"cron_schedule,omitempty"`
 	CronScheduleTrigger     *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesCronScheduleTrigger `json:"cron_schedule_trigger,omitempty"`
 	FeatureName             string                                                                                   `json:"feature_name,omitempty"`
 	IsOnline                bool                                                                                     `json:"is_online,omitempty"`
 	LastMaterializationTime string                                                                                   `json:"last_materialization_time,omitempty"`
+	LatestBackfillOperation string                                                                                   `json:"latest_backfill_operation,omitempty"`
 	MaterializedFeatureId   string                                                                                   `json:"materialized_feature_id"`
 	OfflineStoreConfig      *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOfflineStoreConfig  `json:"offline_store_config,omitempty"`
 	OnlineStoreConfig       *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOnlineStoreConfig   `json:"online_store_config,omitempty"`
@@ -43,6 +47,7 @@ type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures struct
 	StreamingMode           *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesStreamingMode       `json:"streaming_mode,omitempty"`
 	TableName               string                                                                                   `json:"table_name,omitempty"`
 	TableTrigger            *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesTableTrigger        `json:"table_trigger,omitempty"`
+	Tags                    map[string]string                                                                        `json:"tags,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesProviderConfig struct {

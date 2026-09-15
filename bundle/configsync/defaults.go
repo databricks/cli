@@ -63,7 +63,7 @@ var serverSideDefaults = map[string]any{
 	// custom_tags and cluster_log_conf are commonly injected by cluster policies
 	// when the user omits them, so they exist only remotely. Syncing them back leaks
 	// one environment's policy values into (often shared) config and breaks deploys in
-	// other environments. TODO: move to backend_defaults in resources.yml once
+	// other environments. TODO: move to backend_defaults in jobs.yml once
 	// configsync filtering is migrated to the direct engine lifecycle metadata.
 	"resources.jobs.*.tasks[*].new_cluster.custom_tags":      backendDefault,
 	"resources.jobs.*.tasks[*].new_cluster.cluster_log_conf": backendDefault,
@@ -109,6 +109,13 @@ var serverSideDefaults = map[string]any{
 
 	// Terraform defaults
 	"resources.jobs.*.run_as": alwaysSkip,
+
+	// deployment.* is CLI-managed: metadata.AnnotateJobs / AnnotatePipelines write
+	// kind + metadata_file_path on every deploy, and the Deployment Metadata Service
+	// sets deployment_id + version_id. None is user-authored (validate.ValidateDeploymentFields
+	// even rejects deployment_id / version_id in config), so no subfield is synced back.
+	"resources.jobs.*.deployment.*":      alwaysSkip,
+	"resources.pipelines.*.deployment.*": alwaysSkip,
 
 	// Pipeline fields
 	"resources.pipelines.*.storage":    alwaysSkip,

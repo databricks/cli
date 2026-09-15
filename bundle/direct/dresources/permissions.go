@@ -17,6 +17,7 @@ var permissionResourceToObjectType = map[string]string{
 	"alerts":                  "/alertsv2/",
 	"apps":                    "/apps/",
 	"clusters":                "/clusters/",
+	"cluster_policies":        "/cluster-policies/",
 	"instance_pools":          "/instance-pools/",
 	"dashboards":              "/dashboards/",
 	"genie_spaces":            "/genie/",
@@ -33,6 +34,12 @@ var permissionResourceToObjectType = map[string]string{
 
 type ResourcePermissions struct {
 	client *databricks.WorkspaceClient
+
+	// objectType is the permissions API prefix of the parent resource, e.g. "/jobs/".
+	objectType string
+
+	// idField is the parent field holding the permissions object ID.
+	idField string
 }
 
 // StatePermission represents a permission entry in deployment state.
@@ -57,7 +64,7 @@ type PermissionsState struct {
 }
 
 // permissionIDFields maps resource types that use a non-standard ID field for
-// the permissions API (most resources use "id").
+// the permissions API; resources absent from it use defaultPermissionIDField.
 var permissionIDFields = map[string]string{
 	"model_serving_endpoints": "endpoint_id",   // internal numeric ID, not the name used in CRUD APIs
 	"models":                  "model_id",      // numeric model ID, not the model name used as CRUD state ID
@@ -65,29 +72,35 @@ var permissionIDFields = map[string]string{
 	"vector_search_endpoints": "endpoint_uuid", // endpoint UUID, not the endpoint name used as deployment ID
 }
 
-// objectIDRef returns the reference expression for the permissions object ID.
-func objectIDRef(prefix, baseNode, resourceType string) string {
-	if field, ok := permissionIDFields[resourceType]; ok {
-		return prefix + "${" + baseNode + "." + field + "}"
-	}
-	return prefix + "${" + baseNode + ".id}"
+const defaultPermissionIDField = "id"
+
+func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePermissions {
+	return &ResourcePermissions{client: client, objectType: "", idField: ""}
 }
 
-func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
-	baseNode, ok := strings.CutSuffix(node, ".permissions")
+func (r *ResourcePermissions) Configure(resourceType string) error {
+	parentType, ok := strings.CutSuffix(resourceType, ".permissions")
 	if !ok {
-		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", node)
+		return fmt.Errorf("internal error: resource type %q does not end with .permissions", resourceType)
 	}
 
-	parts := strings.Split(baseNode, ".")
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("internal error: unexpected node format %q", baseNode)
-	}
-	resourceType := parts[1]
-
-	prefix, ok := permissionResourceToObjectType[resourceType]
+	r.objectType, ok = permissionResourceToObjectType[parentType]
 	if !ok {
-		return nil, fmt.Errorf("unsupported permissions resource type: %s", resourceType)
+		return fmt.Errorf("unsupported permissions resource type: %s", parentType)
+	}
+
+	r.idField, ok = permissionIDFields[parentType]
+	if !ok {
+		r.idField = defaultPermissionIDField
+	}
+
+	return nil
+}
+
+func (r *ResourcePermissions) PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error) {
+	baseNode, ok := strings.CutSuffix(resourceKey, ".permissions")
+	if !ok {
+		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", resourceKey)
 	}
 
 	permissions, err := toStatePermissions(inputConfig)
@@ -101,13 +114,9 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 			EmbeddedSlice: permissions,
 		},
 		Refs: map[string]string{
-			"object_id": objectIDRef(prefix, baseNode, resourceType),
+			"object_id": r.objectType + "${" + baseNode + "." + r.idField + "}",
 		},
 	}, nil
-}
-
-func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePermissions {
-	return &ResourcePermissions{client: client}
 }
 
 func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState {
@@ -255,14 +264,11 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 	return nil, err
 }
 
-// DoDelete is activated in 2 distinct cases:
+// ResourcePermissions intentionally implements no DoDelete (deleting is a state-only
+// cleanup, see PlanEntry.StateOnly). A delete would otherwise be activated in 2 cases:
 // 1) 'permissions' field is deleted in DABs config. In that case terraform would restore the default permissions (IS_OWNER for current user).
 // 2) the parent resource is deleted; in that case there is no need to do anything; parent resource deletion is enough.
-// Let's do nothing in both cases. If user no longer wishes to manage permissions with DABs they can go ahead and manage
+// We do nothing in both cases. If the user no longer wishes to manage permissions with DABs they can go ahead and manage
 // it themselves. Trying to fix permissions back requires
 // - making assumptions on what it should look like
 // - storing current user somewhere or storing original permissions somewhere
-func (r *ResourcePermissions) DoDelete(ctx context.Context, id string, _ *PermissionsState) error {
-	// intentional noop
-	return nil
-}

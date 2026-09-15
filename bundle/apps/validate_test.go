@@ -33,15 +33,15 @@ func TestAppsValidateSameSourcePath(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
-							Name: "app1",
+							Name:           "app1",
+							SourceCodePath: "./app1",
 						},
-						SourceCodePath: "./app1",
 					},
 					"app2": {
 						App: apps.App{
-							Name: "app2",
+							Name:           "app2",
+							SourceCodePath: "./app1",
 						},
-						SourceCodePath: "./app1",
 					},
 				},
 			},
@@ -188,10 +188,10 @@ func TestAppsValidateResourcePermissionsWarning(t *testing.T) {
 			tc.resources.Apps = map[string]*resources.App{
 				"my_app": {
 					App: apps.App{
-						Name:      "my_app",
-						Resources: tc.appResources,
+						Name:           "my_app",
+						Resources:      tc.appResources,
+						SourceCodePath: "./app1",
 					},
-					SourceCodePath: "./app1",
 				},
 			}
 
@@ -237,11 +237,11 @@ func TestAppsValidateBothSourceCodePathAndGitSource(t *testing.T) {
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
-							Name: "app1",
-						},
-						SourceCodePath: "./app1",
-						GitSource: &apps.GitSource{
-							Branch: "main",
+							Name:           "app1",
+							SourceCodePath: "./app1",
+							GitSource: &apps.GitSource{
+								Branch: "main",
+							},
 						},
 					},
 				},

@@ -1,5 +1,4 @@
 Cloud = true
-RequiresWarehouse = true
 
 Ignore = ["tmp.plan.json", "tmp.plan_after_unbind.json"]
 

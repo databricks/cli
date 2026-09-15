@@ -18,12 +18,12 @@ step 1
 step 2
 CUDA out of memory
 
-=== logs with --lines
->>> [CLI] experimental air logs 123 --lines 1
+=== logs with --tail
+>>> [CLI] experimental air logs 123 --tail 1
 CUDA out of memory
 
-=== logs with --lines 0 prints nothing
->>> [CLI] experimental air logs 123 --lines 0
+=== logs with --tail 0 prints no log lines
+>>> [CLI] experimental air logs 123 --tail 0
 No logs available for run 123. Run terminated in state SUCCESS
 
 === logs from a specific retry
@@ -32,21 +32,21 @@ step 1
 step 2
 CUDA out of memory
 
-=== logs --lines and --minutes are mutually exclusive
->>> [CLI] experimental air logs 123 --lines 100 --minutes 30
-Error: cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window
+=== logs --tail and --minutes are mutually exclusive
+>>> [CLI] experimental air logs 123 --tail 100 --minutes 30
+Error: cannot combine --tail with --minutes: --tail selects by line count, --minutes by time window
 
 Exit code: 1
 
-=== logs --lines and --minutes are mutually exclusive (json)
->>> [CLI] experimental air logs 123 --lines 100 --minutes 30 -o json
+=== logs --tail and --minutes are mutually exclusive (json)
+>>> [CLI] experimental air logs 123 --tail 100 --minutes 30 -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",
   "error": {
     "code": "INVALID_ARGS",
     "kind": "PERMANENT",
-    "message": "cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window",
+    "message": "cannot combine --tail with --minutes: --tail selects by line count, --minutes by time window",
     "retryable": false
   }
 }

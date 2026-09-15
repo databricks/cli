@@ -1,9 +1,5 @@
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-secret-scope-azure-backend/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+>>> [CLI] bundle deploy -qq
 
 >>> print_requests.py //secrets
 {

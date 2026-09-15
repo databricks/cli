@@ -2,8 +2,8 @@ cd app
 
 # Ports are allocated per run so that tests in parallel worktrees do not collide.
 read -r APP_PORT PROXY_PORT ENTRY_POINT_PORT <<< "$(free_port.py 3)"
-add_repl.py "$APP_PORT" APP_PORT
-add_repl.py "$PROXY_PORT" PROXY_PORT
+add_repl "$APP_PORT" APP_PORT
+add_repl "$PROXY_PORT" PROXY_PORT
 
 # The app and the proxy start asynchronously; allow up to 15s for them to come up.
 export RETRY_MAX_ATTEMPTS=30

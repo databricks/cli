@@ -53,10 +53,6 @@ func (s *Schema) InitializeURL(baseURL url.URL) {
 	s.URL = workspaceurls.ResourceURL(baseURL, "schemas", s.ID)
 }
 
-func (s *Schema) GetURL() string {
-	return s.URL
-}
-
 func (s *Schema) GetName() string {
 	return s.Name
 }

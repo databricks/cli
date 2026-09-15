@@ -1,0 +1,24 @@
+# expire_time, ttl and no_expiry are three sides of one oneof, and the API accepts them
+# in update_mask only under the group name spec.expiration. Both engines apply the change;
+# out.requests.direct.json records the group mask the direct engine now sends.
+
+
+# Local only: a real workspace caps how far ahead a branch may expire and answers
+# these literal timestamps with 400 "expiration time exceeds the maximum
+# expiration time", so the branch is never created. A timestamp near enough to now
+# to be accepted would have to be computed per run, and the API normalizes what it
+# echoes back, so the golden could not assert the value. update_ttl covers the same
+# expiration oneof on cloud without that constraint.
+Cloud = false
+
+# The root test.toml collapses every timestamp to [TIMESTAMP], which would hide
+# the change under test.
+[[Repls]]
+Old = '2030-01-01T00:00:00Z'
+New = '[EXPIRE_TIME_BEFORE]'
+Order = 1
+
+[[Repls]]
+Old = '2031-06-15T12:00:00Z'
+New = '[EXPIRE_TIME_AFTER]'
+Order = 1

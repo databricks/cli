@@ -1,0 +1,23 @@
+Cloud = true
+
+# UpdateVolume payload construction is direct-engine-specific.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    ".databricks",
+    ".gitignore",
+    "databricks.yml",
+]
+
+# The plan records the backend-generated storage_location, whose scheme and bucket differ
+# per cloud. Normalize to the AWS form before the METASTORE_NAME repl, same as
+# grants/volumes/test.toml.
+[[Repls]]
+Old = 'abfss://decotestprod-unity-iso@decotestprodunityiso.dfs.core.windows.net'
+New = 's3://deco-uc-prod-isolated-aws-us-east-1/metastore'
+Order = -1
+
+[[Repls]]
+Old = 'gs://deco-uc-prod-gcp-us-central1-isolated'
+New = 's3://deco-uc-prod-isolated-aws-us-east-1'
+Order = -1

@@ -1,2 +1,14 @@
-RequiresUnityCatalog = true
 RecordRequests = true
+
+# The index's only dependent is its own grants child, which needs the index id but not a
+# provisioned index, so the wait is capped here too. Runtime becomes ~2x the cap.
+Env.DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT = "30"
+
+# No longer slow once the wait is capped, so run it on every PR.
+CloudSlow = false
+Cloud = true
+
+# See basic/test.toml: the cap makes deploy warn that it stopped waiting.
+[[Repls]]
+Old = 'Warn: [^\n]*Stopped waiting[^\n]*\n'
+New = ''

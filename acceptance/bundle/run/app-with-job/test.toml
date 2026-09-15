@@ -5,14 +5,14 @@
 # - 10-20 seconds to deploy the bundle
 # This test includes 2 application starts, and it is taking aroung 420 seconds to complete the entire test
 #
+Cloud = true
 CloudSlow = true
 
 Ignore = [
     'databricks.yml',
 ]
 
-[Env]
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
-MSYS_NO_PATHCONV = "1"
+Env.MSYS_NO_PATHCONV = "1"

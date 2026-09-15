@@ -4,3 +4,9 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # .databricks.machineA is the stashed local state; may linger if the test fails mid-run.
 Ignore = [".databricks.machineA"]
+
+# Needed because the serial is not set under DMS: the state file persists none, so the candidate
+# list the CLI prints shows serial=0 where a non-recording run shows the file's counter.
+[[Repls]]
+Old = 'serial=[0-9]+'
+New = 'serial=[SERIAL]'

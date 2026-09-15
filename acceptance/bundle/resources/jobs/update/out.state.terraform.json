@@ -150,6 +150,7 @@
                 "table_update": []
               }
             ],
+            "triggers": [],
             "url": "[DATABRICKS_URL]/#job/[FOO_ID]",
             "usage_policy_id": null,
             "webhook_notifications": [

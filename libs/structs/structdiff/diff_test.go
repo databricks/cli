@@ -1,10 +1,16 @@
 package structdiff
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
+	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type B struct{ S string }
@@ -42,6 +48,15 @@ type E struct {
 	Name      string `json:"name,omitempty"`
 }
 
+// O holds opaque struct fields: Duration and Timestamp keep their payload in an
+// unexported protobuf pointer, while Empty is a proto message that really is
+// empty.
+type O struct {
+	Duration  *duration.Duration         `json:"duration,omitempty"`
+	Timestamp *sdktime.Time              `json:"timestamp,omitempty"`
+	Empty     *jobs.ScheduleTriggerState `json:"empty,omitempty"`
+}
+
 // ResolvedChange represents a change with the field path as a string (like the old Change struct)
 type ResolvedChange struct {
 	Field string
@@ -68,6 +83,11 @@ func resolveChanges(changes []Change) []ResolvedChange {
 func TestGetStructDiff(t *testing.T) {
 	b1 := &B{S: "one"}
 	b2 := &B{S: "two"}
+
+	dur300 := duration.New(300 * time.Second)
+	dur600 := duration.New(600 * time.Second)
+	ts1 := sdktime.New(time.Unix(1000, 0))
+	ts2 := sdktime.New(time.Unix(2000, 0))
 
 	// An *invalid* reflect.Value (IsValid() == false)
 	var invalidRV reflect.Value
@@ -393,6 +413,30 @@ func TestGetStructDiff(t *testing.T) {
 			a:    E{Embedded: &Embedded{EmbeddedInt: 42}, Name: "test"},
 			b:    E{Name: "test"},
 			want: []ResolvedChange{{Field: "", Old: &Embedded{EmbeddedInt: 42}, New: (*Embedded)(nil)}},
+		},
+		{
+			name: "opaque duration changed",
+			a:    O{Duration: dur300},
+			b:    O{Duration: dur600},
+			want: []ResolvedChange{{Field: "duration", Old: *dur300, New: *dur600}},
+		},
+		{
+			name: "opaque duration unset to set",
+			a:    O{},
+			b:    O{Duration: dur600},
+			want: []ResolvedChange{{Field: "duration", Old: nil, New: *dur600}},
+		},
+		{
+			name: "opaque timestamp changed",
+			a:    O{Timestamp: ts1},
+			b:    O{Timestamp: ts2},
+			want: []ResolvedChange{{Field: "timestamp", Old: *ts1, New: *ts2}},
+		},
+		{
+			name: "empty proto message is not opaque",
+			a:    O{Empty: &jobs.ScheduleTriggerState{}},
+			b:    O{Empty: &jobs.ScheduleTriggerState{}},
+			want: nil,
 		},
 	}
 
@@ -876,6 +920,115 @@ func TestGetStructDiffSliceKeysDuplicates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
+		})
+	}
+}
+
+// An anonymous field carrying a json name is a named field to encoding/json: it serializes as
+// a nested object, so a change inside it belongs at that nested path.
+type DiffEmbedLeaf struct {
+	Value string `json:"value,omitempty"`
+}
+
+type diffTaggedEmbed struct {
+	DiffEmbedLeaf `json:"leaf"`
+
+	Own string `json:"own,omitempty"`
+}
+
+func TestDiffTaggedEmbedIsReportedUnderItsName(t *testing.T) {
+	before := &diffTaggedEmbed{DiffEmbedLeaf: DiffEmbedLeaf{Value: "before"}, Own: "o"}
+	after := &diffTaggedEmbed{DiffEmbedLeaf: DiffEmbedLeaf{Value: "after"}, Own: "o"}
+
+	blob, err := json.Marshal(after)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"leaf":{"value":"after"},"own":"o"}`, string(blob))
+
+	changes, err := GetStructDiff(before, after, nil)
+	require.NoError(t, err)
+	require.Len(t, changes, 1)
+	assert.Equal(t, "leaf.value", changes[0].Path.String())
+}
+
+// namedMapKey is a defined string type used as a map key, like config's
+// ScriptHook (`type ScriptHook string`). Its kind is String but its dynamic
+// type is not string.
+type namedMapKey string
+
+type namedKeyMapHolder struct {
+	M map[namedMapKey]string `json:"m"`
+}
+
+// TestGetStructDiffNamedStringMapKey guards against a regression where
+// diffMapStringKey extracted keys with a `k.Interface().(string)` assertion,
+// which panics for a defined string key type (routing only checks the key's
+// Kind is String). Value.String() handles both string and named-string keys.
+func TestGetStructDiffNamedStringMapKey(t *testing.T) {
+	a := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "a", "post": "x"}}
+	b := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "b", "post": "x"}}
+
+	got, err := GetStructDiff(&a, &b, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, []ResolvedChange{{Field: "m['pre']", Old: "a", New: "b"}}, resolveChanges(got))
+}
+
+// Types for the "whole block" tests below: two levels of nesting under an
+// optional pointer, mirroring a schema like Outer{Field *Mid{A *Inner{b,c}}}.
+type wbInner struct {
+	B string `json:"b,omitempty"`
+	C string `json:"c,omitempty"`
+}
+
+type wbMid struct {
+	A *wbInner `json:"a,omitempty"`
+}
+
+type wbOuter struct {
+	Field *wbMid `json:"field,omitempty"`
+}
+
+// TestGetStructDiffWholeBlock documents the "whole block" bug: when a nested
+// struct is nil on one side, the diff records a single change at the level where
+// the nil appears instead of descending to the differing leaves. The want values
+// below are the CURRENT (buggy) output; the commented "should be" lines are what
+// leaf-level decomposition must produce, and this test is expected to change when
+// the bug is fixed.
+func TestGetStructDiffWholeBlock(t *testing.T) {
+	tests := []struct {
+		name string
+		a, b any
+		want []ResolvedChange
+	}{
+		{
+			// Both sides populated: the diff descends to the leaf correctly.
+			name: "leaf change, both populated",
+			a:    wbOuter{Field: &wbMid{A: &wbInner{B: "old"}}},
+			b:    wbOuter{Field: &wbMid{A: &wbInner{B: "new"}}},
+			want: []ResolvedChange{{Field: "field.a.b", Old: "old", New: "new"}},
+		},
+		{
+			// Intermediate nil on the old side (a whole sub-block is added).
+			// BUG: one change at "field.a" carrying the whole struct.
+			// should be: field.a.b (nil->"old") and field.a.c (nil->"newc").
+			name: "intermediate nil, block added",
+			a:    wbOuter{Field: &wbMid{A: nil}},
+			b:    wbOuter{Field: &wbMid{A: &wbInner{B: "old", C: "newc"}}},
+			want: []ResolvedChange{{Field: "field.a", Old: nil, New: wbInner{B: "old", C: "newc"}}},
+		},
+		{
+			// Intermediate nil on the new side (a whole sub-block is removed).
+			name: "intermediate nil, block removed",
+			a:    wbOuter{Field: &wbMid{A: &wbInner{B: "old", C: "newc"}}},
+			b:    wbOuter{Field: &wbMid{A: nil}},
+			want: []ResolvedChange{{Field: "field.a", Old: wbInner{B: "old", C: "newc"}, New: nil}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})

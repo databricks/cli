@@ -36,7 +36,14 @@ func TestGetOnMap(t *testing.T) {
 
 	_, err = dyn.GetByPath(vin, dyn.NewPath(dyn.Key("baz")))
 	assert.True(t, dyn.IsNoSuchKeyError(err))
-	assert.ErrorContains(t, err, `key not found at "baz"`)
+	// "baz" is one edit away from "bar", so the error suggests it.
+	assert.ErrorContains(t, err, `key not found at "baz", did you mean "bar"?`)
+
+	// A key that is close to no existing key gets no suggestion.
+	_, err = dyn.GetByPath(vin, dyn.NewPath(dyn.Key("completely_different")))
+	assert.True(t, dyn.IsNoSuchKeyError(err))
+	assert.ErrorContains(t, err, `key not found at "completely_different"`)
+	assert.NotContains(t, err.Error(), "did you mean")
 
 	vfoo, err := dyn.GetByPath(vin, dyn.NewPath(dyn.Key("foo")))
 	assert.NoError(t, err)

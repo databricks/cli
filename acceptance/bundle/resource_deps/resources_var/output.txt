@@ -34,7 +34,7 @@
   }
 }
 
->>> jq -s .[] | select(.path=="/api/2.0/pipelines") | .body.name out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.0/pipelines") | .body.name [OUTPUT_DIR]/out.requests.txt
 "[dev [USERNAME]] pipeline for mycatalog.myschema.myname"
 
 >>> print_telemetry_bool_values

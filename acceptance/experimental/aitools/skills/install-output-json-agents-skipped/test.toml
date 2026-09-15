@@ -1,0 +1,10 @@
+# Every named agent is skipped for scope before any manifest fetch, so no skills
+# server is needed and nothing is written outside the isolated home.
+Env.DATABRICKS_SKILLS_BASE_URL = "$DATABRICKS_HOST"
+Env.DATABRICKS_SKILLS_REF = "test-ref"
+
+Ignore = [
+    "home",
+]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

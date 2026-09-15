@@ -2,5 +2,4 @@ Badness = "num_workers value 0 is not sent in the direct deployment"
 Cloud = false
 RecordRequests = true
 
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

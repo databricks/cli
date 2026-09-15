@@ -16,13 +16,23 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 	// Resources that are only supported in direct mode and should not be converted to Terraform
 	ignoredResources := []string{
 		"catalogs",
+		"cluster_policies",
 		"external_locations",
 		"genie_spaces",
 		"instance_pools",
 		"job_runs",
+		// The Terraform provider has no resource that maps to a snapshot schedule,
+		// so it is deployed through the direct engine only (see the resource's
+		// acceptance test.toml).
+		"postgres_snapshot_schedules",
+		// AI Gateway model service is deployed through the direct engine only.
+		"model_services",
+		"mcp_services",
+		"model_provider_services",
 		"secrets",
 		"vector_search_endpoints",
 		"vector_search_indexes",
+		"internal_immutable_snapshots",
 	}
 
 	for resourceType := range supportedResources {
@@ -45,7 +55,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 				}, nil),
 			}, nil)
 
-			tfroot, err := BundleToTerraformWithDynValue(ctx, vin)
+			tfroot, err := BundleToTerraformWithDynValue(ctx, vin, false)
 			require.NoError(t, err)
 
 			bytes, err := json.Marshal(tfroot.Resource)

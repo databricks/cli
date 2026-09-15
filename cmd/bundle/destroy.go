@@ -38,8 +38,10 @@ Typical use cases:
 
 	var autoApprove bool
 	var forceDestroy bool
+	var quiet int
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
 	cmd.Flags().BoolVar(&forceDestroy, "force-lock", false, "Force acquisition of deployment lock.")
+	cmd.Flags().CountVarP(&quiet, "quiet", "q", "Reduce output: -qq prints only warnings and errors.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return CommandBundleDestroy(cmd, args, autoApprove, forceDestroy)
@@ -67,6 +69,13 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 
 			// If `--auto-approve`` is specified, we skip confirmation checks
 			b.AutoApprove = autoApprove
+
+			// Read --quiet off the command rather than taking it as a parameter, since
+			// other commands reuse this function ("apps delete") without defining it.
+			if cmd.Flags().Lookup("quiet") != nil {
+				n, _ := cmd.Flags().GetCount("quiet")
+				b.Quiet = bundle.QuietLevel(n)
+			}
 		},
 		// Skip context initialization if already initialized by parent command
 		SkipInitContext: skipInitContext,

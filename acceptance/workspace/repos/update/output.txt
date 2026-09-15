@@ -6,6 +6,7 @@
 >>> [CLI] repos get [NUMID] -o json
 {
   "branch": "update-by-id",
+  "head_commit_id": "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f",
   "id": [NUMID],
   "path": "/Repos/me@databricks.com/test-repo",
   "provider": "gitHub",
@@ -17,8 +18,49 @@
 >>> [CLI] repos get [NUMID] -o json
 {
   "branch": "update-by-path",
+  "head_commit_id": "0a1b2c3d4e5f6a7b8e7dadd73e50a69d8ba47d8f",
   "id": [NUMID],
   "path": "/Repos/me@databricks.com/test-repo",
   "provider": "gitHub",
   "url": "https://github.com/databricks/databricks-empty-ide-project.git"
+}
+
+>>> print_requests.py --get //repos //workspace/get-status
+{
+  "method": "POST",
+  "path": "/api/2.0/repos",
+  "body": {
+    "path": "/Repos/me@databricks.com/test-repo",
+    "provider": "gitHub",
+    "url": "https://github.com/databricks/databricks-empty-ide-project.git"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/repos/[NUMID]",
+  "body": {
+    "branch": "update-by-id"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/repos/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Repos/me@databricks.com/test-repo"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/repos/[NUMID]",
+  "body": {
+    "branch": "update-by-path"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/repos/[NUMID]"
 }

@@ -63,13 +63,13 @@ func TestIncompatibleWheelTasksWithJobClusterKey(t *testing.T) {
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										SparkVersion: "12.2.x-scala2.12",
 									},
 								},
 								{
 									JobClusterKey: "cluster2",
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										SparkVersion: "13.1.x-scala2.12",
 									},
 								},
@@ -163,13 +163,13 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										SparkVersion: "12.2.x-scala2.12",
 									},
 								},
 								{
 									JobClusterKey: "cluster2",
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										SparkVersion: "13.1.x-scala2.12",
 									},
 								},
@@ -269,7 +269,7 @@ func TestTasksWithPyPiPackageAreCompatible(t *testing.T) {
 							JobClusters: []jobs.JobCluster{
 								{
 									JobClusterKey: "cluster1",
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										SparkVersion: "12.2.x-scala2.12",
 									},
 								},

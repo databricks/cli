@@ -25,46 +25,31 @@ func TestRunConfigMaxRetries(t *testing.T) {
 	assert.Equal(t, 7, c.maxRetries())
 }
 
-func TestRunConfigDockerImageURL(t *testing.T) {
+func TestRunConfigUnityCatalogImagePath(t *testing.T) {
 	c := &runConfig{}
-	assert.Empty(t, c.dockerImageURL())
+	assert.Empty(t, c.unityCatalogImagePath())
 
 	c.Environment = &environmentConfig{}
-	assert.Empty(t, c.dockerImageURL())
+	assert.Empty(t, c.unityCatalogImagePath())
 
-	c.Environment.DockerImage = &dockerImageConfig{URL: "org/repo:tag"}
-	assert.Equal(t, "org/repo:tag", c.dockerImageURL())
+	c.Environment.UnityCatalogImage = "main.air.training:prod"
+	assert.Equal(t, "main.air.training:prod", c.unityCatalogImagePath())
 }
 
 func TestRunConfigDependencies(t *testing.T) {
 	t.Run("unset", func(t *testing.T) {
 		c := &runConfig{}
-		_, ok := c.requirementsFile()
-		assert.False(t, ok)
-		_, ok = c.inlineDependencies()
-		assert.False(t, ok)
-	})
-
-	t.Run("file path", func(t *testing.T) {
-		c := &runConfig{Environment: &environmentConfig{
-			Dependencies: dependencies{set: true, isList: false, path: "req.yaml"},
-		}}
-		path, ok := c.requirementsFile()
-		assert.True(t, ok)
-		assert.Equal(t, "req.yaml", path)
-		_, ok = c.inlineDependencies()
+		_, ok := c.inlineDependencies()
 		assert.False(t, ok)
 	})
 
 	t.Run("inline list", func(t *testing.T) {
 		c := &runConfig{Environment: &environmentConfig{
-			Dependencies: dependencies{set: true, isList: true, list: []string{"torch", "numpy"}},
+			Dependencies: dependencies{set: true, list: []string{"torch", "numpy"}},
 		}}
 		list, ok := c.inlineDependencies()
 		assert.True(t, ok)
 		assert.Equal(t, []string{"torch", "numpy"}, list)
-		_, ok = c.requirementsFile()
-		assert.False(t, ok)
 	})
 }
 

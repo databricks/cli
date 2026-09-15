@@ -10,12 +10,12 @@ trace musterr $CLI bundle destroy --auto-approve >>out.$DATABRICKS_BUNDLE_ENGINE
 # Changing from catalog to storage, deploy must fail because pipeline will be recreated
 update_file.py resources/pipeline.yml '      catalog: main' '      storage: "dbfs:/my-storage"'
 trace errcode $CLI bundle plan >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
-trace musterr $CLI bundle deploy >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace musterr $CLI bundle deploy -qq >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
 # Changing the schema name, deploy must fail because schema will be recreated
 update_file.py resources/schema.yml 'name: test-schema' 'name: test-schema-new'
 trace errcode $CLI bundle plan >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
-trace musterr $CLI bundle deploy >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace musterr $CLI bundle deploy -qq >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
 # Removing the prevent_destroy, deploy must succeed
 update_file.py resources/pipeline.yml 'prevent_destroy: true' 'prevent_destroy: false'

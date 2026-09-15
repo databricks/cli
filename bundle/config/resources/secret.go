@@ -25,7 +25,7 @@ func (s *Secret) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }
 
-func (s *Secret) MarshalJSON() ([]byte, error) {
+func (s Secret) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
@@ -61,10 +61,6 @@ func (s *Secret) InitializeURL(baseURL url.URL) {
 		return
 	}
 	s.URL = workspaceurls.ResourceURL(baseURL, "secrets", s.ID)
-}
-
-func (s *Secret) GetURL() string {
-	return s.URL
 }
 
 func (s *Secret) GetName() string {

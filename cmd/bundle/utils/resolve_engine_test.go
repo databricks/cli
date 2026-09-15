@@ -33,7 +33,9 @@ func TestResolveEngineSettingNothingSet(t *testing.T) {
 	b := &bundle.Bundle{Config: config.Root{}}
 	result, err := ResolveEngineSetting(t.Context(), b)
 	require.NoError(t, err)
-	assert.Equal(t, engine.EngineNotSet, result.Type)
+	assert.Equal(t, engine.Default, result.Type)
+	assert.Equal(t, engine.EngineNotSet, result.ConfigType)
+	assert.True(t, result.IsDefault)
 }
 
 func TestResolveEngineSettingInvalidEnvVar(t *testing.T) {

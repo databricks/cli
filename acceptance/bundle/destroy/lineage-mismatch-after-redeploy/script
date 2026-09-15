@@ -13,7 +13,7 @@ trace $CLI bundle destroy --auto-approve
 
 # Mask machine A's (local) lineage so the golden output is stable.
 LINEAGE_A=$(print_state.py | jq -r .lineage)
-add_repl.py "$LINEAGE_A" LINEAGE_A
+add_repl "$LINEAGE_A" LINEAGE_A
 
 # Stash A's local state and wipe it so the next deploy behaves like a fresh machine.
 cp -r .databricks .databricks.machineA
@@ -24,7 +24,7 @@ trace $CLI bundle deploy
 
 # Mask machine B's (remote) lineage.
 LINEAGE_B=$(print_state.py | jq -r .lineage)
-add_repl.py "$LINEAGE_B" LINEAGE_B
+add_repl "$LINEAGE_B" LINEAGE_B
 
 # Back on machine A: restore the stale local state that still carries L1.
 rm -rf .databricks

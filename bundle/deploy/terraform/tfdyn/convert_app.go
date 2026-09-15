@@ -27,6 +27,15 @@ func convertAppResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 		log.Debugf(ctx, "app normalization diagnostic: %s", diag.Summary)
 	}
 
+	// SDK v0.175 added source_code_path, git_source, and default_git_source to
+	// apps.App. These are deploy-only fields DABs handles via source upload (see
+	// bundle/direct/dresources/app.go), not databricks_app resource attributes, so
+	// keep them out of the Terraform state.
+	vout, err := dyn.DropKeys(vout, []string{"source_code_path", "git_source", "default_git_source"})
+	if err != nil {
+		return vout, err
+	}
+
 	return vout, nil
 }
 

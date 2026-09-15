@@ -14,16 +14,75 @@ import (
 )
 
 // JobRun is the bundle config for a triggered job run, described by the same
-// fields as the Jobs RunNow request (embedded). It re-triggers only when its own
-// config changes, not when the targeted job (stable job_id) changes.
+// fields as the Jobs RunNow request (embedded). By default it re-fires when its
+// own configuration changes; lifecycle.triggers can add further conditions.
 type JobRun struct {
 	BaseResource
 	jobs.RunNow
+
+	// Lifecycle shadows BaseResource.Lifecycle so job_runs can set triggers.
+	Lifecycle *JobRunLifecycle `json:"lifecycle,omitempty"`
 
 	// ResolvedJobID holds the run's job_id loaded from state, used only to build
 	// the run URL. Keeping it separate from RunNow.JobId (a ${resources.jobs.*.id}
 	// reference) lets state loading preserve that reference and its plan dependency.
 	ResolvedJobID int64 `json:"resolved_job_id,omitempty" bundle:"internal"`
+}
+
+// JobRunLifecycle extends Lifecycle with run-fire triggers.
+type JobRunLifecycle struct {
+	Lifecycle
+
+	// Triggers that cause the run to re-fire (in addition to config changes).
+	Triggers []JobRunTrigger `json:"triggers,omitempty"`
+
+	// Resolved fingerprint for the planner; not user config.
+	TriggersState *JobRunTriggersState `json:"triggers_state,omitempty" bundle:"internal"`
+}
+
+// JobRunTrigger is one lifecycle.triggers entry.
+type JobRunTrigger struct {
+	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`
+	OnFileChange   *string `json:"on_file_change,omitempty"` // path or glob relative to the defining YAML file; must resolve under the sync root
+}
+
+// JobRunTriggersState is the resolved fingerprint of lifecycle.triggers.
+type JobRunTriggersState struct {
+	OnBundleDeploy string            `json:"on_bundle_deploy,omitempty"`
+	OnFileChange   map[string]string `json:"on_file_change,omitempty"`
+}
+
+// IsEmpty reports whether no trigger is armed. An empty state is left off the
+// job run entirely, so this has to cover every field above: a new fingerprint
+// added without extending it would be dropped instead of persisted.
+func (s JobRunTriggersState) IsEmpty() bool {
+	return s.OnBundleDeploy == "" && len(s.OnFileChange) == 0
+}
+
+// HasOnBundleDeploy reports whether any trigger re-fires on every deploy.
+func (r *JobRun) HasOnBundleDeploy() bool {
+	if r.Lifecycle == nil {
+		return false
+	}
+	for _, t := range r.Lifecycle.Triggers {
+		if t.OnBundleDeploy != nil && *t.OnBundleDeploy {
+			return true
+		}
+	}
+	return false
+}
+
+// HasOnFileChange reports whether any trigger re-fires when matched files change.
+func (r *JobRun) HasOnFileChange() bool {
+	if r.Lifecycle == nil {
+		return false
+	}
+	for _, t := range r.Lifecycle.Triggers {
+		if t.OnFileChange != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *JobRun) UnmarshalJSON(b []byte) error {
@@ -66,10 +125,6 @@ func (r *JobRun) ResourceDescription() ResourceDescription {
 // GetName returns the in-product name, which is empty: a run has no name.
 func (r *JobRun) GetName() string {
 	return ""
-}
-
-func (r *JobRun) GetURL() string {
-	return r.URL
 }
 
 // InitializeURL sets the run's workspace URL. The job id comes from RunNow.JobId

@@ -1,0 +1,9 @@
+# The cap is read by the direct engine only.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+RecordRequests = true
+
+# A cluster is created PENDING and only reaches RUNNING when something polls it
+# (see ClustersGet in libs/testserver), so the poll GET is what proves whether the
+# deployment waited.
+Ignore = [".databricks"]

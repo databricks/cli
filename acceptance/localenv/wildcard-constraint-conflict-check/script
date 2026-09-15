@@ -1,0 +1,14 @@
+# A PEP 440 prefix-match wildcard pin ("pyarrow==18.*") is modeled as the version range
+# it admits, so a conflict with the environment's constraint-dependencies is reported
+# rather than silently missed — the 18.* series lies entirely below the env's ~=19.0.
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = ">=3.10"
+dependencies = ["pyarrow==18.*"]
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+PY
+
+trace $CLI environments setup-local --serverless-version 4 --dry-run

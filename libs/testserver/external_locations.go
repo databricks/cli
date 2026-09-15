@@ -61,6 +61,11 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 		}
 	}
 
+	fields, errResponse := parseUpdateFields(req.Body)
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var updateRequest catalog.UpdateExternalLocation
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
@@ -69,19 +74,10 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 		}
 	}
 
-	// Update only the fields that can be updated
-	if updateRequest.Comment != "" {
-		existing.Comment = updateRequest.Comment
-	}
-	if updateRequest.Url != "" {
-		existing.Url = updateRequest.Url
-	}
-	if updateRequest.CredentialName != "" {
-		existing.CredentialName = updateRequest.CredentialName
-	}
-	if updateRequest.Owner != "" {
-		existing.Owner = updateRequest.Owner
-	}
+	applyUpdatedFields(&existing, updateRequest, fields)
+
+	// These three are always sent, so they track the request whether or not the payload
+	// names them (read_only=false and a dropped key mean the same thing here).
 	existing.ReadOnly = updateRequest.ReadOnly
 	existing.EnableFileEvents = updateRequest.EnableFileEvents
 	existing.Fallback = updateRequest.Fallback

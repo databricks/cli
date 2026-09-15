@@ -1,0 +1,16 @@
+bundle:
+  name: reference-typo-double-nested-typo
+
+variables:
+  cluster:
+    type: complex
+    default:
+      spark_version: "13.2.x"
+
+resources:
+  jobs:
+    one:
+      # Two typos in a single reference across nesting layers: "clustr" (cluster)
+      # and "spark_versio" (spark_version). The lookup fails at the outermost key,
+      # so only "cluster" is suggested; the inner typo is never reached.
+      name: ${var.clustr.spark_versio}

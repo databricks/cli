@@ -3,8 +3,10 @@
 package schema
 
 type DataSourceDisasterRecoveryStableUrl struct {
-	FailoverGroupName  string `json:"failover_group_name,omitempty"`
-	InitialWorkspaceId string `json:"initial_workspace_id,omitempty"`
-	Name               string `json:"name"`
-	Url                string `json:"url,omitempty"`
+	EffectiveWorkspaceId string `json:"effective_workspace_id,omitempty"`
+	FailoverGroupName    string `json:"failover_group_name,omitempty"`
+	InitialWorkspaceId   string `json:"initial_workspace_id,omitempty"`
+	Name                 string `json:"name"`
+	StableWorkspaceId    string `json:"stable_workspace_id,omitempty"`
+	Url                  string `json:"url,omitempty"`
 }

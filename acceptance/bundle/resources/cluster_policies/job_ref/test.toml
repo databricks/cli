@@ -1,0 +1,4 @@
+# The job task defines only new_cluster and no task type (notebook_task, etc.), so the
+# real Jobs API rejects it ("No task defined"); the testserver doesn't validate. The task
+# type is irrelevant here since the test only checks policy-id resolution and create ordering.
+Cloud = false

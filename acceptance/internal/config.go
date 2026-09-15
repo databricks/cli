@@ -37,26 +37,24 @@ type TestConfig struct {
 	// If absent, default to true.
 	GOOS map[string]bool
 
+	// Every test runs locally against the fake server in libs/testserver. None of the
+	// three cloud fields that follow can prevent that: they are only consulted when
+	// CLOUD_ENV is set (an additional run against a real workspace) and can only
+	// subtract from that run. What skips a test locally is a different set entirely:
+	// GOOS, RunsOnDbr, DATABRICKS_TEST_SELECT_CHANGED.
+
 	// Which Clouds the test is enabled on. Allowed values: "aws", "azure", "gcp".
 	// If absent, default to true.
 	// Only checked if CLOUD_ENV is not empty.
 	CloudEnvs map[string]bool
 
-	// If true, run this test when running with cloud env configured
+	// If true, ALSO run this test against a real workspace when cloud env is configured.
+	// Does not affect the local run, which happens either way.
 	Cloud *bool
 
-	// If true, run this test when running with cloud env configured and -short is not passed
-	// This also sets -tail when -v is passed.
+	// Only meaningful alongside Cloud=true: the cloud run is skipped when -short is passed.
+	// This also sets -tail when -v is passed. It does not enable the cloud run on its own.
 	CloudSlow *bool
-
-	// If true and Cloud=true, run this test only if unity catalog is available in the cloud environment
-	RequiresUnityCatalog *bool
-
-	// If true and Cloud=true, run this test only if a default test cluster is available in the cloud environment
-	RequiresCluster *bool
-
-	// If true and Cloud=true, run this test only if a default warehouse is available in the cloud environment
-	RequiresWarehouse *bool
 
 	// If set, current user will be set to a service principal-like UUID instead of email (default is false)
 	IsServicePrincipal *bool
@@ -86,6 +84,17 @@ type TestConfig struct {
 
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
+
+	// Map of name -> regexp. Each run of consecutive output lines matching one of the
+	// regexps is sorted before comparison. Use for output whose line order is not
+	// deterministic, e.g. "bundle deploy" reporting resources as they are applied in
+	// parallel. Entries are keyed by name so an inner test.toml can replace an
+	// inherited pattern by reusing its name, or switch it off via SortLinesOn.
+	SortLines map[string]string
+
+	// Map of SortLines name -> whether to apply it. If a name is not listed, defaults
+	// to true; set it to false to drop an inherited pattern for this test.
+	SortLinesOn map[string]bool
 
 	// List of gitignore patterns to ignore when checking output files
 	Ignore []string

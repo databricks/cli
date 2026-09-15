@@ -2,8 +2,13 @@
 
 package schema
 
-type DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectAwsSecretAccessKey struct {
+type DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectAwsAccessKeySecretAccessKey struct {
 	Plaintext string `json:"plaintext,omitempty"`
+}
+
+type DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectAwsAccessKey struct {
+	AccessKeyId     string                                                                                       `json:"access_key_id,omitempty"`
+	SecretAccessKey *DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectAwsAccessKeySecretAccessKey `json:"secret_access_key,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectServiceCredential struct {
@@ -11,10 +16,9 @@ type DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectServiceCred
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirect struct {
-	AwsAccessKeyId     string                                                                              `json:"aws_access_key_id,omitempty"`
-	AwsSecretAccessKey *DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectAwsSecretAccessKey `json:"aws_secret_access_key,omitempty"`
-	Region             string                                                                              `json:"region,omitempty"`
-	ServiceCredential  *DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectServiceCredential  `json:"service_credential,omitempty"`
+	AwsAccessKey      *DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectAwsAccessKey      `json:"aws_access_key,omitempty"`
+	Region            string                                                                             `json:"region,omitempty"`
+	ServiceCredential *DataSourceAiGatewayModelProviderServiceConfigAmazonBedrockDirectServiceCredential `json:"service_credential,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigAmazonBedrock struct {
@@ -29,9 +33,7 @@ type DataSourceAiGatewayModelProviderServiceConfigAnthropicDirect struct {
 	ApiKey *DataSourceAiGatewayModelProviderServiceConfigAnthropicDirectApiKey `json:"api_key,omitempty"`
 }
 
-type DataSourceAiGatewayModelProviderServiceConfigAnthropicRelayed struct {
-	PlanType string `json:"plan_type,omitempty"`
-}
+type DataSourceAiGatewayModelProviderServiceConfigAnthropicRelayed struct{}
 
 type DataSourceAiGatewayModelProviderServiceConfigAnthropic struct {
 	Direct  *DataSourceAiGatewayModelProviderServiceConfigAnthropicDirect  `json:"direct,omitempty"`
@@ -42,8 +44,14 @@ type DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectApiKey struct
 	Plaintext string `json:"plaintext,omitempty"`
 }
 
-type DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectClientSecret struct {
+type DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectEntraServicePrincipalClientSecret struct {
 	Plaintext string `json:"plaintext,omitempty"`
+}
+
+type DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectEntraServicePrincipal struct {
+	ClientId     string                                                                                           `json:"client_id,omitempty"`
+	ClientSecret *DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectEntraServicePrincipalClientSecret `json:"client_secret,omitempty"`
+	TenantId     string                                                                                           `json:"tenant_id,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectServiceCredential struct {
@@ -51,12 +59,10 @@ type DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectServiceCreden
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirect struct {
-	ApiKey            *DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectApiKey            `json:"api_key,omitempty"`
-	BaseUrl           string                                                                           `json:"base_url,omitempty"`
-	ClientId          string                                                                           `json:"client_id,omitempty"`
-	ClientSecret      *DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectClientSecret      `json:"client_secret,omitempty"`
-	ServiceCredential *DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectServiceCredential `json:"service_credential,omitempty"`
-	TenantId          string                                                                           `json:"tenant_id,omitempty"`
+	ApiKey                *DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectApiKey                `json:"api_key,omitempty"`
+	BaseUrl               string                                                                               `json:"base_url,omitempty"`
+	EntraServicePrincipal *DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectEntraServicePrincipal `json:"entra_service_principal,omitempty"`
+	ServiceCredential     *DataSourceAiGatewayModelProviderServiceConfigAzureOpenaiDirectServiceCredential     `json:"service_credential,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigAzureOpenai struct {
@@ -91,7 +97,6 @@ type DataSourceAiGatewayModelProviderServiceConfigGeminiEnterprise struct {
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigInferenceTable struct {
-	Disabled        bool   `json:"disabled,omitempty"`
 	IsDeleted       bool   `json:"is_deleted,omitempty"`
 	Parent          string `json:"parent"`
 	Table           string `json:"table,omitempty"`
@@ -102,8 +107,14 @@ type DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectApiKey s
 	Plaintext string `json:"plaintext,omitempty"`
 }
 
-type DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectClientSecret struct {
+type DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectEntraServicePrincipalClientSecret struct {
 	Plaintext string `json:"plaintext,omitempty"`
+}
+
+type DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectEntraServicePrincipal struct {
+	ClientId     string                                                                                                `json:"client_id,omitempty"`
+	ClientSecret *DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectEntraServicePrincipalClientSecret `json:"client_secret,omitempty"`
+	TenantId     string                                                                                                `json:"tenant_id,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectServiceCredential struct {
@@ -111,12 +122,10 @@ type DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectServiceC
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirect struct {
-	ApiKey            *DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectApiKey            `json:"api_key,omitempty"`
-	BaseUrl           string                                                                                `json:"base_url,omitempty"`
-	ClientId          string                                                                                `json:"client_id,omitempty"`
-	ClientSecret      *DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectClientSecret      `json:"client_secret,omitempty"`
-	ServiceCredential *DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectServiceCredential `json:"service_credential,omitempty"`
-	TenantId          string                                                                                `json:"tenant_id,omitempty"`
+	ApiKey                *DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectApiKey                `json:"api_key,omitempty"`
+	BaseUrl               string                                                                                    `json:"base_url,omitempty"`
+	EntraServicePrincipal *DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectEntraServicePrincipal `json:"entra_service_principal,omitempty"`
+	ServiceCredential     *DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundryDirectServiceCredential     `json:"service_credential,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigMicrosoftFoundry struct {
@@ -138,13 +147,11 @@ type DataSourceAiGatewayModelProviderServiceConfigOpenai struct {
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigRateLimits struct {
-	Key             string `json:"key"`
-	Principal       string `json:"principal,omitempty"`
-	RenewalPeriod   string `json:"renewal_period"`
-	RequestTagKey   string `json:"request_tag_key,omitempty"`
-	RequestTagValue string `json:"request_tag_value,omitempty"`
-	Requests        int    `json:"requests,omitempty"`
-	Tokens          int    `json:"tokens,omitempty"`
+	Key           string `json:"key"`
+	Principal     string `json:"principal,omitempty"`
+	RenewalPeriod string `json:"renewal_period"`
+	Requests      int    `json:"requests,omitempty"`
+	Tokens        int    `json:"tokens,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigTargets struct {
@@ -175,7 +182,6 @@ type DataSourceAiGatewayModelProviderServiceProviderConfig struct {
 }
 
 type DataSourceAiGatewayModelProviderService struct {
-	BrowseOnly     bool                                                   `json:"browse_only,omitempty"`
 	Comment        string                                                 `json:"comment,omitempty"`
 	Config         *DataSourceAiGatewayModelProviderServiceConfig         `json:"config,omitempty"`
 	CreateTime     string                                                 `json:"create_time,omitempty"`
@@ -184,7 +190,6 @@ type DataSourceAiGatewayModelProviderService struct {
 	Etag           string                                                 `json:"etag,omitempty"`
 	MetastoreId    string                                                 `json:"metastore_id,omitempty"`
 	Name           string                                                 `json:"name"`
-	Owner          string                                                 `json:"owner,omitempty"`
 	ProviderConfig *DataSourceAiGatewayModelProviderServiceProviderConfig `json:"provider_config,omitempty"`
 	UpdateTime     string                                                 `json:"update_time,omitempty"`
 	UpdatedBy      string                                                 `json:"updated_by,omitempty"`

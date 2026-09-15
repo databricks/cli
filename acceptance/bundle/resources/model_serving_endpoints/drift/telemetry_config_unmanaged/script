@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 
 title "Deploy without telemetry_config"
 trace $CLI bundle deploy
@@ -7,7 +6,7 @@ title "Configure telemetry out of band"
 MSYS_NO_PATHCONV=1 $CLI api patch "/api/2.0/serving-endpoints/test-endpoint/telemetry-config" --json '{"telemetry_config": {"table_names": {"logs_table": "main.default.other_logs"}}}' > /dev/null
 
 title "Remote-only telemetry_config is not drift"
-trace $CLI bundle plan --output json | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
+trace $CLI bundle plan --output json | nostamp | jq '.plan[].changes | with_entries(select(.key | startswith("telemetry_config")))'
 
 title "Deploy does not remove it"
 trace $CLI bundle deploy

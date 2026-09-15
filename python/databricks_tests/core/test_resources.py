@@ -1,80 +1,15 @@
-from dataclasses import dataclass, replace
-from typing import Callable
+from dataclasses import replace
 
 import pytest
 
 from databricks.bundles.core import Location, Resources, Severity
 from databricks.bundles.core._bundle import Bundle
-from databricks.bundles.core._resource import Resource
-from databricks.bundles.core._resource_mutator import (
-    ResourceMutator,
-    job_mutator,
-    pipeline_mutator,
-    schema_mutator,
-    volume_mutator,
-)
+from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._resource_type import _ResourceType
 from databricks.bundles.jobs._models.job import Job
-from databricks.bundles.pipelines._models.pipeline import Pipeline
-from databricks.bundles.schemas._models.schema import Schema
-from databricks.bundles.volumes._models.volume import Volume
+from databricks_tests.core._generated import test_cases
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
-
-@dataclass(kw_only=True)
-class TestCase:
-    add_resource: Callable
-    dict_example: dict
-    dataclass_example: Resource
-    mutator: Callable
-
-
-resource_types = {tpe.resource_type: tpe for tpe in _ResourceType.all()}
-test_cases = [
-    (
-        TestCase(
-            add_resource=Resources.add_job,
-            dict_example={"name": "My job"},
-            dataclass_example=Job(name="My job"),
-            mutator=job_mutator,
-        ),
-        resource_types[Job],
-    ),
-    (
-        TestCase(
-            add_resource=Resources.add_pipeline,
-            dict_example={"name": "My pipeline"},
-            dataclass_example=Pipeline(name="My pipeline"),
-            mutator=pipeline_mutator,
-        ),
-        resource_types[Pipeline],
-    ),
-    (
-        TestCase(
-            add_resource=Resources.add_volume,
-            dict_example={
-                "name": "My Volume",
-                "catalog_name": "my_catalog",
-                "schema_name": "my_schema",
-            },
-            dataclass_example=Volume(
-                catalog_name="my_catalog",
-                name="My Volume",
-                schema_name="my_schema",
-            ),
-            mutator=volume_mutator,
-        ),
-        resource_types[Volume],
-    ),
-    (
-        TestCase(
-            add_resource=Resources.add_schema,
-            dict_example={"catalog_name": "my_catalog", "name": "my_schema"},
-            dataclass_example=Schema(catalog_name="my_catalog", name="my_schema"),
-            mutator=schema_mutator,
-        ),
-        resource_types[Schema],
-    ),
-]
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]
 
 
@@ -102,14 +37,14 @@ def test_add_job():
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource_type(tc: TestCase, tpe: _ResourceType):
+def test_add_resource_type(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     tc.add_resource(
         resources,
         **{
             "resource_name": "my_resource",
-            tpe.singular_name: tc.dict_example,
+            tpe.singular_name: tc.dataclass_example,
         },
     )
 
@@ -126,7 +61,7 @@ def test_add_job_dict():
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource_type_dict(tc: TestCase, tpe: _ResourceType):
+def test_add_resource_type_dict(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     tc.add_resource(
@@ -151,7 +86,7 @@ def test_add_job_location():
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource_type_location(tc: TestCase, tpe: _ResourceType):
+def test_add_resource_type_location(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
     location = Location(file="my_file", line=1, column=2)
 
@@ -183,7 +118,7 @@ def test_add_job_location_automatic():
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource_type_location_automatic(tc: TestCase, tpe: _ResourceType):
+def test_add_resource_type_location_automatic(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     tc.add_resource(
@@ -205,7 +140,7 @@ def test_add_resource_type_location_automatic(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource(tc: TestCase, tpe: _ResourceType):
+def test_add_resource(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     resources.add_resource("my_resource", tc.dataclass_example)
@@ -215,7 +150,7 @@ def test_add_resource(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resources(tc: TestCase, tpe: _ResourceType):
+def test_add_resources(tc: ResourceTestCase, tpe: _ResourceType):
     resources_1 = Resources()
     resources_2 = Resources()
 
@@ -227,7 +162,7 @@ def test_add_resources(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_mutator(tc: TestCase, tpe: _ResourceType):
+def test_mutator(tc: ResourceTestCase, tpe: _ResourceType):
     @tc.mutator
     def my_func(bundle, resource):
         return resource
@@ -241,7 +176,7 @@ def test_mutator(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_mutator_export(tc: TestCase, tpe: _ResourceType):
+def test_mutator_export(tc: ResourceTestCase, tpe: _ResourceType):
     import databricks.bundles.core
 
     assert tc.mutator.__name__ in databricks.bundles.core.__all__, (
@@ -250,7 +185,7 @@ def test_mutator_export(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_duplicate_resource(tc: TestCase, tpe: _ResourceType):
+def test_add_duplicate_resource(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     copy_1 = replace(tc.dataclass_example)
@@ -270,7 +205,7 @@ def test_add_duplicate_resource(tc: TestCase, tpe: _ResourceType):
     assert item.severity == Severity.ERROR
     assert (
         item.summary
-        == f"Duplicate resource name 'my_resource' for a {tpe.singular_name}. Resource names must be unique."
+        == f"Duplicate resource name 'my_resource' for resource '{tpe.singular_name}'. Resource names must be unique."
     )
 
 

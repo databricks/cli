@@ -1,0 +1,8 @@
+# securable_kind drift is a direct-engine plan-classification concern, and the fake
+# server models the backend computing it on TABLE securables. A real workspace would
+# need the referenced UC table to exist, so this runs locally only.
+RecordRequests = false
+
+Ignore = [".databricks", "databricks.yml"]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

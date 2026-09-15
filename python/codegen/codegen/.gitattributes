@@ -1,0 +1,2 @@
+# Render the wiring templates as Python on GitHub.
+*.py.tmpl linguist-language=Python

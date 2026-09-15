@@ -132,6 +132,17 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 		return nil
 	}
 
+	if IsOpaqueStruct(v1Type) {
+		equal, err := equalJSON(v1, v2)
+		if err != nil {
+			return err
+		}
+		if !equal {
+			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+		}
+		return nil
+	}
+
 	kind := v1.Kind()
 
 	// Perform nil checks for nilable types.
@@ -198,8 +209,10 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			continue
 		}
 
-		// Continue traversing embedded structs. Do not add the key to the path though.
-		if sf.Anonymous {
+		// Continue traversing embedded structs. Do not add the key to the path though. An
+		// anonymous field carrying a json name is not one of these: encoding/json serializes it
+		// as a nested object, so it is handled as a named field below.
+		if structaccess.IsFlattenedEmbed(sf) {
 			if err := diffValues(ctx, path, s1.Field(i), s2.Field(i), changes); err != nil {
 				return err
 			}
@@ -207,13 +220,10 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 		}
 
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
-		bundleTag := structtag.BundleTag(sf.Tag.Get("bundle"))
 
 		// Resolve field name from JSON tag or fall back to Go field name
-		// Sensitive fields are marked as "json:-" so they are not accidentally stored in the state file.
-		// But we still want to diff them to detect changes based on in-memory values (comes from config and remote)
 		fieldName := jsonTag.Name()
-		if fieldName == "-" && !bundleTag.Sensitive() {
+		if fieldName == "-" {
 			continue
 		}
 
@@ -262,13 +272,13 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
-		// Key is always string at this point
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		// Caller guarantees the key kind is String; use Value.String() rather
+		// than a .(string) assertion, which panics on a named string key type
+		// (e.g. `type ScriptHook string`) whose dynamic type is not string.
+		keySet[k.String()] = k
 	}
 	for _, k := range m2.MapKeys() {
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		keySet[k.String()] = k
 	}
 
 	keys := slices.Sorted(maps.Keys(keySet))
@@ -293,7 +303,7 @@ func getForceSendFields(v reflect.Value) []string {
 	if !fsField.IsValid() || fsField.Kind() != reflect.Slice {
 		return nil
 	}
-	result, ok := fsField.Interface().([]string)
+	result, ok := reflect.TypeAssert[[]string](fsField)
 	if ok {
 		return result
 	}

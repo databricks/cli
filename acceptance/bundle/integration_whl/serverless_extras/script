@@ -1,0 +1,16 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
+replace_ids.py
+
+title "The environment dependency keeps its [train] extras suffix"
+trace $CLI jobs get "$(read_id.py some_other_job)" | jq '.settings.environments[].spec.dependencies'
+
+trace $CLI bundle run some_other_job

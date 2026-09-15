@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/filer"
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 // Launch artifact basenames, uploaded into the run's cli_launch directory. The
@@ -40,35 +41,8 @@ type uploadItem struct {
 // fileWriter is the subset of filer.Filer the upload path needs; a narrow
 // interface keeps buildArtifacts/upload testable without a live workspace.
 type fileWriter interface {
+	Mkdir(ctx context.Context, name string) error
 	Write(ctx context.Context, name string, reader io.Reader, mode ...filer.WriteMode) error
-}
-
-// requirementsDoc mirrors the on-disk requirements.yaml format, used to read a
-// user-provided requirements file's dependencies for the inline spec.dependencies.
-type requirementsDoc struct {
-	Version      string   `yaml:"version,omitempty"`
-	Dependencies []string `yaml:"dependencies"`
-}
-
-// readRequirementsDependencies reads the dependencies and version out of a
-// requirements.yaml file so file-form deps can be carried on the serverless
-// environment's inline spec.dependencies and its version can select the runtime
-// image. Returns an empty list when the file declares no dependencies.
-func readRequirementsDependencies(reqPath string) ([]string, string, error) {
-	data, err := os.ReadFile(reqPath)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to read requirements file %s: %w", reqPath, err)
-	}
-	var doc requirementsDoc
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, "", fmt.Errorf("failed to parse requirements file %s: %w", reqPath, err)
-	}
-	for _, dep := range doc.Dependencies {
-		if fields := strings.Fields(dep); len(fields) > 0 && (fields[0] == "-r" || fields[0] == "--requirement") {
-			return nil, "", fmt.Errorf("requirements file dependency %q uses a requirements-file include (-r/--requirement), which is not supported; list the dependencies directly instead", dep)
-		}
-	}
-	return doc.Dependencies, doc.Version, nil
 }
 
 // buildArtifacts assembles the files to upload for a run: the merged config, the
@@ -155,16 +129,25 @@ func secretEnvVarEntries(secrets map[string]string) []secretEnvVarEntry {
 	return out
 }
 
-// uploadArtifacts writes each artifact into the launch directory, overwriting and
-// creating parents as needed.
+// uploadArtifacts creates the launch directory once, then writes all artifacts
+// concurrently. Each write overwrites an existing file but does not repeat parent
+// directory creation.
 //
 // TODO(DABs): this client-side upload could move onto libs/sync / a bundle deploy
 // so the CLI reuses DABs' file-staging machinery instead of writing files itself.
 func uploadArtifacts(ctx context.Context, w fileWriter, items []uploadItem) error {
-	for _, it := range items {
-		if err := w.Write(ctx, it.name, bytes.NewReader(it.data), filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
-			return fmt.Errorf("failed to upload %s: %w", it.name, err)
-		}
+	if err := w.Mkdir(ctx, "."); err != nil {
+		return fmt.Errorf("failed to create launch directory: %w", err)
 	}
-	return nil
+
+	group, groupCtx := errgroup.WithContext(ctx)
+	for _, item := range items {
+		group.Go(func() error {
+			if err := w.Write(groupCtx, item.name, bytes.NewReader(item.data), filer.OverwriteIfExists); err != nil {
+				return fmt.Errorf("failed to upload %s: %w", item.name, err)
+			}
+			return nil
+		})
+	}
+	return group.Wait()
 }

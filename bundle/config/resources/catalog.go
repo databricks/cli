@@ -51,10 +51,6 @@ func (c *Catalog) InitializeURL(baseURL url.URL) {
 	c.URL = workspaceurls.ResourceURL(baseURL, "catalogs", c.ID)
 }
 
-func (c *Catalog) GetURL() string {
-	return c.URL
-}
-
 func (c *Catalog) GetName() string {
 	return c.Name
 }

@@ -1,0 +1,24 @@
+# Only a databricks-connect pin that provably cannot co-resolve with the managed
+# version (~=17.2.0) is removed. A pin that overlaps it (>=15), carries no version, or
+# is marker-gated resolves fine, so it is left in place — the merge does not silently
+# rewrite the user's declaration (including [project].dependencies wheel metadata) when
+# nothing is broken. The dry-run diff shows only requires-python and the dev pin change,
+# and no W_DBCONNECT_CONSOLIDATED warning is emitted.
+cat > pyproject.toml <<'PY'
+[project]
+name = "demo"
+requires-python = ">=3.10"
+dependencies = [
+    "databricks-connect>=15",
+    "databricks-connect ; python_version < '3.13'",
+]
+
+[project.optional-dependencies]
+extra = ["databricks-connect"]
+
+[dependency-groups]
+dev = ["databricks-connect~=16.0"]
+test = ["databricks-connect>=15,<20"]
+PY
+
+trace $CLI environments setup-local --serverless-version 4 --dry-run --output json

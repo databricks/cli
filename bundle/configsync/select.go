@@ -2,6 +2,7 @@ package configsync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,6 +10,19 @@ import (
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 )
+
+// ErrNoMatchingSelector marks an all-stale --select-ids batch (no selector
+// matched a deployed resource), distinct from a malformed selector: the former
+// is drift the caller reports as skipped, the latter is a failure.
+var ErrNoMatchingSelector = errors.New("no matching selector")
+
+// noMatchingSelectorError keeps the descriptive message while matching
+// ErrNoMatchingSelector via errors.Is, so the sentinel text never leaks into it.
+type noMatchingSelectorError struct{ msg string }
+
+func (e *noMatchingSelectorError) Error() string { return e.msg }
+
+func (e *noMatchingSelectorError) Unwrap() error { return ErrNoMatchingSelector }
 
 // IndexDeployedResources indexes the deployed resources by "<type>:<id>",
 // mapping to the plan key ("resources.<type>.<name>"). Indexing by the <type>
@@ -82,7 +96,9 @@ func ResolveResourceSelectors(ctx context.Context, state *dstate.DeploymentState
 	// nothing, so the caller does not report a spurious success.
 	if len(keys) == 0 {
 		resourceType, id, _ := strings.Cut(missing[0], ":")
-		return nil, fmt.Errorf("no deployed %s resource with id %s; %s", resourceType, id, describeStateIDs(byTypeID, resourceType))
+		return nil, &noMatchingSelectorError{
+			msg: fmt.Sprintf("no deployed %s resource with id %s; %s", resourceType, id, describeStateIDs(byTypeID, resourceType)),
+		}
 	}
 
 	// Some selectors matched: skip the stale ones so the matched resources still

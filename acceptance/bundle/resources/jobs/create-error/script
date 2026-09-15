@@ -1,1 +1,5 @@
 trace musterr $CLI bundle deploy --force-lock
+
+# -q and -qq reduce the summary but must not hide the create error.
+trace musterr $CLI bundle deploy --force-lock -q
+trace musterr $CLI bundle deploy --force-lock -qq

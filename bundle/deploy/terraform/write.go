@@ -26,7 +26,7 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 
 	var root *schema.Root
 	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
-		root, err = BundleToTerraformWithDynValue(ctx, v)
+		root, err = BundleToTerraformWithDynValue(ctx, v, b.MigratingToDirect)
 		return v, err
 	})
 	if err != nil {

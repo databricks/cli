@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
@@ -16,6 +17,18 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 )
+
+// clientAliveIntervalSeconds is how often sshd asks the client to confirm it is still there. It
+// drives the keepalive from the server end of the tunnel; sshconfig.ServerAliveIntervalSeconds
+// documents why an SSH keepalive is what keeps the leg past the driver proxy from being reaped.
+// Configuring it here covers clients the CLI does not configure — a hand-written ProxyCommand host
+// block, or an IDE that supplies its own ssh options — where nothing sets ServerAliveInterval.
+// The two intervals are deliberately independent: neither package imports the other, and each end
+// keeps its own leg warm, so they need not track a single shared value.
+//
+// It also brings in ClientAliveCountMax (OpenSSH default 3), so sshd reclaims a session whose
+// client has gone away after ~90s instead of holding it open until the server's shutdown delay.
+const clientAliveIntervalSeconds = 30
 
 func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) (string, error) {
 	clientPublicKey, err := keys.GetSecret(ctx, client, opts.SecretScopeName, opts.AuthorizedKeySecretName)
@@ -76,15 +89,7 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 	setEnv := setEnvBuf.String()
 
-	sshdConfigContent := "PubkeyAuthentication yes\n" +
-		"PasswordAuthentication no\n" +
-		"ChallengeResponseAuthentication no\n" +
-		"Subsystem sftp internal-sftp\n" +
-		"HostKey " + keyPath + "\n" +
-		"AuthorizedKeysFile " + authKeysPath + "\n" +
-		setEnv + "\n"
-
-	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent), 0o600); err != nil {
+	if err := os.WriteFile(sshdConfig, []byte(sshdConfigContent(keyPath, authKeysPath, setEnv)), 0o600); err != nil {
 		return "", err
 	}
 
@@ -95,6 +100,18 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 	}
 
 	return sshdConfig, nil
+}
+
+// sshdConfigContent assembles the configuration the tunnel's sshd runs with.
+func sshdConfigContent(hostKeyPath, authorizedKeysPath, setEnv string) string {
+	return "PubkeyAuthentication yes\n" +
+		"PasswordAuthentication no\n" +
+		"ChallengeResponseAuthentication no\n" +
+		"ClientAliveInterval " + strconv.Itoa(clientAliveIntervalSeconds) + "\n" +
+		"Subsystem sftp internal-sftp\n" +
+		"HostKey " + hostKeyPath + "\n" +
+		"AuthorizedKeysFile " + authorizedKeysPath + "\n" +
+		setEnv + "\n"
 }
 
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {

@@ -33,17 +33,17 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
-Deploying resources...
-job run [MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
-job run [MY_RUN_ID]: SUCCESS
-Updating deployment state...
-Deployment complete!
+Created jobs.my_job
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
+Created job_runs.my_run
+Files: 2 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -81,19 +81,10 @@ job_runs my_run id='[MY_RUN_ID]' result_state=None
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-basic/default
 
-Deleting files...
-Destroy complete!
+Destroy: 1 deleted
 
 >>> print_requests.py //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [MY_RUN_ID]
-  }
-}

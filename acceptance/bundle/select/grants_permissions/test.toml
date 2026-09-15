@@ -8,7 +8,6 @@
 # own path resolution -- see the env -u workaround in acceptance/script.prepare.)
 Cloud = false
 RecordRequests = true
-RequiresUnityCatalog = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.READPLAN = ["", "1"]
 Ignore = [".databricks", ".gitignore", "databricks.yml", "plan-job.json", "plan-schema.json"]

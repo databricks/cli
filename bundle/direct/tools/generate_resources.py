@@ -5,7 +5,10 @@
 # ]
 # ///
 """
-Generate resources.generated.yml from cli.json field behaviors.
+Generate per-resource <resource_type>.generated.yml files from cli.json field behaviors.
+
+A resource with no field behaviors gets no file; a stale file left over from a
+previous run is removed.
 """
 
 import argparse
@@ -33,34 +36,57 @@ def parse_apitypes(generated_path, override_path):
 
 
 def parse_out_fields(path):
-    """Parse out.fields.txt to extract STATE field names per resource."""
+    """Parse out.fields.txt to extract STATE field names per resource and array element types."""
     state_fields = {}
+    array_element_types = {}  # (resource, base_path) -> element_type
 
     for line in path.read_text().splitlines():
         parts = line.split("\t")
         if len(parts) < 3 or not parts[0].startswith("resources."):
             continue
 
-        field_path, flags = parts[0], parts[2:]
+        field_path, field_type, flags = parts[0], parts[1], parts[2:]
         if "STATE" not in flags and "ALL" not in flags:
             continue
 
         # Field line: resources.<name>.*.<field>
         match = re.match(r"resources\.([a-z_]+)\.\*\.(.+)", field_path)
-        if match and "[*]" not in match.group(2):
-            state_fields.setdefault(match.group(1), set()).add(match.group(2))
+        if not match:
+            continue
+        resource, rest = match.group(1), match.group(2)
 
-    return state_fields
+        # Array element type declarations (path ends with [*]): record the element type
+        # so the generator can traverse into array element schemas that lack a ref in the
+        # OpenAPI schema (e.g. App.resources[] -> AppResource).
+        if rest.endswith("[*]"):
+            base_path = rest[:-3]
+            elem_type = field_type.lstrip("*")
+            array_element_types[(resource, base_path)] = elem_type
+
+        state_fields.setdefault(resource, set()).add(rest)
+
+    return state_fields, array_element_types
 
 
-def get_field_behaviors(schemas, type_name):
+def get_field_behaviors(schemas, type_name, resource_name=None, array_element_types=None):
     """Extract field behaviors from a schema, propagating INPUT_ONLY/OUTPUT_ONLY from containers."""
     if type_name not in schemas:
         return {}
+    if array_element_types is None:
+        array_element_types = {}
 
     def extract(schema, prefix, visited, depth, inherited):
-        if depth > 4:
-            return {}
+        # `visited` holds the ref types on the path from the root to here, so a type
+        # that transitively references itself terminates the recursion. It is scoped
+        # to the current path (each branch gets its own copy via `visited | {ref}`),
+        # not global, so a type reused at sibling paths is expanded at each one — e.g.
+        # ModelServiceConfigDestinationConfig under both config.routing.destinations[*]
+        # and config.routing.fallback.destinations[*]. max_depth is a runaway guard
+        # only; real fields reach depth 5 (e.g.
+        # external_model.custom_provider_config.bearer_token_auth.token_plaintext).
+        max_depth = 10
+        if depth > max_depth:
+            raise Exception(f"Nested field found at depth {depth} ({max_depth=})")
         results = {}
         for name, prop in schema.get("fields", {}).items():
             path = f"{prefix}.{name}" if prefix else name
@@ -73,9 +99,17 @@ def get_field_behaviors(schemas, type_name):
             if "ref" in prop:
                 ref = prop["ref"]
                 if ref in schemas and ref not in visited:
-                    visited.add(ref)
                     propagate = [b for b in behaviors if b in ("INPUT_ONLY", "OUTPUT_ONLY")]
-                    results.update(extract(schemas[ref], path, visited, depth + 1, propagate))
+                    results.update(extract(schemas[ref], path, visited | {ref}, depth + 1, propagate))
+            elif resource_name is not None:
+                # For array fields with no ref in the schema, use the element type from
+                # out.fields.txt (e.g. App.resources[] -> AppResource).
+                elem_type = array_element_types.get((resource_name, path))
+                if elem_type and elem_type in schemas and elem_type not in visited:
+                    propagate = [b for b in behaviors if b in ("INPUT_ONLY", "OUTPUT_ONLY")]
+                    results.update(
+                        extract(schemas[elem_type], f"{path}[*]", visited | {elem_type}, depth + 1, propagate)
+                    )
         return results
 
     # Find INPUT_ONLY/OUTPUT_ONLY from container types that reference this type
@@ -109,7 +143,9 @@ def filter_prefixes(fields):
 
 def write_field_group(lines, header, fields):
     """Write a group of fields with field and reason, grouped by behavior."""
-    lines.append(f"\n    {header}:")
+    if lines:
+        lines.append("")
+    lines.append(f"{header}:")
     # Group by behavior
     by_behavior = {}
     for field, behavior in fields:
@@ -121,51 +157,57 @@ def write_field_group(lines, header, fields):
         first = False
         reason = f"spec:{behavior.lower()}"
         for field in by_behavior[behavior]:
-            lines.append(f"      - field: {field}")
-            lines.append(f"        reason: {reason}")
+            lines.append(f"  - field: {field}")
+            lines.append(f"    reason: {reason}")
 
 
-def generate(resource_behaviors):
-    """Generate resources.yml."""
-    lines = [
-        """# Generated, do not edit. API field behaviors from OpenAPI schema.
-#
-# For manual edits and schema description, see resources.yml.
+GENERATED_SUFFIX = ".generated.yml"
 
-resources:"""
-    ]
+HEADER = "# Generated, do not edit."
 
-    for resource in sorted(resource_behaviors):
-        behaviors = resource_behaviors[resource]
 
-        ignore_remote, recreate = [], []
-        for field, fb in sorted(behaviors.items()):
-            if "OUTPUT_ONLY" in fb:
-                ignore_remote.append((field, "OUTPUT_ONLY"))
-            elif "INPUT_ONLY" in fb:
-                ignore_remote.append((field, "INPUT_ONLY"))
-            if "IMMUTABLE" in fb:
-                recreate.append((field, "IMMUTABLE"))
+def generate(behaviors):
+    """Render one resource's field behaviors, or "" if it has none."""
+    ignore_remote, recreate = [], []
+    for field, fb in sorted(behaviors.items()):
+        if "OUTPUT_ONLY" in fb:
+            ignore_remote.append((field, "OUTPUT_ONLY"))
+        elif "INPUT_ONLY" in fb:
+            ignore_remote.append((field, "INPUT_ONLY"))
+        if "IMMUTABLE" in fb:
+            recreate.append((field, "IMMUTABLE"))
 
-        ignore_remote = filter_prefixes(ignore_remote)
-        recreate = filter_prefixes(recreate)
+    ignore_remote = filter_prefixes(ignore_remote)
+    recreate = filter_prefixes(recreate)
 
-        if not ignore_remote and not recreate:
-            lines.append(f"\n  # {resource}: no api field behaviors")
+    if not ignore_remote and not recreate:
+        return ""
+
+    lines = []
+    if recreate:
+        write_field_group(lines, "recreate_on_changes", recreate)
+    if ignore_remote:
+        write_field_group(lines, "ignore_remote_changes", ignore_remote)
+
+    return HEADER + "\n\n" + "\n".join(lines) + "\n"
+
+
+def write_files(outdir, resource_behaviors):
+    """Write <resource_type>.generated.yml per resource, pruning files that are now empty."""
+    written = set()
+    for resource, behaviors in sorted(resource_behaviors.items()):
+        content = generate(behaviors)
+        if not content:
             continue
+        path = outdir / (resource + GENERATED_SUFFIX)
+        path.write_text(content)
+        written.add(path)
 
-        lines.append(f"\n  {resource}:")
+    for path in sorted(outdir.glob("*" + GENERATED_SUFFIX)):
+        if path not in written:
+            path.unlink()
 
-        if recreate:
-            write_field_group(lines, "recreate_on_changes", recreate)
-
-        if ignore_remote:
-            write_field_group(lines, "ignore_remote_changes", ignore_remote)
-
-    while lines and lines[-1] == "":
-        lines.pop()
-
-    return "\n".join(lines)
+    print(f"wrote {len(written)} files to {outdir}", file=sys.stderr)
 
 
 def main():
@@ -174,24 +216,25 @@ def main():
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
     parser.add_argument("apitypes_override", type=Path, help="Path to apitypes.yml override file")
     parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
+    parser.add_argument("outdir", type=Path, help="Directory to write <resource_type>.generated.yml files to")
     args = parser.parse_args()
 
     resource_types = parse_apitypes(args.apitypes, args.apitypes_override)
-    state_fields = parse_out_fields(args.out_fields)
+    state_fields, array_element_types = parse_out_fields(args.out_fields)
     schemas = json.loads(args.apischema.read_text())["schemas"]
 
     resource_behaviors = {}
     for resource, type_name in sorted(resource_types.items()):
         fields = state_fields.get(resource, set())
         print(f"\n{resource}: type={type_name}", file=sys.stderr)
-        all_behaviors = get_field_behaviors(schemas, type_name)
+        all_behaviors = get_field_behaviors(schemas, type_name, resource, array_element_types)
         if all_behaviors:
             print(f"  field behaviors from {type_name}:", file=sys.stderr)
             for field in sorted(all_behaviors):
                 print(f"    {field}: {all_behaviors[field]}", file=sys.stderr)
         resource_behaviors[resource] = {f: b for f, b in all_behaviors.items() if f in fields}
 
-    print(generate(resource_behaviors))
+    write_files(args.outdir, resource_behaviors)
 
 
 if __name__ == "__main__":

@@ -83,8 +83,13 @@ func sortDiagnostics(diags diag.Diagnostics) {
 			return n
 		}
 
-		// Finally sort by locations as a tie breaker if summaries are the same.
-		return cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations))
+		// Then sort by locations as a tie breaker if summaries are the same.
+		if n := cmp.Compare(fmt.Sprintf("%v", a.Locations), fmt.Sprintf("%v", b.Locations)); n != 0 {
+			return n
+		}
+
+		// Sibling entries can share a location; fall back to path for a stable order.
+		return cmp.Compare(fmt.Sprintf("%v", a.Paths), fmt.Sprintf("%v", b.Paths))
 	})
 }
 
@@ -184,6 +189,34 @@ func errorForInvalidGrants(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	return diags
 }
 
+// errorForInvalidSecretScopePermissions errors when a permission names no principal.
+// Wrong-typed values are already empty here (normalization only warns and drops them).
+func errorForInvalidSecretScopePermissions(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	for key, scope := range b.Config.Resources.SecretScopes {
+		for i, perm := range scope.Permissions {
+			if perm.UserName != "" || perm.GroupName != "" || perm.ServicePrincipalName != "" {
+				continue
+			}
+			path := fmt.Sprintf("resources.secret_scopes.%s.permissions[%d]", key, i)
+			// ApplyBundlePermissions rebuilds permissions via convert.FromTyped and drops
+			// per-entry locations, so point at the scope.
+			diags = diags.Append(diag.Diagnostic{
+				Severity:  diag.Error,
+				Summary:   "secret scope permission principal is required",
+				Detail:    "Set one of user_name, group_name or service_principal_name",
+				Locations: b.Config.GetLocations("resources.secret_scopes." + key),
+				Paths:     []dyn.Path{dyn.MustPathFromString(path)},
+			})
+		}
+	}
+
+	sortDiagnostics(diags)
+
+	return diags
+}
+
 // isMissingOrEmptyString reports whether v is unset, null, or an empty string.
 func isMissingOrEmptyString(v dyn.Value) bool {
 	switch v.Kind() {
@@ -211,6 +244,7 @@ func isMissingOrEmptySequence(v dyn.Value) bool {
 func (f *required) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := errorForMissingFields(ctx, b)
 	diags = diags.Extend(errorForInvalidGrants(ctx, b))
+	diags = diags.Extend(errorForInvalidSecretScopePermissions(ctx, b))
 	if diags.HasError() {
 		return diags
 	}

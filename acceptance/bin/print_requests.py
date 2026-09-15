@@ -90,6 +90,15 @@ from pathlib import Path
 ADD_PREFIX = "/"
 NEGATE_PREFIX = "^/"
 
+# What --nostamp deletes. A job create sends the deployment block at the top level, an
+# update nests it under new_settings.
+STAMP_FIELDS = [
+    "deployment.deployment_id",
+    "deployment.version_id",
+    "new_settings.deployment.deployment_id",
+    "new_settings.deployment.version_id",
+]
+
 
 def read_json_many(s):
     result = []
@@ -123,7 +132,13 @@ result = read_json_many(test)
 assert result == [{"method": "GET"}, {"method": "POST"}], result
 
 
-def filter_requests(requests, path_filters, include_get, should_sort, unique=False, method_filter=None):
+# DMS_PATH is the deployment metadata service's prefix; see filter_requests.
+DMS_PATH = "/api/2.0/bundle"
+
+
+def filter_requests(
+    requests, path_filters, include_get, should_sort, unique=False, method_filter=None, include_dms=False
+):
     """Filter requests based on method and path filters."""
     positive_filters = []
     negative_filters = []
@@ -135,6 +150,13 @@ def filter_requests(requests, path_filters, include_get, should_sort, unique=Fal
             negative_filters.append(f.removeprefix(NEGATE_PREFIX))
         else:
             sys.exit(f"Unrecognized filter: {f!r}")
+
+    # Deployment-history requests carry the resource key in the path
+    # (.../operations/jobs.foo), so a filter like //jobs matches them too and every test
+    # that records one resource type would pick these up in the recording run. Excluded
+    # unless --dms asks for them.
+    if not include_dms:
+        negative_filters.append(DMS_PATH)
 
     filtered_requests = []
     for req in requests:
@@ -178,11 +200,27 @@ def filter_requests(requests, path_filters, include_get, should_sort, unique=Fal
     return filtered_requests
 
 
+def del_path(body, field):
+    """Delete field from body. A dotted field descends into nested objects, e.g.
+    deployment.version_id removes only that key from the deployment block."""
+    *parents, leaf = field.split(".")
+    for name in parents:
+        body = body.get(name)
+        if not isinstance(body, dict):
+            return
+    body.pop(leaf, None)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("path_filters", nargs="*", help="Path substring filters")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable diagnostic messages")
     parser.add_argument("--get", action="store_true", help="Include GET requests (excluded by default)")
+    parser.add_argument(
+        "--dms",
+        action="store_true",
+        help="Include deployment-history requests (excluded by default; see filter_requests)",
+    )
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")
     parser.add_argument("--sort", action="store_true", help="Sort requests before output")
     parser.add_argument(
@@ -210,17 +248,27 @@ def main():
         "--del-body, which edits the parsed JSON body, this drops a field of the request "
         "record itself, e.g. raw_body for a binary upload payload.",
     )
-    parser.add_argument("--fname", default="out.requests.txt")
+    parser.add_argument(
+        "--nostamp",
+        action="store_true",
+        help="Drop the deployment stamp (deployment_id, version_id) from job and pipeline "
+        "bodies, so a test asserts the same requests whether or not deployment history "
+        "recording is on. Shorthand for the --del-body fields it implies.",
+    )
+    parser.add_argument("--fname", default=os.environ["OUT_REQUESTS"])
     args = parser.parse_args()
 
     del_body_fields = [field for group in args.del_body for field in group.split(",")]
+    if args.nostamp:
+        del_body_fields += STAMP_FIELDS
     del_fields = [field for group in args.del_field for field in group.split(",")]
 
+    fname = Path(args.fname)
     test_tmp_dir = os.environ.get("TEST_TMP_DIR")
-    if test_tmp_dir:
-        requests_file = Path(test_tmp_dir) / args.fname
+    if test_tmp_dir and not fname.is_absolute():
+        requests_file = Path(test_tmp_dir) / fname
     else:
-        requests_file = Path(args.fname)
+        requests_file = fname
 
     if not requests_file.exists():
         sys.exit(f"File {requests_file.as_posix()} not found")
@@ -232,13 +280,15 @@ def main():
         return
 
     requests = read_json_many(data)
-    filtered_requests = filter_requests(requests, args.path_filters, args.get, args.sort, args.unique, args.method)
+    filtered_requests = filter_requests(
+        requests, args.path_filters, args.get, args.sort, args.unique, args.method, args.dms
+    )
 
     for req in filtered_requests:
         body = req.get("body")
         if isinstance(body, dict):
             for field in del_body_fields:
-                body.pop(field, None)
+                del_path(body, field)
         for field in del_fields:
             req.pop(field, None)
     if args.verbose:

@@ -1,1 +1,0 @@
-Added the `databricks environments setup-local` command, which provisions (or updates) a local Python environment matched to a Databricks compute target. It resolves the target to an environment key, fetches the pinned Python version, databricks-connect version, and dependency constraints published for that key, then provisions a matched `.venv` with uv.

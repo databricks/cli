@@ -1,4 +1,3 @@
-[EnvMatrix]
-B_REGULAR_VAR = ["hello"]
-FIRST = ["one111", "two222"]
-SECOND = ["variantA", "variantB"]
+EnvMatrix.B_REGULAR_VAR = ["hello"]
+EnvMatrix.FIRST = ["one111", "two222"]
+EnvMatrix.SECOND = ["variantA", "variantB"]

@@ -1,0 +1,10 @@
+provided_id_fields:
+  # catalog_id is part of the hierarchical name and immutable.
+  - field: catalog_id
+    reason: id_field
+recreate_on_changes:
+  # The Postgres SDK has no UpdateCatalog endpoint, so any local change
+  # requires delete+create. The OpenAPI spec only marks postgres_database
+  # as IMMUTABLE (handled by autogen); branch and create_database_if_missing
+  # need explicit entries here.
+  - reason: immutable

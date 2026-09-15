@@ -1,4 +1,3 @@
-RequiresWarehouse = true
 Cloud = true
 
 # Force the local deploy identity to a service principal so the auto-added

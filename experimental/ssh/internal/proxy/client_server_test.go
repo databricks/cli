@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -38,24 +39,28 @@ type testClient struct {
 	Cleanup     func()
 }
 
-func createTestClient(t *testing.T, serverURL string, requestHandoverTick func() <-chan time.Time, errChan chan error) *testClient {
-	ctx := cmdio.MockDiscard(t.Context())
-	clientInput, clientInputWriter := io.Pipe()
-	clientOutput := newTestBuffer(t)
+func createTestClient(t *testing.T, serverURL string, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, errChan chan error) *testClient {
 	wsURL := "ws" + serverURL[4:]
-	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		url := fmt.Sprintf("%s?id=%s", wsURL, connID)
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
 		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
 		return conn, err
 	}
+	return createTestClientWithDialer(t, createConn, requestHandoverTick, keepaliveInterval, false, errChan)
+}
+
+// createTestClientWithDialer is createTestClient with the websocket dialer supplied by the caller,
+// so a test can control which dials succeed - the initial connection's or a handover's.
+func createTestClientWithDialer(t *testing.T, createConn createWebsocketConnectionFunc, requestHandoverTick func() <-chan time.Time, keepaliveInterval time.Duration, resumable bool, errChan chan error) *testClient {
+	ctx := cmdio.MockDiscard(t.Context())
+	clientInput, clientInputWriter := io.Pipe()
+	clientOutput := newTestBuffer(t)
 	if requestHandoverTick == nil {
-		requestHandoverTick = func() <-chan time.Time {
-			return time.After(time.Hour)
-		}
+		requestHandoverTick = neverTick
 	}
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
-		err := RunClientProxy(ctx, clientInput, clientOutput, requestHandoverTick, createConn)
+		err := RunClientProxy(ctx, clientInput, clientOutput, requestHandoverTick, keepaliveInterval, resumable, createConn)
 		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			if errChan != nil {
 				errChan <- err
@@ -78,7 +83,7 @@ func createTestClient(t *testing.T, serverURL string, requestHandoverTick func()
 func TestClientServerEcho(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
-	client := createTestClient(t, server.URL, nil, nil)
+	client := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client.Cleanup()
 
 	testMsg1 := []byte("test message 1\n")
@@ -100,9 +105,9 @@ func TestClientServerEcho(t *testing.T) {
 func TestMultipleClients(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
-	client1 := createTestClient(t, server.URL, nil, nil)
+	client1 := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client1.Cleanup()
-	client2 := createTestClient(t, server.URL, nil, nil)
+	client2 := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client2.Cleanup()
 
 	messageCount := 10
@@ -131,9 +136,9 @@ func TestMaxClients(t *testing.T) {
 	maxClients := 2
 	server := createTestServer(t, maxClients, time.Hour)
 	defer server.Close()
-	client1 := createTestClient(t, server.URL, nil, nil)
+	client1 := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client1.Cleanup()
-	client2 := createTestClient(t, server.URL, nil, nil)
+	client2 := createTestClient(t, server.URL, nil, time.Hour, nil)
 	defer client2.Cleanup()
 
 	testMsg1 := []byte("test message 1\n")
@@ -147,7 +152,7 @@ func TestMaxClients(t *testing.T) {
 	require.NoError(t, err)
 
 	errChan := make(chan error, 1)
-	client3 := createTestClient(t, server.URL, nil, errChan)
+	client3 := createTestClient(t, server.URL, nil, time.Hour, errChan)
 	defer client3.Cleanup()
 	select {
 	case err = <-errChan:
@@ -158,6 +163,17 @@ func TestMaxClients(t *testing.T) {
 }
 
 func TestHandover(t *testing.T) {
+	t.Run("without keepalive", func(t *testing.T) {
+		runHandoverExchange(t, time.Hour)
+	})
+	// Pings and the data stream share the connection's write lock: they must not corrupt or reorder
+	// the stream, nor trip gorilla's concurrent-write panic.
+	t.Run("with keepalive", func(t *testing.T) {
+		runHandoverExchange(t, time.Millisecond)
+	})
+}
+
+func runHandoverExchange(t *testing.T, keepaliveInterval time.Duration) {
 	server := createTestServer(t, 2, time.Hour)
 	defer server.Close()
 
@@ -165,7 +181,7 @@ func TestHandover(t *testing.T) {
 	requestHandoverTick := func() <-chan time.Time {
 		return handoverChan
 	}
-	client := createTestClient(t, server.URL, requestHandoverTick, nil)
+	client := createTestClient(t, server.URL, requestHandoverTick, keepaliveInterval, nil)
 	defer client.Cleanup()
 
 	var expectedOutput []byte
@@ -204,7 +220,7 @@ func TestQuickHandover(t *testing.T) {
 	requestHandoverTick := func() <-chan time.Time {
 		return handoverChan
 	}
-	client := createTestClient(t, server.URL, requestHandoverTick, nil)
+	client := createTestClient(t, server.URL, requestHandoverTick, time.Hour, nil)
 	defer client.Cleanup()
 
 	var expectedOutput []byte
@@ -232,6 +248,74 @@ func TestQuickHandover(t *testing.T) {
 	assert.Equal(t, string(expectedOutput), client.Output.String())
 }
 
+// A handover that fails while dialing its replacement connection must not end the session: the
+// connection it was meant to replace is still live and carrying traffic. Until this was handled,
+// a single transient dial failure - a token refresh, a DNS blip, a proxy stumble - dropped an
+// otherwise healthy session once every handover interval.
+func TestHandoverDialFailureKeepsSessionAlive(t *testing.T) {
+	server := createTestServer(t, 2, time.Hour)
+	defer server.Close()
+
+	wsURL := "ws" + server.URL[4:]
+	var dials atomic.Int32
+	// Signalled the instant a handover dial is attempted (and made to fail). initiateHandover
+	// already holds handoverMutex by the time it dials, so a receive here proves the handover
+	// goroutine has entered the dial and taken the mutex. Buffered and sent non-blockingly so the
+	// dialer never stalls on it even if more dials than expected occur.
+	handoverDialAttempted := make(chan struct{}, 1)
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		// Let the initial connection through and fail every handover dial after it.
+		if dials.Add(1) > 1 {
+			select {
+			case handoverDialAttempted <- struct{}{}:
+			default:
+			}
+			return nil, errors.New("simulated transient dial failure")
+		}
+		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
+		conn, _, err := websocket.DefaultDialer.Dial(url, nil) // nolint:bodyclose
+		return conn, err
+	}
+
+	handoverChan := make(chan time.Time)
+	errChan := make(chan error, 1)
+	client := createTestClientWithDialer(t, createConn, func() <-chan time.Time {
+		return handoverChan
+	}, time.Hour, false, errChan)
+	defer client.Cleanup()
+
+	beforeMsg := []byte("before handover\n")
+	_, err := client.InputWriter.Write(beforeMsg)
+	require.NoError(t, err)
+	require.NoError(t, client.Output.AssertWrite(beforeMsg))
+
+	handoverChan <- time.Now()
+
+	// Completing the tick send only proves the handover goroutine received the tick; it does not
+	// prove it acquired handoverMutex and reached the dial. Wait for the dial to actually be
+	// attempted before sending more traffic - otherwise the payload below can traverse the
+	// original connection before the handover even starts, which is the macOS "dials == 1" flake.
+	select {
+	case <-handoverDialAttempted:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the handover never attempted its replacement dial")
+	}
+
+	// The original connection must still be proxying both ways. sendMessage blocks on the
+	// handover mutex, so this write cannot overtake the failed handover.
+	afterMsg := []byte("after failed handover\n")
+	_, err = client.InputWriter.Write(afterMsg)
+	require.NoError(t, err)
+	require.NoError(t, client.Output.AssertWrite(afterMsg))
+
+	select {
+	case err := <-errChan:
+		t.Fatalf("session ended after a failed handover dial: %v", err)
+	default:
+	}
+	assert.Equal(t, int32(2), dials.Load(), "expected the initial dial plus exactly one handover dial")
+}
+
 // TestClientExitsWhenServerCommandFails reproduces the missing-sshd case: the server accepts the
 // websocket but can't launch its command, so it closes the connection immediately. The client
 // proxy must exit promptly instead of hanging on the handover goroutine (which would leave the
@@ -246,8 +330,8 @@ func TestClientExitsWhenServerCommandFails(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
 		return conn, err
 	}
 	// Source is never closed by the test; only the server-side close must drive the client to exit.
@@ -256,7 +340,7 @@ func TestClientExitsWhenServerCommandFails(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, createConn)
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, time.Hour, false, createConn)
 	}()
 
 	select {
@@ -294,8 +378,8 @@ func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + server.URL[4:]
-	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, connID), nil) // nolint:bodyclose
+	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID), nil) // nolint:bodyclose
 		return conn, err
 	}
 	src, _ := io.Pipe()
@@ -303,7 +387,7 @@ func TestClientTimesOutWhenServerSendsNothing(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, createConn)
+		done <- RunClientProxy(ctx, src, io.Discard, requestHandoverTick, time.Hour, false, createConn)
 	}()
 
 	select {

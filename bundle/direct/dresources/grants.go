@@ -13,13 +13,16 @@ import (
 )
 
 var grantResourceToSecurableType = map[string]string{
-	"catalogs":              "catalog",
-	"schemas":               "schema",
-	"external_locations":    "external_location",
-	"volumes":               "volume",
-	"registered_models":     "function",
-	"secrets":               "secret",
-	"vector_search_indexes": "table",
+	"catalogs":                "catalog",
+	"schemas":                 "schema",
+	"external_locations":      "external_location",
+	"volumes":                 "volume",
+	"registered_models":       "function",
+	"secrets":                 "secret",
+	"vector_search_indexes":   "table",
+	"model_services":          "model_service",
+	"mcp_services":            "mcp_service",
+	"model_provider_services": "model_provider_service",
 }
 
 type GrantsState struct {
@@ -28,49 +31,51 @@ type GrantsState struct {
 	EmbeddedSlice []catalog.PrivilegeAssignment `json:"__embed__,omitempty"`
 }
 
-func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
-	baseNode, ok := strings.CutSuffix(node, ".grants")
+type ResourceGrants struct {
+	client *databricks.WorkspaceClient
+
+	// securableType is the UC securable type of the parent resource, e.g. "schema".
+	securableType string
+}
+
+func (*ResourceGrants) New(client *databricks.WorkspaceClient) *ResourceGrants {
+	return &ResourceGrants{client: client, securableType: ""}
+}
+
+func (r *ResourceGrants) Configure(resourceType string) error {
+	parentType, ok := strings.CutSuffix(resourceType, ".grants")
 	if !ok {
-		return nil, fmt.Errorf("internal error: node %q does not end with .grants", node)
+		return fmt.Errorf("internal error: resource type %q does not end with .grants", resourceType)
 	}
 
-	resourceType, err := extractGrantResourceType(node)
-	if err != nil {
-		return nil, err
+	r.securableType, ok = grantResourceToSecurableType[parentType]
+	if !ok {
+		return fmt.Errorf("unsupported grants resource type: %s", parentType)
 	}
 
-	securableType, ok := grantResourceToSecurableType[resourceType]
-	if !ok {
-		return nil, fmt.Errorf("unsupported grants resource type: %s", resourceType)
-	}
+	return nil
+}
 
-	grantsPtr, ok := inputConfig.(*[]catalog.PrivilegeAssignment)
+func (r *ResourceGrants) PrepareInputConfig(inputConfig *[]catalog.PrivilegeAssignment, resourceKey string) (*structvar.StructVar, error) {
+	baseNode, ok := strings.CutSuffix(resourceKey, ".grants")
 	if !ok {
-		return nil, fmt.Errorf("expected *[]catalog.PrivilegeAssignment, got %T", inputConfig)
+		return nil, fmt.Errorf("internal error: node %q does not end with .grants", resourceKey)
 	}
 
 	// Normalize the same way as DoRead (sort, collapse ALL_PRIVILEGES) so the
 	// config and the value read back compare equal.
-	normalizeAssignments(*grantsPtr)
+	normalizeAssignments(*inputConfig)
 
 	return &structvar.StructVar{
 		Value: &GrantsState{
-			SecurableType: securableType,
+			SecurableType: r.securableType,
 			FullName:      "",
-			EmbeddedSlice: *grantsPtr,
+			EmbeddedSlice: *inputConfig,
 		},
 		Refs: map[string]string{
 			"full_name": "${" + baseNode + ".id}",
 		},
 	}, nil
-}
-
-type ResourceGrants struct {
-	client *databricks.WorkspaceClient
-}
-
-func (*ResourceGrants) New(client *databricks.WorkspaceClient) *ResourceGrants {
-	return &ResourceGrants{client: client}
 }
 
 func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
@@ -139,11 +144,10 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	return nil, err
 }
 
-func (r *ResourceGrants) DoDelete(ctx context.Context, id string, _ *GrantsState) error {
-	// Similar to permissions, we do nothing there.
-	// We could delete all grants there, but it would be confusing to explain wrt permissions.
-	return nil
-}
+// ResourceGrants intentionally implements no DoDelete: removing grants from the
+// bundle does nothing to the backend. We could revoke all grants here, but it would
+// be confusing to explain wrt permissions. Deleting the resource is a state-only
+// cleanup (see PlanEntry.StateOnly).
 
 func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removedPrincipals []string) []catalog.PermissionsChange {
 	changes := make([]catalog.PermissionsChange, 0, len(desiredAssignments)+len(removedPrincipals))
@@ -249,18 +253,6 @@ func normalizeAssignments(assignments []catalog.PrivilegeAssignment) {
 		}
 		slices.Sort(assignments[i].Privileges)
 	}
-}
-
-func extractGrantResourceType(node string) (string, error) {
-	rest, ok := strings.CutPrefix(node, "resources.")
-	if !ok {
-		return "", fmt.Errorf("cannot extract resource type from %q", node)
-	}
-	parts := strings.Split(rest, ".")
-	if len(parts) < 2 {
-		return "", fmt.Errorf("cannot extract resource type from %q", node)
-	}
-	return parts[0], nil
 }
 
 func parseGrantsID(id string) (string, string, error) {

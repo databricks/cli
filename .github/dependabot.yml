@@ -6,6 +6,13 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 14
+    groups:
+      # The new Databricks Go SDK ships as ~100 per-service submodules under
+      # github.com/databricks/sdk-go. Bumping them individually would open one PR
+      # per submodule; group them into a single PR.
+      databricks-sdk-go:
+        patterns:
+          - github.com/databricks/sdk-go/*
     ignore:
       # Ignore Databricks Go SDK because its upgrade requires code generation
       - dependency-name: github.com/databricks/databricks-sdk-go

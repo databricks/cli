@@ -26,7 +26,6 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Project for Synced Table
-      URL:  (not deployed)
   Postgres synced tables:
     my_table:
       Name: ${resources.postgres_catalogs.my_catalog.catalog_id}.public.trips_synced
@@ -38,9 +37,12 @@ Resources:
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Created postgres_catalogs.my_catalog
+Created postgres_projects.my_project
+Created postgres_synced_tables.my_table
+Created schemas.pipeline_storage
+Files: 0 uploaded, 0 deleted
+Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] postgres get-synced-table synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced
 {
@@ -62,7 +64,6 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Project for Synced Table
-      URL:  (not deployed)
   Postgres synced tables:
     my_table:
       Name: lakebase_test_[UNIQUE_NAME].public.trips_synced
@@ -90,6 +91,5 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
 
-Deleting files...
-Destroy complete!
+Destroy: 4 deleted
 Cleaning up temporary source table

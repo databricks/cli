@@ -1,0 +1,24 @@
+
+=== install --output json: every named agent skipped, each with its own category
+>>> [CLI] aitools install --skills-only --scope=project --agents=cursor,codex --output json
+{
+  "scope": "project",
+  "agents": [
+    {
+      "name": "cursor",
+      "delivery": "skip",
+      "status": "skipped",
+      "error_category": "UNSUPPORTED_SCOPE",
+      "message": "does not support project-scoped skills"
+    },
+    {
+      "name": "codex",
+      "delivery": "skip",
+      "status": "skipped",
+      "error_category": "UNSUPPORTED_SCOPE",
+      "message": "does not support project-scoped skills"
+    }
+  ]
+}
+
+Exit code: 1

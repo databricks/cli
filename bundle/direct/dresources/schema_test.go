@@ -49,7 +49,10 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 
 	resultJSON, err := json.Marshal(result)
 	require.NoError(t, err)
+	// browse_only is force-sent from create onwards, matching UC, which returns it on
+	// every read including after an update.
 	expected := `{
+		"browse_only": false,
 		"catalog_name": "main",
 		"catalog_type": "MANAGED_CATALOG",
 		"created_at": 0,

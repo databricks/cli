@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"sync"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -79,7 +80,11 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 
 	// A run with no logs is reported the same way as on the streaming path, so
 	// the message and exit code agree between them.
-	ids := mlflowIDs(ctx, w, run)
+	attempt, taskRunID, err := resolveLogAttempt(run, req.attempt)
+	if err != nil {
+		return false, err
+	}
+	ids := mlflowIDsForTask(ctx, w, taskRunID)
 	if ids == nil || ids.RunID == "" {
 		emitNoLogs(out, req, status)
 		return status.downloadOutcome(), nil
@@ -95,7 +100,7 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 		return false, fmt.Errorf("failed to create %s: %w", dir, err)
 	}
 
-	nodeLogs, failures, err := downloadAllNodeLogs(ctx, w, ids.RunID, dir, nodes, req.attempt)
+	nodeLogs, failures, err := downloadAllNodeLogs(ctx, w, ids.RunID, dir, nodes, attempt)
 	if err != nil {
 		return false, err
 	}
@@ -204,7 +209,10 @@ func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowR
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	// Idempotent so the deferred cleanup and the explicit close before os.Remove
+	// (Windows can't remove an open file) don't double-close.
+	closeFile := sync.OnceFunc(func() { _ = f.Close() })
+	defer closeFile()
 
 	// Skip a failed chunk and keep going: the tail usually holds the failure
 	// signature, so losing it to an early bad chunk is worse than a gap. Cancellation
@@ -215,6 +223,7 @@ func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowR
 		n, err := copyArtifactTo(ctx, w, mlflowRunID, chunk.path, f)
 		switch {
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+			closeFile()
 			os.Remove(outPath)
 			return "", err
 		case err != nil:
@@ -225,6 +234,7 @@ func downloadNodeLog(ctx context.Context, w *databricks.WorkspaceClient, mlflowR
 		}
 	}
 	if written == 0 {
+		closeFile()
 		os.Remove(outPath)
 		if len(missing) > 0 {
 			return "", fmt.Errorf("every chunk failed to download (%d total)", len(missing))

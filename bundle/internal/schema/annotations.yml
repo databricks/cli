@@ -53,14 +53,27 @@ artifacts:
         "source":
           "description": |-
             Required. The artifact source file.
+    "git":
+      "description": |-
+        For a `tgz` artifact, snapshot this git ref instead of the working tree. Mutually exclusive with `build`.
+      "$fields":
+        "branch":
+          "description": |-
+            The git branch to snapshot.
+        "commit":
+          "description": |-
+            The git commit to snapshot. Takes precedence over `branch` when both are set.
+    "include":
+      "description": |-
+        For a `tgz` artifact, subpaths of `path` to pack, relative to it; empty packs the whole `path`. `.gitignore` is honored; the bundle-wide sync include/exclude do not apply. Archive entries are named relative to `path`. Mutually exclusive with `build`.
     "path":
       "description": |-
         The local path of the directory for the artifact.
     "type":
       "description": |-
-        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+        The type of the artifact. Valid values are `whl`, `jar`, and `tgz`. Required if the artifact is a Python wheel.
       "markdown_description": |-
-        Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+        The type of the artifact. Valid values are `whl`, `jar`, and `tgz`. Required if the artifact is a Python wheel.
 bundle:
   "description": |-
     The bundle attributes when deploying to this target.
@@ -86,9 +99,15 @@ bundle:
       "markdown_description": |-
         The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
       "$fields":
+        "deployment_id":
+          "description": |-
+            The ID the deployment metadata service assigned to this bundle's deployment. Output only.
         "fail_on_active_runs":
           "description": |-
             Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
+        "latest_version_id":
+          "description": |-
+            The most recent version the deployment metadata service recorded for this deployment. Output only.
         "lock":
           "description": |-
             The deployment lock attributes.
@@ -144,6 +163,9 @@ experimental:
   "description": |-
     Defines attributes for experimental features.
   "$fields":
+    "deployment_history":
+      "description": |-
+        Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
     "immutable_folder":
       "description": |-
         Whether to deploy bundle files and artifacts as a single immutable snapshot. When true, all files are packaged into a content-addressed archive and workspace.file_path and workspace.artifact_path are set to the resulting location.
@@ -180,9 +202,6 @@ experimental:
     "python_wheel_wrapper":
       "description": |-
         Whether to use a Python wheel wrapper.
-    "record_deployment_history":
-      "description": |-
-        Whether to record deployment history using the deployment metadata service (DMS), which tracks what changed across deployments.
     "scripts":
       "description": |-
         The commands to run.
@@ -543,6 +562,33 @@ resources:
                 "azure_tenant_id":
                   "description": |-
                     PLACEHOLDER
+    "cluster_policies":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "permissions":
+          "description": |-
+            The permissions to apply to this resource.
+          "markdown_description": |-
+            A Sequence of permissions to apply to this resource, where each item grants a permission `level` to a single `user_name`, `group_name`, or `service_principal_name`. A principal cannot be set in both a resource's `permissions` and the top-level `permissions` mapping.
+
+            See [\_](/dev-tools/bundles/settings.md#permissions) and [\_](/dev-tools/bundles/permissions.md).
+          "$fields":
+            "group_name":
+              "description": |-
+                The name of the group granted the permission level.
+            "level":
+              "description": |-
+                The permission level to apply. Cluster policies only support `CAN_USE`.
+            "service_principal_name":
+              "description": |-
+                The name of the service principal granted the permission level.
+            "user_name":
+              "description": |-
+                The name of the user granted the permission level.
     "clusters":
       "description": |-
         The cluster definitions for the bundle, where each key is the name of a cluster.
@@ -978,7 +1024,21 @@ resources:
       "$fields":
         "lifecycle":
           "description": |-
-            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.
+          "$fields":
+            "prevent_destroy":
+              "description": |-
+                Lifecycle setting to prevent the resource from being destroyed.
+            "triggers":
+              "description": |-
+                Conditions that re-fire this job run (in addition to configuration changes).
+              "$fields":
+                "on_bundle_deploy":
+                  "description": |-
+                    If true, re-fire the run on every bundle deploy.
+                "on_file_change":
+                  "description": |-
+                    Path or glob relative to the defining YAML file. It must resolve under the sync root. Re-fire the run when a matched file's content hash changes, or when the set of matches appears or disappears. Only files the bundle syncs are hashed, so .gitignore and sync.exclude apply. Use * to match a single directory level; ** is not supported.
         "python_named_params":
           "description": |-
             PLACEHOLDER
@@ -1134,6 +1194,72 @@ resources:
             "table_update":
               "description": |-
                 PLACEHOLDER
+    "mcp_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+        "grants":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "mcp_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
+    "model_provider_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+        "grants":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "model_provider_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
+    "model_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+        "grants":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "model_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
     "model_serving_endpoints":
       "description": |-
         The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
@@ -1537,6 +1663,19 @@ resources:
         "role_id":
           "description": |-
             The user-specified role ID; becomes the final component of the role's resource name. Must be 4-63 characters, lowercase letters, numbers, and hyphens (RFC 1123).
+    "postgres_snapshot_schedules":
+      "description": |-
+        The Postgres snapshot schedule definitions for the bundle, where each key is the name of the snapshot schedule. Each entry configures the automatic-snapshot cadences for a branch of a Lakebase Autoscaling project.
+      "$fields":
+        "branch":
+          "description": |-
+            The branch whose automatic-snapshot schedule this manages. Format: projects/{project_id}/branches/{branch_id}
+        "lifecycle":
+          "description": |-
+            Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+        "schedule":
+          "description": |-
+            The cadences at which automatic snapshots are taken. An empty set disables automatic snapshots. When several cadences fire together, one snapshot is taken and retained for the longest of their retentions.
     "postgres_synced_tables":
       "description": |-
         The Postgres synced table definitions for the bundle, where each key is the name of the synced table. Each entry continuously replicates a Unity Catalog Delta source table into a Postgres table on a Lakebase Autoscaling instance.

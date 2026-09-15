@@ -1,5 +1,4 @@
 Cloud = true
-RequiresUnityCatalog = true
 
 # Error-path tests only assert via output.txt; recording requests adds noise
 # (and on cloud, flaky timestamps/operation IDs).

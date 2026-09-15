@@ -1,6 +1,5 @@
 # The golden asserts UC's message verbatim, so run on cloud to catch it drifting.
 Cloud = true
-RequiresUnityCatalog = true
 RecordRequests = false
 Ignore = [".databricks"]
 

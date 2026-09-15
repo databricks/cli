@@ -37,6 +37,17 @@ func Resolve(in dyn.Value, fn Lookup) (out dyn.Value, err error) {
 	return resolver{in: in, fn: fn}.run()
 }
 
+// ReferenceError is returned for an unresolved variable reference. Suggestions
+// are carried as data so callers (which can import libs/diag) format them.
+type ReferenceError struct {
+	Reference   string   // original reference text, e.g. "var.hst"
+	Suggestions []string // corrected references, e.g. ["var.host", "var.hosts"]
+}
+
+func (e *ReferenceError) Error() string {
+	return fmt.Sprintf("reference does not exist: ${%s}", e.Reference)
+}
+
 type lookupResult struct {
 	v   dyn.Value
 	err error
@@ -153,31 +164,25 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 		// of where it is used. This also means that relative path resolution is done
 		// relative to where a variable is used, not where it is defined.
 		//
-		// Preserve sensitivity: NewValue strips the secretString wrapper, so use
-		// NewSensitiveValue when the resolved value is a sensitive string.
-		if resolved[0].IsSensitive() {
-			s, _ := resolved[0].AsString()
-			return dyn.NewSensitiveValue(s, ref.Value.Locations()), nil
-		}
 		return dyn.NewValue(resolved[0].Value(), ref.Value.Locations()), nil
 	}
 
 	// Not pure; perform string interpolation.
-	// Track whether any resolved value is sensitive; if so, the result is also sensitive.
-	anySensitive := false
+	//
+	// Substitute by byte offset rather than by searching for the match text: the same
+	// reference may also appear escaped ("$${foo} ${foo}"), and a search would replace
+	// that occurrence instead, corrupting the literal and leaving the real one unresolved.
+	var sb strings.Builder
+	consumed := 0
 	for j := range ref.Matches {
 		// The value is invalid if resolution returned [ErrSkipResolution].
-		// We must skip those and leave the original variable reference in place.
+		// We must skip those and leave the original variable reference in place,
+		// which happens naturally by not advancing past its span.
 		if !resolved[j].IsValid() {
 			continue
 		}
 
-		if resolved[j].IsSensitive() {
-			anySensitive = true
-		}
-
 		// Try to turn the resolved value into a string.
-		// Use AsString (not AsAny) to get the real value even for sensitive strings.
 		s, ok := resolved[j].AsString()
 		if !ok {
 			// Only allow primitive types to be converted to string.
@@ -189,14 +194,14 @@ func (r *resolver) resolveRef(ref Ref, seen []string) (dyn.Value, error) {
 			}
 		}
 
-		ref.Str = strings.Replace(ref.Str, ref.Matches[j][0], s, 1)
+		start, end := ref.Spans[j][0], ref.Spans[j][1]
+		sb.WriteString(ref.Str[consumed:start])
+		sb.WriteString(s)
+		consumed = end
 	}
+	sb.WriteString(ref.Str[consumed:])
 
-	result := dyn.NewValue(ref.Str, ref.Value.Locations())
-	if anySensitive {
-		result = result.MarkSensitive()
-	}
-	return result, nil
+	return dyn.NewValue(sb.String(), ref.Value.Locations()), nil
 }
 
 func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
@@ -215,7 +220,8 @@ func (r *resolver) resolveKey(key string, seen []string) (dyn.Value, error) {
 	v, err := r.fn(p)
 	if err != nil {
 		if dyn.IsNoSuchKeyError(err) {
-			err = fmt.Errorf("reference does not exist: ${%s}", key)
+			// Carry suggestions as data; the caller formats them via libs/diag.
+			err = &ReferenceError{Reference: key, Suggestions: dyn.SuggestedReferences(err, key)}
 		}
 
 		// Cache the return value and return to the caller.

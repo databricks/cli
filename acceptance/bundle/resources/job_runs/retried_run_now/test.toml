@@ -1,10 +1,4 @@
-# job_runs is a direct-engine-only resource; the Terraform provider has no
-# equivalent, so restrict the matrix to direct.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
 # Local only: the lost response is staged by injecting a fault into the testserver.
-RecordRequests = true
-
 Ignore = [".databricks"]
 
 # Number each distinct token so a reused token shows as [0] on both requests.

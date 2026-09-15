@@ -7,6 +7,13 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+      # Link the Go Cryptographic Module and default FIPS 140-3 mode on. Pinned to
+      # a frozen version rather than an alias: only v1.0.0 carries a CMVP
+      # certificate, "latest" tracks the in-tree source with no fixed artifact to
+      # cite, and "certified" is resolved by the toolchain so it moves on upgrade.
+      # Callers who need the previous behaviour can start the binary with
+      # GODEBUG=fips140=off.
+      - GOFIPS140=v1.0.0
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath

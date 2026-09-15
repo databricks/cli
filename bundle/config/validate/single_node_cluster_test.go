@@ -142,7 +142,7 @@ func TestValidateSingleNodeClusterFailForJobClusters(t *testing.T) {
 								JobSettings: jobs.JobSettings{
 									JobClusters: []jobs.JobCluster{
 										{
-											NewCluster: compute.ClusterSpec{
+											NewCluster: &compute.ClusterSpec{
 												ClusterName: "my_cluster",
 												SparkConf:   tc.sparkConf,
 												CustomTags:  tc.customTags,
@@ -415,7 +415,7 @@ func TestValidateSingleNodeClusterPassJobClusters(t *testing.T) {
 								JobSettings: jobs.JobSettings{
 									JobClusters: []jobs.JobCluster{
 										{
-											NewCluster: compute.ClusterSpec{
+											NewCluster: &compute.ClusterSpec{
 												ClusterName: "my_cluster",
 												SparkConf:   tc.sparkConf,
 												CustomTags:  tc.customTags,
@@ -576,7 +576,7 @@ func TestValidateSingleNodeClusterWithIsSingleNode(t *testing.T) {
 						JobSettings: jobs.JobSettings{
 							JobClusters: []jobs.JobCluster{
 								{
-									NewCluster: compute.ClusterSpec{
+									NewCluster: &compute.ClusterSpec{
 										ClusterName: "my_cluster",
 									},
 								},

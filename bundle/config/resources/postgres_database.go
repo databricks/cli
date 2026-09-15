@@ -31,13 +31,21 @@ func (c *PostgresDatabaseConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresDatabaseConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresDatabaseConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
 type PostgresDatabase struct {
 	BaseResource
 	PostgresDatabaseConfig
+}
+
+func (d *PostgresDatabase) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, d)
+}
+
+func (d PostgresDatabase) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(d)
 }
 
 func (d *PostgresDatabase) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
@@ -62,13 +70,14 @@ func (d *PostgresDatabase) ResourceDescription() ResourceDescription {
 }
 
 func (d *PostgresDatabase) GetName() string {
-	// Databases don't have a user-visible name field.
-	return ""
+	// Databases have no name field of their own; the resource name is the ID
+	// ("projects/{project_id}/branches/{branch_id}/databases/{database_id}").
+	return d.ID
 }
 
-func (d *PostgresDatabase) GetURL() string {
+func (d *PostgresDatabase) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (d *PostgresDatabase) InitializeURL(_ url.URL) {

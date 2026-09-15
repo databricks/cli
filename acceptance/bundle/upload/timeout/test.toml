@@ -1,5 +1,4 @@
-[Env]
-DATABRICKS_BUNDLE_HTTP_TIMEOUT_SECONDS = "5"
+Env.DATABRICKS_BUNDLE_HTTP_TIMEOUT_SECONDS = "5"
 
 [[Server]]
 # CLI aborts after a single attempt when the HTTP timeout fires.

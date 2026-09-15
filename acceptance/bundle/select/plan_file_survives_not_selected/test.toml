@@ -1,0 +1,3 @@
+# --select is only supported by the direct engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Ignore = [".databricks", ".gitignore", "databricks.yml", "plan.json"]

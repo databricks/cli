@@ -28,25 +28,29 @@ type listCacheKey struct {
 // table-only columns, which listRow tags json:"-" and so wouldn't survive a
 // direct marshal), the filter inputs, and the submit time.
 type cachedRun struct {
-	RunID        string       `json:"run_id"`
-	RunName      string       `json:"run_name"`
-	User         string       `json:"user"`
-	Status       string       `json:"status"`
-	StartedAt    *string      `json:"started_at"`
-	IsSweep      bool         `json:"is_sweep"`
-	Experiment   string       `json:"experiment"`
-	Duration     string       `json:"duration"`
-	MLflowURL    string       `json:"mlflow_url"`
-	Accelerators string       `json:"accelerators"`
-	Fields       filterFields `json:"filter_fields"`
-	SubmitTimeMs int64        `json:"submit_time_ms"`
+	RunID         string       `json:"run_id"`
+	RunName       string       `json:"run_name"`
+	User          string       `json:"user"`
+	Status        string       `json:"status"`
+	StartedAt     *string      `json:"started_at"`
+	IsSweep       bool         `json:"is_sweep"`
+	Experiment    string       `json:"experiment"`
+	Duration      string       `json:"duration"`
+	MLflowURL     string       `json:"mlflow_url"`
+	MLflowLabel   string       `json:"mlflow_label"`
+	RunURL        string       `json:"run_url"`
+	ExperimentURL string       `json:"experiment_url"`
+	Accelerators  string       `json:"accelerators"`
+	Fields        filterFields `json:"filter_fields"`
+	SubmitTimeMs  int64        `json:"submit_time_ms"`
 }
 
 func (c cachedRun) toRow() listRow {
 	return listRow{
 		RunID: c.RunID, RunName: c.RunName, User: c.User, Status: c.Status,
 		StartedAt: c.StartedAt, IsSweep: c.IsSweep, Experiment: c.Experiment,
-		Duration: c.Duration, MLflowURL: c.MLflowURL, Accelerators: c.Accelerators,
+		Duration: c.Duration, MLflowURL: c.MLflowURL, MLflowLabel: c.MLflowLabel,
+		RunURL: c.RunURL, ExperimentURL: c.ExperimentURL, Accelerators: c.Accelerators,
 	}
 }
 
@@ -54,7 +58,8 @@ func cachedRunFromRow(r listRow, fields filterFields, submitTimeMs int64) cached
 	return cachedRun{
 		RunID: r.RunID, RunName: r.RunName, User: r.User, Status: r.Status,
 		StartedAt: r.StartedAt, IsSweep: r.IsSweep, Experiment: r.Experiment,
-		Duration: r.Duration, MLflowURL: r.MLflowURL, Accelerators: r.Accelerators,
+		Duration: r.Duration, MLflowURL: r.MLflowURL, MLflowLabel: r.MLflowLabel,
+		RunURL: r.RunURL, ExperimentURL: r.ExperimentURL, Accelerators: r.Accelerators,
 		Fields: fields, SubmitTimeMs: submitTimeMs,
 	}
 }

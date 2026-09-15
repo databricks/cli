@@ -3,8 +3,10 @@ package aircmd
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/cmdio"
@@ -73,6 +75,19 @@ func staticListTable(r *lipgloss.Renderer, rows []listRow, links bool) string {
 	return b.String()
 }
 
+// Mode constants for the TUI.
+const (
+	modeList   = 0
+	modeDetail = 1
+)
+
+// detailMsg carries fetched run details or error.
+type detailMsg struct {
+	title string
+	body  string
+	err   error
+}
+
 // listModel is the inline, navigable runs table. It lazily pages older runs from
 // the fetcher as the cursor nears the end of the loaded rows. fetcher is nil for
 // a fixed, non-paging table (e.g. in tests).
@@ -88,15 +103,23 @@ type listModel struct {
 	cursor int
 	offset int // index of the first visible row
 	height int // terminal height, for windowing
+
+	mode          int            // modeList or modeDetail
+	viewport      viewport.Model // for detail pane
+	detailTitle   string         // title of detail pane
+	detailLoading bool           // loading detail
+	detailContent string         // rendered detail content
 }
 
 func newListModel(r *lipgloss.Renderer, f *runFetcher, rows []listRow, links bool) listModel {
 	return listModel{
-		rows:    rows,
-		styles:  newListStyles(r),
-		cols:    computeListCols(rows),
-		links:   links,
-		fetcher: f,
+		rows:     rows,
+		styles:   newListStyles(r),
+		cols:     computeListCols(rows),
+		links:    links,
+		fetcher:  f,
+		mode:     modeList,
+		viewport: viewport.New(0, 0),
 	}
 }
 
@@ -148,6 +171,8 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
+		m.viewport.Width = msg.Width
+		m.viewport.Height = max(msg.Height-3, 1)
 		m.offset = m.clampedOffset()
 		return m.maybeFetch()
 
@@ -167,9 +192,46 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case detailMsg:
+		// The fetch is async: if the user pressed esc back to the list before it
+		// resolved, drop the late result rather than snapping them into a pane
+		// they already dismissed.
+		if m.mode != modeDetail {
+			return m, nil
+		}
+		m.detailLoading = false
+		if msg.err != nil {
+			m.detailContent = fmt.Sprintf("Error: %v", msg.err)
+		} else {
+			m.detailContent = msg.body
+		}
+		m.detailTitle = msg.title
+		m.viewport.SetContent(m.detailContent)
+		m.viewport.GotoTop()
+		return m, nil
+
 	case tea.KeyMsg:
+		// Detail pane key handling.
+		if m.mode == modeDetail {
+			switch msg.String() {
+			case "esc", "q":
+				m.mode = modeList
+				return m, nil
+			case "ctrl+c":
+				return m, tea.Quit
+			default:
+				// Delegate scrolling keys to the viewport.
+				var cmd tea.Cmd
+				m.viewport, cmd = m.viewport.Update(msg)
+				return m, cmd
+			}
+		}
+
+		// List pane key handling.
 		switch msg.String() {
-		case "q", "ctrl+c", "esc":
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "esc":
 			return m, tea.Quit
 		case "up", "k":
 			if m.cursor > 0 {
@@ -194,6 +256,24 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, openURL(url)
 				}
 			}
+		case "i":
+			// Open the run details pane; the fetch fills it in.
+			if m.fetcher != nil && len(m.rows) > 0 {
+				m.mode = modeDetail
+				m.detailLoading = true
+				m.detailTitle = "Run Details"
+				runID, _ := parseRunID(m.rows[m.cursor].RunID)
+				return m, m.fetchRunDetail(runID)
+			}
+		case "L", "l":
+			// Open the logs snapshot pane; the fetch fills it in.
+			if m.fetcher != nil && len(m.rows) > 0 {
+				m.mode = modeDetail
+				m.detailLoading = true
+				m.detailTitle = "Logs Snapshot"
+				runID, _ := parseRunID(m.rows[m.cursor].RunID)
+				return m, m.fetchRunLogs(runID)
+			}
 		}
 		m.offset = m.clampedOffset()
 		return m.maybeFetch()
@@ -212,6 +292,19 @@ func (m listModel) clampedOffset() int {
 }
 
 func (m listModel) View() string {
+	if m.mode == modeDetail {
+		faint := m.styles.r.NewStyle().Foreground(colN7)
+		lines := []string{m.detailTitle}
+		if m.detailLoading {
+			lines = append(lines, "Loading…")
+		} else {
+			lines = append(lines, m.viewport.View())
+		}
+		footer := faint.Render("↑/↓ scroll · esc back · q quit")
+		lines = append(lines, footer)
+		return strings.Join(lines, "\n")
+	}
+
 	if len(m.rows) == 0 {
 		return m.styles.r.NewStyle().Foreground(colN9).Render("No runs found.") + "\n"
 	}
@@ -229,7 +322,7 @@ func (m listModel) View() string {
 // paging state (loading / load failed).
 func (m listModel) renderHint() string {
 	faint := m.styles.r.NewStyle().Foreground(colN7)
-	hint := fmt.Sprintf("↑/↓ navigate · ←/→ page · ↵ mlflow · q quit  ·  row %d/%d", m.cursor+1, len(m.rows))
+	hint := fmt.Sprintf("↑/↓ navigate · ←/→ page · ↵ mlflow · i info · L logs · q quit  ·  row %d/%d", m.cursor+1, len(m.rows))
 	switch {
 	case m.loadErr != nil:
 		hint += " (load failed)"
@@ -239,10 +332,42 @@ func (m listModel) renderHint() string {
 	return faint.Render(hint)
 }
 
+// fetchRunDetail returns a tea.Cmd that fetches run details in the background.
+func (m listModel) fetchRunDetail(runID int64) tea.Cmd {
+	ctx := m.fetcher.ctx
+	w := m.fetcher.w
+	return func() tea.Msg {
+		body, err := runDetailText(ctx, w, runID)
+		if err != nil {
+			return detailMsg{title: "Run Details", err: err}
+		}
+		return detailMsg{title: "Run Details", body: body}
+	}
+}
+
+// fetchRunLogs returns a tea.Cmd that fetches a log snapshot in the background.
+func (m listModel) fetchRunLogs(runID int64) tea.Cmd {
+	ctx := m.fetcher.ctx
+	w := m.fetcher.w
+	return func() tea.Msg {
+		body, err := runLogsSnapshot(ctx, w, runID)
+		if err != nil {
+			return detailMsg{title: "Logs Snapshot", err: err}
+		}
+		return detailMsg{title: "Logs Snapshot", body: body}
+	}
+}
+
 // openURL opens a URL in the user's default browser, best-effort.
 func openURL(url string) tea.Cmd {
 	return func() tea.Msg {
 		_ = browser.OpenURL(url)
 		return nil
 	}
+}
+
+// parseRunID parses a run id string to int64. Rows carry a formatted int64, so
+// this only fails on an unexpectedly malformed value.
+func parseRunID(runIDStr string) (int64, error) {
+	return strconv.ParseInt(runIDStr, 10, 64)
 }

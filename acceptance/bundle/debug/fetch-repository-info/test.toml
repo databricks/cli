@@ -1,0 +1,13 @@
+Cloud = true
+
+# This exercises git.FetchRepositoryInfo, which is independent of the deploy engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# Keep Git Bash from rewriting the /Workspace paths passed to --path.
+Env.MSYS_NO_PATHCONV = "1"
+
+# The commit differs between the fake workspace and a real clone of the repo, so
+# the golden matches both.
+[[Repls]]
+Old = '\b[0-9a-f]{40}\b'
+New = '[COMMIT_SHA]'

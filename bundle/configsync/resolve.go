@@ -193,11 +193,14 @@ func adjustArrayIndex(path *structpath.PatternNode, scope string, operations map
 
 // ResolveChanges resolves selectors and computes field path candidates for each change.
 //
-// A change that cannot be attributed to a single source location is left unapplied
-// rather than written to a guessed one. The count of those is returned so the caller can
-// record it: the command runs unattended, so a change that silently disappears looks
-// identical to one that was written.
-func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, int, error) {
+// A change that cannot be attributed to a single source location, or whose parent
+// in the config is written as a variable reference, is left unapplied rather than
+// written to a guessed or non-existent location. The count of those is returned so
+// the caller can record it: the command runs unattended, so a change that silently
+// disappears looks identical to one that was written. preResolved is the merged
+// config with ${...} references still literal, used to detect variable-reference
+// parents.
+func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes, preResolved dyn.Value) ([]FieldChange, int, error) {
 	var result []FieldChange
 	skipped := 0
 	targetName := b.Config.Bundle.Target
@@ -269,6 +272,18 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 			// Captured before routing rewrites indices to be block-local.
 			mergedIndexPath := resolvedPath
+
+			// The field is nested inside a value written as a variable reference (e.g.
+			// spark_conf: ${var.spark_conf}), which is a scalar in the file with no node
+			// to place the key or index under. Leave it unapplied, and record the skip on
+			// the shared change so the output reports "skip" rather than a write that never
+			// happens (matching the reclassification below).
+			if parentIsVariableReference(preResolved, mergedIndexPath.String()) {
+				log.Debugf(ctx, "config-remote-sync: skipping %s: parent is a variable reference", fullPath)
+				configChange.Operation = OperationSkip
+				skipped++
+				continue
+			}
 
 			destinations, err := routeChange(blocks, resolved, isRename)
 			if err != nil {

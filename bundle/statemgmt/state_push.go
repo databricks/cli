@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -45,7 +44,6 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.Eng
 	defer local.Close()
 
 	// Upload state file from local cache directory to filer.
-	cmdio.LogString(ctx, "Updating deployment state...")
 	err = f.Write(ctx, remotePath, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
 		logdiag.LogError(ctx, err)

@@ -3,6 +3,7 @@ package phases
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"slices"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -48,7 +50,7 @@ var destroyApprovalGroups = []approvalGroup{
 
 // logPipelineDeleteApproval prints the pipeline deletions. If cascade_on_destroy is true, we will include
 // a note that datasets will be deleted as well.
-func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, engine engine.EngineType) error {
+func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []deployplan.Action, engine engine.EngineType, quiet bool) error {
 	pipelineDeletes := filterGroup(actions, "pipelines", deployplan.Delete)
 
 	var cascading, retaining []deployplan.Action
@@ -71,7 +73,7 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 		{deletePipelineWithCascadeMessage, cascading},
 		{deletePipelineNoCascadeMessage, retaining},
 	} {
-		if len(grp.actions) == 0 {
+		if len(grp.actions) == 0 || quiet {
 			continue
 		}
 		cmdio.LogString(ctx, grp.message)
@@ -86,16 +88,25 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (bool, error) {
 	deleteActions := plan.GetActions()
 
-	// Deletes of resources that are already gone remotely only clean up the state,
-	// so they don't count as destructive actions and are not listed as deletions.
-	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.Gone })
+	// Deletes that only clean up the state (already gone remotely, or no delete
+	// operation) are not destructive, so they are not listed as deletions and need no
+	// approval. In particular this makes prevent_destroy inert for state-only
+	// resources: nothing is destroyed.
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
 
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
 		return false, err
 	}
 
-	if len(deleteActions) > 0 {
+	// With --auto-approve there is no prompt, so this listing is informational and -qq
+	// suppresses it. Without --auto-approve we are about to ask for consent and the user
+	// must see what they are consenting to, so it prints at any -q level. The approval
+	// helpers below still run either way: they also validate (e.g. pipeline cascade
+	// lookups can fail), so skipping them would skip that.
+	quiet := b.AutoApprove && b.Quiet >= bundle.QuietAll
+
+	if len(deleteActions) > 0 && !quiet {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
 		for _, a := range deleteActions {
 			if a.IsChildResource() {
@@ -106,13 +117,18 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
-	if err := logPipelineDeleteApproval(ctx, b, deleteActions, engine); err != nil {
+	if !quiet {
+		logApprovalGroups(ctx, deleteActions, destroyApprovalGroups, true, deployplan.Delete)
+	}
+	// Called even when quiet: the cascade lookup can fail, and that error must surface.
+	if err := logPipelineDeleteApproval(ctx, b, deleteActions, engine, quiet); err != nil {
 		return false, err
 	}
 
-	cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
-	cmdio.LogString(ctx, "")
+	if !quiet {
+		cmdio.LogString(ctx, "All files and directories at the following location will be deleted: "+b.Config.Workspace.RootPath)
+		cmdio.LogString(ctx, "")
+	}
 
 	if b.AutoApprove {
 		return true, nil
@@ -123,7 +139,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
+		// Not reported per resource: destroy names them up front for consent and then
+		// reports only a count, so there is no per-resource output to report into.
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -145,10 +163,38 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
+	if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+		// Complete version before deleting remote files; the deployment node is under statePath.
+		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		// A completed destroy's resources are gone, so its deployment record is deleted too.
+		if completed {
+			deploymentID := b.DeploymentBundle.StateDB.DeploymentID
+			if err := b.DeploymentBundle.StateDB.DmsClient().DeleteDeployment(ctx, deploymentID); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
+				return
+			}
+		}
+	}
+
 	bundle.ApplyContext(ctx, b, files.Delete())
 
-	if !logdiag.HasError(ctx) {
-		cmdio.LogString(ctx, "Destroy complete!")
+	if !logdiag.HasError(ctx) && b.Quiet < bundle.QuietAll {
+		// Count top-level resources only, matching the approval list above (which
+		// skips children); this also keeps the count stable across engines. Gone
+		// resources are excluded to match that list: they were already deleted
+		// remotely, so applying their Delete only cleans up stale state and is not
+		// a destruction to report.
+		deleted := 0
+		for _, a := range plan.GetActions() {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnlyDelete() {
+				deleted++
+			}
+		}
+		cmdio.LogString(ctx, fmt.Sprintf("Destroy: %d deleted", deleted))
 	}
 }
 
@@ -163,7 +209,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if !ok {
-		cmdio.LogString(ctx, "No active deployment found to destroy!")
+		cmdio.LogProgress(ctx, "No active deployment found to destroy!")
 		return
 	}
 
@@ -172,12 +218,27 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		return
 	}
 
+	// DMS recording of this destroy: the version is created after approval, so a cancelled
+	// destroy records nothing. Deferred before lock.Release to hold the lock; a no-op once
+	// destroyCore has completed the version.
 	defer func() {
+		if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+			completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
+			if err != nil {
+				logdiag.LogError(ctx, err)
+			} else if completed {
+				deploymentID := b.DeploymentBundle.StateDB.DeploymentID
+				if err := b.DeploymentBundle.StateDB.DmsClient().DeleteDeployment(ctx, deploymentID); err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("failed to delete deployment: %w", err))
+				}
+			}
+		}
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
 	if !engine.IsDirect() {
-		bundle.ApplySeqContext(ctx, b,
+		bundle.ApplySeqContext(
+			ctx, b,
 			// We need to resolve artifact variable (how we do it in build phase)
 			// because some of the to-be-destroyed resource might use this variable.
 			// Not resolving might lead to terraform "Reference to undeclared resource" error
@@ -225,6 +286,19 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		if engine.IsDirect() {
 			// Upgrade from read (opened by process.go) to write mode
 			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+		}
+		// Start the version for this destroy, now that it is approved. Everything else recording
+		// does follows from the buffer this opens.
+		if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+			staged, err := stagedOperations(plan)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			if err := startVersion(ctx, b, dms.VersionTypeDestroy, staged); err != nil {
 				logdiag.LogError(ctx, err)
 				return
 			}

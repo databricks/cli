@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -44,18 +45,19 @@ func (s *FakeWorkspace) CatalogsCreate(req Request) Response {
 		ConnectionName:            createRequest.ConnectionName,
 		CustomMaxRetentionHours:   createRequest.CustomMaxRetentionHours,
 		ManagedEncryptionSettings: createRequest.ManagedEncryptionSettings,
-		StorageRoot:               createRequest.StorageRoot,
-		ProviderName:              createRequest.ProviderName,
-		ShareName:                 createRequest.ShareName,
-		Options:                   createRequest.Options,
-		Properties:                createRequest.Properties,
-		FullName:                  createRequest.Name,
-		CreatedAt:                 nowMilli(),
-		CreatedBy:                 s.CurrentUser().UserName,
-		UpdatedBy:                 s.CurrentUser().UserName,
-		MetastoreId:               nextUUID(),
-		Owner:                     s.CurrentUser().UserName,
-		CatalogType:               catalog.CatalogTypeManagedCatalog,
+		// Strip trailing slash to mimic UC API normalization behavior (see volumes.go).
+		StorageRoot:  strings.TrimRight(createRequest.StorageRoot, "/"),
+		ProviderName: createRequest.ProviderName,
+		ShareName:    createRequest.ShareName,
+		Options:      createRequest.Options,
+		Properties:   createRequest.Properties,
+		FullName:     createRequest.Name,
+		CreatedAt:    nowMilli(),
+		CreatedBy:    s.CurrentUser().UserName,
+		UpdatedBy:    s.CurrentUser().UserName,
+		MetastoreId:  nextUUID(),
+		Owner:        s.CurrentUser().UserName,
+		CatalogType:  catalog.CatalogTypeManagedCatalog,
 	}
 	catalogInfo.UpdatedAt = catalogInfo.CreatedAt
 	if catalogInfo.Properties == nil && createRequest.Name == catalogNameManagedDefaults {
@@ -88,6 +90,11 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
+	fields, errResponse := parseUCUpdate(req.Body, "UpdateCatalog")
+	if errResponse != nil {
+		return *errResponse
+	}
+
 	var updateRequest catalog.UpdateCatalog
 	if err := json.Unmarshal(req.Body, &updateRequest); err != nil {
 		return Response{
@@ -96,25 +103,7 @@ func (s *FakeWorkspace) CatalogsUpdate(req Request, name string) Response {
 		}
 	}
 
-	// Update only the fields that can be updated
-	if updateRequest.Comment != "" {
-		existing.Comment = updateRequest.Comment
-	}
-	if updateRequest.CustomMaxRetentionHours != 0 {
-		existing.CustomMaxRetentionHours = updateRequest.CustomMaxRetentionHours
-	}
-	if updateRequest.ManagedEncryptionSettings != nil {
-		existing.ManagedEncryptionSettings = updateRequest.ManagedEncryptionSettings
-	}
-	if updateRequest.Options != nil {
-		existing.Options = updateRequest.Options
-	}
-	if updateRequest.Properties != nil {
-		existing.Properties = updateRequest.Properties
-	}
-	if updateRequest.Owner != "" {
-		existing.Owner = updateRequest.Owner
-	}
+	applyUpdatedFields(&existing, updateRequest, fields)
 	if updateRequest.NewName != "" {
 		existing.Name = updateRequest.NewName
 		existing.FullName = updateRequest.NewName

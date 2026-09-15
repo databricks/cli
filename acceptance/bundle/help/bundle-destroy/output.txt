@@ -20,6 +20,7 @@ Flags:
       --auto-approve   Skip interactive approvals for deleting resources and files
       --force-lock     Force acquisition of deployment lock.
   -h, --help           help for destroy
+  -q, --quiet count    Reduce output: -qq prints only warnings and errors.
 
 Global Flags:
       --debug            enable debug logging

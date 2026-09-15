@@ -1,0 +1,8 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "install --output json categorizes an experimental skill requested without --experimental"
+# Requesting an experimental skill without --experimental fails during skill
+# resolution, before any agent is touched, so the failure has no per-agent entry
+# and surfaces in the top-level error/error_category fields (EXPERIMENTAL_SKILL).
+trace $CLI aitools install --skills-only --scope=global --agents=claude-code --skills=test-exp --output json

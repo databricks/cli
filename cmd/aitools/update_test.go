@@ -399,6 +399,7 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	// home-based detection would miss these, so update must use DetectProjectInstalled.
 	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".pi", "skills", "databricks-core"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".gemini", "skills", "databricks-core"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(projectRoot, ".goose", "skills", "databricks-core"), 0o755))
 
 	ctx := cmdio.MockDiscard(t.Context())
 	dir, err := installer.ProjectSkillsDir(ctx)
@@ -431,4 +432,5 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 	require.NoError(t, cmd.Execute())
 	assert.Contains(t, names, agents.NamePi)
 	assert.Contains(t, names, agents.NameGemini)
+	assert.Contains(t, names, agents.NameGoose)
 }

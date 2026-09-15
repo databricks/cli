@@ -3,8 +3,6 @@ package aircmd
 import (
 	"context"
 	"fmt"
-	"maps"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -15,14 +13,6 @@ import (
 // This file implements the `--override KEY=VALUE` flag. Overrides are applied to
 // the parsed YAML map (not the typed runConfig) before re-decode, so one pipeline
 // covers path existence, type coercion, and the semantic validate() rules.
-
-// freeFormFields hold free-form maps, so path validation stops at them: any
-// sub-path is valid.
-var freeFormFields = map[string]bool{
-	"parameters":    true,
-	"env_variables": true,
-	"secrets":       true,
-}
 
 // parseOverrides parses --override KEY=VALUE arguments, preserving order.
 func parseOverrides(overrides []string) ([]overrideEntry, error) {
@@ -57,66 +47,42 @@ type overrideEntry struct {
 // before mutation, so an error names the exact --override key rather than the
 // re-decode's Go-type language.
 func validateOverridePaths(entries []overrideEntry) error {
+	schema := configSchema()
 	for _, e := range entries {
-		if err := checkOverridePath(strings.Split(e.path, "."), reflect.TypeFor[runConfig](), e.path); err != nil {
+		if err := checkOverridePath(strings.Split(e.path, "."), schema, e.path); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// checkOverridePath recursively validates one dotted path against a struct type
-// whose fields carry `yaml:` tags.
-func checkOverridePath(parts []string, t reflect.Type, fullPath string) error {
-	field := parts[0]
-	fields := yamlFields(t)
-	sub, ok := fields[field]
+// checkOverridePath validates one dotted path against a resolved schema node.
+// It shares configSchema()'s reflection walk with `-h config.<field>` but keeps
+// the --override error voice, which names the offending flag.
+func checkOverridePath(parts []string, node configField, fullPath string) error {
+	name := parts[0]
+	child, ok := findConfigChild(node.children, name)
 	if !ok {
+		names := make([]string, 0, len(node.children))
+		for _, c := range node.children {
+			names = append(names, configLeafName(c.path))
+		}
+		slices.Sort(names)
 		return fmt.Errorf("invalid --override %q: %q is not a known field; available fields are: %s",
-			fullPath, field, strings.Join(slices.Sorted(maps.Keys(fields)), ", "))
+			fullPath, name, strings.Join(names, ", "))
 	}
 	if len(parts) == 1 {
 		return nil
 	}
-	if freeFormFields[field] {
+	// A free-form map's keys are user-defined, so any sub-path into it is valid.
+	if child.freeForm {
 		return nil
 	}
-	subStruct := underlyingStruct(sub)
-	if subStruct == nil {
+	if len(child.children) == 0 {
 		return fmt.Errorf("invalid --override %q: %q is not a nested object; cannot address sub-field %q",
-			fullPath, field, strings.Join(parts[1:], "."))
+			fullPath, name, strings.Join(parts[1:], "."))
 	}
-	return checkOverridePath(parts[1:], subStruct, fullPath)
-}
-
-// yamlFields maps a struct's yaml tag names to their field types, skipping
-// fields without a yaml tag (or tagged "-").
-func yamlFields(t reflect.Type) map[string]reflect.Type {
-	out := map[string]reflect.Type{}
-	for f := range t.Fields() {
-		tag := f.Tag.Get("yaml")
-		if tag == "" || tag == "-" {
-			continue
-		}
-		name, _, _ := strings.Cut(tag, ",")
-		if name == "" || name == "-" {
-			continue
-		}
-		out[name] = f.Type
-	}
-	return out
-}
-
-// underlyingStruct unwraps pointer/slice indirection and returns the struct type
-// a field decodes into, or nil if the field is not a struct (a scalar/map/etc.).
-func underlyingStruct(t reflect.Type) reflect.Type {
-	for t.Kind() == reflect.Pointer || t.Kind() == reflect.Slice {
-		t = t.Elem()
-	}
-	if t.Kind() == reflect.Struct {
-		return t
-	}
-	return nil
+	return checkOverridePath(parts[1:], child, fullPath)
 }
 
 // applyOverrides walks each dotted path into the parsed YAML map and sets the

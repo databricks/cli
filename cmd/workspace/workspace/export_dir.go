@@ -57,7 +57,6 @@ func isFileSizeError(err error) bool {
 // These will be skipped with a warning during export-dir.
 var nonExportableTypes = []workspace.ObjectType{
 	workspace.ObjectTypeLibrary,
-	workspace.ObjectTypeDashboard,
 	workspace.ObjectTypeRepo,
 	// MLFLOW_EXPERIMENT is not defined as a constant in the SDK
 	workspace.ObjectType("MLFLOW_EXPERIMENT"),

@@ -10,6 +10,7 @@
     "message": "App compute is stopped.",
     "state": "STOPPED"
   },
+  "forward_user_access_token": true,
   "id": "1000",
   "name": "my-app",
   "service_principal_client_id": "[UUID]",

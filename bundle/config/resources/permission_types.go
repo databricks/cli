@@ -27,6 +27,7 @@ func (p Permission) String() string {
 type (
 	AppPermission                  PermissionT[apps.AppPermissionLevel]
 	ClusterPermission              PermissionT[compute.ClusterPermissionLevel]
+	ClusterPolicyPermission        PermissionT[compute.ClusterPolicyPermissionLevel]
 	InstancePoolPermission         PermissionT[compute.InstancePoolPermissionLevel]
 	JobPermission                  PermissionT[jobs.JobPermissionLevel]
 	MlflowExperimentPermission     PermissionT[ml.ExperimentPermissionLevel]

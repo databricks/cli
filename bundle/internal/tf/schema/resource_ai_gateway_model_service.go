@@ -3,7 +3,6 @@
 package schema
 
 type ResourceAiGatewayModelServiceConfigInferenceTable struct {
-	Disabled        bool   `json:"disabled,omitempty"`
 	IsDeleted       bool   `json:"is_deleted,omitempty"`
 	Parent          string `json:"parent"`
 	Table           string `json:"table,omitempty"`
@@ -11,13 +10,11 @@ type ResourceAiGatewayModelServiceConfigInferenceTable struct {
 }
 
 type ResourceAiGatewayModelServiceConfigRateLimits struct {
-	Key             string `json:"key"`
-	Principal       string `json:"principal,omitempty"`
-	RenewalPeriod   string `json:"renewal_period"`
-	RequestTagKey   string `json:"request_tag_key,omitempty"`
-	RequestTagValue string `json:"request_tag_value,omitempty"`
-	Requests        int    `json:"requests,omitempty"`
-	Tokens          int    `json:"tokens,omitempty"`
+	Key           string `json:"key"`
+	Principal     string `json:"principal,omitempty"`
+	RenewalPeriod string `json:"renewal_period"`
+	Requests      int    `json:"requests,omitempty"`
+	Tokens        int    `json:"tokens,omitempty"`
 }
 
 type ResourceAiGatewayModelServiceConfigRoutingDestinationsExternalModelConfigTarget struct {
@@ -82,13 +79,9 @@ type ResourceAiGatewayModelServiceConfigRoutingFallback struct {
 	Destinations []ResourceAiGatewayModelServiceConfigRoutingFallbackDestinations `json:"destinations,omitempty"`
 }
 
-type ResourceAiGatewayModelServiceConfigRoutingTrafficSplitting struct{}
-
 type ResourceAiGatewayModelServiceConfigRouting struct {
-	Destinations      []ResourceAiGatewayModelServiceConfigRoutingDestinations    `json:"destinations,omitempty"`
-	Fallback          *ResourceAiGatewayModelServiceConfigRoutingFallback         `json:"fallback,omitempty"`
-	FirstTokenTimeout string                                                      `json:"first_token_timeout,omitempty"`
-	TrafficSplitting  *ResourceAiGatewayModelServiceConfigRoutingTrafficSplitting `json:"traffic_splitting,omitempty"`
+	Destinations []ResourceAiGatewayModelServiceConfigRoutingDestinations `json:"destinations,omitempty"`
+	Fallback     *ResourceAiGatewayModelServiceConfigRoutingFallback      `json:"fallback,omitempty"`
 }
 
 type ResourceAiGatewayModelServiceConfig struct {
@@ -102,7 +95,6 @@ type ResourceAiGatewayModelServiceProviderConfig struct {
 }
 
 type ResourceAiGatewayModelService struct {
-	BrowseOnly        bool                                         `json:"browse_only,omitempty"`
 	Comment           string                                       `json:"comment,omitempty"`
 	Config            *ResourceAiGatewayModelServiceConfig         `json:"config,omitempty"`
 	CreateTime        string                                       `json:"create_time,omitempty"`
@@ -112,7 +104,6 @@ type ResourceAiGatewayModelService struct {
 	MetastoreId       string                                       `json:"metastore_id,omitempty"`
 	ModelServiceId    string                                       `json:"model_service_id"`
 	Name              string                                       `json:"name,omitempty"`
-	Owner             string                                       `json:"owner,omitempty"`
 	Parent            string                                       `json:"parent"`
 	ProviderConfig    *ResourceAiGatewayModelServiceProviderConfig `json:"provider_config,omitempty"`
 	SupportedApiTypes []string                                     `json:"supported_api_types,omitempty"`

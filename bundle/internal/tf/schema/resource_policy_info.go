@@ -2,15 +2,42 @@
 
 package schema
 
+type ResourcePolicyInfoColumnMaskUsingFunctionArgExpressionTagIntrospectionColumnTagValue struct {
+	ColumnAlias string `json:"column_alias"`
+	TagKey      string `json:"tag_key"`
+}
+
+type ResourcePolicyInfoColumnMaskUsingFunctionArgExpressionTagIntrospectionTagValue struct {
+	TagKey string `json:"tag_key"`
+}
+
+type ResourcePolicyInfoColumnMaskUsingFunctionArgExpressionTagIntrospection struct {
+	ColumnTagValue *ResourcePolicyInfoColumnMaskUsingFunctionArgExpressionTagIntrospectionColumnTagValue `json:"column_tag_value,omitempty"`
+	TagValue       *ResourcePolicyInfoColumnMaskUsingFunctionArgExpressionTagIntrospectionTagValue       `json:"tag_value,omitempty"`
+}
+
+type ResourcePolicyInfoColumnMaskUsingFunctionArgExpression struct {
+	TagIntrospection *ResourcePolicyInfoColumnMaskUsingFunctionArgExpressionTagIntrospection `json:"tag_introspection,omitempty"`
+}
+
 type ResourcePolicyInfoColumnMaskUsing struct {
-	Alias    string `json:"alias,omitempty"`
-	Constant string `json:"constant,omitempty"`
+	Alias                 string                                                  `json:"alias,omitempty"`
+	Constant              string                                                  `json:"constant,omitempty"`
+	FunctionArgExpression *ResourcePolicyInfoColumnMaskUsingFunctionArgExpression `json:"function_arg_expression,omitempty"`
 }
 
 type ResourcePolicyInfoColumnMask struct {
 	FunctionName string                              `json:"function_name"`
 	OnColumn     string                              `json:"on_column"`
 	Using        []ResourcePolicyInfoColumnMaskUsing `json:"using,omitempty"`
+}
+
+type ResourcePolicyInfoDeny struct {
+	Privileges []string `json:"privileges"`
+}
+
+type ResourcePolicyInfoGrant struct {
+	Privileges []string `json:"privileges"`
 }
 
 type ResourcePolicyInfoMatchColumns struct {
@@ -22,9 +49,28 @@ type ResourcePolicyInfoProviderConfig struct {
 	WorkspaceId string `json:"workspace_id,omitempty"`
 }
 
+type ResourcePolicyInfoRowFilterUsingFunctionArgExpressionTagIntrospectionColumnTagValue struct {
+	ColumnAlias string `json:"column_alias"`
+	TagKey      string `json:"tag_key"`
+}
+
+type ResourcePolicyInfoRowFilterUsingFunctionArgExpressionTagIntrospectionTagValue struct {
+	TagKey string `json:"tag_key"`
+}
+
+type ResourcePolicyInfoRowFilterUsingFunctionArgExpressionTagIntrospection struct {
+	ColumnTagValue *ResourcePolicyInfoRowFilterUsingFunctionArgExpressionTagIntrospectionColumnTagValue `json:"column_tag_value,omitempty"`
+	TagValue       *ResourcePolicyInfoRowFilterUsingFunctionArgExpressionTagIntrospectionTagValue       `json:"tag_value,omitempty"`
+}
+
+type ResourcePolicyInfoRowFilterUsingFunctionArgExpression struct {
+	TagIntrospection *ResourcePolicyInfoRowFilterUsingFunctionArgExpressionTagIntrospection `json:"tag_introspection,omitempty"`
+}
+
 type ResourcePolicyInfoRowFilterUsing struct {
-	Alias    string `json:"alias,omitempty"`
-	Constant string `json:"constant,omitempty"`
+	Alias                 string                                                 `json:"alias,omitempty"`
+	Constant              string                                                 `json:"constant,omitempty"`
+	FunctionArgExpression *ResourcePolicyInfoRowFilterUsingFunctionArgExpression `json:"function_arg_expression,omitempty"`
 }
 
 type ResourcePolicyInfoRowFilter struct {
@@ -37,8 +83,10 @@ type ResourcePolicyInfo struct {
 	Comment             string                            `json:"comment,omitempty"`
 	CreatedAt           int                               `json:"created_at,omitempty"`
 	CreatedBy           string                            `json:"created_by,omitempty"`
+	Deny                *ResourcePolicyInfoDeny           `json:"deny,omitempty"`
 	ExceptPrincipals    []string                          `json:"except_principals,omitempty"`
 	ForSecurableType    string                            `json:"for_securable_type"`
+	Grant               *ResourcePolicyInfoGrant          `json:"grant,omitempty"`
 	Id                  string                            `json:"id,omitempty"`
 	MatchColumns        []ResourcePolicyInfoMatchColumns  `json:"match_columns,omitempty"`
 	Name                string                            `json:"name,omitempty"`
