@@ -82,7 +82,10 @@ type ProcessOptions struct {
 	Deploy          bool
 
 	// Path to pre-computed plan JSON file (direct engine only).
-	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
+	// When set, skips build commands and the PreDeployChecks phase, and loads the
+	// plan from the file instead of calculating it. Library file discovery runs
+	// (via FindLibraries) so that the correct local files are found and uploaded
+	// to the remote paths the plan already references.
 	ReadPlanPath string
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
@@ -347,14 +350,21 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	var plan *deployplan.Plan
-
+	var findLibraries bool
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
+		// Build commands are not re-run when applying a saved plan: re-running them
+		// could produce new artifact files with a different mtime which, with
+		// dynamic_version, would yield a different patched filename than the remote
+		// path the plan already has baked in. Library discovery still runs (via
+		// FindLibraries) so the correct local files are found and uploaded to the
+		// remote paths the plan references.
 		opts.Build = false
 		opts.PreDeployChecks = false
+		findLibraries = true
 
 		var err error
 		plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
@@ -411,6 +421,17 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		libs = phases.Build(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Build",
+			Value: time.Since(t2).Milliseconds(),
+		})
+
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	} else if findLibraries {
+		t2 := time.Now()
+		libs = phases.FindLibraries(ctx, b)
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   "phases.FindLibraries",
 			Value: time.Since(t2).Milliseconds(),
 		})
 

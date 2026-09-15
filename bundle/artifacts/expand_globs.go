@@ -3,7 +3,9 @@ package artifacts
 import (
 	"context"
 	"fmt"
+	"maps"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -121,4 +123,25 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 	}
 
 	return diags
+}
+
+type expandAllGlobs struct{}
+
+func (e *expandAllGlobs) Name() string {
+	return "artifacts.ExpandGlobReferences"
+}
+
+func (e *expandAllGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	for _, name := range slices.Sorted(maps.Keys(b.Config.Artifacts)) {
+		bundle.ApplyContext(ctx, b, expandGlobs{name: name})
+	}
+	return nil
+}
+
+// ExpandGlobReferences returns a mutator that expands glob patterns in artifact
+// file sources for every artifact. Prepare handles artifacts without a build
+// command; Build handles those with one. This mutator covers both, making it
+// safe to call after Prepare but before a build has run (e.g. FindLibraries).
+func ExpandGlobReferences() bundle.Mutator {
+	return &expandAllGlobs{}
 }
