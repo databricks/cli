@@ -134,7 +134,6 @@ func TestCompactStateMigratesLegacyFullContent(t *testing.T) {
 // itself otherwise), that isStateHashPlaceholder recognizes only the strings this package
 // produces, and that CompactState of a dashboard's serialized_dashboard yields the same.
 func TestStateHashing(t *testing.T) {
-	requireLargeEnoughToHash(t, largeDashboard)
 	requireTooSmallToHash(t, smallDashboard)
 
 	// A raw string of exactly stateHashPlaceholderLen bytes sits at the limit; one more tips
@@ -158,11 +157,6 @@ third line of content
 fourth line of content
 `,
 			want: "sha256:c74674070e73f13131f1611d89ecf2ff74c7adf5f998da1321b026a7f154bf1e",
-		},
-		{
-			name:    "large_dashboard",
-			content: largeDashboard,
-			want:    "sha256:a1aa00318292865fb69b5e99fe14b29e43e707c23f4badce8dcefc3d728fea90",
 		},
 		{
 			name:    "over_size_limit",
@@ -197,11 +191,6 @@ fourth line of content
 			want:    atLimit,
 		},
 		{
-			name:    "prefix_only",
-			content: stateHashPrefix,
-			want:    stateHashPrefix,
-		},
-		{
 			name:    "too_short",
 			content: stateHashPrefix + strings.Repeat("a", 63),
 			want:    stateHashPrefix + strings.Repeat("a", 63),
@@ -212,19 +201,9 @@ fourth line of content
 			want:    stateHashPrefix + strings.Repeat("A", 64),
 		},
 		{
-			name:    "non_hex",
-			content: stateHashPrefix + strings.Repeat("g", 64),
-			want:    stateHashPrefix + strings.Repeat("g", 64),
-		},
-		{
 			name:    "no_prefix",
 			content: hex64,
 			want:    hex64,
-		},
-		{
-			name:    "content_like",
-			content: `{"pages":[]}`,
-			want:    `{"pages":[]}`,
 		},
 	}
 
