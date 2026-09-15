@@ -27,3 +27,20 @@ title "bundle open --force-pull: remote state read\n"
 trace $CLI bundle open foo --force-pull > /dev/null
 touch "$OUT_REQUESTS"
 print_requests.py --get //workspace/export
+
+title "Deployment history always reads remote state, with or without --force-pull"
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+rm -rf .databricks
+export DATABRICKS_BUNDLE_ENGINE=direct
+export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true
+$CLI bundle deploy > /dev/null 2>&1
+rm -f "$OUT_REQUESTS"
+
+trace $CLI bundle summary > /dev/null
+print_requests.py --get //workspace/export
+trace $CLI bundle summary --force-pull > /dev/null
+print_requests.py --get //workspace/export
+trace $CLI bundle open foo > /dev/null
+print_requests.py --get //workspace/export
+trace $CLI bundle open foo --force-pull > /dev/null
+print_requests.py --get //workspace/export

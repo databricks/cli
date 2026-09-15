@@ -1,3 +1,6 @@
+# The script exercises both modes explicitly because local state has different semantics.
+EnvMatrix.DMS = [""]
+
 # Lineage is a direct-engine concept (a UUID minted per deployment history),
 # so this scenario only applies to the direct engine.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

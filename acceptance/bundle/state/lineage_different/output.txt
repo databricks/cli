@@ -41,3 +41,9 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle
+
+=== Deployment history ignores the local resource lineage
+>>> DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle plan
+create schemas.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

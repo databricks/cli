@@ -6,3 +6,9 @@ Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfs
 >>> musterr [CLI] bundle plan
 Error: parsing [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: unexpected end of JSON input
 
+
+=== Deployment history ignores corrupt local resource state
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle plan
+create schemas.foo
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

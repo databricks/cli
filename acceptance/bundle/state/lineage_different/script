@@ -9,3 +9,7 @@ trace musterr $CLI bundle destroy --auto-approve
 # These commands don't care:
 trace $CLI bundle validate
 trace $CLI bundle > /dev/null
+
+title "Deployment history ignores the local resource lineage"
+rm .databricks/bundle/default/terraform/terraform.tfstate
+trace DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan

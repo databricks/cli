@@ -9,3 +9,7 @@ title "State written by this CLI: no warning\n"
 version=$($CLI version | sed 's/^Databricks CLI v//')
 jq --arg v "$version" '.cli_version = $v' resources.newer.json > .databricks/bundle/default/resources.json
 trace $CLI bundle plan
+
+title "Deployment history ignores the local writer version\n"
+cp resources.newer.json .databricks/bundle/default/resources.json
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan | contains.py '!Warn:'

@@ -1,6 +1,2 @@
 # The script exercises both modes explicitly because local state has different semantics.
 EnvMatrix.DMS = [""]
-
-RecordRequests = false
-IncludeRequestHeaders = ["User-Agent"]
-Ignore = [".databricks"]

@@ -34,3 +34,16 @@ title "Machine A: any command that pulls remote state now fails\n"
 trace musterr $CLI bundle plan
 trace musterr $CLI bundle deploy
 trace musterr $CLI bundle destroy --auto-approve
+
+title "Deployment history can start over despite a stale local marker"
+rm -rf .databricks
+$CLI bundle destroy --auto-approve > /dev/null 2>&1
+export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true
+trace $CLI bundle deploy
+stale_marker=$(print_state.py --no-dms)
+trace $CLI bundle destroy --auto-approve
+mkdir -p .databricks/bundle/default
+printf '%s' "$stale_marker" > .databricks/bundle/default/resources.json
+trace $CLI bundle deploy
+trace $CLI bundle plan
+test "$(cat .databricks/bundle/default/resources.json)" = "$stale_marker"
