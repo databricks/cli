@@ -18,24 +18,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// A "provisioned capacity" is a pre-provisioned AI Runtime accelerator
-// reservation — the same reservation a run targets via
-// compute.provisioned_capacity_id. It is served by AiWorkflowService's
-// purpose-built public read API (the platform tracks it internally as a
-// "guaranteed capacity"; the public surface calls it "provisioned capacity").
-const provisionedCapacityPath = "/api/2.0/ai-training/provisioned-capacities"
+// A "GPU pool" is a pre-provisioned AI Runtime accelerator reservation — the
+// same reservation a run targets via compute.provisioned_capacity_id. "GPU
+// pool" (or "pool") is the product-facing name used across the Compute page and
+// this CLI. The backend still models and serves these as AiWorkflowService
+// ProvisionedCapacity resources, so the endpoint path and the wire structs
+// below keep the API's name; only the user-facing surface says "pool".
+const poolsAPIPath = "/api/2.0/ai-training/provisioned-capacities"
 
 // resourceNamePrefix is the AIP resource-name prefix on ProvisionedCapacity.name
 // ("provisioned-capacities/{id}"). The CLI shows and accepts the bare id.
 const resourceNamePrefix = "provisioned-capacities/"
 
-// capacityListPageSize is the per-request page size for the list endpoint. A
-// workspace holds very few reservations, so this is effectively a single page.
-const capacityListPageSize = 100
+// poolListPageSize is the per-request page size for the list endpoint. A
+// workspace holds very few pools, so this is effectively a single page.
+const poolListPageSize = 100
 
-// capacityListMaxPages caps pagination so a misbehaving next_page_token can't
-// loop forever.
-const capacityListMaxPages = 50
+// poolListMaxPages caps pagination so a misbehaving next_page_token can't loop
+// forever.
+const poolListMaxPages = 50
 
 // apiInt64 decodes an int64 that the REST gateway may send either as a JSON
 // number or, per proto3 JSON, as a quoted string.
@@ -54,7 +55,8 @@ func (n *apiInt64) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// The wire structs below mirror the ProvisionedCapacity proto's JSON.
+// The wire structs below mirror the ProvisionedCapacity proto's JSON (the
+// backend name for a GPU pool).
 type provisionedCapacity struct {
 	Name   string                     `json:"name"`
 	Spec   *provisionedCapacitySpec   `json:"spec"`
@@ -80,46 +82,45 @@ type listProvisionedCapacitiesResponse struct {
 	NextPageToken         string                `json:"next_page_token"`
 }
 
-// capacityListData is the `air list provisioned-capacity` payload. Usage counts
-// are intentionally absent: the list endpoint does not populate them (they come
-// from `air get`).
-type capacityListData struct {
-	Rows []capacityRow `json:"provisioned_capacities"`
+// poolListData is the `air list pools` payload. Usage counts are intentionally
+// absent: the list endpoint does not populate them (they come from `air get`).
+type poolListData struct {
+	Rows []poolRow `json:"pools"`
 }
 
-type capacityRow struct {
-	ID                   string `json:"provisioned_capacity_id"`
+type poolRow struct {
+	ID                   string `json:"pool_id"`
 	AcceleratorType      string `json:"accelerator_type"`
 	ReservedAccelerators int64  `json:"reserved_accelerators"`
 }
 
-// capacityDetailData is the `air get provisioned-capacity` payload. Usage is a
-// pointer because it is populated only when the reservation reports it.
-type capacityDetailData struct {
-	ID                   string `json:"provisioned_capacity_id"`
+// poolDetailData is the `air get pool` payload. Usage is a pointer because it is
+// populated only when the pool reports it.
+type poolDetailData struct {
+	ID                   string `json:"pool_id"`
 	AcceleratorType      string `json:"accelerator_type"`
 	ReservedAccelerators int64  `json:"reserved_accelerators"`
 	UsedAccelerators     *int64 `json:"used_accelerators"`
 	IdleAccelerators     *int64 `json:"idle_accelerators"`
 }
 
-// capacityID strips the AIP resource-name prefix, returning the bare id. Input
-// may already be the bare id (from a user argument) or the full resource name
-// (from a response's name field).
-func capacityID(name string) string {
+// poolID strips the AIP resource-name prefix, returning the bare id. Input may
+// already be the bare id (from a user argument) or the full resource name (from
+// a response's name field).
+func poolID(name string) string {
 	return strings.TrimPrefix(name, resourceNamePrefix)
 }
 
-// capacityAPIError classifies a provisioned-capacities call failure into the
-// CLI's error envelope, matching how `air get` classifies run lookups.
-func capacityAPIError(ctx context.Context, cmd *cobra.Command, action string, err error) error {
+// poolAPIError classifies a pools call failure into the CLI's error envelope,
+// matching how `air get` classifies run lookups.
+func poolAPIError(ctx context.Context, cmd *cobra.Command, action string, err error) error {
 	// The handler gates the API behind a SAFE flag and reports FEATURE_DISABLED
 	// where it is not yet rolled out. That is a permanent state for the
 	// workspace, not a retryable failure — and its explicit error code is more
 	// specific than the generic 403 it may arrive as, so check it first.
 	if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.ErrorCode == "FEATURE_DISABLED" {
 		return renderError(ctx, cmd, "FEATURE_DISABLED", "PERMANENT", false,
-			errors.New("the provisioned capacity API is not enabled for this workspace"))
+			errors.New("the GPU pools API is not enabled for this workspace"))
 	}
 	if errors.Is(err, apierr.ErrUnauthenticated) || errors.Is(err, apierr.ErrPermissionDenied) {
 		return authError(ctx, cmd, err)
@@ -128,8 +129,8 @@ func capacityAPIError(ctx context.Context, cmd *cobra.Command, action string, er
 		fmt.Errorf("failed to %s: %w", action, err))
 }
 
-// listProvisionedCapacities pages the list endpoint fully.
-func listProvisionedCapacities(ctx context.Context, w *databricks.WorkspaceClient) ([]provisionedCapacity, error) {
+// listPools pages the list endpoint fully.
+func listPools(ctx context.Context, w *databricks.WorkspaceClient) ([]provisionedCapacity, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
@@ -137,15 +138,15 @@ func listProvisionedCapacities(ctx context.Context, w *databricks.WorkspaceClien
 
 	var out []provisionedCapacity
 	pageToken := ""
-	for range capacityListMaxPages {
+	for range poolListMaxPages {
 		// GET query params ride the request arg (the SDK serializes them for a
 		// GET), matching the sibling workflows call.
-		query := map[string]any{"page_size": capacityListPageSize}
+		query := map[string]any{"page_size": poolListPageSize}
 		if pageToken != "" {
 			query["page_token"] = pageToken
 		}
 		var resp listProvisionedCapacitiesResponse
-		if err := apiClient.Do(ctx, http.MethodGet, provisionedCapacityPath, nil, nil, query, &resp); err != nil {
+		if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath, nil, nil, query, &resp); err != nil {
 			return nil, err
 		}
 		out = append(out, resp.ProvisionedCapacities...)
@@ -157,24 +158,24 @@ func listProvisionedCapacities(ctx context.Context, w *databricks.WorkspaceClien
 	return out, nil
 }
 
-// getProvisionedCapacity fetches one reservation, including its usage summary.
-func getProvisionedCapacity(ctx context.Context, w *databricks.WorkspaceClient, id string) (*provisionedCapacity, error) {
+// getPool fetches one pool, including its usage summary.
+func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*provisionedCapacity, error) {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
 	var pc provisionedCapacity
-	if err := apiClient.Do(ctx, http.MethodGet, provisionedCapacityPath+"/"+id, nil, nil, nil, &pc); err != nil {
+	if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath+"/"+id, nil, nil, nil, &pc); err != nil {
 		return nil, err
 	}
 	return &pc, nil
 }
 
-func newListProvisionedCapacityCommand() *cobra.Command {
+func newListPoolsCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provisioned-capacity",
+		Use:   "pools",
 		Args:  root.NoArgs,
-		Short: "List the pre-provisioned AI Runtime capacity reservations for the current workspace",
+		Short: "List the GPU pools available to the current workspace",
 	}
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -189,31 +190,31 @@ func newListProvisionedCapacityCommand() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		capacities, err := listProvisionedCapacities(ctx, w)
+		pools, err := listPools(ctx, w)
 		if err != nil {
-			return capacityAPIError(ctx, cmd, "list provisioned capacities", err)
+			return poolAPIError(ctx, cmd, "list GPU pools", err)
 		}
 
-		data := capacityListData{Rows: make([]capacityRow, 0, len(capacities))}
-		for _, c := range capacities {
-			data.Rows = append(data.Rows, capacityRowFrom(c))
+		data := poolListData{Rows: make([]poolRow, 0, len(pools))}
+		for _, p := range pools {
+			data.Rows = append(data.Rows, poolRowFrom(p))
 		}
 
 		if root.OutputType(cmd) != flags.OutputText {
 			return renderEnvelope(ctx, data)
 		}
-		renderCapacityTable(cmd.OutOrStdout(), data.Rows)
+		renderPoolTable(cmd.OutOrStdout(), data.Rows)
 		return nil
 	}
 
 	return cmd
 }
 
-func newGetProvisionedCapacityCommand() *cobra.Command {
+func newGetPoolCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provisioned-capacity PROVISIONED_CAPACITY_ID",
+		Use:   "pool POOL_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Show a pre-provisioned AI Runtime capacity reservation, including its accelerator usage",
+		Short: "Show a GPU pool, including its accelerator usage",
 	}
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -229,61 +230,61 @@ func newGetProvisionedCapacityCommand() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 
 		// Accept either the bare id or the full resource name.
-		id := capacityID(strings.TrimSpace(args[0]))
+		id := poolID(strings.TrimSpace(args[0]))
 		if id == "" {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("provisioned_capacity_id cannot be empty"))
+				errors.New("pool_id cannot be empty"))
 		}
 
-		pc, err := getProvisionedCapacity(ctx, w, id)
+		pool, err := getPool(ctx, w, id)
 		if err != nil {
 			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
-					fmt.Errorf("provisioned capacity %q not found: check the id with `air list provisioned-capacity`", id))
+					fmt.Errorf("GPU pool %q not found: check the id with `air list pools`", id))
 			}
-			return capacityAPIError(ctx, cmd, fmt.Sprintf("get provisioned capacity %q", id), err)
+			return poolAPIError(ctx, cmd, fmt.Sprintf("get GPU pool %q", id), err)
 		}
 
-		data := capacityDetailFrom(*pc)
+		data := poolDetailFrom(*pool)
 		if root.OutputType(cmd) != flags.OutputText {
 			return renderEnvelope(ctx, data)
 		}
-		renderCapacityDetail(cmd.OutOrStdout(), data)
+		renderPoolDetail(cmd.OutOrStdout(), data)
 		return nil
 	}
 
 	return cmd
 }
 
-// capacityRowFrom projects a wire ProvisionedCapacity to a list row.
-func capacityRowFrom(c provisionedCapacity) capacityRow {
-	row := capacityRow{ID: capacityID(c.Name)}
-	if c.Spec != nil {
-		row.AcceleratorType = c.Spec.AcceleratorType
-		row.ReservedAccelerators = int64(c.Spec.AcceleratorCount)
+// poolRowFrom projects a wire ProvisionedCapacity to a list row.
+func poolRowFrom(p provisionedCapacity) poolRow {
+	row := poolRow{ID: poolID(p.Name)}
+	if p.Spec != nil {
+		row.AcceleratorType = p.Spec.AcceleratorType
+		row.ReservedAccelerators = int64(p.Spec.AcceleratorCount)
 	}
 	return row
 }
 
-// capacityDetailFrom projects a wire ProvisionedCapacity to the detail payload.
-func capacityDetailFrom(c provisionedCapacity) capacityDetailData {
-	data := capacityDetailData{ID: capacityID(c.Name)}
-	if c.Spec != nil {
-		data.AcceleratorType = c.Spec.AcceleratorType
-		data.ReservedAccelerators = int64(c.Spec.AcceleratorCount)
+// poolDetailFrom projects a wire ProvisionedCapacity to the detail payload.
+func poolDetailFrom(p provisionedCapacity) poolDetailData {
+	data := poolDetailData{ID: poolID(p.Name)}
+	if p.Spec != nil {
+		data.AcceleratorType = p.Spec.AcceleratorType
+		data.ReservedAccelerators = int64(p.Spec.AcceleratorCount)
 	}
-	if c.Status != nil && c.Status.Usage != nil {
-		used, idle := int64(c.Status.Usage.UsedAcceleratorCount), int64(c.Status.Usage.IdleAcceleratorCount)
+	if p.Status != nil && p.Status.Usage != nil {
+		used, idle := int64(p.Status.Usage.UsedAcceleratorCount), int64(p.Status.Usage.IdleAcceleratorCount)
 		data.UsedAccelerators = &used
 		data.IdleAccelerators = &idle
 	}
 	return data
 }
 
-// renderCapacityTable prints the list as an aligned text table.
-func renderCapacityTable(out io.Writer, rows []capacityRow) {
+// renderPoolTable prints the list as an aligned text table.
+func renderPoolTable(out io.Writer, rows []poolRow) {
 	if len(rows) == 0 {
-		fmt.Fprintln(out, "No provisioned capacity reservations found.")
+		fmt.Fprintln(out, "No GPU pools found.")
 		return
 	}
 	fmt.Fprintf(out, "%-40s %-14s %s\n", "ID", "ACCELERATOR", "RESERVED")
@@ -292,18 +293,18 @@ func renderCapacityTable(out io.Writer, rows []capacityRow) {
 	}
 }
 
-// renderCapacityDetail prints the get view as aligned label/value lines.
-func renderCapacityDetail(out io.Writer, d capacityDetailData) {
+// renderPoolDetail prints the get view as aligned label/value lines.
+func renderPoolDetail(out io.Writer, d poolDetailData) {
 	line := func(label, value string) { fmt.Fprintf(out, "%-24s %s\n", label+":", value) }
-	line("Provisioned Capacity ID", orNA(d.ID))
+	line("Pool ID", orNA(d.ID))
 	line("Accelerator Type", orNA(d.AcceleratorType))
 	line("Reserved Accelerators", strconv.FormatInt(d.ReservedAccelerators, 10))
 	line("Used Accelerators", acceleratorCell(d.UsedAccelerators))
 	line("Idle Accelerators", acceleratorCell(d.IdleAccelerators))
 }
 
-// acceleratorCell renders an optional count, showing N/A when the reservation
-// did not report usage.
+// acceleratorCell renders an optional count, showing N/A when the pool did not
+// report usage.
 func acceleratorCell(v *int64) string {
 	if v == nil {
 		return na

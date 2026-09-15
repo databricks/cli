@@ -160,7 +160,7 @@ func newListCommand() *cobra.Command {
 		return renderListText(cmd, fetcher, limit)
 	}
 
-	cmd.AddCommand(newListProvisionedCapacityCommand())
+	cmd.AddCommand(newListPoolsCommand())
 
 	return cmd
 }
