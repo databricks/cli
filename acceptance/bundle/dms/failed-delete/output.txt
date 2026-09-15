@@ -112,6 +112,7 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Fault injected by test.
 
+Destroy: 1 deleted
 
 >>> print_requests.py --dms //api/2.0/bundle
 {
