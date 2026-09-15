@@ -15,7 +15,7 @@ import (
 // an optimisation, and failing to learn about it has to cost bounded time, not the whole session.
 func TestServerSupportsResumeGivesUpOnAStalledServer(t *testing.T) {
 	restore := capabilitiesProbeTimeout
-	capabilitiesProbeTimeout = time.Second
+	capabilitiesProbeTimeout = 100 * time.Millisecond
 	defer func() { capabilitiesProbeTimeout = restore }()
 
 	stalled := make(chan struct{})
@@ -40,7 +40,7 @@ func TestServerSupportsResumeGivesUpOnAStalledServer(t *testing.T) {
 	select {
 	case resumable := <-done:
 		require.False(t, resumable, "a server that never answered cannot be assumed to support resume")
-	case <-time.After(30 * time.Second):
+	case <-time.After(time.Second):
 		t.Fatal("the capabilities probe never returned: it has no timeout of its own, so a stalled driver proxy blocks the connect path indefinitely")
 	}
 }
