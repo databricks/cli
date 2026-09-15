@@ -28,6 +28,7 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 		// AI Gateway model service is deployed through the direct engine only.
 		"model_services",
 		"mcp_services",
+		"model_provider_services",
 		"secrets",
 		"vector_search_endpoints",
 		"vector_search_indexes",

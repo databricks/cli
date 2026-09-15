@@ -79,9 +79,9 @@ const (
 	// Bounds the wait for the peer's first frame on a reattached connection, which carries the
 	// offset to replay from. The connection is new, but the peer may be wedged.
 	proxyResumeHandshakeTimeout = 10 * time.Second
-	// Cap on payload held for replay, per direction. A full window pauses the source
-	// until the peer acknowledges delivery; bursts through the driver proxy can fill it.
-	proxyResumeBufferLimit = 1 << 20
+	// Cap on unacknowledged payload held for replay, per direction. At 120 ms RTT,
+	// an 8 MiB window sustains over 500 Mbit/s before backpressure pauses the source.
+	proxyResumeBufferLimit = 8 << 20
 	// How much payload may be delivered before we tell the peer about it, so it can release
 	// its replay buffer. Small enough to keep the window far below proxyResumeBufferLimit.
 	proxyAckThreshold = 64 << 10

@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+MPS_ID=$($CLI bundle summary --output json | jq -r '.resources.model_provider_services.mps.id')
+
+trace $CLI ai-gateway get-model-provider-service "model-provider-services/$MPS_ID" | jq '{name, comment}'
+
+# Verify there is no drift right after deploy. Text plan (not -o json) keeps the
+# output identical between the mock and a real workspace: the server populates
+# output-only fields but the resource action stays "unchanged".
+trace $CLI bundle plan

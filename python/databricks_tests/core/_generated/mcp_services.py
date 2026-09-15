@@ -5,6 +5,9 @@ from databricks.bundles.core._generated.mcp_services import _resource_type
 from databricks.bundles.mcp_services._models.lifecycle import Lifecycle
 from databricks.bundles.mcp_services._models.mcp_service import McpService
 from databricks.bundles.mcp_services._models.mcp_service_config import McpServiceConfig
+from databricks.bundles.mcp_services._models.privilege_assignment import (
+    PrivilegeAssignment,
+)
 from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
@@ -14,12 +17,14 @@ def _test_case():
             add_resource=Resources.add_mcp_service,
             dict_example={
                 "config": {},
+                "grants": [{}],
                 "lifecycle": {},
                 "mcp_service_id": "mcp_service_id",
                 "parent": "parent",
             },
             dataclass_example=McpService(
                 config=McpServiceConfig(),
+                grants=[PrivilegeAssignment()],
                 lifecycle=Lifecycle(),
                 mcp_service_id="mcp_service_id",
                 parent="parent",

@@ -1204,10 +1204,35 @@ resources:
         "config":
           "description": |-
             PLACEHOLDER
+        "grants":
+          "description": |-
+            PLACEHOLDER
         "lifecycle":
           "description": |-
             PLACEHOLDER
         "mcp_service_id":
+          "description": |-
+            PLACEHOLDER
+        "parent":
+          "description": |-
+            PLACEHOLDER
+    "model_provider_services":
+      "description": |-
+        PLACEHOLDER
+      "$fields":
+        "comment":
+          "description": |-
+            PLACEHOLDER
+        "config":
+          "description": |-
+            PLACEHOLDER
+        "grants":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "model_provider_service_id":
           "description": |-
             PLACEHOLDER
         "parent":
@@ -1221,6 +1246,9 @@ resources:
           "description": |-
             PLACEHOLDER
         "config":
+          "description": |-
+            PLACEHOLDER
+        "grants":
           "description": |-
             PLACEHOLDER
         "lifecycle":

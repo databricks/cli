@@ -101,11 +101,11 @@ func splitUCName(name string, n int) ([]string, bool) {
 	return parts, true
 }
 
-// resolveParent rewrites a `schemas/{catalog}.{schema}` parent reference so that
+// resolveAiGatewayParent rewrites a `schemas/{catalog}.{schema}` parent reference so that
 // a catalog or schema defined in the same bundle becomes an explicit deploy-time
 // dependency. AI Gateway securables address their parent schema with this
 // compound field rather than separate catalog/schema fields.
-func resolveParent(b *bundle.Bundle, parent string) string {
+func resolveAiGatewayParent(b *bundle.Bundle, parent string) string {
 	rest, ok := strings.CutPrefix(parent, "schemas/")
 	if !ok {
 		return parent
@@ -215,13 +215,19 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		if dynvar.ContainsVariableReference(ms.Parent) {
 			continue
 		}
-		ms.Parent = resolveParent(b, ms.Parent)
+		ms.Parent = resolveAiGatewayParent(b, ms.Parent)
 	}
 	for _, ms := range b.Config.Resources.McpServices {
 		if ms == nil {
 			continue
 		}
-		ms.Parent = resolveParent(b, ms.Parent)
+		ms.Parent = resolveAiGatewayParent(b, ms.Parent)
+	}
+	for _, mps := range b.Config.Resources.ModelProviderServices {
+		if mps == nil {
+			continue
+		}
+		mps.Parent = resolveAiGatewayParent(b, mps.Parent)
 	}
 
 	// Schemas are resolved last because the schema catalog resolution modifies
