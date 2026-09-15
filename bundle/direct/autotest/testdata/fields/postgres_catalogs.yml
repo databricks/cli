@@ -1,0 +1,19 @@
+# Value library for postgres catalogs. See ../../README.md.
+
+# Enabling on cloud surfaced testserver-fidelity gaps to close first (2026-09):
+#   - branch: a resource reference fuzzed with garbage -> aws 404/format error, fake 501 "No stub"
+#   - branch is required in the catalog spec; the fake lets it be cleared
+#   - recreate semantics diverge (aws recreates far fewer fields than the fake: OK_RECREATE 18->8)
+# Until those match, the catalog stays local.
+local_only: branch reference + required-field + recreate semantics differ from aws (see above)
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+
+base:
+  catalog_id: test_pg_catalog_$UNIQUE_NAME
+  branch: ${resources.postgres_projects.postgres_projects.name}/branches/production
+  postgres_database: appdb
+  create_database_if_missing: true

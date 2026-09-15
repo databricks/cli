@@ -1,0 +1,32 @@
+# field | from | to | verdict | detail
+#
+# How the direct engine handles every field of this resource type: each row is one move of one field
+# between two values, "absent" included. An outcome the engine got wrong is recorded here rather than
+# failed, so this file is a description of current behaviour -- what fails the test is a verdict
+# changing. Passing rows are counted in the summary and listed in logs/<type>.full.txt, along with
+# the evidence behind each finding and what could not be covered.
+#
+# Regenerate with ./task test-update-fields. See bundle/direct/autotest/README.md for the verdicts.
+
+catalog_name                                 absent     main       BASE_ERROR  Invalid input: RPC CreateSchema Field managedcatalog.SchemaInfo.catalog_name: name "" is not a valid name. Valid names cannot contain spaces, periods,...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+catalog_name                                 main       absent     BACKEND_ERROR  Invalid input: RPC CreateSchema Field managedcatalog.SchemaInfo.catalog_name: name "" is not a valid name. Valid names cannot contain spaces, periods,...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+custom_max_retention_hours                   168        absent     UPDATE_IGNORED
+custom_max_retention_hours                   720        absent     UPDATE_IGNORED
+name                                         absent     x-UNIQUE   BASE_ERROR  Invalid input: RPC CreateSchema Field managedcatalog.SchemaInfo.name: name "" is not a valid name. Valid names cannot contain spaces, periods, forward...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-UNIQUE   BASE_ERROR  Invalid input: RPC CreateSchema Field managedcatalog.SchemaInfo.name: name "" is not a valid name. Valid names cannot contain spaces, periods, forward...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+name                                         x-UNIQUE   absent     BACKEND_ERROR  Invalid input: RPC CreateSchema Field managedcatalog.SchemaInfo.name: name "" is not a valid name. Valid names cannot contain spaces, periods, forward...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+name                                         y-UNIQUE   absent     BACKEND_ERROR  Invalid input: RPC CreateSchema Field managedcatalog.SchemaInfo.name: name "" is not a valid name. Valid names cannot contain spaces, periods, forward...ntrol characters. (400 INVALID_PARAMETER_VALUE)
+properties                                   keys1      absent     UPDATE_IGNORED
+properties                                   keys1      keys0      UPDATE_IGNORED
+properties['team']                           x          absent     UPDATE_IGNORED
+properties['team']                           y          absent     UPDATE_IGNORED
+
+=== summary
+OK                         16
+OK_RECREATE                2
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+UPDATE_IGNORED             6
+BACKEND_ERROR              3
+SKIPPED                    2
+BASE_ERROR                 3

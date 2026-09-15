@@ -1,0 +1,74 @@
+# Value library for clusters. See ../../README.md.
+
+# init_scripts is a union: an entry carries exactly one of workspace, volumes, s3, abfss,
+# gcs, dbfs or file. Only the workspace member is seeded -- every other one names
+# cloud-specific storage, and the suite runs against all three clouds -- so the rest stay
+# uncovered for this config, which the report says.
+base:
+  cluster_name: test-cluster-$UNIQUE_NAME
+  spark_version: 13.3.x-scala2.12
+  node_type_id: $NODE_TYPE_ID
+  instance_pool_id: $TEST_INSTANCE_POOL_ID
+  num_workers: 1
+  custom_tags:
+    team: eng
+  spark_conf:
+    spark.speculation: "true"
+  spark_env_vars:
+    MY_VAR: value
+  ssh_public_keys:
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQtest
+
+fields:
+  # The API refuses anything between 1 and 9: "The cluster autotermination time cannot be less than
+  # 10 minutes." 0 disables it and is accepted too, but the CLI defaults the field to 60, so 0 is
+  # what a user writes to turn it off rather than a second ordinary value.
+  autotermination_minutes: [10, 20]
+
+skip:
+  # "The field 'aws_attributes.availability' cannot be supplied when an instance pool ID is provided",
+  # and base sets one -- the pool decides availability for the instances it hands out. The same reason
+  # node_type_flexibility is skipped below.
+  aws_attributes.availability: cannot be set on a cluster that names an instance pool, which base does
+  # Custom containers is turned off on this workspace, so no value of the block is accepted there.
+  docker_image: needs custom containers enabled on the workspace
+  # An init script has to name a file that exists: a real workspace fails the cluster with "Init
+  # scripts failed ... Tree node with path ... does not exist". This suite deliberately uploads no
+  # bundle files -- a sync per permutation would dominate the run -- so no destination it could name
+  # is there, and the mock server's acceptance of any path is what made the field look testable.
+  init_scripts: an init script has to name a file that exists, and this suite uploads none
+  # "is_single_node is not allowed with unspecified kind." The field is only meaningful on a cluster
+  # whose kind says it is one, and this fixture's cluster has no kind, so no value of it is valid
+  # here. The mock server stores it either way, which is what made the field look testable.
+  is_single_node: only allowed on a cluster with a kind, which this fixture does not set
+
+  # Same constraint, same reason: "use_ml_runtime is not allowed with unspecified kind."
+  use_ml_runtime: only allowed on a cluster with a kind, which this fixture does not set
+
+  # "dependency_mode requires DBR major version >= 19." The fixture runs DEFAULT_SPARK_VERSION, which
+  # is DBR 13, and raising it for one field would change the runtime every other field is measured on.
+  # The fake server has no DBR notion and accepted every value, so all six rows read OK locally and
+  # were refused on aws.
+  dependency_mode: requires DBR 19 or newer, and the fixture runs the default spark version
+
+  # A cluster policy has to exist: "'x' is not a valid cluster policy ID." The fake server takes any
+  # string, so these rows only ever measured the fake.
+  policy_id: needs a cluster policy to exist
+  # An init script entry carries exactly one of workspace, volumes, s3, abfss, gcs, dbfs or file,
+  # and base seeds the workspace member. Setting a leaf inside another arm leaves that arm without
+  # its own destination, which the backend accepts and then ignores -- every such row was recording
+  # the fake server storing a value the API drops. Covering an arm needs a fixture that seeds it,
+  # not a value for a leaf inside one that is not there.
+  init_scripts[*].abfss: an init script member the seeded workspace member excludes
+  init_scripts[*].dbfs: an init script member the seeded workspace member excludes
+  init_scripts[*].file: an init script member the seeded workspace member excludes
+  init_scripts[*].gcs: an init script member the seeded workspace member excludes
+  init_scripts[*].s3: an init script member the seeded workspace member excludes
+  init_scripts[*].volumes: an init script member the seeded workspace member excludes
+
+  # "The field 'worker_node_type_flexibility' cannot be supplied when an instance pool ID is
+  # provided", and base provides one. The alternates would also have to name a
+  # second node type, which differs per cloud.
+  worker_node_type_flexibility: incompatible with the instance pool the config sets
+  driver_node_type_flexibility: incompatible with the instance pool the config sets
+  node_type_flexibility: incompatible with the instance pool the config sets

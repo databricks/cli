@@ -1,0 +1,26 @@
+# Value library for postgres databases. See ../../README.md.
+
+# Enabling on cloud surfaced testserver-fidelity gaps to close first (2026-09):
+#   - parent / role: resource references fuzzed with garbage -> aws 404/format error, fake 501/OK
+#   - postgres_database: aws rejects the update (update_mask omitted); the fake accepts it
+# Until those match, the database catalog stays local.
+local_only: database references + postgres_database update differ from aws (see above)
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+  postgres_branches:
+    parent: ${resources.postgres_projects.postgres_projects.name}
+    branch_id: test-branch-$UNIQUE_NAME
+    no_expiry: true
+  postgres_roles:
+    parent: ${resources.postgres_branches.postgres_branches.name}
+    role_id: test-role-$UNIQUE_NAME
+    postgres_role: app_role
+
+base:
+  parent: ${resources.postgres_branches.postgres_branches.name}
+  database_id: test-database-$UNIQUE_NAME
+  postgres_database: app_db
+  role: ${resources.postgres_roles.postgres_roles.name}
