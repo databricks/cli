@@ -7,7 +7,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-model-service-grants-[UNIQUE_NAME]/default/files...
 Created model_services.my_model_service
 Created model_services.my_model_service.grants
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //permissions
