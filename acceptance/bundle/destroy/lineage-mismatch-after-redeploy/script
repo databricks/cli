@@ -1,22 +1,28 @@
-# Reproduces the lineage mismatch a user hits when one machine destroys a bundle
-# and another machine (with no local state) redeploys it under the same name.
+# A user destroys a bundle on one machine and redeploys it (under the same name)
+# from another machine that has no local state. Local state is scoped by target
+# only (.databricks/bundle/<target>), while remote state lives under
+# ~/.bundle/<bundle name>/<target>/state, so the two can diverge.
 #
-# Local state is scoped by target only (.databricks/bundle/<target>), while remote
-# state lives under ~/.bundle/<bundle name>/<target>/state. Destroy deletes the
-# remote state but leaves the local file (with its lineage) behind, so the next
-# fresh deploy elsewhere mints a brand-new lineage that no longer matches the
-# lingering local one.
+# Destroy removes the local state file, so a clean destroy leaves no stale lineage
+# behind. But if that cleanup does not happen (e.g. the process dies after the remote
+# state is deleted), the lingering local lineage no longer matches the new one a fresh
+# redeploy mints, and every command that pulls remote state fails. Cover both cases.
 
-title "Machine A: deploy, then destroy (leaves local state with lineage L1 behind)\n"
+title "Machine A: deploy, then destroy\n"
 trace $CLI bundle deploy
-trace $CLI bundle destroy --auto-approve
 
-# Mask machine A's (local) lineage so the golden output is stable.
+# Snapshot machine A's local state (lineage L1) while it exists, so the lingering-state
+# case below can replay a destroy whose local cleanup did not happen.
 LINEAGE_A=$(print_state.py | jq -r .lineage)
 add_repl "$LINEAGE_A" LINEAGE_A
-
-# Stash A's local state and wipe it so the next deploy behaves like a fresh machine.
 cp -r .databricks .databricks.machineA
+
+trace $CLI bundle destroy --auto-approve
+
+title "A clean destroy removes the local state file, so no stale lineage is left behind:\n"
+trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$' --expect 0
+
+# Wipe whatever remains so the next deploy behaves like a fresh machine.
 rm -rf .databricks
 
 title "Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)\n"
@@ -26,11 +32,12 @@ trace $CLI bundle deploy
 LINEAGE_B=$(print_state.py | jq -r .lineage)
 add_repl "$LINEAGE_B" LINEAGE_B
 
-# Back on machine A: restore the stale local state that still carries L1.
+# Back on machine A, but this time destroy's local cleanup did not happen: restore the
+# stale local state that still carries L1.
 rm -rf .databricks
 mv .databricks.machineA .databricks
 
-title "Machine A: any command that pulls remote state now fails\n"
+title "Machine A with a lingering local state: any command that pulls remote state now fails\n"
 trace musterr $CLI bundle plan
 trace musterr $CLI bundle deploy
 trace musterr $CLI bundle destroy --auto-approve

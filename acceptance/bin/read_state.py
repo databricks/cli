@@ -16,6 +16,11 @@ from print_state import get_resources
 def print_resource_terraform(group, name, *attrs):
     resource_type = "databricks_" + group[:-1]
     filename = ".databricks/bundle/default/terraform/terraform.tfstate"
+    # A missing state file (e.g. after destroy removes it) means the resource's
+    # state is not there, same as a missing entry within the file.
+    if not os.path.exists(filename):
+        print(f"State not found for {group}.{name}")
+        return
     raw = open(filename).read()
     data = json.loads(raw)
     found = 0
@@ -38,6 +43,11 @@ def print_resource_terraform(group, name, *attrs):
 
 def print_resource_direct(group, name, *attrs):
     filename = ".databricks/bundle/default/resources.json"
+    # A missing state file (e.g. after destroy removes it) means the resource's
+    # state is not there, same as a missing entry within the file.
+    if not os.path.exists(filename):
+        print(f"State not found for {group}.{name}")
+        return
     raw = open(filename).read()
     data = json.loads(raw)
     state_map = data["state"]
