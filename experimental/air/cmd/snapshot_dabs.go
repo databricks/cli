@@ -38,7 +38,7 @@ const uploadProvenanceSidecars = false
 // not reimplement workspace/volume upload. A minimal in-memory bundle carries the
 // local tarball path as code_source_path; ReplaceWithRemotePath rewrites it to the
 // artifact .internal path and Upload pushes the bytes.
-func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath string, sidecarStore filer.Filer, sidecarBase string) (snapshotResult, error) {
+func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, snap *snapshotSourceConfig, configPath string, sidecarStore filer.Filer, sidecarBase string, noCache bool) (snapshotResult, error) {
 	repoPath, err := resolveRootPath(ctx, snap.RootPath, filepath.Dir(configPath))
 	if err != nil {
 		return snapshotResult{}, err
@@ -57,7 +57,7 @@ func snapshotViaDABsUpload(ctx context.Context, w *databricks.WorkspaceClient, s
 	if snap.RemoteVolume != nil {
 		remoteVolume = *snap.RemoteVolume
 	}
-	result, err := uploadSnapshotViaDABs(ctx, w, repoPath, plan, remoteVolume)
+	result, err := uploadSnapshotViaDABs(ctx, w, repoPath, configPath, plan, remoteVolume, noCache)
 	if err != nil {
 		return snapshotResult{}, err
 	}
@@ -142,13 +142,18 @@ func snapshotTarballName(plan snapshotPlan, dirName string) string {
 }
 
 // packageSnapshot writes the snapshot to tarball per the resolved plan: `git archive`
-// of the pinned commit for git_archive, else a plain tar of the working tree.
-func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, tarball string) error {
+// of the pinned commit for git_archive, else a plain tar of the working tree. The
+// working-tree path uses the warm snapshot cache unless noCache is set, in which case
+// it re-packs from scratch.
+func packageSnapshot(ctx context.Context, repoPath, configPath string, plan snapshotPlan, tarball string, noCache bool) error {
 	dirName := filepath.Base(repoPath)
 	if plan.mode == modeGitArchive {
 		return createGitArchiveSnapshot(ctx, newGitRepo(repoPath), plan.commitSHA, tarball, dirName, plan.includePaths, plan.subtreePrefix)
 	}
-	return createPlainTarball(ctx, repoPath, tarball, plan.includePaths, plan.isGitRepo)
+	if noCache {
+		return createPlainTarball(ctx, repoPath, tarball, plan.includePaths, plan.isGitRepo)
+	}
+	return packagePlainTarWithCache(ctx, repoPath, configPath, plan.includePaths, plan.isGitRepo, tarball)
 }
 
 // uploadSnapshotViaDABs uploads the snapshot through DABs' artifact-upload machinery
@@ -160,7 +165,7 @@ func packageSnapshot(ctx context.Context, repoPath string, plan snapshotPlan, ta
 // git_archive snapshots are cacheable: the tarball name is content-addressed by
 // (commit, include_paths, root_path subtree), so if the identical object is already
 // uploaded we skip packaging and upload entirely and just reuse the remote path.
-func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, repoPath string, plan snapshotPlan, remoteVolume string) (snapshotResult, error) {
+func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, repoPath, configPath string, plan snapshotPlan, remoteVolume string, noCache bool) (snapshotResult, error) {
 	// artifactPath is where DABs uploads the tarball; GetFilerForLibraries routes to
 	// a Workspace or Volume filer based on its prefix, then appends /.internal.
 	artifactPath := remoteVolume
@@ -237,7 +242,7 @@ func uploadSnapshotViaDABs(ctx context.Context, w *databricks.WorkspaceClient, r
 	}
 
 	// Cache miss (or plain_tar): package the tarball locally, then upload the bytes.
-	if err := packageSnapshot(ctx, repoPath, plan, filepath.Join(tmp, tarName)); err != nil {
+	if err := packageSnapshot(ctx, repoPath, configPath, plan, filepath.Join(tmp, tarName), noCache); err != nil {
 		return snapshotResult{}, err
 	}
 
