@@ -1,0 +1,4 @@
+for target in pipeline alert model_serving quality_monitor app embedded_dashboard; do
+  trace musterr $CLI bundle validate -t "$target"
+done
+trace $CLI bundle validate -t dashboard

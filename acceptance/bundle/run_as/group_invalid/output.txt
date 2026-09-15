@@ -1,0 +1,84 @@
+
+>>> musterr [CLI] bundle validate -t empty
+Error: run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name
+  in databricks.yml:18:7
+
+Name: run_as_group_invalid
+Target: empty
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as_group_invalid/empty
+
+Found 1 error
+
+>>> musterr [CLI] bundle validate -t user_group
+Error: run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name
+  in databricks.yml:21:7
+
+Name: run_as_group_invalid
+Target: user_group
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as_group_invalid/user_group
+
+Found 1 error
+
+>>> musterr [CLI] bundle validate -t sp_group
+Error: run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name
+  in databricks.yml:25:7
+
+Name: run_as_group_invalid
+Target: sp_group
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as_group_invalid/sp_group
+
+Found 1 error
+
+>>> musterr [CLI] bundle validate -t all
+Error: run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name
+  in databricks.yml:29:7
+
+Name: run_as_group_invalid
+Target: all
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as_group_invalid/all
+
+Found 1 error
+
+>>> musterr [CLI] bundle validate -t legacy
+Error: run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity
+  in databricks.yml:34:19
+
+Name: run_as_group_invalid
+Target: legacy
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as_group_invalid/legacy
+
+Found 1 error
+
+>>> musterr [CLI] bundle validate -t legacy_empty
+Error: run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity
+  in databricks.yml:41:19
+
+Name: run_as_group_invalid
+Target: legacy_empty
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as_group_invalid/legacy_empty
+
+Found 1 error
+
+>>> musterr [CLI] bundle validate -t legacy_conflict
+Error: run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity
+  in databricks.yml:45:19
+
+Name: run_as_group_invalid
+Target: legacy_conflict
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/run_as_group_invalid/legacy_conflict
+
+Found 1 error

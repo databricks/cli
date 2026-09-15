@@ -1,0 +1,34 @@
+bundle:
+  name: run_as_group_terraform
+
+run_as:
+  group_name: bundle_group
+
+resources:
+  jobs:
+    inherited:
+      name: Inherited identity
+    user_override:
+      name: User override
+      run_as:
+        user_name: user@example.test
+    sp_override:
+      name: Service principal override
+      run_as:
+        service_principal_name: sp
+
+targets:
+  default:
+    default: true
+  resource_group:
+    resources:
+      jobs:
+        inherited:
+          run_as:
+            group_name: resource_group
+  user_override:
+    resources:
+      jobs:
+        inherited:
+          run_as:
+            user_name: user@example.test

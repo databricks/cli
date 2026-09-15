@@ -3,6 +3,7 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -44,31 +45,21 @@ func reportRunAsNotSupported(resourceType string, location dyn.Location, current
 func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
-	neitherSpecifiedErr := diag.Diagnostics{{
-		Summary:   "run_as section must specify exactly one identity. Neither service_principal_name nor user_name is specified",
-		Locations: []dyn.Location{b.Config.GetLocation("run_as")},
-		Severity:  diag.Error,
-	}}
-
-	// Fail fast if neither service_principal_name nor user_name are specified, but the
-	// run_as section is present.
-	if b.Config.Value().Get("run_as").Kind() == dyn.KindNil {
-		return neitherSpecifiedErr
-	}
-
-	// Fail fast if one or both of service_principal_name and user_name are specified,
-	// but with empty values.
+	identityCount := 0
 	runAs := b.Config.RunAs
-	if runAs.ServicePrincipalName == "" && runAs.UserName == "" {
-		return neitherSpecifiedErr
+	if runAs != nil {
+		for _, identity := range []string{runAs.UserName, runAs.ServicePrincipalName, runAs.GroupName} {
+			if identity != "" {
+				identityCount++
+			}
+		}
 	}
-
-	if runAs.UserName != "" && runAs.ServicePrincipalName != "" {
-		diags = diags.Extend(diag.Diagnostics{{
-			Summary:   "run_as section cannot specify both user_name and service_principal_name",
+	if identityCount != 1 {
+		return diag.Diagnostics{{
+			Summary:   "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name",
 			Locations: []dyn.Location{b.Config.GetLocation("run_as")},
 			Severity:  diag.Error,
-		}})
+		}}
 	}
 
 	identity := runAs.ServicePrincipalName
@@ -77,8 +68,30 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// All resources are supported if the run_as identity is the same as the current deployment identity.
-	if identity == b.Config.Workspace.CurrentUser.UserName {
+	if runAs.GroupName == "" && identity == b.Config.Workspace.CurrentUser.UserName {
 		return diags
+	}
+
+	if runAs.GroupName != "" {
+		identity = fmt.Sprintf("group %q", runAs.GroupName)
+		for _, key := range slices.Sorted(maps.Keys(b.Config.Resources.Pipelines)) {
+			if b.Config.Resources.Pipelines[key].RunAs == nil {
+				diags = diags.Extend(diag.Diagnostics{{
+					Summary:   "pipelines do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on this pipeline to override the bundle run_as",
+					Locations: []dyn.Location{b.Config.GetLocation("resources.pipelines." + key)},
+					Severity:  diag.Error,
+				}})
+			}
+		}
+		for _, key := range slices.Sorted(maps.Keys(b.Config.Resources.Alerts)) {
+			if b.Config.Resources.Alerts[key].RunAs == nil {
+				diags = diags.Extend(diag.Diagnostics{{
+					Summary:   "alerts do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on this alert to override the bundle run_as",
+					Locations: []dyn.Location{b.Config.GetLocation("resources.alerts." + key)},
+					Severity:  diag.Error,
+				}})
+			}
+		}
 	}
 
 	// Model serving endpoints do not support run_as in the API.
@@ -141,6 +154,7 @@ func setRunAsForJobs(b *bundle.Bundle) {
 			continue
 		}
 		job.RunAs = &jobs.JobRunAs{
+			GroupName:            runAs.GroupName,
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,
 		}
@@ -228,6 +242,13 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// User has opted to use the legacy behavior of run_as with the
 	// experimental.use_legacy_run_as flag.
 	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
+		if b.Config.Value().Get("run_as").Get("group_name").Kind() != dyn.KindInvalid {
+			return diag.Diagnostics{{
+				Summary:   "run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity",
+				Locations: b.Config.GetLocations("run_as.group_name"),
+				Severity:  diag.Error,
+			}}
+		}
 		setPipelineOwnersToRunAsIdentity(b)
 		setRunAsForJobs(b)
 		return diag.Diagnostics{
