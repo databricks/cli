@@ -34,6 +34,7 @@ rm "$OUT_REQUESTS"
 # the terraform state the deploy created, so this deploy runs on terraform and migrates.
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'terraform' 'tf-provider' '!engine/direct'
+trace print_state.py | jq .serial | contains.py "7"
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 #trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
