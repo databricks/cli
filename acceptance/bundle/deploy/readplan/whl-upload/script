@@ -1,0 +1,25 @@
+# A local wheel referenced by a job library must be uploaded to its .../artifacts/.internal/
+# workspace path by both `bundle deploy` and `bundle deploy --plan`. Applying a saved plan
+# still runs the build phase, which computes the artifact upload list
+# (phases.Build -> libraries.ReplaceWithRemotePath), so the wheel the job task points at
+# actually exists remotely. This test pins that the two deploy paths upload it identically.
+
+title "bundle deploy uploads the wheel"
+trace $CLI bundle deploy
+# An import-file request uploaded the wheel to its .../artifacts/.internal/ workspace path.
+# raw_body is the wheel's binary payload; drop it to keep the golden readable.
+trace print_requests.py //artifacts/.internal --del-field raw_body
+
+trace $CLI bundle destroy --auto-approve
+# Discard destroy's requests so the saved-plan deploy below starts from a clean recording.
+rm "$OUT_REQUESTS"
+
+title "bundle deploy --plan also uploads the wheel"
+trace $CLI bundle plan -o json > out.plan.json
+trace $CLI bundle deploy --plan out.plan.json
+# The same import-file request uploads the wheel to the .../artifacts/.internal/ path the
+# job task points at, matching the plain `bundle deploy` above.
+trace print_requests.py //artifacts/.internal --del-field raw_body
+
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

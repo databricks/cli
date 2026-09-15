@@ -1,10 +1,10 @@
 bundle:
-  name: whl-not-uploaded
+  name: whl-upload
 
 resources:
   jobs:
     my_job:
-      name: whl-not-uploaded-job
+      name: whl-upload-job
       tasks:
         - task_key: main
           new_cluster:
@@ -15,6 +15,5 @@ resources:
             package_name: my_test_code
             entry_point: run
           libraries:
-            # Local wheel, prebuilt (no build: step) to keep the test hermetic. See script
-            # for the bug this exercises. Behaves the same as a wheel with a build: step.
+            # Local wheel, prebuilt (no build: step) to keep the test hermetic.
             - whl: ./dist/*.whl

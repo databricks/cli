@@ -1,0 +1,4 @@
+# --plan is direct-engine only.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = true
+Ignore = [".databricks"]
