@@ -22,6 +22,10 @@ trace $CLI bundle destroy --auto-approve
 title "A clean destroy removes the local state file, so no stale lineage is left behind:\n"
 trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$' --expect 0
 
+title "and prunes the scaffolding directories it leaves empty:\n"
+trace test '!' -d .databricks/bundle/default/.internal
+trace test '!' -d .databricks/bundle/default/sync-snapshots
+
 # Wipe whatever remains so the next deploy behaves like a fresh machine.
 rm -rf .databricks
 

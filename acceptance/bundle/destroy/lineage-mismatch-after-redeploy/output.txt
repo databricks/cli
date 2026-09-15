@@ -19,6 +19,12 @@ Destroy: 1 deleted
 
 >>> find.py ^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$ --expect 0
 
+=== and prunes the scaffolding directories it leaves empty:
+
+>>> test ! -d .databricks/bundle/default/.internal
+
+>>> test ! -d .databricks/bundle/default/sync-snapshots
+
 === Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)
 
 >>> [CLI] bundle deploy
