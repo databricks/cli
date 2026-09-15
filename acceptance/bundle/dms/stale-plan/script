@@ -30,7 +30,7 @@ $CLI bundle plan -o json > tmp.plan2.json
 trace jq '{serial}' tmp.plan2.json
 trace update_file.py databricks.yml "name: foo" "name: foo_renamed"
 trace $CLI bundle deploy
-trace jq '{serial}' .databricks/bundle/default/resources.json
+trace print_state.py --no-dms | jq '{serial}'
 
 title "Replaying the older plan is rejected: same deployment, outdated version"
 trace musterr $CLI bundle deploy --plan tmp.plan2.json

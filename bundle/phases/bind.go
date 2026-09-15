@@ -135,6 +135,11 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}()
 
 	if engine.IsDirect() {
+		if b.ConfiguresDeploymentHistory(ctx) {
+			logdiag.LogError(ctx, errors.New("unbind is not supported for a bundle target that records deployment history"))
+			return
+		}
+
 		groupName, ok := terraform.TerraformToGroupName[tfResourceType]
 		if !ok {
 			groupName = tfResourceType

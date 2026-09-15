@@ -1,8 +1,10 @@
 package statemgmt
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/fs"
 	"os"
 
@@ -14,7 +16,7 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-// PushResourcesState uploads the local state file to the remote location.
+// PushResourcesState uploads finalized resource state to the remote location.
 func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
@@ -30,21 +32,30 @@ func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.Eng
 		remotePath, localPath = b.StateFilenameTerraform(ctx)
 	}
 
-	local, err := os.Open(localPath)
-	if errors.Is(err, fs.ErrNotExist) {
-		// The state file can be absent if terraform apply is skipped because
-		// there are no changes to apply in the plan.
-		log.Debugf(ctx, "Local state file does not exist: %s", localPath)
-		return
+	var state io.Reader
+	if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+		data := b.DeploymentBundle.StateDB.StateForUpload
+		if data == nil {
+			return
+		}
+		state = bytes.NewReader(data)
+	} else {
+		local, err := os.Open(localPath)
+		if errors.Is(err, fs.ErrNotExist) {
+			// The state file can be absent if terraform apply is skipped because
+			// there are no changes to apply in the plan.
+			log.Debugf(ctx, "Local state file does not exist: %s", localPath)
+			return
+		}
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		defer local.Close()
+		state = local
 	}
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	defer local.Close()
 
-	// Upload state file from local cache directory to filer.
-	err = f.Write(ctx, remotePath, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
+	err = f.Write(ctx, remotePath, state, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
