@@ -1,6 +1,10 @@
 # Value library for postgres databases. See ../../README.md.
 
-local_only: a recreate cannot reuse the project name until the soft delete is purged
+# Enabling on cloud surfaced testserver-fidelity gaps to close first (2026-09):
+#   - parent / role: resource references fuzzed with garbage -> aws 404/format error, fake 501/OK
+#   - postgres_database: aws rejects the update (update_mask omitted); the fake accepts it
+# Until those match, the database catalog stays local.
+local_only: database references + postgres_database update differ from aws (see above)
 
 deps:
   postgres_projects:

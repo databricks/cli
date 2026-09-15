@@ -2,7 +2,13 @@
 
 # The parent project holds its name after deletion until the soft delete is purged, so the chain
 # cannot be rebuilt on a real workspace. See postgres_projects.yml.
-local_only: a recreate cannot reuse the project name until the soft delete is purged
+# Enabling this on cloud surfaced several testserver-fidelity gaps to close first (2026-09):
+#   - no_expiry: aws rejects false ("must be true to disable expiration"); the fake accepts it
+#   - source_branch / source_snapshot / source_branch_lsn: aws validates the reference/LSN
+#     format, the fake accepts any string
+#   - a bad parent returns 404 ENDPOINT_NOT_FOUND on aws vs 501 "No stub found" locally
+# Until those match, the branch catalog stays local.
+local_only: several branch fields are validated on aws but not by the fake server (see above)
 
 deps:
   postgres_projects:

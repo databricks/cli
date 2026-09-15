@@ -1,6 +1,10 @@
 # Value library for postgres endpoints. See ../../README.md.
 
-local_only: a recreate cannot reuse the project name until the soft delete is purged
+# On a real workspace a branch is provisioned with its own read_write endpoint, so the base
+# config -- which creates a second read_write endpoint -- is refused with "read_write endpoint
+# already exists". Running on cloud needs a fixture that manages the auto-created endpoint
+# instead of adding one.
+local_only: a branch already has a read_write endpoint, so the fixture cannot create another
 
 deps:
   postgres_projects:

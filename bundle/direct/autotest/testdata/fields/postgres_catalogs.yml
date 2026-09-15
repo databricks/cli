@@ -1,6 +1,11 @@
 # Value library for postgres catalogs. See ../../README.md.
 
-local_only: a recreate cannot reuse the project name until the soft delete is purged
+# Enabling on cloud surfaced testserver-fidelity gaps to close first (2026-09):
+#   - branch: a resource reference fuzzed with garbage -> aws 404/format error, fake 501 "No stub"
+#   - branch is required in the catalog spec; the fake lets it be cleared
+#   - recreate semantics diverge (aws recreates far fewer fields than the fake: OK_RECREATE 18->8)
+# Until those match, the catalog stays local.
+local_only: branch reference + required-field + recreate semantics differ from aws (see above)
 
 deps:
   postgres_projects:

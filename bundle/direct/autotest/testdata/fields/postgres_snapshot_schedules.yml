@@ -1,11 +1,10 @@
 # Value library for postgres snapshot schedules. See ../../README.md.
 
-# The schedule attaches to the project's implicitly-created "production" root branch -- the backend
-# refuses a schedule on any other branch ("not allowed to snapshot non-root branch"). The project
-# holds its name after deletion until the soft delete is purged, so the chain cannot be rebuilt on a
-# real workspace. See postgres_projects.yml. Shape follows
-# acceptance/bundle/resources/postgres_snapshot_schedules/basic.
-local_only: a recreate cannot reuse the project name until the soft delete is purged
+# Enabling on cloud surfaced testserver-fidelity gaps to close first (2026-09):
+#   - branch: a resource reference fuzzed with garbage -> aws 404, fake 501 "No stub"
+#   - schedule.daily_schedule.hour / monthly_schedule: aws requires 'hour' in [0,23]; the fake does not
+# Until those match, the schedule catalog stays local.
+local_only: branch reference + required schedule 'hour' differ from aws (see above)
 
 deps:
   postgres_projects:
