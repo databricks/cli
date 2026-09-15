@@ -6,7 +6,7 @@ cleanup() { $CLI bundle destroy --auto-approve &> LOG.destroy; }
 trap cleanup EXIT
 
 title "Old CLI (predates hashing) deploys: state holds the full serialized_dashboard\n"
-$CLI_LATEST bundle deploy &> LOG.deploy_old
+$CLI_1_16_1 bundle deploy &> LOG.deploy_old
 contains.py '!panic' '!internal error' < LOG.deploy_old > /dev/null
 print_state.py | gron.py | grep serialized_dashboard
 

@@ -13,14 +13,14 @@ print_state.py | gron.py | grep serialized_dashboard
 # The old CLI reads the hash as literal content; so hash != config content is a local change -> update
 # never a recreate or crash.
 title "Old CLI on the hashed state plans a drift update, not a recreate or crash"
-$CLI_LATEST bundle plan &> LOG.plan_old
+$CLI_1_16_1 bundle plan &> LOG.plan_old
 contains.py '!recreate' '!panic' '!internal error' < LOG.plan_old > /dev/null
 
 title "The old CLI redeploys and writes full content back, so the drift is self-correcting\n"
-$CLI_LATEST bundle deploy &> LOG.deploy_old
+$CLI_1_16_1 bundle deploy &> LOG.deploy_old
 contains.py '!panic' '!internal error' < LOG.deploy_old > /dev/null
 print_state.py | gron.py | grep serialized_dashboard
 
 title "A second old-CLI plan is a no-op"
-$CLI_LATEST bundle plan &> LOG.plan_old2
+$CLI_1_16_1 bundle plan &> LOG.plan_old2
 contains.py '0 to change' '!panic' < LOG.plan_old2 > /dev/null

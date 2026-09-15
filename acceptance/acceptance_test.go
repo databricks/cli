@@ -383,9 +383,9 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		repls.SetPath(cli293Path, "[CLI_293]")
 
 		// CLI version that predates the hashed_fields feature. Used by acceptance/bundle/hashing
-		cliLatestPath := DownloadCLI(t, buildDir, "1.16.1")
-		t.Setenv("CLI_LATEST", cliLatestPath)
-		repls.SetPath(cliLatestPath, "[CLI_LATEST]")
+		cli1161Path := DownloadCLI(t, buildDir, "1.16.1")
+		t.Setenv("CLI_1_16_1", cli1161Path)
+		repls.SetPath(cli1161Path, "[CLI_1_16_1]")
 	}
 
 	paths := []string{
