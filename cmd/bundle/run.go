@@ -188,7 +188,9 @@ Example usage:
 					return err
 				}
 
-				runner, err := run.ToRunner(b, ref)
+				// Re-resolve after ResolveConfigAgainstState so the runner reads the resolved
+				// resource; the ref above is a pre-resolution snapshot.
+				runner, err := keyToRunner(b, key)
 				if err != nil {
 					return err
 				}
