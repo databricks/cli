@@ -409,40 +409,10 @@ func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.Pa
 	return nil
 }
 
-// DoDelete deletes the run via jobs/runs/delete, on both destroy and the
-// recreate path. The API rejects a still-active run, which an interrupted wait
-// leaves behind, so cancel it first.
-func (r *ResourceJobRun) DoDelete(ctx context.Context, id string, _ *JobRunState) error {
-	runID, err := parseRunID(id)
-	if err != nil {
-		return err
-	}
-	remote, err := r.DoRead(ctx, id)
-	if err != nil {
-		return err
-	}
-	if !runIsTerminal(remote.State.LifeCycleState) {
-		err = r.cancelRun(ctx, runID)
-		if err != nil {
-			return err
-		}
-	}
-	return r.client.Jobs.DeleteRunByRunId(ctx, runID)
-}
-
-// cancelRun cancels a run and waits for it to settle, since cancellation is
-// asynchronous and the delete that follows needs a settled run.
-func (r *ResourceJobRun) cancelRun(ctx context.Context, runID int64) error {
-	waiter, err := r.client.Jobs.CancelRun(ctx, jobs.CancelRun{RunId: runID})
-	if err != nil {
-		return fmt.Errorf("cancelling run %d before deleting it: %w", runID, err)
-	}
-	_, err = waiter.Get()
-	if err != nil {
-		return fmt.Errorf("waiting for run %d to be cancelled: %w", runID, err)
-	}
-	return nil
-}
+// ResourceJobRun intentionally implements no DoDelete: a run is a historical
+// record, so removing it from the bundle (or recreating it when a trigger
+// re-fires) leaves the run alone on the backend and only drops the state entry
+// (see PlanEntry.StateOnly). A recreate still triggers a fresh run.
 
 func isEmptyFileTriggerMap(v any) bool {
 	if v == nil {

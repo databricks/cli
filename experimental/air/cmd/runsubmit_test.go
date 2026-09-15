@@ -48,9 +48,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 		MLflowRunName:             new("run-v2"),
 		MLflowExperimentDirectory: new("/Workspace/Users/me/exp"),
 		MLflowArtifactLocation:    new("dbfs:/Volumes/main/default/artifacts"),
-		Environment: &environmentConfig{DockerImage: &dockerImageConfig{
-			URL: "registry.example.com/team/image:tag",
-		}},
 	}
 
 	p := buildSubmitPayload(cfg, "/d/command.sh", "5", "", snapshotResult{}, nil)
@@ -78,7 +75,6 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, "run-v2", at.MlflowRun)
 	assert.Equal(t, "/Workspace/Users/me/exp", at.MlflowExperimentDirectory)
 	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", at.MlflowArtifactLocation)
-	assert.Equal(t, "registry.example.com/team/image:tag", at.DockerImageUrl)
 	require.Len(t, at.Deployments, 1)
 	assert.Equal(t, "/d/command.sh", at.Deployments[0].CommandPath)
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)

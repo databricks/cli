@@ -22,21 +22,19 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ai-gateway",
-		Short: `*Beta* Govern AI workloads in Unity Catalog.`,
-		Long: `This command is in Beta and may change without notice.
-
-Govern AI workloads in Unity Catalog. This API manages the Unity Catalog
+		Short: `Govern AI workloads in Unity Catalog.`,
+		Long: `Govern AI workloads in Unity Catalog. This API manages the Unity Catalog
   securables that bring centralized access control, lineage, and auditing to
   AI-serving entities: model services (governed access to foundation models and
-  external LLMs), model provider services (governed connections to external
-  model providers), and MCP services (governed Model Context Protocol servers).`,
+  external LLMs), model provider services (governed resources for external model
+  providers), and MCP services (governed Model Context Protocol servers).`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newCreateMcpService())
@@ -84,18 +82,15 @@ func newCreateMcpService() *cobra.Command {
 	cmd.Flags().StringVar(&createMcpServiceReq.McpService.Comment, "comment", createMcpServiceReq.McpService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&createMcpServiceReq.McpService.Name, "name", createMcpServiceReq.McpService.Name, `Resource name of the MCP service.`)
-	cmd.Flags().StringVar(&createMcpServiceReq.McpService.Owner, "owner", createMcpServiceReq.McpService.Owner, `The owner of the MCP service.`)
 
 	cmd.Use = "create-mcp-service PARENT MCP_SERVICE_ID"
-	cmd.Short = `*Beta* Create an MCP service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create an MCP service.
+	cmd.Short = `Create an MCP service.`
+	cmd.Long = `Create an MCP service.
 
   Creates an MCP service in a Unity Catalog schema. An MCP (Model Context
   Protocol) service is a governed securable that registers an MCP server and
-  exposes its tools for discovery, access control, and invocation. The caller
-  supplies the leaf name in mcp_service_id.
+  exposes its tools for discovery, access control, and invocation. Specify its
+  name in mcp_service_id.
 
   You must be the owner of the parent schema or have the CREATE_SERVICE and
   USE_SCHEMA privileges on the parent schema and USE_CATALOG on the parent
@@ -108,8 +103,8 @@ Create an MCP service.
     MCP_SERVICE_ID: Name for the MCP service, e.g. "my_mcp_service".`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -177,23 +172,22 @@ func newCreateModelProviderService() *cobra.Command {
 	cmd.Flags().StringVar(&createModelProviderServiceReq.ModelProviderService.Comment, "comment", createModelProviderServiceReq.ModelProviderService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&createModelProviderServiceReq.ModelProviderService.Name, "name", createModelProviderServiceReq.ModelProviderService.Name, `Resource name of the provider service.`)
-	cmd.Flags().StringVar(&createModelProviderServiceReq.ModelProviderService.Owner, "owner", createModelProviderServiceReq.ModelProviderService.Owner, `The owner of the model provider service.`)
 
 	cmd.Use = "create-model-provider-service PARENT MODEL_PROVIDER_SERVICE_ID"
-	cmd.Short = `*Beta* Create a model provider service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a model provider service.
+	cmd.Short = `Create a model provider service.`
+	cmd.Long = `Create a model provider service.
 
   Creates a model provider service in a Unity Catalog schema. A model provider
-  service is a governed connection to an external model provider (for example
-  OpenAI, Azure OpenAI, or Amazon Bedrock) that model services reference to
-  invoke that provider. The caller supplies the leaf name in
+  service stores authentication and request configuration for an external model
+  provider, such as OpenAI, Azure OpenAI, or Amazon Bedrock. Model services
+  reference it to invoke the provider. Specify its name in
   model_provider_service_id.
 
   You must be the owner of the parent schema or have the CREATE_SERVICE and
   USE_SCHEMA privileges on the parent schema and USE_CATALOG on the parent
-  catalog.
+  catalog. Inline credentials additionally require CREATE_CONNECTION on the
+  parent schema. When using a Unity Catalog service credential, you must have
+  ACCESS on that credential.
 
   Arguments:
     PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
@@ -201,8 +195,8 @@ Create a model provider service.
     MODEL_PROVIDER_SERVICE_ID: Name for the model provider service, e.g. "openai_prod".`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -270,22 +264,23 @@ func newCreateModelService() *cobra.Command {
 	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Comment, "comment", createModelServiceReq.ModelService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Name, "name", createModelServiceReq.ModelService.Name, `Resource name of the model service.`)
-	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Owner, "owner", createModelServiceReq.ModelService.Owner, `The owner of the model service.`)
 	// TODO: array: supported_api_types
 
 	cmd.Use = "create-model-service PARENT MODEL_SERVICE_ID"
-	cmd.Short = `*Beta* Create a model service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Create a model service.
+	cmd.Short = `Create a model service.`
+	cmd.Long = `Create a model service.
 
   Creates a model service in a Unity Catalog schema. A model service is a
   governed AI Gateway endpoint that routes inference requests to one or more
-  model destinations. The caller supplies the leaf name in model_service_id.
+  model destinations. Specify its name in model_service_id.
 
   You must be the owner of the parent schema or have the CREATE_SERVICE and
   USE_SCHEMA privileges on the parent schema and USE_CATALOG on the parent
-  catalog.
+  catalog. For every destination, you also need USE_CATALOG and USE_SCHEMA
+  on its parent and EXECUTE on the referenced Unity Catalog model or model
+  provider service. A provisioned-throughput destination additionally requires
+  CAN_MANAGE on its Model Serving endpoint. Configuring an inference table
+  additionally requires CREATE_TABLE.
 
   Arguments:
     PARENT: Name of the parent schema. Format: schemas/{catalog}.{schema}. Each
@@ -293,8 +288,8 @@ Create a model service.
     MODEL_SERVICE_ID: Name for the model service, e.g. "my_model_service".`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -355,13 +350,11 @@ func newDeleteMcpService() *cobra.Command {
 
 	var deleteMcpServiceReq catalog.DeleteMcpServiceRequest
 
-	cmd.Flags().StringVar(&deleteMcpServiceReq.Etag, "etag", deleteMcpServiceReq.Etag, `If-match precondition: when set, the delete proceeds only if the current server-side etag matches.`)
+	cmd.Flags().StringVar(&deleteMcpServiceReq.Etag, "etag", deleteMcpServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-mcp-service NAME"
-	cmd.Short = `*Beta* Delete an MCP service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete an MCP service.
+	cmd.Short = `Delete an MCP service.`
+	cmd.Long = `Delete an MCP service.
 
   Deletes the MCP service identified by its resource name. Optionally supply an
   etag to make the delete conditional on the MCP service not having changed
@@ -376,8 +369,8 @@ Delete an MCP service.
       capped at 255 characters individually.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -424,13 +417,11 @@ func newDeleteModelProviderService() *cobra.Command {
 
 	var deleteModelProviderServiceReq catalog.DeleteModelProviderServiceRequest
 
-	cmd.Flags().StringVar(&deleteModelProviderServiceReq.Etag, "etag", deleteModelProviderServiceReq.Etag, `If-match precondition: when set, the delete proceeds only if the current server-side etag matches.`)
+	cmd.Flags().StringVar(&deleteModelProviderServiceReq.Etag, "etag", deleteModelProviderServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-model-provider-service NAME"
-	cmd.Short = `*Beta* Delete a model provider service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a model provider service.
+	cmd.Short = `Delete a model provider service.`
+	cmd.Long = `Delete a model provider service.
 
   Deletes the model provider service identified by its resource name. Optionally
   supply an etag to make the delete conditional on the model provider service
@@ -446,8 +437,8 @@ Delete a model provider service.
       Each {...} component is capped at 255 characters individually.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -494,13 +485,11 @@ func newDeleteModelService() *cobra.Command {
 
 	var deleteModelServiceReq catalog.DeleteModelServiceRequest
 
-	cmd.Flags().StringVar(&deleteModelServiceReq.Etag, "etag", deleteModelServiceReq.Etag, `If-match precondition: when set, the delete proceeds only if the current server-side etag matches.`)
+	cmd.Flags().StringVar(&deleteModelServiceReq.Etag, "etag", deleteModelServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 
 	cmd.Use = "delete-model-service NAME"
-	cmd.Short = `*Beta* Delete a model service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Delete a model service.
+	cmd.Short = `Delete a model service.`
+	cmd.Long = `Delete a model service.
 
   Deletes the model service identified by its resource name. Optionally supply
   an etag to make the delete conditional on the model service not having
@@ -515,8 +504,8 @@ Delete a model service.
       component is capped at 255 characters individually.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -564,10 +553,8 @@ func newGetMcpService() *cobra.Command {
 	var getMcpServiceReq catalog.GetMcpServiceRequest
 
 	cmd.Use = "get-mcp-service NAME"
-	cmd.Short = `*Beta* Get an MCP service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get an MCP service.
+	cmd.Short = `Get an MCP service.`
+	cmd.Long = `Get an MCP service.
 
   Returns the MCP service identified by its resource name.
 
@@ -581,8 +568,8 @@ Get an MCP service.
       capped at 255 characters individually.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -631,10 +618,8 @@ func newGetModelProviderService() *cobra.Command {
 	var getModelProviderServiceReq catalog.GetModelProviderServiceRequest
 
 	cmd.Use = "get-model-provider-service NAME"
-	cmd.Short = `*Beta* Get a model provider service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a model provider service.
+	cmd.Short = `Get a model provider service.`
+	cmd.Long = `Get a model provider service.
 
   Returns the model provider service identified by its resource name.
 
@@ -648,8 +633,8 @@ Get a model provider service.
       Each {...} component is capped at 255 characters individually.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -698,10 +683,8 @@ func newGetModelService() *cobra.Command {
 	var getModelServiceReq catalog.GetModelServiceRequest
 
 	cmd.Use = "get-model-service NAME"
-	cmd.Short = `*Beta* Get a model service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Get a model service.
+	cmd.Short = `Get a model service.`
+	cmd.Long = `Get a model service.
 
   Returns the model service identified by its resource name.
 
@@ -715,8 +698,8 @@ Get a model service.
       component is capped at 255 characters individually.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -769,8 +752,8 @@ func newListMcpServices() *cobra.Command {
 	var listMcpServicesLimit int
 
 	cmd.Flags().IntVar(&listMcpServicesReq.PageSize, "page-size", listMcpServicesReq.PageSize, `Maximum number of MCP services to return.`)
-	cmd.Flags().StringVar(&listMcpServicesReq.Parent, "parent", listMcpServicesReq.Parent, `Name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
-	cmd.Flags().Var(&listMcpServicesReq.View, "view", `View selector controlling which fields are populated per row. Supported values: [BASIC, FULL]`)
+	cmd.Flags().StringVar(&listMcpServicesReq.Parent, "parent", listMcpServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	cmd.Flags().Var(&listMcpServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listMcpServicesLimit, "limit", 0, `Maximum number of results to return.`)
@@ -780,10 +763,8 @@ func newListMcpServices() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-mcp-services"
-	cmd.Short = `*Beta* List MCP services.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List MCP services.
+	cmd.Short = `List MCP services.`
+	cmd.Long = `List MCP services.
 
   Lists the MCP services in a Unity Catalog schema. Provide parent as
   schemas/{catalog}.{schema}. Results are paginated; pass the returned
@@ -794,8 +775,8 @@ List MCP services.
   EXECUTE, READ_METADATA, or MANAGE) are returned.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -849,8 +830,8 @@ func newListModelProviderServices() *cobra.Command {
 	var listModelProviderServicesLimit int
 
 	cmd.Flags().IntVar(&listModelProviderServicesReq.PageSize, "page-size", listModelProviderServicesReq.PageSize, `Maximum number of provider services to return.`)
-	cmd.Flags().StringVar(&listModelProviderServicesReq.Parent, "parent", listModelProviderServicesReq.Parent, `Name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
-	cmd.Flags().Var(&listModelProviderServicesReq.View, "view", `View selector controlling which fields are populated per row. Supported values: [BASIC, FULL]`)
+	cmd.Flags().StringVar(&listModelProviderServicesReq.Parent, "parent", listModelProviderServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	cmd.Flags().Var(&listModelProviderServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listModelProviderServicesLimit, "limit", 0, `Maximum number of results to return.`)
@@ -860,10 +841,8 @@ func newListModelProviderServices() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-model-provider-services"
-	cmd.Short = `*Beta* List model provider services.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List model provider services.
+	cmd.Short = `List model provider services.`
+	cmd.Long = `List model provider services.
 
   Lists the model provider services in a Unity Catalog schema. Provide parent
   as schemas/{catalog}.{schema}. Results are paginated; pass the returned
@@ -874,8 +853,8 @@ List model provider services.
   through EXECUTE, READ_METADATA, or MANAGE) are returned.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -929,8 +908,8 @@ func newListModelServices() *cobra.Command {
 	var listModelServicesLimit int
 
 	cmd.Flags().IntVar(&listModelServicesReq.PageSize, "page-size", listModelServicesReq.PageSize, `Maximum number of model services to return.`)
-	cmd.Flags().StringVar(&listModelServicesReq.Parent, "parent", listModelServicesReq.Parent, `Name of the parent schema to list within, as schemas/{catalog}.{schema}.`)
-	cmd.Flags().Var(&listModelServicesReq.View, "view", `View selector controlling which fields are populated per row. Supported values: [BASIC, FULL]`)
+	cmd.Flags().StringVar(&listModelServicesReq.Parent, "parent", listModelServicesReq.Parent, `Parent schema to list within, in the form schemas/{catalog}.{schema}.`)
+	cmd.Flags().Var(&listModelServicesReq.View, "view", `Fields to return for each service. Supported values: [BASIC, FULL]`)
 
 	// Limit flag for total result capping.
 	cmd.Flags().IntVar(&listModelServicesLimit, "limit", 0, `Maximum number of results to return.`)
@@ -940,10 +919,8 @@ func newListModelServices() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-model-services"
-	cmd.Short = `*Beta* List model services.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-List model services.
+	cmd.Short = `List model services.`
+	cmd.Long = `List model services.
 
   Lists the model services in a Unity Catalog schema. Provide parent as
   schemas/{catalog}.{schema}. Results are paginated; pass the returned
@@ -954,8 +931,8 @@ List model services.
   EXECUTE, READ_METADATA, or MANAGE) are returned.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -1008,17 +985,14 @@ func newUpdateMcpService() *cobra.Command {
 
 	cmd.Flags().Var(&updateMcpServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateMcpServiceReq.Etag, "etag", updateMcpServiceReq.Etag, `If-match precondition: when set, the update proceeds only if the current server-side etag matches.`)
+	cmd.Flags().StringVar(&updateMcpServiceReq.Etag, "etag", updateMcpServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Comment, "comment", updateMcpServiceReq.McpService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Name, "name", updateMcpServiceReq.McpService.Name, `Resource name of the MCP service.`)
-	cmd.Flags().StringVar(&updateMcpServiceReq.McpService.Owner, "owner", updateMcpServiceReq.McpService.Owner, `The owner of the MCP service.`)
 
 	cmd.Use = "update-mcp-service NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update an MCP service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update an MCP service.
+	cmd.Short = `Update an MCP service.`
+	cmd.Long = `Update an MCP service.
 
   Updates an MCP service. Only the fields named in update_mask are changed;
   the resource name is immutable. Optionally supply an etag to make the update
@@ -1026,19 +1000,24 @@ Update an MCP service.
 
   You must be the owner of the MCP service or have MANAGE on it, plus
   USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+  When changing config.source_connection.name, the MCP service owner must also
+  have USE_CONNECTION on the new connection.
 
   Arguments:
     NAME: Resource name of the MCP service. Format:
       mcp-services/{catalog}.{schema}.{mcp_service}. Each {...} component is
       capped at 255 characters individually. Server-derived on Create from
       parent + mcp_service_id; required and immutable on Update/Get/Delete.
-    UPDATE_MASK: The list of fields to update. The framework validates each path against
-      the mcp_service field above. Wildcard paths (paths: ["*"]) are not
-      supported; list each field path explicitly.`
+    UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
+      replacement must include every required field; any optional field you omit
+      is cleared. To preserve sibling fields, use one or more granular paths:
+      comment, config.source_connection.name,
+      config.include_tool_selectors, or config.rate_limits. Wildcard paths
+      such as * are not supported.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1106,17 +1085,14 @@ func newUpdateModelProviderService() *cobra.Command {
 
 	cmd.Flags().Var(&updateModelProviderServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateModelProviderServiceReq.Etag, "etag", updateModelProviderServiceReq.Etag, `If-match precondition: when set, the update proceeds only if the current server-side etag matches.`)
+	cmd.Flags().StringVar(&updateModelProviderServiceReq.Etag, "etag", updateModelProviderServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Comment, "comment", updateModelProviderServiceReq.ModelProviderService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Name, "name", updateModelProviderServiceReq.ModelProviderService.Name, `Resource name of the provider service.`)
-	cmd.Flags().StringVar(&updateModelProviderServiceReq.ModelProviderService.Owner, "owner", updateModelProviderServiceReq.ModelProviderService.Owner, `The owner of the model provider service.`)
 
 	cmd.Use = "update-model-provider-service NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a model provider service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a model provider service.
+	cmd.Short = `Update a model provider service.`
+	cmd.Long = `Update a model provider service.
 
   Updates a model provider service. Only the fields named in update_mask are
   changed; the resource name and provider type are immutable. Optionally supply
@@ -1127,19 +1103,28 @@ Update a model provider service.
   plus USE_CATALOG on the parent catalog and USE_SCHEMA on the parent
   schema.
 
+  Updating config.provider cannot change the provider type or switch between
+  Unity Catalog service-credential authentication and inline authentication.
+
   Arguments:
     NAME: Resource name of the provider service. Format:
       model-provider-services/{catalog}.{schema}.{model_provider_service}.
       Each {...} component is capped at 255 characters individually.
       Server-derived on Create from parent + model_provider_service_id;
       required and immutable on Update/Get/Delete.
-    UPDATE_MASK: The list of fields to update. The framework validates each path against
-      the model_provider_service field above. Wildcard paths (paths: ["*"])
-      are not supported; list each field path explicitly.`
+    UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
+      replacement must include every required field; any optional field you omit
+      is cleared. To preserve sibling fields, use one or more granular paths:
+      comment; config.provider to replace the active provider-specific value
+      (for example, config.openai; the mask path remains config.provider);
+      config.allow_all_targets, config.targets, config.forward_headers,
+      config.forward_query_parameters, config.forward_unmanaged_paths,
+      config.rate_limits, or config.inference_table. The provider type is
+      immutable, and wildcard paths such as * are not supported.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -1207,18 +1192,15 @@ func newUpdateModelService() *cobra.Command {
 
 	cmd.Flags().Var(&updateModelServiceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateModelServiceReq.Etag, "etag", updateModelServiceReq.Etag, `If-match precondition: when set, the update proceeds only if the current server-side etag matches.`)
+	cmd.Flags().StringVar(&updateModelServiceReq.Etag, "etag", updateModelServiceReq.Etag, `Optimistic concurrency token from the most recent read.`)
 	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Comment, "comment", updateModelServiceReq.ModelService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Name, "name", updateModelServiceReq.ModelService.Name, `Resource name of the model service.`)
-	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Owner, "owner", updateModelServiceReq.ModelService.Owner, `The owner of the model service.`)
 	// TODO: array: supported_api_types
 
 	cmd.Use = "update-model-service NAME UPDATE_MASK"
-	cmd.Short = `*Beta* Update a model service.`
-	cmd.Long = `This command is in Beta and may change without notice.
-
-Update a model service.
+	cmd.Short = `Update a model service.`
+	cmd.Long = `Update a model service.
 
   Updates a model service. Only the fields named in update_mask are changed;
   the resource name is immutable. Optionally supply an etag to make the update
@@ -1226,6 +1208,12 @@ Update a model service.
 
   You must be the owner of the model service or have MANAGE on it, plus
   USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+  When changing destinations, both you and the model service owner need
+  USE_CATALOG and USE_SCHEMA on each destination's parent and EXECUTE on
+  the referenced Unity Catalog model or model provider service. A
+  provisioned-throughput destination additionally requires CAN_MANAGE for you
+  and CAN_QUERY for the model service owner. Adding an inference table
+  additionally requires CREATE_TABLE.
 
   Arguments:
     NAME: Resource name of the model service. Format:
@@ -1233,13 +1221,18 @@ Update a model service.
       component is capped at 255 characters individually. Server-derived on
       Create from parent + model_service_id; required and immutable on
       Update/Get/Delete.
-    UPDATE_MASK: The list of fields to update. The framework validates each path against
-      the model_service field above. Wildcard paths (paths: ["*"]) are not
-      supported; list each field path explicitly.`
+    UPDATE_MASK: Fields to update. Use config to replace the entire configuration. The
+      replacement must include every required field; any optional field you omit
+      is cleared. To preserve sibling fields, use one or more granular paths:
+      comment, config.routing.destinations,
+      config.routing.fallback.destinations, config.rate_limits, or
+      config.inference_table. Intermediate paths such as config.routing and
+      config.routing.fallback, and wildcard paths such as *, are not
+      supported.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
-	cmd.Annotations["launch_stage_display"] = "Beta"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)

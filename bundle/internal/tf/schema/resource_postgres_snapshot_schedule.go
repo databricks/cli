@@ -29,6 +29,7 @@ type ResourcePostgresSnapshotScheduleSchedule struct {
 
 type ResourcePostgresSnapshotSchedule struct {
 	Name           string                                          `json:"name,omitempty"`
+	Parent         string                                          `json:"parent"`
 	ProviderConfig *ResourcePostgresSnapshotScheduleProviderConfig `json:"provider_config,omitempty"`
 	Schedule       []ResourcePostgresSnapshotScheduleSchedule      `json:"schedule,omitempty"`
 }

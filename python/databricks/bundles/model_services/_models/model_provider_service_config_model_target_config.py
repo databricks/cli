@@ -19,23 +19,17 @@ class ModelProviderServiceConfigModelTargetConfig:
 
     model: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Provider-side model identifier (e.g. "gpt-5", "claude-opus-4-7"). This is
-    a string on the LLM provider's side, not a UC entity. The UC governance
-    hook for external destinations is the ModelProviderService referenced by
-    `ExternalModelConfig.model_provider_service`, not the model itself.
+    Provider-side model identifier, such as `gpt-5` or `claude-opus-4-7`.
+    This identifies a model at the upstream provider; it is not a Unity
+    Catalog model resource.
     """
 
     native_api_types: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Provider-native API types the model supports (e.g.
-    "openai/v1/chat/completions"). Used by the platform for request/response
-    translation from the unified API type. At most 64 entries of at most 256
-    characters each; the list is persisted into the destination binding's
-    bounded storage envelope.
+    Provider-native API types supported by this model, such as
+    `openai/v1/chat/completions`. At least one value is required. AI Gateway
+    uses these values to translate requests and responses. At most 64 entries
+    of 256 characters each are allowed.
     """
 
     @classmethod
@@ -53,23 +47,17 @@ class ModelProviderServiceConfigModelTargetConfigDict(TypedDict, total=False):
 
     model: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Provider-side model identifier (e.g. "gpt-5", "claude-opus-4-7"). This is
-    a string on the LLM provider's side, not a UC entity. The UC governance
-    hook for external destinations is the ModelProviderService referenced by
-    `ExternalModelConfig.model_provider_service`, not the model itself.
+    Provider-side model identifier, such as `gpt-5` or `claude-opus-4-7`.
+    This identifies a model at the upstream provider; it is not a Unity
+    Catalog model resource.
     """
 
     native_api_types: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Provider-native API types the model supports (e.g.
-    "openai/v1/chat/completions"). Used by the platform for request/response
-    translation from the unified API type. At most 64 entries of at most 256
-    characters each; the list is persisted into the destination binding's
-    bounded storage envelope.
+    Provider-native API types supported by this model, such as
+    `openai/v1/chat/completions`. At least one value is required. AI Gateway
+    uses these values to translate requests and responses. At most 64 entries
+    of 256 characters each are allowed.
     """
 
 

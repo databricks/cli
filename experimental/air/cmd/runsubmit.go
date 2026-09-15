@@ -76,7 +76,6 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	if cfg.MLflowArtifactLocation != nil {
 		task.MlflowArtifactLocation = *cfg.MLflowArtifactLocation
 	}
-	task.DockerImageUrl = cfg.dockerImageURL()
 
 	maxRetries := cfg.maxRetries()
 	st := jobs.SubmitTask{
@@ -299,15 +298,6 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	}
 	if err := ensureExperimentDirectory(ctx, w, experimentDir); err != nil {
 		return 0, "", err
-	}
-
-	// After the cheap validations but before any upload: verify the custom image is
-	// registered (and, under tag_policy=latest, re-resolve it — a refresh can block
-	// for minutes), so a bad or unregistered image wastes no artifact work.
-	if img := cfg.dockerImage(); img != nil {
-		if err := prepareDockerImage(ctx, w, img); err != nil {
-			return 0, "", err
-		}
 	}
 
 	fc, err := filer.NewWorkspaceFilesClient(w, funcDir)

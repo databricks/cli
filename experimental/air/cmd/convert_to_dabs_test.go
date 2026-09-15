@@ -537,19 +537,6 @@ func TestConvertToDabsDotRootPathRejected(t *testing.T) {
 }
 
 func TestConvertToDabsRejectsUnsupported(t *testing.T) {
-	t.Run("docker_image", func(t *testing.T) {
-		cfg := minimalConfig + `
-environment:
-  docker_image:
-    url: myregistry/img:tag
-`
-		path := writeConfigFile(t, "run.yaml", cfg)
-		loaded, err := loadRunConfig(path)
-		require.NoError(t, err)
-		_, _, err = convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
-		require.ErrorContains(t, err, "docker_image is not yet supported")
-	})
-
 	t.Run("usage_policy_name", func(t *testing.T) {
 		cfg := minimalConfig + "usage_policy_name: my-policy\n"
 		path := writeConfigFile(t, "run.yaml", cfg)

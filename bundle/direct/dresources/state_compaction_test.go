@@ -40,7 +40,7 @@ func requireTooSmallToHash(t *testing.T, content string) {
 		"fixture must be at most %d bytes to be persisted raw; shrink it", stateHashPlaceholderLen)
 }
 
-// TestHashedFieldsAreValid checks every hashed_fields path in resources.yml is a top-level
+// TestHashedFieldsAreValid checks every hashed_fields path in the resource configs is a top-level
 // field (CompactState's shallow copy only isolates those) and a real field on the state type
 // (a typo parses fine but resolves to nothing, so CompactState silently skips it).
 func TestHashedFieldsAreValid(t *testing.T) {

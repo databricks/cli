@@ -313,8 +313,13 @@ tasks:
     cmds:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
+  check-agents-setup:
+    desc: Check every agent's config setup is in sync with AGENTS.md/.agents; fails if anything was out of sync
+    cmds:
+      - "./tools/validate_agents_setup.py"
+
   checks:
-    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles, agent setup)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with the whitespace scanner.
     cmds:
@@ -323,6 +328,7 @@ tasks:
       - task: deadcode
       - task: check-changelog
       - task: check-lockfiles
+      - task: check-agents-setup
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
@@ -1050,9 +1056,9 @@ tasks:
       - bundle/direct/dresources/apitypes.yml
       - acceptance/bundle/refschema/out.fields.txt
     generates:
-      - bundle/direct/dresources/resources.generated.yml
+      - bundle/direct/dresources/configs/*.generated.yml
     cmds:
-      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt bundle/direct/dresources/configs"
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 

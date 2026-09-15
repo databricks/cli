@@ -1181,10 +1181,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	// postgres_snapshot_schedules has no delete endpoint: DoDelete disables the
-	// schedule by setting an empty cadence set, and the schedule remains readable
-	// (it is intrinsic to the branch), so DoRead still succeeds afterwards.
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "postgres_snapshot_schedules"
+	// A resource that implements no DoDelete (permissions, grants, job_runs)
+	// leaves the resource in place, so DoRead still succeeds afterwards.
+	// postgres_snapshot_schedules does implement DoDelete but has no delete
+	// endpoint: it disables the schedule by setting an empty cadence set, and the
+	// schedule remains readable (it is intrinsic to the branch).
+	deleteIsNoop := !adapter.HasDoDelete() || group == "postgres_snapshot_schedules"
 	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
