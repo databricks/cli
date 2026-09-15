@@ -142,11 +142,17 @@ type DeploymentState struct {
 	// VersionID is the DMS counterpart of Data.Serial - same meaning, but owned by the service
 	// rather than the file, so it lives outside Data and is never written to resources.json.
 	VersionID int
+
+	// StateForUpload holds the finalized DMS marker until it is uploaded. DMS never caches it on disk.
+	StateForUpload []byte
 }
 
 // OpenDmsArgs identifies the recorded deployment Open reads from. The zero value means the
 // bundle does not record deployment history, or no deployment exists for it yet.
 type OpenDmsArgs struct {
+	// State is the remote resources.json marker; the local file belongs to non-DMS deployments.
+	State []byte
+
 	// DeploymentID is the deployment's server-minted id.
 	DeploymentID string
 
@@ -484,19 +490,13 @@ type (
 	// but disables GetResourceEntry (since writes go strictly into WAL and not in memory).
 	WithWrite bool
 
-	// If true, the deployment records history with the metadata service: Open builds a DMS
-	// client from the workspace client, reads resources from the service, and refuses a state
-	// that tracks resources without the recording marker. It forces WithRecovery off, since the
-	// service is the source of truth and a leftover WAL is discarded rather than replayed.
+	// If true, Open reads the remote marker and resources from DMS, ignoring local state and WAL.
 	WithDeploymentHistory bool
 )
 
 // Open reads the deployment state from disk, recovering the WAL when withRecovery is set.
-// When withDeploymentHistory is set it builds a DMS client from wsClient and reads resources from
-// the service instead, with dmsDeploymentID the id the service holds (empty before the first
-// recorded deploy); lineage and serial still come from the file, since that is what the write path
-// increments. Open only reads through the client - InitializeOperationBuffer installs the write path once a
-// version exists.
+// With deployment history, it reads the remote marker from dmsDeployment.State and resources and
+// version from the service instead. InitializeOperationBuffer installs the write path once a version exists.
 func (db *DeploymentState) Open(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment OpenDmsArgs) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -533,16 +533,19 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	// Cleared here rather than in reset, which CompleteVersion needs it to survive: the same state
 	// is reopened (see bind.go), and a stale value would misroute a non-recording open.
 	db.recordsHistory = false
+	db.StateForUpload = nil
 
-	// The state file is the source of truth for whether this deployment records history: read it
-	// first.
-	data, err := os.ReadFile(db.Path)
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			db.Data = NewDatabase("", 0)
-		} else {
+	// DMS uses only the remote marker, even if a previous deployment left local state behind.
+	data := dmsDeployment.State
+	if !withDeploymentHistory {
+		var err error
+		data, err = os.ReadFile(db.Path)
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return err
 		}
+	}
+	if data == nil {
+		db.Data = NewDatabase("", 0)
 	} else {
 		if err := json.Unmarshal(data, &db.Data); err != nil {
 			return err
@@ -567,25 +570,21 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 	recording := bool(withDeploymentHistory)
 
 	walPath := db.Path + walSuffix
-	_, err = os.Stat(walPath)
-	switch {
-	case errors.Is(err, fs.ErrNotExist):
-		// no WAL, nothing to do
-	case err != nil:
-		return fmt.Errorf("failed to stat WAL file %s: %w", walPath, err)
-	default: // WAL exists
+	if !recording {
+		_, err := os.Stat(walPath)
 		switch {
-		case recording:
-			// A recorded deployment writes no WAL, so finding one means this state was written by a
-			// deployment that did not record history. Refuse rather than discard it: the file is the
-			// only record of that deploy's writes, and recording is refused below anyway.
-			return fmt.Errorf("unexpected WAL file found at %s: this deployment records deployment history, which does not write one", walPath)
-		case bool(withRecovery):
-			if err := db.replayWAL(ctx); err != nil {
-				return fmt.Errorf("reading state from %s: %w", path, err)
+		case errors.Is(err, fs.ErrNotExist):
+			// no WAL, nothing to do
+		case err != nil:
+			return fmt.Errorf("failed to stat WAL file %s: %w", walPath, err)
+		default: // WAL exists
+			if withRecovery {
+				if err := db.replayWAL(ctx); err != nil {
+					return fmt.Errorf("reading state from %s: %w", path, err)
+				}
+			} else {
+				return fmt.Errorf("unexpected WAL file found at %s", walPath)
 			}
-		default:
-			return fmt.Errorf("unexpected WAL file found at %s", walPath)
 		}
 	}
 
@@ -834,11 +833,8 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		db.walFile = nil
 		err = db.replayWAL(ctx)
 	} else if db.openedForWrite && db.isDeploymentMetadataService() {
-		// replayWAL is what normally persists the file. Without one, write the tombstone here so
-		// the header (lineage, state version, CLI version) still lands on disk - even when no
-		// operations were recorded, since the deployment and any version this run created exist
-		// either way.
-		err = db.unlockedSave()
+		// Preserve the remote marker across reset without leaving a local DMS state file.
+		db.StateForUpload, err = json.MarshalIndent(db.dataForFile(), "", " ")
 	}
 
 	// Wait until all operations are recorded in the service.

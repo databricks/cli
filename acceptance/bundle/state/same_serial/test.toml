@@ -1,1 +1,4 @@
+# The script exercises both modes explicitly because local state has different semantics.
+EnvMatrix.DMS = [""]
+
 Ignore = [".databricks"]

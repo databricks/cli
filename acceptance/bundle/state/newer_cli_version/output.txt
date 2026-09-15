@@ -13,3 +13,10 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 create jobs.my_job
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+=== Deployment history ignores the local writer version
+
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle plan
+create jobs.my_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

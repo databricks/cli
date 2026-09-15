@@ -5,6 +5,7 @@ trace $CLI bundle deploy
 dms_plan
 trace print_requests.py --dms //api/2.0/bundle --oneline
 trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+direct_state=$(cat .databricks/bundle/default/resources.json)
 
 title "Enabling recording is refused: this deployment already exists but the service has no record of it, and treating the service as authoritative would create its resources a second time"
 musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
@@ -14,9 +15,9 @@ title "The check is against the remote state, not the local cache: wiping .datab
 rm -rf .databricks
 musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 
-title "A leftover local WAL is refused: a recorded deployment writes none, so one can only have come from a deploy that did not record"
+title "A leftover local WAL does not override the remote deployment's non-recording state"
 mkdir -p .databricks/bundle/default
-printf '{"lineage":"stale","serial":99,"state_version":2,"features":{"deployment_history":{}}}\n' > .databricks/bundle/default/resources.json.wal
+cp stale.wal .databricks/bundle/default/resources.json.wal
 musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 
 title "Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone"
@@ -24,9 +25,31 @@ title "Destroy clears the deployment. With nothing recorded remotely the bundle 
 # would otherwise try to replay it and fail on the lineage mismatch.
 rm -f .databricks/bundle/default/resources.json.wal
 trace $CLI bundle destroy --auto-approve
+
+title "Enable recording after destroy even if old local state and WAL survived cleanup"
+mkdir -p .databricks/bundle/default
+printf '%s' "$direct_state" > .databricks/bundle/default/resources.json
+cp stale.wal .databricks/bundle/default/resources.json.wal
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --oneline
-trace find.py 'resources[.]json[.]wal' --expect 0
+test "$(cat .databricks/bundle/default/resources.json)" = "$direct_state"
+trace cmp stale.wal .databricks/bundle/default/resources.json.wal
+
+title "Read-only commands ignore corrupt local state and WAL and use DMS"
+cp corrupt.json .databricks/bundle/default/resources.json
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan | contains.py '1 unchanged'
+trace cmp corrupt.json .databricks/bundle/default/resources.json
+
+title "DMS deploys do not recreate local resources.json, but keep the remote marker"
+rm .databricks/bundle/default/resources.json .databricks/bundle/default/resources.json.wal
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+trace find.py 'resources[.]json([.]wal)?$' --expect 0
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py --no-dms
+
+title "Switch back to direct after destroying the recorded deployment"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve
+trace find.py 'resources[.]json([.]wal)?$' --expect 0
+trace $CLI bundle deploy
 trace jq '{state_version, features}' .databricks/bundle/default/resources.json
 
 # The recorded requests are asserted above via print_requests.py; drop whatever the run added after

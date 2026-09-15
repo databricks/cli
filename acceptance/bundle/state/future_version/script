@@ -1,4 +1,7 @@
 mkdir -p .databricks/bundle/default
 cp resources.future.json .databricks/bundle/default/resources.json
 
-trace $CLI bundle plan 2>&1 | grep -o 'state version.*'
+musterr trace $CLI bundle plan 2>&1 | grep -o 'state version.*'
+
+title "Deployment history ignores the local state version"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan

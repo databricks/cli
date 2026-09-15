@@ -85,7 +85,8 @@ def get_remote_state_path(target):
     load would need whatever --var and flags the test deployed with, which a helper cannot know.
     A bundle with no files to sync writes no snapshot, so fall back to asking the CLI - those
     bundles are the ones with nothing to parameterize."""
-    target_dir = os.path.dirname(get_state_file(target, False))
+    # DMS has no local state file; its sync snapshots still live beside the direct-engine path.
+    target_dir = os.path.dirname(get_state_files(target, False)[-1])
     snapshots = glob.glob(f"{target_dir}/sync-snapshots/*.json")
     if snapshots:
         # One snapshot per remote path, so a test that moved its root leaves several: the newest
@@ -173,13 +174,12 @@ def get_last_version_id(target):
     return (deployment or {}).get("last_version_id")
 
 
-def print_recorded_state(filename, target):
+def print_recorded_state(data, target):
     """Print the state file with its resources filled in from the deployment metadata service.
 
     While recording, the file itself carries only the header - the service holds the resources - so
     printing it raw would show an empty state and differ from the same test's non-recording run.
     """
-    data = json.loads(open(filename).read())
     # Recording stamps each resource payload with the deployment and version; drop it here so the
     # printed state matches a non-recording run without every caller piping through nostamp.
     data["state"] = scrub(get_recorded_state(target))
@@ -217,16 +217,24 @@ def main():
     )
     args = parser.parse_args()
 
+    recording = os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true"
+    terraform = os.environ.get("DATABRICKS_BUNDLE_ENGINE") == "terraform"
+    if recording and not terraform and not args.backup:
+        state_path = get_remote_state_path(args.target)
+        data = run_json(
+            [CLI, "workspace", "export", f"{state_path}/resources.json", "--format", "RAW"], allow_failure=True
+        )
+        if data is not None:
+            if args.no_dms:
+                print(json.dumps(data, indent=1))
+            else:
+                print_recorded_state(data, args.target)
+        return
+
     for filename in get_state_files(args.target, args.backup):
         if not os.path.exists(filename):
             continue
-        # Recording only applies to the direct engine, so a terraform run prints the file as-is.
-        recording = os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true"
-        terraform = os.environ.get("DATABRICKS_BUNDLE_ENGINE") == "terraform"
-        if recording and not terraform and not args.no_dms:
-            print_recorded_state(filename, args.target)
-        else:
-            print_file(filename)
+        print_file(filename)
 
 
 if __name__ == "__main__":

@@ -4,3 +4,7 @@ echo '{"version": 4, "serial": 20}' > .databricks/bundle/default/terraform/terra
 echo '{"serial": 20}' > .databricks/bundle/default/resources.json
 #trace musterr $CLI bundle plan
 trace musterr $CLI bundle deploy
+
+title "Deployment history ignores the local resource serial"
+rm .databricks/bundle/default/terraform/terraform.tfstate
+trace DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan

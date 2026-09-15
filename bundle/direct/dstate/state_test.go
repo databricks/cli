@@ -2,11 +2,14 @@ package dstate
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,6 +46,74 @@ func TestFinalizeWithNoEntriesDoesNotWriteStateFile(t *testing.T) {
 
 	_, err := os.Stat(path)
 	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestDeploymentHistoryIgnoresLocalState(t *testing.T) {
+	const remoteState = `{"state_version":2,"lineage":"remote-lineage","features":{"deployment_history":{}},"state":{}}`
+	for _, tt := range []struct {
+		name  string
+		local string
+		wal   string
+	}{
+		{name: "no local files"},
+		{name: "corrupt local files", local: "not json", wal: "not a WAL"},
+		{
+			name:  "previous direct deployment",
+			local: `{"state_version":2,"lineage":"old-lineage","serial":99,"state":{"resources.jobs.old":{"__id__":"old-job"}}}`,
+			wal:   `{"state_version":2,"lineage":"old-lineage","serial":100}`,
+		},
+	} {
+		for _, remote := range []string{"", remoteState} {
+			for _, write := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s/remote=%t/write=%t", tt.name, remote != "", write), func(t *testing.T) {
+					path := filepath.Join(t.TempDir(), "resources.json")
+					for name, content := range map[string]string{path: tt.local, path + walSuffix: tt.wal} {
+						if content != "" {
+							require.NoError(t, os.WriteFile(name, []byte(content), 0o600))
+						}
+					}
+					w := databricks.Must(databricks.NewWorkspaceClient(&databricks.Config{Host: "https://workspace.test", Token: "token"}))
+					ctx := cmdctx.SetWorkspaceClient(t.Context(), w)
+					var state []byte
+					if remote != "" {
+						state = []byte(remote)
+					}
+					var db DeploymentState
+					require.NoError(t, db.Open(ctx, path, WithRecovery(true), WithWrite(write), WithDeploymentHistory(true), OpenDmsArgs{State: state}))
+					assert.Empty(t, db.Data.State)
+					assert.Empty(t, db.GetResourceID("resources.jobs.old"))
+					if remote != "" {
+						assert.Equal(t, "remote-lineage", db.Data.Lineage)
+					}
+					const resourceKey = "resources.jobs.current"
+					if write {
+						require.NoError(t, db.SaveState(ctx, resourceKey, "123", map[string]string{"name": "current"}, nil))
+					}
+					exported, err := db.Finalize(ctx)
+					require.NoError(t, err)
+					if write {
+						assert.Equal(t, "123", exported[resourceKey].ID)
+						var uploaded Database
+						require.NoError(t, json.Unmarshal(db.StateForUpload, &uploaded))
+						assert.Contains(t, uploaded.Features, FeatureDeploymentHistory)
+						assert.NotEmpty(t, uploaded.Lineage)
+						assert.Empty(t, uploaded.State)
+					} else {
+						assert.Nil(t, db.StateForUpload)
+					}
+					for name, content := range map[string]string{path: tt.local, path + walSuffix: tt.wal} {
+						if content == "" {
+							assert.NoFileExists(t, name)
+						} else {
+							actual, err := os.ReadFile(name)
+							require.NoError(t, err)
+							assert.Equal(t, content, string(actual))
+						}
+					}
+				})
+			}
+		}
+	}
 }
 
 func TestExportStateFromDataJobRunJobID(t *testing.T) {

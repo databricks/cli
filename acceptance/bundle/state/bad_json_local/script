@@ -6,3 +6,6 @@ trace musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'parsing' 'terraform.t
 rm .databricks/bundle/default/terraform/terraform.tfstate
 echo "{" > .databricks/bundle/default/resources.json
 trace musterr $CLI bundle plan 2>&1 | contains.py 'Error' 'parsing' 'resources.json' 'unexpected end'
+
+title "Deployment history ignores corrupt local resource state"
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle plan

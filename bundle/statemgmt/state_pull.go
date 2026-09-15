@@ -185,6 +185,10 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		// local state is fresh, nothing to do
 		return ctx, winner
 	}
+	if winner.Engine.IsDirect() && b.ConfiguresDeploymentHistory(ctx) {
+		// DMS reads the remote marker in memory; a local copy can outlive the deployment.
+		return ctx, winner
+	}
 
 	if !winner.IsLocal {
 		log.Info(ctx, "Remote state is newer than local state. Using remote resources state.")
@@ -223,10 +227,14 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		return nil
 	}
 
-	directLocalState := localRead(ctx, localPathDirect, engine.EngineDirect)
+	var directLocalState *StateDesc
+	recording := b.ConfiguresDeploymentHistory(ctx)
+	if !recording {
+		directLocalState = localRead(ctx, localPathDirect, engine.EngineDirect)
+	}
 	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
 
-	if (directLocalState == nil && terraformLocalState == nil) || alwaysPull {
+	if recording || (directLocalState == nil && terraformLocalState == nil) || bool(alwaysPull) {
 		f, err := deploy.StateFiler(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)
