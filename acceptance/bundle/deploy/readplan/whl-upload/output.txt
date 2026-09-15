@@ -25,13 +25,11 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 === bundle deploy --plan also uploads the wheel
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy --plan out.plan.json
+>>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-upload/default/files...
 Created jobs.my_job
-Files: 5 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //artifacts/.internal --del-field raw_body

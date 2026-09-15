@@ -20,9 +20,11 @@ type LibLocationMap map[string][]libraries.LocationToUpdate
 
 // resolveLibraries runs variable resolution, glob expansion, path rewriting,
 // and wheel-task transformation to produce the local→remote upload map.
-// It is the shared tail of both Build and FindLibraries.
-func resolveLibraries(ctx context.Context, b *bundle.Bundle) LibLocationMap {
-	bundle.ApplySeqContext(ctx, b,
+// extra mutators are applied after CheckForSameNameLibraries and before
+// ReplaceWithRemotePath; Build passes libraries.SwitchToPatchedWheels() there.
+func resolveLibraries(ctx context.Context, b *bundle.Bundle, extra ...bundle.Mutator) LibLocationMap {
+	mutators := make([]bundle.Mutator, 0, 4+len(extra))
+	mutators = append(mutators,
 		mutator.ResolveVariableReferencesWithoutResources(
 			"artifacts",
 		),
@@ -37,6 +39,8 @@ func resolveLibraries(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		libraries.ExpandGlobReferences(),
 		libraries.CheckForSameNameLibraries(),
 	)
+	mutators = append(mutators, extra...)
+	bundle.ApplySeqContext(ctx, b, mutators...)
 
 	if logdiag.HasError(ctx) {
 		return nil
@@ -58,15 +62,16 @@ func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 		scripts.Execute(config.ScriptPreBuild),
 		artifacts.Build(),
 		scripts.Execute(config.ScriptPostBuild),
-		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
-		libraries.SwitchToPatchedWheels(),
 	)
 
 	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	return resolveLibraries(ctx, b)
+	// SwitchToPatchedWheels must be passed to resolveLibraries so it runs after
+	// ExpandGlobReferences (which expands *.whl patterns in job library paths)
+	// and after the build phase (which populates Artifact.Source and Artifact.Patched).
+	return resolveLibraries(ctx, b, libraries.SwitchToPatchedWheels())
 }
 
 // FindLibraries discovers which local library files need uploading by reading
