@@ -254,6 +254,11 @@ type FakeWorkspace struct {
 	postgresImplicitBranches  map[string]bool
 	postgresImplicitEndpoints map[string]bool
 
+	// Project names held by a soft delete: deleting a Lakebase project does not
+	// free its resource name until the tombstone is purged, so a create that
+	// reuses the name is refused. A set keyed by "projects/<id>".
+	postgresSoftDeleted map[string]bool
+
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
@@ -538,6 +543,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
+		postgresSoftDeleted:       map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
 		DmsDeployments:            map[string]*DmsDeployment{},
 		DmsDeploymentNodes:        map[string]string{},

@@ -1080,6 +1080,11 @@ var generatedIDs = []struct {
 	pattern     *regexp.Regexp
 	replacement string
 }{
+	// A trailing "[TraceId: <hex>]" in a backend message -- a UUID on the fake server and a bare
+	// hex string on aws (also plain "Id: <uid>"). Matched via the "Id:" it ends with, and redacted
+	// first, before the unique-suffix and UUID rules below fragment it into pieces that differ
+	// between the two.
+	{regexp.MustCompile(`Id: [0-9a-fA-F-]{6,}`), "Id: [ID]"},
 	// The suffix this suite gives every resource it creates.
 	{regexp.MustCompile(`f[0-9a-f]{20}`), "[UNIQUE_NAME]"},
 	// The placeholder an identity field's values carry. Only ever seen in a label, where it

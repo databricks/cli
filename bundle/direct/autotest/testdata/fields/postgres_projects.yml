@@ -1,11 +1,13 @@
 # Value library for postgres projects. See ../../README.md.
 
-# A recreate reuses the project name, and a deleted project holds its name until the soft delete
-# is purged: "A soft-deleted project currently has this resource name." So on a real workspace
-# every recreating field fails the create half, the same shape as instance_pools. A plain deploy
-# and destroy works -- the invariant suite does that on aws -- but a run of recreates does not,
-# so the catalog for this type is the local one.
-local_only: a recreate cannot reuse the project name until the soft delete is purged
+# Postgres (Lakebase) is only offered on aws, so the catalog for this type runs there.
+#
+# A deleted project holds its resource name until the soft delete is purged: "A soft-deleted
+# project currently has this resource name." So a recreate that keeps the same name -- changing
+# an immutable field like pg_version -- fails the create half, while a recreate that renames
+# (project_id) creates a fresh name and succeeds. The fake server models this (libs/testserver/
+# postgres.go) so the local catalog matches what aws does.
+clouds: [aws]
 base:
   project_id: test-pg-project-$UNIQUE_NAME
   display_name: Test Postgres Project
