@@ -159,8 +159,7 @@ func TestLogRequestTailTarget(t *testing.T) {
 
 func TestDrainPagesDedupAndOrdering(t *testing.T) {
 	// Two pages: page 1 has two ascending records; page 2 repeats the last record
-	// of page 1 (boundary re-query — must dedup) and includes an older record
-	// (out of order — must skip), then a genuinely newer one.
+	// of page 1 (boundary re-query — must dedup), a late record, and a newer one.
 	var page int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("page_token") == "" {
@@ -192,13 +191,100 @@ func TestDrainPagesDedupAndOrdering(t *testing.T) {
 		req:       logRequest{runID: 1, node: 0, attempt: -1},
 		seen:      newSeenSet(seenRecordsCap),
 	}
-	require.NoError(t, st.drainPages(0))
+	_, err = st.drainPages(0)
+	require.NoError(t, err)
 	require.Equal(t, 2, page)
 
-	// "b" prints once (deduped), "stale" is skipped (older than last emitted), and
-	// fromSec advances to the newest record's floor-second (3000ns -> 0s here).
-	assert.Equal(t, "a\nb\nc\n", buf.String())
+	// "b" prints once while the late record remains visible.
+	assert.Equal(t, "a\nb\nstale\nc\n", buf.String())
 	assert.Equal(t, int64(3000), st.lastNano)
+}
+
+func TestDrainPagesEmitsLateRecordsWithinLookback(t *testing.T) {
+	var requests int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/logs") {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		requests++
+		if requests == 1 {
+			assert.Equal(t, "10", r.URL.Query().Get("from"))
+			_, _ = w.Write([]byte(`{"log_records":[
+				{"record_id":"first","time_unix_nano":50000000000,"body":"same"},
+				{"record_id":"second","time_unix_nano":50000000000,"body":"same"}
+			]}`))
+			return
+		}
+		assert.Equal(t, "20", r.URL.Query().Get("from"))
+		_, _ = w.Write([]byte(`{"log_records":[
+			{"record_id":"late","time_unix_nano":30000000000,"body":"late"},
+			{"record_id":"first","time_unix_nano":51000000000,"body":"same"},
+			{"record_id":"second","time_unix_nano":51000000000,"body":"same"}
+		]}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	w := newTestWorkspaceClient(t, srv.URL)
+	apiClient, err := client.New(w.Config)
+	require.NoError(t, err)
+	st := &bricklensStreamer{
+		ctx:            t.Context(),
+		w:              w,
+		apiClient:      apiClient,
+		out:            &buf,
+		req:            logRequest{runID: 1, node: 0, attempt: -1},
+		fromSec:        10,
+		streamStartSec: 10,
+		seen:           newSeenSet(seenRecordsCap),
+	}
+
+	_, err = st.drainPages(0)
+	require.NoError(t, err)
+	_, err = st.drainPages(0)
+	require.NoError(t, err)
+	assert.Equal(t, "same\nsame\nlate\n", buf.String())
+}
+
+func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Millisecond
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	var logRequests int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			logRequests++
+			switch logRequests {
+			case 1:
+				_, _ = w.Write([]byte(`{"log_records":[{"record_id":"new","time_unix_nano":50000000000,"body":"new"}]}`))
+			case 3:
+				_, _ = w.Write([]byte(`{"log_records":[
+					{"record_id":"late","time_unix_nano":30000000000,"body":"late"},
+					{"record_id":"new","time_unix_nano":50000000000,"body":"new"}
+				]}`))
+			default:
+				_, _ = w.Write([]byte(`{"log_records":[]}`))
+			}
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id":1,"start_time":10000,"end_time":60000,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"}}`))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	ok, err := streamBricklensLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &buf,
+		logRequest{runID: 1, node: 0, attempt: -1, jsonOutput: true},
+		logRunStatus{lifeCycleState: "RUNNING", startTimeMs: 10_000})
+	require.NoError(t, err)
+	assert.True(t, ok)
+	assert.Equal(t, bricklensTerminalEmptyPolls+3, logRequests)
+	assert.Contains(t, buf.String(), `"line":"new"`)
+	assert.Contains(t, buf.String(), `"line":"late"`)
 }
 
 func TestDisplayState(t *testing.T) {
@@ -583,21 +669,33 @@ func TestFetchLogsFallsBackToMLflowWhenBricklensEmpty(t *testing.T) {
 
 func TestSeenSetEviction(t *testing.T) {
 	s := newSeenSet(2)
-	s.add(1, "a")
-	s.add(2, "b")
-	assert.True(t, s.has(1, "a"))
-	assert.True(t, s.has(2, "b"))
+	a := logRecord{TimeUnixNano: "1", Body: "a"}
+	b := logRecord{TimeUnixNano: "2", Body: "b"}
+	c := logRecord{TimeUnixNano: "3", Body: "c"}
+	s.add(a)
+	s.add(b)
+	assert.True(t, s.has(a))
+	assert.True(t, s.has(b))
 
 	// Adding a third evicts the oldest-inserted (1,"a").
-	s.add(3, "c")
-	assert.False(t, s.has(1, "a"))
-	assert.True(t, s.has(2, "b"))
-	assert.True(t, s.has(3, "c"))
+	assert.Equal(t, int64(1), s.add(c))
+	assert.False(t, s.has(a))
+	assert.True(t, s.has(b))
+	assert.True(t, s.has(c))
 
 	// Same (nano, body) shares one entry; distinct body under the same nano does not.
-	s.add(3, "c")
-	assert.True(t, s.has(3, "c"))
-	assert.False(t, s.has(3, "d"))
+	s.add(c)
+	assert.True(t, s.has(c))
+	assert.False(t, s.has(logRecord{TimeUnixNano: "3", Body: "d"}))
+}
+
+func TestNextBricklensPollDelay(t *testing.T) {
+	original := bricklensPollInterval
+	bricklensPollInterval = time.Second
+	t.Cleanup(func() { bricklensPollInterval = original })
+
+	assert.Equal(t, 650*time.Millisecond, nextBricklensPollDelay(350*time.Millisecond))
+	assert.Zero(t, nextBricklensPollDelay(1500*time.Millisecond))
 }
 
 func TestSleepOrCancel(t *testing.T) {
