@@ -43,20 +43,37 @@ type JobRunLifecycle struct {
 // JobRunTrigger is one lifecycle.triggers entry.
 type JobRunTrigger struct {
 	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`
-	OnFileChange   *string `json:"on_file_change,omitempty"` // path or glob relative to the defining YAML file; must resolve under the sync root
+	OnFileChange   *string `json:"on_file_change,omitempty"`  // path or glob relative to the defining YAML file; must resolve under the sync root
+	OnValueChange  *string `json:"on_value_change,omitempty"` // expression whose resolved value re-fires the run when changed
+}
+
+// ArmedCount returns how many trigger fields this entry sets.
+func (t JobRunTrigger) ArmedCount() int {
+	n := 0
+	if t.OnBundleDeploy != nil {
+		n++
+	}
+	if t.OnFileChange != nil {
+		n++
+	}
+	if t.OnValueChange != nil {
+		n++
+	}
+	return n
 }
 
 // JobRunTriggersState is the resolved fingerprint of lifecycle.triggers.
 type JobRunTriggersState struct {
 	OnBundleDeploy string            `json:"on_bundle_deploy,omitempty"`
 	OnFileChange   map[string]string `json:"on_file_change,omitempty"`
+	OnValueChange  map[string]string `json:"on_value_change,omitempty"`
 }
 
 // IsEmpty reports whether no trigger is armed. An empty state is left off the
 // job run entirely, so this has to cover every field above: a new fingerprint
 // added without extending it would be dropped instead of persisted.
 func (s JobRunTriggersState) IsEmpty() bool {
-	return s.OnBundleDeploy == "" && len(s.OnFileChange) == 0
+	return s.OnBundleDeploy == "" && len(s.OnFileChange) == 0 && len(s.OnValueChange) == 0
 }
 
 // HasOnBundleDeploy reports whether any trigger re-fires on every deploy.
