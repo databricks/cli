@@ -32,6 +32,13 @@ func resolveLibraries(ctx context.Context, b *bundle.Bundle, extra ...bundle.Mut
 			"artifacts",
 		),
 
+		// Expand artifact file globs (e.g. dist/*.whl in artifacts[*].files[*].source).
+		// Prepare() skips this for artifacts with a build command because the files don't
+		// exist yet; Build() does it after running the command. For FindLibraries (plan
+		// apply) the artifacts were already built at plan time, so we expand here instead.
+		// Safe to call from Build too: already-expanded paths are left unchanged.
+		artifacts.ExpandGlobReferences(),
+
 		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
 		// know what are the actual library paths.
 		// libraries.ExpandGlobReferences() has to be run after the libraries are built and thus this
