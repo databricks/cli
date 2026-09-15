@@ -1,0 +1,15 @@
+{
+  "state_version": 2,
+  "lineage": "stale-local-lineage",
+  "serial": 99,
+  "state": {
+    "resources.dashboards.dashboard": {
+      "__id__": "stale-dashboard-id",
+      "state": {}
+    },
+    "resources.genie_spaces.space": {
+      "__id__": "stale-genie-id",
+      "state": {}
+    }
+  }
+}

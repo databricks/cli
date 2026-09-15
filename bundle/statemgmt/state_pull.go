@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -25,9 +26,12 @@ import (
 
 type AlwaysPull bool
 
+const resourcesWALSuffix = ".wal"
+
 type StateDesc struct {
-	Serial  int    `json:"serial"`
-	Lineage string `json:"lineage"`
+	Serial   int                 `json:"serial"`
+	Lineage  string              `json:"lineage"`
+	Features map[string]struct{} `json:"features,omitempty"`
 
 	// additional fields describing state:
 	SourcePath string
@@ -37,6 +41,19 @@ type StateDesc struct {
 	IsLocal bool              `json:"-"`
 
 	AllStates []*StateDesc
+}
+
+// hasDeploymentHistory reports whether the state belongs to a recorded deployment.
+func (s *StateDesc) hasDeploymentHistory() bool {
+	_, ok := s.Features[dstate.FeatureDeploymentHistory]
+	return ok
+}
+
+// HasLocalDeploymentHistory reports whether an older CLI cached a DMS marker locally.
+func HasLocalDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
+	_, localPath := b.StateFilenameDirect(ctx)
+	state := localRead(ctx, localPath, engine.EngineDirect)
+	return state != nil && state.hasDeploymentHistory()
 }
 
 func (s *StateDesc) String() string {
@@ -127,7 +144,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	_, localPathDirect := b.StateFilenameDirect(ctx)
 	_, localPathTerraform := b.StateFilenameTerraform(ctx)
 
-	states := readStates(ctx, b, alwaysPull)
+	states, localDMS := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
 		return ctx, nil
@@ -153,6 +170,12 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	if err != nil {
 		logStatesError(ctx, err.Error(), states)
 		return ctx, winner
+	}
+	if localDMS {
+		if err := removeLocalDMSState(localPathDirect); err != nil {
+			logdiag.LogError(ctx, err)
+			return ctx, winner
+		}
 	}
 
 	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
@@ -217,14 +240,14 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	return ctx, winner
 }
 
-func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {
+func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) ([]*StateDesc, bool) {
 	var states []*StateDesc
 
 	remotePathDirect, localPathDirect := b.StateFilenameDirect(ctx)
 	remotePathTerraform, localPathTerraform := b.StateFilenameTerraform(ctx)
 
 	if logdiag.HasError(ctx) {
-		return nil
+		return nil, false
 	}
 
 	var directLocalState *StateDesc
@@ -232,13 +255,18 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 	if !recording {
 		directLocalState = localRead(ctx, localPathDirect, engine.EngineDirect)
 	}
+	localDMS := directLocalState != nil && directLocalState.hasDeploymentHistory()
+	if localDMS {
+		// A cached DMS marker is never authoritative, including after recording is disabled.
+		directLocalState = nil
+	}
 	terraformLocalState := localRead(ctx, localPathTerraform, engine.EngineTerraform)
 
-	if recording || (directLocalState == nil && terraformLocalState == nil) || bool(alwaysPull) {
+	if recording || localDMS || (directLocalState == nil && terraformLocalState == nil) || bool(alwaysPull) {
 		f, err := deploy.StateFiler(ctx, b)
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return nil
+			return nil, false
 		}
 
 		var wg sync.WaitGroup
@@ -253,6 +281,13 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		})
 
 		wg.Wait()
+		if logdiag.HasError(ctx) {
+			return nil, false
+		}
+		if !recording && directRemoteState != nil && directRemoteState.hasDeploymentHistory() {
+			logdiag.LogError(ctx, dstate.ErrUnsettingRecording)
+			return nil, false
+		}
 
 		// find highest serial across all state files
 		// sorting is stable, so initial setting represents preference (later is preferred):
@@ -265,7 +300,23 @@ func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []
 		return a.Serial - b.Serial
 	})
 
-	return states
+	return states, localDMS
+}
+
+// removeLocalDMSState discards a legacy marker only after remote state has been checked.
+func removeLocalDMSState(localPath string) error {
+	// Removing the marker before replaying an unrelated WAL could resurrect old resource IDs.
+	_, err := os.Stat(localPath + resourcesWALSuffix)
+	if err == nil {
+		return fmt.Errorf("cannot discard local deployment-history state %s while its WAL exists; reconcile or move both local files before retrying", filepath.ToSlash(localPath))
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking WAL for %s: %w", filepath.ToSlash(localPath), err)
+	}
+	if err := os.Remove(localPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("removing obsolete deployment-history state %s: %w", filepath.ToSlash(localPath), err)
+	}
+	return nil
 }
 
 func validateStates(states []*StateDesc) error {

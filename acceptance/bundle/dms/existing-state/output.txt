@@ -106,7 +106,16 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
  "state": {}
 }
 
-=== Switch back to direct after destroying the recorded deployment
+=== Disabling history while deployed is refused without creating a local marker
+>>> [CLI] bundle deploy
+Error: unsetting experimental.deployment_history is not supported
+
+This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle
+
+
+>>> find.py resources[.]json([.]wal)?$ --expect 0
+
+=== Switch back to direct after destroy even if an older CLI cached the DMS marker
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.one
@@ -114,6 +123,9 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+>>> [CLI] bundle debug states
+
 
 >>> find.py resources[.]json([.]wal)?$ --expect 0
 

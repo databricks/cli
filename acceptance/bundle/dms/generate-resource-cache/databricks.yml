@@ -1,0 +1,14 @@
+bundle:
+  name: dms-generate-resource-cache
+
+resources:
+  dashboards:
+    dashboard:
+      display_name: current dashboard
+      warehouse_id: my-warehouse-1234
+      file_path: ./dashboard.lvdash.json
+  genie_spaces:
+    space:
+      title: current genie space
+      warehouse_id: my-warehouse-1234
+      file_path: ./space.geniespace.json

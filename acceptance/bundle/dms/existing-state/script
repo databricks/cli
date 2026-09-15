@@ -46,9 +46,18 @@ trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 trace find.py 'resources[.]json([.]wal)?$' --expect 0
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py --no-dms
 
-title "Switch back to direct after destroying the recorded deployment"
-trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve
+title "Disabling history while deployed is refused without creating a local marker"
+musterr trace $CLI bundle deploy
 trace find.py 'resources[.]json([.]wal)?$' --expect 0
+
+title "Switch back to direct after destroy even if an older CLI cached the DMS marker"
+legacy_marker=$(DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py --no-dms)
+printf '%s' "$legacy_marker" > .databricks/bundle/default/resources.json
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve
+test "$(cat .databricks/bundle/default/resources.json)" = "$legacy_marker"
+trace $CLI bundle debug states
+trace find.py 'resources[.]json([.]wal)?$' --expect 0
+printf '%s' "$legacy_marker" > .databricks/bundle/default/resources.json
 trace $CLI bundle deploy
 trace jq '{state_version, features}' .databricks/bundle/default/resources.json
 

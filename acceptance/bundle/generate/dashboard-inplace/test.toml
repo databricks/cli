@@ -1,6 +1,6 @@
-# bundle generate reading recorded state from DMS is a fast followup; until then this
-# deploy-then-generate flow can't run under recording (local state is a tombstone).
-EnvMatrix.DMS = [""]
+# DMS is a no-op for Terraform; direct DMS generation is covered by its rejection test.
+EnvMatrix.DMS = ["", "true"]
+EnvMatrixExclude.dms_needs_direct = ["DMS=true", "DATABRICKS_BUNDLE_ENGINE=direct"]
 
 [[Repls]]
 Old = "[0-9a-f]{32}"

@@ -321,6 +321,10 @@ func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) {
 
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
+		if b.ConfiguresDeploymentHistory(ctx) {
+			logdiag.LogError(ctx, errors.New("generating a Genie space with --resource is not supported when deployment history is enabled; use --existing-id instead"))
+			return
+		}
 		_, localPath := b.StateFilenameDirect(ctx)
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 			logdiag.LogError(ctx, err)

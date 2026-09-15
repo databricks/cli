@@ -1,0 +1,7 @@
+resources:
+  genie_spaces:
+    current_genie:
+      title: "current genie space"
+      warehouse_id: my-warehouse-1234
+      file_path: ../genie/current_genie.geniespace.json
+      parent_path: /Workspace/Users/[USERNAME]/.bundle/dms-generate-resource-cache/default/resources

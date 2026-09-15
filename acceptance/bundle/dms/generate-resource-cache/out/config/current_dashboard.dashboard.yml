@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    current_dashboard:
+      display_name: "current dashboard"
+      warehouse_id: my-warehouse-1234
+      file_path: ../dashboard/current_dashboard.lvdash.json

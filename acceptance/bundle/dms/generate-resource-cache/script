@@ -1,0 +1,28 @@
+title "Deploy the current resources with DMS"
+trace $CLI bundle deploy
+cp dashboard.lvdash.json LOG.dashboard-before
+cp space.geniespace.json LOG.genie-before
+cp stale-resources.json .databricks/bundle/default/resources.json
+rm -f "$OUT_REQUESTS"
+
+title "Dashboard generation must not fetch the stale local ID or overwrite its asset"
+musterr trace $CLI bundle generate dashboard --resource dashboard --force
+touch "$OUT_REQUESTS"
+trace print_requests.py --get //api/2.0/lakeview/dashboards
+trace cmp LOG.dashboard-before dashboard.lvdash.json
+
+title "Genie generation must not fetch the stale local ID or overwrite its asset"
+musterr trace $CLI bundle generate genie-space --resource space --force
+touch "$OUT_REQUESTS"
+trace print_requests.py --get //api/2.0/genie/spaces
+trace cmp LOG.genie-before space.geniespace.json
+trace cmp stale-resources.json .databricks/bundle/default/resources.json
+
+title "Generation by explicit ID remains available"
+dashboard_id=$($CLI bundle summary -o json | jq -r '.resources.dashboards.dashboard.id')
+space_id=$($CLI bundle summary -o json | jq -r '.resources.genie_spaces.space.id')
+add_repl "$dashboard_id" DASHBOARD_ID
+add_repl "$space_id" GENIE_SPACE_ID
+trace $CLI bundle generate dashboard --existing-id "$dashboard_id" --key current_dashboard --resource-dir out/config --dashboard-dir out/dashboard
+trace $CLI bundle generate genie-space --existing-id "$space_id" --key current_genie --resource-dir out/config --genie-space-dir out/genie
+rm -f "$OUT_REQUESTS"

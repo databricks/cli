@@ -1,0 +1,53 @@
+
+=== Deploy the current resources with DMS
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-generate-resource-cache/default/files...
+Created dashboards.dashboard
+Created genie_spaces.space
+Files: 6 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Dashboard generation must not fetch the stale local ID or overwrite its asset
+>>> [CLI] bundle generate dashboard --resource dashboard --force
+Error: generating a dashboard with --resource is not supported when deployment history is enabled; use --existing-id instead
+
+
+>>> print_requests.py --get //api/2.0/lakeview/dashboards
+
+>>> cmp LOG.dashboard-before dashboard.lvdash.json
+
+=== Genie generation must not fetch the stale local ID or overwrite its asset
+>>> [CLI] bundle generate genie-space --resource space --force
+Error: generating a Genie space with --resource is not supported when deployment history is enabled; use --existing-id instead
+
+
+>>> print_requests.py --get //api/2.0/genie/spaces
+
+>>> cmp LOG.genie-before space.geniespace.json
+
+>>> cmp stale-resources.json .databricks/bundle/default/resources.json
+
+=== Generation by explicit ID remains available
+>>> [CLI] bundle generate dashboard --existing-id [DASHBOARD_ID] --key current_dashboard --resource-dir out/config --dashboard-dir out/dashboard
+Writing dashboard to out/dashboard/current_dashboard.lvdash.json
+Writing configuration to out/config/current_dashboard.dashboard.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out/config/current_dashboard.dashboard.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - out/config/*.yml
+
+
+>>> [CLI] bundle generate genie-space --existing-id [GENIE_SPACE_ID] --key current_genie --resource-dir out/config --genie-space-dir out/genie
+Writing genie space to out/genie/current_genie.geniespace.json
+Writing configuration to out/config/current_genie.genie_space.yml
+Warning: Generated configuration is not included in the bundle
+
+The file out/config/current_genie.genie_space.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - out/config/*.yml
+

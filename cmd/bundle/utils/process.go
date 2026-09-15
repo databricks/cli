@@ -161,7 +161,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 	// DMS state reads always need the remote workspace paths, even without --force-pull.
-	if !opts.SkipInitialize || (shouldReadState && b.ConfiguresDeploymentHistory(ctx)) {
+	if !opts.SkipInitialize || (shouldReadState && (b.ConfiguresDeploymentHistory(ctx) || statemgmt.HasLocalDeploymentHistory(ctx, b))) {
 		t0 := time.Now()
 		phases.Initialize(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
