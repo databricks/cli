@@ -105,8 +105,9 @@ var proxyEOFDrainTimeout = proxyResumeGrace
 type resumeState struct {
 	// Outgoing payload that may still have to be replayed.
 	sendBuf *sendBuffer
-	// Total payload bytes written to the destination. The peer replays from this offset, so it
-	// only advances after a successful write.
+	// Total payload bytes received from the peer and written to sshd's stdin on the server or
+	// stdout on the client. The peer replays from this offset, so it only advances after a
+	// successful write.
 	delivered atomic.Int64
 	// The delivered count we last told the peer about, so an ack is only sent once the number
 	// has actually moved.

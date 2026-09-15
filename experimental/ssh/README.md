@@ -148,3 +148,57 @@ Note that `metadata.json` is published before the server starts accepting connec
 left behind when the server exits. Neither its presence nor its contents prove that a server is
 running, which is why the client always re-checks `/metadata` through the driver proxy before
 reusing a port.
+
+### Session resume protocol
+
+Resume protocol v2 lets an SSH session survive a dropped websocket without losing or duplicating
+bytes. The protocol is symmetric: the client and server keep separate offsets and replay buffers
+for their outgoing streams.
+
+Before opening the websocket, the client requests `/capabilities`. It enables resume only when the
+server returns `{"resume_version":2}`. A missing route, another version, an invalid response, or a
+probe that takes more than ten seconds leaves resume disabled. The SSH connection still proceeds.
+When resume is enabled, the initial websocket URL includes these query parameters:
+
+| Parameter | Initial value | Meaning |
+| --- | --- | --- |
+| `id` | A new session UUID | Identifies the SSH session across websocket connections. |
+| `resume_version` | `2` | Selects this protocol version. |
+| `delivered` | `0` | Reports how many peer payload bytes this side has written to its local stream. |
+
+Binary websocket frames carry SSH payload. Text frames contain `{"delivered":N}` and acknowledge
+that the receiver wrote the first `N` bytes to sshd's stdin on the server or stdout on the client.
+Each side appends outgoing payload to a one MiB replay buffer before writing it to the websocket.
+Acknowledgments release buffer space. The receiver sends them after 64 KiB or 100 milliseconds.
+When the buffer is full, the sender stops reading its source until an acknowledgment frees space.
+
+After an unexpected disconnect, the client retries for 60 seconds. The server retains the session
+for 90 seconds so it remains available throughout that retry period.
+
+```mermaid
+sequenceDiagram
+  participant C as Client proxy
+  participant S as Server proxy
+  C->>S: GET /ssh?id=ID&resume_version=2&delivered=C&reattach=1
+  S->>S: Close the old socket and stop delivery at offset S
+  S-->>C: Websocket upgrade
+  S->>C: Text frame {"delivered":S}
+  par Replay server output after C
+    S->>C: Binary frames [C, server sent offset)
+  and Replay client input after S
+    C->>S: Binary frames [S, client sent offset)
+  end
+  C->>S: Continue payload and acknowledgments
+  S->>C: Continue payload and acknowledgments
+```
+
+The `delivered` value on the reattach URL tells the server where to replay its output. The first
+text frame on the new websocket gives the client the corresponding offset for its input. Each side
+replays the buffered range from the peer's offset before sending new payload. The server returns
+HTTP 409 when the existing session did not negotiate resume and HTTP 410 when the session no longer
+exists. Those responses stop retries; other connection failures retry within the 60-second budget.
+
+A normal websocket close with reason `finished` ends the session instead of starting a reattach.
+This explicit reason distinguishes a clean EOF from a dropped connection. Scheduled authentication
+handovers reuse the same session ID without `reattach=1`; if a handover itself drops, protocol v2
+uses the same reattach exchange to recover it.
