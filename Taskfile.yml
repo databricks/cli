@@ -314,7 +314,7 @@ tasks:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
   check-agents-setup:
-    desc: Sync Cursor's per-rule .mdc symlinks with .agents/rules; fails if any were out of sync
+    desc: Check every agent's config setup is in sync with AGENTS.md/.agents; fails if anything was out of sync
     cmds:
       - "./tools/validate_agents_setup.py"
 
