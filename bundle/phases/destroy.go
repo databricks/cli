@@ -184,28 +184,8 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	bundle.ApplyContext(ctx, b, files.Delete())
 
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	// Remove the local state file now that the deployment is gone. Destroy only
-	// deletes the remote state; leaving the local file behind keeps its lineage
-	// around, so a later fresh deploy of the same bundle (e.g. from another
-	// machine that has no local state) mints a new lineage that no longer matches
-	// this lingering one, and every subsequent command fails with a lineage
-	// mismatch. Destroy runs on a single engine, so remove only that engine's
-	// state file.
-	var localStatePath string
-	if engine.IsDirect() {
-		_, localStatePath = b.StateFilenameDirect(ctx)
-	} else {
-		_, localStatePath = b.StateFilenameTerraform(ctx)
-	}
-	if err := os.Remove(localStatePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
+	// Print the summary even on error: resources that were deleted are still worth
+	// reporting (an accurate partial count is a follow-up).
 	if b.Quiet < bundle.QuietAll {
 		// Count top-level resources only, matching the approval list above (which
 		// skips children); this also keeps the count stable across engines. Gone
@@ -219,6 +199,28 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 			}
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Destroy: %d deleted", deleted))
+	}
+
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// Remove the local state file now that the deployment is gone. Destroy only
+	// deletes the remote state; leaving the local file behind keeps its lineage
+	// around, so a later fresh deploy of the same bundle (e.g. from another
+	// machine that has no local state) mints a new lineage that no longer matches
+	// this lingering one, and every subsequent command fails with a lineage
+	// mismatch. Destroy runs on a single engine, so remove only that engine's
+	// state file. Log a removal failure but keep going; the destroy already
+	// succeeded and its summary is printed above.
+	var localStatePath string
+	if engine.IsDirect() {
+		_, localStatePath = b.StateFilenameDirect(ctx)
+	} else {
+		_, localStatePath = b.StateFilenameTerraform(ctx)
+	}
+	if err := os.Remove(localStatePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logdiag.LogError(ctx, err)
 	}
 }
 
