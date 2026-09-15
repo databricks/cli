@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"reflect"
-	"strings"
+	"regexp"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -20,19 +20,14 @@ const stateHashPrefix = "sha256:"
 // SHA-256 digest in hex (sha256.Size bytes, two characters each).
 const stateHashPlaceholderLen = len(stateHashPrefix) + sha256.Size*2
 
-// isStateHashPlaceholder reports whether s matches ^sha256:[a-f0-9]{64}$ exactly, so only
-// values this package produced count as already-hashed, not content that shares the prefix.
+// stateHashPlaceholderRe matches exactly the placeholders this package produces (the prefix
+// followed by a lowercase-hex SHA-256 digest), so content that merely shares the prefix is
+// not mistaken for an already-hashed value.
+var stateHashPlaceholderRe = regexp.MustCompile(fmt.Sprintf("^%s[a-f0-9]{%d}$", regexp.QuoteMeta(stateHashPrefix), sha256.Size*2))
+
+// isStateHashPlaceholder reports whether s is a placeholder this package produced.
 func isStateHashPlaceholder(s string) bool {
-	if len(s) != stateHashPlaceholderLen || !strings.HasPrefix(s, stateHashPrefix) {
-		return false
-	}
-	for i := len(stateHashPrefix); i < len(s); i++ {
-		c := s[i]
-		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
-			return false
-		}
-	}
-	return true
+	return stateHashPlaceholderRe.MatchString(s)
 }
 
 // hashStateValue returns a content-hash placeholder ("sha256:<hex>") for s, used to store
