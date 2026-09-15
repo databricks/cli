@@ -364,9 +364,11 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
+	// The pool id is sent on the wire as provisioned_capacity_id (the backend's
+	// name for a GPU pool); only the user-facing YAML field is pool_id.
 	provisionedCapacityID := ""
-	if cfg.Compute.ProvisionedCapacityID != nil {
-		provisionedCapacityID = *cfg.Compute.ProvisionedCapacityID
+	if cfg.Compute.PoolID != nil {
+		provisionedCapacityID = *cfg.Compute.PoolID
 	}
 	priorityClass := ""
 	if cfg.Compute.PriorityClass != nil {
