@@ -96,14 +96,16 @@ func TestRegister(t *testing.T) {
 			}
 
 			require.NoError(t, c.Register(t.Context(), "token-one", userID, false))
-			assert.Len(t, d.snapshot(), 2, "unchanged credentials must not invalidate caches")
+			requests = d.snapshot()
+			require.Len(t, requests, 3, "unchanged credentials must only refresh volumes")
+			assert.Equal(t, "first.test:1015", requests[2].Host)
 			require.NoError(t, c.Register(t.Context(), "token-two", userID, false))
 			requests = d.snapshot()
-			require.Len(t, requests, 4)
-			assert.Equal(t, "token-two", requests[2].Body["apiToken"])
+			require.Len(t, requests, 5)
 			assert.Equal(t, "token-two", requests[3].Body["apiToken"])
+			assert.Equal(t, "token-two", requests[4].Body["apiToken"])
 			require.NoError(t, c.Register(t.Context(), "token-two", userID, true))
-			assert.Len(t, d.snapshot(), 6, "restore a lost registration with the same token")
+			assert.Len(t, d.snapshot(), 7, "restore a lost registration with the same token")
 		})
 	}
 }

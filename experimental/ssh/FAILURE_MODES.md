@@ -175,6 +175,7 @@ ps -o pid,ppid,args -p <registered-pid>
 On dedicated compute, the reported PID should identify the tunnel server. If it identifies
 the bootstrap Python process, workspace-file access still depends on that process.
 The server checks this every ten minutes and attempts to restore a lost registration.
+Volume registration is refreshed every ten minutes, independently of this workspace-file check.
 An unavailable daemon produces a warning rather than preventing SSH startup.
 
 This registration only covers the server and its descendants. A detached process that

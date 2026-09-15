@@ -71,14 +71,12 @@ func TestKeepRegistered(t *testing.T) {
 				time.Sleep(fuse.RefreshInterval)
 				synctest.Wait()
 				mu.Lock()
-				retries := 0
+				refreshes := 1
 				switch initialFailure {
-				case "token", "both":
-					retries = 2
-				case "workspace", "volumes":
-					retries = 1
+				case "token", "both", "workspace":
+					refreshes = 2
 				}
-				assert.Len(t, requests, initialRequests+retries)
+				assert.Len(t, requests, initialRequests+refreshes)
 				assert.Equal(t, 2, tokenCalls, "a failed startup must still start the refresh loop")
 
 				before := len(requests)
@@ -86,7 +84,11 @@ func TestKeepRegistered(t *testing.T) {
 				time.Sleep(3 * fuse.RefreshInterval)
 				synctest.Wait()
 				mu.Lock()
-				assert.Len(t, requests, before, "steady state must not re-register")
+				assert.Len(t, requests, before+3, "steady state must only refresh volumes")
+				for _, req := range requests[before:] {
+					assert.Equal(t, "first.test:1015", req.Host)
+				}
+				before = len(requests)
 
 				token = "token-two"
 				mu.Unlock()
@@ -126,4 +128,43 @@ func TestKeepRegistered(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestKeepRegisteredRecoversVolumesRegistrationLoss(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		c, err := fuse.NewClient(registration)
+		require.NoError(t, err)
+		var mu sync.Mutex
+		registered := map[string]bool{}
+		requests := map[string]int{}
+		httpClient := fuse.HTTPClient(c)
+		httpClient.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			registered[r.URL.Port()] = true
+			requests[r.URL.Port()]++
+			return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))}, nil
+		})
+		fuse.ConfigureTestClient(c, httpClient, testHosts, func() (int, error) { return registration.PID, nil })
+		require.NoError(t, fuse.KeepRegistered(ctx, c, func(context.Context) (string, error) {
+			return "fixed-bootstrap-token", nil
+		}, "12345"))
+		synctest.Wait()
+
+		for tick := range 3 {
+			mu.Lock()
+			// A UC-FUSE restart loses its mapping while WSFS still reports the server PID.
+			registered["1015"] = false
+			mu.Unlock()
+			time.Sleep(fuse.RefreshInterval)
+			synctest.Wait()
+			mu.Lock()
+			assert.True(t, registered["1015"], "restore volumes registration with an unchanged credential")
+			assert.Equal(t, 1, requests["1021"], "healthy WSFS must not invalidate its caches")
+			assert.Equal(t, tick+2, requests["1015"])
+			mu.Unlock()
+		}
+	})
 }

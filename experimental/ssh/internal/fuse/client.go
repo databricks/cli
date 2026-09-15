@@ -29,11 +29,12 @@ type request struct {
 }
 
 type daemon struct {
-	name  string
-	port  int
-	path  string
-	host  string
-	token string
+	name             string
+	port             int
+	path             string
+	host             string
+	token            string
+	refreshUnchanged bool
 }
 
 // Client tracks the last successful registration for each daemon. It must not be used concurrently.
@@ -59,7 +60,8 @@ func NewClient(r Registration) (*Client, error) {
 		hosts:        []string{"databricks.node.host.local", "node.host.local", "localhost"},
 		daemons: []daemon{
 			{name: "workspace files", port: 1021, path: fmt.Sprintf("/api/1/pid/%d", r.PID)},
-			{name: "volumes", port: 1015, path: fmt.Sprintf("/dbfs-fuse-api/1/pid/%d", r.PID)},
+			// UC-FUSE has no registration probe and its PUT does not invalidate WSFS's caches.
+			{name: "volumes", port: 1015, path: fmt.Sprintf("/dbfs-fuse-api/1/pid/%d", r.PID), refreshUnchanged: true},
 		},
 		http: &http.Client{
 			Timeout:       requestTimeout,
@@ -69,7 +71,8 @@ func NewClient(r Registration) (*Client, error) {
 	}, nil
 }
 
-// Register updates changed credentials and retries failed registrations. Force also restores a lost registration.
+// Register refreshes volumes, updates changed credentials, and retries failed registrations.
+// Force also restores a lost workspace-files registration.
 func (c *Client) Register(ctx context.Context, token, userID string, force bool) error {
 	if token == "" {
 		return errors.New("cannot register an empty FUSE token")
@@ -94,7 +97,7 @@ func (c *Client) Register(ctx context.Context, token, userID string, force bool)
 		if force {
 			d.token = ""
 		}
-		if d.token == token {
+		if d.token == token && !d.refreshUnchanged {
 			continue
 		}
 		if err := c.registerDaemon(ctx, d, encoded); err != nil {

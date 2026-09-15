@@ -44,9 +44,11 @@ daemons. SSH sessions that remain descendants of that server can keep accessing
 This does not keep the compute or server alive, preserve detached processes that leave
 the server's process tree, or restore them after a server restart.
 
-The server checks its filesystem registration and current credential every ten minutes.
-It updates registration when the credential changes or the registered process is lost,
-and retries failed registrations. Unchanged registrations do not generate updates.
+The server checks its workspace-file registration and current credential every ten minutes.
+It updates the workspace-file registration when the credential changes or the registered
+process is lost, and retries failed registrations. Unchanged workspace-file registrations
+do not generate updates. Volume registration is refreshed on every tick so it recovers
+after an independent UC-FUSE restart.
 The bootstrap supplies a fixed credential; checking it again cannot renew an expired or
 revoked credential. Registration entries may remain until compute shutdown. Matching
 the process start time prevents a reused PID from inheriting an old registration.

@@ -42,8 +42,8 @@ func refreshUntilDone(ctx context.Context, client *Client, token TokenFunc, user
 			return
 		case <-ticker.C:
 			pid, err := client.readPID()
-			// Re-register only after credential rotation or loss of the registered ancestor.
-			// Unchanged registrations unnecessarily invalidate the daemon's caches.
+			// Re-register WSFS only after credential rotation or loss of the registered ancestor.
+			// Unchanged WSFS registrations unnecessarily invalidate the daemon's caches.
 			force := err != nil || pid != client.registration.PID
 			if err := refresh(ctx, client, token, userID, force); err != nil {
 				log.Warnf(ctx, "Failed to refresh SSH filesystem credentials; retrying in %v: %v", refreshInterval, err)
