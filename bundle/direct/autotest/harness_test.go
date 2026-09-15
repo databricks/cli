@@ -347,7 +347,9 @@ func (h *bundleHarness) apply(p *pendingApply, plan *deployplan.Plan) diag.Diagn
 		_, _ = db.StateDB.Finalize(ctx)
 		return diag.FromErr(err)
 	}
-	db.Apply(ctx, h.client, plan)
+	// reportApplied=false: per-resource "applied" lines come out in completion order, which
+	// varies per run -- the catalog reads diags, not that progress output, and needs determinism.
+	db.Apply(ctx, h.client, plan, false)
 	diags := logdiag.FlushCollected(ctx)
 	if _, err := db.StateDB.Finalize(ctx); err != nil {
 		diags = append(diags, diag.FromErr(err)...)
