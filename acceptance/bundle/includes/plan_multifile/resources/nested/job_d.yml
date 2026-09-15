@@ -2,6 +2,10 @@ resources:
   jobs:
     job_d:
       name: job_d
+      # Unknown field in a nested included file. `bundle validate` must report its
+      # location as this file, which verifies that source locations survive the
+      # in-scope include merge this PR introduces for load performance.
+      unknown_field: true
       tasks:
         - task_key: main
           notebook_task:
