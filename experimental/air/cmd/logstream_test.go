@@ -286,7 +286,7 @@ func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
 
 	var buf bytes.Buffer
 	ok, err := streamBricklensLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &buf,
-		logRequest{runID: 1, node: 0, attempt: -1, tailLines: 2, tailInitialLogs: true, jsonOutput: true},
+		logRequest{runID: 1, node: 0, attempt: -1, tailLines: 2, boundInitialLogs: true, jsonOutput: true},
 		logRunStatus{lifeCycleState: "RUNNING", startTimeMs: 10_000})
 	require.NoError(t, err)
 	assert.True(t, ok)
@@ -696,15 +696,6 @@ func TestSeenSetEviction(t *testing.T) {
 	s.add(c)
 	assert.True(t, s.has(c))
 	assert.False(t, s.has(logRecord{TimeUnixNano: "3", Body: "d"}))
-}
-
-func TestNextBricklensPollDelay(t *testing.T) {
-	original := bricklensPollInterval
-	bricklensPollInterval = time.Second
-	t.Cleanup(func() { bricklensPollInterval = original })
-
-	assert.Equal(t, 650*time.Millisecond, nextBricklensPollDelay(350*time.Millisecond))
-	assert.Zero(t, nextBricklensPollDelay(1500*time.Millisecond))
 }
 
 func TestSleepOrCancel(t *testing.T) {

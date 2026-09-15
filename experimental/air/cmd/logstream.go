@@ -104,9 +104,9 @@ type logRequest struct {
 	// past retry of an active run: that attempt's logs are immutable, so streaming
 	// would poll forever waiting for the run (not the attempt) to finish.
 	staticView bool
-	// tailInitialLogs bounds existing output before following an active run.
-	tailInitialLogs bool
-	jsonOutput      bool
+	// boundInitialLogs limits existing output before following an active run.
+	boundInitialLogs bool
+	jsonOutput       bool
 	// onStatusChange, when set, is called on each lifecycle transition while
 	// following the run (current, previous display states). Used by
 	// `air run --watch -o json` to emit STATUS events.
@@ -412,7 +412,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		// polls follow live with dedup so the overlap does not re-print it.
 		var emitted int
 		var err error
-		if firstIteration && (terminal || st.req.tailInitialLogs) {
+		if firstIteration && (terminal || st.req.boundInitialLogs) {
 			err = st.drainTail(toSec, !terminal)
 		} else {
 			emitted, err = st.drainPages(toSec)
@@ -461,11 +461,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 }
 
 func waitForNextBricklensPoll(ctx context.Context, pollStarted time.Time) error {
-	return sleepOrCancel(ctx, nextBricklensPollDelay(time.Since(pollStarted)))
-}
-
-func nextBricklensPollDelay(elapsed time.Duration) time.Duration {
-	return max(time.Duration(0), bricklensPollInterval-elapsed)
+	return sleepOrCancel(ctx, max(time.Duration(0), bricklensPollInterval-time.Since(pollStarted)))
 }
 
 // sleepOrCancel waits for d, or returns early with the context error if the

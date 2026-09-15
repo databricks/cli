@@ -116,15 +116,15 @@ func newLogsCommand() *cobra.Command {
 		}
 
 		err = runLogs(streamCtx, cmd, logRequest{
-			runID:           runID,
-			node:            node,
-			nodeSet:         cmd.Flags().Changed("node"),
-			attempt:         retry,
-			windowMinutes:   minutes,
-			tailLines:       tailLines,
-			tailInitialLogs: minutes == 0,
-			downloadTo:      downloadTo,
-			jsonOutput:      root.OutputType(cmd) == flags.OutputJSON,
+			runID:            runID,
+			node:             node,
+			nodeSet:          cmd.Flags().Changed("node"),
+			attempt:          retry,
+			windowMinutes:    minutes,
+			tailLines:        tailLines,
+			boundInitialLogs: minutes == 0,
+			downloadTo:       downloadTo,
+			jsonOutput:       root.OutputType(cmd) == flags.OutputJSON,
 		})
 		if downloadTo != "" || root.OutputType(cmd) == flags.OutputJSON {
 			return err
