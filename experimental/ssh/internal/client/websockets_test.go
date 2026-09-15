@@ -1,14 +1,18 @@
 package client
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,11 +46,22 @@ func TestServerSupportsResume(t *testing.T) {
 }
 
 func TestCreateWebsocketConnectionReattachRejected(t *testing.T) {
-	for _, status := range []int{http.StatusGone, http.StatusConflict, http.StatusUnauthorized, http.StatusTooManyRequests, http.StatusServiceUnavailable} {
-		t.Run(http.StatusText(status), func(t *testing.T) {
+	for _, tc := range []struct {
+		status   int
+		rejected bool
+	}{
+		{http.StatusGone, true},
+		{http.StatusConflict, true},
+		{http.StatusUnauthorized, false},
+		{http.StatusForbidden, false},
+		{http.StatusRequestTimeout, false},
+		{http.StatusTooManyRequests, false},
+		{http.StatusServiceUnavailable, false},
+	} {
+		t.Run(http.StatusText(tc.status), func(t *testing.T) {
 			mux := http.NewServeMux()
 			mux.HandleFunc("GET /driver-proxy-api/o/123/cluster/7772/ssh", func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(status)
+				w.WriteHeader(tc.status)
 			})
 			server := httptest.NewServer(mux)
 			defer server.Close()
@@ -56,13 +71,55 @@ func TestCreateWebsocketConnectionReattachRejected(t *testing.T) {
 			defer cancel()
 			_, err = createWebsocketConnection(ctx, client, proxy.DialRequest{ConnID: "test", ResumeCapable: true, Reattach: true}, "cluster", 7772, "")
 			require.Error(t, err)
-			if status < 500 && status != http.StatusTooManyRequests {
+			if tc.rejected {
 				assert.ErrorIs(t, err, proxy.ErrReattachRejected)
 			} else {
 				assert.NotErrorIs(t, err, proxy.ErrReattachRejected)
 			}
 		})
 	}
+}
+
+func TestCreateWebsocketConnectionRetriesRequestTimeout(t *testing.T) {
+	var reattachments atomic.Int32
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /driver-proxy-api/o/123/cluster/7772/ssh", func(w http.ResponseWriter, r *http.Request) {
+		reattach := r.URL.Query().Get("reattach") == "1"
+		if reattach && reattachments.Add(1) == 1 {
+			w.WriteHeader(http.StatusRequestTimeout)
+			return
+		}
+		conn, err := (&websocket.Upgrader{}).Upgrade(w, r, nil)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer conn.Close()
+		if !reattach {
+			assert.NoError(t, conn.WriteMessage(websocket.BinaryMessage, []byte("before")))
+			return
+		}
+		assert.Equal(t, "6", r.URL.Query().Get("delivered"))
+		assert.NoError(t, conn.WriteJSON(map[string]int{"delivered": 0}))
+		assert.NoError(t, conn.WriteMessage(websocket.BinaryMessage, []byte("after")))
+		assert.NoError(t, conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "finished")))
+	})
+	server := httptest.NewServer(mux)
+	defer server.Close()
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "test-token", WorkspaceID: "123", AuthType: "pat"})
+	require.NoError(t, err)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	input, writer := io.Pipe()
+	defer writer.Close()
+	var output bytes.Buffer
+	err = proxy.RunClientProxy(ctx, input, &output, func() <-chan time.Time { return nil }, time.Hour, true,
+		func(ctx context.Context, req proxy.DialRequest) (*websocket.Conn, error) {
+			return createWebsocketConnection(ctx, client, req, "cluster", 7772, "")
+		})
+	require.NoError(t, err)
+	assert.NoError(t, ctx.Err())
+	assert.Equal(t, int32(2), reattachments.Load())
+	assert.Equal(t, "beforeafter", output.String())
 }
 
 func TestBuildProxyWebsocketURL(t *testing.T) {

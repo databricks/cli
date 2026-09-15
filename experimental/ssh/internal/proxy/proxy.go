@@ -528,51 +528,54 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 		conn := pc.conn.Load()
 		mt, data, err := conn.ReadMessage()
 		if err != nil {
-			// During handover a normal closure is expected, but any other error must stop the read loop (and eventually terminate the ssh session).
+			// A normal closure completes handover. An interrupted handover needs
+			// reattachment to recover bytes the close-frame exchange did not drain.
 			if handover := pc.handoverState.Load(); handover != nil {
 				var closeConnSignal error
 				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 					closeConnSignal = errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket during handover: %w", err))
 				}
 				// Signal the current connection is closed to the handover initiator (initiateHandover or acceptHandover).
-				if err := handover.signalConnectionClosed(closeConnSignal); err != nil {
-					return err
-				}
+				handoverErr := handover.signalConnectionClosed(closeConnSignal)
 				// Wait for the handover initiator to swap the connection.
 				// While we wait for the handover to complete, the new connection might be getting incoming messages.
 				// They will be buffered by the TCP stack and will be read by us after the handover is complete.
-				if err := handover.waitForConnectionToSwap(); err != nil {
-					return err
+				if handoverErr == nil {
+					handoverErr = handover.waitForConnectionToSwap()
 				}
 				// Continue with the receiving loop, pc.conn is now the new connection.
-				continue
-			} else {
-				closeErr, closed := errors.AsType[*websocket.CloseError](err)
-				finished := closed && closeErr.Code == websocket.CloseNormalClosure && closeErr.Text == proxySessionFinished
-				if finished || (!pc.resumable() && (errors.Is(err, io.EOF) || websocket.IsCloseError(err, websocket.CloseNormalClosure))) {
-					return errors.Join(errProxyEOF, err)
-				}
-				// A read that fails once our own context is cancelled is the teardown, not a drop:
-				// start's context watcher closes the connection to unblock this very read, and
-				// only after the context is done, so cancellation is always visible here first.
-				// Neither branch below fits - a reattach would warn the user about a drop on every
-				// clean exit and could not succeed anyway (its redial budget comes from this same
-				// context), and ErrWebsocketDropped would bill an ordinary exit to a tunnel failure.
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-				// An unexpected drop. With resume negotiated the session state on both ends
-				// outlives the connection, so reattach instead of ending the session.
-				if pc.resumable() {
-					conn.Close()
-					pc.resume.drops.Add(1)
-					if resumeErr := pc.reattach(ctx); resumeErr != nil {
-						return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to reattach after the connection dropped: %w", resumeErr))
-					}
+				if handoverErr == nil {
 					continue
 				}
-				return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket: %w", err))
+				if !pc.resumable() {
+					return handoverErr
+				}
 			}
+			closeErr, closed := errors.AsType[*websocket.CloseError](err)
+			finished := closed && closeErr.Code == websocket.CloseNormalClosure && closeErr.Text == proxySessionFinished
+			if finished || (!pc.resumable() && (errors.Is(err, io.EOF) || websocket.IsCloseError(err, websocket.CloseNormalClosure))) {
+				return errors.Join(errProxyEOF, err)
+			}
+			// A read that fails once our own context is cancelled is the teardown, not a drop:
+			// start's context watcher closes the connection to unblock this very read, and
+			// only after the context is done, so cancellation is always visible here first.
+			// Neither branch below fits - a reattach would warn the user about a drop on every
+			// clean exit and could not succeed anyway (its redial budget comes from this same
+			// context), and ErrWebsocketDropped would bill an ordinary exit to a tunnel failure.
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			// An unexpected drop. With resume negotiated the session state on both ends
+			// outlives the connection, so reattach instead of ending the session.
+			if pc.resumable() {
+				conn.Close()
+				pc.resume.drops.Add(1)
+				if resumeErr := pc.reattach(ctx); resumeErr != nil {
+					return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to reattach after the connection dropped: %w", resumeErr))
+				}
+				continue
+			}
+			return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket: %w", err))
 		}
 
 		if mt == websocket.TextMessage && pc.resumable() {
@@ -681,6 +684,7 @@ func (pc *proxyConnection) initiateHandover(ctx context.Context) error {
 	// (it does so when it receives an /ssh request with known connection ID and starts AcceptHandover process).
 	// Receiving loop will signal about closed connection to the coord.connClosed channel.
 	if err := handoverState.waitForConnectionToClose(); err != nil {
+		pc.conn.Load().Close()
 		newConn.Close()
 		return err
 	}
@@ -733,6 +737,7 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	}
 	err = currentConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "handover"))
 	if err != nil {
+		currentConn.Close()
 		newConn.Close()
 		return fmt.Errorf("failed to send close message to the current connection: %w", err)
 	}
@@ -741,6 +746,7 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	// On the client its done automatically by the websocket library with the default close handler.
 	// On the server we then receive a close error in the RunReceivingLoop and signal about it to the coord.connClosed channel.
 	if err := handoverState.waitForConnectionToClose(); err != nil {
+		currentConn.Close()
 		newConn.Close()
 		return err
 	}

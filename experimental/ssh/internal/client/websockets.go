@@ -38,7 +38,9 @@ func createWebsocketConnection(ctx context.Context, client *databricks.Workspace
 		resp.Body.Close()
 	}
 	if err != nil {
-		if dial.Reattach && resp != nil && resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != http.StatusTooManyRequests {
+		// Only the server's explicit session refusals bypass the retry budget.
+		// Other responses, including 408, can come from an intermediary.
+		if dial.Reattach && resp != nil && (resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusGone) {
 			return nil, errors.Join(proxy.ErrReattachRejected, fmt.Errorf("reattach failed (HTTP %d): %w", resp.StatusCode, err))
 		}
 		return nil, fmt.Errorf("failed to establish websocket connection: %w", err)

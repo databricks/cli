@@ -108,6 +108,12 @@ func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, reque
 							log.Debugf(gCtx, "Could not open a replacement connection for the auth handover, staying on the current one: %v", err)
 							continue
 						}
+						if resumable {
+							// The failed handover closes its sockets. The receiving loop
+							// reattaches after the handover releases the write lock.
+							log.Debugf(gCtx, "Auth handover failed, recovering through session reattachment: %v", err)
+							continue
+						}
 						return errors.Join(ErrHandoverFailed, err)
 					}
 				}

@@ -271,6 +271,135 @@ func TestConnectionHandover(t *testing.T) {
 	}
 }
 
+// TestResumeAfterHandoverDrop keeps the same byte streams alive when the old
+// connection drops before the handover's close-frame exchange finishes.
+func TestResumeAfterHandoverDrop(t *testing.T) {
+	for _, tc := range []struct {
+		name              string
+		dropDuringUpgrade bool
+		failDial          bool
+		loseCloseReply    bool
+	}{
+		{name: "during upgrade", dropDuringUpgrade: true},
+		{name: "failed dial", failDial: true},
+		{name: "lost close reply", loseCloseReply: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), 8*time.Second)
+			defer cancel()
+			serverProxy := newResumableProxyConnection(nil)
+			serverInput, serverWriter := io.Pipe()
+			defer serverWriter.Close()
+			serverOutput := newTestBuffer(t)
+			done := make(chan error, 2)
+			var accepted atomic.Bool
+			var reattachments atomic.Int32
+			server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if accepted.CompareAndSwap(false, true) {
+					if !assert.NoError(t, serverProxy.accept(w, r)) {
+						return
+					}
+					done <- serverProxy.start(ctx, serverInput, serverOutput)
+					return
+				}
+				req, err := parseDialRequest(r)
+				if !assert.NoError(t, err) {
+					return
+				}
+				if req.Reattach {
+					reattachments.Add(1)
+					assert.NoError(t, serverProxy.acceptReattach(ctx, w, r, req.Delivered))
+					return
+				}
+				_ = serverProxy.acceptHandover(ctx, w, r)
+			}))
+			var upgrades atomic.Int32
+			server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+				if state == http.StateHijacked && upgrades.Add(1) == 2 && tc.dropDuringUpgrade {
+					// Both handover coordinators exist before the replacement is upgraded.
+					assert.NoError(t, serverProxy.conn.Load().Close())
+				}
+			}
+			server.Start()
+			defer server.Close()
+			defer cancel()
+
+			clientInput, clientWriter := io.Pipe()
+			defer clientWriter.Close()
+			clientOutput := newTestBuffer(t)
+			ticks := make(chan time.Time, 1)
+			var initial *websocket.Conn
+			createConn := func(ctx context.Context, req DialRequest) (*websocket.Conn, error) {
+				if initial != nil && !req.Reattach && tc.failDial {
+					assert.NoError(t, initial.Close())
+					return nil, errors.New("handover dial interrupted")
+				}
+				url := fmt.Sprintf("ws%s?id=%s&resume_version=%d&delivered=%d", server.URL[4:], req.ConnID, ResumeProtocolVersion, req.Delivered)
+				if req.Reattach {
+					url += "&reattach=1"
+				}
+				conn, resp, err := websocket.DefaultDialer.DialContext(ctx, url, nil)
+				if resp != nil {
+					resp.Body.Close()
+				}
+				if err == nil && initial == nil {
+					initial = conn
+					if tc.loseCloseReply {
+						conn.SetCloseHandler(func(int, string) error {
+							_ = conn.Close()
+							return net.ErrClosed
+						})
+					}
+				}
+				return conn, err
+			}
+			go func() {
+				done <- RunClientProxy(ctx, clientInput, clientOutput, func() <-chan time.Time { return ticks }, time.Hour, true, createConn)
+			}()
+
+			beforeClient := []byte("before handover to client")
+			beforeServer := []byte("before handover to server")
+			_, err := serverWriter.Write(beforeClient)
+			require.NoError(t, err)
+			require.NoError(t, clientOutput.WaitForWrite(beforeClient))
+			_, err = clientWriter.Write(beforeServer)
+			require.NoError(t, err)
+			require.NoError(t, serverOutput.WaitForWrite(beforeServer))
+			ticks <- time.Now()
+			require.Eventually(t, func() bool { return reattachments.Load() > 0 }, 3*time.Second, time.Millisecond,
+				"a drop during handover must reattach the session")
+
+			afterClient := bytes.Repeat([]byte("download"), 8192)
+			afterServer := bytes.Repeat([]byte("upload!!"), 8192)
+			_, err = serverWriter.Write(afterClient)
+			require.NoError(t, err)
+			_, err = clientWriter.Write(afterServer)
+			require.NoError(t, err)
+			require.NoError(t, clientOutput.WaitForWrite(afterClient))
+			require.NoError(t, serverOutput.WaitForWrite(afterServer))
+			select {
+			case err := <-done:
+				t.Fatalf("session ended before cancellation: %v", err)
+			default:
+			}
+			cancel()
+			for range 2 {
+				select {
+				case err := <-done:
+					// Cancellation closes the source to unblock the sending loop.
+					if err != nil && !errors.Is(err, io.ErrClosedPipe) {
+						assert.ErrorIs(t, err, context.Canceled)
+					}
+				case <-time.After(time.Second):
+					t.Fatal("proxy did not stop after cancellation")
+				}
+			}
+			assert.Equal(t, string(append(beforeClient, afterClient...)), clientOutput.String())
+			assert.Equal(t, string(append(beforeServer, afterServer...)), serverOutput.String())
+		})
+	}
+}
+
 // A failed acknowledgement write on a resumable connection must be treated exactly like a failed
 // binary write: close the connection and report errSendFailedResumable, so the receiving loop's
 // next read fails and drives the reattach. When traffic is one-way from the server the receiving
