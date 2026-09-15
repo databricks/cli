@@ -1,23 +1,6 @@
 bundle:
   name: test-bundle
 
-workspace:
-  artifact_path: /foo/bar/artifacts
-
-# The tarball is delivered as an artifact; don't also sync it as a bundle file.
-sync:
-  exclude:
-    - build/**
-    - dist/**
-    - code.tgz
-    - "**/*.tar.gz"
-
-artifacts:
-  code_source:
-    build: touch code.tgz
-    files:
-      - source: code.tgz
-
 resources:
   jobs:
     job:
@@ -35,9 +18,8 @@ resources:
           environment_key: default
           ai_runtime_task:
             experiment: my-experiment
-            code_source_path: code.tgz
             deployments:
-              - command_path: command.sh
+              - command_path: /Workspace/Shared/command.sh
                 compute:
                   accelerator_type: GPU_1xA10
                   accelerator_count: 1
