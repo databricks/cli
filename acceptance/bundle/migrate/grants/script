@@ -9,7 +9,7 @@ print_state.py > out.new_state.json
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "6 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "6 unchanged"
@@ -23,4 +23,4 @@ trace musterr $CLI bundle deployment migrate
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

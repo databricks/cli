@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -62,6 +63,23 @@ func TestLoadProfilesNoConfiguration(t *testing.T) {
 	profiler := FileProfilerImpl{}
 	_, err := profiler.LoadProfiles(ctx, MatchAllProfiles)
 	require.ErrorIs(t, err, ErrNoConfiguration)
+}
+
+func TestLoadProfilesClientID(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(`[u2m]
+host = https://workspace.test
+auth_type = databricks-cli
+client_id = custom-client-id
+`), 0o600)
+	require.NoError(t, err)
+
+	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", configPath)
+	profiles, err := (FileProfilerImpl{}).LoadProfiles(ctx, MatchAllProfiles)
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, "custom-client-id", profiles[0].ClientID)
+	assert.False(t, profiles[0].HasClientCredentials)
 }
 
 func TestLoadProfilesMatchWorkspace(t *testing.T) {

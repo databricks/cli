@@ -28,7 +28,7 @@
     },
     "suspend_timeout_duration": {
       "action": "skip",
-      "reason": "empty",
+      "reason": "spec:input_only",
       "old": "300s",
       "new": "300s"
     }

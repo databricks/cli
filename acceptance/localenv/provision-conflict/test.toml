@@ -1,0 +1,30 @@
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# setup-local writes pyproject.toml through the merge phase (backing up the
+# committed one) before it reports the conflict; the assertion is the JSON output,
+# so ignore the mutated file and its backup. No .venv is created because the run
+# stops before provisioning.
+Ignore = ["pyproject.toml", "pyproject.toml.bak"]
+
+Env.DATABRICKS_LOCALENV_CONSTRAINT_SOURCE_URL_TEST_OVERRIDE = "$DATABRICKS_HOST"
+
+# The pip pin in pyproject.toml is bumped by dependabot; normalize it in the
+# echoed warning so a version bump doesn't churn the golden. Any pinned version
+# still conflicts with the environment's "pip<24" constraint, which is what the
+# test asserts.
+[[Repls]]
+Old = 'pip==\d+(\.\d+)*'
+New = 'pip==[PIP_VERSION]'
+
+[[Server]]
+Pattern = "GET /serverless/serverless-v4/pyproject.toml"
+Response.Body = '''
+[project]
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = ["databricks-connect~=17.2.0"]
+
+[tool.uv]
+constraint-dependencies = ["pip<24"]
+'''

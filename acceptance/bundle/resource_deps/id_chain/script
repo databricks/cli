@@ -1,22 +1,22 @@
 print_all_requests() {
-    jq --sort-keys 'select(.path | contains("/jobs"))' < out.requests.txt
-    rm out.requests.txt
+    jq --sort-keys 'select(.path | contains("/jobs"))' < "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
-    rm out.requests.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 print_requests_short() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs"))) | (.body.name // .body.new_settings.name // empty)' < out.requests.txt
-    rm out.requests.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs"))) | (.body.name // .body.new_settings.name // empty)' < "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 trace $CLI bundle plan
 trace print_requests
 
-$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests
 
 trace $CLI bundle deploy
@@ -25,7 +25,7 @@ trace print_requests_short
 trace update_file.py databricks.yml aa_desc aa_new_desc
 trace update_file.py databricks.yml prefix new_prefix
 
-$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests
 
 trace $CLI bundle plan
@@ -34,5 +34,5 @@ trace print_requests
 trace $CLI bundle deploy
 trace print_requests_short
 
-$CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json | nostamp > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests

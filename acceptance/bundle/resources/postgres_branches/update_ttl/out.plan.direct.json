@@ -1,0 +1,10 @@
+{
+  "action": "update",
+  "changes": {
+    "ttl": {
+      "action": "update",
+      "old": "604800s",
+      "new": "259200s"
+    }
+  }
+}

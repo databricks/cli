@@ -89,6 +89,14 @@ type Dashboard struct {
 	FilePath string `json:"file_path,omitempty"`
 }
 
+func (r *Dashboard) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r Dashboard) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
+}
+
 func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
 	_, err := w.Lakeview.Get(ctx, dashboards.GetDashboardRequest{
 		DashboardId: id,
@@ -119,8 +127,4 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 
 func (r *Dashboard) GetName() string {
 	return r.DisplayName
-}
-
-func (r *Dashboard) GetURL() string {
-	return r.URL
 }

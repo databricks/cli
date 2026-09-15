@@ -1,0 +1,21 @@
+provided_id_fields:
+  - field: catalog_name
+    reason: id_field
+  - field: schema_name
+    reason: id_field
+recreate_on_changes:
+  - field: storage_location
+    reason: immutable
+  - field: volume_type
+    reason: immutable
+updatable_id_fields:
+  - field: name
+    reason: id_changes
+normalize_slash:
+  # UC strips trailing slashes on create; matches the Terraform provider's suppressLocationDiff.
+  # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
+  - field: storage_location
+    reason: uc_strips_trailing_slash
+backend_defaults:
+  # storage_location is Computed; backend generates it for managed volumes.
+  - field: storage_location

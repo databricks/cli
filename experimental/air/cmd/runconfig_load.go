@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -108,4 +111,31 @@ func loadRunConfigWithOverrides(ctx context.Context, path string, overrides []st
 		return nil, err
 	}
 	return cfg, nil
+}
+
+var runtimeVersionRe = regexp.MustCompile(`^[0-9]+$`)
+
+const databricksAIPrefix = "databricks_ai_v"
+
+func validateRuntimeVersion(version, source string) (string, error) {
+	normalized := strings.ToLower(version)
+	numeric := normalized
+	usesDatabricksAI := strings.HasPrefix(normalized, databricksAIPrefix)
+	if usesDatabricksAI {
+		numeric = strings.TrimPrefix(normalized, databricksAIPrefix)
+	}
+	if !runtimeVersionRe.MatchString(numeric) {
+		return "", fmt.Errorf("unsupported client image version %q in %s: version must be an integer, optionally prefixed with databricks_ai_v", version, source)
+	}
+	if !usesDatabricksAI {
+		return numeric, nil
+	}
+	major, err := strconv.Atoi(numeric)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse client image version %q in %s: %w", version, source, err)
+	}
+	if major < 5 {
+		return "", fmt.Errorf("databricks_ai_v in %s requires AI Runtime version 5 or higher, got %q", source, version)
+	}
+	return databricksAIPrefix + numeric, nil
 }

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py test_job)"
+
+# In JSON mode the command never fails the process: the outcome is carried in
+# "status" so the workspace caller can tell a benign no-op apart from an error.
+
+title "A selector that matches nothing is reported as skipped, exit 0"
+echo
+errcode $CLI bundle config-remote-sync --select-ids "jobs:no-such-id-999" -o json
+
+title "A malformed selector is reported as failed, exit 0"
+echo
+errcode $CLI bundle config-remote-sync --select-ids "no-such-id-999" -o json

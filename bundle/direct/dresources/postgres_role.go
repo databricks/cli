@@ -96,7 +96,7 @@ func (*ResourcePostgresRole) RemapState(remote *PostgresRoleRemote) *PostgresRol
 
 // makePostgresRoleRemote converts the SDK Role into the embedded remote shape.
 // GET does not echo spec today (only status is returned); the embedded spec fields
-// stay at their zero values, and resources.yml suppresses phantom drift via
+// stay at their zero values, and postgres_roles.yml suppresses phantom drift via
 // ignore_remote_changes with reason spec:input_only.
 func makePostgresRoleRemote(role *postgres.Role) *PostgresRoleRemote {
 	var spec postgres.RoleRoleSpec
@@ -158,7 +158,7 @@ func (r *ResourcePostgresRole) DoUpdate(ctx context.Context, id string, config *
 	// Build update mask from fields that have action="update" in the changes map.
 	// Prefix with "spec." because the API expects paths relative to the Role
 	// object, not relative to our flattened state type.
-	fieldPaths := collectLeafUpdatePathsWithPrefix(entry.Changes, "spec.")
+	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", nil)
 
 	waiter, err := r.client.Postgres.UpdateRole(ctx, postgres.UpdateRoleRequest{
 		Name: id,

@@ -4,6 +4,7 @@ package schema
 
 type ResourceFeatureEngineeringMaterializedFeatureCronScheduleTrigger struct {
 	CronExpression string `json:"cron_expression,omitempty"`
+	Mode           string `json:"mode,omitempty"`
 }
 
 type ResourceFeatureEngineeringMaterializedFeatureOfflineStoreConfig struct {
@@ -31,11 +32,13 @@ type ResourceFeatureEngineeringMaterializedFeatureStreamingMode struct {
 type ResourceFeatureEngineeringMaterializedFeatureTableTrigger struct{}
 
 type ResourceFeatureEngineeringMaterializedFeature struct {
+	BudgetPolicyId          string                                                            `json:"budget_policy_id,omitempty"`
 	CronSchedule            string                                                            `json:"cron_schedule,omitempty"`
 	CronScheduleTrigger     *ResourceFeatureEngineeringMaterializedFeatureCronScheduleTrigger `json:"cron_schedule_trigger,omitempty"`
 	FeatureName             string                                                            `json:"feature_name"`
 	IsOnline                bool                                                              `json:"is_online,omitempty"`
 	LastMaterializationTime string                                                            `json:"last_materialization_time,omitempty"`
+	LatestBackfillOperation string                                                            `json:"latest_backfill_operation,omitempty"`
 	MaterializedFeatureId   string                                                            `json:"materialized_feature_id,omitempty"`
 	OfflineStoreConfig      *ResourceFeatureEngineeringMaterializedFeatureOfflineStoreConfig  `json:"offline_store_config,omitempty"`
 	OnlineStoreConfig       *ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig   `json:"online_store_config,omitempty"`
@@ -44,4 +47,5 @@ type ResourceFeatureEngineeringMaterializedFeature struct {
 	StreamingMode           *ResourceFeatureEngineeringMaterializedFeatureStreamingMode       `json:"streaming_mode,omitempty"`
 	TableName               string                                                            `json:"table_name,omitempty"`
 	TableTrigger            *ResourceFeatureEngineeringMaterializedFeatureTableTrigger        `json:"table_trigger,omitempty"`
+	Tags                    map[string]string                                                 `json:"tags,omitempty"`
 }

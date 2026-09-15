@@ -26,7 +26,7 @@ Settings
   network-connectivity                These APIs provide configurations for the network connectivity of your workspaces for serverless compute resources.
   network-policies                    These APIs manage network policies for this account.
   settings                            Accounts Settings API allows users to manage settings at the account level.
-  settings-v2                         *Public Preview* APIs to manage account level settings.
+  settings-v2                         APIs to manage account level settings.
   workspace-network-configuration     These APIs allow configuration of network settings for Databricks workspaces by selecting which network policy to associate with the workspace.
 
 Provisioning

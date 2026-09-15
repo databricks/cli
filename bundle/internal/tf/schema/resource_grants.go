@@ -26,6 +26,7 @@ type ResourceGrants struct {
 	Pipeline             string                        `json:"pipeline,omitempty"`
 	Recipient            string                        `json:"recipient,omitempty"`
 	Schema               string                        `json:"schema,omitempty"`
+	Secret               string                        `json:"secret,omitempty"`
 	Share                string                        `json:"share,omitempty"`
 	StorageCredential    string                        `json:"storage_credential,omitempty"`
 	Table                string                        `json:"table,omitempty"`

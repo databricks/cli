@@ -1,0 +1,30 @@
+# Generated, do not edit.
+
+recreate_on_changes:
+  - field: config.provider_type
+    reason: spec:immutable
+
+ignore_remote_changes:
+  - field: config.amazon_bedrock.direct.aws_access_key.secret_access_key.plaintext
+    reason: spec:input_only
+  - field: config.anthropic.direct.api_key.plaintext
+    reason: spec:input_only
+  - field: config.azure_openai.direct.api_key.plaintext
+    reason: spec:input_only
+  - field: config.azure_openai.direct.entra_service_principal.client_secret.plaintext
+    reason: spec:input_only
+  - field: config.custom.direct.api_key.plaintext
+    reason: spec:input_only
+  - field: config.gemini_enterprise.direct.api_key.plaintext
+    reason: spec:input_only
+  - field: config.microsoft_foundry.direct.api_key.plaintext
+    reason: spec:input_only
+  - field: config.microsoft_foundry.direct.entra_service_principal.client_secret.plaintext
+    reason: spec:input_only
+  - field: config.openai.direct.api_key.plaintext
+    reason: spec:input_only
+
+  - field: config.inference_table.is_deleted
+    reason: spec:output_only
+  - field: config.inference_table.table
+    reason: spec:output_only

@@ -1,5 +1,5 @@
 {
-  "plan_version": 2,
+  "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 3,
@@ -79,19 +79,7 @@
         }
       ],
       "action": "delete",
-      "remote_state": {
-        "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
-        "__embed__": [
-          {
-            "level": "CAN_MANAGE",
-            "user_name": "viewer@example.com"
-          },
-          {
-            "level": "IS_OWNER",
-            "user_name": "[USERNAME]"
-          }
-        ]
-      }
+      "state_only": true
     }
   }
 }

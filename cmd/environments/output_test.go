@@ -49,6 +49,21 @@ func TestRenderSuccessSummary(t *testing.T) {
 	assert.NotContains(t, out, "preflight  ok")
 }
 
+func TestRenderSuccessExplainsInstalledPythonFallback(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.OK = true
+	res.Resolved = &libslocalenv.ResolvedInfo{PythonVersion: "3.12"}
+	res.VenvPath = ".venv"
+	res.PythonResolution = libslocalenv.PythonResolutionInstalledFallback
+	res.PythonInterpreter = "/usr/bin/python3.12"
+
+	out := renderText(t, res, nil)
+
+	assert.Contains(t, out, "Python download failed")
+	// The exact interpreter is named so the user knows what backs the venv.
+	assert.Contains(t, out, "/usr/bin/python3.12")
+}
+
 func TestRenderSuccessConstraintsOnlyOmitsDBConnect(t *testing.T) {
 	res := libslocalenv.NewResult()
 	res.OK = true
@@ -78,6 +93,36 @@ func TestRenderFailure(t *testing.T) {
 	assert.Contains(t, out, "fetching constraints")
 	assert.Contains(t, out, "constraint repo unreachable")
 	assert.Contains(t, out, "--debug")
+}
+
+func TestRenderFailureExplainsInstalledPythonFallback(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.PythonResolution = libslocalenv.PythonResolutionInstalledFallback
+	res.PythonInterpreter = "/usr/bin/python3.12"
+	res.Error = &libslocalenv.PipelineError{
+		Code:         libslocalenv.ErrProvision,
+		FailurePhase: libslocalenv.PhaseProvision,
+		Msg:          "sync failed",
+	}
+
+	out := renderText(t, res, res.Error)
+
+	assert.Contains(t, out, "Python download failed")
+	assert.Contains(t, out, "/usr/bin/python3.12")
+}
+
+// A user interrupt after a fallback must not append the fallback note, which
+// would contradict "Setup canceled".
+func TestRenderCanceledOmitsInstalledPythonFallback(t *testing.T) {
+	res := libslocalenv.NewResult()
+	res.PythonResolution = libslocalenv.PythonResolutionInstalledFallback
+	res.PythonInterpreter = "/usr/bin/python3.12"
+	res.Error = &libslocalenv.PipelineError{Code: libslocalenv.ErrCanceled, FailurePhase: libslocalenv.PhaseProvision, Msg: "interrupted"}
+
+	out := renderText(t, res, res.Error)
+
+	assert.Contains(t, out, "canceled")
+	assert.NotContains(t, out, "Python download failed")
 }
 
 func TestRenderCanceled(t *testing.T) {

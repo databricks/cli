@@ -1,0 +1,9 @@
+# Isolate HOME so parallel aitools tests don't race on a shared ~/.databricks.
+sethome home
+
+title "install --output json records a per-agent error category"
+# claude-code supports project-scoped skills; cursor does not. At --scope=project,
+# claude-code installs while cursor is skipped with an UNSUPPORTED_SCOPE category in
+# its own agents[] entry (the top-level error_category stays unset because the
+# failure is per-agent). cursor was named explicitly, so the run exits non-zero.
+trace $CLI aitools install --skills-only --scope=project --agents=claude-code,cursor --output json

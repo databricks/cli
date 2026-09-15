@@ -1,0 +1,1 @@
+* direct: `bundle plan` no longer reports a permanent update on a cluster that uses a cluster policy: when the cluster spec sets `policy_id`, a field present in the remote but absent from the bundle config is not treated as drift. ([#6531](https://github.com/databricks/cli/pull/6531))

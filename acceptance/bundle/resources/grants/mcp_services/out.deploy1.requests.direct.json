@@ -1,0 +1,17 @@
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/mcp_service/main.myschema.myservice",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "APPLY_TAG"
+        ],
+        "principal": "deco-test-user@databricks.com",
+        "remove": [
+          "ALL_PRIVILEGES"
+        ]
+      }
+    ]
+  }
+}

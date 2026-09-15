@@ -1,0 +1,35 @@
+{
+  "action": "update",
+  "changes": {
+    "default_endpoint_settings": {
+      "action": "update",
+      "old": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "300s"
+      },
+      "new": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "600s"
+      }
+    },
+    "default_endpoint_settings.suspend_timeout_duration": {
+      "action": "update",
+      "old": "300s",
+      "new": "600s"
+    },
+    "display_name": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "Test Project for Default Endpoint Suspend Update",
+      "new": "Test Project for Default Endpoint Suspend Update"
+    },
+    "pg_version": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": 16,
+      "new": 16
+    }
+  }
+}

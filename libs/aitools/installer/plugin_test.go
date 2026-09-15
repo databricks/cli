@@ -65,29 +65,23 @@ func TestInstallPluginForAgentClaudeSuccess(t *testing.T) {
 	assert.Contains(t, cmds, "claude plugin install databricks@databricks-agent-skills --scope user")
 }
 
-func TestInstallPluginForAgentBuiltinMarketplace(t *testing.T) {
+func TestInstallPluginForAgentSharedMarketplace(t *testing.T) {
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
 
-	// An agent whose plugin lives in a built-in marketplace (empty Source) like
-	// Claude's claude-plugins-official: install from it, never register it.
-	agent := &agents.Agent{
-		Name:        agents.NameClaudeCode,
-		DisplayName: "Claude Code",
-		Binary:      "claude",
-		Plugin:      &agents.PluginSpec{Marketplace: "claude-plugins-official", ID: "databricks", Source: ""},
-	}
+	// Claude installs from its official, Shared marketplace (claude-plugins-official).
+	// It is not reliably registered locally, so the CLI must add it from its source
+	// before refreshing and installing. Use the real registry spec.
+	agent := agents.ByName(agents.NameClaudeCode)
 
 	rec, err := InstallPluginForAgent(ctx, agent, "user", "main")
 	require.NoError(t, err)
 	assert.Equal(t, "claude-plugins-official", rec.Marketplace)
-	assert.False(t, rec.InstalledMarketplace, "a built-in marketplace is never registered by us")
+	assert.True(t, rec.InstalledMarketplace, "an absent shared marketplace is added by us")
 
 	cmds := stub.Commands()
-	for _, c := range cmds {
-		assert.NotContains(t, c, "marketplace add", "must not register a built-in marketplace")
-	}
+	assert.Contains(t, cmds, "claude plugin marketplace add anthropics/claude-plugins-official")
 	assert.Contains(t, cmds, "claude plugin marketplace update")
 	assert.Contains(t, cmds, "claude plugin install databricks@claude-plugins-official --scope user")
 }
@@ -309,17 +303,17 @@ func TestUninstallSkillsOptsTargetsPluginAgents(t *testing.T) {
 	assert.Contains(t, state.Plugins, agents.NameCopilot)
 }
 
-func TestUninstallNeverDeregistersBuiltinMarketplace(t *testing.T) {
+func TestUninstallNeverDeregistersSharedMarketplace(t *testing.T) {
 	setupTestHome(t)
 	stubAgentLookPath(t, true)
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
-	ctx = cmdio.MockDiscard(ctx)
+	ctx, stderr := cmdio.NewTestContextWithStderr(ctx)
 
 	dir, err := GlobalSkillsDir(ctx)
 	require.NoError(t, err)
-	// Claude installs from its built-in claude-plugins-official marketplace; even a
-	// stale InstalledMarketplace=true must never trigger a de-register.
+	// Claude's claude-plugins-official is a Shared marketplace; even a stale
+	// InstalledMarketplace=true must never trigger a de-register.
 	require.NoError(t, SaveState(dir, &InstallState{
 		SchemaVersion: schemaVersionV2,
 		Plugins: map[string]PluginRecord{
@@ -334,6 +328,9 @@ func TestUninstallNeverDeregistersBuiltinMarketplace(t *testing.T) {
 	for _, c := range cmds {
 		assert.NotContains(t, c, "marketplace remove")
 	}
+	// The message must not claim to have removed the shared marketplace.
+	assert.Contains(t, stderr.String(), "removed databricks plugin")
+	assert.NotContains(t, stderr.String(), "+ marketplace")
 }
 
 func TestUninstallKeepMarketplace(t *testing.T) {

@@ -220,6 +220,38 @@ func TestBuildGetData(t *testing.T) {
 	assert.Equal(t, int64(12), *d.DurationSeconds)
 }
 
+func TestBuildGetDataTerminationReasonJSON(t *testing.T) {
+	failed := buildGetData(&jobs.Run{
+		RunId: 5,
+		State: &jobs.RunState{ResultState: jobs.RunResultStateFailed},
+		Status: &jobs.RunStatus{TerminationDetails: &jobs.TerminationDetails{
+			Message: "out of memory",
+		}},
+	})
+	body, err := json.Marshal(failed)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{
+		"run_id":"5","status":"FAILED","started_at":null,"duration_seconds":null,
+		"attempt_number":0,"experiment_name":null,"dashboard_url":"","mlflow_url":null,
+		"termination_reason":"out of memory","est_remaining_seconds":null,"est_percent_complete":null
+	}`, string(body))
+
+	canceled := buildGetData(&jobs.Run{RunId: 6, State: &jobs.RunState{ResultState: jobs.RunResultStateCanceled, StateMessage: "user canceled"}})
+	body, err = json.Marshal(canceled)
+	require.NoError(t, err)
+	assert.NotContains(t, string(body), "termination_reason")
+}
+
+func TestGetTemplateUsesDisplayStatus(t *testing.T) {
+	out := renderGet(t, getData{
+		RunID:         "456",
+		Status:        "RUNNING",
+		DisplayStatus: "PENDING",
+		Sweep:         &sweepInfo{Total: 1, Active: 1},
+	})
+	assert.Contains(t, out, "Status:       PENDING")
+}
+
 func TestEnrichFromAiRuntimeTask(t *testing.T) {
 	t.Run("fills config path, experiment, and accelerators", func(t *testing.T) {
 		run := &jobs.Run{RunId: 5, Tasks: []jobs.RunTask{{

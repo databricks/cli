@@ -66,10 +66,12 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigIngestio
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfig struct {
 	BackfillJobId        int                                                                                      `json:"backfill_job_id,omitempty"`
 	BackfillSource       *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigBackfillSource       `json:"backfill_source,omitempty"`
+	BudgetPolicyId       string                                                                                   `json:"budget_policy_id,omitempty"`
 	DeduplicationColumns []string                                                                                 `json:"deduplication_columns,omitempty"`
 	IngestionDestination *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsIngestionConfigIngestionDestination `json:"ingestion_destination,omitempty"`
 	IngestionJobId       int                                                                                      `json:"ingestion_job_id,omitempty"`
 	IngestionPipelineId  string                                                                                   `json:"ingestion_pipeline_id,omitempty"`
+	Tags                 map[string]string                                                                        `json:"tags,omitempty"`
 }
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchemaProtoSchema struct {

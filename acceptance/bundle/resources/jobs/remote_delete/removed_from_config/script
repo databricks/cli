@@ -18,4 +18,4 @@ trace $CLI bundle deploy
 trace $CLI bundle summary &> out.summary.$DATABRICKS_BUNDLE_ENGINE.txt
 
 title "No delete API calls for resources that are already gone remotely"
-trace print_requests.py //jobs/delete //pipelines/
+trace print_requests.py //jobs/delete //pipelines/ --nostamp

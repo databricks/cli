@@ -66,10 +66,12 @@ type ResourceFeatureEngineeringKafkaConfigIngestionConfigIngestionDestination st
 type ResourceFeatureEngineeringKafkaConfigIngestionConfig struct {
 	BackfillJobId        int                                                                       `json:"backfill_job_id,omitempty"`
 	BackfillSource       *ResourceFeatureEngineeringKafkaConfigIngestionConfigBackfillSource       `json:"backfill_source,omitempty"`
+	BudgetPolicyId       string                                                                    `json:"budget_policy_id,omitempty"`
 	DeduplicationColumns []string                                                                  `json:"deduplication_columns,omitempty"`
 	IngestionDestination *ResourceFeatureEngineeringKafkaConfigIngestionConfigIngestionDestination `json:"ingestion_destination,omitempty"`
 	IngestionJobId       int                                                                       `json:"ingestion_job_id,omitempty"`
 	IngestionPipelineId  string                                                                    `json:"ingestion_pipeline_id,omitempty"`
+	Tags                 map[string]string                                                         `json:"tags,omitempty"`
 }
 
 type ResourceFeatureEngineeringKafkaConfigKeySchemaProtoSchema struct {

@@ -58,7 +58,7 @@ func computeListCols(rows []listRow) listCols {
 	for _, r := range rows {
 		c.runID = max(c.runID, lipgloss.Width(r.RunID))
 		c.experiment = min(columnCap, max(c.experiment, lipgloss.Width(r.Experiment)))
-		c.status = max(c.status, lipgloss.Width("● "+r.Status))
+		c.status = max(c.status, lipgloss.Width("● "+listRowStatus(r)))
 		c.started = max(c.started, lipgloss.Width(startedDisplay(r)))
 		c.duration = max(c.duration, lipgloss.Width(r.Duration))
 		c.progress = max(c.progress, lipgloss.Width(progressDisplay(r)))
@@ -123,7 +123,7 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 		s.cell(base, gutter, 1, fg(colN7), false, false, ""),
 		s.cell(base, r.RunID, cols.runID, fg(colRunID), false, runIDLink != "", runIDLink),
 		s.cell(base, r.Experiment, cols.experiment, fg(colN11), false, experimentLink != "", experimentLink),
-		s.cell(base, "● "+r.Status, cols.status, fg(statusColor(r.Status)), false, false, ""),
+		s.cell(base, "● "+listRowStatus(r), cols.status, fg(statusColor(listRowStatus(r))), false, false, ""),
 		s.cell(base, startedDisplay(r), cols.started, fg(colN9), false, false, ""),
 		s.cell(base, r.Duration, cols.duration, fg(colN9), true, false, ""),
 		s.cell(base, progressDisplay(r), cols.progress, fg(colAmber), true, false, ""),
@@ -133,6 +133,13 @@ func (s listStyles) renderRow(cols listCols, r listRow, selected, links bool) st
 	}
 	// Trim the final column's trailing pad so rows carry no trailing whitespace.
 	return strings.TrimRight(strings.Join(cells, base.Render("  ")), " ")
+}
+
+func listRowStatus(r listRow) string {
+	if r.DisplayStatus != "" {
+		return r.DisplayStatus
+	}
+	return r.Status
 }
 
 // cell renders one padded, colored cell. The text is truncated to width, then

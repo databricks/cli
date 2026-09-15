@@ -94,6 +94,11 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: "beautifulsoup4==4.12.3+abc.5", expected: false},
 		{path: "beautifulsoup4==1!4.12.3", expected: false},
 
+		// Trailing ".*" wildcard for prefix matching (valid with == and != per PEP 440).
+		{path: "numpy==2.5.*", expected: false},
+		{path: "numpy!=2.5.*", expected: false},
+		{path: "numpy==2.*", expected: false},
+
 		{path: "beautifulsoup4 >= 4.12.3", expected: false},
 		{path: "beautifulsoup4 < 4.12.3", expected: false},
 		{path: "beautifulsoup4 ~= 4.12.3", expected: false},

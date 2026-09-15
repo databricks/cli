@@ -1,0 +1,16 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_instance_pool"
+
+resources:
+  instance_pools:
+    my_pool_1:
+      instance_pool_name: "my_pool_1"
+      node_type_id: "i3.xlarge"

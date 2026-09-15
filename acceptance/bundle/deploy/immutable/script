@@ -5,15 +5,37 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle validate
-trace $CLI bundle plan -o json | jq '.plan["resources.jobs.my_job"].new_state.value.tasks'
-trace $CLI bundle deploy
+trace $CLI bundle plan -o json > plan.json
+trace jq '.plan["resources.jobs.my_job"].new_state.value.tasks' plan.json
+trace jq '.plan["resources.jobs.my_job"].new_state.value.environments' plan.json
+trace jq '.plan["resources.internal_immutable_snapshots.immutable"]' plan.json
 
+trace $CLI bundle deploy
 
 # Get a job and check that task paths are immutable
 JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
-trace $CLI jobs get $JOB_ID | jq '.settings.tasks' | jq '.[] | select(.spark_python_task != null) | .spark_python_task.python_file'
-trace $CLI jobs get $JOB_ID | jq '.settings.tasks' | jq '.[] | select(.notebook_task != null) | .notebook_task.notebook_path'
-trace $CLI jobs get $JOB_ID | jq '.settings.environments[0].spec.dependencies'
+$CLI jobs get $JOB_ID > job.json
+trace jq '.settings.tasks' job.json | jq '.[] | select(.spark_python_task != null) | .spark_python_task.python_file'
+trace jq '.settings.tasks' job.json | jq '.[] | select(.notebook_task != null) | .notebook_task.notebook_path'
+trace jq '.settings.environments[0].spec.dependencies' job.json
+PYTHON_FILE_1=$(jq '.settings.tasks' job.json | jq '.[] | select(.spark_python_task != null) | .spark_python_task.python_file')
+
+trace title "Check snapshot plan after deploy"
+trace $CLI bundle plan -o json > plan.json
+trace jq '.plan["resources.internal_immutable_snapshots.immutable"]' plan.json
+rm plan.json
+rm job.json
+
+trace $CLI bundle deploy
+
+title "Check that job uses a new snapshot: "
+PYTHON_FILE_2=$($CLI jobs get $JOB_ID | jq '.settings.tasks' | jq '.[] | select(.spark_python_task != null) | .spark_python_task.python_file')
+if [ "$PYTHON_FILE_1" != "$PYTHON_FILE_2" ]; then
+    echo "Snapshot changed as expected"
+else
+    echo "Snapshot did not change"
+    exit 1
+fi
 
 # Redirect run output to a log file — the real workspace produces different output than the local test server.
 $CLI bundle run my_job &> LOG.run

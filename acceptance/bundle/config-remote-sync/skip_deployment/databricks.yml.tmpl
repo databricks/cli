@@ -1,0 +1,33 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      name: test-job-$UNIQUE_NAME
+      description: original description
+      job_clusters:
+        - job_cluster_key: test_cluster
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          job_cluster_key: test_cluster
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-$UNIQUE_NAME
+      catalog: main
+      schema: default
+      configuration:
+        key1: value1
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+
+targets:
+  default:
+    mode: development

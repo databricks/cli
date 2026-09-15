@@ -12,7 +12,7 @@ import (
 )
 
 func TestGenerateHostConfigSetsServerAliveInterval(t *testing.T) {
-	config := GenerateHostConfig("myhost", "root", "/keys/myhost", "databricks ssh connect --proxy")
+	config := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/myhost", "cluster-123", "databricks ssh connect --proxy")
 
 	// `ssh setup` and `--ide` reach ssh through this block and nothing else, so the option has to
 	// be in it.
@@ -24,6 +24,18 @@ func TestGenerateHostConfigSetsServerAliveInterval(t *testing.T) {
 	// proxy.proxyHandoverInitTimeout's current value; it is unexported, so it can't be referenced.
 	assert.Less(t, ServerAliveIntervalSeconds, 8*60)
 	assert.Greater(t, 3*ServerAliveIntervalSeconds, 30)
+}
+
+func TestGenerateHostConfigPinsHostKeyAlias(t *testing.T) {
+	// `ssh setup --name myhost --cluster cluster-123` writes `Host myhost` but pins the server
+	// key under the cluster ID, so the block has to carry `HostKeyAlias cluster-123` for ssh to
+	// find the pinned entry under strict checking (DECO-27882).
+	config := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/cluster-123", "cluster-123", "databricks ssh connect --proxy")
+	assert.Contains(t, config, "\n    HostKeyAlias cluster-123\n")
+
+	// An empty alias omits the directive entirely rather than emitting a bare `HostKeyAlias`.
+	noAlias := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/myhost", "", "databricks ssh connect --proxy")
+	assert.NotContains(t, noAlias, "HostKeyAlias")
 }
 
 func TestGetConfigDir(t *testing.T) {

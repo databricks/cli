@@ -9,3 +9,10 @@
     "state": "PENDING"
   }
 }
+
+>>> print_requests.py //apps
+{
+  "method": "POST",
+  "path": "/api/2.0/apps/test-app/deployments",
+  "body": {}
+}

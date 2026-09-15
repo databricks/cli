@@ -31,7 +31,7 @@ Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_c
 Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.test_job
-Files: 19 uploaded, 0 deleted
+Files: 17 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === There are 2 original wheels and 2 patched ones
@@ -52,7 +52,7 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS][1].dist-info/top_level.txt
 my_test_code-0.0.1+[UNIX_TIME_NANOS][1].dist-info/RECORD
 
 === Expecting 2 patched wheels in libraries section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 json[1].for_each_task.task.libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl";
 json[1].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl";
 json[1].libraries[1].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl";
@@ -73,7 +73,7 @@ Uploading .databricks/bundle/default/patched_wheels/my_prebuilt_whl_other_test_c
 Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.test_job
-Files: 12 uploaded, 0 deleted
+Files: 10 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Verify contents, it should now have new_module.py
@@ -88,7 +88,7 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS][2].dist-info/top_level.txt
 my_test_code-0.0.1+[UNIX_TIME_NANOS][2].dist-info/RECORD
 
 === Expecting 2 patched wheels in libraries section in /jobs/reset
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks [OUTPUT_DIR]/out.requests.txt
 json[1].for_each_task.task.libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl";
 json[1].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl";
 json[1].libraries[1].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl";

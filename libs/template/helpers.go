@@ -53,13 +53,13 @@ var metastoreDisabledErrorCodes = []string{
 // is run and can be used to attribute DBU revenue to bundle templates.
 var bundleUuid = uuid.New().String()
 
-// recordDeploymentHistoryEnvVar makes the built-in templates set
-// experimental.record_deployment_history in the databricks.yml they generate. It is scoped to
+// deploymentHistoryEnvVar makes the built-in templates set
+// experimental.deployment_history in the databricks.yml they generate. It is scoped to
 // `bundle init` because it persists the setting in the generated project rather than applying
 // it to the bundle being run.
 //
 // Temporary: remove it and its callers in the templates once this is the default.
-const recordDeploymentHistoryEnvVar = "DATABRICKS_BUNDLE_INIT_RECORD_DEPLOYMENT_HISTORY"
+const deploymentHistoryEnvVar = "DATABRICKS_BUNDLE_INIT_DEPLOYMENT_HISTORY"
 
 func loadHelpers(ctx context.Context) template.FuncMap {
 	w := cmdctx.WorkspaceClient(ctx)
@@ -183,8 +183,8 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			cachedIsServicePrincipal = &result
 			return result, nil
 		},
-		"record_deployment_history": func() bool {
-			v, _ := env.GetBool(ctx, recordDeploymentHistoryEnvVar)
+		"deployment_history": func() bool {
+			v, _ := env.GetBool(ctx, deploymentHistoryEnvVar)
 			return v
 		},
 		"lower": func(s string) string {
