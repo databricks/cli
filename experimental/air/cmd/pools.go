@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
@@ -146,7 +147,9 @@ func listPools(ctx context.Context, w *databricks.WorkspaceClient) ([]provisione
 			query["page_token"] = pageToken
 		}
 		var resp listProvisionedCapacitiesResponse
-		if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath, nil, nil, query, &resp); err != nil {
+		// WorkspaceIDHeaders is required so unified hosts route the call to the
+		// caller's workspace rather than relying on Config.WorkspaceID alone.
+		if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath, auth.WorkspaceIDHeaders(w.Config), nil, query, &resp); err != nil {
 			return nil, err
 		}
 		out = append(out, resp.ProvisionedCapacities...)
@@ -165,7 +168,9 @@ func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*pr
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
 	var pc provisionedCapacity
-	if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath+"/"+id, nil, nil, nil, &pc); err != nil {
+	// WorkspaceIDHeaders is required so unified hosts route the call to the
+	// caller's workspace rather than relying on Config.WorkspaceID alone.
+	if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath+"/"+id, auth.WorkspaceIDHeaders(w.Config), nil, nil, &pc); err != nil {
 		return nil, err
 	}
 	return &pc, nil
@@ -238,7 +243,8 @@ func newGetPoolCommand() *cobra.Command {
 
 		pool, err := getPool(ctx, w, id)
 		if err != nil {
-			if errors.Is(err, apierr.ErrResourceDoesNotExist) {
+			// ErrNotFound covers a plain 404 as well as RESOURCE_DOES_NOT_EXIST.
+			if errors.Is(err, apierr.ErrNotFound) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
 					fmt.Errorf("GPU pool %q not found: check the id with `air list pools`", id))
 			}

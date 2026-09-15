@@ -266,3 +266,26 @@ func TestGetPoolNotFoundJSON(t *testing.T) {
 	assert.Equal(t, "NOT_FOUND", got.Error.Code)
 	assert.Contains(t, got.Error.Message, `GPU pool "missing" not found`)
 }
+
+func TestGetPoolPlain404(t *testing.T) {
+	// A bare HTTP 404 (no RESOURCE_DOES_NOT_EXIST error code) must still map to
+	// NOT_FOUND, since apierr.ErrNotFound covers any 404.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message":"no such thing"}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(t.Context(), newTestWorkspaceClient(t, srv.URL))
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputJSON, nil, &buf, &buf, "", ""))
+	cmd := withOutput(newGetPoolCommand(), flags.OutputJSON)
+	cmd.SetContext(ctx)
+
+	err := cmd.RunE(cmd, []string{"pool-x"})
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+
+	var got errorEnvelope
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, "NOT_FOUND", got.Error.Code)
+}
