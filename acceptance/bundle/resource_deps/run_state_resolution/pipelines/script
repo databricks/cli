@@ -1,0 +1,4 @@
+trace $CLI bundle deploy --select pipelines.foo --auto-approve
+# Same bug via a pipeline target: bundle run resolves ${resources.*} for ALL resources,
+# so the unrelated, not-deployed job's run_job_task reference breaks `bundle run foo`.
+musterr trace $CLI bundle run foo

@@ -1,0 +1,5 @@
+trace $CLI bundle deploy --select jobs.foo --auto-approve
+# bundle run resolves ${resources.*} against state across ALL resources. unrelated_job
+# (not deployed) references the not-deployed bar; bar.id resolves to "" and lands in the
+# int job_id field, so an unrelated job breaks `bundle run foo`.
+musterr trace $CLI bundle run foo

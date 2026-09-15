@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle deploy --select pipelines.foo --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created pipelines.foo
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 2 not selected
+
+>>> [CLI] bundle run foo
+Error: [TEST_TMP_DIR]/databricks.yml:19:21: expected an int, found a string

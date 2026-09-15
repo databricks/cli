@@ -1,0 +1,15 @@
+
+>>> [CLI] bundle deploy --select jobs.bar --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.bar
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged, 3 not selected
+
+>>> [CLI] bundle deploy --select apps.foo --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.foo
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged, 2 not selected
+
+>>> [CLI] bundle run foo
+Error: [TEST_TMP_DIR]/databricks.yml:23:21: expected an int, found a string

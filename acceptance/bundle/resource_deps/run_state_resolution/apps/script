@@ -1,0 +1,6 @@
+trace $CLI bundle deploy --select jobs.bar --auto-approve
+trace $CLI bundle deploy --select apps.foo --auto-approve
+# The app's ${resources.jobs.bar.id} reference IS resolved here (bar is deployed).
+# But bundle run resolves refs for ALL resources: unrelated_job (not deployed) references
+# the not-deployed baz, which resolves to "" in the int job_id field and breaks the run.
+musterr trace $CLI bundle run foo
