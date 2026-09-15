@@ -16,6 +16,7 @@ func TestParseGPUType(t *testing.T) {
 		{"GPU_1xA10", gpuType1xA10},
 		{"GPU_8xH100", gpuType8xH100},
 		{"GPU_1xH100", gpuType1xH100},
+		{"GPU_8xB300", gpuType8xB300},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
@@ -29,7 +30,7 @@ func TestParseGPUType(t *testing.T) {
 func TestParseGPUTypeInvalid(t *testing.T) {
 	// Wrong casing is rejected rather than fixed up; legacy types (h100_80gb, a10)
 	// can no longer be submitted; unknown types are rejected.
-	for _, in := range []string{"gpu_1xa10", "GPU_1XA10", "GPU_2xH100", "h100_80gb", "a10", "b200", ""} {
+	for _, in := range []string{"gpu_1xa10", "GPU_1XA10", "gpu_8xb300", "GPU_2xH100", "h100_80gb", "a10", "b200", ""} {
 		t.Run(in, func(t *testing.T) {
 			_, err := parseGPUType(in)
 			require.Error(t, err)
@@ -46,6 +47,7 @@ func TestGPUsPerNode(t *testing.T) {
 		{gpuType1xA10, 1},
 		{gpuType1xH100, 1},
 		{gpuType8xH100, 8},
+		{gpuType8xB300, 8},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.in), func(t *testing.T) {
@@ -99,6 +101,14 @@ func TestComputeConfigValidate(t *testing.T) {
 		{"legacy type rejected", computeConfig{NumAccelerators: 8, AcceleratorType: "h100_80gb"}, "accelerator_type"},
 		{"non-positive count", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_1xH100"}, "must be positive"},
 		{"count not a multiple", computeConfig{NumAccelerators: 4, AcceleratorType: "GPU_8xH100"}, "multiple of 8"},
+		{"B300 single node", computeConfig{NumAccelerators: 8, AcceleratorType: "GPU_8xB300"}, ""},
+		{"B300 two nodes", computeConfig{NumAccelerators: 16, AcceleratorType: "GPU_8xB300"}, ""},
+		{"B300 three nodes", computeConfig{NumAccelerators: 24, AcceleratorType: "GPU_8xB300"}, ""},
+		{"B300 count one", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_8xB300"}, "multiple of 8"},
+		{"B300 count four", computeConfig{NumAccelerators: 4, AcceleratorType: "GPU_8xB300"}, "multiple of 8"},
+		{"B300 count twelve", computeConfig{NumAccelerators: 12, AcceleratorType: "GPU_8xB300"}, "multiple of 8"},
+		{"B300 zero", computeConfig{NumAccelerators: 0, AcceleratorType: "GPU_8xB300"}, "must be positive"},
+		{"B300 negative", computeConfig{NumAccelerators: -8, AcceleratorType: "GPU_8xB300"}, "must be positive"},
 		{"priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", ProvisionedCapacityID: new("cap"), PriorityClass: new("critical")}, ""},
 		{"priority class requires reservation", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", PriorityClass: new("NORMAL")}, "requires compute.provisioned_capacity_id"},
 		{"invalid priority class", computeConfig{NumAccelerators: 1, AcceleratorType: "GPU_1xH100", ProvisionedCapacityID: new("cap"), PriorityClass: new("urgent")}, "invalid priority_class"},

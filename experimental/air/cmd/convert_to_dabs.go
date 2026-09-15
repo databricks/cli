@@ -115,6 +115,10 @@ does not contact the workspace.`,
 // env/secret/param sidecars) to write under generated_artifacts/. It does not touch the
 // code_source; the emitted `tgz` artifact packages it at deploy.
 func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir string) (map[string]dyn.Value, []uploadItem, error) {
+	if gpuType(cfg.Compute.AcceleratorType) == gpuType8xB300 {
+		return nil, nil, errors.New("GPU_8xB300 is not yet supported by convert-to-dabs; use air run until DAB support is available")
+	}
+
 	// idempotency_token is intentionally not mapped: it dedups a single runs/submit
 	// call, which has no analogue for a persistent, repeatedly-runnable bundle job.
 	//
