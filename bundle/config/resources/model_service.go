@@ -52,6 +52,7 @@ func (c ModelServiceConfig) MarshalJSON() ([]byte, error) {
 
 type ModelService struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	ModelServiceConfig
 }
 
