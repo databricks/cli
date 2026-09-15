@@ -14,6 +14,12 @@ license = { file = "LICENSE" }
 dependencies = [
 ]
 
+[project.urls]
+Changelog = "https://github.com/databricks/cli/blob/main/CHANGELOG.md"
+Documentation = "https://databricks.github.io/cli/python/"
+Issues = "https://github.com/databricks/cli/issues"
+Repository = "https://github.com/databricks/cli/tree/main/python"
+
 [build-system]
 requires = ["flit_core==3.12.0"]
 build-backend = "flit_core.buildapi"
