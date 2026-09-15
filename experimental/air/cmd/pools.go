@@ -217,9 +217,9 @@ func newListPoolsCommand() *cobra.Command {
 
 func newGetPoolCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "pool POOL_ID",
-		Args:  root.ExactArgs(1),
-		Short: "Show a GPU pool, including its accelerator usage",
+		Use:   "pool [POOL_ID]",
+		Args:  root.MaximumNArgs(1),
+		Short: "Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)",
 	}
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -234,11 +234,21 @@ func newGetPoolCommand() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		// Accept either the bare id or the full resource name.
-		id := poolID(strings.TrimSpace(args[0]))
-		if id == "" {
-			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("pool_id cannot be empty"))
+		var id string
+		if len(args) == 1 {
+			// Accept either the bare id or the full resource name.
+			id = poolID(strings.TrimSpace(args[0]))
+			if id == "" {
+				return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+					errors.New("pool_id cannot be empty"))
+			}
+		} else {
+			// No id given: resolve it only when the workspace has exactly one pool.
+			resolved, err := resolveSolePoolID(ctx, cmd, w)
+			if err != nil {
+				return err
+			}
+			id = resolved
 		}
 
 		pool, err := getPool(ctx, w, id)
@@ -260,6 +270,30 @@ func newGetPoolCommand() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// resolveSolePoolID returns the id of the workspace's only pool, for `air get
+// pool` with no argument. It errors (with the ids to choose from) when there is
+// not exactly one, so the convenience never silently picks among several.
+func resolveSolePoolID(ctx context.Context, cmd *cobra.Command, w *databricks.WorkspaceClient) (string, error) {
+	pools, err := listPools(ctx, w)
+	if err != nil {
+		return "", poolAPIError(ctx, cmd, "list GPU pools", err)
+	}
+	switch len(pools) {
+	case 1:
+		return poolID(pools[0].Name), nil
+	case 0:
+		return "", renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
+			errors.New("no GPU pools found in this workspace"))
+	default:
+		ids := make([]string, len(pools))
+		for i, p := range pools {
+			ids[i] = poolID(p.Name)
+		}
+		return "", renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
+			fmt.Errorf("workspace has %d GPU pools; specify one of: %s", len(pools), strings.Join(ids, ", ")))
+	}
 }
 
 // poolRowFrom projects a wire ProvisionedCapacity to a list row.

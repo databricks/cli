@@ -26,9 +26,10 @@ func TestPoolsCommandShape(t *testing.T) {
 	assert.Error(t, list.Args(list, []string{"x"}))
 
 	get := newGetPoolCommand()
-	assert.Equal(t, "pool POOL_ID", get.Use)
+	assert.Equal(t, "pool [POOL_ID]", get.Use)
 	assert.NoError(t, get.Args(get, []string{"pool-1"}))
-	assert.Error(t, get.Args(get, []string{}))
+	assert.NoError(t, get.Args(get, []string{})) // id optional: resolved when there's one pool
+	assert.Error(t, get.Args(get, []string{"a", "b"}))
 
 	// The subcommands are wired under `air list` and `air get`.
 	assert.True(t, hasSubcommand(newListCommand(), "pools"))
@@ -212,6 +213,54 @@ func TestGetPoolText(t *testing.T) {
 	assert.Contains(t, out, "Pool ID:                 pool-a")
 	assert.Contains(t, out, "Reserved Accelerators:   64")
 	assert.Contains(t, out, "Used Accelerators:       N/A")
+}
+
+func TestGetPoolOmitIDResolvesSolePool(t *testing.T) {
+	// With exactly one pool, `air get pool` (no id) resolves it and shows usage.
+	list := `{"provisioned_capacities":[{"name":"provisioned-capacities/pool-only","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}]}`
+	detail := `{"name":"provisioned-capacities/pool-only","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64},"status":{"usage":{"used_accelerator_count":40,"idle_accelerator_count":24}}}`
+	srv := poolsServer(t, []string{list}, map[string]string{"pool-only": detail})
+
+	var buf bytes.Buffer
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newGetPoolCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+
+	require.NoError(t, cmd.RunE(cmd, nil))
+	out := buf.String()
+	assert.Contains(t, out, "Pool ID:                 pool-only")
+	assert.Contains(t, out, "Used Accelerators:       40")
+}
+
+func TestGetPoolOmitIDNoPools(t *testing.T) {
+	srv := poolsServer(t, []string{`{"provisioned_capacities":[]}`}, nil)
+
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newGetPoolCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&bytes.Buffer{})
+
+	err := cmd.RunE(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no GPU pools found")
+}
+
+func TestGetPoolOmitIDMultipleErrors(t *testing.T) {
+	// More than one pool: the id can't be inferred, so the error lists the ids.
+	list := `{"provisioned_capacities":[` +
+		`{"name":"provisioned-capacities/pool-a","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}},` +
+		`{"name":"provisioned-capacities/pool-b","spec":{"accelerator_type":"GPU_1xH100","accelerator_count":8}}]}`
+	srv := poolsServer(t, []string{list}, nil)
+
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newGetPoolCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&bytes.Buffer{})
+
+	err := cmd.RunE(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "specify one of: pool-a, pool-b")
 }
 
 func TestGetPoolEmptyID(t *testing.T) {
