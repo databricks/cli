@@ -117,7 +117,7 @@ const (
 	ReplsEnvVar = "ACC_REPLS"
 )
 
-var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
+var IsRunningOnCI = os.Getenv("GITHUB_WORKFLOW") != ""
 
 // MaxLogLines caps how many lines of each LOG.* file the harness echoes into the test
 // log. Some invariant tests write very large LOG.planjson files that otherwise drown out
@@ -131,7 +131,7 @@ var MaxLogLines = func() int {
 		}
 		return n
 	}
-	if ApplyCITimeoutMultipler {
+	if IsRunningOnCI {
 		return 100
 	}
 	return 1000
@@ -880,7 +880,7 @@ func runTest(t *testing.T,
 		timeout = max(timeout, config.TimeoutCloud)
 	}
 
-	if ApplyCITimeoutMultipler {
+	if IsRunningOnCI {
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
