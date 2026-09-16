@@ -1,0 +1,15 @@
+bundle:
+  name: change-serialized-space-$UNIQUE_NAME
+
+# out.* are test-capture files (recorded requests, state snapshots) written into the bundle
+# root; keep them out of the deploy so they don't perturb the "Files: N uploaded" count.
+sync:
+  exclude:
+    - "out.*"
+
+resources:
+  genie_spaces:
+    my_space:
+      title: test genie space
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      file_path: ./space.geniespace.json

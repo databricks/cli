@@ -1,0 +1,56 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-serialized-space-[UNIQUE_NAME]/default/files...
+Created genie_spaces.my_space
+Files: 5 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Re-plan should be a no-op
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Plan after changing serialized_space should show update
+>>> [CLI] bundle plan
+update genie_spaces.my_space
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-serialized-space-[UNIQUE_NAME]/default/files...
+Updated genie_spaces.my_space
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //api/2.0/genie/spaces
+{
+  "method": "POST",
+  "path": "/api/2.0/genie/spaces",
+  "body": {
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-space-[UNIQUE_NAME]/default/resources",
+    "serialized_space": "{\"version\":1,\"instructions\":{\"text_instructions\":[{\"id\":\"ti-001\",\"content\":[\"Analyze sales orders by date\"]}]}}\n",
+    "title": "test genie space",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/genie/spaces/[MY_SPACE_ID]",
+  "body": {
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-space-[UNIQUE_NAME]/default/resources",
+    "serialized_space": "{\"version\":1,\"instructions\":{\"text_instructions\":[{\"id\":\"ti-001\",\"content\":[\"Summarize sales revenue by month\"]}]}}\n",
+    "title": "test genie space",
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_spaces.my_space
+
+This action will result in the deletion of the following Genie spaces.
+The conversation history attached to them is permanently lost:
+  delete resources.genie_spaces.my_space
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-serialized-space-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

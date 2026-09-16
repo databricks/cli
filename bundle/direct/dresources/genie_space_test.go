@@ -1,6 +1,8 @@
 package dresources
 
 import (
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -12,6 +14,54 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// largeGenieSpace is a serialized_space longer than stateHashPlaceholderLen, so it is
+// actually compacted.
+const largeGenieSpace = `{"version":1,"data_sources":{"tables":[{"identifier":"main.sales.orders"}]}}`
+
+func TestGenieSpaceCompactState(t *testing.T) {
+	requireLargeEnoughToHash(t, largeGenieSpace)
+
+	state := &resources.GenieSpaceConfig{
+		Title:           "test genie space",
+		Etag:            "etag-123",
+		SerializedSpace: largeGenieSpace,
+	}
+
+	out, err := CompactState(GetResourceConfig("genie_spaces"), state)
+	require.NoError(t, err)
+	compacted := out.(*resources.GenieSpaceConfig)
+
+	// serialized_space is replaced by a content hash; other fields are preserved.
+	require.IsType(t, "", compacted.SerializedSpace)
+	assert.True(t, strings.HasPrefix(compacted.SerializedSpace.(string), stateHashPrefix))
+	assert.Equal(t, "test genie space", compacted.Title)
+	assert.Equal(t, "etag-123", compacted.Etag)
+
+	// The original state is not mutated.
+	assert.Equal(t, largeGenieSpace, state.SerializedSpace)
+
+	// Compacting is idempotent.
+	out2, err := CompactState(GetResourceConfig("genie_spaces"), compacted)
+	require.NoError(t, err)
+	assert.Equal(t, compacted.SerializedSpace, out2.(*resources.GenieSpaceConfig).SerializedSpace)
+}
+
+func TestGenieSpaceSerializedSpaceStateRules(t *testing.T) {
+	cfg := GetResourceConfig("genie_spaces")
+	path := structpath.NewStringKey(nil, "serialized_space")
+
+	ignoresRemote := false
+	for _, rule := range cfg.IgnoreRemoteChanges {
+		if path.HasPatternPrefix(rule.Field) {
+			ignoresRemote = true
+			break
+		}
+	}
+
+	assert.True(t, slices.Contains(cfg.HashedFields, "serialized_space"), "serialized_space must be declared hashed_fields")
+	assert.True(t, ignoresRemote, "serialized_space must be ignore_remote_changes (local and remote content differ)")
+}
 
 func TestIsMissingGenieParentPathError(t *testing.T) {
 	tests := []struct {
