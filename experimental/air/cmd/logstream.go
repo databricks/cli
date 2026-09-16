@@ -415,12 +415,11 @@ func (st *bricklensStreamer) run() (bool, error) {
 		if firstIteration && (terminal || st.req.boundInitialLogs) {
 			err = st.drainTail(toSec, !terminal)
 			if err == nil && !terminal {
-				// Remember omitted history so the overlapping live query does not
-				// print it after the requested tail.
-				_, err = st.drainPages(toSec, false)
+				// Baseline omitted history without suppressing newer records.
+				_, err = st.drainPages(toSec, true)
 			}
 		} else {
-			emitted, err = st.drainPages(toSec, true)
+			emitted, err = st.drainPages(toSec, false)
 		}
 		if err != nil {
 			return false, err
@@ -548,10 +547,11 @@ func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
 }
 
 // drainPages exhausts all pages from the current from-second in ascending order.
-// Live polls retain a bounded overlap so late records remain visible. When emit
-// is false, records only initialize the dedup baseline.
-func (st *bricklensStreamer) drainPages(toSec int64, emit bool) (int, error) {
+// Live polls retain a bounded overlap so late records remain visible. The
+// initial baseline suppresses omitted history through the tail's watermark.
+func (st *bricklensStreamer) drainPages(toSec int64, suppressInitialHistory bool) (int, error) {
 	emitted := 0
+	initialTailNano := st.lastNano
 	var maximumEvictedNano int64
 	var pageToken string
 	for {
@@ -565,7 +565,7 @@ func (st *bricklensStreamer) drainPages(toSec int64, emit bool) (int, error) {
 			if st.seen.has(rec) {
 				continue
 			}
-			if emit {
+			if !suppressInitialHistory || (nano != 0 && nano > initialTailNano) {
 				st.emit(rec.Body)
 				emitted++
 			}

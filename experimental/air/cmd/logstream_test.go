@@ -191,7 +191,7 @@ func TestDrainPagesDedupAndOrdering(t *testing.T) {
 		req:       logRequest{runID: 1, node: 0, attempt: -1},
 		seen:      newSeenSet(seenRecordsCap),
 	}
-	_, err = st.drainPages(0, true)
+	_, err = st.drainPages(0, false)
 	require.NoError(t, err)
 	require.Equal(t, 2, page)
 
@@ -242,9 +242,9 @@ func TestDrainPagesEmitsLateRecordsWithinLookback(t *testing.T) {
 		seen:           newSeenSet(seenRecordsCap),
 	}
 
-	_, err = st.drainPages(0, true)
+	_, err = st.drainPages(0, false)
 	require.NoError(t, err)
-	_, err = st.drainPages(0, true)
+	_, err = st.drainPages(0, false)
 	require.NoError(t, err)
 	assert.Equal(t, "same\nsame\nuntimed\nlate\n", buf.String()) //nolint:dupword
 }
@@ -271,7 +271,8 @@ func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
 				_, _ = w.Write([]byte(`{"log_records":[
 					{"record_id":"first","time_unix_nano":30000000000,"body":"first"},
 					{"record_id":"second","time_unix_nano":40000000000,"body":"second"},
-					{"record_id":"third","time_unix_nano":50000000000,"body":"third"}
+					{"record_id":"third","time_unix_nano":50000000000,"body":"third"},
+					{"record_id":"fourth","time_unix_nano":60000000000,"body":"fourth"}
 				]}`))
 			case 3:
 				_, _ = w.Write([]byte(`{"log_records":[
@@ -300,6 +301,7 @@ func TestStreamBricklensWaitsForLateTerminalRecords(t *testing.T) {
 	assert.Contains(t, buf.String(), `"line":"second"`)
 	assert.Contains(t, buf.String(), `"line":"third"`)
 	assert.Contains(t, buf.String(), `"line":"late"`)
+	assert.Contains(t, buf.String(), `"line":"fourth"`)
 	assert.NotContains(t, buf.String(), `"line":"first"`)
 }
 
