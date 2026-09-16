@@ -11,7 +11,10 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-const refreshInterval = time.Minute
+const (
+	refreshInterval = time.Minute
+	pidProbeTimeout = 2 * time.Second
+)
 
 // TokenFunc returns the current credential, including any refresh performed by the SDK.
 type TokenFunc func(context.Context) (string, error)
@@ -36,15 +39,32 @@ func refreshUntilDone(ctx context.Context, client *Client, token TokenFunc, user
 	ticker := time.NewTicker(refreshInterval)
 	defer ticker.Stop()
 	defer client.http.CloseIdleConnections()
+	var pendingProbe chan bool
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			pid, err := client.readPID()
+			if pendingProbe == nil {
+				pendingProbe = make(chan bool, 1)
+				go func(result chan<- bool) {
+					pid, err := client.readPID()
+					result <- err != nil || pid != client.registration.PID
+				}(pendingProbe)
+			}
 			// Re-register WSFS only after credential rotation or loss of the registered ancestor.
 			// Unchanged WSFS registrations unnecessarily invalidate the daemon's caches.
-			force := err != nil || pid != client.registration.PID
+			force := true
+			timer := time.NewTimer(pidProbeTimeout)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case force = <-pendingProbe:
+				pendingProbe = nil
+			case <-timer.C:
+			}
+			timer.Stop()
 			if err := refresh(ctx, client, token, userID, notebookDir, force); err != nil {
 				log.Warnf(ctx, "Failed to refresh SSH filesystem credentials; retrying in %v: %v", refreshInterval, err)
 			}

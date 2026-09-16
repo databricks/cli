@@ -6,6 +6,8 @@ var ParseRegistration = parseRegistration
 
 const RefreshInterval = refreshInterval
 
+const PIDProbeTimeout = pidProbeTimeout
+
 func ConfigureTestClient(c *Client, httpClient *http.Client, hosts []string, readPID func() (int, error)) {
 	c.http = httpClient
 	c.hosts = hosts

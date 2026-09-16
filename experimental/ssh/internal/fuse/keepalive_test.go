@@ -175,3 +175,103 @@ func TestKeepRegisteredRecoversVolumesRegistrationLoss(t *testing.T) {
 		}
 	})
 }
+
+type keepaliveTransport struct {
+	http.RoundTripper
+	closed chan struct{}
+}
+
+func (transport *keepaliveTransport) CloseIdleConnections() {
+	close(transport.closed)
+}
+
+func TestKeepRegisteredBlockedPIDProbe(t *testing.T) {
+	for _, scenario := range []string{"cancel", "recover"} {
+		t.Run(scenario, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx, cancel := context.WithCancel(t.Context())
+				defer cancel()
+				client, err := fuse.NewClient(registration)
+				require.NoError(t, err)
+				var mu sync.Mutex
+				requests := map[string]int{}
+				transport := &keepaliveTransport{
+					closed: make(chan struct{}),
+					RoundTripper: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+						mu.Lock()
+						defer mu.Unlock()
+						requests[request.URL.Port()]++
+						return &http.Response{StatusCode: http.StatusOK, Body: http.NoBody}, nil
+					}),
+				}
+				httpClient := fuse.HTTPClient(client)
+				httpClient.Transport = transport
+				releaseProbe := make(chan struct{}, 1)
+				defer close(releaseProbe)
+				probeCalls := 0
+				fuse.ConfigureTestClient(client, httpClient, testHosts, func() (int, error) {
+					mu.Lock()
+					probeCalls++
+					firstProbe := probeCalls == 1
+					mu.Unlock()
+					if firstProbe {
+						<-releaseProbe
+					}
+					return registration.PID, nil
+				})
+				require.NoError(t, fuse.KeepRegistered(ctx, client, func(context.Context) (string, error) {
+					return "fixed-bootstrap-token", nil
+				}, "12345", testNotebookDir))
+				synctest.Wait()
+				start := time.Now()
+				for tick := range 3 {
+					time.Sleep(time.Until(start.Add(time.Duration(tick+1) * fuse.RefreshInterval)))
+					synctest.Wait()
+					mu.Lock()
+					assert.Equal(t, tick+1, requests["1015"], "wait for the probe before refreshing")
+					mu.Unlock()
+					time.Sleep(fuse.PIDProbeTimeout)
+					synctest.Wait()
+					mu.Lock()
+					assert.Equal(t, tick+2, requests["1015"], "keep refreshing volumes while WSFS is blocked")
+					assert.Equal(t, tick+2, requests["1021"], "force WSFS registration after a probe timeout")
+					assert.Equal(t, 1, probeCalls, "reuse the outstanding probe across refreshes")
+					mu.Unlock()
+				}
+
+				if scenario == "recover" {
+					releaseProbe <- struct{}{}
+					synctest.Wait()
+					time.Sleep(2 * fuse.RefreshInterval)
+					synctest.Wait()
+					mu.Lock()
+					assert.Equal(t, 6, requests["1015"])
+					assert.Equal(t, 4, requests["1021"], "stop forcing WSFS registration after probe recovery")
+					assert.Equal(t, 2, probeCalls, "resume probing after the outstanding read completes")
+					mu.Unlock()
+				} else {
+					time.Sleep(fuse.RefreshInterval - fuse.PIDProbeTimeout)
+					synctest.Wait()
+				}
+
+				cancel()
+				synctest.Wait()
+				select {
+				case <-transport.closed:
+				default:
+					assert.Fail(t, "refresh loop must exit on cancellation even with a blocked probe")
+				}
+				mu.Lock()
+				callsAtCancel := probeCalls
+				requestsAtCancel := requests["1015"]
+				mu.Unlock()
+				time.Sleep(2 * fuse.RefreshInterval)
+				synctest.Wait()
+				mu.Lock()
+				assert.Equal(t, callsAtCancel, probeCalls)
+				assert.Equal(t, requestsAtCancel, requests["1015"])
+				mu.Unlock()
+			})
+		})
+	}
+}
