@@ -5,7 +5,7 @@ DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=$(jq '.features | has("deployment_history")
 export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY
 
 trace $CLI bundle plan | contains.py "Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged"
-cmp "$STATE_FILE" .databricks/bundle/default/resources.json
+trace cmp "$STATE_FILE" .databricks/bundle/default/resources.json
 
 trace $CLI bundle deploy
 trace jq '.state_version' .databricks/bundle/default/resources.json

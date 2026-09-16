@@ -3,3 +3,5 @@
 create jobs.my_job
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> cmp [STATE_FILE] .databricks/bundle/default/resources.json

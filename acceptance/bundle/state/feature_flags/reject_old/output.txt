@@ -2,3 +2,5 @@
 >>> musterr [CLI_1_8] bundle plan
 Error: migrating state [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: the deployment state requires features this CLI does not support: [FEATURE]; upgrade to the latest CLI version and see https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features for more information
 
+
+>>> cmp resources.v3.[FEATURE].json .databricks/bundle/default/resources.json
