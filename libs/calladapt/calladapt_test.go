@@ -339,7 +339,7 @@ func TestCall(t *testing.T) {
 			ifaceType: reflect.TypeFor[interface{ PMethodAcceptAny(v any) error }](),
 			method:    "PMethodAcceptAny",
 			args:      []any{nil},
-			expect:    []any{},
+			errMsg:    "PMethodAcceptAny: arg 0 type mismatch: want interface {}, got nil",
 		},
 		{
 			name:      "nil slice param allowed",

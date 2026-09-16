@@ -370,7 +370,7 @@ func reportRunLine(ctx context.Context, runID int64, msg string) {
 // Removing a trigger drops the change and leaves the last fingerprint in state,
 // so re-adding the trigger only re-fires when the watched files changed
 // meanwhile. All other trigger changes recreate the run.
-func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ any, remote *JobRunRemote) error {
+func (*ResourceJobRun) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *JobRunState, remote *JobRunRemote) error {
 	switch path.String() {
 	case "lifecycle":
 		// Dropped when the trigger is removed (New nil) and when both sides are

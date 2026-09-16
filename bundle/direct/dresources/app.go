@@ -258,7 +258,7 @@ func hasAppChanges(entry *PlanEntry) bool {
 // git_source) while the app has no active deployment. DoRead reads them only from the
 // active deployment, so before the first deploy (or once a stop clears it) the remote
 // side is empty and the diff is spurious; it applies on the next start (manageLifecycle).
-func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ any, remote *AppRemote) error {
+func (*ResourceApp) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *AppState, remote *AppRemote) error {
 	// Prefix(1) so a nested diff (e.g. config.command) matches its top-level field.
 	switch path.Prefix(1).String() {
 	case "source_code_path", "config", "git_source":

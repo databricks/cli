@@ -45,9 +45,8 @@ func (c *BoundCaller) call(args ...any) ([]reflect.Value, error) {
 	for i, a := range args {
 		it := c.InTypes[i]
 		if a == nil {
-			// Allow untyped nil for nilable types (pointer, interface), converting to a
-			// typed/nil-interface zero value.
-			if it.Kind() == reflect.Pointer || it.Kind() == reflect.Interface {
+			// Allow untyped nil for pointer types, converting to typed nil
+			if it.Kind() == reflect.Pointer {
 				in[i+1] = reflect.Zero(it)
 				continue
 			}

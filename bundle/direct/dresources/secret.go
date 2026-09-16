@@ -125,7 +125,7 @@ func (r *ResourceSecret) DoDelete(ctx context.Context, id string, _ *catalog.Sec
 // the actual stored value. We compare new vs remote (via effective_value from DoRead)
 // to decide whether the secret actually changed: if they are equal, the user's config
 // already matches what is stored remotely and no update is needed.
-func (*ResourceSecret) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, ch *ChangeDesc, _ any, _ *catalog.Secret) error {
+func (*ResourceSecret) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *catalog.Secret, _ *catalog.Secret) error {
 	if path.String() != "value" {
 		return nil
 	}

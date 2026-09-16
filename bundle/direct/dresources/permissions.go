@@ -219,6 +219,10 @@ func (*ResourcePermissions) OverrideChangeDesc(_ context.Context, path *structpa
 		return nil
 	}
 
+	// Match on value only, not level: level is a separate leaf that surfaces on its
+	// own. Gating these drops on a matching level would resurrect the field-swap diff
+	// whenever the level also changed.
+
 	// Config adds this field while remote holds the same value under the counterpart.
 	if newStr, ok := ch.New.(string); ok && newStr != "" && remoteState.hasPrincipal(counterpart, newStr) {
 		ch.Reason = deployplan.ReasonDrop
