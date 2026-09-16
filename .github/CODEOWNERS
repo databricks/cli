@@ -1,84 +1,84 @@
 # Maintainers can approve any PR. Keep them on every rule because GitHub uses
 # only the last matching rule, and any owner on that line can approve.
-*                                       @databricks/eng-cli-maintainers
+*                                       @databricks/eng-deco-cli
 
 # Bundles
-/bundle/                                @databricks/eng-cli-maintainers @databricks/eng-dabs
-/cmd/bundle/                            @databricks/eng-cli-maintainers @databricks/eng-dabs
-/acceptance/bundle/                     @databricks/eng-cli-maintainers @databricks/eng-dabs
-/libs/template/                         @databricks/eng-cli-maintainers @databricks/eng-dabs
+/bundle/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/cmd/bundle/                            @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/acceptance/bundle/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/libs/template/                         @databricks/eng-deco-cli @databricks/eng-deco-dabs
 
 # Pipelines
-/cmd/pipelines/                         @databricks/eng-cli-maintainers @jefferycheng1 @kanterov @lennartkats-db
-/acceptance/pipelines/                  @databricks/eng-cli-maintainers @jefferycheng1 @kanterov @lennartkats-db
+/cmd/pipelines/                         @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
+/acceptance/pipelines/                  @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
 
 # Labs
-/cmd/labs/                              @databricks/eng-cli-maintainers @alexott @asnare
+/cmd/labs/                              @databricks/eng-deco-cli @alexott @asnare
 
 # Local environments / DB Connect
-/libs/localenv/                         @databricks/eng-cli-maintainers @databricks/eng-ide
-/cmd/environments/                      @databricks/eng-cli-maintainers @databricks/eng-ide
-/acceptance/localenv/                   @databricks/eng-cli-maintainers @databricks/eng-ide
+/libs/localenv/                         @databricks/eng-deco-cli @databricks/eng-deco-ax
+/cmd/environments/                      @databricks/eng-deco-cli @databricks/eng-deco-ax
+/acceptance/localenv/                   @databricks/eng-deco-cli @databricks/eng-deco-ax
 
 # Apps
-/cmd/apps/                              @databricks/eng-cli-maintainers @databricks/eng-apps-devex
-/cmd/workspace/apps/                    @databricks/eng-cli-maintainers @databricks/eng-apps-devex
-/libs/apps/                             @databricks/eng-cli-maintainers @databricks/eng-apps-devex
-/acceptance/apps/                       @databricks/eng-cli-maintainers @databricks/eng-apps-devex
+/cmd/apps/                              @databricks/eng-deco-cli @databricks/eng-apps-devex
+/cmd/workspace/apps/                    @databricks/eng-deco-cli @databricks/eng-apps-devex
+/libs/apps/                             @databricks/eng-deco-cli @databricks/eng-apps-devex
+/acceptance/apps/                       @databricks/eng-deco-cli @databricks/eng-apps-devex
 
 # Sandbox
-/cmd/sandbox/                           @databricks/eng-cli-maintainers @databricks/eng-sandbox
-/acceptance/cmd/sandbox/                @databricks/eng-cli-maintainers @databricks/eng-sandbox
+/cmd/sandbox/                           @databricks/eng-deco-cli @databricks/eng-sandbox
+/acceptance/cmd/sandbox/                @databricks/eng-deco-cli @databricks/eng-sandbox
 
 # Auth
-/cmd/auth/                              @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/auth/                             @databricks/eng-cli-maintainers @databricks/eng-pae
-/acceptance/auth/                       @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/auth/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/auth/                             @databricks/eng-deco-cli @databricks/eng-deco-platform
+/acceptance/auth/                       @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 # Filesystem & sync
-/cmd/fs/                                @databricks/eng-cli-maintainers @databricks/eng-pae
-/cmd/sync/                              @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/filer/                            @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/sync/                             @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/fs/                                @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/sync/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/filer/                            @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/sync/                             @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 # Core CLI infrastructure
-/cmd/root/                              @databricks/eng-cli-maintainers @databricks/eng-pae
-/cmd/version/                           @databricks/eng-cli-maintainers @databricks/eng-pae
-/cmd/completion/                        @databricks/eng-cli-maintainers @databricks/eng-pae
-/cmd/configure/                         @databricks/eng-cli-maintainers @databricks/eng-pae
-/cmd/cache/                             @databricks/eng-cli-maintainers @databricks/eng-pae
-/cmd/api/                               @databricks/eng-cli-maintainers @databricks/eng-pae
-/cmd/selftest/                          @databricks/eng-cli-maintainers @databricks/eng-pae
-/cmd/psql/                              @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/psql/                             @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/root/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/version/                           @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/completion/                        @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/configure/                         @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/cache/                             @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/api/                               @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/selftest/                          @databricks/eng-deco-cli @databricks/eng-deco-platform
+/cmd/psql/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/psql/                             @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 # Libs (general)
-/libs/databrickscfg/                    @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/env/                              @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/flags/                            @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/cmdio/                            @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/log/                              @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/telemetry/                        @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/process/                          @databricks/eng-cli-maintainers @databricks/eng-pae
-/libs/git/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/databrickscfg/                    @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/env/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/flags/                            @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/cmdio/                            @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/log/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/telemetry/                        @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/process/                          @databricks/eng-deco-cli @databricks/eng-deco-platform
+/libs/git/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 # Integration tests
-/integration/                           @databricks/eng-cli-maintainers @databricks/eng-pae
+/integration/                           @databricks/eng-deco-cli @databricks/eng-deco-platform
 
-/integration/cmd/environments/          @databricks/eng-cli-maintainers @databricks/eng-ide
+/integration/cmd/environments/          @databricks/eng-deco-cli @databricks/eng-deco-ax
 
 # Internal
-/internal/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+/internal/                              @databricks/eng-deco-cli @databricks/eng-deco-platform
 
 # AI tools
-/cmd/aitools/                           @databricks/eng-cli-maintainers @databricks/eng-apps-devex @databricks/eng-ide @lennartkats-db
-/libs/aitools/                          @databricks/eng-cli-maintainers @databricks/eng-apps-devex @databricks/eng-ide @lennartkats-db
+/cmd/aitools/                           @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-ax @lennartkats-db
+/libs/aitools/                          @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-ax @lennartkats-db
 
 # CLI compatibility manifest
-/internal/build/cli-compat.json         @databricks/eng-cli-maintainers @databricks/eng-apps-devex @databricks/eng-pae
-/libs/clicompat/                        @databricks/eng-cli-maintainers @databricks/eng-apps-devex @databricks/eng-pae
+/internal/build/cli-compat.json         @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-platform
+/libs/clicompat/                        @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-platform
 
 # Experimental
-/experimental/air/                      @databricks/eng-cli-maintainers @databricks/eng-ai-custom-training
-/acceptance/experimental/air/           @databricks/eng-cli-maintainers @databricks/eng-ai-custom-training
-/experimental/aitools/                  @databricks/eng-cli-maintainers @databricks/eng-apps-devex @lennartkats-db
+/experimental/air/                      @databricks/eng-deco-cli @databricks/eng-ai-custom-training
+/acceptance/experimental/air/           @databricks/eng-deco-cli @databricks/eng-ai-custom-training
+/experimental/aitools/                  @databricks/eng-deco-cli @databricks/eng-apps-devex @lennartkats-db

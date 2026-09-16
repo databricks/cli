@@ -7,7 +7,7 @@ allowed-tools: Read, Edit, Write, Bash, Glob, Grep, AskUserQuestion
 
 # Onboard a team / area into the CLI
 
-How ownership works here: `.github/CODEOWNERS` uses GitHub's native code-owner reviews. The last matching rule wins, and any owner on that line can approve. Include `@databricks/eng-cli-maintainers` on every rule so maintainers can approve changes across all areas. Team membership is maintained in GitHub.
+How ownership works here: `.github/CODEOWNERS` uses GitHub's native code-owner reviews. The last matching rule wins, and any owner on that line can approve. Include `@databricks/eng-deco-cli` on every rule so maintainers can approve changes across all areas. Team membership is maintained in GitHub.
 
 Enforcement requires "Require review from Code Owners" in the target branch's ruleset. Adding a CODEOWNERS file alone requests reviews but does not require them.
 
@@ -37,8 +37,8 @@ acceptance/experimental/<area>/.gitkeep
 Add rules under an `# <Area>` comment. Specific rules go after the `*` maintainer catch-all and must repeat the maintainer team:
 
 ```
-/experimental/<area>/             @databricks/eng-cli-maintainers @databricks/<team>
-/acceptance/experimental/<area>/  @databricks/eng-cli-maintainers @databricks/<team>
+/experimental/<area>/             @databricks/eng-deco-cli @databricks/<team>
+/acceptance/experimental/<area>/  @databricks/eng-deco-cli @databricks/<team>
 ```
 
 ## Step 4 — Validate and open the PR

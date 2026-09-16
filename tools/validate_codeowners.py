@@ -4,7 +4,7 @@
 import sys
 from pathlib import Path
 
-MAINTAINERS = "@databricks/eng-cli-maintainers"
+MAINTAINERS = "@databricks/eng-deco-cli"
 
 
 def validate_contents(data):
@@ -12,44 +12,44 @@ def validate_contents(data):
 
     A maintainer catch-all followed by area owners is valid:
 
-    >>> catch_all = '* @databricks/eng-cli-maintainers\n'
-    >>> validate_contents(catch_all + '/bundle/ @databricks/eng-cli-maintainers @databricks/eng-dabs\n')
+    >>> catch_all = '* @databricks/eng-deco-cli\n'
+    >>> validate_contents(catch_all + '/bundle/ @databricks/eng-deco-cli @databricks/eng-deco-dabs\n')
     []
 
     Ignore blank lines and comments, including inline comments:
 
-    >>> validate_contents('\n  # Owners\n\t*\t@databricks/eng-cli-maintainers # Default\r\n')
+    >>> validate_contents('\n  # Owners\n\t*\t@databricks/eng-deco-cli # Default\r\n')
     []
 
     Missing owners, a different first owner, and a maintainer listed later fail:
 
     >>> validate_contents(catch_all + '/bundle/\n')
-    ['2: first owner must be @databricks/eng-cli-maintainers']
-    >>> validate_contents(catch_all + '/bundle/ @databricks/eng-dabs\n')
-    ['2: first owner must be @databricks/eng-cli-maintainers']
-    >>> validate_contents(catch_all + '/bundle/ @databricks/eng-dabs @databricks/eng-cli-maintainers\n')
-    ['2: first owner must be @databricks/eng-cli-maintainers']
+    ['2: first owner must be @databricks/eng-deco-cli']
+    >>> validate_contents(catch_all + '/bundle/ @databricks/eng-deco-dabs\n')
+    ['2: first owner must be @databricks/eng-deco-cli']
+    >>> validate_contents(catch_all + '/bundle/ @databricks/eng-deco-dabs @databricks/eng-deco-cli\n')
+    ['2: first owner must be @databricks/eng-deco-cli']
 
     A comment or similarly named team cannot satisfy the owner requirement:
 
-    >>> validate_contents(catch_all + '/bundle/ # @databricks/eng-cli-maintainers\n')
-    ['2: first owner must be @databricks/eng-cli-maintainers']
-    >>> validate_contents('* @databricks/eng-cli-maintainers-extra\n')
-    ['1: first owner must be @databricks/eng-cli-maintainers']
+    >>> validate_contents(catch_all + '/bundle/ # @databricks/eng-deco-cli\n')
+    ['2: first owner must be @databricks/eng-deco-cli']
+    >>> validate_contents('* @databricks/eng-deco-cli-extra\n')
+    ['1: first owner must be @databricks/eng-deco-cli']
 
     The first rule must cover all paths, even if a catch-all appears later:
 
-    >>> validate_contents('# Owners\n/bundle/ @databricks/eng-cli-maintainers\n' + catch_all)
+    >>> validate_contents('# Owners\n/bundle/ @databricks/eng-deco-cli\n' + catch_all)
     ["2: first rule must use '*' to cover all paths"]
     >>> validate_contents('')
-    ["1: missing '* @databricks/eng-cli-maintainers' catch-all rule"]
+    ["1: missing '* @databricks/eng-deco-cli' catch-all rule"]
     >>> validate_contents('\n# No rules\n')
-    ["1: missing '* @databricks/eng-cli-maintainers' catch-all rule"]
+    ["1: missing '* @databricks/eng-deco-cli' catch-all rule"]
 
     Report every invalid rule with its actual line number:
 
-    >>> validate_contents(catch_all + '\n# Bundles\n/bundle/\n/cmd/bundle/ @databricks/eng-dabs\n')
-    ['4: first owner must be @databricks/eng-cli-maintainers', '5: first owner must be @databricks/eng-cli-maintainers']
+    >>> validate_contents(catch_all + '\n# Bundles\n/bundle/\n/cmd/bundle/ @databricks/eng-deco-dabs\n')
+    ['4: first owner must be @databricks/eng-deco-cli', '5: first owner must be @databricks/eng-deco-cli']
     """
     errors = []
     found_rule = False
