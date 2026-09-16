@@ -27,17 +27,11 @@ func Install(ctx context.Context, shell Shell, homeDir string) (filePath string,
 		return filePath, true, nil
 	}
 
+	// Fish uses a file-drop model; any existing file was ruled out above.
 	if shell == Fish {
-		return installFish(filePath, shell)
+		return filePath, false, atomicfile.Write(filePath, []byte(ShimContent(shell)), 0o644, atomicfile.MkDir(0o755))
 	}
 	return installRC(filePath, shell)
-}
-
-// installFish handles the file-drop model for fish completions.
-// The caller must check Status before calling this — existence checks are not
-// repeated here.
-func installFish(filePath string, shell Shell) (string, bool, error) {
-	return filePath, false, atomicfile.Write(filePath, []byte(ShimContent(shell)), 0o644, atomicfile.MkDir(0o755))
 }
 
 // installRC handles the RC file model for bash, zsh, and powershell.

@@ -144,7 +144,7 @@ func (c *fileStore) write(f *tokenStoreFile) error {
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
 	}
-	if err := c.atomicWriteFile(raw); err != nil {
+	if err := atomicfile.Write(c.fileLocation, raw, ownerReadWrite); err != nil {
 		return fmt.Errorf("error storing token in local cache: %w", err)
 	}
 	return nil
@@ -180,7 +180,7 @@ func (c *fileStore) init(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("marshal: %w", err)
 		}
-		if err := c.atomicWriteFile(raw); err != nil {
+		if err := atomicfile.Write(c.fileLocation, raw, ownerReadWrite); err != nil {
 			return fmt.Errorf("error creating token store file: %w", err)
 		}
 	}
@@ -205,10 +205,4 @@ func (c *fileStore) load() (*tokenStoreFile, error) {
 		return nil, fmt.Errorf("needs version %d, got version %d", tokenStoreVersion, f.Version)
 	}
 	return f, nil
-}
-
-// atomicWriteFile writes data to the token store file atomically, so an
-// interrupted write cannot corrupt existing tokens.
-func (c *fileStore) atomicWriteFile(data []byte) error {
-	return atomicfile.Write(c.fileLocation, data, ownerReadWrite)
 }
