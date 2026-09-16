@@ -253,7 +253,7 @@ func validateSecretRefs(secrets map[string]string) error {
 // settings.
 type environmentConfig struct {
 	Dependencies      dependencies `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside unity_catalog_image."`
-	Version           stringOrInt  `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
+	Version           stringOrInt  `yaml:"version" help:"Client image version to pin."`
 	UnityCatalogImage string       `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside dependencies or version."`
 }
 
@@ -279,11 +279,6 @@ func (e *environmentConfig) validate() error {
 		return nil
 	}
 
-	// version pins the client image version, which is only meaningful alongside an
-	// inline dependency set.
-	if e.Version.set && !e.Dependencies.set {
-		return errors.New("'environment.version' requires inline 'dependencies' (a list of packages)")
-	}
 	if e.Version.set {
 		version, err := validateRuntimeVersion(e.Version.raw, "environment.version")
 		if err != nil {

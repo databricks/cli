@@ -65,6 +65,9 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, aiRuntimeEnvironmentKey, p.Environments[0].EnvironmentKey)
 	require.NotNil(t, p.Environments[0].Spec)
 	assert.Equal(t, "5", p.Environments[0].Spec.EnvironmentVersion)
+	environmentJSON, err := json.Marshal(p.Environments[0].Spec)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"environment_version":"5"}`, string(environmentJSON))
 
 	require.Len(t, p.Tasks, 1)
 	task := p.Tasks[0]
