@@ -4,3 +4,9 @@ RecordRequests = true
 Ignore = [
     "databricks.yml",
 ]
+
+# update_file.py rewrites the fixture in text mode, so on Windows the edited
+# serialized_space payload ends with \r\n; normalize it to the LF golden output.
+[[Repls]]
+Old = '\\r\\n'
+New = '\n'
