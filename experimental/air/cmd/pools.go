@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -168,9 +169,13 @@ func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*pr
 		return nil, fmt.Errorf("failed to create API client: %w", err)
 	}
 	var pc provisionedCapacity
+	// PathEscape the id: it is user-supplied, so a stray "/" or "?" would
+	// otherwise be parsed as extra path segments or a query string rather than
+	// staying part of the resource id.
+	//
 	// WorkspaceIDHeaders is required so unified hosts route the call to the
 	// caller's workspace rather than relying on Config.WorkspaceID alone.
-	if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath+"/"+id, auth.WorkspaceIDHeaders(w.Config), nil, nil, &pc); err != nil {
+	if err := apiClient.Do(ctx, http.MethodGet, poolsAPIPath+"/"+url.PathEscape(id), auth.WorkspaceIDHeaders(w.Config), nil, nil, &pc); err != nil {
 		return nil, err
 	}
 	return &pc, nil

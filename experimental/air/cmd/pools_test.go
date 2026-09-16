@@ -196,6 +196,22 @@ func TestGetPoolAcceptsResourceName(t *testing.T) {
 	require.NoError(t, cmd.RunE(cmd, []string{"provisioned-capacities/pool-a"}))
 }
 
+func TestGetPoolEscapesID(t *testing.T) {
+	// A stray "?" in the id must be PathEscaped so it stays part of the resource
+	// path rather than being parsed as a query string (which would truncate the
+	// path to "pool" and 404). The httptest server decodes %3F back to "?" in
+	// r.URL.Path, so a hit on the "pool?x" key proves the id survived intact.
+	body := `{"name":"provisioned-capacities/pool?x","spec":{"accelerator_type":"GPU_1xH100","accelerator_count":8}}`
+	srv := poolsServer(t, nil, map[string]string{"pool?x": body})
+
+	ctx := cmdctx.SetWorkspaceClient(cmdio.MockDiscard(t.Context()), newTestWorkspaceClient(t, srv.URL))
+	cmd := withOutput(newGetPoolCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&bytes.Buffer{})
+
+	require.NoError(t, cmd.RunE(cmd, []string{"pool?x"}))
+}
+
 func TestGetPoolText(t *testing.T) {
 	// A pool whose usage block is absent shows N/A for the usage cells rather
 	// than a misleading zero.
