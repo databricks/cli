@@ -76,6 +76,14 @@ R4 POST
 ... ]
 >>> [x["method"] for x in filter_requests(seq, ["//idx"], True, False, unique=True)]
 ['GET', 'DELETE', 'GET']
+
+>>> # Periodic lease renewals vary with deployment duration; inspect them explicitly.
+>>> heartbeat = {"method": "POST", "path": "/api/2.0/bundle/deployments/123/versions/1/heartbeat"}
+>>> complete = {"method": "POST", "path": "/api/2.0/bundle/deployments/123/versions/1/complete"}
+>>> filter_requests([heartbeat, complete], [], False, False, include_dms=True) == [complete]
+True
+>>> filter_requests([heartbeat], [], False, False, include_dms=True, include_heartbeats=True) == [heartbeat]
+True
 """
 
 import argparse
@@ -137,7 +145,14 @@ DMS_PATH = "/api/2.0/bundle"
 
 
 def filter_requests(
-    requests, path_filters, include_get, should_sort, unique=False, method_filter=None, include_dms=False
+    requests,
+    path_filters,
+    include_get,
+    should_sort,
+    unique=False,
+    method_filter=None,
+    include_dms=False,
+    include_heartbeats=False,
 ):
     """Filter requests based on method and path filters."""
     positive_filters = []
@@ -170,6 +185,15 @@ def filter_requests(
 
         # Apply path filters
         path = req.get("path", "")
+        # A slow cloud deployment can renew its lease several times while the local
+        # fake finishes before the first tick. Heartbeat tests opt in explicitly.
+        if (
+            not include_heartbeats
+            and req.get("method") == "POST"
+            and path.startswith(DMS_PATH + "/deployments/")
+            and path.endswith("/heartbeat")
+        ):
+            continue
         should_include = True
 
         # Check positive filters - if any exist, at least one must match (OR logic)
@@ -222,6 +246,11 @@ def main():
         help="Include deployment-history requests (excluded by default; see filter_requests)",
     )
     parser.add_argument("--keep", action="store_true", help="Keep out.requests.json file after processing")
+    parser.add_argument(
+        "--heartbeats",
+        action="store_true",
+        help="Include periodic DMS heartbeat requests (use with --dms)",
+    )
     parser.add_argument("--sort", action="store_true", help="Sort requests before output")
     parser.add_argument(
         "--unique",
@@ -281,7 +310,7 @@ def main():
 
     requests = read_json_many(data)
     filtered_requests = filter_requests(
-        requests, args.path_filters, args.get, args.sort, args.unique, args.method, args.dms
+        requests, args.path_filters, args.get, args.sort, args.unique, args.method, args.dms, args.heartbeats
     )
 
     for req in filtered_requests:
