@@ -1,4 +1,3 @@
-echo "*" > .gitignore
 $CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py --nostamp //jobs

@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -10,7 +10,7 @@ endpoint_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/my-e
 
 title "Initial deployment with pg_settings.statement_timeout: 8000"
 trace $CLI bundle deploy
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Change the value of one pg_settings key"
 trace update_file.py databricks.yml "statement_timeout: 8000" "statement_timeout: 16000"
@@ -23,7 +23,7 @@ trace update_file.py databricks.yml "statement_timeout: 8000" "statement_timeout
 # 400 "Unknown field path in update_mask".
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 # The mask each engine sends: direct names the map, terraform replaces the whole spec.

@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Deploy so there is a recorded resource to recreate"
 trace $CLI bundle deploy
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "The plan records the deployment_history feature and the schema"
 dms_plan

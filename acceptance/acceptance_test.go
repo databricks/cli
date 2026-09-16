@@ -117,7 +117,25 @@ const (
 	ReplsEnvVar = "ACC_REPLS"
 )
 
-var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
+var IsRunningOnCI = os.Getenv("GITHUB_WORKFLOW") != ""
+
+// MaxLogLines caps how many lines of each LOG.* file the harness echoes into the test
+// log. Some invariant tests write very large LOG.planjson files that otherwise drown out
+// the rest of the logs and overflow log viewers. Override with DATABRICKS_CLI_TEST_MAX_LOG;
+// a value <= 0 disables the limit.
+var MaxLogLines = func() int {
+	if v := os.Getenv("DATABRICKS_CLI_TEST_MAX_LOG"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			panic("invalid DATABRICKS_CLI_TEST_MAX_LOG=" + v + ": " + err.Error())
+		}
+		return n
+	}
+	if IsRunningOnCI {
+		return 100
+	}
+	return 1000
+}()
 
 var exeSuffix = func() string {
 	if runtime.GOOS == "windows" {
@@ -836,6 +854,15 @@ func runTest(t *testing.T,
 		tmpDir = t.TempDir()
 	}
 
+	// Harness-written output files (output.txt, out.requests.txt) live outside the
+	// test dir so the bundle sync doesn't upload them as bundle sources. They are
+	// written here during the run and copied into tmpDir afterwards for comparison.
+	// Otherwise these continuously-rewritten files perturb the deploy "Files: N" count.
+	// Register this repl before [TEST_TMP_DIR] so it wins: outputDir is a sibling of
+	// tmpDir, so the [TEST_TMP_DIR]_PARENT repl would otherwise match it first.
+	outputDir := t.TempDir()
+	repls.SetPath(outputDir, "[OUTPUT_DIR]")
+
 	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
 	scriptContents := readMergedScriptContents(t, dir)
@@ -862,7 +889,7 @@ func runTest(t *testing.T,
 		timeout = max(timeout, config.TimeoutCloud)
 	}
 
-	if ApplyCITimeoutMultipler {
+	if IsRunningOnCI {
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
@@ -871,7 +898,7 @@ func runTest(t *testing.T,
 	args := []string{"bash", "-euo", "pipefail", EntryPointScript}
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, tmpDir, testEnv)
+	cfg, user := internal.PrepareServerAndClient(t, config, LogRequests, outputDir, testEnv)
 	testdiff.PrepareReplacementsUser(t, &repls, user)
 	testdiff.PrepareReplacementsWorkspaceConfig(t, &repls, cfg)
 
@@ -888,6 +915,9 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "DATABRICKS_RATE_LIMIT="+rateLimit)
 	cmd.Env = append(cmd.Env, "UNIQUE_NAME="+uniqueName)
 	cmd.Env = append(cmd.Env, "TEST_TMP_DIR="+tmpDir)
+	// Forward slashes: scripts pass $OUT_REQUESTS straight to bash tools, and a
+	// backslash Windows path would be mangled inside double quotes in Git Bash.
+	cmd.Env = append(cmd.Env, "OUT_REQUESTS="+filepath.ToSlash(filepath.Join(outputDir, "out.requests.txt")))
 
 	replsPath := filepath.Join(t.TempDir(), ReplsEnvVar)
 	cmd.Env = append(cmd.Env, ReplsEnvVar+"="+replsPath)
@@ -1001,7 +1031,7 @@ func runTest(t *testing.T,
 	}
 	cmd.Dir = tmpDir
 
-	outputPath := filepath.Join(tmpDir, "output.txt")
+	outputPath := filepath.Join(outputDir, "output.txt")
 	out, err := os.Create(outputPath)
 	require.NoError(t, err)
 	defer out.Close()
@@ -1021,14 +1051,26 @@ func runTest(t *testing.T,
 	printedRepls := false
 
 	pathFilter := preparePathFilter(config, customEnv)
+	sortLines := compileSortLines(t, config)
+
+	// output.txt lives in outputDir, not tmpDir, so the bundle sync never uploads it;
+	// compare it from there. Every run produces it, so compare it explicitly rather
+	// than relying on it turning up in the tmpDir scan below. out.requests.txt also
+	// stays in outputDir and is never compared: tests assert on recorded requests
+	// through print_requests.py, not by committing the raw recording.
+	doComparison(t, repls, sortLines, dir, outputDir, "output.txt", &printedRepls)
 
 	// Compare expected outputs
 	for relPath := range outputs {
+		if relPath == "output.txt" {
+			// Handled above: it is produced in outputDir, not tmpDir.
+			continue
+		}
 		if shouldSkip(pathFilter, relPath) {
 			continue
 		}
 
-		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+		doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
 	}
 
 	// Make sure there are not unaccounted for new files
@@ -1048,6 +1090,7 @@ func runTest(t *testing.T,
 			prefix := relPath + ": "
 			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
 			messages = strings.TrimRight(messages, "\r\n \t")
+			messages = truncateLines(messages, MaxLogLines)
 			messages = prefix + strings.ReplaceAll(messages, "\n", "\n"+prefix)
 			if strings.Contains(messages, "\n") {
 				messages = "\n" + messages
@@ -1059,13 +1102,28 @@ func runTest(t *testing.T,
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
 			// Show the contents & support overwrite mode for it:
-			doComparison(t, repls, dir, tmpDir, relPath, &printedRepls)
+			doComparison(t, repls, sortLines, dir, tmpDir, relPath, &printedRepls)
 		}
 	}
 
 	if len(unexpected) > 0 {
 		t.Error("Test produced unexpected files:\n" + strings.Join(unexpected, "\n"))
 	}
+}
+
+// truncateLines keeps at most maxLines lines of s, appending a note about how many were
+// dropped. maxLines <= 0 disables truncation.
+func truncateLines(s string, maxLines int) string {
+	if maxLines <= 0 {
+		return s
+	}
+	lines := strings.Split(s, "\n")
+	if len(lines) <= maxLines {
+		return s
+	}
+	dropped := len(lines) - maxLines
+	kept := strings.Join(lines[:maxLines], "\n")
+	return fmt.Sprintf("%s\n... (%d more lines truncated, raise DATABRICKS_CLI_TEST_MAX_LOG to see more)", kept, dropped)
 }
 
 // checkEnvFilters skips the test if any env filter doesn't match testEnv. Filters that
@@ -1144,7 +1202,24 @@ func addEnvVar(t *testing.T, env []string, repls *testdiff.ReplacementsContext, 
 	return append(env, key+"="+newValue)
 }
 
-func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirNew, relPath string, printedRepls *bool) {
+// compileSortLines compiles the enabled SortLines patterns from the test config.
+// Patterns are returned in name order so the result does not depend on map iteration.
+func compileSortLines(t *testing.T, config internal.TestConfig) []*regexp.Regexp {
+	result := make([]*regexp.Regexp, 0, len(config.SortLines))
+	for _, name := range slices.Sorted(maps.Keys(config.SortLines)) {
+		if on, ok := config.SortLinesOn[name]; ok && !on {
+			continue
+		}
+		re, err := regexp.Compile(config.SortLines[name])
+		if err != nil {
+			t.Fatalf("Invalid SortLines pattern %s = %#v: %s", name, config.SortLines[name], err)
+		}
+		result = append(result, re)
+	}
+	return result
+}
+
+func doComparison(t *testing.T, repls testdiff.ReplacementsContext, sortLines []*regexp.Regexp, dirRef, dirNew, relPath string, printedRepls *bool) {
 	pathRef := filepath.Join(dirRef, relPath)
 	pathNew := filepath.Join(dirNew, relPath)
 	bufRef, okRef := tryReading(t, pathRef)
@@ -1161,6 +1236,14 @@ func doComparison(t *testing.T, repls testdiff.ReplacementsContext, dirRef, dirN
 	// The reference value is stored after applying replacements.
 	if !NoRepl {
 		valueNew = repls.Replace(valueNew)
+	}
+
+	// Canonicalize line runs whose order the command does not guarantee. Applied to
+	// the reference too so a hand-edited golden compares the same way; sorting is
+	// idempotent, so a stored reference is unaffected.
+	for _, re := range sortLines {
+		valueRef = testdiff.SortLineRuns(valueRef, re)
+		valueNew = testdiff.SortLineRuns(valueNew, re)
 	}
 
 	// In update mode, regenerating the reference files is the goal: each branch below

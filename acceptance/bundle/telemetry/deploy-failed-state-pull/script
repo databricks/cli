@@ -1,6 +1,6 @@
 errcode trace $CLI bundle deploy
 
-cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
+cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
 
 # resources_metadata reports state_engine even though the deploy failed while pulling
 # the state: b.Metrics.StateEngine is set from the requested engine before the pull.
@@ -9,5 +9,5 @@ cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .
 # with line-ending conversion across platforms.
 cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata | if . then del(.state_file_size_bytes) else . end' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 rm telemetry.json

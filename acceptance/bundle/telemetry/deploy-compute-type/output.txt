@@ -2,13 +2,13 @@
 >>> [CLI] bundle deploy -t one
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-compute-type/one/files...
 Created jobs.my_job
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deploy -t two
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-compute-type/two/files...
 Created jobs.my_job
-Files: 7 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_telemetry_bool_values
@@ -28,8 +28,11 @@ has_classic_interactive_compute false
 has_classic_interactive_compute true
 has_classic_job_compute false
 has_classic_job_compute true
+has_notebook_task true
 has_serverless_compute true
 has_serverless_compute true
+has_spark_python_task true
+has_spark_python_task true
 local.cache.attempt true
 local.cache.attempt true
 local.cache.hit true

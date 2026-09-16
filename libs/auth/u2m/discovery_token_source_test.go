@@ -330,8 +330,11 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 	dts := &discoveryTokenSource{pa: p}
 
 	errc := make(chan error, 1)
+	tokenc := make(chan *oauth2.Token, 1)
 	go func() {
-		errc <- dts.challenge()
+		token, err := dts.challenge()
+		tokenc <- token
+		errc <- err
 	}()
 
 	// Wait for browser to be called and extract state from the URL.
@@ -388,17 +391,17 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 	if arg.GetDiscoveredHost() != expectedHost {
 		t.Errorf("discovered host = %q, want %q", arg.GetDiscoveredHost(), expectedHost)
 	}
-	if len(storedTokens) != 1 {
-		t.Fatalf("store count: want 1 key (profile), got %d", len(storedTokens))
+	if len(storedTokens) != 0 {
+		t.Fatalf("store count: want 0, got %d", len(storedTokens))
 	}
-	storedToken := storedTokens["test-profile"]
-	if storedToken == nil {
-		t.Fatalf("stored token for profile key is nil")
+	returnedToken := <-tokenc
+	if returnedToken == nil {
+		t.Fatal("returned token is nil")
 	}
-	if storedToken.AccessToken != "test-access-token" {
-		t.Errorf("access token = %q, want %q", storedToken.AccessToken, "test-access-token")
+	if returnedToken.AccessToken != "test-access-token" {
+		t.Errorf("access token = %q, want %q", returnedToken.AccessToken, "test-access-token")
 	}
-	if storedToken.RefreshToken != "test-refresh-token" {
-		t.Errorf("refresh token = %q, want %q", storedToken.RefreshToken, "test-refresh-token")
+	if returnedToken.RefreshToken != "test-refresh-token" {
+		t.Errorf("refresh token = %q, want %q", returnedToken.RefreshToken, "test-refresh-token")
 	}
 }

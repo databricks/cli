@@ -57,6 +57,13 @@ func (p *Plan) CountActions() ActionCounts {
 		case Update, UpdateWithID, Resize:
 			c.Change++
 		case Delete:
+			// A state-only delete touches nothing in the backend and only drops the
+			// state entry, so it is not a real action: leave it out of the tally
+			// entirely rather than misreport it as deleted or unchanged. This matches
+			// how `bundle destroy` counts its own deletions.
+			if entry.IsStateOnlyDelete() {
+				continue
+			}
 			c.Delete++
 		case Recreate:
 			// A recreate counts as both a delete and a create.
@@ -122,10 +129,25 @@ type PlanEntry struct {
 	// Gone is set on Delete entries when planning confirmed the resource no longer
 	// exists remotely. Applying such an entry only removes it from the state, without
 	// calling the delete API, and approval prompts do not list it as a deletion.
-	Gone        bool                     `json:"gone,omitempty"`
+	Gone bool `json:"gone,omitempty"`
+	// StateOnly is set on Delete entries for resources that implement no DoDelete:
+	// deleting them has no backend effect. Like Gone, applying such an entry only
+	// removes it from the state and it is excluded from destructive-action prompts,
+	// textual plan output and the deleted count — but unlike Gone it is a property of
+	// the resource type, not of the current remote state, so planning skips the
+	// remote read that Gone detection needs.
+	StateOnly   bool                     `json:"state_only,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
+}
+
+// IsStateOnlyDelete reports whether applying this delete only drops the state entry
+// without any backend call: the resource is already gone remotely (Gone) or has no
+// delete operation (StateOnly). Such deletes are omitted from human output, excluded
+// from the resource counts, and need no destructive-action approval.
+func (e *PlanEntry) IsStateOnlyDelete() bool {
+	return e.Gone || e.StateOnly
 }
 
 type DependsOnEntry struct {
@@ -153,6 +175,11 @@ const (
 	// ReasonMissingInRemote: field is not present in RemoteType (write-only / input-only).
 	// Remote always appears nil, so treat the absence as a no-op when there is no local change.
 	ReasonMissingInRemote = "missing_in_remote"
+	// ReasonRemoteAddition: the field is a remote-only addition (absent from config, present
+	// in the remote) inside an object whose gate is set (e.g. a cluster with a policy_id). The
+	// backend may extend such an object beyond what the bundle declares, so the addition is not
+	// treated as drift. We do not attribute the value to any particular source.
+	ReasonRemoteAddition = "remote_addition"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"
@@ -207,6 +234,7 @@ func (p *Plan) GetActions() []Action {
 			ResourceKey: key,
 			ActionType:  entry.Action,
 			Gone:        entry.Gone,
+			StateOnly:   entry.StateOnly,
 		})
 	}
 

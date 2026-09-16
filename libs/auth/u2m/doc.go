@@ -34,14 +34,13 @@ OAuthArgument and call Challenge:
 		return err
 	}
 	defer auth.Close()
-	if err := auth.Challenge(); err != nil {
+	token, err := auth.Challenge()
+	if err != nil {
 		return err
 	}
-	token, err := auth.Token()
 
-Because the U2M flow requires user interaction, callers should provide a
-persistent store to avoid prompting the user on every invocation. Without
-WithTokenStore, PersistentAuth uses an in-memory store. See the storage package
-for the store contract.
+Challenge returns the new token without storing it. The caller is responsible
+for persisting it after any configuration associated with the login is ready.
+WithTokenStore configures the store used by Token and ForceRefreshToken.
 */
 package u2m

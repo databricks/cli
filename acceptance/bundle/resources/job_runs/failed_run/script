@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -24,8 +24,8 @@ title "so a redeploy runs the job again, and fails again"
 musterr trace $CLI bundle deploy
 read_id.py my_run > /dev/null
 
-# The delete names [MY_RUN_ID], the run that failed first, not the [MY_RUN_ID_2]
-# that replaced it: the recreate discards the run it replaces.
-title "run-now was issued once per deploy, and the recreate deleted the failed run"
+# The recreate leaves the failed run [MY_RUN_ID] alone and triggers [MY_RUN_ID_2]:
+# a run is a historical record, not deleted, so no jobs/runs/delete is issued.
+title "run-now was issued once per deploy, and the recreate left the failed run alone"
 trace print_requests.py --keep //jobs/run-now
 trace print_requests.py //jobs/runs/delete

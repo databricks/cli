@@ -2,3 +2,4 @@ setup_test_profile
 setup_test_token_cache
 
 musterr $CLI auth token --profile test-profile --force-refresh
+musterr $CLI auth token --profile test-profile --force-refresh --output json

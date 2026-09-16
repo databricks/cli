@@ -456,14 +456,15 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 // OAuth2 flow is started by opening the browser to the OAuth2 authorization
 // URL. The user is redirected to the callback server on appRedirectAddr. The
 // callback server listens for the redirect from the identity provider and
-// exchanges the authorization code for an access token.
-func (a *PersistentAuth) Challenge() error {
+// exchanges the authorization code for an access token. The caller is
+// responsible for storing the returned token.
+func (a *PersistentAuth) Challenge() (*oauth2.Token, error) {
 	if a.discoveryMode {
 		return a.discoveryChallenge()
 	}
 	err := a.startListener(a.ctx)
 	if err != nil {
-		return fmt.Errorf("starting listener: %w", err)
+		return nil, fmt.Errorf("starting listener: %w", err)
 	}
 	// The listener will be closed by the callback server automatically, but if
 	// the callback server is not created, we need to close the listener manually.
@@ -471,39 +472,35 @@ func (a *PersistentAuth) Challenge() error {
 
 	cfg, err := a.oauth2Config()
 	if err != nil {
-		return fmt.Errorf("fetching oauth config: %w", err)
+		return nil, fmt.Errorf("fetching oauth config: %w", err)
 	}
 	cb, err := a.newCallbackServer()
 	if err != nil {
-		return fmt.Errorf("callback server: %w", err)
+		return nil, fmt.Errorf("callback server: %w", err)
 	}
 	defer cb.Close()
 
 	state, pkce, err := a.stateAndPKCE()
 	if err != nil {
-		return fmt.Errorf("state and pkce: %w", err)
+		return nil, fmt.Errorf("state and pkce: %w", err)
 	}
 	// make OAuth2 library use our client
 	ctx := a.setOAuthContext(a.ctx)
 	ts := authhandler.TokenSourceWithPKCE(ctx, cfg, state, cb.Handler, pkce)
 	t, err := ts.Token()
 	if err != nil {
-		return fmt.Errorf("authorize: %w", err)
+		return nil, fmt.Errorf("authorize: %w", err)
 	}
-	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
-	if err != nil {
-		return fmt.Errorf("store: %w", err)
-	}
-	return nil
+	return t, nil
 }
 
 // discoveryChallenge handles the login.databricks.com discovery flow.
 // The listener must be started before the discovery token source is invoked
 // because the challenge needs the redirect address to build the authorize URL.
-func (a *PersistentAuth) discoveryChallenge() error {
+func (a *PersistentAuth) discoveryChallenge() (*oauth2.Token, error) {
 	err := a.startListener(a.ctx)
 	if err != nil {
-		return fmt.Errorf("starting listener: %w", err)
+		return nil, fmt.Errorf("starting listener: %w", err)
 	}
 	defer a.Close()
 	ds := &discoveryTokenSource{pa: a, host: a.discoveryHost}

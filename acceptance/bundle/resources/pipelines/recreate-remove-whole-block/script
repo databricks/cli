@@ -14,4 +14,4 @@ grep -v '# TO_DELETE' databricks.yml > databricks.yml.tmp && mv databricks.yml.t
 # rule on the connection_name leaf. See the per-engine "changes"/"action" in the JSON.
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

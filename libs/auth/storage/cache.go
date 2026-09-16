@@ -82,14 +82,13 @@ func OAuthTokenStore(ctx context.Context, s Store, mode StorageMode) Store {
 }
 
 // WrapForOAuthArgument is OAuthTokenStore plus, in plaintext mode, a dual-write
-// of every Challenge/refresh write to the legacy host-based cache key. Use on
-// the login and refresh write paths. Other modes return the hinted store:
-// secure mode never writes a host-key entry, and the dual-write has nothing to
-// do for non-file backends.
+// of the login token to the legacy host-based cache key. Other modes return the
+// hinted store. Secure mode never writes a host-key entry, and the dual-write
+// has nothing to do for non-file backends.
 //
-// Pass the OAuthArgument that the same NewPersistentAuth call will use. For
-// discovery arguments the discovered host is read at Store time, so it is
-// safe to wrap before Challenge populates it.
+// Pass the OAuthArgument used to obtain or refresh the token. For discovery
+// arguments, Challenge must populate the discovered host before the caller
+// stores the token.
 func WrapForOAuthArgument(ctx context.Context, s Store, mode StorageMode, arg TokenKeyProvider) Store {
 	s = OAuthTokenStore(ctx, s, mode)
 	if mode != StorageModePlaintext {

@@ -1,0 +1,22 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_dashboard"
+
+resources:
+  dashboards:
+    my_dashboard_1:
+      display_name: "my_dashboard_1"
+      warehouse_id: "abc123"
+      parent_path: "/Workspace/Users/me"
+      # interface{} field authored inline as a YAML map
+      serialized_dashboard:
+        pages:
+          - name: main
+            displayName: "Main"

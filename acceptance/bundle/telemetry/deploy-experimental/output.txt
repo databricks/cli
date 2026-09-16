@@ -6,7 +6,7 @@ Warning: You are using the legacy mode of run_as. The support for this mode is e
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.foo
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_telemetry_bool_values
@@ -19,6 +19,7 @@ experimental.use_legacy_run_as true
 has_classic_interactive_compute true
 has_classic_job_compute false
 has_serverless_compute false
+has_spark_python_task true
 local.cache.attempt true
 local.cache.miss true
 permissions_section_set false

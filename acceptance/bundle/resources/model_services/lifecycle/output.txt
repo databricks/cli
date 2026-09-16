@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-model-service-test-[UNIQUE_NAME]/default/files...
 Created model_services.ms
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] ai-gateway get-model-service model-services/main.default.test_ms_[UNIQUE_NAME]

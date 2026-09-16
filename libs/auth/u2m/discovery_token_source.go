@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/databricks/cli/libs/auth/storage"
 	"golang.org/x/oauth2"
 )
 
@@ -116,17 +115,18 @@ type discoveryTokenSource struct {
 // challenge initiates the discovery OAuth flow through login.databricks.com.
 // It builds a custom authorize URL, opens the browser, waits for the callback,
 // derives the workspace host and token endpoint from the iss parameter, and
-// exchanges the authorization code for tokens.
-func (d *discoveryTokenSource) challenge() error {
+// exchanges the authorization code for tokens. The caller is responsible for
+// storing the returned token.
+func (d *discoveryTokenSource) challenge() (*oauth2.Token, error) {
 	cb, err := d.pa.newCallbackServer()
 	if err != nil {
-		return fmt.Errorf("callback server: %w", err)
+		return nil, fmt.Errorf("callback server: %w", err)
 	}
 	defer cb.Close()
 
 	state, authPKCE, err := d.pa.stateAndPKCE()
 	if err != nil {
-		return fmt.Errorf("state and pkce: %w", err)
+		return nil, fmt.Errorf("state and pkce: %w", err)
 	}
 
 	scopes := d.pa.resolveScopes()
@@ -144,22 +144,22 @@ func (d *discoveryTokenSource) challenge() error {
 
 	code, returnedState, issuer, err := cb.handlerWithIssuer(authorizeURL)
 	if err != nil {
-		return fmt.Errorf("authorize: %w", err)
+		return nil, fmt.Errorf("authorize: %w", err)
 	}
 
 	// Validate state matches what we generated before consuming callback data.
 	if returnedState != state {
-		return fmt.Errorf("state mismatch: expected %q, got %q", state, returnedState)
+		return nil, fmt.Errorf("state mismatch: expected %q, got %q", state, returnedState)
 	}
 
 	if issuer == "" {
-		return errors.New("discovery login failed: callback did not include an issuer (iss) parameter")
+		return nil, errors.New("discovery login failed: callback did not include an issuer (iss) parameter")
 	}
 
 	// Derive host and token endpoint from the issuer.
 	discoveredHost, err := DeriveHostFromIssuer(issuer)
 	if err != nil {
-		return fmt.Errorf("deriving host from issuer: %w", err)
+		return nil, fmt.Errorf("deriving host from issuer: %w", err)
 	}
 	tokenEndpoint := DeriveTokenEndpoint(issuer)
 
@@ -176,17 +176,13 @@ func (d *discoveryTokenSource) challenge() error {
 	token, err := cfg.Exchange(ctx, code,
 		oauth2.SetAuthURLParam("code_verifier", pkce.Verifier))
 	if err != nil {
-		return fmt.Errorf("token exchange: %w", err)
+		return nil, fmt.Errorf("token exchange: %w", err)
 	}
 
 	discoveryArg, ok := d.pa.oAuthArgument.(DiscoveryOAuthArgument)
 	if !ok {
-		return fmt.Errorf("discovery login requires DiscoveryOAuthArgument, got %T", d.pa.oAuthArgument)
+		return nil, fmt.Errorf("discovery login requires DiscoveryOAuthArgument, got %T", d.pa.oAuthArgument)
 	}
 	discoveryArg.SetDiscoveredHost(discoveredHost)
-
-	if err := d.pa.store.Put(d.pa.oAuthArgument.GetCacheKey(), storage.Entry{Token: token}); err != nil {
-		return fmt.Errorf("storing token: %w", err)
-	}
-	return nil
+	return token, nil
 }

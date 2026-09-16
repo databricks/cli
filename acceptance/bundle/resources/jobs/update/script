@@ -1,7 +1,6 @@
 # The raw plans the replays read go under .databricks, which sync skips.
 mkdir -p .databricks
 
-echo "*" > .gitignore
 trace $CLI bundle plan
 $CLI bundle plan -o json > .databricks/tmp.plan_create.json
 nostamp < .databricks/tmp.plan_create.json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
@@ -32,11 +31,11 @@ title "Fetch job ID and verify remote state"
 ppid=`read_id.py foo`
 
 trace $CLI jobs get $ppid | jq 'del(.settings.run_as)' | nostamp
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 title "Destroy the job and verify that it's removed from the state and from remote"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //jobs --nostamp
 
 trace musterr $CLI jobs get $ppid
-rm out.requests.txt
+rm "$OUT_REQUESTS"

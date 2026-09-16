@@ -9,7 +9,7 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES]
 
-Files: 6 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 
 >>> [CLI] bundle plan -o json
 {

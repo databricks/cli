@@ -7,7 +7,7 @@ add_repl "$NODE_TYPE_ID" NODE_TYPE_ID
 cleanup() {
   trace $CLI bundle destroy --auto-approve
   # destroy records requests too; drop the recorded file so it is not compared.
-  rm -f out.requests.txt
+  rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -71,4 +71,4 @@ echo
 # The engine name is dropped because both EnvMatrix variants share this output;
 # every other counter is engine-agnostic. This run exercises add_count and
 # remove_count (the remote edits add and remove keyed fields).
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | del(.engine)'
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_config_remote_sync_event | select(. != null) | del(.engine)'

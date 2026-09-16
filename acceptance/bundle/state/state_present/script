@@ -19,7 +19,7 @@ trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 title 'Adding resources.json with higher serial, env var mismatch warns but uses state engine\n'
 echo '{"serial": 10, "lineage": "test-lineage"}' > .databricks/bundle/default/resources.json
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
@@ -29,7 +29,7 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle destroy --auto-approve
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
 trace print_state.py | jq .serial | contains.py "13"
@@ -44,4 +44,4 @@ trace print_state.py | jq .serial | contains.py "13"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

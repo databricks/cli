@@ -8,5 +8,5 @@ for target in \
 	shared_not_declared; do
 	trace $CLI bundle deploy -t "$target"
 	trace print_telemetry_bool_values | grep -E "state_path|permissions_section|dms_"
-	rm out.requests.txt
+	rm "$OUT_REQUESTS"
 done

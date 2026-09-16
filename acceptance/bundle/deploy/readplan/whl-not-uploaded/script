@@ -12,7 +12,7 @@ trace print_requests.py //artifacts/.internal --del-field raw_body
 
 trace $CLI bundle destroy --auto-approve
 # Discard destroy's requests so the saved-plan deploy below starts from a clean recording.
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 title "bundle deploy --plan does NOT upload the wheel (bug)"
 trace $CLI bundle plan -o json > tmp.plan.json
@@ -25,4 +25,4 @@ trace $CLI bundle deploy --plan tmp.plan.json
 trace print_requests.py //artifacts/.internal --del-field raw_body
 
 trace $CLI bundle destroy --auto-approve
-rm out.requests.txt
+rm "$OUT_REQUESTS"

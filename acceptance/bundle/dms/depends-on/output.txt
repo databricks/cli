@@ -20,7 +20,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/files...
 Created jobs.child
 Created jobs.parent
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //versions/1/operations

@@ -32,6 +32,10 @@ type DataSourcePolicyInfoColumnMask struct {
 	Using        []DataSourcePolicyInfoColumnMaskUsing `json:"using,omitempty"`
 }
 
+type DataSourcePolicyInfoDeny struct {
+	Privileges []string `json:"privileges"`
+}
+
 type DataSourcePolicyInfoGrant struct {
 	Privileges []string `json:"privileges"`
 }
@@ -79,6 +83,7 @@ type DataSourcePolicyInfo struct {
 	Comment             string                              `json:"comment,omitempty"`
 	CreatedAt           int                                 `json:"created_at,omitempty"`
 	CreatedBy           string                              `json:"created_by,omitempty"`
+	Deny                *DataSourcePolicyInfoDeny           `json:"deny,omitempty"`
 	ExceptPrincipals    []string                            `json:"except_principals,omitempty"`
 	ForSecurableType    string                              `json:"for_securable_type,omitempty"`
 	Grant               *DataSourcePolicyInfoGrant          `json:"grant,omitempty"`

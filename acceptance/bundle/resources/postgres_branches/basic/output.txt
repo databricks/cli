@@ -56,7 +56,7 @@ Workspace:
 Resources:
   Postgres branches:
     main:
-      Name: 
+      Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/main
   Postgres projects:
     my_project:
       Name: Test Project for Branch

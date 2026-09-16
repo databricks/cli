@@ -33,6 +33,43 @@ func newTestStore() storage.Store {
 	return &inMemoryStore{Tokens: map[string]*oauth2.Token{}}
 }
 
+type putErrorStore struct {
+	storage.Store
+	err error
+}
+
+func (s *putErrorStore) Put(string, storage.Entry) error {
+	return s.err
+}
+
+type countingStore struct {
+	storage.Store
+	putCalls int
+}
+
+func (s *countingStore) Put(key string, entry storage.Entry) error {
+	s.putCalls++
+	return s.Store.Put(key, entry)
+}
+
+func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
+	const profileName = "TEST"
+	inner := storage.NewMemoryStore()
+	require.NoError(t, inner.Put(profileName, storage.Entry{
+		Token: &oauth2.Token{AccessToken: "old-token"},
+	}))
+	storeErr := errors.New("put failed")
+	store := &putErrorStore{Store: inner, err: storeErr}
+	arg, err := u2m.NewProfileWorkspaceOAuthArgument("https://workspace.example.test", profileName)
+	require.NoError(t, err)
+
+	err = storeLoginToken(t.Context(), store, storage.StorageModeSecure, arg, &oauth2.Token{AccessToken: "new-token"})
+
+	assert.ErrorIs(t, err, storeErr)
+	_, err = inner.Lookup(profileName)
+	assert.ErrorIs(t, err, storage.ErrNotFound)
+}
+
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
 type logBuffer struct {
 	mu  sync.Mutex
@@ -61,18 +98,10 @@ func loadTestProfile(t *testing.T, ctx context.Context, profileName string) *pro
 type fakeDiscoveryPersistentAuth struct {
 	token        *oauth2.Token
 	challengeErr error
-	tokenErr     error
 }
 
-func (f *fakeDiscoveryPersistentAuth) Challenge() error {
-	return f.challengeErr
-}
-
-func (f *fakeDiscoveryPersistentAuth) Token() (*oauth2.Token, error) {
-	if f.tokenErr != nil {
-		return nil, f.tokenErr
-	}
-	return f.token, nil
+func (f *fakeDiscoveryPersistentAuth) Challenge() (*oauth2.Token, error) {
+	return f.token, f.challengeErr
 }
 
 func (f *fakeDiscoveryPersistentAuth) Close() error {
@@ -833,6 +862,38 @@ func TestDiscoveryLogin_IntrospectionFailureStillSavesProfile(t *testing.T) {
 	assert.Equal(t, "all-apis,sql", savedProfile.Scopes)
 	assert.Empty(t, savedProfile.AccountID)
 	assert.Empty(t, savedProfile.WorkspaceID)
+}
+
+func TestDiscoveryLogin_ProfileSaveFailureDoesNotStoreToken(t *testing.T) {
+	tmpDir := t.TempDir()
+	parentFile := filepath.Join(tmpDir, "not-a-directory")
+	require.NoError(t, os.WriteFile(parentFile, nil, 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", filepath.Join(parentFile, ".databrickscfg"))
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://workspace.example.test")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg: oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{
+			token: &oauth2.Token{AccessToken: "test-token"},
+		},
+		introspectionErr: errors.New("introspection failed"),
+	}
+	store := &countingStore{Store: storage.NewMemoryStore()}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  store,
+	})
+
+	require.ErrorContains(t, err, "saving profile")
+	assert.Zero(t, store.putCalls)
 }
 
 func TestDiscoveryLogin_AccountIDMismatchWarning(t *testing.T) {

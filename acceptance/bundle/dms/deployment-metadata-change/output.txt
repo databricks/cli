@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-before-[UNIQUE_NAME]/dev/files...
 Created schemas.foo
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
@@ -94,7 +94,7 @@ A common practice is to use a username or principal name in this path, i.e. use
   root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/prod/files...
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
@@ -159,7 +159,7 @@ A common practice is to use a username or principal name in this path, i.e. use
   root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-metadata-after-[UNIQUE_NAME]/prod/files...
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle

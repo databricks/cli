@@ -25,9 +25,6 @@ experimental and may change in future versions.`,
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newLogsCommand())
 	cmd.AddCommand(newCancelCommand())
-	registerImageCommand := newRegisterImageCommand()
-	wrapRunErrorWithDebugTip(registerImageCommand)
-	cmd.AddCommand(registerImageCommand)
 	cmd.AddCommand(newConvertToDabsCommand())
 
 	return cmd

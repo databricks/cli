@@ -57,10 +57,10 @@ Workspace:
 Resources:
   Postgres branches:
     main:
-      Name: 
+      Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/main
   Postgres endpoints:
     custom:
-      Name: 
+      Name: projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/custom
   Postgres projects:
     my_project:
       Name: Test Project for Endpoint

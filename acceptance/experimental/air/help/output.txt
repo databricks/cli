@@ -15,7 +15,6 @@ Available Commands:
   get             Show status, configuration, and timing details for a specific run
   list            List your active runs for the current profile (use --all-status for finished runs)
   logs            Stream or fetch logs for a run
-  register-image  Mirror a Docker image into the workspace registry
   run             Submit a training workload from a YAML config
 
 Flags:
