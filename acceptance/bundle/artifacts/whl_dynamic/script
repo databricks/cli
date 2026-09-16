@@ -19,7 +19,7 @@ title "Expecting 2 patched wheels in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' "$OUT_REQUESTS" | gron.py | grep -w libraries
 
 title "Expecting 2 patched wheels to be uploaded"
-trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
+trace jq -r '.body.multipart_form.path | strings' < "$OUT_REQUESTS" | grep whl | sort
 
 rm "$OUT_REQUESTS"
 
@@ -35,4 +35,4 @@ title "Expecting 2 patched wheels in libraries section in /jobs/reset"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' "$OUT_REQUESTS" | gron.py | grep -w libraries
 
 title "Expecting 2 pached wheels to be uploaded (Bad: it is currently uploaded twice)"
-trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
+trace jq -r '.body.multipart_form.path | strings' < "$OUT_REQUESTS" | grep whl | sort

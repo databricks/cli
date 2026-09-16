@@ -5,7 +5,7 @@ echo "test wheel content" > whl/source.whl
 trace $CLI bundle deploy
 
 title "Expecting wheel to be uploaded"
-trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
+trace jq -r '.body.multipart_form.path | strings' < "$OUT_REQUESTS" | grep whl | sort
 
 title "Expecting delete request to artifact_path/.internal folder"
 trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' "$OUT_REQUESTS"

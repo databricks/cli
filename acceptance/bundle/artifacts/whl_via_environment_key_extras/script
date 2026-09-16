@@ -6,6 +6,6 @@ title "Expecting the environments dependency to keep its [train] extras suffix"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body' "$OUT_REQUESTS" | nostamp
 
 title "Expecting 1 wheel to be uploaded under its bare filename (no extras)"
-trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
+trace jq -r '.body.multipart_form.path | strings' < "$OUT_REQUESTS" | grep whl | sort
 
 rm "$OUT_REQUESTS"

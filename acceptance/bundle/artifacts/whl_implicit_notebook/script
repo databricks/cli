@@ -6,6 +6,6 @@ title "Expecting 1 wheel in libraries section in /jobs/create"
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[0].libraries' "$OUT_REQUESTS"
 
 title "Expecting 1 wheel to be uploaded"
-trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
+trace jq -r '.body.multipart_form.path | strings' < "$OUT_REQUESTS" | grep whl | sort
 
 rm "$OUT_REQUESTS"

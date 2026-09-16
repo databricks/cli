@@ -20,9 +20,14 @@ filename, old, new = sys.argv[1:]
 # call update_file.py on that file.
 assert filename != "output.txt"
 
-data = open(filename).read()
+# Read raw and normalize CRLF to LF so the search string (always LF in the
+# script) matches on Windows, where the file is checked out with CRLF. Write
+# with newline="" so Python does not turn the \n back into \r\n: the acceptance
+# harness treats every file as LF, and a stray \r would change any uploaded
+# bytes or content hash a test later asserts.
+data = open(filename, newline="").read().replace("\r\n", "\n")
 newdata = data.replace(old, new)
 if newdata == data:
     sys.exit(f"{old=} not found in {filename=}\n{data}")
-with open(filename, "w") as fobj:
+with open(filename, "w", newline="") as fobj:
     fobj.write(newdata)

@@ -12,6 +12,6 @@
 Cloud = false
 
 [[Server]]
-Pattern = "POST /api/2.0/workspace-files/import-file/{path...}"
+Pattern = "POST /api/2.0/workspace/import"
 Response.StatusCode = 500
 Response.Body = '''{"error_code": "INTERNAL_ERROR", "message": "Internal error"}'''

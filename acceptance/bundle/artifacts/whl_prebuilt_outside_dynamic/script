@@ -14,6 +14,6 @@ trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' "$OUT_RE
 trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' "$OUT_REQUESTS"
 
 title "Expecting 2 wheels to be uploaded"
-trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
+trace jq -r '.body.multipart_form.path | strings' < "$OUT_REQUESTS" | grep whl | sort
 
 rm "$OUT_REQUESTS"
