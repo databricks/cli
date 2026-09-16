@@ -1,0 +1,15 @@
+# Git Bash on Windows rewrites leading-slash paths; keep them verbatim.
+export MSYS_NO_PATHCONV=1
+
+trace $CLI workspace mkdirs /Workspace/tmp/remote_file_path/dir
+trace $CLI workspace import /Workspace/tmp/remote_file_path/file --format AUTO --file ./databricks.yml
+
+title "file_path is a directory: valid destination\n"
+trace $CLI bundle validate -t ok
+
+# validate's slow validators run in parallel and stream diagnostics in
+# nondeterministic order, so sort a projection (full output in LOG.validate). The
+# destination error appears twice for now: from this validator and from FilesToSync.
+title "file_path is a file: invalid destination\n"
+errcode $CLI bundle validate -t bad > LOG.validate 2>&1
+grep -E "^(Error|Warning|Found)" LOG.validate | sort

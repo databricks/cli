@@ -1,0 +1,2 @@
+# This test does not deploy, so it is engine-independent.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
