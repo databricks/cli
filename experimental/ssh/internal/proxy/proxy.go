@@ -79,9 +79,9 @@ const (
 	// Bounds the wait for the peer's first frame on a reattached connection, which carries the
 	// offset to replay from. The connection is new, but the peer may be wedged.
 	proxyResumeHandshakeTimeout = 10 * time.Second
-	// Cap on payload held for replay, per direction. A full window pauses the source
-	// until the peer acknowledges delivery; bursts through the driver proxy can fill it.
-	proxyResumeBufferLimit = 1 << 20
+	// Cap on unacknowledged payload held for replay, per direction. At 120 ms RTT,
+	// an 8 MiB window sustains over 500 Mbit/s before backpressure pauses the source.
+	proxyResumeBufferLimit = 8 << 20
 	// How much payload may be delivered before we tell the peer about it, so it can release
 	// its replay buffer. Small enough to keep the window far below proxyResumeBufferLimit.
 	proxyAckThreshold = 64 << 10
@@ -105,8 +105,9 @@ var proxyEOFDrainTimeout = proxyResumeGrace
 type resumeState struct {
 	// Outgoing payload that may still have to be replayed.
 	sendBuf *sendBuffer
-	// Total payload bytes written to the destination. The peer replays from this offset, so it
-	// only advances after a successful write.
+	// Total payload bytes received from the peer and written to sshd's stdin on the server or
+	// stdout on the client. The peer replays from this offset, so it only advances after a
+	// successful write.
 	delivered atomic.Int64
 	// The delivered count we last told the peer about, so an ack is only sent once the number
 	// has actually moved.

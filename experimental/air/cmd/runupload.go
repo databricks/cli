@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/cli/libs/filer"
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 // Launch artifact basenames, uploaded into the run's cli_launch directory. The
@@ -40,6 +41,7 @@ type uploadItem struct {
 // fileWriter is the subset of filer.Filer the upload path needs; a narrow
 // interface keeps buildArtifacts/upload testable without a live workspace.
 type fileWriter interface {
+	Mkdir(ctx context.Context, name string) error
 	Write(ctx context.Context, name string, reader io.Reader, mode ...filer.WriteMode) error
 }
 
@@ -127,16 +129,25 @@ func secretEnvVarEntries(secrets map[string]string) []secretEnvVarEntry {
 	return out
 }
 
-// uploadArtifacts writes each artifact into the launch directory, overwriting and
-// creating parents as needed.
+// uploadArtifacts creates the launch directory once, then writes all artifacts
+// concurrently. Each write overwrites an existing file but does not repeat parent
+// directory creation.
 //
 // TODO(DABs): this client-side upload could move onto libs/sync / a bundle deploy
 // so the CLI reuses DABs' file-staging machinery instead of writing files itself.
 func uploadArtifacts(ctx context.Context, w fileWriter, items []uploadItem) error {
-	for _, it := range items {
-		if err := w.Write(ctx, it.name, bytes.NewReader(it.data), filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
-			return fmt.Errorf("failed to upload %s: %w", it.name, err)
-		}
+	if err := w.Mkdir(ctx, "."); err != nil {
+		return fmt.Errorf("failed to create launch directory: %w", err)
 	}
-	return nil
+
+	group, groupCtx := errgroup.WithContext(ctx)
+	for _, item := range items {
+		group.Go(func() error {
+			if err := w.Write(groupCtx, item.name, bytes.NewReader(item.data), filer.OverwriteIfExists); err != nil {
+				return fmt.Errorf("failed to upload %s: %w", item.name, err)
+			}
+			return nil
+		})
+	}
+	return group.Wait()
 }

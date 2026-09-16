@@ -993,7 +993,9 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, opts.KeepaliveInterval, resumable, createConn)
 }
 
-// capabilitiesProbeTimeout caps the pre-connect capabilities probe. A var so tests can shorten it.
+// capabilitiesProbeTimeout caps the pre-connect capabilities probe. The endpoint returns a small,
+// fixed response, so a slow probe should not delay a connection that can still run without resume.
+// A var so tests can shorten it.
 var capabilitiesProbeTimeout = 10 * time.Second
 
 // serverSupportsResume reports whether the running SSH server speaks the resume protocol.

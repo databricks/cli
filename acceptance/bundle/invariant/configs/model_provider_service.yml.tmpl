@@ -7,6 +7,10 @@ resources:
       parent: schemas/main.default
       model_provider_service_id: test-model-provider-service-$UNIQUE_NAME
       comment: test model provider service
+      grants:
+        - principal: account users
+          privileges:
+            - APPLY_TAG
       config:
         provider_type: EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM
         targets:

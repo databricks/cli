@@ -153,7 +153,11 @@ func TestResumeCancellationInterruptsHandshake(t *testing.T) {
 func TestResumeReplaysFullWindowsInBothDirections(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 4*time.Second)
 	defer cancel()
+	// TestResumeBackpressure covers the production limit. A smaller window keeps this
+	// simultaneous replay test focused on coordination rather than transfer volume.
+	const testWindow = 1 << 20
 	serverProxy := newResumableProxyConnection(nil)
+	serverProxy.resume.sendBuf = newSendBuffer(testWindow)
 	var accepted atomic.Bool
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if accepted.CompareAndSwap(false, true) {
@@ -199,6 +203,7 @@ func TestResumeReplaysFullWindowsInBothDirections(t *testing.T) {
 		}
 		return conn, err
 	})
+	clientProxy.resume.sendBuf = newSendBuffer(testWindow)
 	require.NoError(t, clientProxy.connect(ctx))
 	<-serverProxy.ready
 	defer func() { _ = serverProxy.closeConnection() }()
@@ -206,8 +211,8 @@ func TestResumeReplaysFullWindowsInBothDirections(t *testing.T) {
 
 	// Both writes failed before reaching the peer. Neither direction has room for
 	// new payload, and neither can finish replay unless the peer resumes reading.
-	toClient := bytes.Repeat([]byte("s"), proxyResumeBufferLimit)
-	toServer := bytes.Repeat([]byte("c"), proxyResumeBufferLimit)
+	toClient := bytes.Repeat([]byte("s"), testWindow)
+	toServer := bytes.Repeat([]byte("c"), testWindow)
 	require.NoError(t, serverProxy.resume.sendBuf.append(toClient))
 	require.NoError(t, clientProxy.resume.sendBuf.append(toServer))
 	require.NoError(t, clientProxy.closeConnection())
@@ -229,8 +234,8 @@ func TestResumeReplaysFullWindowsInBothDirections(t *testing.T) {
 
 	// Resume must remain available after a transfer larger than the replay window,
 	// including an auth handover and another reset while data is in flight.
-	moreClient := bytes.Repeat([]byte("download"), proxyResumeBufferLimit)
-	moreServer := bytes.Repeat([]byte("upload!!"), proxyResumeBufferLimit)
+	moreClient := bytes.Repeat([]byte("download"), testWindow)
+	moreServer := bytes.Repeat([]byte("upload!!"), testWindow)
 	writes := make(chan error, 2)
 	go func() { _, err := serverWriter.Write(moreClient); writes <- err }()
 	go func() { _, err := clientWriter.Write(moreServer); writes <- err }()
