@@ -55,7 +55,10 @@ the process start time prevents a reused PID from inheriting an old registration
 
 Registration failures are warnings. On compute where the daemon APIs are unavailable,
 including serverless, the tunnel starts and file access continues to depend on the
-bootstrap notebook as before. See [filesystem troubleshooting](./FAILURE_MODES.md#filesystem-access-after-the-bootstrap-notebook-exits).
+bootstrap notebook as before. When the current-user lookup succeeds, registration also
+includes the workspace home directory so workspace files can prepopulate its directory cache.
+This does not change the session's working directory or filesystem permissions.
+See [filesystem troubleshooting](./FAILURE_MODES.md#filesystem-access-after-the-bootstrap-notebook-exits).
 
 ## Development
 

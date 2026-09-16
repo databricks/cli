@@ -78,13 +78,15 @@ type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
-func TestFuseUserID(t *testing.T) {
+func TestFuseUserInfo(t *testing.T) {
 	for _, tc := range []struct {
-		name       string
-		status     int
-		body, want string
+		name            string
+		status          int
+		body            string
+		wantUserID      string
+		wantNotebookDir string
 	}{
-		{name: "available", status: http.StatusOK, body: `{"id":"12345"}`, want: "12345"},
+		{name: "available", status: http.StatusOK, body: `{"id":"12345","userName":"user@example.test"}`, wantUserID: "12345", wantNotebookDir: "/Users/user@example.test"},
 		{name: "forbidden", status: http.StatusForbidden, body: `{"message":"forbidden"}`},
 		{name: "timeout"},
 	} {
@@ -103,7 +105,9 @@ func TestFuseUserID(t *testing.T) {
 				})
 				require.NoError(t, err)
 				start := time.Now()
-				assert.Equal(t, tc.want, server.FuseUserID(t.Context(), c))
+				userID, notebookDir := server.FuseUserInfo(t.Context(), c)
+				assert.Equal(t, tc.wantUserID, userID)
+				assert.Equal(t, tc.wantNotebookDir, notebookDir)
 				assert.LessOrEqual(t, time.Since(start), 2*time.Second)
 			})
 		})

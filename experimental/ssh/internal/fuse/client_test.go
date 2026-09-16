@@ -20,6 +20,8 @@ import (
 
 var testHosts = []string{"first.test", "second.test", "third.test"}
 
+const testNotebookDir = "/Users/user@example.test"
+
 type recordedRequest struct {
 	Host string
 	Path string
@@ -73,11 +75,16 @@ func (d *testDaemon) snapshot() []recordedRequest {
 }
 
 func TestRegister(t *testing.T) {
-	for _, userID := range []string{"", "12345"} {
-		t.Run("user="+userID, func(t *testing.T) {
+	for _, user := range []struct {
+		name, id, notebookDir string
+	}{
+		{name: "unavailable"},
+		{name: "available", id: "12345", notebookDir: testNotebookDir},
+	} {
+		t.Run(user.name, func(t *testing.T) {
 			d := &testDaemon{}
 			c := newTestClient(t, d)
-			require.NoError(t, c.Register(t.Context(), "token-one", userID, false))
+			require.NoError(t, c.Register(t.Context(), "token-one", user.id, user.notebookDir, false))
 			requests := d.snapshot()
 			require.Len(t, requests, 2)
 			assert.Equal(t, "first.test:1021", requests[0].Host)
@@ -88,23 +95,24 @@ func TestRegister(t *testing.T) {
 				"apiToken": "token-one", "procStartTime": float64(8613244),
 				"commandOrigin": "RemoteSshServer", "namespaceId": float64(4026531836),
 			}
-			if userID != "" {
-				want["additionalTags"] = map[string]any{"userId": userID}
+			if user.id != "" {
+				want["additionalTags"] = map[string]any{"userId": user.id}
+				want["notebookDir"] = user.notebookDir
 			}
 			for _, req := range requests {
 				assert.Equal(t, want, req.Body)
 			}
 
-			require.NoError(t, c.Register(t.Context(), "token-one", userID, false))
+			require.NoError(t, c.Register(t.Context(), "token-one", user.id, user.notebookDir, false))
 			requests = d.snapshot()
 			require.Len(t, requests, 3, "unchanged credentials must only refresh volumes")
 			assert.Equal(t, "first.test:1015", requests[2].Host)
-			require.NoError(t, c.Register(t.Context(), "token-two", userID, false))
+			require.NoError(t, c.Register(t.Context(), "token-two", user.id, user.notebookDir, false))
 			requests = d.snapshot()
 			require.Len(t, requests, 5)
 			assert.Equal(t, "token-two", requests[3].Body["apiToken"])
 			assert.Equal(t, "token-two", requests[4].Body["apiToken"])
-			require.NoError(t, c.Register(t.Context(), "token-two", userID, true))
+			require.NoError(t, c.Register(t.Context(), "token-two", user.id, user.notebookDir, true))
 			assert.Len(t, d.snapshot(), 7, "restore a lost registration with the same token")
 		})
 	}
@@ -118,9 +126,9 @@ func TestRegisterSelectsReachableHostPerDaemon(t *testing.T) {
 		return http.StatusNotFound
 	}}
 	c := newTestClient(t, d)
-	require.NoError(t, c.Register(t.Context(), "token-one", "", false))
+	require.NoError(t, c.Register(t.Context(), "token-one", "", "", false))
 	require.Len(t, d.snapshot(), 5)
-	require.NoError(t, c.Register(t.Context(), "token-two", "", false))
+	require.NoError(t, c.Register(t.Context(), "token-two", "", "", false))
 	requests := d.snapshot()
 	require.Len(t, requests, 7)
 	assert.Equal(t, "second.test:1021", requests[5].Host)
@@ -135,14 +143,14 @@ func TestRegisterRetriesOnlyFailedDaemon(t *testing.T) {
 		return http.StatusOK
 	}}
 	c := newTestClient(t, d)
-	err := c.Register(t.Context(), "token-one", "", false)
+	err := c.Register(t.Context(), "token-one", "", "", false)
 	require.ErrorContains(t, err, "volumes:")
 	assert.NotContains(t, err.Error(), "secret-token-in-error-body")
 	assert.Len(t, d.snapshot(), 4)
 	d.mu.Lock()
 	d.status = nil
 	d.mu.Unlock()
-	require.NoError(t, c.Register(t.Context(), "token-one", "", false))
+	require.NoError(t, c.Register(t.Context(), "token-one", "", "", false))
 	requests := d.snapshot()
 	require.Len(t, requests, 5)
 	assert.Equal(t, "first.test:1015", requests[4].Host)
@@ -160,7 +168,7 @@ func TestRegisterRejectsInvalidCredentials(t *testing.T) {
 	}
 	d := &testDaemon{}
 	c := newTestClient(t, d)
-	require.ErrorContains(t, c.Register(t.Context(), "", "", false), "empty FUSE token")
+	require.ErrorContains(t, c.Register(t.Context(), "", "", "", false), "empty FUSE token")
 	assert.Empty(t, d.snapshot())
 }
 
@@ -180,7 +188,7 @@ func TestRegisterBoundsRequests(t *testing.T) {
 			return nil, r.Context().Err()
 		})
 		start := time.Now()
-		err = c.Register(t.Context(), "token-one", "", false)
+		err = c.Register(t.Context(), "token-one", "", "", false)
 		require.Error(t, err)
 		assert.Equal(t, 6, calls)
 		assert.Equal(t, 12*time.Second, time.Since(start))
@@ -193,7 +201,7 @@ func TestRegisterCancellation(t *testing.T) {
 	require.NoError(t, err)
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	err = c.Register(ctx, "token-one", "", false)
+	err = c.Register(ctx, "token-one", "", "", false)
 	require.ErrorIs(t, err, context.Canceled)
 }
 
@@ -212,7 +220,7 @@ func TestRegisterDoesNotRedirectOrProxyCredentials(t *testing.T) {
 			Body:       io.NopCloser(strings.NewReader("secret-token-in-error-body")),
 		}, nil
 	})
-	err = c.Register(t.Context(), "token-one", "", false)
+	err = c.Register(t.Context(), "token-one", "", "", false)
 	require.ErrorContains(t, err, "HTTP 307")
 	assert.NotContains(t, err.Error(), "secret-token-in-error-body")
 	assert.Equal(t, 6, requests)

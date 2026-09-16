@@ -25,6 +25,7 @@ type request struct {
 	ProcStartTime  uint64            `json:"procStartTime"`
 	CommandOrigin  string            `json:"commandOrigin"`
 	PIDNamespaceID uint32            `json:"namespaceId"`
+	NotebookDir    string            `json:"notebookDir,omitempty"`
 	AdditionalTags map[string]string `json:"additionalTags,omitempty"`
 }
 
@@ -73,7 +74,7 @@ func NewClient(r Registration) (*Client, error) {
 
 // Register refreshes volumes, updates changed credentials, and retries failed registrations.
 // Force also restores a lost workspace-files registration.
-func (c *Client) Register(ctx context.Context, token, userID string, force bool) error {
+func (c *Client) Register(ctx context.Context, token, userID, notebookDir string, force bool) error {
 	if token == "" {
 		return errors.New("cannot register an empty FUSE token")
 	}
@@ -82,6 +83,7 @@ func (c *Client) Register(ctx context.Context, token, userID string, force bool)
 		ProcStartTime:  c.registration.StartTime,
 		CommandOrigin:  commandOrigin,
 		PIDNamespaceID: c.registration.PIDNamespaceID,
+		NotebookDir:    notebookDir,
 	}
 	if userID != "" {
 		body.AdditionalTags = map[string]string{"userId": userID}

@@ -23,19 +23,20 @@ func registerFuseCredentials(ctx context.Context, client *databricks.WorkspaceCl
 	if err != nil {
 		return err
 	}
-	return fuse.KeepRegistered(ctx, fuseClient, workspaceToken(client), fuseUserID(ctx, client))
+	userID, notebookDir := fuseUserInfo(ctx, client)
+	return fuse.KeepRegistered(ctx, fuseClient, workspaceToken(client), userID, notebookDir)
 }
 
-func fuseUserID(ctx context.Context, client *databricks.WorkspaceClient) string {
-	// The user ID is an optional audit tag. Limit its lookup before publishing the server port.
+func fuseUserInfo(ctx context.Context, client *databricks.WorkspaceClient) (userID, notebookDir string) {
+	// User metadata is optional. Limit its lookup before publishing the server port.
 	userCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 	me, err := client.CurrentUser.Me(userCtx, iam.MeRequest{})
 	if err != nil {
-		log.Debugf(ctx, "Registering filesystem credentials without a user ID: %v", err)
-		return ""
+		log.Debugf(ctx, "Registering filesystem credentials without user metadata: %v", err)
+		return "", ""
 	}
-	return me.Id
+	return me.Id, "/Users/" + me.UserName
 }
 
 func workspaceToken(client *databricks.WorkspaceClient) fuse.TokenFunc {

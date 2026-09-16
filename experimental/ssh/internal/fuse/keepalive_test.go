@@ -40,6 +40,7 @@ func TestKeepRegistered(t *testing.T) {
 						return nil, err
 					}
 					assert.NotEmpty(t, body["apiToken"], "cancellation must not send a revoke")
+					assert.Equal(t, testNotebookDir, body["notebookDir"])
 					requests = append(requests, recordedRequest{r.Host, r.URL.Path, body})
 					status := http.StatusOK
 					if failure == "both" || (failure == "workspace" && r.URL.Port() == "1021") || (failure == "volumes" && r.URL.Port() == "1015") {
@@ -57,7 +58,7 @@ func TestKeepRegistered(t *testing.T) {
 						return "", errors.New("token unavailable")
 					}
 					return token, nil
-				}, "12345")
+				}, "12345", testNotebookDir)
 				if initialFailure == "" {
 					require.NoError(t, err)
 				} else {
@@ -156,7 +157,7 @@ func TestKeepRegisteredRecoversVolumesRegistrationLoss(t *testing.T) {
 		fuse.ConfigureTestClient(c, httpClient, testHosts, func() (int, error) { return registration.PID, nil })
 		require.NoError(t, fuse.KeepRegistered(ctx, c, func(context.Context) (string, error) {
 			return "fixed-bootstrap-token", nil
-		}, "12345"))
+		}, "12345", testNotebookDir))
 		synctest.Wait()
 
 		for tick := range 3 {
