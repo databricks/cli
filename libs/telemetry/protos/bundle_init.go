@@ -9,6 +9,10 @@ type BundleInitEvent struct {
 	// Name of the template initialized when the user ran `databricks bundle init`
 	// This is only populated when the template is a first party template like
 	// mlops-stacks or default-python.
+	//
+	// Templates initialized from the first-party databricks/bundle-examples repo
+	// are recorded as "bundle-examples/<template-dir>" (or just "bundle-examples"
+	// when no template directory is given).
 	TemplateName string `json:"template_name,omitempty"`
 
 	// Arguments used by the user to initialize the template. Only enum
