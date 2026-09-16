@@ -20,7 +20,7 @@ cleanup() {
   # which would make the golden fragile. The bundle scaffolding we care about lives
   # directly under the target dir, so it is still covered.
   title "Assert destroy leaves the bundle state dir clean:\n"
-  trace find .databricks -name terraform -prune -o -print | sort
+  trace find.py --include-dirs --prune 'terraform$' '^\.databricks(/|$)'
 
   title "Assert bundle deployment path is deleted"
   trace errcode $CLI workspace get-status "${DEPLOYMENT_PATH}"

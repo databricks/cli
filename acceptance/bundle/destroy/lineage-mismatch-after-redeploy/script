@@ -28,7 +28,7 @@ trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.t
 # already asserted gone above). The bundle scaffolding we care about lives directly
 # under the target dir, so it is still covered.
 title "and leaves the bundle state dir clean, with no empty scaffolding directories:\n"
-trace find .databricks -name terraform -prune -o -print | sort
+trace find.py --include-dirs --prune 'terraform$' '^\.databricks(/|$)'
 
 # Wipe whatever remains so the next deploy behaves like a fresh machine.
 rm -rf .databricks
