@@ -16,6 +16,7 @@ func New(load TokenLoader) *cobra.Command {
 		Short: "(Experimental) Manage Docker authentication for Databricks Artifact Registry",
 	}
 	cmd.AddCommand(newDockerTokenCommand(load))
+	cmd.AddCommand(newDockerConfigureCommand())
 	return cmd
 }
 
