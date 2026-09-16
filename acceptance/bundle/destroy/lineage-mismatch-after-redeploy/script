@@ -22,6 +22,14 @@ trace $CLI bundle destroy --auto-approve
 title "A clean destroy removes the local state file, so no stale lineage is left behind:\n"
 trace find.py '^.databricks/bundle/default/(resources.json|terraform/terraform.tfstate)$' --expect 0
 
+# Print the whole state tree so any empty scaffolding dir or stray file shows up. The
+# terraform engine dir is pruned: its contents differ by engine and embed the provider
+# version and OS/arch, which would make the golden fragile (the state file it holds is
+# already asserted gone above). The bundle scaffolding we care about lives directly
+# under the target dir, so it is still covered.
+title "and leaves the bundle state dir clean, with no empty scaffolding directories:\n"
+trace find .databricks -name terraform -prune -o -print | sort
+
 # Wipe whatever remains so the next deploy behaves like a fresh machine.
 rm -rf .databricks
 

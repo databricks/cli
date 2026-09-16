@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -222,6 +223,59 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	if err := os.Remove(localStatePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		logdiag.LogError(ctx, err)
 	}
+
+	// Destroy leaves empty scaffolding directories behind once their contents are
+	// gone (e.g. .internal/ and sync-snapshots/ after the state and sync files are
+	// removed), so prune them rather than littering empty directories. Pruning stays
+	// within the target's state dir, so a sibling engine's state (terraform/) or
+	// another target is untouched. Cosmetic cleanup: a failure here does not fail the
+	// destroy.
+	stateDir := b.GetLocalStateDir(ctx)
+	if _, err := removeEmptyDirs(stateDir, 0); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Debugf(ctx, "cannot prune empty state directories under %s: %v", stateDir, err)
+	}
+}
+
+// maxStateDirDepth caps removeEmptyDirs recursion. The local state tree is only a
+// few levels deep (bundle/<target>/{.internal,sync-snapshots,terraform}); the cap is
+// a defensive guard against a pathologically deep tree, not a limit ever hit in
+// practice.
+const maxStateDirDepth = 100
+
+// removeEmptyDirs removes every empty directory in the subtree rooted at dir,
+// bottom-up, and reports whether dir itself was removed. Symlinked entries count as
+// content and are never traversed, so a symlinked provider mirror is left intact.
+// depth is the caller's recursion depth; recursion stops with an error once it passes
+// maxStateDirDepth.
+func removeEmptyDirs(dir string, depth int) (bool, error) {
+	if depth > maxStateDirDepth {
+		return false, fmt.Errorf("state directory nesting exceeds %d levels at %s", maxStateDirDepth, dir)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false, err
+	}
+	empty := true
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			empty = false
+			continue
+		}
+		removed, err := removeEmptyDirs(filepath.Join(dir, entry.Name()), depth+1)
+		if err != nil {
+			return false, err
+		}
+		if !removed {
+			empty = false
+		}
+	}
+	if !empty {
+		return false, nil
+	}
+	if err := os.Remove(dir); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // The destroy phase deletes artifacts and resources.
