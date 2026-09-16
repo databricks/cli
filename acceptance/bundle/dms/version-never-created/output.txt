@@ -9,6 +9,8 @@ API error_code: INTERNAL_ERROR
 API message: Internal error
 
 
+>>> print_requests.py --keep //files/ //artifacts/
+
 >>> [CLI] bundle plan -o json
 {
   "plan_version": [PLAN_VERSION],

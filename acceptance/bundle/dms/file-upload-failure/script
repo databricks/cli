@@ -1,0 +1,11 @@
+title "An upload failure completes the version without applying resources or opening a WAL"
+trace fault.py "POST /api/2.0/workspace-files/import-file/*" 403 0 1 PERMISSION_DENIED
+trace musterr $CLI bundle deploy
+trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
+trace print_requests.py --keep //jobs | contains.py "!POST"
+trace print_requests.py --dms //versions --oneline
+
+title "Retry succeeds, including permissions on the custom artifact directory"
+trace $CLI bundle deploy
+trace assert_not_exists.py .databricks/bundle/default/resources.json.wal
+trace print_requests.py --dms //versions --oneline
