@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 )
 
@@ -143,10 +144,24 @@ func printTerminalEvent(out io.Writer, runID, status, dashboardURL string) {
 	fmt.Fprintln(out, string(b))
 }
 
-// emitLogLine writes one log line: raw in text mode, or a JSONL LOG event under
-// --json. In --json mode a line matching a fatal-failure pattern also emits an
-// ALERT event first, giving an agent an immediate actionable signal.
+const (
+	missingRequirementsNoticePrefix = "No co-located requirements.yaml at "
+	missingRequirementsNoticeSuffix = "; skipping requirements.yaml install."
+)
+
+// suppressLogLine reports whether a backend log line should be omitted.
+func suppressLogLine(body string) bool {
+	// This backend-derived notice is non-actionable noise because requirements.yaml
+	// is not supported by Databricks Air and is rejected earlier.
+	return strings.HasPrefix(body, missingRequirementsNoticePrefix) &&
+		strings.HasSuffix(body, missingRequirementsNoticeSuffix)
+}
+
+// emitLogLine writes one relevant log line.
 func emitLogLine(out io.Writer, req logRequest, body string) {
+	if suppressLogLine(body) {
+		return
+	}
 	if !req.jsonOutput {
 		fmt.Fprintln(out, body)
 		return

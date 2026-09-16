@@ -291,6 +291,21 @@ func TestEmitLogLineText(t *testing.T) {
 	assert.Equal(t, "hello\n", buf.String())
 }
 
+func TestEmitLogLineSuppressesMissingRequirementsNotice(t *testing.T) {
+	body := "No co-located requirements.yaml at /Workspace/Users/user/.air/cli_launch/run/requirements.yaml; skipping requirements.yaml install."
+
+	for _, req := range []logRequest{{node: 0}, {node: 0, jsonOutput: true}} {
+		var buf bytes.Buffer
+		emitLogLine(&buf, req, body)
+		assert.Empty(t, buf.String())
+	}
+}
+
+func TestSuppressLogLineKeepsRequirementsErrors(t *testing.T) {
+	assert.False(t, suppressLogLine("ERROR: requirements.yaml not found"))
+	assert.False(t, suppressLogLine("ERROR: Failed to process requirements.yaml"))
+}
+
 func TestEmitLogLineJSONFatalEmitsAlert(t *testing.T) {
 	var buf bytes.Buffer
 	emitLogLine(&buf, logRequest{node: 1, jsonOutput: true}, "CUDA out of memory")
