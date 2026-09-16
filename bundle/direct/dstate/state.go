@@ -122,10 +122,6 @@ type DeploymentState struct {
 	// history, in which case InitializeOperationBuffer installs it once the version exists.
 	operationBuffer *dms.OperationBuffer
 
-	// dmsService talks to the deployment metadata service. Open sets it from the workspace
-	// client when the deployment records history; nil otherwise.
-	dmsService bundledeployments.BundleDeploymentsInterface
-
 	// versionCompleted makes CompleteVersion a no-op after the first call, so a deferred safety-net
 	// completion after an explicit one does nothing.
 	versionCompleted bool
@@ -204,7 +200,7 @@ type WALEntry struct {
 // (after approval) - which is why it is not an Open option. It also records the id a first deploy
 // just created, which Open could not know, so CompleteVersion later has it.
 func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploymentID string, versionID int) {
-	buf := dms.StartOperationBuffer(ctx, db.dmsService, deploymentID, versionID)
+	buf := dms.StartOperationBuffer(ctx, cmdctx.WorkspaceClient(ctx).BundleDeployments, deploymentID, versionID)
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -248,7 +244,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 		return false, nil
 	}
 	db.versionCompleted = true
-	deploymentID, service, versionID := db.DeploymentID, db.dmsService, db.VersionID
+	deploymentID, versionID := db.DeploymentID, db.VersionID
 	db.mu.Unlock()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
@@ -262,7 +258,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	if !success {
 		reason = bundledeployments.VersionCompleteVersionCompleteFailure
 	}
-	_, err := service.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
+	_, err := cmdctx.WorkspaceClient(ctx).BundleDeployments.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
 		Name:             dms.VersionName(deploymentID, versionID),
 		CompletionReason: reason,
 	})
@@ -454,12 +450,6 @@ func (db *DeploymentState) IsDeploymentMetadataService() bool {
 	return db.isDeploymentMetadataService()
 }
 
-// DmsService returns the deployment metadata service client Open set from the workspace client,
-// or nil when the deployment does not record history.
-func (db *DeploymentState) DmsService() bundledeployments.BundleDeploymentsInterface {
-	return db.dmsService
-}
-
 // GetOrInitLineage returns the deployment lineage, generating and storing a new
 // one if the state does not have one yet. It is the single place the lineage is
 // initialized, shared so the direct deployment engine (when it writes state, via
@@ -621,11 +611,10 @@ To record this bundle's history, start it over as a new deployment:
 	if recorded {
 		// The service is the source of truth for a recorded deployment; the file is a tombstone
 		// carrying only the marker, and applyDMSState loads the resources the service holds.
-		db.dmsService = cmdctx.WorkspaceClient(ctx).BundleDeployments
 		db.DeploymentID = dmsDeployment.DeploymentID
 
 		if dmsDeployment.DeploymentID != "" {
-			resources, err := dms.ListResources(ctx, db.dmsService, dmsDeployment.DeploymentID)
+			resources, err := dms.ListResources(ctx, cmdctx.WorkspaceClient(ctx).BundleDeployments, dmsDeployment.DeploymentID)
 			if err != nil {
 				return err
 			}

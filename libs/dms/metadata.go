@@ -81,12 +81,12 @@ func NextVersion(lastVersionID string) (int, error) {
 	return last + 1, nil
 }
 
-// DeploymentNodeName is the workspace node DMS creates per deployment. Must
-// match DeploymentWhsClient.DEPLOYMENT_NODE_NAME on the service side.
+// DeploymentNodeName is the workspace node DMS makes for each deployment.
+// Keep it equal to the service's DEPLOYMENT_NODE_NAME.
 const DeploymentNodeName = "resources.deployment.json"
 
-// DeploymentName and VersionName are the two resource-name formats the service uses, so a
-// caller only ever passes ids.
+// DeploymentName, VersionName and OperationName build the resource names the
+// service uses, so callers pass only ids.
 func DeploymentName(deploymentID string) string {
 	return "deployments/" + deploymentID
 }
@@ -95,8 +95,12 @@ func VersionName(deploymentID string, version int) string {
 	return fmt.Sprintf("deployments/%s/versions/%d", deploymentID, version)
 }
 
-// DeploymentIDFromName extracts the deployment ID from a DMS resource name of
-// the form "deployments/{deployment_id}".
+// OperationName drops the state prefix DMS keys don't use (see StatePrefix).
+func OperationName(deploymentID string, version int, stateKey string) string {
+	return VersionName(deploymentID, version) + "/operations/" + strings.TrimPrefix(stateKey, StatePrefix)
+}
+
+// DeploymentIDFromName pulls the id out of a "deployments/{id}" name.
 func DeploymentIDFromName(name string) (string, error) {
 	id, ok := strings.CutPrefix(name, DeploymentName(""))
 	if !ok || id == "" {
@@ -105,10 +109,8 @@ func DeploymentIDFromName(name string) (string, error) {
 	return id, nil
 }
 
-// DeploymentUpdate builds the deployment carrying exactly the masked fields, empty ones
-// included: the service requires every masked field to be present in the body and reads an empty
-// value as a clear (a target that stops setting mode clears deployment_mode). ForceSendFields
-// keeps those empty values on the wire, which omitempty would drop.
+// DeploymentUpdate builds the deployment with only the masked fields.
+// A masked field must be sent even when empty (empty = clear it), so ForceSendFields stops omitempty dropping it.
 func DeploymentUpdate(metadata Metadata, mask string) bundledeployments.Deployment {
 	full := metadata.Deployment()
 	var dep bundledeployments.Deployment
