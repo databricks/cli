@@ -1,0 +1,1 @@
+* Pipeline development mode is now decided per update from the bundle target mode at run time, rather than stamped on the pipeline at deploy time. Deploy no longer sets the pipeline-level `development` property, and the `presets.pipelines_development` setting has been removed.

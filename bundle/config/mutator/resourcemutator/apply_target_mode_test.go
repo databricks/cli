@@ -376,7 +376,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Continuous) //nolint:staticcheck // SA1019: pipeline continuous is deprecated in the SDK but remains a supported bundle config field
 	// Development mode no longer stamps the pipeline-level development property;
-	// dev-vs-prod is decided per update by `bundle run --development`.
+	// dev-vs-prod is decided per update at run time from the target mode.
 	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].Development)
 
 	// Experiment 1
