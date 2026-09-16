@@ -885,39 +885,44 @@ tasks:
     cmds:
       - go run ./internal/cligen --input .codegen/cli.json --output .
 
-  # Refreshes .codegen/cli.json from the OpenAPI spec at .codegen/_openapi_sha.
+  # Refreshes .codegen/cli.json from the Universe commit pinned in
+  # .codegen/_openapi_sha.
   # cli.json is a genkit SDK target like any other (mode cli_v1 in .codegen.json):
-  # the cli_v1 producer is decoupled from the spec, so genkit is built from the
-  # universe checkout's HEAD (the current producer), while the spec itself is
-  # fetched by SHA. Run it when the spec SHA is bumped; `task generate` then
-  # consumes the committed cli.json. SDK version bumps (go.mod/go.sum) are a
-  # manual `go get` step beforehand; TestConsistentDatabricksSdkVersion asserts
-  # the two stay in sync.
+  # Genkit and the spec are built from the same Universe commit so their schema
+  # dialects cannot drift. The build runs in a temporary shared clone, leaving
+  # the developer's Universe checkout untouched. The commit SHA is passed
+  # alongside the built file; update-sdk keeps the previous
+  # .codegen/_openapi_sha available during generation and writes the same SHA
+  # afterwards. `task generate` then consumes the committed cli.json. SDK
+  # version bumps (go.mod/go.sum) are a manual `go get` step beforehand;
+  # TestConsistentDatabricksSdkVersion asserts the two stay in sync.
   #
-  # No `sources:`/`generates:`: the producer is built from the universe
-  # checkout's HEAD, which no source fingerprint can capture, so a checksum
-  # cache would report "up to date" after pulling a newer producer.
+  # No `sources:`/`generates:`: this task deliberately refreshes cli.json from
+  # an external Universe checkout whenever it is invoked.
   generate-clijson:
-    desc: Produce .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo with the cli_v1 producer)
+    desc: Produce .codegen/cli.json from its pinned Universe commit via genkit
     vars:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
     cmds:
-      # Building from a dirty universe tree would produce a cli.json that no
-      # universe commit can reproduce. Set UNIVERSE_ALLOW_DIRTY=1 to build from
-      # uncommitted producer changes deliberately (e.g. while iterating on the
-      # producer itself).
       - |
-        if [ -z "$UNIVERSE_ALLOW_DIRTY" ]; then
-          if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
-            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_ALLOW_DIRTY=1 to build the producer from the dirty tree"
-            exit 1
-          fi
-        fi
-      - echo "Building genkit at universe HEAD $(git -C {{.UNIVERSE_DIR}} rev-parse --short HEAD)..."
-      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
-      - echo "Generating CLI code..."
-      - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk --dir {{.ROOT_DIR}}'
+        OPENAPI_SHA="$(tr -d '[:space:]' < "{{.ROOT_DIR}}/.codegen/_openapi_sha")"
+        BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/databricks-cli-universe.XXXXXX")"
+        trap 'rm -rf -- "$BUILD_DIR"' EXIT HUP INT TERM
+
+        echo "Creating temporary Universe checkout at ${OPENAPI_SHA}..."
+        git clone --quiet --shared --no-checkout "{{.UNIVERSE_DIR}}" "$BUILD_DIR/universe"
+        git -C "$BUILD_DIR/universe" checkout --quiet --detach "$OPENAPI_SHA"
+
+        echo "Building genkit and OpenAPI spec at ${OPENAPI_SHA}..."
+        cd "$BUILD_DIR/universe"
+        ./tools/bazel build //deco/genkit //openapi:all-internal.json
+
+        echo "Generating CLI code..."
+        "$BUILD_DIR/universe/bazel-bin/deco/genkit/genkit_/genkit" update-sdk \
+          --dir "{{.ROOT_DIR}}" \
+          --openapi-spec-file "$BUILD_DIR/universe/bazel-bin/openapi/all-internal.json" \
+          --openapi-spec-sha "$OPENAPI_SHA"
       # genkit also writes .gitattributes, but that file is owned by
       # generate-cligen (which derives it from .gitattributes.manual plus the
       # rendered file list), so discard genkit's copy.
