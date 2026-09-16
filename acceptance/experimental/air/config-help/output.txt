@@ -58,7 +58,7 @@ config
 Use "-h config.<field>" for details on a field.
 
 === nested object lists its fields
->>> [CLI] experimental air run -h config.compute
+>>> [CLI] experimental air run -h config.compute --profile compute-help
 config.compute
   Which accelerators to run on and how many.
 
@@ -69,6 +69,41 @@ config.compute
     priority_class           Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest).
 
 Use "-h config.compute.<field>" for details on a field.
+
+Accelerator types available in this workspace:
+  GPU_1xA10        1 accelerator per node
+  GPU_8xH100       8 accelerators per node
+
+=== compute options request uses workspace routing
+>>> print_requests.py --get //api/2.0/ai-compute-manager/compute-options
+{
+  "headers": {
+    "X-Databricks-Workspace-Id": [
+      "12345"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.0/ai-compute-manager/compute-options"
+}
+
+=== unresolved workspace falls back to the built-in list
+>>> [CLI] experimental air run -h config.compute --profile missing
+config.compute
+  Which accelerators to run on and how many.
+
+  Fields:
+    num_accelerators         Total number of GPUs to allocate.
+    accelerator_type         Which accelerator to run on, e.g. GPU_1xA10.
+    provisioned_capacity_id  Pre-provisioned AIR capacity reservation id.
+    priority_class           Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest).
+
+Use "-h config.compute.<field>" for details on a field.
+Warning: Couldn't verify workspace accelerator availability; showing the built-in list instead.
+
+Accelerator types supported by this CLI (workspace availability not verified):
+  GPU_1xA10        1 accelerator per node
+  GPU_1xH100       1 accelerator per node
+  GPU_8xH100       8 accelerators per node
 
 === new submission fields are documented
 >>> [CLI] experimental air run -h config.mlflow_artifact_location

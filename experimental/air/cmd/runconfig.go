@@ -495,12 +495,18 @@ const configHelpRoot = "config"
 
 // writeConfigFieldHelp resolves a dotted config path and writes its docs.
 func writeConfigFieldHelp(w io.Writer, path string) error {
+	_, err := resolveAndWriteConfigFieldHelp(w, path)
+	return err
+}
+
+// resolveAndWriteConfigFieldHelp returns the field after rendering it.
+func resolveAndWriteConfigFieldHelp(w io.Writer, path string) (configField, error) {
 	field, err := resolveConfigField(path)
 	if err != nil {
-		return err
+		return configField{}, err
 	}
 	renderConfigField(w, field)
-	return nil
+	return field, nil
 }
 
 // freeFormConfigFields hold free-form maps, so path resolution stops at them:

@@ -68,7 +68,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			_ = c.Usage()
 			return
 		}
-		if err := writeConfigFieldHelp(c.OutOrStdout(), fields[0]); err != nil {
+		if err := writeRunConfigFieldHelp(c, fields[0], lookupComputeOptionsForHelp); err != nil {
 			c.PrintErrln("Error:", err)
 		}
 	})

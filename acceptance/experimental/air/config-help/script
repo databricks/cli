@@ -1,6 +1,13 @@
 # Pin the rendered config field help. Any change to a `help:` struct tag on the
 # run YAML schema shows up as a diff here.
 
+sethome "./home"
+envsubst < "./home/.databrickscfg.tmpl" > "./home/.databrickscfg"
+unset DATABRICKS_HOST
+unset DATABRICKS_TOKEN
+unset DATABRICKS_CONFIG_PROFILE
+unset DATABRICKS_WORKSPACE_ID
+
 # Plain -h must keep documenting the command itself, and advertise the config
 # path syntax so the feature is discoverable.
 title "command help"
@@ -10,7 +17,13 @@ title "schema overview"
 trace $CLI experimental air run -h config
 
 title "nested object lists its fields"
-trace $CLI experimental air run -h config.compute
+trace $CLI experimental air run -h config.compute --profile compute-help
+
+title "compute options request uses workspace routing"
+trace print_requests.py --get //api/2.0/ai-compute-manager/compute-options
+
+title "unresolved workspace falls back to the built-in list"
+trace $CLI experimental air run -h config.compute --profile missing
 
 title "new submission fields are documented"
 trace $CLI experimental air run -h config.mlflow_artifact_location
