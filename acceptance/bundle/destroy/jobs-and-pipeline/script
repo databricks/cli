@@ -14,8 +14,13 @@ cleanup() {
   title "Assert job is deleted:\n"
   errcode $CLI jobs get "${JOB_ID}" 2>&1
 
-  title "Assert destroy leaves no empty directories behind (the snapshot dir included):\n"
-  trace find .databricks -type d -empty | sort
+  # Print the whole state tree so a lingering snapshot file or an empty scaffolding
+  # dir (e.g. sync-snapshots/ or .internal/) both show up. The terraform engine dir is
+  # pruned: its contents differ by engine and embed the provider version and OS/arch,
+  # which would make the golden fragile. The bundle scaffolding we care about lives
+  # directly under the target dir, so it is still covered.
+  title "Assert destroy leaves the bundle state dir clean:\n"
+  trace find .databricks -name terraform -prune -o -print | sort
 
   title "Assert bundle deployment path is deleted"
   trace errcode $CLI workspace get-status "${DEPLOYMENT_PATH}"
