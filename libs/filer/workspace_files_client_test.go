@@ -313,17 +313,6 @@ func TestWorkspaceFilesClientWriteErrorMapping(t *testing.T) {
 			expectErrTarget: fileAlreadyExistsError{},
 		},
 		{
-			// Notebook conflicts arrive as a 400 with an empty error_code, so
-			// they match neither ErrResourceAlreadyExists nor
-			// ErrInvalidParameterValue and are detected by message marker.
-			name: "400 without error_code and 'already exists.' maps to fileAlreadyExistsError",
-			apiErr: &apierr.APIError{
-				StatusCode: http.StatusBadRequest,
-				Message:    "Path (/dir/notebook) already exists.",
-			},
-			expectErrTarget: fileAlreadyExistsError{},
-		},
-		{
 			name: "400 INVALID_PARAMETER_VALUE other message passes through",
 			apiErr: &apierr.APIError{
 				StatusCode: http.StatusBadRequest,

@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"path"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -211,18 +210,6 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	if errors.Is(err, apierr.ErrInvalidParameterValue) {
 		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
 			if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "WORKSPACE_OBJECT_TYPE_MISMATCH" {
-				return fileAlreadyExistsError{absPath}
-			}
-		}
-	}
-
-	// A notebook that already exists returns 400 with an empty error_code, which
-	// unwraps to ErrBadRequest by status alone, so this runs after the
-	// ErrInvalidParameterValue branch. Anchor on the shared "already exists."
-	// marker rather than parsing the full message.
-	if errors.Is(err, apierr.ErrBadRequest) {
-		if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
-			if strings.Contains(aerr.Message, "already exists.") {
 				return fileAlreadyExistsError{absPath}
 			}
 		}
