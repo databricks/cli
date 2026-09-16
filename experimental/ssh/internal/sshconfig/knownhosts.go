@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"golang.org/x/crypto/ssh"
 )
@@ -65,25 +66,8 @@ func PinHostKey(path, hostName string, publicKey []byte) error {
 
 	// Write and rename so a connection racing this one (every ssh invocation runs the
 	// ProxyCommand, which refreshes the pin) never reads a half-written file.
-	tmp, err := os.CreateTemp(dir, ".known-hosts-*.tmp")
-	if err != nil {
-		return fmt.Errorf("failed to create known hosts file: %w", err)
-	}
-	defer os.Remove(tmp.Name())
-
-	_, err = tmp.WriteString(line)
-	if err == nil {
-		err = tmp.Chmod(0o600)
-	}
-	if closeErr := tmp.Close(); err == nil {
-		err = closeErr
-	}
-	if err != nil {
+	if err := atomicfile.Write(path, []byte(line), 0o600); err != nil {
 		return fmt.Errorf("failed to write known hosts file: %w", err)
-	}
-
-	if err := os.Rename(tmp.Name(), path); err != nil {
-		return fmt.Errorf("failed to replace known hosts file: %w", err)
 	}
 	return nil
 }

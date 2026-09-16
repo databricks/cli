@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"golang.org/x/oauth2"
 )
@@ -206,33 +207,8 @@ func (c *fileStore) load() (*tokenStoreFile, error) {
 	return f, nil
 }
 
-// atomicWriteFile writes data to the file atomically by first writing to a
-// temporary file in the same directory and then renaming it to the target.
-// This prevents corruption from interrupted writes.
+// atomicWriteFile writes data to the token store file atomically, so an
+// interrupted write cannot corrupt existing tokens.
 func (c *fileStore) atomicWriteFile(data []byte) error {
-	tmp, err := c.writeTmpFile(data)
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmp)
-	return os.Rename(tmp, c.fileLocation)
-}
-
-func (c *fileStore) writeTmpFile(data []byte) (string, error) {
-	tmp, err := os.CreateTemp(filepath.Dir(c.fileLocation), ".token-cache-*.tmp")
-	if err != nil {
-		return "", fmt.Errorf("create temp file: %w", err)
-	}
-	defer tmp.Close()
-
-	if _, err := tmp.Write(data); err != nil {
-		return "", err
-	}
-	if err := tmp.Chmod(ownerReadWrite); err != nil {
-		return "", err
-	}
-	if err := tmp.Close(); err != nil {
-		return "", err
-	}
-	return tmp.Name(), nil
+	return atomicfile.Write(c.fileLocation, data, ownerReadWrite)
 }

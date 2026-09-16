@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
@@ -94,38 +95,13 @@ func cacheFileName(envKey string) string {
 	return fmt.Sprintf("%s-%s.toml", slug, hex.EncodeToString(sum[:8]))
 }
 
-// writeCacheAtomic writes data to path via a temp file and rename, creating the
-// parent directory first. The rename is atomic on the same filesystem, so a
-// concurrent reader never observes a truncated or partial cache file (os.WriteFile
-// truncates in place, which a fallback reader could catch mid-write).
+// writeCacheAtomic writes data to path, creating the parent directory first.
 func writeCacheAtomic(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	tmp, err := os.CreateTemp(dir, ".constraints-*.tmp")
-	if err != nil {
-		return err
-	}
-	tmpName := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	if err := os.Chmod(tmpName, 0o600); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	return nil
+	return atomicfile.Write(path, data, 0o600)
 }
 
 // FetchConstraints fetches the pyproject.toml for envKey from baseURL and caches it in

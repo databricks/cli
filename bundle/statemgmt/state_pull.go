@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -202,8 +203,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 			return ctx, winner
 		}
 
-		// TODO: write + rename
-		err = os.WriteFile(localStatePath, winner.Content, 0o600)
+		err = atomicfile.Write(localStatePath, winner.Content, 0o600)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return ctx, winner
