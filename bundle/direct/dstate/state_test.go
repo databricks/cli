@@ -2,6 +2,7 @@ package dstate
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -182,36 +183,29 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	mustFinalize(t, &recovered)
 }
 
-// TestEmptyFeatureStateAcceptedWithoutFlippingVersion pins the special case that a
-// featureStateVersion state with no features is accepted as-is — the on-disk version
-// is left at featureStateVersion, not flipped down to currentStateVersion — and that
-// a featureStateVersion state recording any feature is refused. This is scaffolding
-// for the deferred version bump, special-cased to featureStateVersion only (see the
-// featureStateVersion doc comment).
-//
-// When the baseline is actually bumped to featureStateVersion, this special case must
-// go away. This test is the forcing function: it fails once featureStateVersion is
-// removed, making the author decide what the post-bump behavior should be.
-func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
-	// The special case applies to featureStateVersion (3) only.
-	require.Equal(t, 2, currentStateVersion, "when currentStateVersion is bumped, remove featureStateVersion and this special case")
-	require.Equal(t, 3, featureStateVersion)
-
-	empty := &Database{Header: Header{StateVersion: featureStateVersion}}
-	require.NoError(t, migrateState(empty))
-	assert.Equal(t, featureStateVersion, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
-
-	// v3 that records a feature is refused: this CLI does not understand features.
-	withFeature := &Database{Header: Header{
-		StateVersion: featureStateVersion,
-		Features:     map[string]struct{}{"future_feature": {}},
-	}}
-	err := migrateState(withFeature)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "requires features this CLI does not support")
-	assert.Contains(t, err.Error(), "future_feature")
-	assert.Contains(t, err.Error(), "upgrade to the latest CLI version")
-	assert.Contains(t, err.Error(), featuresDocURL)
+func TestMigrateState(t *testing.T) {
+	for _, version := range []int{0, 1, 2, 3} {
+		for _, feature := range []string{"", FeatureDeploymentHistory, "future_feature"} {
+			t.Run(fmt.Sprintf("version=%d/feature=%s", version, feature), func(t *testing.T) {
+				db := &Database{Header: Header{StateVersion: version}}
+				if feature != "" {
+					db.Features = map[string]struct{}{feature: {}}
+				}
+				err := migrateState(db)
+				if feature == "future_feature" {
+					require.ErrorContains(t, err, "requires features this CLI does not support: future_feature")
+					assert.Contains(t, err.Error(), featuresDocURL)
+					assert.Equal(t, version, db.StateVersion)
+					return
+				}
+				require.NoError(t, err)
+				assert.Equal(t, 3, db.StateVersion)
+				if feature != "" {
+					assert.Contains(t, db.Features, feature)
+				}
+			})
+		}
+	}
 }
 
 func TestDeleteState(t *testing.T) {
