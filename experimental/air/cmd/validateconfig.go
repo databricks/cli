@@ -80,9 +80,6 @@ func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
 	putOpt(task, "mlflow_run", cfg.MLflowRunName)
 	putOpt(task, "mlflow_experiment_directory", cfg.MLflowExperimentDirectory)
 	putOpt(task, "mlflow_artifact_location", cfg.MLflowArtifactLocation)
-	if dockerImageURL := cfg.dockerImageURL(); dockerImageURL != "" {
-		task["docker_image_url"] = dockerImageURL
-	}
 
 	req := map[string]any{"task": task}
 	if runOptions := validateConfigRunOptions(cfg); len(runOptions) > 0 {

@@ -3,3 +3,20 @@
 {
   "job_id": [NUMID]
 }
+
+>>> print_requests.py //jobs
+{
+  "headers": {
+    "Authorization": [
+      "Bearer [DATABRICKS_TOKEN]"
+    ],
+    "User-Agent": [
+      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/jobs_create cmd-exec-id/[UUID] interactive/none auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "name": "abc"
+  }
+}

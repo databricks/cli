@@ -189,7 +189,7 @@ func ExtractChanges(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				if changeDesc.Action == deployplan.Skip {
+				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonRemoteAddition {
 					continue
 				}
 

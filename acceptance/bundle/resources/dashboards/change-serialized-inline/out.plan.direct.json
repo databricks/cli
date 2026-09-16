@@ -61,7 +61,7 @@
           "action": "update",
           "old": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\"}]}",
           "new": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"page1\"}]}",
-          "remote": "{\"pages\":[{\"displayName\":\"Page 1\",\"name\":\"page1\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
+          "remote": "sha256:[HASH]"
         },
         "update_time": {
           "action": "skip",

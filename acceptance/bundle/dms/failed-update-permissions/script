@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Deploy the job and its permissions"
 trace $CLI bundle deploy
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "The plan records the deployment_history feature and the job"
 dms_plan

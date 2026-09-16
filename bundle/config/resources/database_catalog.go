@@ -47,10 +47,6 @@ func (d *DatabaseCatalog) GetName() string {
 	return d.Name
 }
 
-func (d *DatabaseCatalog) GetURL() string {
-	return d.URL
-}
-
 func (d *DatabaseCatalog) InitializeURL(baseURL url.URL) {
 	if d.Name == "" {
 		return

@@ -29,6 +29,36 @@ type JobRun struct {
 	ResolvedJobID int64 `json:"resolved_job_id,omitempty" bundle:"internal"`
 }
 
+// JobRunLifecycle extends Lifecycle with run-fire triggers.
+type JobRunLifecycle struct {
+	Lifecycle
+
+	// Triggers that cause the run to re-fire (in addition to config changes).
+	Triggers []JobRunTrigger `json:"triggers,omitempty"`
+
+	// Resolved fingerprint for the planner; not user config.
+	TriggersState *JobRunTriggersState `json:"triggers_state,omitempty" bundle:"internal"`
+}
+
+// JobRunTrigger is one lifecycle.triggers entry.
+type JobRunTrigger struct {
+	OnBundleDeploy *bool   `json:"on_bundle_deploy,omitempty"`
+	OnFileChange   *string `json:"on_file_change,omitempty"` // path or glob relative to the defining YAML file; must resolve under the sync root
+}
+
+// JobRunTriggersState is the resolved fingerprint of lifecycle.triggers.
+type JobRunTriggersState struct {
+	OnBundleDeploy string            `json:"on_bundle_deploy,omitempty"`
+	OnFileChange   map[string]string `json:"on_file_change,omitempty"`
+}
+
+// IsEmpty reports whether no trigger is armed. An empty state is left off the
+// job run entirely, so this has to cover every field above: a new fingerprint
+// added without extending it would be dropped instead of persisted.
+func (s JobRunTriggersState) IsEmpty() bool {
+	return s.OnBundleDeploy == "" && len(s.OnFileChange) == 0
+}
+
 // HasOnBundleDeploy reports whether any trigger re-fires on every deploy.
 func (r *JobRun) HasOnBundleDeploy() bool {
 	if r.Lifecycle == nil {
@@ -36,6 +66,19 @@ func (r *JobRun) HasOnBundleDeploy() bool {
 	}
 	for _, t := range r.Lifecycle.Triggers {
 		if t.OnBundleDeploy != nil && *t.OnBundleDeploy {
+			return true
+		}
+	}
+	return false
+}
+
+// HasOnFileChange reports whether any trigger re-fires when matched files change.
+func (r *JobRun) HasOnFileChange() bool {
+	if r.Lifecycle == nil {
+		return false
+	}
+	for _, t := range r.Lifecycle.Triggers {
+		if t.OnFileChange != nil {
 			return true
 		}
 	}
@@ -82,10 +125,6 @@ func (r *JobRun) ResourceDescription() ResourceDescription {
 // GetName returns the in-product name, which is empty: a run has no name.
 func (r *JobRun) GetName() string {
 	return ""
-}
-
-func (r *JobRun) GetURL() string {
-	return r.URL
 }
 
 // InitializeURL sets the run's workspace URL. The job id comes from RunNow.JobId

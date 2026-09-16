@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-once-[UNIQUE_NAME]/default/files...
 Created schemas.foo
-Files: 6 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === The plan records the deployment_history feature and the schema
@@ -34,7 +34,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === The raw recorded state after deploy
 >>> print_state.py --no-dms
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "features": {
@@ -53,6 +53,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-upload-fails-o
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   recreate resources.schemas.foo
+Recreated schemas.foo
 Error: recording operation for resources.schemas.foo: Fault injected by test. (500 INJECTED)
 
 Endpoint: PATCH [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions/2/operations/schemas.foo?update_mask=state%2Cerror_message%2Cstatus
@@ -60,7 +61,7 @@ HTTP Status: 500 Internal Server Error
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 
 === The service lists the schema with the failure
 >>> MSYS_NO_PATHCONV=1 [CLI] bundle-deployments list-resources deployments/[NUMID] -o json
@@ -75,7 +76,7 @@ Files: 4 uploaded, 0 deleted
 === The raw recorded state after the failure
 >>> print_state.py --no-dms
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "features": {

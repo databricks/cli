@@ -22,6 +22,7 @@ type proxyServer struct {
 	ctx                 context.Context
 	connections         *ConnectionsManager
 	createServerCommand createServerCommandFunc
+	resumeGrace         time.Duration
 }
 
 func NewProxyServer(ctx context.Context, connections *ConnectionsManager, createServerCommand createServerCommandFunc) *proxyServer {
@@ -29,6 +30,7 @@ func NewProxyServer(ctx context.Context, connections *ConnectionsManager, create
 		ctx:                 ctx,
 		connections:         connections,
 		createServerCommand: createServerCommand,
+		resumeGrace:         proxyResumeGrace,
 	}
 }
 
@@ -70,6 +72,9 @@ func parseDialRequest(r *http.Request) (DialRequest, error) {
 		Reattach: query.Get("reattach") == "1",
 	}
 	if raw := query.Get("delivered"); raw != "" {
+		if query.Get(ResumeVersionParameter) != strconv.Itoa(ResumeProtocolVersion) {
+			return DialRequest{}, fmt.Errorf("session resume requires %s=%d", ResumeVersionParameter, ResumeProtocolVersion)
+		}
 		delivered, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil || delivered < 0 {
 			return DialRequest{}, fmt.Errorf("invalid 'delivered' query parameter: %q", raw)
@@ -79,6 +84,9 @@ func parseDialRequest(r *http.Request) (DialRequest, error) {
 	}
 	if req.Reattach && !req.ResumeCapable {
 		return DialRequest{}, errors.New("'reattach' requires the 'delivered' query parameter")
+	}
+	if query.Has(ResumeVersionParameter) && !req.ResumeCapable {
+		return DialRequest{}, errors.New("'resume_version' requires the 'delivered' query parameter")
 	}
 	return req, nil
 }
@@ -114,6 +122,7 @@ func (server *proxyServer) handleNewConnection(ctx context.Context, w http.Respo
 	var conn *proxyConnection
 	if req.ResumeCapable {
 		conn = newResumableProxyConnection(nil)
+		conn.resume.grace = server.resumeGrace
 	} else {
 		conn = newProxyConnection(nil)
 	}
@@ -166,7 +175,8 @@ func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCom
 
 	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		defer closeProxyConnection(ctx, proxy)
+		// Let the sending loop drain stdout and receive its final acknowledgment
+		// before closing the websocket, even if the process has already exited.
 		// Waiting on the underlying Process, not the command itself.
 		// Command.Wait needs to be called to release all resources,
 		// but it's only safe to do so after we've finished reading from stdout,

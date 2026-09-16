@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-failed-recreate-[UNIQUE_NAME]/default/files...
 Created schemas.foo
-Files: 6 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //api/2.0/bundle
@@ -87,7 +87,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === The raw state after successful deploy
 >>> print_state.py --no-dms
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "features": {
@@ -113,7 +113,7 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Fault injected by test.
 
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 
 >>> print_requests.py --dms //api/2.0/bundle
 {
@@ -173,7 +173,7 @@ Files: 4 uploaded, 0 deleted
 === The raw state after failed recreate shows no resource
 >>> print_state.py --no-dms
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "features": {

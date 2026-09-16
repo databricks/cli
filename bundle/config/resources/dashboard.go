@@ -128,7 +128,3 @@ func (r *Dashboard) InitializeURL(baseURL url.URL) {
 func (r *Dashboard) GetName() string {
 	return r.DisplayName
 }
-
-func (r *Dashboard) GetURL() string {
-	return r.URL
-}

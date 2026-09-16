@@ -226,6 +226,16 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
+			if !adapter.HasDoDelete() {
+				// Deleting this resource has no backend effect, so applying the
+				// Delete only drops the state entry. The remote read below exists
+				// solely to detect an already-deleted/gone resource and skip the
+				// delete call — pointless when there is no delete call — so skip it
+				// and mark the entry state-only.
+				entry.StateOnly = true
+				return true
+			}
+
 			remoteState, err := retryOnTransient(ctx, func() (any, error) {
 				return adapter.DoRead(ctx, id)
 			})
@@ -273,6 +283,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
+		// Compact the saved state so hashed_fields fields are hashes
+		compactedSavedState, err := dresources.CompactState(adapter.ResourceConfig(), savedState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting saved state: %w", errorPrefix, err))
+			return false
+		}
+
 		// Note, currently we're diffing static structs, not dynamic value.
 		// This means for fields that contain references like ${resources.group.foo.id} we do one of the following:
 		// for strings: comparing unresolved string like "${resoures.group.foo.id}" with actual object id. As long as IDs do not have ${...} format we're good.
@@ -284,7 +301,14 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
-		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
+		// Compact a copy for comparison only; sv.Value keeps the full contents, which
+		// the deploy sends to the API.
+		localState, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
+			return false
+		}
+		localDiff, err := structdiff.GetStructDiff(compactedSavedState, localState, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -317,20 +341,28 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
+			// Compact the remapped remote on the same fields, so a hashed_fields field
+			// is a hash on all three sides of the diff (saved, local, remote)
+			remoteStateComparable, err = dresources.CompactState(adapter.ResourceConfig(), remoteStateComparable)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: compacting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				return false
+			}
+
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false
 			}
 		}
 
-		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteStateComparable)
+		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, compactedSavedState, remoteStateComparable)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
 		}
 
-		err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+		err = addPerFieldActions(ctx, adapter, entry.Changes, sv.Value, remoteState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
 			return false
@@ -431,7 +463,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 	return m, nil
 }
 
-func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
+func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, newState, remoteState any) error {
 	cfg := adapter.ResourceConfig()
 	generatedCfg := adapter.GeneratedResourceConfig()
 
@@ -482,10 +514,18 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if isFieldMissingInRemote(adapter, path) && structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonMissingInRemote
-		} else if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+			// remote_addition is the broadest skip (any config-absent remote field inside a gated
+			// object), so it runs after every more specific skip classifier above. It MUST stay
+			// above recreate: a policy-supplied field must not trigger a delete+create. And after
+			// backend_default (both share the Old==nil,New==nil,Remote!=nil shape) so known defaults
+			// keep their own reason for config-remote-sync (#6631). See shouldSkipRemoteAddition.
+		} else if reason, ok := shouldSkipRemoteAddition(cfg, path, ch, newState); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := findMatchingRuleBidirectional(path, cfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
-		} else if reason, ok := findMatchingRule(path, generatedCfg.RecreateOnChanges); ok {
+		} else if reason, ok := findMatchingRuleBidirectional(path, generatedCfg.RecreateOnChanges); ok {
 			ch.Action = deployplan.Recreate
 			ch.Reason = reason
 		} else {
@@ -557,6 +597,32 @@ func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (
 	return "", false
 }
 
+// findMatchingRuleBidirectional matches rules in both directions: the usual
+// descendant match, plus a rule on foo.bar matching a change recorded at foo,
+// because a whole block added or removed is one block-level change and the field
+// the rule names is part of it. Callers must only use this for escalating actions
+// (currently recreate): a whole block that merely contains a leaf named by a
+// suppressing rule (ignore_remote/ignore_local, backend_default, normalize) is
+// still a real change, so those keep the descendant-only findMatchingRule.
+func findMatchingRuleBidirectional(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
+	for _, r := range rules {
+		if matchesFieldRuleBidirectional(path, r.Field) {
+			return r.Reason, true
+		}
+	}
+	return "", false
+}
+
+func matchesFieldRuleBidirectional(path *structpath.PathNode, pattern *structpath.PatternNode) bool {
+	if path.HasPatternPrefix(pattern) {
+		return true
+	}
+	if path.Len() < pattern.Len() {
+		return path.HasPatternPrefix(pattern.Prefix(path.Len()))
+	}
+	return false
+}
+
 func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
 		return "", false
@@ -616,6 +682,60 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	}
 	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
 		return reason, true
+	}
+	return "", false
+}
+
+// shouldSkipRemoteAddition skips a field the backend added to an object it co-owns.
+//
+// It fires only on an addition: absent from both old state and new config, present in the
+// remote. A disagreement between config and remote (New != nil) is left alone and still
+// reports an update, and so does a field the user removed from config (Old != nil) — that
+// is a deletion the user asked for, not a backend addition.
+//
+// The rule is gated on a field within the same object (ignore_remote_additions.when_set).
+// For cluster specs that gate is policy_id: an attached cluster policy supplies values
+// server-side — "fixed" elements always, "defaultValue" elements when the request sets
+// apply_policy_default_values — so the remote spec is legitimately a superset of what the
+// bundle declares. See acceptance/bundle/resources/jobs/cluster_policy (fixed_addition, default_flag)
+// for the measured backend behavior.
+//
+// Suppressed values are never echoed back on write: an update sends the config spec as-is
+// and the backend re-supplies the policy values.
+//
+// Order in the ladder: this is the broadest skip (any config-absent remote field inside a
+// gated object), so it runs last among the skip classifiers — after backend_default,
+// normalized, and missing_in_remote (all mutually exclusive with it or more specific), and
+// before recreate (a policy-supplied field must not trigger a delete+create). The
+// after-backend_default part is load-bearing: the cluster rule is root-level so it also
+// matches known backend defaults; classifying those as backend_default first keeps
+// remote_addition to genuine, unrecognized additions. config-remote-sync relies on this — it
+// captures remote_addition entries but excludes backend defaults, so mislabeling a default as
+// remote_addition would sync it into config (#6631).
+func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc, newState any) (string, bool) {
+	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
+		return "", false
+	}
+	for _, rule := range cfg.IgnoreRemoteAdditions {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		// Resolve the gate in two steps: the concrete object the rule matched, then the gate
+		// path relative to it. The wildcards in Field are filled in from the change path, so
+		// each object is gated on its own value.
+		object, err := structaccess.Get(newState, path.Prefix(rule.Field.Len()))
+		if err != nil {
+			// The gated object is absent from the config entirely (e.g. the remote grew a
+			// whole new_cluster the bundle does not declare), so there is no policy to gate
+			// on and the addition is real drift. Rule typos cannot reach here: the patterns
+			// are validated against the state type by TestResourcesYMLRemoteAdditionGates.
+			continue
+		}
+		value, err := structaccess.Get(object, rule.WhenSet)
+		if err != nil || allEmpty(value) {
+			continue
+		}
+		return deployplan.ReasonRemoteAddition, true
 	}
 	return "", false
 }

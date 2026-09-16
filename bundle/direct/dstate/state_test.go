@@ -182,28 +182,14 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	mustFinalize(t, &recovered)
 }
 
-// TestEmptyFeatureStateAcceptedWithoutFlippingVersion pins the special case that a
-// featureStateVersion state with no features is accepted as-is — the on-disk version
-// is left at featureStateVersion, not flipped down to currentStateVersion — and that
-// a featureStateVersion state recording any feature is refused. This is scaffolding
-// for the deferred version bump, special-cased to featureStateVersion only (see the
-// featureStateVersion doc comment).
-//
-// When the baseline is actually bumped to featureStateVersion, this special case must
-// go away. This test is the forcing function: it fails once featureStateVersion is
-// removed, making the author decide what the post-bump behavior should be.
 func TestEmptyFeatureStateAcceptedWithoutFlippingVersion(t *testing.T) {
-	// The special case applies to featureStateVersion (3) only.
-	require.Equal(t, 2, currentStateVersion, "when currentStateVersion is bumped, remove featureStateVersion and this special case")
-	require.Equal(t, 3, featureStateVersion)
-
-	empty := &Database{Header: Header{StateVersion: featureStateVersion}}
+	empty := &Database{Header: Header{StateVersion: 3}}
 	require.NoError(t, migrateState(empty))
-	assert.Equal(t, featureStateVersion, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
+	assert.Equal(t, 3, empty.StateVersion, "v3 + no features keeps its on-disk version, not flipped to v2")
 
-	// v3 that records a feature is refused: this CLI does not understand features.
+	// Version 3 states with unknown features must still be refused.
 	withFeature := &Database{Header: Header{
-		StateVersion: featureStateVersion,
+		StateVersion: 3,
 		Features:     map[string]struct{}{"future_feature": {}},
 	}}
 	err := migrateState(withFeature)

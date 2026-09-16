@@ -9,7 +9,7 @@ HTTP Status: 500 Internal Server Error
 API error_code: INTERNAL_ERROR
 API message: Internal error
 
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 
 >>> [CLI] bundle plan -o json
 {
@@ -51,7 +51,7 @@ HTTP Status: 500 Internal Server Error
 API error_code: INTERNAL_ERROR
 API message: Internal error
 
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 
 >>> print_requests.py --dms //api/2.0/bundle --get --oneline
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[NUMID]/resources"}

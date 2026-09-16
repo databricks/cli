@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm out.requests.txt
+    rm "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -28,8 +28,8 @@ update_file.py databricks.yml "      num_workers: 2" "      autoscale:
 $CLI bundle plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
 $CLI bundle plan -o json | nostamp >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -q
-trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk)' out.requests.txt
-rm out.requests.txt
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk)' "$OUT_REQUESTS"
+rm "$OUT_REQUESTS"
 
 title "Cluster should have autoscale\n"
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
@@ -40,8 +40,8 @@ update_file.py databricks.yml "max_workers: 4" "max_workers: 5"
 $CLI bundle plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
 $CLI bundle plan -o json | nostamp >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -q
-trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk)' out.requests.txt
-rm out.requests.txt
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/edit"))) | del(.body.aws_attributes, .body.driver_node_type_id, .body.data_security_mode, .body.enable_elastic_disk)' "$OUT_REQUESTS"
+rm "$OUT_REQUESTS"
 
 title "Cluster should have new autoscale\n"
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
@@ -55,8 +55,8 @@ update_file.py databricks.yml "max_workers: 5" "max_workers: 6"
 $CLI bundle plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
 $CLI bundle plan -o json | nostamp >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -q
-trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' out.requests.txt
-rm out.requests.txt
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' "$OUT_REQUESTS"
+rm "$OUT_REQUESTS"
 
 title "Cluster should have new autoscale\n"
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'
@@ -68,8 +68,8 @@ update_file.py databricks.yml "      autoscale:
 $CLI bundle plan >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.txt
 $CLI bundle plan -o json | nostamp >> out.plan_.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -q
-trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' out.requests.txt
-rm out.requests.txt
+trace jq 'select(.method == "POST" and (.path | contains("/clusters/resize")))' "$OUT_REQUESTS"
+rm "$OUT_REQUESTS"
 
 title "Cluster should have num_workers\n"
 $CLI clusters get "${CLUSTER_ID}" | jq '{cluster_name,num_workers,autoscale}'

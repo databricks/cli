@@ -4,7 +4,10 @@
 kill_after.py "POST /api/2.2/jobs/create" 1 1
 
 echo "=== First deploy (crashes after job_a create, before job_b) ==="
-trace errcode $CLI bundle deploy
+# -q: the per-resource "Created" line races the kill signal, so whether it flushes
+# before the process dies is not stable (notably on Windows). This test asserts WAL
+# content, not deploy stdout.
+trace errcode $CLI bundle deploy -q
 
 trace assert_exists.py .databricks/bundle/default/resources.json.wal
 trace assert_not_exists.py .databricks/bundle/default/resources.json

@@ -1,6 +1,6 @@
 errcode trace $CLI bundle deploy
 
-cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
+cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
 
 # The deploy fails before deployCore runs (the deployment-lock write is stubbed to
 # 500), yet resources_metadata still reports state_engine: b.Metrics.StateEngine is
@@ -9,5 +9,5 @@ cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .
 # engine="unknown". state_engine is engine-specific, so capture it per-engine.
 cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 rm telemetry.json

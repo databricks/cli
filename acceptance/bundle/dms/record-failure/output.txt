@@ -9,7 +9,7 @@ HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Node type nonexistent-node-type is not supported. Supported node types: [NODE_TYPES]
 
-Files: 6 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 
 >>> [CLI] bundle plan -o json
 {
@@ -87,7 +87,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> print_state.py --no-dms
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "features": {

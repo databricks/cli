@@ -5,7 +5,7 @@
   "serial": 1,
   "plan": {
     "resources.pipelines.my": {
-      "action": "update",
+      "action": "recreate",
       "new_state": {
         "value": {
           "channel": "CURRENT",
@@ -57,7 +57,8 @@
       },
       "changes": {
         "ingestion_definition": {
-          "action": "update",
+          "action": "recreate",
+          "reason": "immutable",
           "new": {
             "connection_name": "my_connection",
             "objects": [

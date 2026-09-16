@@ -109,4 +109,13 @@ const (
 	DMSUndeclaredOtherUser        = "dms_undeclared_other_user"
 	DMSUndeclaredServicePrincipal = "dms_undeclared_service_principal"
 	DMSUndeclaredGroup            = "dms_undeclared_group"
+
+	// Task-type usage is recorded generically at deploy as one "has_<task_type>" key
+	// per task type present in the bundle (e.g. has_notebook_task, has_ai_runtime_task);
+	// see collectTaskTypes in bundle/phases. The two keys below are extra
+	// ai_runtime_task-specific dimensions, emitted only when the bundle declares an
+	// ai_runtime_task, so a false value means "has an ai_runtime_task, but it is not
+	// scheduled / not multi-task". GPU type and count are intentionally not recorded here.
+	AiRuntimeTaskScheduled = "ai_runtime_task_scheduled"
+	AiRuntimeTaskMultitask = "ai_runtime_task_multitask"
 )

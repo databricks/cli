@@ -11,7 +11,7 @@ cleanup() {
     trace $CLI bundle destroy --auto-approve
     $CLI schemas delete "$SCHEMA_NAME" --force 2>/dev/null || true
     $CLI schemas delete "qm_test_${UNIQUE_NAME}_2" --force 2>/dev/null || true
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -29,7 +29,7 @@ trace errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 errcode $CLI bundle plan -o json &> .databricks/tmp.plan.json
 nostamp < .databricks/tmp.plan.json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py '^//api/2.0/bundle' '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace errcode $CLI bundle plan &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt

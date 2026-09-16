@@ -6,13 +6,13 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 title "Initial deployment"
 trace $CLI bundle deploy
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Change ttl and re-deploy"
 trace update_file.py databricks.yml "ttl: 604800s" "ttl: 259200s"
@@ -25,6 +25,6 @@ trace update_file.py databricks.yml "ttl: 604800s" "ttl: 259200s"
 # The update_mask each engine sends is what this test is about.
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_branches.dev_branch" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 trace print_requests.py --del-body project_id,branch_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json

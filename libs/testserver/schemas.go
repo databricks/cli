@@ -31,6 +31,8 @@ func (s *FakeWorkspace) SchemasCreate(req Request) Response {
 
 	// UC normalizes schema names to lowercase.
 	schema.Name = strings.ToLower(schema.Name)
+	// Strip trailing slash to mimic UC API normalization behavior (see volumes.go).
+	schema.StorageRoot = strings.TrimRight(schema.StorageRoot, "/")
 	schema.FullName = schema.CatalogName + "." + schema.Name
 	schema.ForceSendFields = []string{"BrowseOnly"}
 	schema.CatalogType = "MANAGED_CATALOG"

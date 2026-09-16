@@ -21,7 +21,7 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "3 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "3 unchanged"
@@ -38,7 +38,7 @@ trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
 title "Extra plan: should have no drift"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "3 unchanged"
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 title "Update databricks.yml, run plan & update"
 trace update_file.py databricks.yml Migration Migrated
@@ -51,4 +51,4 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t prod
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod --force-pull
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

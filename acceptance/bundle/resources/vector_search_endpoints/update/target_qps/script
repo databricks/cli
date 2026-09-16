@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -12,7 +12,7 @@ print_requests() {
 }
 
 title "Initial deployment"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 print_requests create
@@ -24,7 +24,7 @@ title "Update target_qps"
 trace update_file.py databricks.yml "target_qps: 1" "target_qps: 2"
 
 trace $CLI bundle plan
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 print_requests update

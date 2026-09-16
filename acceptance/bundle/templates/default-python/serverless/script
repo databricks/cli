@@ -10,7 +10,7 @@ trace $CLI bundle plan -t prod
 $CLI bundle plan -o json -t dev | nostamp > ../../out.plan_dev.$DATABRICKS_BUNDLE_ENGINE.json
 $CLI bundle plan -o json -t prod | nostamp > ../../out.plan_prod.$DATABRICKS_BUNDLE_ENGINE.json
 
-rm ../../out.requests.txt
+rm "$OUT_REQUESTS"
 trace $CLI bundle deploy -t dev
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.dev.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle plan -t dev  # check if if there is drift
@@ -26,4 +26,4 @@ mv .gitignore out.gitignore
 rm -fr .databricks dist
 
 cd ../../
-rm out.requests.txt
+rm "$OUT_REQUESTS"

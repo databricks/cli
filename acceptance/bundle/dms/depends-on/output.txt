@@ -20,7 +20,7 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-depends-on-[UNIQUE_NAME]/default/files...
 Created jobs.child
 Created jobs.parent
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py --dms //versions/1/operations
@@ -86,7 +86,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 === The raw recorded state the service holds for this deployment
 >>> print_state.py --no-dms
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "features": {

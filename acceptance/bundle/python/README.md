@@ -43,5 +43,23 @@ files:
    test that only passes with `-update` is nondeterministic (usually a `$VAR` or a
    volatile field left in); fix it before finishing.
 
+## Interface (`Any`) fields
+
+A field generated as `VariableOrOptional[Any]` comes from a Go `interface{}` (schema ref
+`#/$defs/interface`) — an untyped blob (e.g. a serialized JSON document) that a Go config
+mutator normalizes to a string at deploy time. From Python it accepts two forms — an inline
+`dict` and a serialized JSON `str` — and the two take different `_transform` code paths, so
+a fixture must exercise **both through `add_<singular>`**. Covering only one leaves the
+other path silently brittle, so add two Python instances:
+
+- one sets the field as a **serialized JSON string** (`my_<name>_2`), and
+- one sets it as an **inline dict** (`my_<name>_3`).
+
+The YAML instance (`my_<name>_1`) may use either form, but it exercises the YAML loader, not
+the Python `Any` path, so it does not substitute for either Python instance. The golden
+shows all of them converging: a dict is marshalled to a compact JSON string, a string passes
+through unchanged. See `cluster_policies-support/` for an example. Apply this to every
+resource with an interface field.
+
 Note: `bundle validate` normalizes the `python:` key to `experimental.python` in the
 output — that's expected.

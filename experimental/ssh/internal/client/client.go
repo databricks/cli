@@ -993,6 +993,11 @@ func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, server
 	return proxy.RunClientProxy(ctx, os.Stdin, os.Stdout, requestHandoverTick, opts.KeepaliveInterval, resumable, createConn)
 }
 
+// capabilitiesProbeTimeout caps the pre-connect capabilities probe. The endpoint returns a small,
+// fixed response, so a slow probe should not delay a connection that can still run without resume.
+// A var so tests can shorten it.
+var capabilitiesProbeTimeout = 10 * time.Second
+
 // serverSupportsResume reports whether the running SSH server speaks the resume protocol.
 func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClient, clusterID string, serverPort int, liteswap string) bool {
 	req, err := newDriverProxyRequest(ctx, client, clusterID, serverPort, "capabilities", liteswap)
@@ -1000,7 +1005,10 @@ func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClien
 		log.Debugf(ctx, "Failed to build the server capabilities request: %v", err)
 		return false
 	}
-	httpClient := &http.Client{Transport: client.Config.HTTPTransport}
+	// Bounded on its own: this probe runs before the tunnel is dialled, and resume is an
+	// optimisation, so a driver proxy that accepts the request and never answers must cost a
+	// bounded wait rather than the whole connect path.
+	httpClient := &http.Client{Transport: client.Config.HTTPTransport, Timeout: capabilitiesProbeTimeout}
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		log.Debugf(ctx, "Failed to query the server capabilities: %v", err)
@@ -1012,13 +1020,13 @@ func serverSupportsResume(ctx context.Context, client *databricks.WorkspaceClien
 		return false
 	}
 	var capabilities struct {
-		Resume bool `json:"resume"`
+		ResumeVersion int `json:"resume_version"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&capabilities); err != nil {
 		log.Debugf(ctx, "Failed to decode the server capabilities: %v", err)
 		return false
 	}
-	return capabilities.Resume
+	return capabilities.ResumeVersion == proxy.ResumeProtocolVersion
 }
 
 // accessModeUILabel maps a cluster's access mode to the name shown in the Databricks UI.

@@ -27,35 +27,12 @@ import (
 )
 
 const (
-	// currentStateVersion is the schema version written for deployments that record
-	// no feature flags, and the version legacy states are migrated up to on load.
-	currentStateVersion = 2
+	// currentStateVersion is the schema version written by this CLI and the version
+	// legacy states are migrated up to on load.
+	currentStateVersion = 3
 	initialBufferSize   = 64 * 1024
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
-
-	// featureStateVersion is the schema version a future CLI will write once it
-	// records deployment state "feature flags" (see Header.Features). This CLI does
-	// not write it and records no features; it exists now only so this CLI reads
-	// such states correctly (see migrateState):
-	//   - featureStateVersion with no features  -> accept and leave the version as-is
-	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
-	//
-	// A featureStateVersion state with no features is equivalent to
-	// currentStateVersion, but we deliberately do not flip the on-disk version down
-	// to currentStateVersion: a state written at featureStateVersion stays at
-	// featureStateVersion. This is forward-compat scaffolding so that a later release
-	// can start writing featureStateVersion + features without older CLIs (with this
-	// change) either mishandling a feature they lack or rejecting a featureless state
-	// outright. featureStateVersion is always 3.
-	featureStateVersion = 3
-
-	// supportedStateVersion is the highest schema version this CLI can read. It is
-	// normally equal to currentStateVersion — the version this CLI reads is the
-	// version it writes — and exceeds it only during a two-phase version bump like
-	// the current feature-flag scaffolding, where this CLI reads (but does not
-	// write) featureStateVersion. A state newer than this is rejected as too new.
-	supportedStateVersion = featureStateVersion
 )
 
 // FeatureDeploymentHistory marks a state whose resources are also recorded with the
@@ -553,12 +530,6 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
-	// TODO: We can remove and move this assertion to migrateState once we do the state
-	// version bump to 3 for this CLI.
-	if err := assertNoUnsupportedFeatures(db.Data.Features); err != nil {
-		return err
-	}
-
 	db.stateIDs = make(map[string]string)
 	for key, entry := range db.Data.State {
 		db.stateIDs[key] = entry.ID
@@ -667,7 +638,16 @@ To record this bundle's history, start it over as a new deployment:
 			StateVersion: currentStateVersion,
 			CLIVersion:   build.GetInfo().Version,
 		}
-		return appendJSONLine(db.walFile, walHead)
+		if err := appendJSONLine(db.walFile, walHead); err != nil {
+			// Remove the WAL created just above: O_EXCL means it is ours, and
+			// without a header it carries nothing to recover. Leaving it makes
+			// every later open fail, with recovery on the header parse and
+			// without it on the unexpected WAL file.
+			db.walFile.Close()
+			db.walFile = nil
+			os.Remove(walPath)
+			return fmt.Errorf("failed to write WAL header to %s: %w", walPath, err)
+		}
 	}
 
 	return nil

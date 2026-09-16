@@ -1,0 +1,51 @@
+
+=== Deploy records version 3 and the deployment_history feature, with resources held in DMS
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> jq {state_version, features, state} .databricks/bundle/default/resources.json
+{
+  "state_version": 3,
+  "features": {
+    "deployment_history": {}
+  },
+  "state": {}
+}
+
+=== Reopening version 3 reads resources from DMS and produces a no-op plan
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_requests.py --dms //resources --get --oneline
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[NUMID]/resources"}
+
+=== Disabling deployment history refuses plan, deploy, and destroy
+>>> musterr env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
+Error: unsetting experimental.deployment_history is not supported
+
+This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle
+
+
+>>> musterr env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle deploy
+Error: unsetting experimental.deployment_history is not supported
+
+This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle
+
+
+>>> musterr env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle destroy --auto-approve
+Error: unsetting experimental.deployment_history is not supported
+
+This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle
+
+
+>>> print_requests.py --dms //api/2.0/bundle --oneline
+
+=== Reenabling deployment history still reads the unchanged resources from DMS
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> print_requests.py --dms //resources --get --oneline
+{"method": "GET", "path": "/api/2.0/bundle/deployments/[NUMID]/resources"}

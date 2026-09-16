@@ -36,6 +36,9 @@ var SupportedResources = map[string]any{
 	"genie_spaces":                (*ResourceGenieSpace)(nil),
 	"secret_scopes":               (*ResourceSecretScope)(nil),
 	"model_serving_endpoints":     (*ResourceModelServingEndpoint)(nil),
+	"model_services":              (*ResourceModelService)(nil),
+	"mcp_services":                (*ResourceMcpService)(nil),
+	"model_provider_services":     (*ResourceModelProviderService)(nil),
 	"quality_monitors":            (*ResourceQualityMonitor)(nil),
 	"vector_search_endpoints":     (*ResourceVectorSearchEndpoint)(nil),
 	"vector_search_indexes":       (*ResourceVectorSearchIndex)(nil),
@@ -63,13 +66,16 @@ var SupportedResources = map[string]any{
 	"instance_pools.permissions":          (*ResourcePermissions)(nil),
 
 	// Grants
-	"catalogs.grants":              (*ResourceGrants)(nil),
-	"schemas.grants":               (*ResourceGrants)(nil),
-	"external_locations.grants":    (*ResourceGrants)(nil),
-	"volumes.grants":               (*ResourceGrants)(nil),
-	"registered_models.grants":     (*ResourceGrants)(nil),
-	"vector_search_indexes.grants": (*ResourceGrants)(nil),
-	"secrets.grants":               (*ResourceGrants)(nil),
+	"catalogs.grants":                (*ResourceGrants)(nil),
+	"schemas.grants":                 (*ResourceGrants)(nil),
+	"external_locations.grants":      (*ResourceGrants)(nil),
+	"volumes.grants":                 (*ResourceGrants)(nil),
+	"registered_models.grants":       (*ResourceGrants)(nil),
+	"vector_search_indexes.grants":   (*ResourceGrants)(nil),
+	"secrets.grants":                 (*ResourceGrants)(nil),
+	"model_services.grants":          (*ResourceGrants)(nil),
+	"mcp_services.grants":            (*ResourceGrants)(nil),
+	"model_provider_services.grants": (*ResourceGrants)(nil),
 
 	// Internal resources
 	"internal_immutable_snapshots": (*ResourceSnapshot)(nil),

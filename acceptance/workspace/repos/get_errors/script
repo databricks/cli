@@ -1,1 +1,3 @@
-musterr trace $CLI repos get /Repos/me@databricks.com/doesnotexist -o json
+MSYS_NO_PATHCONV=1 musterr trace $CLI repos get /Repos/me@databricks.com/doesnotexist -o json
+
+trace print_requests.py --get //repos //workspace/get-status

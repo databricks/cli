@@ -1,0 +1,61 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "plan": {
+    "resources.model_provider_services.my_model_provider_service": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "comment": "mycomment",
+          "config": {
+            "custom": {
+              "direct": {
+                "api_key": {
+                  "plaintext": "dummy-api-key"
+                },
+                "base_url": "https://api.example.com/v1"
+              }
+            },
+            "provider_type": "EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM",
+            "targets": [
+              {
+                "model": "gpt-4o",
+                "native_api_types": [
+                  "openai/v1/chat/completions"
+                ]
+              }
+            ]
+          },
+          "model_provider_service_id": "myservice",
+          "parent": "schemas/main.myschema"
+        }
+      }
+    },
+    "resources.model_provider_services.my_model_provider_service.grants": {
+      "depends_on": [
+        {
+          "node": "resources.model_provider_services.my_model_provider_service",
+          "label": "${resources.model_provider_services.my_model_provider_service.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "securable_type": "model_provider_service",
+          "full_name": "",
+          "__embed__": [
+            {
+              "principal": "deco-test-user@databricks.com",
+              "privileges": [
+                "APPLY_TAG"
+              ]
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.model_provider_services.my_model_provider_service.id}"
+        }
+      }
+    }
+  }
+}
