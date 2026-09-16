@@ -1,3 +1,4 @@
-state version 999 is newer than supported version 3; upgrade the CLI
 
-Exit code: 1
+>>> musterr [CLI] bundle plan
+Error: migrating state [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: state version 999 is newer than supported version 3; upgrade the CLI
+

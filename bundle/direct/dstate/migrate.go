@@ -13,15 +13,15 @@ import (
 // migrateState runs all necessary migrations on the database.
 // It is called after loading state from disk.
 func migrateState(db *Database) error {
+	if db.StateVersion > currentStateVersion {
+		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, currentStateVersion)
+	}
 	if err := assertNoUnsupportedFeatures(db.Features); err != nil {
 		return err
 	}
 
 	if db.StateVersion == currentStateVersion {
 		return nil
-	}
-	if db.StateVersion > currentStateVersion {
-		return fmt.Errorf("state version %d is newer than supported version %d; upgrade the CLI", db.StateVersion, currentStateVersion)
 	}
 
 	for version := db.StateVersion; version < currentStateVersion; version++ {
