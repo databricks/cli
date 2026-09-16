@@ -3,5 +3,14 @@ bundle:
 
 resources:
   jobs:
-    my:
-      name: test-job
+    # Chained job_01 <- job_02 <- job_03 via id references, so destroy deletes them in a
+    # fixed order (children first: job_03, job_02, job_01). Independent jobs would delete
+    # in parallel, making both the faulted delete and the error output vary per run.
+    job_01:
+      name: job-01
+    job_02:
+      name: job-02
+      description: needs ${resources.jobs.job_01.id}
+    job_03:
+      name: job-03
+      description: needs ${resources.jobs.job_02.id}
