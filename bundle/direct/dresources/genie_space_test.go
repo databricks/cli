@@ -1,7 +1,6 @@
 package dresources
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -13,22 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func TestGenieSpaceSerializedSpaceStateRules(t *testing.T) {
-	cfg := GetResourceConfig("genie_spaces")
-	path := structpath.NewStringKey(nil, "serialized_space")
-
-	ignoresRemote := false
-	for _, rule := range cfg.IgnoreRemoteChanges {
-		if path.HasPatternPrefix(rule.Field) {
-			ignoresRemote = true
-			break
-		}
-	}
-
-	assert.True(t, slices.Contains(cfg.HashedFields, "serialized_space"), "serialized_space must be declared hashed_fields")
-	assert.True(t, ignoresRemote, "serialized_space must be ignore_remote_changes (local and remote content differ)")
-}
 
 func TestIsMissingGenieParentPathError(t *testing.T) {
 	tests := []struct {

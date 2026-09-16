@@ -1,8 +1,6 @@
 bundle:
   name: change-serialized-space-$UNIQUE_NAME
 
-# out.* are test-capture files (recorded requests, state snapshots) written into the bundle
-# root; keep them out of the deploy so they don't perturb the "Files: N uploaded" count.
 sync:
   exclude:
     - "out.*"

@@ -1,6 +1,4 @@
-# Runs locally and on a real workspace (Cloud = true is inherited from the parent).
-# RecordRequests captures the create/update payloads for the request assertion below;
-# it works against both the local testserver and a real workspace.
+# Cloud = true is inherited from the parent
 RecordRequests = true
 
 Ignore = [
