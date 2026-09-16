@@ -49,13 +49,6 @@ func (s *StateDesc) hasDeploymentHistory() bool {
 	return ok
 }
 
-// HasLocalDeploymentHistory reports whether an older CLI cached a DMS marker locally.
-func HasLocalDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
-	_, localPath := b.StateFilenameDirect(ctx)
-	state := localRead(ctx, localPath, engine.EngineDirect)
-	return state != nil && state.hasDeploymentHistory()
-}
-
 func (s *StateDesc) String() string {
 	source := "remote"
 	if s.IsLocal {

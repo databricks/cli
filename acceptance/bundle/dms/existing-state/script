@@ -55,7 +55,7 @@ legacy_marker=$(DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true print_state.py --no-dm
 printf '%s' "$legacy_marker" > .databricks/bundle/default/resources.json
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve
 test "$(cat .databricks/bundle/default/resources.json)" = "$legacy_marker"
-trace $CLI bundle debug states
+trace $CLI bundle plan
 trace find.py 'resources[.]json([.]wal)?$' --expect 0
 printf '%s' "$legacy_marker" > .databricks/bundle/default/resources.json
 trace $CLI bundle deploy

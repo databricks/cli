@@ -1,1 +1,4 @@
 Ignore = [".databricks"]
+
+# Local-only debug state inspection does not support deployment history.
+EnvMatrix.DMS = [""]

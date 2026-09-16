@@ -124,8 +124,10 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> [CLI] bundle debug states
+>>> [CLI] bundle plan
+create jobs.one
 
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> find.py resources[.]json([.]wal)?$ --expect 0
 
