@@ -165,7 +165,7 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 		return err
 	}
 	result, err := b.service.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
-		Name:       VersionName(b.deploymentID, b.versionNum) + "/operations/" + strings.TrimPrefix(key, StatePrefix),
+		Name:       OperationName(b.deploymentID, b.versionNum, key),
 		Operation:  operation,
 		UpdateMask: fieldmask.FieldMask{Paths: strings.Split(update.Fields.Mask(), ",")},
 	})

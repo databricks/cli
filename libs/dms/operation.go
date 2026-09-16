@@ -10,9 +10,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
-// statePrefix is what a bundle state key carries and a DMS resource key does not: state calls a
-// job "resources.jobs.foo", DMS calls it "jobs.foo". Exported names take the state form; the
-// prefix comes off where a request is built, and back on where a resource is read.
+// StatePrefix is the "resources." that bundle keys carry but DMS keys don't
+// ("resources.jobs.foo" vs "jobs.foo"). Strip it when sending, add it back when reading.
 const StatePrefix = "resources."
 
 // maxStateSize is the largest serialized state DMS accepts per operation. More than this
@@ -147,12 +146,8 @@ func (u OperationUpdate) Merge(newer OperationUpdate) OperationUpdate {
 	return merged
 }
 
-// newOperationUpdate builds the operation carrying exactly the fields update.Fields masks, plus
-// the sequence_id precondition. The service requires a masked field to be present and reads an
-// empty value as a write (error_message="" clears it), so masked fields that can be empty are
-// forced onto the wire; sequence_id is always sent and a freshly staged operation sits at 0,
-// which omitempty would drop. State is the exception: an absent value is how the service is told
-// the resource is gone, so a nil state is left off (never forced) while still named in the mask.
+// newOperationUpdate builds the operation from the masked fields, plus the sequence_id check.
+// Force-send them (empty = clear, and 0 is a real sequence_id); never force state, since a missing state means the resource is gone.
 func newOperationUpdate(update OperationUpdate, sequenceID string) (bundledeployments.Operation, error) {
 	sequence, err := strconv.ParseInt(sequenceID, 10, 64)
 	if err != nil {

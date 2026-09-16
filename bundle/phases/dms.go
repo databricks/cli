@@ -70,7 +70,7 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 // no deployment behind; a first deploy's new id is then stamped into the plan (StampDeploymentID).
 func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) {
 	db := &b.DeploymentBundle
-	dmsService := db.StateDB.DmsService()
+	dmsService := b.WorkspaceClient(ctx).BundleDeployments
 	metadata := deploymentMetadata(b)
 	deploymentID := db.StateDB.DeploymentID
 	if deploymentID == "" {
@@ -81,7 +81,7 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
 			return
 		}
-		// The server assigns the id as the workspace node it creates under the parent path.
+		// The id is the workspace node the server makes under the parent path.
 		deploymentID, err = dms.DeploymentIDFromName(created.Name)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
@@ -111,10 +111,10 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 // A no-op when the bundle does not record deployment history.
 func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.VersionType, staged []bundledeployments.StagedOperation) error {
 	db := &b.DeploymentBundle
-	dmsService := db.StateDB.DmsService()
-	if dmsService == nil {
+	if !db.StateDB.IsDeploymentMetadataService() {
 		return nil
 	}
+	dmsService := b.WorkspaceClient(ctx).BundleDeployments
 	deploymentID := db.StateDB.DeploymentID
 	// This run's version follows the one the state is anchored to, which is empty for the first.
 	// InitializeOperationBuffer moves the anchor below, so callers afterwards read the created
