@@ -1,4 +1,3 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: exit status 1
 
 Error: Invalid index
@@ -12,6 +11,5 @@ The given key does not identify an element in this collection value: the
 collection has no elements.
 
 
-Files: 6 uploaded, 0 deleted
 
 Exit code: 1

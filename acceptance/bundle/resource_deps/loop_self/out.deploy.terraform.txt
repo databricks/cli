@@ -1,4 +1,3 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: exit status 1
 
 Error: Self-referential block
@@ -16,4 +15,3 @@ Error: Self-referential block
 Configuration for databricks_job.foo may not refer to itself.
 
 
-Files: 5 uploaded, 0 deleted

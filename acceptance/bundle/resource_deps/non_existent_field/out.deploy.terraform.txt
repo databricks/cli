@@ -1,4 +1,3 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: exit status 1
 
 Error: Unsupported attribute
@@ -10,4 +9,3 @@ This object has no argument, nested block, or exported attribute named
 "non_existent".
 
 
-Files: 5 uploaded, 0 deleted

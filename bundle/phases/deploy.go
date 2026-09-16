@@ -283,9 +283,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// IsDirect first: the state must be open to read its features, and only the direct engine opens it.
 	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
-		if firstDeploy {
+		if firstDeploy && !b.Config.Bundle.Deployment.Lock.IsEnabled() {
 			// StatePush used to create this parent before registering the deployment.
-			// Create it explicitly, including when workspace locking is disabled.
+			// With locking enabled, lock acquisition has already created it.
 			if err := b.WorkspaceClient(ctx).Workspace.MkdirsByPath(ctx, b.Config.Workspace.StatePath); err != nil {
 				logdiag.LogError(ctx, err)
 				return
