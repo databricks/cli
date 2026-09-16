@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -17,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
@@ -260,13 +260,7 @@ func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engin
 		return fmt.Errorf("reading snapshot content: %w", err)
 	}
 
-	localStateDir := filepath.Dir(localPathSnapshot)
-	err = os.MkdirAll(localStateDir, 0o700)
-	if err != nil {
-		return fmt.Errorf("creating snapshot directory: %w", err)
-	}
-
-	err = os.WriteFile(localPathSnapshot, content, 0o600)
+	err = atomicfile.Write(localPathSnapshot, content, 0o600, atomicfile.MkDir(0o700))
 	if err != nil {
 		return fmt.Errorf("writing snapshot file: %w", err)
 	}

@@ -6,10 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/telemetry"
 	"github.com/databricks/cli/libs/telemetry/protos"
 )
@@ -91,12 +90,7 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 // SaveFiles writes all file changes to disk.
 func SaveFiles(ctx context.Context, b *bundle.Bundle, files []FileChange) error {
 	for _, file := range files {
-		err := os.MkdirAll(filepath.Dir(file.Path), 0o755)
-		if err != nil {
-			return err
-		}
-
-		err = os.WriteFile(file.Path, []byte(file.ModifiedContent), 0o644)
+		err := atomicfile.Write(file.Path, []byte(file.ModifiedContent), 0o644, atomicfile.MkDir(0o755))
 		if err != nil {
 			return err
 		}
