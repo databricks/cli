@@ -1,3 +1,10 @@
 Timeout = '30s'
 Cloud = true
 Ignore = ["bar.py", "foo.py"]
+
+# read_state.py names where it looked for state, which differs per engine (a state file under
+# .databricks, or deployment history when recording); normalize the location so all variants
+# match. (?m) anchors $ to the message line, not the end of the whole output.
+[[Repls]]
+Old = '(?m) in (?:\.databricks/\S+|deployment history)$'
+New = ' in [STATE_LOCATION]'

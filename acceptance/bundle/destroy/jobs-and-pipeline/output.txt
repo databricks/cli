@@ -72,7 +72,14 @@ Error: Job [NUMID] does not exist.
 
 Exit code: 1
 
-=== Assert snapshot file is deleted: Directory exists and is empty
+=== Assert destroy leaves the bundle state dir clean:
+
+>>> find .databricks -name terraform -prune -o -print
+.databricks
+.databricks/.gitignore
+.databricks/bundle
+.databricks/bundle/default
+.databricks/bundle/default/deployment.json
 
 === Assert bundle deployment path is deleted
 >>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
