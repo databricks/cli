@@ -33,4 +33,5 @@ trace $CLI bundle deploy
 print_state.py | gron.py | grep serialized_space > out.state_after_update.txt
 
 # The full serialized_space content reached the create (POST) and update (PATCH) APIs.
-trace print_requests.py //api/2.0/genie/spaces
+# --unique collapses the duplicate create the SDK retries on cloud (eventual consistency).
+trace print_requests.py //api/2.0/genie/spaces --unique

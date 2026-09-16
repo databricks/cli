@@ -21,13 +21,13 @@ Updated genie_spaces.my_space
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //api/2.0/genie/spaces
+>>> print_requests.py //api/2.0/genie/spaces --unique
 {
   "method": "POST",
   "path": "/api/2.0/genie/spaces",
   "body": {
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-space-[UNIQUE_NAME]/default/resources",
-    "serialized_space": "{\"version\":1,\"instructions\":{\"text_instructions\":[{\"id\":\"ti-001\",\"content\":[\"Analyze sales orders by date\"]}]}}\n",
+    "serialized_space": "{\"version\":1,\"instructions\":{\"text_instructions\":[{\"id\":\"a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4\",\"content\":[\"Analyze sales orders by date\"]}]}}\n",
     "title": "test genie space",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
@@ -37,7 +37,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/genie/spaces/[MY_SPACE_ID]",
   "body": {
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-serialized-space-[UNIQUE_NAME]/default/resources",
-    "serialized_space": "{\"version\":1,\"instructions\":{\"text_instructions\":[{\"id\":\"ti-001\",\"content\":[\"Summarize sales revenue by month\"]}]}}\n",
+    "serialized_space": "{\"version\":1,\"instructions\":{\"text_instructions\":[{\"id\":\"a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4\",\"content\":[\"Summarize sales revenue by month\"]}]}}\n",
     "title": "test genie space",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
