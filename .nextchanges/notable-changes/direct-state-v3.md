@@ -1,1 +1,1 @@
-* Direct-engine deployments now write state version 3. Bundles deployed with this release or later require CLI v1.8.0 or newer. ([#6706](https://github.com/databricks/cli/pull/6706))
+* Bump the direct deployment state version to 3. Clients older than v1.8.0 will reject bundles deployed with this release. ([#6706](https://github.com/databricks/cli/pull/6706))
