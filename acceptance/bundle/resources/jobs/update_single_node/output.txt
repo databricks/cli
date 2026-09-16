@@ -86,5 +86,16 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Destroy: 1 deleted
 
-Error: Test script killed due to a timeout (1m0s)
+>>> print_requests.py //jobs --nostamp
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [FOO_ID]
+  }
+}
+
+>>> musterr [CLI] jobs get [FOO_ID]
+Error: Job [FOO_ID] does not exist.

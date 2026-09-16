@@ -21,7 +21,7 @@
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
     "spec": {
       "attributes": {
-        "createdb": true
+        "createdb": false
       },
       "postgres_role": "app_role"
     }

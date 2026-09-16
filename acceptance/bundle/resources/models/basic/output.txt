@@ -85,5 +85,9 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 }
 
 >>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.models.my_model
 
-Error: Test script killed due to a timeout (1m0s)
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

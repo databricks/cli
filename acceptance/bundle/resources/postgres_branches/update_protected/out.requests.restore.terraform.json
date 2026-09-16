@@ -16,7 +16,7 @@
     "name": "[DEV_BRANCH_ID]",
     "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
-      "is_protected": true,
+      "is_protected": false,
       "no_expiry": true
     }
   }

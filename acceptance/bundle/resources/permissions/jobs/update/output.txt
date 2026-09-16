@@ -146,4 +146,19 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle plan -o json
 
-Error: Test script killed due to a timeout (2m0s)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/files...
+Files: 3 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py --nostamp //jobs/
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_with_permissions
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
+
+Destroy: 1 deleted
+
+>>> print_requests.py --nostamp //jobs/
