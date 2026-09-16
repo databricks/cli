@@ -121,6 +121,8 @@ func TestTemplateResolverForBundleExamplesRejectsEscapingTemplateDir(t *testing.
 	// local template, so it must not be recorded as first-party.
 	for _, dir := range []string{
 		"../../../local-template",
+		// Starts inside the repo but escapes it after cleaning.
+		"./contrib/../../now-i-am-outside",
 		"/etc/local-template",
 	} {
 		t.Run(dir, func(t *testing.T) {

@@ -62,31 +62,38 @@ func IsGitRepoUrl(url string) bool {
 	return p != nil && !p.invalid
 }
 
-// gitHostAndPath extracts the host and the "owner/repo" path from a Git URL,
-// handling both scheme-based URLs (https://, ssh://) and scp-like syntax
-// (git@host:owner/repo). Userinfo, port, a trailing ".git" and surrounding
-// slashes are stripped. ok is false when the input is not a recognizable remote
-// URL (e.g. a local path).
+// gitHostAndPath extracts the host and the "owner/repo" path from a Git URL. It
+// recognizes the same URL forms as matchGitUrlPrefix (scheme-based https:// and
+// ssh://, and scp-like git@host:owner/repo), so it agrees with the rest of the
+// resolver on what counts as a Git URL; ok is false for anything else (e.g. a
+// local path). Userinfo, port, a trailing ".git" and surrounding slashes are
+// stripped.
 //
-// The host is parsed from the URL authority rather than by stripping to the
-// last "@", so a path that embeds an "@" (e.g.
+// For scheme URLs the host comes from the parsed authority rather than by
+// stripping to the last "@", so a path that embeds an "@" (e.g.
 // "https://attacker.example/foo@github.com/...") is not mistaken for the host.
 func gitHostAndPath(rawurl string) (host, path string, ok bool) {
-	if strings.Contains(rawurl, "://") {
+	prefix := matchGitUrlPrefix(rawurl)
+	if prefix == nil || prefix.invalid {
+		return "", "", false
+	}
+
+	if prefix.prefix == "git@" {
+		// scp-like syntax: git@host:owner/repo (no scheme; host and path are
+		// separated by a colon).
+		_, rest, _ := strings.Cut(rawurl, "@")
+		h, p, found := strings.Cut(rest, ":")
+		if !found {
+			return "", "", false
+		}
+		host, path = h, p
+	} else {
 		u, err := url.Parse(rawurl)
 		if err != nil {
 			return "", "", false
 		}
 		// Hostname strips any userinfo and port.
 		host, path = u.Hostname(), u.Path
-	} else if h, p, found := strings.Cut(rawurl, ":"); found {
-		// scp-like syntax: [user@]host:owner/repo
-		if _, after, ok := strings.Cut(h, "@"); ok {
-			h = after
-		}
-		host, path = h, p
-	} else {
-		return "", "", false
 	}
 
 	path = strings.TrimSuffix(strings.Trim(path, "/"), ".git")
