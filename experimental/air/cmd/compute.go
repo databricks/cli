@@ -17,7 +17,8 @@ const (
 	gpuType8xB300 gpuType = "GPU_8xB300"
 )
 
-// gpuTypes lists every valid type. Used for validation error messages.
+// gpuTypes lists every accelerator type understood by this CLI.
+// Workspace availability is enforced by the server.
 var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100, gpuType8xB300}
 
 func validGPUTypesHint() string {
