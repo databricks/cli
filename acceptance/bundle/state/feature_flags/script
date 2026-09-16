@@ -2,7 +2,7 @@ mkdir -p .databricks/bundle/default
 
 case "$CLI_VERSION" in
     1.8.0) tested_cli="$CLI_1_8" ;;
-    1.17.0) tested_cli="$CLI" ;;
+    main) tested_cli="$CLI" ;;
 esac
 expected=$(jq -er --arg cli "$CLI_VERSION" --arg version "$STATE_VERSION" --arg feature "$STATE_FEATURE" '.[$cli][$version][$feature]' expected.json)
 
@@ -35,7 +35,7 @@ else
 fi
 cmp .databricks/input.json .databricks/bundle/default/resources.json
 
-if [ "$CLI_VERSION" = 1.17.0 ] && [ "$expected" = accept ]; then
+if [ "$CLI_VERSION" = main ] && [ "$expected" = accept ]; then
     "$tested_cli" bundle deploy > .databricks/deploy.log 2>&1 || { cat .databricks/deploy.log; exit 1; }
     jq -e --arg feature "$STATE_FEATURE" '
         .state_version == 3 and
