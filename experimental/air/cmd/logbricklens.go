@@ -18,6 +18,7 @@ const bricklensLogsPathFmt = "/api/2.0/ai-training/workflows/by-run-id/%d/logs"
 type logRecord struct {
 	// TimeUnixNano may arrive as a JSON number or string.
 	TimeUnixNano json.Number `json:"time_unix_nano"`
+	RecordID     string      `json:"record_id"`
 	Body         string      `json:"body"`
 	NodeIndex    int         `json:"node_index"`
 }
