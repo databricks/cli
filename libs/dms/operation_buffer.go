@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
@@ -24,7 +25,6 @@ const stagedSequenceID = "0"
 // path: writes are queued and sent on one background goroutine. It exists only while a bundle
 // records deployment history; callers hold a nil buffer otherwise and must not call it.
 type OperationBuffer struct {
-	service      bundledeployments.BundleDeploymentsInterface
 	deploymentID string
 	versionNum   int
 
@@ -61,9 +61,8 @@ type OperationBuffer struct {
 
 // StartOperationBuffer opens the buffer for the version the caller just created. The version
 // must already exist: operations record under it, and nothing here creates it.
-func StartOperationBuffer(ctx context.Context, service bundledeployments.BundleDeploymentsInterface, deploymentID string, versionNum int) *OperationBuffer {
+func StartOperationBuffer(ctx context.Context, deploymentID string, versionNum int) *OperationBuffer {
 	b := &OperationBuffer{
-		service:      service,
 		deploymentID: deploymentID,
 		versionNum:   versionNum,
 		queue:        make(chan string, bufferedOperations),
@@ -164,7 +163,8 @@ func (b *OperationBuffer) write(ctx context.Context, key string, update Operatio
 	if err != nil {
 		return err
 	}
-	result, err := b.service.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
+	w := cmdctx.WorkspaceClient(ctx)
+	result, err := w.BundleDeployments.UpdateOperation(ctx, bundledeployments.UpdateOperationRequest{
 		Name:       OperationName(b.deploymentID, b.versionNum, key),
 		Operation:  operation,
 		UpdateMask: fieldmask.FieldMask{Paths: strings.Split(update.Fields.Mask(), ",")},
