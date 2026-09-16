@@ -23,13 +23,16 @@ const (
 	// before falling back to MLflow.
 	maxTransientFailures = 5
 	// defaultCompletedRunTailLines caps a completed run's output when neither
-	// --lines nor --minutes is set.
+	// --tail nor --minutes is set.
 	defaultCompletedRunTailLines = 10000
 	// seenRecordsCap bounds the dedup set, evicting oldest-inserted entries first.
 	seenRecordsCap = 100000
 	// statusMessageRefreshEveryNPolls throttles the status_message fetch so the
 	// waiting spinner doesn't issue a get-output on every poll tick.
 	statusMessageRefreshEveryNPolls = 5
+	// bricklensEmptyMLflowProbeEveryNPolls throttles the active-run MLflow
+	// existence probe while Bricklens has returned no records.
+	bricklensEmptyMLflowProbeEveryNPolls = 10
 )
 
 // statusMessageType tags a client-facing message packed into
@@ -54,6 +57,9 @@ func normalizeStatusMessage(raw string) string {
 	payload = strings.TrimSpace(payload)
 	if payload == "" {
 		return ""
+	}
+	if strings.EqualFold(payload, "Waiting for GPU compute capacity to become available") {
+		return waitingForComputeStatus
 	}
 	return payload + "..."
 }
@@ -83,7 +89,7 @@ type logRequest struct {
 	// windowMinutes, when > 0, restricts the fetch to the last N minutes.
 	windowMinutes int
 	// tailLines caps a completed run's output to the last N lines. Negative means
-	// --lines was unset (use the default cap); 0 prints nothing.
+	// --tail was unset (use the default cap); 0 prints no log lines.
 	tailLines int
 	// downloadTo, when set, writes logs to that directory instead of stdout.
 	downloadTo string
@@ -101,11 +107,12 @@ type logRequest struct {
 // logRunStatus is the subset of a run's state the log path needs, resolved once
 // and reused.
 type logRunStatus struct {
-	lifeCycleState string
-	resultState    string
-	stateMessage   string
-	startTimeMs    int64
-	endTimeMs      int64
+	lifeCycleState          string
+	firstTaskLifeCycleState string
+	resultState             string
+	stateMessage            string
+	startTimeMs             int64
+	endTimeMs               int64
 	// latestAttempt is the highest attempt_number across the run's tasks.
 	latestAttempt int
 }
@@ -114,7 +121,7 @@ type logRunStatus struct {
 // set (result states only appear on terminal runs).
 var (
 	terminalLifeCycleStates = map[string]bool{"TERMINATED": true, "SKIPPED": true, "INTERNAL_ERROR": true}
-	terminalResultStates    = map[string]bool{"SUCCESS": true, "FAILED": true, "CANCELED": true}
+	terminalResultStates    = map[string]bool{"SUCCESS": true, "FAILED": true, "TIMEDOUT": true, "CANCELED": true}
 )
 
 func (s logRunStatus) terminal() bool {
@@ -123,6 +130,25 @@ func (s logRunStatus) terminal() bool {
 
 func (s logRunStatus) succeeded() bool {
 	return s.resultState == "SUCCESS"
+}
+
+func (s logRunStatus) waitingForCompute() bool {
+	if s.resultState != "" {
+		return false
+	}
+	if s.lifeCycleState == string(jobs.RunLifeCycleStatePending) {
+		return true
+	}
+	if s.lifeCycleState != string(jobs.RunLifeCycleStateRunning) {
+		return false
+	}
+	switch jobs.RunLifeCycleState(s.firstTaskLifeCycleState) {
+	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
+		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
+		return true
+	default:
+		return false
+	}
 }
 
 // downloadOutcome is the exit status for a one-shot fetch, which unlike streaming
@@ -153,6 +179,9 @@ func projectRunStatus(run *jobs.Run) logRunStatus {
 		s.lifeCycleState = string(run.State.LifeCycleState)
 		s.resultState = string(run.State.ResultState)
 		s.stateMessage = run.State.StateMessage
+	}
+	if len(run.Tasks) > 0 && run.Tasks[0].State != nil {
+		s.firstTaskLifeCycleState = string(run.Tasks[0].State.LifeCycleState)
 	}
 	for i := range run.Tasks {
 		s.latestAttempt = max(s.latestAttempt, run.Tasks[i].AttemptNumber)
@@ -257,7 +286,7 @@ func (st *bricklensStreamer) waitingSpinnerText() string {
 	if msg := st.serverStatusMessage(); msg != "" {
 		return msg
 	}
-	if st.status.lifeCycleState == "PENDING" {
+	if st.status.waitingForCompute() {
 		return waitingForComputeStatus
 	}
 	return fmt.Sprintf("Waiting for run to start (node %d)...", st.req.node)
@@ -324,6 +353,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 	// server status_message fetch to every Nth poll, and lastSpinnerText avoids
 	// redundant spinner updates.
 	statusRefreshCounter := 0
+	emptyStreamPolls := 0
 	lastSpinnerText := ""
 	for {
 		if !firstIteration {
@@ -388,6 +418,13 @@ func (st *bricklensStreamer) run() (bool, error) {
 			log.Infof(st.ctx, "air logs: run %d finished in state %s", st.req.runID, st.status.displayState())
 			return st.status.succeeded(), nil
 		}
+		if !st.firstLogSeen {
+			emptyStreamPolls++
+			if emptyStreamPolls%bricklensEmptyMLflowProbeEveryNPolls == 0 && mlflowLogsExist(st.ctx, st.w, st.req) {
+				log.Debugf(st.ctx, "air logs: MLflow artifacts exist for run %d; falling back to MLflow log stream", st.req.runID)
+				return false, errBricklensFeatureDisabled
+			}
+		}
 
 		firstIteration = false
 		if err := sleepOrCancel(st.ctx, retryCheckInterval); err != nil {
@@ -425,8 +462,8 @@ func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
 }
 
 // tailTarget is the number of lines a tail keeps. A negative tailLines means
-// --lines was unset, so use the default cap; 0 or more is taken literally (an
-// explicit --lines 0 prints nothing).
+// --tail was unset, so use the default cap; 0 or more is taken literally (an
+// explicit --tail 0 prints no log lines).
 func (req logRequest) tailTarget() int {
 	if req.tailLines < 0 {
 		return defaultCompletedRunTailLines

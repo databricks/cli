@@ -32,13 +32,21 @@ func (c *PostgresRoleConfig) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, c)
 }
 
-func (c *PostgresRoleConfig) MarshalJSON() ([]byte, error) {
+func (c PostgresRoleConfig) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(c)
 }
 
 type PostgresRole struct {
 	BaseResource
 	PostgresRoleConfig
+}
+
+func (r *PostgresRole) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, r)
+}
+
+func (r PostgresRole) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(r)
 }
 
 func (r *PostgresRole) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
@@ -63,13 +71,14 @@ func (r *PostgresRole) ResourceDescription() ResourceDescription {
 }
 
 func (r *PostgresRole) GetName() string {
-	// Roles don't have a user-visible name field.
-	return ""
+	// Roles have no name field of their own; the resource name is the ID
+	// ("projects/{project_id}/branches/{branch_id}/roles/{role_id}").
+	return r.ID
 }
 
-func (r *PostgresRole) GetURL() string {
+func (r *PostgresRole) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (r *PostgresRole) InitializeURL(_ url.URL) {

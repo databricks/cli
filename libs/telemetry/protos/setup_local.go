@@ -41,6 +41,7 @@ const (
 	SetupLocalErrorCodeMerge              SetupLocalErrorCode = "E_MERGE"
 	SetupLocalErrorCodePythonInstall      SetupLocalErrorCode = "E_PYTHON_INSTALL"
 	SetupLocalErrorCodeProvision          SetupLocalErrorCode = "E_PROVISION"
+	SetupLocalErrorCodeProvisionConflict  SetupLocalErrorCode = "E_PROVISION_CONFLICT"
 	SetupLocalErrorCodeValidate           SetupLocalErrorCode = "E_VALIDATE"
 	SetupLocalErrorCodeCanceled           SetupLocalErrorCode = "E_CANCELED"
 )
@@ -71,6 +72,12 @@ type SetupLocalEvent struct {
 
 	// Provisioning mode: default or constraints-only.
 	Mode SetupLocalMode `json:"mode,omitempty"`
+
+	// Whether --no-constraints was set, leaving requires-python and the dependency
+	// constraints unmanaged. Orthogonal to Mode (which records the databricks-connect
+	// axis), so without this a --no-constraints run is indistinguishable from a plain
+	// run. Not omitempty for the same reason as Success.
+	SkipConstraints bool `json:"skip_constraints"`
 
 	// Whether pyproject.toml was created fresh (true) vs an existing project
 	// updated (false). Not omitempty for the same reason as Success.

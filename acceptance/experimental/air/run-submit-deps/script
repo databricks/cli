@@ -7,7 +7,7 @@ title "only config + command are uploaded; no requirements.yaml"
 # body.multipart_form.path instead of in the request path.
 trace print_requests.py //api/2.0/workspace/import --oneline --sort --unique --keep
 
-title "declared deps ride on environments[].spec.dependencies"
+title "inline deps, artifact location, and capacity id reach the submit payload"
 trace print_requests.py //api/2.2/jobs/runs/submit
 
 title "a requirements.yaml file path is rejected; deps must be inline"

@@ -13,7 +13,7 @@ import (
 // MergeManaged refuses to merge rather than risk corrupting the file. The caller
 // surfaces both as E_MERGE.
 var (
-	errMultilineString = errors.New("pyproject.toml uses a TOML multi-line string, which the formatting-preserving merge cannot safely edit; edit requires-python / [tool.uv] manually")
+	errMultilineString = errors.New("pyproject.toml has an unterminated TOML multi-line string")
 	errNoProjectTable  = errors.New("pyproject.toml has no [project] table to hold requires-python")
 )
 
@@ -75,19 +75,22 @@ type dbconnectPlan struct {
 }
 
 // planDBConnect returns the databricks-connect edits merging target would make, or
-// the zero plan in constraints-only mode (empty pin) where databricks-connect is left
-// untouched. It mirrors MergeManaged's preprocessing (CRLF normalization, multi-line
-// string bail) and runs both databricks-connect passes on a clone, in the same order
-// as MergeManaged, so replacedDevPin and removed match what the real merge does.
-func planDBConnect(target []byte, c Constraints) dbconnectPlan {
-	if c.DatabricksConnect == "" {
+// the zero plan when databricks-connect is skipped (--no-dbconnect / --constraints-only)
+// or the artifact carries no pin — the cases where MergeManaged leaves databricks-connect
+// untouched. It mirrors MergeManaged's preprocessing (CRLF normalization and
+// multi-line string protection) and runs both databricks-connect passes on a clone,
+// in the same order as MergeManaged, so replacedDevPin and removed match what the
+// real merge does.
+func planDBConnect(target []byte, c Constraints, opts MergeOptions) dbconnectPlan {
+	if opts.SkipDBConnect || c.DatabricksConnect == "" {
 		return dbconnectPlan{}
 	}
 	// Mirror MergeManaged's own preprocessing so the same lines are inspected.
-	lines := strings.Split(strings.ReplaceAll(string(target), "\r\n", "\n"), "\n")
-	if containsMultilineString(lines) {
+	protected, _, err := protectMultilineStrings(strings.ReplaceAll(string(target), "\r\n", "\n"))
+	if err != nil {
 		return dbconnectPlan{}
 	}
+	lines := strings.Split(protected, "\n")
 	// mergeDatabricksConnect rewrites element lines in place, so hand it a copy: this
 	// probe must not disturb the caller's view of the pre-merge file. The consolidation
 	// pass then runs on its output, so removed reflects the post-dev-merge state where
@@ -97,11 +100,27 @@ func planDBConnect(target []byte, c Constraints) dbconnectPlan {
 	return dbconnectPlan{replacedDevPin: replaced, removed: removed}
 }
 
+// MergeOptions selects which orthogonal managed axes are left unmanaged. Each flag
+// is threaded explicitly rather than inferred from empty/nil values in the
+// Constraints, so a caller's intent is unambiguous and the Constraints always carry
+// the real artifact values. The zero value manages every axis. A new axis is a new
+// field here — callers that manage everything keep passing MergeOptions{} unchanged.
+type MergeOptions struct {
+	// SkipConstraints (--no-constraints) leaves the requires-python and [tool.uv]
+	// constraint regions unmanaged: existing values are preserved and none written.
+	SkipConstraints bool
+	// SkipDBConnect (--no-dbconnect / --constraints-only) leaves the
+	// databricks-connect dependency unmanaged: an existing pin is preserved and none
+	// is injected or asserted.
+	SkipDBConnect bool
+}
+
 // MergeManaged applies the managed transforms to target, preserving every other
 // byte (comments, ordering, whitespace). It returns the merged bytes and the list of
 // regions that actually changed. The operation is idempotent: feeding its own output
-// back in produces identical bytes.
-func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string, err error) {
+// back in produces identical bytes. opts selects which axes are managed; the
+// environment region is always reconciled.
+func MergeManaged(target []byte, c Constraints, opts MergeOptions) (merged []byte, regions []string, err error) {
 	s := string(target)
 
 	// Detect and normalize line endings. We process on "\n" and restore "\r\n" on
@@ -115,42 +134,46 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 		s = strings.ReplaceAll(s, "\r\n", "\n")
 	}
 
-	lines := strings.Split(s, "\n")
+	protected, restore, err := protectMultilineStrings(s)
+	if err != nil {
+		return nil, nil, err
+	}
+	lines := strings.Split(protected, "\n")
 
-	// The merge is line-based and does not track TOML multi-line string state
-	// ("""...""" / '''...''') across lines. A line inside such a string can look
-	// like a table header, a key assignment, or a bracket, which would mis-scope
-	// the managed-region edits and silently corrupt the file. Rather than risk
-	// that, bail out: this is the guarantee the merge exists to uphold. Multi-line
-	// strings are rare in a pyproject.toml, and the caller surfaces this as E_MERGE.
-	if containsMultilineString(lines) {
-		return nil, nil, errMultilineString
+	// requires-python needs a [project] table to hold it; without one the merge
+	// would silently drop the pin, so fail loudly instead. Only enforced when
+	// constraints are managed — under SkipConstraints there is no requires-python to
+	// write, so a [project]-less file (e.g. one with only dependency groups) is
+	// merged for its other axes rather than rejected.
+	if !opts.SkipConstraints {
+		if _, _, ok := tableBounds(lines, "[project]"); !ok {
+			return nil, nil, errNoProjectTable
+		}
 	}
 
-	// requires-python is a managed value; if there is no [project] table to hold
-	// it, this is not a file we can faithfully merge (greenfield goes through
-	// RenderFreshPyproject, which always writes [project]). Fail loudly rather
-	// than silently skip the version pin.
-	if _, _, ok := tableBounds(lines, "[project]"); !ok {
-		return nil, nil, errNoProjectTable
+	if !opts.SkipConstraints {
+		var rpChanged bool
+		lines, rpChanged = mergeRequiresPython(lines, c.RequiresPython)
+		if rpChanged {
+			regions = append(regions, regionRequiresPython)
+		}
 	}
 
-	lines, rpChanged := mergeRequiresPython(lines, c.RequiresPython)
-	if rpChanged {
-		regions = append(regions, regionRequiresPython)
-	}
-
-	lines, _, dbcChanged := mergeDatabricksConnect(lines, c.DatabricksConnect)
-	// In the install flow, after the managed pin lands in the dev group, remove any
-	// databricks-connect pin elsewhere that is disjoint from it — the pins that would
-	// otherwise make uv unsatisfiable. Compatible pins are left alone. Skipped in
-	// constraints-only mode (empty pin), where databricks-connect is left untouched.
-	strayChanged := false
-	if c.DatabricksConnect != "" {
-		lines, _, strayChanged = removeStrayDatabricksConnect(lines, c.DatabricksConnect)
-	}
-	if dbcChanged || strayChanged {
-		regions = append(regions, regionDatabricksConnect)
+	if !opts.SkipDBConnect {
+		var dbcChanged bool
+		lines, _, dbcChanged = mergeDatabricksConnect(lines, c.DatabricksConnect)
+		// In the install flow, after the managed pin lands in the dev group, remove any
+		// databricks-connect pin elsewhere that is disjoint from it — the pins that would
+		// otherwise make uv unsatisfiable. Compatible pins are left alone. An empty pin
+		// (an artifact without databricks-connect) is a data no-op, distinct from the
+		// SkipDBConnect intent handled by the gate above.
+		strayChanged := false
+		if c.DatabricksConnect != "" {
+			lines, _, strayChanged = removeStrayDatabricksConnect(lines, c.DatabricksConnect)
+		}
+		if dbcChanged || strayChanged {
+			regions = append(regions, regionDatabricksConnect)
+		}
 	}
 
 	lines, envChanged := mergeDatabricksEnvironment(lines, c.EnvironmentVersion)
@@ -158,12 +181,15 @@ func MergeManaged(target []byte, c Constraints) (merged []byte, regions []string
 		regions = append(regions, regionDatabricksEnvironment)
 	}
 
-	lines, uvChanged := mergeToolUv(lines, c.ConstraintDeps)
-	if uvChanged {
-		regions = append(regions, regionToolUv)
+	if !opts.SkipConstraints {
+		var uvChanged bool
+		lines, uvChanged = mergeToolUv(lines, c.ConstraintDeps)
+		if uvChanged {
+			regions = append(regions, regionToolUv)
+		}
 	}
 
-	out := strings.Join(lines, "\n")
+	out := restore(strings.Join(lines, "\n"))
 	if crlf {
 		out = strings.ReplaceAll(out, "\n", "\r\n")
 	}
@@ -221,6 +247,8 @@ func tableBounds(lines []string, name string) (header, end int, found bool) {
 // the line's leading whitespace. If the key is absent, it is inserted directly under the
 // [project] header. Returns whether the line slice changed.
 func mergeRequiresPython(lines []string, value string) ([]string, bool) {
+	// Only reached when constraints are managed (MergeManaged gates on
+	// skipConstraints), where a fetched artifact always carries a requires-python.
 	header, end, found := tableBounds(lines, "[project]")
 	if !found {
 		return lines, false
@@ -865,6 +893,9 @@ func arrayLineSpan(lines []string, start, limit int) (last int, multiline bool) 
 // marker-bracketed block already exists, its contents are replaced in place. Otherwise any
 // plain [tool.uv] table is removed and a fresh marker-bracketed block is appended at EOF.
 func mergeToolUv(lines, deps []string) ([]string, bool) {
+	// Only reached when constraints are managed (MergeManaged gates on
+	// skipConstraints). A nil deps slice is treated identically to an empty one:
+	// both render an empty managed block.
 	start, stop, found := markerBounds(lines)
 	if found {
 		// Replace the existing managed region in place. Whether it owns a [tool.uv]
@@ -934,23 +965,96 @@ func markerAttachedToToolUv(lines []string, start int) bool {
 // [tool.uv] table, capturing its leading whitespace.
 var constraintDepsRe = regexp.MustCompile(`^\s*constraint-dependencies\s*=`)
 
-// containsMultilineString reports whether the input contains a TOML multi-line
-// string delimiter (""" or ”'), taking a line-outside-comment view. The
-// line-based merge cannot track such a string's body across lines, so its
-// presence anywhere is treated as unmergeable rather than risking corruption.
-// This is conservative: a single-line """x""" is also refused, but those are
-// vanishingly rare in a pyproject.toml and refusing is safe.
-func containsMultilineString(lines []string) bool {
-	for _, line := range lines {
-		// Ignore a delimiter that appears only within a "#" comment.
-		if i := commentStart(line); i >= 0 {
-			line = line[:i]
-		}
-		if strings.Contains(line, `"""`) || strings.Contains(line, "'''") {
-			return true
+// protectMultilineStrings replaces TOML multi-line strings with unique ordinary
+// string values while the line-based merge runs. This prevents string contents
+// that resemble tables, assignments, brackets, comments, or managed markers
+// from affecting the merge. The returned restore function puts each original
+// string back byte-for-byte after the managed edits are complete.
+func protectMultilineStrings(s string) (protected string, restore func(string) string, err error) {
+	type replacement struct {
+		placeholder string
+		original    string
+	}
+
+	prefix := "__databricks_setup_local_multiline_"
+	for strings.Contains(s, prefix) {
+		prefix += "_"
+	}
+
+	var replacements []replacement
+	var out strings.Builder
+	for i := 0; i < len(s); {
+		switch {
+		case s[i] == '#':
+			end := strings.IndexByte(s[i:], '\n')
+			if end < 0 {
+				out.WriteString(s[i:])
+				i = len(s)
+				continue
+			}
+			end += i
+			out.WriteString(s[i:end])
+			i = end
+		case strings.HasPrefix(s[i:], `"""`) || strings.HasPrefix(s[i:], "'''"):
+			delimiter := s[i : i+3]
+			end, ok := multilineStringEnd(s, i+3, delimiter)
+			if !ok {
+				return "", nil, errMultilineString
+			}
+			placeholder := fmt.Sprintf(`"%s%d__"`, prefix, len(replacements))
+			replacements = append(replacements, replacement{placeholder: placeholder, original: s[i:end]})
+			out.WriteString(placeholder)
+			i = end
+		case s[i] == '"' || s[i] == '\'':
+			quote := s[i]
+			start := i
+			i++
+			for i < len(s) {
+				if quote == '"' && s[i] == '\\' {
+					i += min(2, len(s)-i)
+					continue
+				}
+				i++
+				if s[i-1] == quote {
+					break
+				}
+			}
+			out.WriteString(s[start:i])
+		default:
+			out.WriteByte(s[i])
+			i++
 		}
 	}
-	return false
+
+	restore = func(merged string) string {
+		for _, r := range replacements {
+			merged = strings.ReplaceAll(merged, r.placeholder, r.original)
+		}
+		return merged
+	}
+	return out.String(), restore, nil
+}
+
+// multilineStringEnd returns the byte immediately after a multi-line string's
+// closing delimiter. Backslash escapes apply only to basic (double-quoted)
+// strings. Runs of four or five quotes include one or two quotes in the value,
+// followed by the closing three-quote delimiter.
+func multilineStringEnd(s string, start int, delimiter string) (int, bool) {
+	for i := start; i < len(s); {
+		if delimiter == `"""` && s[i] == '\\' {
+			i += min(2, len(s)-i)
+			continue
+		}
+		if strings.HasPrefix(s[i:], delimiter) {
+			run := 3
+			for run < 5 && i+run < len(s) && s[i+run] == delimiter[0] {
+				run++
+			}
+			return i + run, true
+		}
+		i++
+	}
+	return 0, false
 }
 
 // commentStart returns the index of the "#" that begins an inline comment on
@@ -1155,18 +1259,21 @@ const freshProjectVersion = "0.0.0"
 // RenderFreshPyproject produces a complete managed pyproject.toml for a project that has
 // none, with [project], [dependency-groups].dev (carrying the databricks-connect pin), the
 // [tool.databricks.environment] section (serverless targets only), and the marker-bracketed
-// [tool.uv] constraint block. When c.DatabricksConnect is empty (constraints-only mode) the
-// dev group is emitted empty rather than with a blank entry.
-func RenderFreshPyproject(projectName string, c Constraints) []byte {
+// [tool.uv] constraint block. When databricks-connect is skipped (--no-dbconnect /
+// --constraints-only) or the artifact carries no pin, the dev group is emitted empty.
+func RenderFreshPyproject(projectName string, c Constraints, opts MergeOptions) []byte {
 	var b strings.Builder
 	b.WriteString("[project]\n")
 	fmt.Fprintf(&b, "name = %q\n", projectName)
 	// uv requires project.version when a [project] table is present.
 	fmt.Fprintf(&b, "version = %q\n", freshProjectVersion)
-	fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
+	// Omitted under SkipConstraints, letting uv pick the interpreter for the project.
+	if !opts.SkipConstraints {
+		fmt.Fprintf(&b, "requires-python = %q\n", c.RequiresPython)
+	}
 	b.WriteString("\n")
 	b.WriteString("[dependency-groups]\n")
-	if c.DatabricksConnect != "" {
+	if !opts.SkipDBConnect && c.DatabricksConnect != "" {
 		b.WriteString("dev = [\n")
 		fmt.Fprintf(&b, "    %q,\n", c.DatabricksConnect)
 		b.WriteString("]\n")
@@ -1181,9 +1288,13 @@ func RenderFreshPyproject(projectName string, c Constraints) []byte {
 		fmt.Fprintf(&b, "environment_version = %q\n", c.EnvironmentVersion)
 		b.WriteString("\n")
 	}
-	for _, line := range renderToolUvBlock(c.ConstraintDeps, true) {
-		b.WriteString(line)
-		b.WriteString("\n")
+	// Written whenever constraints are managed — an empty block when the artifact
+	// carries no constraint-dependencies (nil and empty are treated alike).
+	if !opts.SkipConstraints {
+		for _, line := range renderToolUvBlock(c.ConstraintDeps, true) {
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
 	}
 	return []byte(b.String())
 }

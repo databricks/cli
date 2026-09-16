@@ -78,6 +78,7 @@ type runView struct {
 	retries      int
 	maxRetries   string
 	duration     string
+	progress     string
 	experiment   string
 	mlflowLabel  string
 	mlflowURL    string
@@ -110,11 +111,15 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 		retries:      data.AttemptNumber,
 		maxRetries:   data.MaxRetriesDisplay,
 		duration:     data.DurationDisplay,
+		progress:     data.ProgressDisplay,
 		experiment:   data.ExperimentDisplay,
 		mlflowLabel:  na,
 		user:         data.UserDisplay,
 		accelerators: data.AcceleratorsDisplay,
 		environment:  data.EnvironmentDisplay,
+	}
+	if data.DisplayStatus != "" {
+		view.status = data.DisplayStatus
 	}
 
 	if ids != nil {
@@ -127,6 +132,9 @@ func renderRunText(ctx context.Context, out io.Writer, w *databricks.WorkspaceCl
 		sections = append(sections, renderBox(p, configBoxTitle, body))
 	}
 	sections = append(sections, renderBox(p, metadataBoxTitle, renderFields(p, colorOn, view)))
+	if data.TerminationReason != nil {
+		sections = append(sections, p.red.Render("Failure reason: ")+p.n12.Render(*data.TerminationReason))
+	}
 
 	// A single write: a blank line before the first box and after the last, and
 	// one between each box.
@@ -376,12 +384,19 @@ func renderFields(p palette, colorOn bool, v runView) string {
 		field(p, "Retries", p.n12.Render(strconv.Itoa(v.retries))),
 		field(p, "Max Retries", p.n12.Render(v.maxRetries)),
 		field(p, "Duration", p.n12.Render(v.duration)),
+	}
+	// Progress is shown only for a running run we could estimate; amber marks it
+	// as live, in-progress information.
+	if v.progress != "" {
+		rows = append(rows, field(p, "Progress", p.amber.Render(v.progress)))
+	}
+	rows = append(rows,
 		field(p, "Experiment", p.n12.Render(v.experiment)),
 		field(p, "MLflow Run", link(colorOn, p.blue, v.mlflowLabel, v.mlflowURL)),
 		field(p, "User", p.n12.Render(v.user)),
 		field(p, "Accelerators", p.n12.Render(v.accelerators)),
 		field(p, "Environment", p.n12.Render(v.environment)),
-	}
+	)
 	return strings.Join(rows, "\n")
 }
 

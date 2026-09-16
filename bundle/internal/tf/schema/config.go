@@ -28,6 +28,7 @@ type Config struct {
 	DiscoveryUrl               string   `json:"discovery_url,omitempty"`
 	GoogleCredentials          string   `json:"google_credentials,omitempty"`
 	GoogleServiceAccount       string   `json:"google_service_account,omitempty"`
+	GroupId                    string   `json:"group_id,omitempty"`
 	Host                       string   `json:"host,omitempty"`
 	HttpTimeoutSeconds         int      `json:"http_timeout_seconds,omitempty"`
 	MetadataServiceUrl         string   `json:"metadata_service_url,omitempty"`

@@ -1,6 +1,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.job
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> cat databricks.yml
@@ -24,5 +24,5 @@ resources:
                 - whl: /Workspace/Users/foo@bar.test/mywheel.whl
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.job
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged

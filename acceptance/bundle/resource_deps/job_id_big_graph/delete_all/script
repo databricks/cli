@@ -1,9 +1,8 @@
 cp $TESTDIR/../databricks.yml .
 cp $TESTDIR/../empty.yml .
-echo "*" > .gitignore
 
 trace $CLI bundle deploy
-trace print_requests.py --sort //jobs
+trace print_requests.py --nostamp --sort //jobs
 
 replace_ids.py
 
@@ -16,4 +15,4 @@ trace $CLI bundle plan > out.plan_delete.txt
 trace $CLI bundle deploy
 
 trace $CLI bundle destroy --auto-approve
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

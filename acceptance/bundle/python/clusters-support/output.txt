@@ -1,0 +1,30 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_cluster"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "clusters": {
+      "my_cluster_1": {
+        "autotermination_minutes": 60,
+        "cluster_name": "my_cluster_1 (updated)",
+        "num_workers": 1,
+        "spark_version": "13.3.x-scala2.12"
+      },
+      "my_cluster_2": {
+        "autotermination_minutes": 60,
+        "cluster_name": "my_cluster_2 (updated)",
+        "num_workers": 1,
+        "spark_version": "13.3.x-scala2.12"
+      }
+    }
+  }
+}

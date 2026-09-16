@@ -21,14 +21,20 @@ import (
 // the machine-readable output; fields tagged `json:"-"` are shown only in the
 // human-readable text view.
 type getData struct {
-	RunID           string  `json:"run_id"`
-	Status          string  `json:"status"`
-	StartedAt       *string `json:"started_at"`
-	DurationSeconds *int64  `json:"duration_seconds"`
-	AttemptNumber   int     `json:"attempt_number"`
-	ExperimentName  *string `json:"experiment_name"`
-	DashboardURL    string  `json:"dashboard_url"`
-	MLflowURL       *string `json:"mlflow_url"`
+	RunID             string  `json:"run_id"`
+	Status            string  `json:"status"`
+	StartedAt         *string `json:"started_at"`
+	DurationSeconds   *int64  `json:"duration_seconds"`
+	AttemptNumber     int     `json:"attempt_number"`
+	ExperimentName    *string `json:"experiment_name"`
+	DashboardURL      string  `json:"dashboard_url"`
+	MLflowURL         *string `json:"mlflow_url"`
+	TerminationReason *string `json:"termination_reason,omitempty"`
+	// ESTRemainingSeconds and ESTPercentComplete are a best-effort progress
+	// estimate for a running run, or null when one can't be made (see
+	// estimateTrainingETA).
+	ESTRemainingSeconds *int64 `json:"est_remaining_seconds"`
+	ESTPercentComplete  *int   `json:"est_percent_complete"`
 
 	// The fields below are pre-rendered text-view cells, excluded from JSON
 	// (matching `air get --json`). Each shows "N/A" when its value is
@@ -42,6 +48,10 @@ type getData struct {
 	AcceleratorsDisplay string `json:"-"`
 	EnvironmentDisplay  string `json:"-"`
 	MaxRetriesDisplay   string `json:"-"`
+	// ProgressDisplay is the pre-rendered "Progress" cell ("45% · ~2h 15m left"),
+	// set only for a running run with an estimable remaining time.
+	ProgressDisplay string `json:"-"`
+	DisplayStatus   string `json:"-"`
 	// TrainingConfigPath is the run's config file, downloaded for the config box.
 	TrainingConfigPath string `json:"-"`
 	// Sweep replaces the single-run view for foreach runs.
@@ -53,7 +63,7 @@ type getData struct {
 // used only when .Data.Sweep is set. It reads from the JSON envelope, so every
 // field is reached through ".Data".
 const getTemplate = `Sweep Run ID: {{.Data.RunID}}
-Status:       {{.Data.Status}}
+Status:       {{if .Data.DisplayStatus}}{{.Data.DisplayStatus}}{{else}}{{.Data.Status}}{{end}}
 Total:        {{.Data.Sweep.Total}}
 Completed:    {{.Data.Sweep.Completed}}
 Succeeded:    {{.Data.Sweep.Succeeded}}
@@ -151,10 +161,22 @@ func newGetCommand() *cobra.Command {
 
 		data := buildGetData(run)
 		data.DashboardURL = dashboardURL(w.Config.Host, runID, workspaceID)
-		ids := mlflowIDs(ctx, w, run)
+		taskOutput := aiRuntimeTaskOutput(ctx, w, run)
+		ids := mlflowIDsFromOutput(taskOutput)
 		if ids != nil {
 			url := mlflowLogsURL(w.Config.Host, ids)
 			data.MLflowURL = &url
+			// A remaining-time estimate only makes sense while the run is still
+			// training; a terminal run is either done or stopped mid-progress.
+			if isRunning(run) {
+				if eta := estimateTrainingETA(ctx, w, ids.RunID); eta != nil {
+					secs := eta.RemainingSeconds
+					pct := eta.PercentComplete
+					data.ESTRemainingSeconds = &secs
+					data.ESTPercentComplete = &pct
+					data.ProgressDisplay = eta.detailed()
+				}
+			}
 		}
 		if task := findForEachTask(run); task != nil {
 			data.Sweep = buildSweepInfo(ctx, w, task)
@@ -173,6 +195,11 @@ func newGetCommand() *cobra.Command {
 			fmt.Fprintf(out, "Job Link: %s\n\n", hyperlink(ctx, out, data.DashboardURL, data.DashboardURL))
 			return renderEnvelope(ctx, data)
 		}
+		statusMessage := ""
+		if taskOutput != nil {
+			statusMessage = normalizeStatusMessage(taskOutput.StatusMessage)
+		}
+		data.DisplayStatus = detailedDisplayRunStatus(run, statusMessage)
 
 		renderRunText(ctx, out, w, run, &data, ids)
 		return nil
@@ -218,12 +245,14 @@ func aiRuntimeTaskOf(run *jobs.Run) *jobs.AiRuntimeTask {
 // hyperlinks and colors once the dashboard and MLflow identifiers are known.
 func buildGetData(run *jobs.Run) getData {
 	data := getData{
-		RunID:           strconv.FormatInt(run.RunId, 10),
-		Status:          runStatus(run.State),
-		StartedAt:       startedAt(run),
-		DurationSeconds: durationSeconds(run),
-		AttemptNumber:   latestAttemptNumber(run),
-		ExperimentName:  experimentName(run),
+		RunID:             strconv.FormatInt(run.RunId, 10),
+		Status:            runStatus(run.State),
+		DisplayStatus:     displayRunStatus(run),
+		TerminationReason: terminationReason(run),
+		StartedAt:         startedAt(run),
+		DurationSeconds:   durationSeconds(run),
+		AttemptNumber:     latestAttemptNumber(run),
+		ExperimentName:    experimentName(run),
 	}
 	data.SubmittedDisplay = submittedDisplay(run)
 	data.DurationDisplay = na

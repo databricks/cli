@@ -1,0 +1,9 @@
+experiment_name: databricks-ai-v5-smoke
+command: python train.py
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 1
+environment:
+  version: databricks_ai_v5
+  dependencies:
+    - accelerate

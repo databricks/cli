@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      name: test-job-$UNIQUE_NAME
+      trigger:
+        table_update:
+          table_names:
+            - samples.nyctaxi.trips
+          condition: ANY_UPDATED
+          wait_after_last_change_seconds: 60

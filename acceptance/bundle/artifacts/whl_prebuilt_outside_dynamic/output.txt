@@ -13,7 +13,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 .databricks/bundle/default/patched_wheels/art2_other_test_code/other_test_code-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl
 
 === Expecting 2 wheels in libraries section in /jobs/create
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.tasks [OUTPUT_DIR]/out.requests.txt
 [
   {
     "environment_key": "test_env",
@@ -41,7 +41,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 ]
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments [OUTPUT_DIR]/out.requests.txt
 [
   {
     "environment_key": "test_env",

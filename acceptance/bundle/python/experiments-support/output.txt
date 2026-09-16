@@ -1,0 +1,24 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_mlflow_experiment"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "experiments": {
+      "my_experiment_1": {
+        "name": "//my_experiment_1 (updated)"
+      },
+      "my_experiment_2": {
+        "name": "//my_experiment_2 (updated)"
+      }
+    }
+  }
+}

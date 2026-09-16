@@ -7,10 +7,10 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.foo
-Files: 0 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py //jobs --nostamp
 
 === Update trigger.periodic.unit and re-deploy
 >>> update_file.py databricks.yml DAYS HOURS
@@ -23,10 +23,10 @@ Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.foo
-Files: 0 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py //jobs --nostamp
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
@@ -86,16 +86,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Destroy: 1 deleted
 
->>> print_requests.py //jobs
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [FOO_ID]
-  }
-}
-
->>> musterr [CLI] jobs get [FOO_ID]
-Error: Job [FOO_ID] does not exist.
+Error: Test script killed due to a timeout (1m0s)

@@ -3,7 +3,7 @@
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.test_job
-Files: 4 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_migration_telemetry
@@ -12,9 +12,14 @@ direct_drymigrate_warnings false
 
 === Redeploy with nothing set: direct is the default, so auto-migration triggers
 >>> [CLI] bundle deploy
-Warn: Direct engine selected via default but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Notice: the direct deployment engine is the default as of CLI v1.14.0.
+
+This bundle will be automatically migrated to use the direct deployment engine after this deployment.
+
+Learn more: https://docs.databricks.com/dev-tools/bundles/direct
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 Migrating state to direct deployment engine (selected via default)...
 Migrated 1 resource to direct deployment engine.
@@ -39,7 +44,7 @@ resources.json: remote direct state serial=3 lineage="[UUID]"
 === Subsequent deploy is a no-op on direct
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_migration_telemetry

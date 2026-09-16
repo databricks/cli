@@ -2,11 +2,13 @@ package aircmd
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -28,6 +30,8 @@ func TestLogsCommandShape(t *testing.T) {
 	review := cmd.Flags().Lookup("review")
 	require.NotNil(t, review)
 	assert.True(t, review.Hidden)
+	assert.NotNil(t, cmd.Flags().Lookup("tail"))
+	assert.Nil(t, cmd.Flags().Lookup("lines"))
 }
 
 // runLogsCmd invokes the logs command's RunE with the given flags against a mock
@@ -53,16 +57,16 @@ func TestLogsFlagValidation(t *testing.T) {
 		wantMsg string
 	}{
 		{
-			name:    "lines and minutes are mutually exclusive",
+			name:    "tail and minutes are mutually exclusive",
 			args:    []string{"5"},
-			flags:   map[string]string{"lines": "100", "minutes": "10"},
-			wantMsg: "cannot combine --lines with --minutes",
+			flags:   map[string]string{"tail": "100", "minutes": "10"},
+			wantMsg: "cannot combine --tail with --minutes",
 		},
 		{
-			name:    "negative lines rejected",
+			name:    "negative tail rejected",
 			args:    []string{"5"},
-			flags:   map[string]string{"lines": "-1"},
-			wantMsg: "invalid --lines",
+			flags:   map[string]string{"tail": "-1"},
+			wantMsg: "invalid --tail",
 		},
 		{
 			name:    "negative minutes rejected",
@@ -192,6 +196,37 @@ func TestLogsFallsBackToMLflow(t *testing.T) {
 	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, attempt: -1, tailLines: -1})
 	require.NoError(t, err)
 	assert.Equal(t, "line one\nline two\n", buf.String())
+}
+
+func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id":5,"state":{"life_cycle_state":"RUNNING"},"tasks":[{"run_id":456}]}`))
+		case strings.HasSuffix(r.URL.Path, "/logs"):
+			cancel()
+			_, _ = w.Write([]byte(`{"log_records":[]}`))
+		default:
+			_, _ = w.Write([]byte(`{"userName":"u@example.com"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	client := newTestWorkspaceClient(t, srv.URL)
+	client.Config.Profile = "team profile"
+	ctx = cmdio.InContext(ctx, cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", ""))
+	ctx = cmdctx.SetWorkspaceClient(ctx, client)
+	cmd := withOutput(newLogsCommand(), flags.OutputText)
+	cmd.SetContext(ctx)
+	cmd.SetOut(&buf)
+
+	err := cmd.RunE(cmd, []string{"5"})
+	require.ErrorIs(t, err, root.ErrAlreadyPrinted)
+	assert.Contains(t, buf.String(), "Streaming logs interrupted.")
+	assert.Contains(t, buf.String(), "To check status:\ndatabricks experimental air get 5 -p 'team profile'")
+	assert.Contains(t, buf.String(), "To resume streaming logs:\ndatabricks experimental air logs 5 -p 'team profile'")
 }
 
 // activeRunPastRetryServer serves a still-RUNNING run with two attempts and a

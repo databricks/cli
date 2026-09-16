@@ -1,0 +1,32 @@
+cleanup() {
+    withdir bundle trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+changes() {
+    withdir bundle $CLI bundle plan -o json | jq '.plan["resources.job_runs.my_run"].changes'
+}
+
+file_triggers() {
+    withdir bundle print_state.py | jq '.state["resources.job_runs.my_run"].state.lifecycle.triggers_state.on_file_change'
+}
+
+title "first deploy"
+withdir bundle trace $CLI bundle deploy
+trace file_triggers
+
+title "editing the file next to the included YAML re-fires"
+# printf keeps LF on Windows, where update_file.py's text-mode rewrite uses CRLF.
+printf 'include-v2\n' > bundle/resources/watched-resources.txt
+trace changes
+printf 'include-v1\n' > bundle/resources/watched-resources.txt
+
+title "editing the file at the bundle root re-fires"
+printf 'bundle-v2\n' > bundle/watched-bundle.txt
+trace changes
+printf 'bundle-v1\n' > bundle/watched-bundle.txt
+
+title "editing the file at the sync root re-fires"
+printf 'parent-v2\n' > shared.txt
+trace changes
+printf 'parent-v1\n' > shared.txt

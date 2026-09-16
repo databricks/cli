@@ -1,1 +1,0 @@
-`bundle plan` no longer reports a permanent, unconvergeable update on `securable_kind` for Unity Catalog `TABLE` securables declared under an app's `resources`. The field is computed by the backend (output-only), so it is now ignored during drift detection. Direct engine only ([#6342](https://github.com/databricks/cli/issues/6342)).

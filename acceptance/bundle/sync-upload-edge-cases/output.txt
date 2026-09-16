@@ -77,7 +77,7 @@ Uploaded with spaces.txt
   map(select(.path == "/api/2.0/workspace/import")) |
   map(.body.multipart_form.path) |
   sort | .[]
- out.requests.txt
+ [OUTPUT_DIR]/out.requests.txt
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/.gitignore
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/dashboard.lvdash.json
 /Workspace/Users/[USERNAME]/.bundle/upload-edge-cases/default/files/databricks.yml
@@ -94,7 +94,7 @@ Uploaded with spaces.txt
 >>> jq -rs 
   map(select(.path == "/api/2.0/workspace/import")) |
   map(.body.multipart_form.format) | unique
- out.requests.txt
+ [OUTPUT_DIR]/out.requests.txt
 [
   "AUTO"
 ]
@@ -105,7 +105,7 @@ Uploaded with spaces.txt
   map(select(.body.multipart_form.path | test("/(pyNb\\.py|sqlNb\\.sql|scalaNb\\.scala|plain-script\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
   map({path: (.body.multipart_form.path | sub(".*/"; "")), content: .body.multipart_form.content}) |
   sort_by(.path) | .[]
- out.requests.txt
+ [OUTPUT_DIR]/out.requests.txt
 {
   "path": "dashboard.lvdash.json",
   "content": "{\"datasets\":[],\"pages\":[]}\n"

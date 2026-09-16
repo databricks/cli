@@ -1,9 +1,9 @@
 trace $CLI bundle validate
 trace $CLI bundle plan
-trace print_requests.py '^//workspace/import'
+trace print_requests.py --nostamp '^//workspace/import' '^//api/2.0/bundle'
 
 trace $CLI bundle deploy
-trace print_requests.py '^//workspace/import'
+trace print_requests.py --nostamp '^//workspace/import' '^//api/2.0/bundle'
 
 trace $CLI bundle destroy --auto-approve
-trace print_requests.py --sort '^//workspace/import'
+trace print_requests.py --nostamp --sort '^//workspace/import' '^//api/2.0/bundle'

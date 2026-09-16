@@ -59,11 +59,6 @@ func (b *Bundle) SuppressProgress() bool {
 	return b.Quiet >= QuietAll
 }
 
-// AiCodeSnapshotDir is the sync-relative dir the aicode mutator writes AI Runtime
-// code snapshots into. Force-included in sync (see GetSyncIncludePatterns) so user
-// ignore rules can't filter the deployed job's code_source_path archives out.
-const AiCodeSnapshotDir = ".air_snapshots"
-
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=direct
 const resourcesFilename = "resources.json"
 
@@ -85,8 +80,11 @@ type Metrics struct {
 	ExecutionTimes              []protos.IntMapEntry
 	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
 
-	// StateEngine is the engine that ran the deploy, set in deployCore. Empty when
-	// telemetry is emitted without a deploy having run.
+	// StateEngine is the engine that ran (or would have run) the deploy. Set to the
+	// requested engine as soon as it is resolved, then refined to the state's engine
+	// once the state is pulled, so deploy telemetry reports it even when the deploy
+	// fails or is cancelled before applying resources. Empty only when the deploy
+	// fails before the engine is resolved.
 	StateEngine engine.EngineType
 
 	// ResourceState is the direct engine's per-resource deployment state
@@ -224,12 +222,6 @@ type Bundle struct {
 	// comparison with remote state, but local file validation would incorrectly fail.
 	SkipLocalFileValidation bool
 
-	// HasAiRuntimeCodeSnapshot is set by the aicode.PackageCodeSource build-phase
-	// mutator when it packages a local AI Runtime code_source into the bundle's
-	// snapshot dir. GetSyncIncludePatterns reads it to force-sync that dir only for
-	// bundles that actually use the feature, rather than for every bundle.
-	HasAiRuntimeCodeSnapshot bool
-
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud
@@ -328,6 +320,14 @@ func (b *Bundle) WorkspaceClient(ctx context.Context) *databricks.WorkspaceClien
 	return client
 }
 
+// ConfiguresDeploymentHistory reports whether this bundle is configured to record deployment history with the
+// deployment metadata service, from experimental.deployment_history or
+// DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY.
+func (b *Bundle) ConfiguresDeploymentHistory(ctx context.Context) bool {
+	configured := b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory
+	return env.RecordsDeploymentHistory(ctx, configured)
+}
+
 // SetWorkpaceClient sets the workspace client for this bundle.
 // This is used to inject a mock client for testing.
 func (b *Bundle) SetWorkpaceClient(w *databricks.WorkspaceClient) {
@@ -419,13 +419,6 @@ func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 	includes := append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*")))
-	// Force-sync generated AI Runtime code snapshots so a user ignore rule (e.g.
-	// "*.tar.gz" in .gitignore) can't filter them out — the deployed job's
-	// code_source_path points at these archives (see bundle/config/mutator/aicode).
-	// Scoped to bundles that actually package one, so it's not a global include.
-	if b.HasAiRuntimeCodeSnapshot {
-		includes = append(includes, AiCodeSnapshotDir+"/*")
-	}
 	return includes, nil
 }
 

@@ -25,15 +25,15 @@ func TestRunConfigMaxRetries(t *testing.T) {
 	assert.Equal(t, 7, c.maxRetries())
 }
 
-func TestRunConfigDockerImageURL(t *testing.T) {
+func TestRunConfigUnityCatalogImagePath(t *testing.T) {
 	c := &runConfig{}
-	assert.Empty(t, c.dockerImageURL())
+	assert.Empty(t, c.unityCatalogImagePath())
 
 	c.Environment = &environmentConfig{}
-	assert.Empty(t, c.dockerImageURL())
+	assert.Empty(t, c.unityCatalogImagePath())
 
-	c.Environment.DockerImage = &dockerImageConfig{URL: "org/repo:tag"}
-	assert.Equal(t, "org/repo:tag", c.dockerImageURL())
+	c.Environment.UnityCatalogImage = "main.air.training:prod"
+	assert.Equal(t, "main.air.training:prod", c.unityCatalogImagePath())
 }
 
 func TestRunConfigDependencies(t *testing.T) {

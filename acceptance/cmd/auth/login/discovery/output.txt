@@ -1,5 +1,5 @@
 
->>> [CLI] auth login --profile discovery-test
+>>> [CLI] auth login --profile discovery-test --client-id discovery-client-id
 Opening login.databricks.com in your browser...
 Profile discovery-test was successfully saved
 

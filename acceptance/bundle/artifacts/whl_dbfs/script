@@ -4,9 +4,9 @@ title "Expecting to find no wheels"
 trace errcode find.py --expect 0 whl
 
 title "Expecting 1 wheel in libraries section in /jobs/create"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' "$OUT_REQUESTS"
 
 title "Expecting no wheels to be uploaded"
-trace errcode sh -c "jq -r '.body.multipart_form.path | strings' < out.requests.txt | grep whl"
+trace errcode sh -c 'jq -r ".body.multipart_form.path | strings" < "$OUT_REQUESTS" | grep whl'
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-remote-sync-telemetry/default/files...
 Created jobs.foo
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle config-remote-sync
@@ -13,7 +13,7 @@ Resource: resources.jobs.foo
 
 
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "engine": "direct",
   "changes_total": 1,

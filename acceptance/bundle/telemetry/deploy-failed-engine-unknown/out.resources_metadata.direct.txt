@@ -1,0 +1,13 @@
+{
+  "state_engine": "direct",
+  "state_file_size_bytes": 543,
+  "resources": [
+    {
+      "resource_type": "jobs",
+      "count": 1,
+      "state_size_max_bytes": 254,
+      "state_size_mean_bytes": 254,
+      "state_size_median_bytes": 254
+    }
+  ]
+}

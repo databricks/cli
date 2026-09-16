@@ -101,6 +101,15 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 
+	if msg := s.applyJobClusterPolicies(&jobSettings); msg != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    msg,
+			},
+		}
+	}
 	jobFixUps(&jobSettings)
 
 	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
@@ -130,6 +139,15 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 
 	defer s.LockUnlock()()
 
+	if msg := s.applyJobClusterPolicies(&request.NewSettings); msg != "" {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    msg,
+			},
+		}
+	}
 	jobFixUps(&request.NewSettings)
 
 	jobId := request.JobId
@@ -166,6 +184,12 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 	}
 
 	jobSettings.ForceSendFields = append(jobSettings.ForceSendFields, "TimeoutSeconds")
+
+	// The real Jobs API accepts trigger.table_update.condition on create/update but
+	// does not return it in GET responses; clear it so testserver matches cloud.
+	if jobSettings.Trigger != nil && jobSettings.Trigger.TableUpdate != nil {
+		jobSettings.Trigger.TableUpdate.Condition = ""
+	}
 
 	// Add task-level defaults that match AWS cloud behavior
 	for i := range jobSettings.Tasks {
@@ -217,21 +241,32 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 
 			// The real Jobs API consumes apply_policy_default_values but does not
 			// return it in GET responses; clear it so testserver matches cloud.
-			task.NewCluster.ApplyPolicyDefaultValues = false
+			clearApplyPolicyDefaultValues(task.NewCluster)
 		}
 
 		// Handle for_each_task inner cluster.
 		if task.ForEachTask != nil && task.ForEachTask.Task.NewCluster != nil {
 			// Same as above: not returned in GET responses.
-			task.ForEachTask.Task.NewCluster.ApplyPolicyDefaultValues = false
+			clearApplyPolicyDefaultValues(task.ForEachTask.Task.NewCluster)
 		}
 	}
 
 	// Handle job cluster new_clusters.
 	for i := range jobSettings.JobClusters {
 		// Same as above: not returned in GET responses.
-		jobSettings.JobClusters[i].NewCluster.ApplyPolicyDefaultValues = false
+		clearApplyPolicyDefaultValues(jobSettings.JobClusters[i].NewCluster)
 	}
+}
+
+// clearApplyPolicyDefaultValues drops apply_policy_default_values from a job's cluster spec.
+// Zeroing the value alone is not enough: decoding the request populates ForceSendFields from
+// the keys it carried, so a request that set the flag would still serialize it as an explicit
+// false instead of omitting it the way the Jobs API does.
+func clearApplyPolicyDefaultValues(spec *compute.ClusterSpec) {
+	spec.ApplyPolicyDefaultValues = false
+	spec.ForceSendFields = slices.DeleteFunc(spec.ForceSendFields, func(field string) bool {
+		return field == "ApplyPolicyDefaultValues"
+	})
 }
 
 // jobsGetTasksPageSize matches the real Databricks API limit of 100 tasks per jobs.get response.
@@ -587,7 +622,8 @@ const (
 )
 
 // writeSSHTunnelMetadata publishes the metadata.json a real tunnel server would
-// write next to the bootstrap notebook. Callers must hold the workspace lock.
+// write next to the bootstrap notebook, and the host key it would publish to the
+// session's secret scope. Callers must hold the workspace lock.
 func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 	for _, t := range request.Tasks {
 		if t.NotebookTask == nil {
@@ -605,7 +641,24 @@ func (s *FakeWorkspace) writeSSHTunnelMetadata(request jobs.SubmitRun) {
 			Info: workspace.ObjectInfo{ObjectType: "FILE", Path: metadataPath},
 			Data: metadata,
 		}
+		s.publishSSHTunnelHostKey(t.NotebookTask.BaseParameters["secretScopeName"])
 	}
+}
+
+// publishSSHTunnelHostKey stores the tunnel host key's public half in the session's
+// secret scope, the way the real server does at startup, so the client can pin it.
+// Callers must hold the workspace lock.
+func (s *FakeWorkspace) publishSSHTunnelHostKey(scope string) {
+	if scope == "" {
+		return
+	}
+	if _, err := s.ensureSSHTunnelHostKey(); err != nil {
+		return
+	}
+	if s.Secrets[scope] == nil {
+		s.Secrets[scope] = make(map[string]string)
+	}
+	s.Secrets[scope][sshServerPublicKeySecretKey] = string(s.sshTunnelHostPublicKey)
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.

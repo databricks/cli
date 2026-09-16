@@ -9,10 +9,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.bar
 Created jobs.foo
-Files: 0 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -28,10 +28,10 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.foo
-Files: 0 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -73,7 +73,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 2 deleted
 
->>> print_requests.py //jobs
+>>> print_requests.py --nostamp //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",

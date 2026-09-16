@@ -1,1 +1,0 @@
-Bundles still on Terraform state are now migrated to the direct engine automatically, after a deploy whose dry-run conversion comes back clean. To opt out, set `engine: terraform` under `bundle` or `DATABRICKS_BUNDLE_ENGINE=terraform`. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct

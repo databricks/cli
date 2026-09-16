@@ -19,18 +19,16 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "settings-v2",
-		Short: `*Public Preview* APIs to manage account level settings.`,
-		Long: `This command is in Public Preview and may change without notice.
-
-APIs to manage account level settings`,
+		Use:     "settings-v2",
+		Short:   `APIs to manage account level settings.`,
+		Long:    `APIs to manage account level settings`,
 		GroupID: "settings",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	// Add methods
 	cmd.AddCommand(newGetPublicAccountSetting())
@@ -63,18 +61,16 @@ func newGetPublicAccountSetting() *cobra.Command {
 	var getPublicAccountSettingReq settingsv2.GetPublicAccountSettingRequest
 
 	cmd.Use = "get-public-account-setting NAME"
-	cmd.Short = `*Public Preview* Get an account setting.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Get an account setting.
+	cmd.Short = `Get an account setting.`
+	cmd.Long = `Get an account setting.
 
   Get a setting value at account level. See
   :method:settingsv2/listaccountsettingsmetadata for list of setting available
   via public APIs at account level.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -202,18 +198,16 @@ func newListAccountSettingsMetadata() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-account-settings-metadata"
-	cmd.Short = `*Public Preview* List valid setting keys and their metadata.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-List valid setting keys and their metadata.
+	cmd.Short = `List valid setting keys and their metadata.`
+	cmd.Long = `List valid setting keys and their metadata.
 
   List valid setting keys and metadata. These settings are available to be
   referenced via GET :method:settingsv2/getpublicaccountsetting and PATCH
   :method:settingsv2/patchpublicaccountsetting APIs`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(0)
@@ -372,10 +366,8 @@ func newPatchPublicAccountSetting() *cobra.Command {
 	// TODO: complex arg: string_val
 
 	cmd.Use = "patch-public-account-setting NAME"
-	cmd.Short = `*Public Preview* Update an account setting.`
-	cmd.Long = `This command is in Public Preview and may change without notice.
-
-Update an account setting.
+	cmd.Short = `Update an account setting.`
+	cmd.Long = `Update an account setting.
 
   Patch a setting value at account level. See
   :method:settingsv2/listaccountsettingsmetadata for list of setting available
@@ -386,8 +378,8 @@ Update an account setting.
   Note: Page refresh is required for changes to take effect in UI.`
 
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PUBLIC_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Public Preview"
+	cmd.Annotations["launch_stage"] = "GA"
+	cmd.Annotations["launch_stage_display"] = "GA"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)

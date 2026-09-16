@@ -1,0 +1,46 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Change one field inside default_endpoint_settings
+>>> update_file.py databricks.yml autoscaling_limit_max_cu: 4 autoscaling_limit_max_cu: 8
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --del-body project_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+{
+  "autoscaling_limit_max_cu": 8,
+  "autoscaling_limit_min_cu": 0.5,
+  "suspend_timeout_duration": "86400s"
+}
+
+=== Plan again: the change must leave no drift behind
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_projects.my_project
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

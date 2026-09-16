@@ -226,6 +226,7 @@ func newCreateSpace() *cobra.Command {
 
 	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createSpaceReq.Space.AssumeGroupId, "assume-group-id", createSpaceReq.Space.AssumeGroupId, `The group whose permissions users assume via Role Authorization for apps in this space.`)
 	cmd.Flags().StringVar(&createSpaceReq.Space.Description, "description", createSpaceReq.Space.Description, `The description of the app space.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: array: resources
@@ -1951,6 +1952,7 @@ func newUpdateSpace() *cobra.Command {
 
 	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateSpaceReq.Space.AssumeGroupId, "assume-group-id", updateSpaceReq.Space.AssumeGroupId, `The group whose permissions users assume via Role Authorization for apps in this space.`)
 	cmd.Flags().StringVar(&updateSpaceReq.Space.Description, "description", updateSpaceReq.Space.Description, `The description of the app space.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: array: resources

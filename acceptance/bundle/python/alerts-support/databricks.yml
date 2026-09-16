@@ -1,0 +1,24 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_alert"
+
+resources:
+  alerts:
+    my_alert_1:
+      display_name: "My Alert"
+      query_text: "SELECT 1"
+      warehouse_id: "my_warehouse"
+      evaluation:
+        comparison_operator: "GREATER_THAN"
+        source:
+          name: "column_1"
+      schedule:
+        quartz_cron_schedule: "0 0 0 * * ?"
+        timezone_id: "UTC"

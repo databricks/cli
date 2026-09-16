@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -444,6 +445,37 @@ func aliasToVarName(prefix string) string {
 		return prefix
 	}
 	return prefix + "_id"
+}
+
+// DedupeResources returns a copy of plugins with resources shared by several
+// plugins collapsed to a single occurrence, identified by type and key (as in
+// manifest.CollectResources). Otherwise a resource declared by two selected
+// features is emitted twice by every generator. Required declarations are
+// processed before optional ones so a required resource is never dropped in
+// favor of an optional duplicate.
+func DedupeResources(plugins []manifest.Plugin) []manifest.Plugin {
+	seen := make(map[string]bool)
+	filter := func(rs []manifest.Resource) []manifest.Resource {
+		var out []manifest.Resource
+		for _, r := range rs {
+			id := r.Type + ":" + r.Key()
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			out = append(out, r)
+		}
+		return out
+	}
+
+	out := slices.Clone(plugins)
+	for i := range out {
+		out[i].Resources.Required = filter(out[i].Resources.Required)
+	}
+	for i := range out {
+		out[i].Resources.Optional = filter(out[i].Resources.Optional)
+	}
+	return out
 }
 
 // GetSelectedPlugins returns plugins that match the given names.

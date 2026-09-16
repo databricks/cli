@@ -80,7 +80,11 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 
 	// A run with no logs is reported the same way as on the streaming path, so
 	// the message and exit code agree between them.
-	ids := mlflowIDs(ctx, w, run)
+	attempt, taskRunID, err := resolveLogAttempt(run, req.attempt)
+	if err != nil {
+		return false, err
+	}
+	ids := mlflowIDsForTask(ctx, w, taskRunID)
 	if ids == nil || ids.RunID == "" {
 		emitNoLogs(out, req, status)
 		return status.downloadOutcome(), nil
@@ -96,7 +100,7 @@ func downloadLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Wri
 		return false, fmt.Errorf("failed to create %s: %w", dir, err)
 	}
 
-	nodeLogs, failures, err := downloadAllNodeLogs(ctx, w, ids.RunID, dir, nodes, req.attempt)
+	nodeLogs, failures, err := downloadAllNodeLogs(ctx, w, ids.RunID, dir, nodes, attempt)
 	if err != nil {
 		return false, err
 	}

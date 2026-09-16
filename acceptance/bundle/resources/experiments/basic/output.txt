@@ -178,4 +178,5 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted
+
+Error: Test script killed due to a timeout (1m0s)

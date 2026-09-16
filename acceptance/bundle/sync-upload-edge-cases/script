@@ -75,13 +75,13 @@ trace jq -rs '
   map(select(.path == "/api/2.0/workspace/import")) |
   map(.body.multipart_form.path) |
   sort | .[]
-' out.requests.txt
+' "$OUT_REQUESTS"
 
 title "every upload set format=AUTO"
 trace jq -rs '
   map(select(.path == "/api/2.0/workspace/import")) |
   map(.body.multipart_form.format) | unique
-' out.requests.txt
+' "$OUT_REQUESTS"
 
 title "recorded content for the small text inputs"
 trace jq -rs '
@@ -89,8 +89,8 @@ trace jq -rs '
   map(select(.body.multipart_form.path | test("/(pyNb\\.py|sqlNb\\.sql|scalaNb\\.scala|plain-script\\.py|héllo\\.txt|with spaces\\.txt|empty\\.txt|dashboard\\.lvdash\\.json)$"))) |
   map({path: (.body.multipart_form.path | sub(".*/"; "")), content: .body.multipart_form.content}) |
   sort_by(.path) | .[]
-' out.requests.txt
+' "$OUT_REQUESTS"
 
 # Drop the recorded requests; their workspace-prefixed paths are noisy and the
 # assertions above already pin the relevant fields.
-rm out.requests.txt .gitignore
+rm "$OUT_REQUESTS" .gitignore

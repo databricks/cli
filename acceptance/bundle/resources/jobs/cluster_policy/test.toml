@@ -1,0 +1,11 @@
+# The drift-suppression under test is a direct-engine feature (bundle/direct), so restrict the
+# inherited engine matrix to direct. Cloud = true adds a real-workspace run; every test here
+# also runs locally against the testserver.
+Cloud = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+]

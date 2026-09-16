@@ -1,1 +1,0 @@
-`bundle destroy` no longer counts resources that are already gone remotely in its `Destroy: N deleted` summary. Such deletes only clean up stale state and are not listed under the deletion prompt, so they are now excluded from the count as well, matching the terraform engine.
