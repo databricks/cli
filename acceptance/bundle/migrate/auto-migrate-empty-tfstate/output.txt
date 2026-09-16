@@ -9,9 +9,9 @@ Removing empty terraform state; direct engine will be used on the next deploy (s
 
 === Terraform state is renamed to .backup; no resources.json (empty state, nothing to persist)
 
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py ^\.databricks/bundle/.*resources\.json$
 
->>> find .databricks/bundle -name terraform.tfstate* -type f
+>>> find.py ^\.databricks/bundle/.*terraform\.tfstate
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Sweep is recorded in telemetry as via-config

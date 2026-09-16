@@ -12,8 +12,8 @@ title "Deploy with bundle.engine: direct and an empty terraform state — sweep,
 trace $CLI bundle deploy 2>&1 | contains.py 'Removing empty terraform state' '!Migrating state to direct'
 
 title "Terraform state is renamed to .backup; no resources.json (empty state, nothing to persist)\n"
-trace find .databricks/bundle -name "resources.json" -type f
-trace find .databricks/bundle -name "terraform.tfstate*" -type f
+trace find.py '^\.databricks/bundle/.*resources\.json$'
+trace find.py '^\.databricks/bundle/.*terraform\.tfstate'
 
 title "Sweep is recorded in telemetry as via-config\n"
 trace print_migration_telemetry
