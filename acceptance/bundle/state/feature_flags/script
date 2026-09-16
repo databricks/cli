@@ -1,31 +1,46 @@
 mkdir -p .databricks/bundle/default
 
-for cli in "$CLI_1_7" "$CLI_1_8" "$CLI"; do
-    for version in 0 1 2 3; do
-        for feature in none deployment_history future_feature; do
-            title "state version=$version feature=$feature"
-            # Version 0 represents a legacy state with no state_version field.
-            jq --argjson version "$version" --arg feature "$feature" '
-                .state_version = $version |
-                if $version == 0 then del(.state_version) else . end |
-                .features = (if $feature == "none" then {} else {($feature): {}} end)
-            ' resources.empty_features.json > .databricks/bundle/default/resources.json
+case "$CLI_VERSION" in
+    old) tested_cli="$CLI_1_8" ;;
+    new) tested_cli="$CLI" ;;
+esac
+expected=$(jq -er --arg cli "$CLI_VERSION" --arg version "$STATE_VERSION" --arg feature "$STATE_FEATURE" '.[$cli][$version][$feature]' expected.json)
 
-            export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
-            if [ "$feature" = deployment_history ]; then
-                export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true
-            fi
+jq --argjson version "$STATE_VERSION" --arg feature "$STATE_FEATURE" '
+    .state_version = $version |
+    .features = (if $feature == "none" then {} else {($feature): {}} end)
+' resources.empty_features.json > .databricks/bundle/default/resources.json
+cp .databricks/bundle/default/resources.json .databricks/input.json
 
-            cp .databricks/bundle/default/resources.json .databricks/input.json
-            trace errcode "$cli" bundle plan
-            cmp .databricks/input.json .databricks/bundle/default/resources.json
+export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
+if [ "$STATE_FEATURE" = deployment_history ]; then
+    export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true
+fi
 
-            if [ "$cli" = "$CLI" ] && [ "$feature" != future_feature ]; then
-                title "Deploy persists the migrated version and features"
-                trace "$cli" bundle deploy
-                trace jq '{state_version, features}' .databricks/bundle/default/resources.json
-                trace "$cli" bundle destroy --auto-approve
-            fi
-        done
-    done
-done
+if "$tested_cli" bundle plan > .databricks/plan.log 2>&1; then
+    actual=accept
+else
+    actual=reject
+fi
+if [ "$actual" != "$expected" ]; then
+    cat .databricks/plan.log
+    echo "Expected $expected, got $actual for CLI=$CLI_VERSION state=$STATE_VERSION feature=$STATE_FEATURE" >&2
+    exit 1
+fi
+
+if [ "$expected" = reject ]; then
+    contains.py "requires features this CLI does not support: $STATE_FEATURE" "upgrade to the latest CLI version" "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features" < .databricks/plan.log > /dev/null
+else
+    contains.py "Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged" < .databricks/plan.log > /dev/null
+fi
+cmp .databricks/input.json .databricks/bundle/default/resources.json
+
+if [ "$CLI_VERSION" = new ] && [ "$expected" = accept ]; then
+    "$tested_cli" bundle deploy > .databricks/deploy.log 2>&1 || { cat .databricks/deploy.log; exit 1; }
+    jq -e --arg feature "$STATE_FEATURE" '
+        .state_version == 3 and
+        (.features // {}) == (if $feature == "none" then {} else {($feature): {}} end)
+    ' .databricks/bundle/default/resources.json > /dev/null
+fi
+
+echo "State compatibility checks passed."

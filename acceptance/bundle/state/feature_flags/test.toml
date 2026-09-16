@@ -2,6 +2,8 @@ Ignore = [".databricks"]
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = [""]
+EnvMatrix.CLI_VERSION = ["old", "new"]
+EnvMatrix.STATE_VERSION = ["2", "3"]
+EnvMatrix.STATE_FEATURE = ["none", "deployment_history", "future_feature"]
 
-CLIVersions.CLI_1_7 = "1.7.0"
 CLIVersions.CLI_1_8 = "1.8.0"

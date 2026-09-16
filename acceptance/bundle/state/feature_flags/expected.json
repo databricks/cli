@@ -1,0 +1,10 @@
+{
+  "old": {
+    "2": {"none": "accept", "deployment_history": "accept", "future_feature": "accept"},
+    "3": {"none": "accept", "deployment_history": "reject", "future_feature": "reject"}
+  },
+  "new": {
+    "2": {"none": "accept", "deployment_history": "accept", "future_feature": "reject"},
+    "3": {"none": "accept", "deployment_history": "accept", "future_feature": "reject"}
+  }
+}
