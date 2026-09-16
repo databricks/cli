@@ -1,1 +1,0 @@
-* direct: resources.job\_runs: new lifecycle.triggers.on\_file\_change setting to restart the run when monitored files change. Can be set to a series of paths or globs. ([#6309](https://github.com/databricks/cli/pull/6309))

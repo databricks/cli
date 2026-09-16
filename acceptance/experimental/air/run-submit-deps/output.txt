@@ -11,7 +11,7 @@ Stream logs after submission using:
 
 === only config + command are uploaded; no requirements.yaml
 >>> print_requests.py //api/2.0/workspace/import --oneline --sort --unique --keep
-{"method": "POST", "path": "/api/2.0/workspace/import", "body": {"multipart_form": {"content": "experiment_name: deps-smoke\ncommand: python train.py\ncompute:\n  accelerator_type: GPU_1xH100\n  num_accelerators: 1\n  provisioned_capacity_id: capacity-123\nenvironment:\n  version: 5\n  dependencies:\n    - numpy\n    - torch==2.3.0\nmlflow_artifact_location: /Volumes/main/default/air-artifacts\n", "format": "AUTO", "overwrite": "true", "path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/training_config.yaml"}}}
+{"method": "POST", "path": "/api/2.0/workspace/import", "body": {"multipart_form": {"content": "experiment_name: deps-smoke\ncommand: python train.py\ncompute:\n    accelerator_type: GPU_1xH100\n    num_accelerators: 1\n    provisioned_capacity_id: capacity-123\nenvironment:\n    version: 5\n    dependencies:\n        - numpy\n        - torch==2.3.0\nmlflow_artifact_location: /Volumes/main/default/air-artifacts\n", "format": "AUTO", "overwrite": "true", "path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/training_config.yaml"}}}
 {"method": "POST", "path": "/api/2.0/workspace/import", "body": {"multipart_form": {"content": "python train.py", "format": "AUTO", "overwrite": "true", "path": "/Workspace/Users/[USERNAME]/.air/cli_launch/deps-smoke/deps-smoke_[RUN_ID]/command.sh"}}}
 
 === inline deps, artifact location, and capacity id reach the submit payload

@@ -1,5 +1,5 @@
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "serial": 3,
@@ -12,7 +12,7 @@
     "etag": "[NUMID]",
     "parent_path": "/Workspace/Users/[USERNAME]",
     "published": true,
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+    "serialized_dashboard": "sha256:[HASH]",
     "warehouse_id": "123456"
    }
   }

@@ -241,7 +241,7 @@
   "path": "/api/2.0/workspace/import",
   "body": {
     "multipart_form": {
-      "content": "{\n \"state_version\": 2,\n \"cli_version\": \"[CLI_VERSION]\",\n \"lineage\": \"[UUID]\",\n \"serial\": 1,\n \"state\": {\n  \"resources.schemas.foo\": {\n   \"__id__\": \"mycatalog.myschema\",\n   \"state\": {\n    \"catalog_name\": \"mycatalog\",\n    \"name\": \"myschema\"\n   }\n  }\n }\n}",
+      "content": "{\n \"state_version\": 3,\n \"cli_version\": \"[CLI_VERSION]\",\n \"lineage\": \"[UUID]\",\n \"serial\": 1,\n \"state\": {\n  \"resources.schemas.foo\": {\n   \"__id__\": \"mycatalog.myschema\",\n   \"state\": {\n    \"catalog_name\": \"mycatalog\",\n    \"name\": \"myschema\"\n   }\n  }\n }\n}",
       "format": "AUTO",
       "overwrite": "true",
       "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json"

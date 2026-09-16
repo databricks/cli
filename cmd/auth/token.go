@@ -25,6 +25,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const invalidRefreshTokenErrorCode = "INVALID_REFRESH_TOKEN"
+
+type tokenErrorOutput struct {
+	ErrorCode string `json:"error_code"`
+	Message   string `json:"message"`
+}
+
 func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthArgument) string {
 	loginMsg := auth.BuildLoginCommand(ctx, profile, persistentAuth)
 	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
@@ -72,6 +79,14 @@ and secret is not supported.`,
 			persistentAuthOpts: nil,
 		})
 		if err != nil {
+			if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputJSON {
+				if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
+					if outputErr := writeTokenErrorOutput(cmd.OutOrStdout(), err); outputErr != nil {
+						return outputErr
+					}
+					return root.ErrAlreadyPrinted
+				}
+			}
 			return err
 		}
 		// Only honor the explicit --output text flag, not implicit text mode
@@ -96,6 +111,15 @@ func writeTokenOutput(w io.Writer, t *oauth2.Token, textMode bool) error {
 	}
 	_, err = w.Write(raw)
 	return err
+}
+
+func writeTokenErrorOutput(w io.Writer, err error) error {
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(tokenErrorOutput{
+		ErrorCode: invalidRefreshTokenErrorCode,
+		Message:   err.Error(),
+	})
 }
 
 type loadTokenArgs struct {
