@@ -176,7 +176,7 @@ type WALEntry struct {
 // (after approval) - which is why it is not an Open option. It also records the id a first deploy
 // just created, which Open could not know, so CompleteVersion later has it.
 func (db *DeploymentState) InitializeOperationBuffer(ctx context.Context, deploymentID string, versionID int) {
-	buf := dms.StartOperationBuffer(ctx, cmdctx.WorkspaceClient(ctx).BundleDeployments, deploymentID, versionID)
+	buf := dms.StartOperationBuffer(ctx, deploymentID, versionID)
 
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -234,7 +234,8 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	if !success {
 		reason = bundledeployments.VersionCompleteVersionCompleteFailure
 	}
-	_, err := cmdctx.WorkspaceClient(ctx).BundleDeployments.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
+	w := cmdctx.WorkspaceClient(ctx)
+	_, err := w.BundleDeployments.CompleteVersion(ctx, bundledeployments.CompleteVersionRequest{
 		Name:             dms.VersionName(deploymentID, versionID),
 		CompletionReason: reason,
 	})
@@ -581,7 +582,8 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 		db.DeploymentID = dmsDeployment.DeploymentID
 
 		if dmsDeployment.DeploymentID != "" {
-			resources, err := dms.ListResources(ctx, cmdctx.WorkspaceClient(ctx).BundleDeployments, dmsDeployment.DeploymentID)
+			w := cmdctx.WorkspaceClient(ctx)
+			resources, err := dms.ListResources(ctx, w.BundleDeployments, dmsDeployment.DeploymentID)
 			if err != nil {
 				return err
 			}

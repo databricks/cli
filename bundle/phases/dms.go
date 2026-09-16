@@ -70,13 +70,13 @@ func actionToSDK(a deployplan.ActionType) (bundledeployments.OperationActionType
 // no deployment behind; a first deploy's new id is then stamped into the plan (StampDeploymentID).
 func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment) {
 	db := &b.DeploymentBundle
-	dmsService := b.WorkspaceClient(ctx).BundleDeployments
+	w := b.WorkspaceClient(ctx)
 	metadata := deploymentMetadata(b)
 	deploymentID := db.StateDB.DeploymentID
 	if deploymentID == "" {
 		dep := metadata.Deployment()
 		dep.InitialParentPath = b.Config.Workspace.StatePath
-		created, err := dmsService.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: dep})
+		created, err := w.BundleDeployments.CreateDeployment(ctx, bundledeployments.CreateDeploymentRequest{Deployment: dep})
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
 			return
@@ -89,7 +89,7 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 		}
 		db.StateDB.DeploymentID = deploymentID
 	} else if mask := metadata.StaleFields(current); mask != "" {
-		_, err := dmsService.UpdateDeployment(ctx, bundledeployments.UpdateDeploymentRequest{
+		_, err := w.BundleDeployments.UpdateDeployment(ctx, bundledeployments.UpdateDeploymentRequest{
 			Name:       dms.DeploymentName(deploymentID),
 			Deployment: dms.DeploymentUpdate(metadata, mask),
 			UpdateMask: fieldmask.FieldMask{Paths: strings.Split(mask, ",")},
@@ -114,7 +114,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 	if !db.StateDB.IsDeploymentMetadataService() {
 		return nil
 	}
-	dmsService := b.WorkspaceClient(ctx).BundleDeployments
+	w := b.WorkspaceClient(ctx)
 	deploymentID := db.StateDB.DeploymentID
 	// This run's version follows the one the state is anchored to, which is empty for the first.
 	// InitializeOperationBuffer moves the anchor below, so callers afterwards read the created
@@ -137,7 +137,7 @@ func startVersion(ctx context.Context, b *bundle.Bundle, versionType dms.Version
 			OriginUrl: git.OriginURL,
 		}
 	}
-	version, err := dmsService.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
+	version, err := w.BundleDeployments.CreateVersion(ctx, bundledeployments.CreateVersionRequest{
 		Parent:    dms.DeploymentName(deploymentID),
 		VersionId: strconv.Itoa(versionID),
 		Version: bundledeployments.Version{
