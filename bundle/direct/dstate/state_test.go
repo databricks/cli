@@ -2,7 +2,6 @@ package dstate
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -181,31 +180,6 @@ func TestHeaderOnlyWALRecoveryDoesNotAdvanceSerial(t *testing.T) {
 	assert.Equal(t, "123", recovered.GetResourceID("jobs.my_job"))
 	assert.NoFileExists(t, walPath)
 	mustFinalize(t, &recovered)
-}
-
-func TestMigrateState(t *testing.T) {
-	for _, version := range []int{0, 1, 2, 3} {
-		for _, feature := range []string{"", FeatureDeploymentHistory, "future_feature"} {
-			t.Run(fmt.Sprintf("version=%d/feature=%s", version, feature), func(t *testing.T) {
-				db := &Database{Header: Header{StateVersion: version}}
-				if feature != "" {
-					db.Features = map[string]struct{}{feature: {}}
-				}
-				err := migrateState(db)
-				if feature == "future_feature" {
-					require.ErrorContains(t, err, "requires features this CLI does not support: future_feature")
-					assert.Contains(t, err.Error(), featuresDocURL)
-					assert.Equal(t, version, db.StateVersion)
-					return
-				}
-				require.NoError(t, err)
-				assert.Equal(t, 3, db.StateVersion)
-				if feature != "" {
-					assert.Contains(t, db.Features, feature)
-				}
-			})
-		}
-	}
 }
 
 func TestDeleteState(t *testing.T) {

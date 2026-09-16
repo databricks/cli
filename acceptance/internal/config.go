@@ -101,6 +101,10 @@ type TestConfig struct {
 
 	CompiledIgnoreObject *ignore.GitIgnore
 
+	// Released CLI versions to download for this test, keyed by the environment variable
+	// that exposes each executable to the script (e.g. CLIVersions.CLI_1_8 = "1.8.0").
+	CLIVersions map[string]string
+
 	// Environment variables
 	// If the same variable is defined both in Env and EnvMatrix, the one in EnvMatrix takes precedence
 	// regardless of which config file it is defined in.

@@ -1,11 +1,31 @@
 mkdir -p .databricks/bundle/default
 
-title "a state depending on a feature this CLI does not recognize is rejected"
-cp resources.with_feature.json .databricks/bundle/default/resources.json
-trace errcode $CLI bundle plan 2>&1 | contains.py "requires features this CLI does not support: future_feature" "upgrade to the latest CLI version" "https://docs.databricks.com/aws/en/dev-tools/bundles/state-features#state-features"
+for cli in "$CLI_1_7" "$CLI_1_8" "$CLI"; do
+    for version in 0 1 2 3; do
+        for feature in none deployment_history future_feature; do
+            title "state version=$version feature=$feature"
+            # Version 0 represents a legacy state with no state_version field.
+            jq --argjson version "$version" --arg feature "$feature" '
+                .state_version = $version |
+                if $version == 0 then del(.state_version) else . end |
+                .features = (if $feature == "none" then {} else {($feature): {}} end)
+            ' resources.empty_features.json > .databricks/bundle/default/resources.json
 
-title "a state with an empty features map is accepted, and a deploy keeps it at version 3"
-cp resources.empty_features.json .databricks/bundle/default/resources.json
-trace $CLI bundle plan | contains.py "Plan:"
-trace $CLI bundle deploy
-trace gron.py .databricks/bundle/default/resources.json | grep state_version
+            export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false
+            if [ "$feature" = deployment_history ]; then
+                export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true
+            fi
+
+            cp .databricks/bundle/default/resources.json .databricks/input.json
+            trace errcode "$cli" bundle plan
+            cmp .databricks/input.json .databricks/bundle/default/resources.json
+
+            if [ "$cli" = "$CLI" ] && [ "$feature" != future_feature ]; then
+                title "Deploy persists the migrated version and features"
+                trace "$cli" bundle deploy
+                trace jq '{state_version, features}' .databricks/bundle/default/resources.json
+                trace "$cli" bundle destroy --auto-approve
+            fi
+        done
+    done
+done

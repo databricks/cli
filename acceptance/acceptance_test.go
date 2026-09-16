@@ -585,6 +585,19 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				t.Skip(skipReason)
 			}
 
+			var testRepls testdiff.ReplacementsContext
+			// Download before t.Parallel so tests sharing a release cannot race to extract it.
+			for _, name := range slices.Sorted(maps.Keys(config.CLIVersions)) {
+				path := DownloadCLI(t, buildDir, config.CLIVersions[name])
+				if config.Env == nil {
+					config.Env = make(map[string]string)
+				}
+				config.Env[name] = path
+				testRepls.SetPath(path, "["+name+"]")
+			}
+			// Replace executable paths before their parent build directory.
+			testRepls.Repls = append(testRepls.Repls, repls.Repls...)
+
 			runParallel := !inprocessMode
 			if benchmarkMode && strings.Contains(dir, "benchmark") {
 				runParallel = false
@@ -625,7 +638,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				if reason := subset.skipReason(dir, nil); reason != "" {
 					t.Skip(reason)
 				}
-				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
+				runTest(t, dir, 0, coverDir, testRepls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -643,7 +656,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 						if reason := subset.skipReason(dir, envset); reason != "" {
 							t.Skip(reason)
 						}
-						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
+						runTest(t, dir, ind, coverDir, testRepls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
 				}
 			}
