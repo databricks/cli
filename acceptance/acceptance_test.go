@@ -1521,7 +1521,8 @@ func resolveLatestVersion(t *testing.T, buildDir string) string {
 }
 
 // DownloadCLI downloads a released CLI binary archive for the given version,
-// extracts the executable, and returns its path.
+// extracts the executable, and returns its path. Executables are cached by version
+// in the shared build directory and reused across tests and subsequent suite runs.
 func DownloadCLI(t *testing.T, buildDir, version string) string {
 	// Prepare target directory for this version
 	versionDir := filepath.Join(buildDir, version)
