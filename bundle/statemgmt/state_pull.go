@@ -195,15 +195,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 			localStatePath = localPathDirect
 		}
 
-		localStateDir := filepath.Dir(localStatePath)
-
-		err := os.MkdirAll(localStateDir, 0o700)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return ctx, winner
-		}
-
-		err = atomicfile.Write(localStatePath, winner.Content, 0o600)
+		err := atomicfile.Write(localStatePath, winner.Content, 0o600, atomicfile.MkDir(0o700))
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return ctx, winner

@@ -119,17 +119,13 @@ func migrateState(state *InstallState) {
 // SaveState writes install state to the given directory atomically.
 // Creates the directory if it does not exist.
 func SaveState(dir string, state *InstallState) error {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("failed to create state directory: %w", err)
-	}
-
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 	data = append(data, '\n')
 
-	return atomicfile.Write(filepath.Join(dir, stateFileName), data, 0o600)
+	return atomicfile.Write(filepath.Join(dir, stateFileName), data, 0o600, atomicfile.MkDir(0o755))
 }
 
 // GlobalSkillsDir returns the path to the global skills directory (~/.databricks/aitools/skills/).

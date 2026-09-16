@@ -329,12 +329,7 @@ func writeLocalManifest(ctx context.Context, path string, m Manifest) {
 		log.Debugf(ctx, "Failed to marshal manifest for cache: %v", err)
 		return
 	}
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		log.Warnf(ctx, "Failed to create cache directory %s: %v", dir, err)
-		return
-	}
-	if err := atomicfile.Write(path, data, 0o600); err != nil {
+	if err := atomicfile.Write(path, data, 0o600, atomicfile.MkDir(0o700)); err != nil {
 		log.Warnf(ctx, "Failed to write cache file: %v", err)
 	}
 }

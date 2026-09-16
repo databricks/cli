@@ -59,14 +59,9 @@ func PinHostKey(path, hostName string, publicKey []byte) error {
 		return nil
 	}
 
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("failed to create known hosts directory: %w", err)
-	}
-
 	// Write and rename so a connection racing this one (every ssh invocation runs the
 	// ProxyCommand, which refreshes the pin) never reads a half-written file.
-	if err := atomicfile.Write(path, []byte(line), 0o600); err != nil {
+	if err := atomicfile.Write(path, []byte(line), 0o600, atomicfile.MkDir(0o700)); err != nil {
 		return fmt.Errorf("failed to write known hosts file: %w", err)
 	}
 	return nil

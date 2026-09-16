@@ -11,15 +11,45 @@ import (
 	"path/filepath"
 )
 
+// Option configures a Write call.
+type Option func(*config)
+
+type config struct {
+	mkdirPerm os.FileMode
+	mkdir     bool
+}
+
+// MkDir makes Write create path's parent directory (and any missing parents)
+// with mode perm before writing, like os.MkdirAll. The directory mode is a
+// separate, deliberate choice from the file mode (e.g. 0o700 for a directory
+// holding secrets), so callers pass it explicitly rather than it defaulting.
+func MkDir(perm os.FileMode) Option {
+	return func(c *config) {
+		c.mkdir = true
+		c.mkdirPerm = perm
+	}
+}
+
 // Write atomically writes data to path with mode perm. It creates a temp file
 // in path's directory, writes and chmods it, then renames it over path.
 //
 // The resulting file always has mode perm; it does not inherit the permissions
 // of a file it replaces (os.CreateTemp starts at 0600, and the rename replaces
 // the inode, so callers state the mode they want explicitly). The parent
-// directory must already exist.
-func Write(path string, data []byte, perm os.FileMode) error {
+// directory must already exist unless the MkDir option is passed.
+func Write(path string, data []byte, perm os.FileMode, opts ...Option) error {
+	var cfg config
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	dir := filepath.Dir(path)
+
+	if cfg.mkdir {
+		if err := os.MkdirAll(dir, cfg.mkdirPerm); err != nil {
+			return fmt.Errorf("create directory %s: %w", dir, err)
+		}
+	}
 
 	// Temp file in the same directory so the rename stays on one filesystem.
 	// The "." prefix hides a leftover temp file and the ".tmp" suffix lets

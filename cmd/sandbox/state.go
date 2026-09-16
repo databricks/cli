@@ -88,16 +88,12 @@ func saveState(ctx context.Context, state *stateFile) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return err
-	}
-
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	return atomicfile.Write(path, data, 0o600)
+	return atomicfile.Write(path, data, 0o600, atomicfile.MkDir(0o700))
 }
 
 func getDefault(ctx context.Context, profile string) string {

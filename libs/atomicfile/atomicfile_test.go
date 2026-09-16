@@ -81,3 +81,19 @@ func TestWriteMissingDir(t *testing.T) {
 	_, statErr := os.Stat(path)
 	assert.ErrorIs(t, statErr, os.ErrNotExist)
 }
+
+func TestWriteMkDirCreatesParents(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "a", "b", "out")
+
+	require.NoError(t, Write(path, []byte("x"), 0o600, MkDir(0o700)))
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "x", string(got))
+
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(filepath.Dir(path))
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o700), info.Mode().Perm())
+	}
+}

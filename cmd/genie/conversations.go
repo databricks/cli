@@ -83,10 +83,7 @@ func saveStore(path string, store conversationStore) {
 	if err != nil {
 		return
 	}
-	if err := os.MkdirAll(filepath.Dir(path), conversationDirPerm); err != nil {
-		return
-	}
-	_ = atomicfile.Write(path, raw, conversationFilePerm)
+	_ = atomicfile.Write(path, raw, conversationFilePerm, atomicfile.MkDir(conversationDirPerm))
 }
 
 // lookupConversationID returns the server conversation id mapped to sessionID on

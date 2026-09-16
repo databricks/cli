@@ -95,15 +95,6 @@ func cacheFileName(envKey string) string {
 	return fmt.Sprintf("%s-%s.toml", slug, hex.EncodeToString(sum[:8]))
 }
 
-// writeCacheAtomic writes data to path, creating the parent directory first.
-func writeCacheAtomic(path string, data []byte) error {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	return atomicfile.Write(path, data, 0o600)
-}
-
 // FetchConstraints fetches the pyproject.toml for envKey from baseURL and caches it in
 // cacheDir. On a transport or non-404 HTTP failure it falls back to the cached copy if one
 // exists (E_FETCH otherwise). A 404 means the env key is not published (E_ENV_UNSUPPORTED)
@@ -139,7 +130,7 @@ func FetchConstraints(ctx context.Context, baseURL, envKey, cacheDir string, wri
 		// so a read-only cacheDir doesn't break the command. Skipped under a dry
 		// run so --dry-run performs no disk writes at all.
 		if writeCache {
-			if err := writeCacheAtomic(cachePath, data); err != nil {
+			if err := atomicfile.Write(cachePath, data, 0o600, atomicfile.MkDir(0o755)); err != nil {
 				log.Debugf(ctx, "failed to write constraint cache %s: %v", filepath.ToSlash(cachePath), err)
 			}
 		}

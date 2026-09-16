@@ -999,12 +999,7 @@ func (db *DeploymentState) unlockedSave() error {
 		return err
 	}
 
-	dir := filepath.Dir(db.Path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
-	}
-
-	if err := atomicfile.Write(db.Path, data, 0o600); err != nil {
+	if err := atomicfile.Write(db.Path, data, 0o600, atomicfile.MkDir(0o755)); err != nil {
 		return fmt.Errorf("failed to save resources state to %#v: %w", db.Path, err)
 	}
 
