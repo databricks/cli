@@ -267,6 +267,19 @@ environment:
 	assert.Equal(t, "6", get(t, root, "resources.jobs.b300.environments[0].spec.environment_version").MustString())
 }
 
+func TestConvertToDabsDatabricksAIEnvironment(t *testing.T) {
+	path := writeConfigFile(t, "run.yaml", minimalConfig+"\nenvironment:\n  version: databricks_ai_v5\n")
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.NoError(t, err)
+
+	spec := "resources.jobs." + loaded.ExperimentName + ".environments[0].spec."
+	assert.Equal(t, "workspace-base-environments/databricks_ai_v5", get(t, root, spec+"base_environment").MustString())
+	assert.False(t, has(root, spec+"environment_version"))
+}
+
 // remote_volume can't be honored by a converted bundle (bundle deploy owns the
 // artifact upload location), so it is rejected rather than silently ignored.
 func TestConvertToDabsRejectsRemoteVolume(t *testing.T) {
