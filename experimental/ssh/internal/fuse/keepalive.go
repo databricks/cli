@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-const refreshInterval = 10 * time.Minute
+const refreshInterval = time.Minute
 
 // TokenFunc returns the current credential, including any refresh performed by the SDK.
 type TokenFunc func(context.Context) (string, error)

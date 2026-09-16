@@ -68,7 +68,13 @@ func TestKeepRegistered(t *testing.T) {
 				initialRequests := len(requests)
 				failure = ""
 				mu.Unlock()
-				time.Sleep(fuse.RefreshInterval)
+				time.Sleep(59 * time.Second)
+				synctest.Wait()
+				mu.Lock()
+				assert.Len(t, requests, initialRequests)
+				assert.Equal(t, 1, tokenCalls)
+				mu.Unlock()
+				time.Sleep(time.Second)
 				synctest.Wait()
 				mu.Lock()
 				refreshes := 1
