@@ -2,16 +2,13 @@ package dresources
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -68,22 +65,14 @@ func (*ResourceSecret) RemapState(remote *catalog.Secret) *catalog.Secret {
 	}
 }
 
-// DoRead fetches the secret by full name.
+// DoRead fetches the secret by full name. IncludeValue is set so RemapState can
+// recover the stored value from EffectiveValue.
 func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
-	apiClient, err := client.New(r.client.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	// SDK does not support include_value in the GetSecretRequest, so we use the API directly.
-	var secret catalog.Secret
-	err = apiClient.Do(ctx, http.MethodGet, "/api/2.1/unity-catalog/secrets/"+id, auth.WorkspaceIDHeaders(r.client.Config), map[string]any{
-		"include_value": true,
-	}, nil, &secret)
-	if err != nil {
-		return nil, err
-	}
-	return &secret, nil
+	return r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
+		FullName:        id,
+		IncludeValue:    true,
+		ForceSendFields: nil,
+	})
 }
 
 // DoCreate creates a new UC secret.
