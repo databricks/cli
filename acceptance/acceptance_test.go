@@ -399,6 +399,10 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		cli293Path := DownloadCLI(t, buildDir, "0.293.0")
 		t.Setenv("CLI_293", cli293Path)
 		repls.SetPath(cli293Path, "[CLI_293]")
+
+		cli18Path := DownloadCLI(t, buildDir, "1.8.0")
+		t.Setenv("CLI_1_8", cli18Path)
+		repls.SetPath(cli18Path, "[CLI_1_8]")
 	}
 
 	paths := []string{
@@ -585,19 +589,6 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				t.Skip(skipReason)
 			}
 
-			var testRepls testdiff.ReplacementsContext
-			// Download before t.Parallel so tests sharing a release cannot race to extract it.
-			for _, name := range slices.Sorted(maps.Keys(config.CLIVersions)) {
-				path := DownloadCLI(t, buildDir, config.CLIVersions[name])
-				if config.Env == nil {
-					config.Env = make(map[string]string)
-				}
-				config.Env[name] = path
-				testRepls.SetPath(path, "["+name+"]")
-			}
-			// Replace executable paths before their parent build directory.
-			testRepls.Repls = append(testRepls.Repls, repls.Repls...)
-
 			runParallel := !inprocessMode
 			if benchmarkMode && strings.Contains(dir, "benchmark") {
 				runParallel = false
@@ -638,7 +629,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 				if reason := subset.skipReason(dir, nil); reason != "" {
 					t.Skip(reason)
 				}
-				runTest(t, dir, 0, coverDir, testRepls.Clone(), config, nil, envFilters, sandboxProxyURL)
+				runTest(t, dir, 0, coverDir, repls.Clone(), config, nil, envFilters, sandboxProxyURL)
 			} else {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
@@ -656,7 +647,7 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 						if reason := subset.skipReason(dir, envset); reason != "" {
 							t.Skip(reason)
 						}
-						runTest(t, dir, ind, coverDir, testRepls.Clone(), config, envset, envFilters, sandboxProxyURL)
+						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters, sandboxProxyURL)
 					})
 				}
 			}
@@ -1521,8 +1512,7 @@ func resolveLatestVersion(t *testing.T, buildDir string) string {
 }
 
 // DownloadCLI downloads a released CLI binary archive for the given version,
-// extracts the executable, and returns its path. Executables are cached by version
-// in the shared build directory and reused across tests and subsequent suite runs.
+// extracts the executable, and returns its path.
 func DownloadCLI(t *testing.T, buildDir, version string) string {
 	// Prepare target directory for this version
 	versionDir := filepath.Join(buildDir, version)

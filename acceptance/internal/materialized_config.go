@@ -53,10 +53,6 @@ func GenerateMaterializedConfig(config *TestConfig) string {
 	for _, k := range slices.Sorted(maps.Keys(config.CloudEnvs)) {
 		fmt.Fprintf(&buf, "CloudEnvs.%s = %v\n", k, config.CloudEnvs[k])
 	}
-	for _, name := range slices.Sorted(maps.Keys(config.CLIVersions)) {
-		fmt.Fprintf(&buf, "CLIVersions.%s = %s\n", name, tomlQuote(config.CLIVersions[name]))
-	}
-
 	envMatrix := filteredEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
 	for _, k := range slices.Sorted(maps.Keys(envMatrix)) {
 		writeTomlStringArray(&buf, "EnvMatrix."+k, envMatrix[k])
