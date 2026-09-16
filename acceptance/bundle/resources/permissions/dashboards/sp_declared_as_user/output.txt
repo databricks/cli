@@ -1,0 +1,39 @@
+
+=== Deploy the bundle
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dashboard-sp-perm-[UNIQUE_NAME]/default/files...
+Created dashboards.foo
+Created dashboards.foo.permissions
+Files: 4 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Re-plan after deploy (expected: no changes)
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Permissions node of the JSON plan{
+  "action": "skip",
+  "changes": null
+}
+
+=== Lower the permission level: real drift is still detected
+>>> [CLI] bundle plan
+update dashboards.foo.permissions
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+=== Permissions node of the JSON plan{
+  "action": "update",
+  "changes": {
+    "[service_principal_name='[UUID]'].level": {
+      "action": "update",
+      "new": "CAN_READ",
+      "remote": "CAN_MANAGE"
+    },
+    "[user_name='[UUID]'].level": {
+      "action": "update",
+      "old": "CAN_MANAGE",
+      "new": "CAN_READ"
+    }
+  }
+}

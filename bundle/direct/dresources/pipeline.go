@@ -233,7 +233,7 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string, state *Pipel
 // old=false, new=nil, remote=nil.
 // The problem is that classifier skips the change if remote and new are "empty". There is a bug
 // where "false" value for a boolean field is treated as empty. Hence, we set this override.
-func (*ResourcePipeline) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *PipelineRemote) error {
+func (*ResourcePipeline) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ any, _ *PipelineRemote) error {
 	if path.String() == "cascade_on_destroy" && !structdiff.IsEqual(change.Old, change.New) {
 		change.Action = deployplan.Update
 	}

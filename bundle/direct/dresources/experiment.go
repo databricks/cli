@@ -83,7 +83,7 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string, _ *ml.Crea
 //
 // This matches the Terraform provider's experimentNameSuppressDiff behavior.
 // https://github.com/databricks/terraform-provider-databricks/blob/8945a7b2328659b1fc976d04e32457305860131f/mlflow/resource_mlflow_experiment.go#L13
-func (*ResourceExperiment) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *ml.Experiment) error {
+func (*ResourceExperiment) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ any, _ *ml.Experiment) error {
 	if change.Action == deployplan.Skip {
 		return nil
 	}
