@@ -414,8 +414,13 @@ func (st *bricklensStreamer) run() (bool, error) {
 		var err error
 		if firstIteration && (terminal || st.req.boundInitialLogs) {
 			err = st.drainTail(toSec, !terminal)
+			if err == nil && !terminal {
+				// Remember omitted history so the overlapping live query does not
+				// print it after the requested tail.
+				_, err = st.drainPages(toSec, false)
+			}
 		} else {
-			emitted, err = st.drainPages(toSec)
+			emitted, err = st.drainPages(toSec, true)
 		}
 		if err != nil {
 			return false, err
@@ -543,8 +548,9 @@ func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
 }
 
 // drainPages exhausts all pages from the current from-second in ascending order.
-// Live polls retain a bounded overlap so late records remain visible.
-func (st *bricklensStreamer) drainPages(toSec int64) (int, error) {
+// Live polls retain a bounded overlap so late records remain visible. When emit
+// is false, records only initialize the dedup baseline.
+func (st *bricklensStreamer) drainPages(toSec int64, emit bool) (int, error) {
 	emitted := 0
 	var maximumEvictedNano int64
 	var pageToken string
@@ -559,8 +565,10 @@ func (st *bricklensStreamer) drainPages(toSec int64) (int, error) {
 			if st.seen.has(rec) {
 				continue
 			}
-			st.emit(rec.Body)
-			emitted++
+			if emit {
+				st.emit(rec.Body)
+				emitted++
+			}
 			maximumEvictedNano = max(maximumEvictedNano, st.seen.add(rec))
 			if nano != 0 {
 				st.lastNano = max(st.lastNano, nano)

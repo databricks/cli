@@ -75,7 +75,7 @@ func newLogsCommand() *cobra.Command {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				errors.New("cannot combine --tail with --minutes: --tail selects by line count, --minutes by time window"))
 		}
-		if tail < 0 {
+		if cmd.Flags().Changed("tail") && tail <= 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
 				fmt.Errorf("invalid --tail %d: must be positive", tail))
 		}
@@ -98,8 +98,7 @@ func newLogsCommand() *cobra.Command {
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
-		// -1 signals "unset" (use the default cap); an explicit --tail 0 stays 0
-		// and prints no log lines.
+		// -1 signals "unset" (use the default cap).
 		tailLines := -1
 		if cmd.Flags().Changed("tail") {
 			tailLines = tail
