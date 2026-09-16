@@ -217,7 +217,27 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if !immutable {
-		uploadLibraries(ctx, b, libs)
+		if plan != nil {
+			// Applying a saved plan: expand library globs (normally done in Build)
+			// then upload the local files. LocalLibraryPaths computes patched paths
+			// for dynamic_version wheels from the cache left by "bundle plan".
+			bundle.ApplyContext(ctx, b, libraries.ExpandGlobReferences())
+			if logdiag.HasError(ctx) {
+				return
+			}
+			planLocalPaths, err := libraries.LocalLibraryPaths(ctx, b)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			planLibs := make(map[string][]libraries.LocationToUpdate, len(planLocalPaths))
+			for _, p := range planLocalPaths {
+				planLibs[p] = nil
+			}
+			uploadLibraries(ctx, b, planLibs)
+		} else {
+			uploadLibraries(ctx, b, libs)
+		}
 		if logdiag.HasError(ctx) {
 			return
 		}

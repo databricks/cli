@@ -1,7 +1,7 @@
 
 === bundle deploy uploads the wheel
 >>> [CLI] bundle deploy
-Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-upload/default/files...
 Created jobs.my_job
 Files: 4 uploaded, 0 deleted
@@ -10,7 +10,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //artifacts/.internal --del-field raw_body
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
   "q": {
     "overwrite": "true"
   }
@@ -26,7 +26,7 @@ Destroy: 1 deleted
 
 === bundle deploy --plan also uploads the wheel
 >>> [CLI] bundle deploy --plan tmp.plan.json
-Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
+Uploading .databricks/bundle/default/patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/whl-upload/default/files...
 Created jobs.my_job
 Files: 6 uploaded, 0 deleted
@@ -35,7 +35,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> print_requests.py //artifacts/.internal --del-field raw_body
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl",
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
   "q": {
     "overwrite": "true"
   }

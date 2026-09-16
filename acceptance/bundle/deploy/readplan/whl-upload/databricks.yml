@@ -1,6 +1,16 @@
 bundle:
   name: whl-upload
 
+artifacts:
+  my_test_code:
+    type: whl
+    # Pre-built wheel with dynamic_version: true. deploy --plan reads the patched
+    # filename directly from the plan's new_state and finds the cached local file,
+    # so no build command or glob re-expansion is needed.
+    files:
+      - source: ./dist/*.whl
+    dynamic_version: true
+
 resources:
   jobs:
     my_job:
