@@ -1,0 +1,2 @@
+# The file behaves like gitignore for the purpose of making comments greyed out
+/known_failures.txt linguist-language=gitignore
