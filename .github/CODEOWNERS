@@ -1,0 +1,84 @@
+# Maintainers can approve any PR. Keep them on every rule because GitHub uses
+# only the last matching rule, and any owner on that line can approve.
+*                                       @databricks/eng-cli-maintainers
+
+# Bundles
+/bundle/                                @databricks/eng-cli-maintainers @databricks/eng-dabs
+/cmd/bundle/                            @databricks/eng-cli-maintainers @databricks/eng-dabs
+/acceptance/bundle/                     @databricks/eng-cli-maintainers @databricks/eng-dabs
+/libs/template/                         @databricks/eng-cli-maintainers @databricks/eng-dabs
+
+# Pipelines
+/cmd/pipelines/                         @databricks/eng-cli-maintainers @jefferycheng1 @kanterov @lennartkats-db
+/acceptance/pipelines/                  @databricks/eng-cli-maintainers @jefferycheng1 @kanterov @lennartkats-db
+
+# Labs
+/cmd/labs/                              @databricks/eng-cli-maintainers @alexott @asnare
+
+# Local environments / DB Connect
+/libs/localenv/                         @databricks/eng-cli-maintainers @databricks/eng-ide
+/cmd/environments/                      @databricks/eng-cli-maintainers @databricks/eng-ide
+/acceptance/localenv/                   @databricks/eng-cli-maintainers @databricks/eng-ide
+
+# Apps
+/cmd/apps/                              @databricks/eng-cli-maintainers @databricks/eng-apps-devex
+/cmd/workspace/apps/                    @databricks/eng-cli-maintainers @databricks/eng-apps-devex
+/libs/apps/                             @databricks/eng-cli-maintainers @databricks/eng-apps-devex
+/acceptance/apps/                       @databricks/eng-cli-maintainers @databricks/eng-apps-devex
+
+# Sandbox
+/cmd/sandbox/                           @databricks/eng-cli-maintainers @databricks/eng-sandbox
+/acceptance/cmd/sandbox/                @databricks/eng-cli-maintainers @databricks/eng-sandbox
+
+# Auth
+/cmd/auth/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/auth/                             @databricks/eng-cli-maintainers @databricks/eng-pae
+/acceptance/auth/                       @databricks/eng-cli-maintainers @databricks/eng-pae
+
+# Filesystem & sync
+/cmd/fs/                                @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/sync/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/filer/                            @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/sync/                             @databricks/eng-cli-maintainers @databricks/eng-pae
+
+# Core CLI infrastructure
+/cmd/root/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/version/                           @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/completion/                        @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/configure/                         @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/cache/                             @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/api/                               @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/selftest/                          @databricks/eng-cli-maintainers @databricks/eng-pae
+/cmd/psql/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/psql/                             @databricks/eng-cli-maintainers @databricks/eng-pae
+
+# Libs (general)
+/libs/databrickscfg/                    @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/env/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/flags/                            @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/cmdio/                            @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/log/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/telemetry/                        @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/process/                          @databricks/eng-cli-maintainers @databricks/eng-pae
+/libs/git/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+
+# Integration tests
+/integration/                           @databricks/eng-cli-maintainers @databricks/eng-pae
+
+/integration/cmd/environments/          @databricks/eng-cli-maintainers @databricks/eng-ide
+
+# Internal
+/internal/                              @databricks/eng-cli-maintainers @databricks/eng-pae
+
+# AI tools
+/cmd/aitools/                           @databricks/eng-cli-maintainers @databricks/eng-apps-devex @databricks/eng-ide @lennartkats-db
+/libs/aitools/                          @databricks/eng-cli-maintainers @databricks/eng-apps-devex @databricks/eng-ide @lennartkats-db
+
+# CLI compatibility manifest
+/internal/build/cli-compat.json         @databricks/eng-cli-maintainers @databricks/eng-apps-devex @databricks/eng-pae
+/libs/clicompat/                        @databricks/eng-cli-maintainers @databricks/eng-apps-devex @databricks/eng-pae
+
+# Experimental
+/experimental/air/                      @databricks/eng-cli-maintainers @databricks/eng-ai-custom-training
+/acceptance/experimental/air/           @databricks/eng-cli-maintainers @databricks/eng-ai-custom-training
+/experimental/aitools/                  @databricks/eng-cli-maintainers @databricks/eng-apps-devex @lennartkats-db
