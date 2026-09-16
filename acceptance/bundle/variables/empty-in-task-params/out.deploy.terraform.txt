@@ -1,0 +1,23 @@
+
+>>> errcode [CLI] bundle deploy
+Warning: empty parameter in spark_python_task fails deploys that use the Terraform engine
+  at resources.jobs.demo_job.tasks[0].spark_python_task.parameters[1]
+  in databricks.yml:19:17
+
+The Terraform provider reads an empty string element in a parameters list back as nil, and creating the job panics with "parameters[<nil>] is not a string". Remove the empty element or make its value non-empty. The direct engine (bundle.engine: direct) deploys empty parameters correctly.
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/empty-in-task-params/default/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: cannot create job: panic: task: spark_python_task: parameters: task.0.spark_python_task.0.parameters[<nil>] is not a string
+
+  with databricks_job.demo_job,
+  on bundle.tf.json line 45, in resource.databricks_job.demo_job:
+  45:       }
+
+
+
+Updating deployment state...
+
+Exit code: 1

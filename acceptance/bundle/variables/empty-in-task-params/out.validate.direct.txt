@@ -1,0 +1,9 @@
+
+>>> errcode [CLI] bundle validate
+Name: empty-in-task-params
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/empty-in-task-params/default
+
+Validation OK!
