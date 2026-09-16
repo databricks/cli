@@ -1,0 +1,5 @@
+mkdir -p .databricks/bundle/default
+cp "$STATE_FILE" .databricks/bundle/default/resources.json
+
+trace $CLI_1_8 bundle plan | contains.py "Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged"
+cmp "$STATE_FILE" .databricks/bundle/default/resources.json

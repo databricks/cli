@@ -1,0 +1,3 @@
+EnvMatrix.FEATURE = ["future_feature", "deployment_history"]
+
+CLIVersions.CLI_1_8 = "1.8.0"

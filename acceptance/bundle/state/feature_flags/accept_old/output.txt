@@ -1,0 +1,5 @@
+
+>>> [CLI_1_8] bundle plan
+create jobs.my_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

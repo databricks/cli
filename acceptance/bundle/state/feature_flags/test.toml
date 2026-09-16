@@ -2,9 +2,5 @@ Ignore = [".databricks"]
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = [""]
-# main uses the source build; pin it to this week's release (v1.17.0) once published.
-EnvMatrix.CLI_VERSION = ["1.8.0", "main"]
-EnvMatrix.STATE_VERSION = ["2", "3"]
-EnvMatrix.STATE_FEATURE = ["none", "deployment_history", "future_feature"]
 
-CLIVersions.CLI_1_8 = "1.8.0"
+# New-CLI tests use the source build; pin them to this week's release (v1.17.0) once published.

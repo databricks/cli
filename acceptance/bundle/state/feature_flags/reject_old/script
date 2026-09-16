@@ -1,0 +1,5 @@
+mkdir -p .databricks/bundle/default
+cp "resources.v3.$FEATURE.json" .databricks/bundle/default/resources.json
+
+trace musterr $CLI_1_8 bundle plan 2>&1 | contains.py "requires features this CLI does not support: $FEATURE"
+cmp "resources.v3.$FEATURE.json" .databricks/bundle/default/resources.json

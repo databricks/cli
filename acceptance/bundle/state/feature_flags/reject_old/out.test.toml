@@ -1,0 +1,5 @@
+Cloud = false
+CLIVersions.CLI_1_8 = "1.8.0"
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DMS = [""]
+EnvMatrix.FEATURE = ["future_feature", "deployment_history"]

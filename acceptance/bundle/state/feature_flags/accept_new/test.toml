@@ -1,0 +1,1 @@
+EnvMatrix.STATE_FILE = ["resources.v2.json", "resources.v3.json", "resources.v2.deployment_history.json", "resources.v3.deployment_history.json"]

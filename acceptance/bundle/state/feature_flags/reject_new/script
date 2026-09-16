@@ -1,0 +1,5 @@
+mkdir -p .databricks/bundle/default
+cp "$STATE_FILE" .databricks/bundle/default/resources.json
+
+trace musterr $CLI bundle plan 2>&1 | contains.py "requires features this CLI does not support: future_feature"
+cmp "$STATE_FILE" .databricks/bundle/default/resources.json
