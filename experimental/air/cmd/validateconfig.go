@@ -66,7 +66,9 @@ func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
 		compute["accelerator_count"] = cfg.Compute.NumAccelerators
-		putOpt(compute, "provisioned_capacity_id", cfg.Compute.ProvisionedCapacityID)
+		// Wire field stays provisioned_capacity_id (the backend name); the YAML
+		// field is pool_id.
+		putOpt(compute, "provisioned_capacity_id", cfg.Compute.PoolID)
 	}
 	task := map[string]any{
 		"experiment":  cfg.ExperimentName,
