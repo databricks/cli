@@ -363,7 +363,6 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	runtimeVersion, _ := cfg.runtimeVersion()
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
-	experimentID := preparePermissionExperiment(ctx, w, cfg)
 
 	provisionedCapacityID := ""
 	if cfg.Compute.ProvisionedCapacityID != nil {
@@ -378,7 +377,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
-	applySubmittedPermissions(ctx, w, runID, experimentID, cfg.Permissions)
+	applySubmittedPermissions(ctx, w, runID, cfg.Permissions)
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil

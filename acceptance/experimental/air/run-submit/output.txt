@@ -10,26 +10,13 @@ Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
   databricks experimental air logs 555
 
-=== the ai_runtime_task and additive permission grants
->>> print_requests.py //api/2.2/jobs/runs/submit //api/2.0/mlflow/experiments/create //api/2.0/permissions --sort
+=== the ai_runtime_task and additive job permission grants
+>>> print_requests.py --get //api/2.2/jobs/runs/submit //api/2.2/jobs/runs/get //api/2.0/permissions //api/2.0/mlflow --sort --unique
 {
-  "method": "PATCH",
-  "path": "/api/2.0/permissions/experiments/exp-456",
-  "body": {
-    "access_control_list": [
-      {
-        "permission_level": "CAN_MANAGE",
-        "user_name": "alice@example.com"
-      },
-      {
-        "group_name": "data-team",
-        "permission_level": "CAN_READ"
-      },
-      {
-        "permission_level": "CAN_EDIT",
-        "service_principal_name": "training-sp"
-      }
-    ]
+  "method": "GET",
+  "path": "/api/2.2/jobs/runs/get",
+  "q": {
+    "run_id": "555"
   }
 }
 {
@@ -50,13 +37,6 @@ Stream logs after submission using:
         "service_principal_name": "training-sp"
       }
     ]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/mlflow/experiments/create",
-  "body": {
-    "name": "/Users/[USERNAME]/submit-smoke"
   }
 }
 {
