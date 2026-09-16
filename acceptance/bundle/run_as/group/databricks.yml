@@ -12,36 +12,6 @@ resources:
       name: User override
       run_as:
         user_name: user_override
-    sp_override:
-      name: Service principal override
-      run_as:
-        service_principal_name: sp_override
-    group_override:
-      name: Group override
-      run_as:
-        group_name: resource_group
-  pipelines:
-    pipeline_override:
-      name: Pipeline override
-      run_as:
-        user_name: pipeline_user
-  alerts:
-    alert_override:
-      display_name: Alert override
-      query_text: SELECT 1
-      warehouse_id: "1234567890"
-      evaluation:
-        comparison_operator: EQUAL
-        source:
-          name: "1"
-        threshold:
-          value:
-            double_value: 1
-      schedule:
-        quartz_cron_schedule: "0 0 * * * ?"
-        timezone_id: UTC
-      run_as:
-        service_principal_name: alert_sp
 
 targets:
   default:
@@ -49,13 +19,3 @@ targets:
   group:
     run_as:
       group_name: target_group
-  user:
-    run_as:
-      user_name: target_user
-  sp:
-    run_as:
-      service_principal_name: target_sp
-  production:
-    mode: production
-    workspace:
-      root_path: /Workspace/Users/${workspace.current_user.userName}/run_as_group

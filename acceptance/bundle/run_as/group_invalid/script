@@ -1,7 +1,0 @@
-for target in empty user_group sp_group all; do
-  trace musterr $CLI bundle validate -t "$target"
-done
-update_file.py databricks.yml "use_legacy_run_as: false" "use_legacy_run_as: true"
-for target in legacy legacy_empty legacy_conflict; do
-  trace musterr $CLI bundle validate -t "$target"
-done

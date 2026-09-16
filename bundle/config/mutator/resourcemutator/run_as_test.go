@@ -1,6 +1,7 @@
 package resourcemutator
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 
@@ -314,5 +315,62 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		}
 		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.NoError(t, diags.Error())
+	}
+}
+
+func TestRunAsGroupInvalidIdentity(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		runAs  string
+		legacy bool
+	}{
+		{name: "empty", runAs: `{group_name: ""}`},
+		{name: "user and group", runAs: `{user_name: user, group_name: group}`},
+		{name: "legacy", runAs: `{group_name: group}`, legacy: true},
+		{name: "legacy empty", runAs: `{group_name: ""}`, legacy: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			yaml := fmt.Sprintf("run_as: %s\nexperimental: {use_legacy_run_as: %t}", tc.runAs, tc.legacy)
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			require.Error(t, diags.Error())
+			if tc.legacy {
+				assert.Contains(t, diags.Error().Error(), "run_as.group_name is not supported with experimental.use_legacy_run_as")
+			} else {
+				assert.Contains(t, diags.Error().Error(), "run_as section must specify exactly one non-empty identity")
+			}
+		})
+	}
+}
+
+func TestRunAsGroupResources(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		resource  string
+		wantError string
+	}{
+		{name: "pipeline", resource: `pipelines: {test: {}}`, wantError: "pipelines do not support run_as.group_name"},
+		{name: "alert", resource: `alerts: {test: {}}`, wantError: "alerts do not support run_as.group_name"},
+		{name: "model serving", resource: `model_serving_endpoints: {test: {}}`, wantError: "Run as identity: group \"group\""},
+		{name: "pipeline user override", resource: `pipelines: {test: {run_as: {user_name: user}}}`},
+		{name: "alert sp override", resource: `alerts: {test: {run_as: {service_principal_name: sp}}}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			yaml := "run_as: {group_name: group}\nworkspace: {current_user: {userName: group}}\nresources:\n  " + tc.resource
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			before := b.Config.Value().Get("resources")
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			if tc.wantError != "" {
+				require.Error(t, diags.Error())
+				assert.Contains(t, diags.Error().Error(), tc.wantError)
+			} else {
+				require.NoError(t, diags.Error())
+				assert.Equal(t, before, b.Config.Value().Get("resources"))
+			}
+		})
 	}
 }

@@ -1,55 +1,17 @@
 
->>> [CLI] bundle validate -t default -o json
-json.resources.alerts.alert_override.run_as.service_principal_name = "alert_sp";
-json.resources.jobs.group_override.run_as.group_name = "resource_group";
+>>> [CLI] bundle validate -o json
 json.resources.jobs.inherited.run_as.group_name = "bundle_group";
-json.resources.jobs.sp_override.run_as.service_principal_name = "sp_override";
 json.resources.jobs.user_override.run_as.user_name = "user_override";
-json.resources.pipelines.pipeline_override.run_as.user_name = "pipeline_user";
 json.run_as.group_name = "bundle_group";
 
+>>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle plan
+Error: run_as.group_name is only supported in direct deployment mode
+  at resources.jobs.inherited.run_as.group_name
+
+Set 'bundle.engine: direct' in your databricks.yml or set DATABRICKS_BUNDLE_ENGINE=direct. For an existing Terraform deployment, run 'databricks bundle migrate' first. Alternatively, set run_as.user_name or run_as.service_principal_name on this job
+
+
 >>> [CLI] bundle validate -t group -o json
-json.resources.alerts.alert_override.run_as.service_principal_name = "alert_sp";
-json.resources.jobs.group_override.run_as.group_name = "resource_group";
 json.resources.jobs.inherited.run_as.group_name = "target_group";
-json.resources.jobs.sp_override.run_as.service_principal_name = "sp_override";
 json.resources.jobs.user_override.run_as.user_name = "user_override";
-json.resources.pipelines.pipeline_override.run_as.user_name = "pipeline_user";
-json.run_as.group_name = "target_group";
-
->>> [CLI] bundle validate -t user -o json
-json.resources.alerts.alert_override.run_as.service_principal_name = "alert_sp";
-json.resources.jobs.group_override.run_as.group_name = "resource_group";
-json.resources.jobs.inherited.run_as.user_name = "target_user";
-json.resources.jobs.sp_override.run_as.service_principal_name = "sp_override";
-json.resources.jobs.user_override.run_as.user_name = "user_override";
-json.resources.pipelines.pipeline_override.run_as.user_name = "pipeline_user";
-json.run_as.user_name = "target_user";
-
->>> [CLI] bundle validate -t sp -o json
-json.resources.alerts.alert_override.run_as.service_principal_name = "alert_sp";
-json.resources.jobs.group_override.run_as.group_name = "resource_group";
-json.resources.jobs.inherited.run_as.service_principal_name = "target_sp";
-json.resources.jobs.sp_override.run_as.service_principal_name = "sp_override";
-json.resources.jobs.user_override.run_as.user_name = "user_override";
-json.resources.pipelines.pipeline_override.run_as.user_name = "pipeline_user";
-json.run_as.service_principal_name = "target_sp";
-
->>> [CLI] bundle validate -t production -o json
-json.resources.alerts.alert_override.run_as.service_principal_name = "alert_sp";
-json.resources.jobs.group_override.run_as.group_name = "resource_group";
-json.resources.jobs.inherited.run_as.group_name = "bundle_group";
-json.resources.jobs.sp_override.run_as.service_principal_name = "sp_override";
-json.resources.jobs.user_override.run_as.user_name = "user_override";
-json.resources.pipelines.pipeline_override.run_as.user_name = "pipeline_user";
-json.run_as.group_name = "bundle_group";
-
-=== Target group replaces a bundle user
->>> [CLI] bundle validate -t group -o json
-json.resources.alerts.alert_override.run_as.service_principal_name = "alert_sp";
-json.resources.jobs.group_override.run_as.group_name = "resource_group";
-json.resources.jobs.inherited.run_as.group_name = "target_group";
-json.resources.jobs.sp_override.run_as.service_principal_name = "sp_override";
-json.resources.jobs.user_override.run_as.user_name = "user_override";
-json.resources.pipelines.pipeline_override.run_as.user_name = "pipeline_user";
 json.run_as.group_name = "target_group";

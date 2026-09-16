@@ -22,7 +22,7 @@ type setRunAs struct{}
 //  1. Sets the run_as field for jobs to the value of the run_as field in the bundle.
 //
 //  2. Validates that the bundle run_as configuration is valid in the context of the bundle.
-//     If the run_as user is different from the current deployment user, DABs only
+//     If the run_as identity differs from the deployment identity, DABs only
 //     supports a subset of resources.
 func SetRunAs() bundle.Mutator {
 	return &setRunAs{}
