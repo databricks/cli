@@ -2,7 +2,8 @@ Ignore = [".databricks"]
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = [""]
-EnvMatrix.CLI_VERSION = ["old", "new"]
+# 1.17.0 uses the source build containing the state-version bump.
+EnvMatrix.CLI_VERSION = ["1.8.0", "1.17.0"]
 EnvMatrix.STATE_VERSION = ["2", "3"]
 EnvMatrix.STATE_FEATURE = ["none", "deployment_history", "future_feature"]
 

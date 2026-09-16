@@ -1,6 +1,6 @@
 Cloud = false
 CLIVersions.CLI_1_8 = "1.8.0"
-EnvMatrix.CLI_VERSION = ["old", "new"]
+EnvMatrix.CLI_VERSION = ["1.8.0", "1.17.0"]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = [""]
 EnvMatrix.STATE_FEATURE = ["none", "deployment_history", "future_feature"]
