@@ -85,7 +85,7 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
-func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
+func TestSubmitRunInjectsPoolID(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
