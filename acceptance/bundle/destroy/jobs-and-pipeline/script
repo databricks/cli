@@ -1,8 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 envsubst < resources.yml.tmpl > resources.yml
 
-SNAPSHOTS_DIR=".databricks/bundle/default/sync-snapshots"
-
 # double slash at the start prevents Windows to apply replacements to the path
 DEPLOYMENT_PATH="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}"
 
@@ -16,12 +14,8 @@ cleanup() {
   title "Assert job is deleted:\n"
   errcode $CLI jobs get "${JOB_ID}" 2>&1
 
-  title "Assert snapshot directory is removed: "
-  if [ ! -d ${SNAPSHOTS_DIR} ]; then
-      echo "Directory does not exist"
-  else
-      echo "Directory still exists. This is unexpected by this test"
-  fi
+  title "Assert destroy leaves no empty directories behind (the snapshot dir included):\n"
+  trace find .databricks -type d -empty | sort
 
   title "Assert bundle deployment path is deleted"
   trace errcode $CLI workspace get-status "${DEPLOYMENT_PATH}"

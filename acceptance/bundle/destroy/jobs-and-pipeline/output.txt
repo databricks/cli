@@ -72,7 +72,9 @@ Error: Job [NUMID] does not exist.
 
 Exit code: 1
 
-=== Assert snapshot directory is removed: Directory does not exist
+=== Assert destroy leaves no empty directories behind (the snapshot dir included):
+
+>>> find .databricks -type d -empty
 
 === Assert bundle deployment path is deleted
 >>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
