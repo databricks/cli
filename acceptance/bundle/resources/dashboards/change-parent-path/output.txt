@@ -26,11 +26,11 @@ recreate dashboards.my_dashboard
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following dashboards.
 This will result in changed IDs and permanent URLs of the dashboards that will be recreated:
   recreate resources.dashboards.my_dashboard
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/files...
 Recreated dashboards.my_dashboard
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged

@@ -1,7 +1,6 @@
 
 === The first version fails, so no deployment record exists - only the node naming its ID
 >>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
 Error: failed to create deployment version: Internal error (500 INTERNAL_ERROR)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions?version_id=1
@@ -9,7 +8,6 @@ HTTP Status: 500 Internal Server Error
 API error_code: INTERNAL_ERROR
 API message: Internal error
 
-Files: 3 uploaded, 0 deleted
 
 >>> [CLI] bundle plan -o json
 {
@@ -43,7 +41,6 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 === The next deploy reuses the ID that node names and retries version 1, rather than creating a second deployment
 >>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-version-never-created/default/files...
 Error: failed to create deployment version: Internal error (500 INTERNAL_ERROR)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions?version_id=1
@@ -51,7 +48,6 @@ HTTP Status: 500 Internal Server Error
 API error_code: INTERNAL_ERROR
 API message: Internal error
 
-Files: 0 uploaded, 0 deleted
 
 >>> print_requests.py --dms //api/2.0/bundle --get --oneline
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[NUMID]/resources"}

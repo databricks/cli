@@ -216,30 +216,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if !immutable {
-		uploadLibraries(ctx, b, libs)
-		if logdiag.HasError(ctx) {
-			return
-		}
-
-		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
-		if logdiag.HasError(ctx) {
-			return
-		}
-	}
-
-	// From here on the files are uploaded, so report them however the rest of the
-	// deploy turns out. Deferred rather than repeated at each of the returns below, so
-	// that a new early return cannot silently drop it. On success logDeploySummary
-	// prints this line itself, between the per-resource lines and the resource summary,
-	// and sets the flag so the defer does not print it twice.
-	filesReported := false
-	defer func() {
-		if !filesReported {
-			logFileSummary(ctx, b)
-		}
-	}()
-
 	bundle.ApplySeqContext(
 		ctx, b,
 		deploy.StateUpdate(),
@@ -346,6 +322,33 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 			logDeploymentVersion(ctx, b)
 		}
 	}
+
+	// Upload only after planning, approval, and (for DMS deployments with changes)
+	// version creation. In particular, a failed CreateVersion must not leave files
+	// from an unrecorded deployment in the workspace.
+	if !immutable {
+		uploadLibraries(ctx, b, libs)
+		if logdiag.HasError(ctx) {
+			return
+		}
+
+		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
+	// From here on the files are uploaded, so report them however the rest of the
+	// deploy turns out. Deferred rather than repeated at each of the returns below, so
+	// that a new early return cannot silently drop it. On success logDeploySummary
+	// prints this line itself, between the per-resource lines and the resource summary,
+	// and sets the flag so the defer does not print it twice.
+	filesReported := false
+	defer func() {
+		if !filesReported {
+			logFileSummary(ctx, b)
+		}
+	}()
 
 	deployCore(ctx, b, plan, stateEngine)
 

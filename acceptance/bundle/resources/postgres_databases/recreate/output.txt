@@ -144,7 +144,6 @@ Plan: 1 to add, 0 to change, 1 to delete, 3 unchanged
 
 === Recreate requires approval: non-interactive deploy must abort, not silently delete the database
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following Lakebase databases.
 All data stored in them will be permanently lost:
@@ -153,14 +152,13 @@ Error: the deployment requires destructive actions, but the current console does
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
 
-Files: 0 uploaded, 0 deleted
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following Lakebase databases.
 All data stored in them will be permanently lost:
   recreate resources.postgres_databases.my_database
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-database-recreate-[UNIQUE_NAME]/default/files...
 Recreated postgres_databases.my_database
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 3 unchanged

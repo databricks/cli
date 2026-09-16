@@ -107,7 +107,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> update_file.py databricks.yml catalog_name: main catalog_name: dms_other_[UNIQUE_NAME]
 
 >>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-declined-deploy-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   recreate resources.schemas.foo
@@ -115,7 +114,6 @@ Error: the deployment requires destructive actions, but the current console does
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
 
-Files: 2 uploaded, 0 deleted
 
 === Nothing was recorded for the declined deploy - no version, so none to abort
 >>> print_requests.py --dms --get //api/2.0/bundle
