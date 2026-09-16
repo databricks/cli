@@ -1,0 +1,2 @@
+trace $CLI bundle validate
+trace $CLI bundle validate --output json | jq '.resources.jobs.consumer.tasks'
