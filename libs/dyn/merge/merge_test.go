@@ -117,6 +117,40 @@ func TestMergeMapsNil(t *testing.T) {
 	}
 }
 
+func TestMergeMapsNilEntryClearsExisting(t *testing.T) {
+	l1 := dyn.Location{File: "base", Line: 1, Column: 2}
+	base := dyn.NewValue(map[string]dyn.Value{
+		"foo": dyn.NewValue("bar", []dyn.Location{l1}),
+		"autoscale": dyn.NewValue(map[string]dyn.Value{
+			"min_workers": dyn.NewValue(1, []dyn.Location{l1}),
+			"max_workers": dyn.NewValue(2, []dyn.Location{l1}),
+		}, []dyn.Location{l1}),
+	}, []dyn.Location{l1})
+
+	l2 := dyn.Location{File: "target", Line: 3, Column: 4}
+	override := dyn.NewValue(map[string]dyn.Value{
+		"autoscale": dyn.NewValue(nil, []dyn.Location{l2}),
+	}, []dyn.Location{l2})
+
+	out, err := Merge(base, override)
+	assert.NoError(t, err)
+
+	// An explicit nil in the override clears the inherited value rather than
+	// leaving the base in place.
+	assert.Equal(t, map[string]any{
+		"foo":       "bar",
+		"autoscale": nil,
+	}, out.AsAny())
+	assert.Equal(t, dyn.KindNil, out.Get("autoscale").Kind())
+
+	// The override's location wins and the base location is accumulated.
+	assert.Equal(t, l2, out.Get("autoscale").Location())
+	assert.Equal(t, []dyn.Location{l2, l1}, out.Get("autoscale").Locations())
+
+	// Keys not present in the override are untouched.
+	assert.Equal(t, "bar", out.Get("foo").AsAny())
+}
+
 func TestMergeMapsError(t *testing.T) {
 	v := dyn.V(map[string]dyn.Value{
 		"foo": dyn.V("bar"),
