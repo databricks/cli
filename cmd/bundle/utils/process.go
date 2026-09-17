@@ -91,7 +91,7 @@ type ProcessOptions struct {
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
 	// If true, an existing non-DMS state may be used even when deployment history is configured.
-	AllowDeploymentHistoryMismatch bool
+	AllowDeploymentHistoryEnableMismatch bool
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
@@ -320,12 +320,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if stateVersion := b.DeploymentBundle.StateDB.StateCLIVersion(); isNewerVersion(stateVersion, currentVersion) {
 				log.Warnf(ctx, "State was last deployed with CLI version %s but current version is %s", stateVersion, currentVersion)
 			}
-			if err := checkDeploymentHistoryMismatch(ctx, b, stateDesc, opts.AllowDeploymentHistoryMismatch); err != nil {
+			if err := checkDeploymentHistoryMismatch(ctx, b, stateDesc, opts.AllowDeploymentHistoryEnableMismatch); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		} else if stateDesc.Engine.IsDirect() {
-			if err := checkDeploymentHistoryMismatch(ctx, b, stateDesc, opts.AllowDeploymentHistoryMismatch); err != nil {
+			if err := checkDeploymentHistoryMismatch(ctx, b, stateDesc, opts.AllowDeploymentHistoryEnableMismatch); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -615,7 +615,7 @@ func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *
 	return stateDesc.IsDMS()
 }
 
-func checkDeploymentHistoryMismatch(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, allowMismatch bool) error {
+func checkDeploymentHistoryMismatch(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, allowEnableMismatch bool) error {
 	if stateDesc.SourcePath == "" {
 		return nil
 	}
@@ -624,7 +624,7 @@ func checkDeploymentHistoryMismatch(ctx context.Context, b *bundle.Bundle, state
 	if configured == recorded {
 		return nil
 	}
-	if configured && !allowMismatch {
+	if configured && !allowEnableMismatch {
 		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
 
 Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
