@@ -119,17 +119,17 @@ const (
 	modelServiceProbePageSize = 50
 	modelServiceProbeMaxPages = 20
 	aiGatewayDocsURL          = "https://docs.databricks.com/aws/en/ai-gateway/overview-beta"
-	modelServiceEmptyDetail = "reachable, no accessible model services returned; " +
+	modelServiceEmptyDetail   = "reachable, no accessible model services returned; " +
 		"check USE CATALOG on system, and USE SCHEMA and EXECUTE on system.ai"
 )
 
 type gatewayProbe struct {
-	reachable         bool
-	detail            string
+	reachable bool
+	detail    string
 	// true if the API returned at least one usable resource
 	resourceAvailable bool
 	// false when paging couldn't be completed, so "no resources" was never actually confirmed
-	conclusive        bool
+	conclusive bool
 }
 
 func probeAIGateway(ctx context.Context, client *databricks.WorkspaceClient) error {
@@ -177,7 +177,7 @@ func probeAIGateway(ctx context.Context, client *databricks.WorkspaceClient) err
 
 func probeModelServices(ctx context.Context, client *databricks.WorkspaceClient, host string) gatewayProbe {
 	pageToken := ""
-	for page := 0; page < modelServiceProbeMaxPages; page++ {
+	for page := range modelServiceProbeMaxPages {
 		reqURL := fmt.Sprintf("%s%s?page_size=%d", host, modelServicesPath, modelServiceProbePageSize)
 		if pageToken != "" {
 			reqURL += "&page_token=" + url.QueryEscape(pageToken)
@@ -439,7 +439,7 @@ func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 func launchAgent(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) error {
 	ugPath, err := exec.LookPath("ucode")
 	if err != nil {
-		return fmt.Errorf("Unity Gateway CLI not found on PATH after setup: %w", err)
+		return fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err)
 	}
 	contextArgs, err := injectAgentContext(ctx, home, agent)
 	if err != nil {
@@ -610,7 +610,7 @@ func latestNodeTarball(ctx context.Context, shasumsURL, arch string) (name, sum 
 		return "", "", fmt.Errorf("failed to read Node checksums: %w", err)
 	}
 	re := regexp.MustCompile(`^([0-9a-f]{64})\s+(node-v[0-9.]+-linux-` + regexp.QuoteMeta(arch) + `\.tar\.xz)$`)
-	for _, line := range strings.Split(string(body), "\n") {
+	for line := range strings.SplitSeq(string(body), "\n") {
 		if m := re.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
 			return m[2], m[1], nil
 		}

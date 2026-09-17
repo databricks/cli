@@ -3,6 +3,7 @@ package client
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -42,7 +43,7 @@ func TestAcquireSetupLock(t *testing.T) {
 	require.NoError(t, statErr, "lock sentinel should exist while held")
 	unlock()
 	_, statErr = os.Stat(lockPath)
-	assert.True(t, os.IsNotExist(statErr), "lock sentinel should be gone after release")
+	assert.ErrorIs(t, statErr, fs.ErrNotExist, "lock sentinel should be gone after release")
 
 	// A lock left behind by a dead process is reclaimed once stale, not waited on
 	// forever.
