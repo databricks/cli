@@ -52,7 +52,7 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		ResourceType: tfName,
 		ResourceKey:  resourceKey,
 		ResourceId:   resourceId,
-	}, stateDesc.Engine)
+	}, stateDesc.Engine, utils.StateRecordsDeploymentHistory(stateDesc))
 	if logdiag.HasError(ctx) {
 		return root.ErrAlreadyPrinted
 	}

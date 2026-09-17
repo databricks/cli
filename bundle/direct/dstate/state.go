@@ -75,12 +75,10 @@ func assertNoUnsupportedFeatures(features map[string]struct{}) error {
 // The caller should delete the stale WAL and proceed normally.
 var errStaleWAL = errors.New("stale WAL")
 
-// ErrUnsettingRecording is returned by Open when a recorded state is opened without recording - the
-// config turned the feature off, or an operation that never records (unbind) reached it. Callers
-// present an operation-appropriate message via errors.Is.
-var ErrUnsettingRecording = errors.New(`unsetting experimental.deployment_history is not supported
-
-This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle`)
+// ErrUnsettingRecording is returned by Open when an operation that does not support deployment
+// history (such as unbind) reaches a recorded state. Callers present an operation-appropriate
+// message via errors.Is.
+var ErrUnsettingRecording = errors.New("this operation is not supported for a deployment that records deployment history")
 
 type DeploymentState struct {
 	Path    string

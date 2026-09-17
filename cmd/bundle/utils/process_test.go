@@ -12,17 +12,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUseDeploymentHistoryStateReader(t *testing.T) {
+func TestResolveDeploymentHistory(t *testing.T) {
 	b := &bundle.Bundle{Config: config.Root{
 		Experimental: &config.Experimental{DeploymentHistory: true},
 	}}
 
-	assert.True(t, useDeploymentHistoryStateReader(t.Context(), b, &statemgmt.StateDesc{}, false))
-	assert.False(t, useDeploymentHistoryStateReader(t.Context(), b, &statemgmt.StateDesc{}, true))
+	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{}))
+	assert.False(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{SourcePath: "resources.json"}))
 	b.Config.Experimental.DeploymentHistory = false
-	assert.True(t, useDeploymentHistoryStateReader(t.Context(), b, &statemgmt.StateDesc{
-		Features: map[string]struct{}{dstate.FeatureDeploymentHistory: {}},
-	}, true))
+	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{
+		SourcePath: "resources.json",
+		Features:   map[string]struct{}{dstate.FeatureDeploymentHistory: {}},
+	}))
 }
 
 func TestIsNewerVersion(t *testing.T) {

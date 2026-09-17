@@ -89,10 +89,6 @@ type ProcessOptions struct {
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
-	// If true, state feature markers, rather than bundle configuration, determine
-	// which feature-specific state reader to use.
-	UseStateFeatures bool
-
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
@@ -213,6 +209,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// metadata diff and to reject a saved plan that predates the deployment's recorded version.
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
+	var recordsDeploymentHistory bool
 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
@@ -223,6 +220,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
+		if stateDesc.Engine.IsDirect() {
+			recordsDeploymentHistory = resolveDeploymentHistory(ctx, b, stateDesc)
+		}
 
 		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.
@@ -261,8 +261,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
-
-			recordsDeploymentHistory := useDeploymentHistoryStateReader(ctx, b, stateDesc, opts.UseStateFeatures)
 
 			if recordsDeploymentHistory {
 				var err error
@@ -565,9 +563,9 @@ func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error
 // OpenDirectStateForRead opens the direct-engine state database read-only. When the bundle
 // records deployment history the local state file is only a tombstone, so the resources are
 // read from the deployment metadata service instead.
-func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle) error {
+func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 	_, localPath := b.StateFilenameDirect(ctx)
-	if !b.ConfiguresDeploymentHistory(ctx) {
+	if !resolveDeploymentHistory(ctx, b, stateDesc) {
 		return b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
 	}
 
@@ -586,12 +584,23 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle) error {
 	return b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID})
 }
 
-func useDeploymentHistoryStateReader(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, useStateFeatures bool) bool {
-	if useStateFeatures {
-		_, ok := stateDesc.Features[dstate.FeatureDeploymentHistory]
-		return ok
+func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
+	configured := b.ConfiguresDeploymentHistory(ctx)
+	if stateDesc.SourcePath == "" {
+		return configured
 	}
-	return b.ConfiguresDeploymentHistory(ctx)
+
+	recorded := StateRecordsDeploymentHistory(stateDesc)
+	if configured != recorded {
+		log.Warnf(ctx, "Deployment history setting (%t) does not match the existing state (%t). Using the existing state.", configured, recorded)
+	}
+	return recorded
+}
+
+// StateRecordsDeploymentHistory reports whether the selected state uses deployment history.
+func StateRecordsDeploymentHistory(stateDesc *statemgmt.StateDesc) bool {
+	_, ok := stateDesc.Features[dstate.FeatureDeploymentHistory]
+	return ok
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly
