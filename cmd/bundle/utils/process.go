@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -596,7 +597,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 }
 
 func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
-	configured := b.ConfiguresDeploymentHistory(ctx)
+	configured := configuresDeploymentHistory(ctx, b)
 	if stateDesc.SourcePath == "" {
 		if configured {
 			stateDesc.Features = map[string]struct{}{dstate.FeatureDeploymentHistory: {}}
@@ -611,11 +612,16 @@ func warnDeploymentHistoryMismatch(ctx context.Context, b *bundle.Bundle, stateD
 	if stateDesc.SourcePath == "" {
 		return
 	}
-	configured := b.ConfiguresDeploymentHistory(ctx)
+	configured := configuresDeploymentHistory(ctx, b)
 	recorded := stateDesc.IsDMS()
 	if configured != recorded {
 		log.Warnf(ctx, "Deployment history setting (%t) does not match the existing state (%t). Using the existing state.", configured, recorded)
 	}
+}
+
+func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
+	configured := b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory
+	return bundleenv.RecordsDeploymentHistory(ctx, configured)
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly
