@@ -340,7 +340,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			ResourceType: tfName,
 			ResourceKey:  appKey,
 			ResourceId:   app.Name,
-		}, stateDesc.Engine, bundleutils.StateRecordsDeploymentHistory(stateDesc))
+		}, stateDesc)
 		if logdiag.HasError(ctx) {
 			return errors.New("failed to bind resource")
 		}

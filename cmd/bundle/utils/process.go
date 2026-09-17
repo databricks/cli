@@ -590,17 +590,11 @@ func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *
 		return configured
 	}
 
-	recorded := StateRecordsDeploymentHistory(stateDesc)
+	recorded := stateDesc.IsDMS()
 	if configured != recorded {
 		log.Warnf(ctx, "Deployment history setting (%t) does not match the existing state (%t). Using the existing state.", configured, recorded)
 	}
 	return recorded
-}
-
-// StateRecordsDeploymentHistory reports whether the selected state uses deployment history.
-func StateRecordsDeploymentHistory(stateDesc *statemgmt.StateDesc) bool {
-	_, ok := stateDesc.Features[dstate.FeatureDeploymentHistory]
-	return ok
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly
