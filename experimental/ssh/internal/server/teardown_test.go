@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/telemetry"
@@ -35,12 +34,12 @@ func TestReportDetachedDescendantsWarning(t *testing.T) {
 		reportDetachedDescendants(ctx, ServerOptions{}, procWithDetachedWork(t), testServerPid)
 
 		assert.Contains(t, logs.String(), "1 detached process(es) still running (pids 400)")
-		assert.Contains(t, logs.String(), "--keep-detached-for")
+		assert.Contains(t, logs.String(), "--keep-detached-processes")
 	})
 
 	t.Run("stays quiet when the run is held open for them", func(t *testing.T) {
 		ctx, logs := captureWarnLogs(t.Context())
-		opts := ServerOptions{KeepDetachedFor: time.Hour}
+		opts := ServerOptions{KeepDetachedProcesses: true}
 		reportDetachedDescendants(ctx, opts, procWithDetachedWork(t), testServerPid)
 
 		assert.Empty(t, logs.String())
@@ -93,7 +92,7 @@ func TestReportDetachedDescendantsTelemetry(t *testing.T) {
 		},
 		{
 			name: "the run was held open for it",
-			opts: ServerOptions{KeepDetachedFor: 2 * time.Hour},
+			opts: ServerOptions{KeepDetachedProcesses: true},
 			root: procWithDetachedWork,
 			want: protos.SshTunnelTeardownEvent{
 				ComputeType:                      protos.SshTunnelComputeTypeDedicated,

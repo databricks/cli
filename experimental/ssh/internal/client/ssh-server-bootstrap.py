@@ -16,6 +16,11 @@ SSH_TUNNEL_BASENAME = "databricks_cli"
 # How often the linger loop re-checks for detached processes still holding the run open.
 LINGER_POLL_SECONDS = 15
 
+# How often the linger loop repeats its "holding the run open" line while the set of survivors
+# is unchanged. The hold ends with the work rather than at a deadline, so a line per poll would
+# flood the run log for as long as the work lives.
+LINGER_REPORT_SECONDS = 300
+
 # Exit statuses collected by the SIGCHLD subreaper handler, keyed by pid. The handler
 # can reap the server subprocess before Popen.wait() does, in which case Popen would
 # report exit code 0; this map preserves the real status.
@@ -29,7 +34,7 @@ dbutils.widgets.text("shutdownDelay", "10m")
 dbutils.widgets.text("sessionId", "")
 dbutils.widgets.text("serverless", "false")
 dbutils.widgets.text("usagePolicyId", "")
-dbutils.widgets.text("keepDetachedForSeconds", "0")
+dbutils.widgets.text("keepDetachedProcesses", "false")
 
 
 def cleanup():
@@ -132,34 +137,34 @@ def detached_descendants(server_pgid):
     return sorted(survivors, key=int)
 
 
-def wait_for_detached_descendants(server_pgid, timeout_seconds):
+def wait_for_detached_descendants(server_pgid):
     """Hold the notebook open while detached work is still running.
 
     WSFS authorises an I/O by walking the live process tree for a registered ancestor, and
     this process is the registered one. Returning while detached work is still alive would
     reparent it to PID 1, outside the registered subtree, and silently strip its /Workspace
     and /Volumes access - trading a visible failure for an invisible one. Holding the run
-    open instead keeps the cluster from auto-terminating, which is why it is opt-in and
-    bounded by --keep-detached-for.
+    open instead keeps the cluster from auto-terminating, which is why it is opt-in.
+
+    The work decides how long this takes. The only bound is the run's own timeout
+    (--server-timeout), which Jobs enforces and the client requires to be set, so this loop
+    cannot hold a cluster indefinitely.
     """
-    deadline = time.monotonic() + timeout_seconds
+    reported = None
+    reported_at = 0.0
     while True:
         survivors = detached_descendants(server_pgid)
         if not survivors:
             print("No detached processes left, releasing the run", flush=True)
             return
-        if time.monotonic() > deadline:
+        now = time.monotonic()
+        if survivors != reported or now - reported_at >= LINGER_REPORT_SECONDS:
             print(
-                f"Reached the --keep-detached-for limit of {timeout_seconds}s with "
-                f"{len(survivors)} detached process(es) still running: {','.join(survivors)}. "
-                "Releasing the run; they lose /Workspace and /Volumes access from here.",
+                f"Holding the run open for {len(survivors)} detached process(es): {','.join(survivors)}",
                 flush=True,
             )
-            return
-        print(
-            f"Holding the run open for {len(survivors)} detached process(es): {','.join(survivors)}",
-            flush=True,
-        )
+            reported = survivors
+            reported_at = now
         time.sleep(LINGER_POLL_SECONDS)
 
 
@@ -210,7 +215,7 @@ def run_ssh_server():
         raise RuntimeError("Session ID is required. Please provide it using the 'sessionId' widget.")
     serverless = dbutils.widgets.get("serverless")
     usage_policy_id = dbutils.widgets.get("usagePolicyId")
-    keep_detached_for_seconds = int(dbutils.widgets.get("keepDetachedForSeconds") or 0)
+    keep_detached_processes = dbutils.widgets.get("keepDetachedProcesses") == "true"
 
     # Mark this process's WSFS command origin so workspace-file activity from the
     # remote SSH session is attributable
@@ -261,10 +266,10 @@ def run_ssh_server():
     if usage_policy_id:
         server_args.append(f"--usage-policy-id={usage_policy_id}")
 
-    # The server does not linger itself; it uses this to persist the mode for reconnects and
-    # to warn about detached work it is about to leave behind when the mode is off.
-    if keep_detached_for_seconds > 0:
-        server_args.append(f"--keep-detached-for={keep_detached_for_seconds}s")
+    # The server does not hold the run open itself; it uses this to persist the mode for
+    # reconnects and to warn about detached work it is about to leave behind when the mode is off.
+    if keep_detached_processes:
+        server_args.append("--keep-detached-processes")
 
     # Tee the server output instead of inheriting stdout: the run-page logs remain the only
     # place to debug a RUNNING server, but on failure we attach the log tail to the exception
@@ -294,9 +299,9 @@ def run_ssh_server():
             returncode = os.waitstatus_to_exitcode(reaped_statuses[proc.pid])
         if returncode == -signal.SIGTERM:
             # A newer session's bootstrap terminates a server already running on this cluster
-            # (see cleanup), which a reconnect asking for a different --keep-detached-for now
-            # reaches on a normal path. That is a handover, not a failure of this run, so it
-            # must not mark the run FAILED - the linger below still runs.
+            # (see cleanup), which a reconnect asking for --keep-detached-processes against a
+            # server without it now reaches on a normal path. That is a handover, not a failure
+            # of this run, so it must not mark the run FAILED - the hold below still runs.
             print("SSH server was terminated, most likely by a newer session on this cluster", flush=True)
         elif returncode != 0:
             # The tail size matches maxRunFailureTraceBytes, the cap the client prints to the terminal.
@@ -305,11 +310,11 @@ def run_ssh_server():
         # Always reap the server and the sshd children it spawned; they are the only things
         # in its process group. What happens to work that left that group depends on the mode:
         # keep it and hold the run open as its WSFS anchor, or sweep it as we always have.
-        # Narrowing the sweep without lingering would leave survivors alive but cut off from
-        # /Workspace, which is a worse failure than the one it fixes.
+        # Narrowing the sweep without holding the run open would leave survivors alive but cut
+        # off from /Workspace, which is a worse failure than the one it fixes.
         kill_server_group(server_pgid)
-        if keep_detached_for_seconds > 0:
-            wait_for_detached_descendants(server_pgid, keep_detached_for_seconds)
+        if keep_detached_processes:
+            wait_for_detached_descendants(server_pgid)
         else:
             kill_all_children()
 

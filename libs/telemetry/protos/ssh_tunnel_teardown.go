@@ -5,7 +5,7 @@ package protos
 // because it is not a connection attempt: folding it into that event would add rows
 // that every existing is_success query would count as connections.
 //
-// It exists to size the problem the --keep-detached-for flag addresses: only the
+// It exists to size the problem the --keep-detached-processes flag addresses: only the
 // server, running on the compute at teardown, can see whether the session left
 // detached processes behind, and by then the client that started it is long gone.
 //
@@ -17,12 +17,12 @@ type SshTunnelTeardownEvent struct {
 	ComputeType SshTunnelComputeType `json:"compute_type,omitempty"`
 
 	// Whether the session asked for detached processes to be kept via
-	// --keep-detached-for. Only the presence is recorded, not the duration.
+	// --keep-detached-processes.
 	KeepDetachedRequested bool `json:"keep_detached_requested"`
 
 	// Whether processes the tunnel started, but that left its process group (tmux,
 	// setsid, nohup), were still running when the server shut down. Without
-	// --keep-detached-for those processes do not survive the run, so this counts how
+	// --keep-detached-processes those processes do not survive the run, so this counts how
 	// often the tunnel destroys work a user meant to keep.
 	HadDetachedDescendantsAtTeardown bool `json:"had_detached_descendants_at_teardown"`
 }

@@ -47,12 +47,12 @@ type ServerOptions struct {
 	// UsagePolicyID the job was submitted with. Persisted to metadata.json so reconnects
 	// can tell which usage policy the running server was started under.
 	UsagePolicyID string
-	// KeepDetachedFor is how long the bootstrap notebook holds the job run open for
-	// detached processes after this server exits. Zero means it does not: the notebook
-	// sweeps them as it always has. The server does not linger itself; it only needs the
-	// value to persist it for reconnects and to decide whether to warn about work it is
-	// about to destroy.
-	KeepDetachedFor time.Duration
+	// KeepDetachedProcesses is whether the bootstrap notebook holds the job run open for
+	// detached processes after this server exits. False means it does not: the notebook
+	// sweeps them as it always has. The server does not hold the run open itself; it only
+	// needs the value to persist it for reconnects and to decide whether to warn about work
+	// it is about to destroy.
+	KeepDetachedProcesses bool
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
@@ -89,10 +89,10 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 
 	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
 	metadata := &workspace.WorkspaceMetadata{
-		Port:              port,
-		ClusterID:         opts.ClusterID,
-		UsagePolicyID:     opts.UsagePolicyID,
-		KeepDetachedForMs: opts.KeepDetachedFor.Milliseconds(),
+		Port:                  port,
+		ClusterID:             opts.ClusterID,
+		UsagePolicyID:         opts.UsagePolicyID,
+		KeepDetachedProcesses: opts.KeepDetachedProcesses,
 	}
 	err = workspace.SaveWorkspaceMetadata(ctx, client, opts.Version, opts.SessionID, metadata)
 	if err != nil {
@@ -162,14 +162,14 @@ func reportDetachedDescendants(ctx context.Context, opts ServerOptions, root str
 		return
 	}
 
-	// Warning, not info: without --keep-detached-for these processes do not outlive the
+	// Warning, not info: without --keep-detached-processes these processes do not outlive the
 	// run, and until now they vanished with no explanation anywhere. The client reads this
 	// back through /logs. Serverless is excluded because the container teardown takes them
 	// regardless, so the flag cannot help there and is rejected for it.
-	if len(pids) > 0 && opts.KeepDetachedFor == 0 && !opts.Serverless {
+	if len(pids) > 0 && !opts.KeepDetachedProcesses && !opts.Serverless {
 		log.Warnf(ctx, "Shutting down with %d detached process(es) still running (pids %s). "+
 			"They do not survive the end of this run. To keep them, reconnect with "+
-			"\"databricks ssh connect --keep-detached-for=<duration>\", which holds the run open for them.",
+			"\"databricks ssh connect --keep-detached-processes\", which holds the run open while they run.",
 			len(pids), formatPids(pids))
 	}
 
@@ -180,7 +180,7 @@ func reportDetachedDescendants(ctx context.Context, opts ServerOptions, root str
 	telemetry.Log(ctx, protos.DatabricksCliLog{
 		SshTunnelTeardownEvent: &protos.SshTunnelTeardownEvent{
 			ComputeType:                      computeType,
-			KeepDetachedRequested:            opts.KeepDetachedFor > 0,
+			KeepDetachedRequested:            opts.KeepDetachedProcesses,
 			HadDetachedDescendantsAtTeardown: len(pids) > 0,
 		},
 	})

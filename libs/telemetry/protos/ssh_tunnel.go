@@ -151,7 +151,7 @@ type SshTunnelEvent struct {
 	HasUsagePolicy bool `json:"has_usage_policy"`
 
 	// Whether the connection asked for detached processes (tmux, setsid, nohup) to
-	// outlive the server via --keep-detached-for. Only the presence is recorded, not
+	// outlive the server via --keep-detached-processes. Only the request is recorded, not
 	// the duration. Whether any such process actually existed at teardown is reported
 	// separately by the server, in SshTunnelTeardownEvent.
 	KeepDetachedRequested bool `json:"keep_detached_requested"`

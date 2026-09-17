@@ -512,8 +512,8 @@ func TestBuildSshTunnelEvent(t *testing.T) {
 			},
 		},
 		{
-			name: "keeping detached processes records presence only",
-			opts: ClientOptions{ClusterID: "abc-123", KeepDetachedFor: 2 * time.Hour},
+			name: "keeping detached processes records the request",
+			opts: ClientOptions{ClusterID: "abc-123", KeepDetachedProcesses: true},
 			want: protos.SshTunnelEvent{
 				ComputeType:           protos.SshTunnelComputeTypeDedicated,
 				ClientMode:            protos.SshTunnelClientModeSSH,
