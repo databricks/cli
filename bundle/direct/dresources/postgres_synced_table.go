@@ -2,14 +2,24 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
+
+// deleteSyncedTableTimeout caps the wait for a synced-table deletion to finish.
+// Deletion tears down the backing sync pipeline, which usually completes in a
+// minute or two but can take longer under load.
+const deleteSyncedTableTimeout = 15 * time.Minute
 
 // PostgresSyncedTableRemote is the return type for DoRead. It embeds
 // SyncedTableSyncedTableSpec so that all paths in StateType are valid paths in
@@ -126,4 +136,38 @@ func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _
 		return err
 	}
 	return waiter.Wait(ctx)
+}
+
+// WaitAfterDelete polls GetSyncedTable until the table is gone. DeleteSyncedTable
+// returns a synthetic operation immediately while the backend tears the table
+// down asynchronously: GET keeps returning 200 with a DELETING provisioning
+// state until the Unity Catalog record is finally removed, and only then returns
+// 404. CreateSyncedTable checks existence against that same UC record, so a
+// recreate's follow-up create issued during the window is rejected with 409
+// ALREADY_EXISTS (observed on AWS). Because both the create's conflict check and
+// this GET read the one UC record, waiting for GET to stop returning the table
+// is enough to make the recreate safe. The framework calls this after dropping
+// state, so giving up leaves the bundle consistent (retry on next plan).
+//
+// This wait is best-effort and never fails the deploy: only a successful GET
+// keeps us waiting. A 404 (gone) or 403 (the caller loses access once the
+// backing table is torn down) means we can proceed; any other error, or timing
+// out while the table still exists, is logged and tolerated. A genuinely
+// incomplete teardown then resurfaces as the 409 on the subsequent create,
+// which is the clearer place to report it.
+func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id string) error {
+	_, err := retries.Poll[struct{}](ctx, deleteSyncedTableTimeout, func() (*struct{}, *retries.Err) {
+		_, getErr := r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: id})
+		if getErr == nil {
+			return nil, retries.Continues("synced table still exists, waiting for deletion to complete")
+		}
+		if !errors.Is(getErr, apierr.ErrResourceDoesNotExist) && !errors.Is(getErr, apierr.ErrNotFound) && !errors.Is(getErr, apierr.ErrPermissionDenied) {
+			log.Warnf(ctx, "Ignoring unexpected error while waiting for synced table %s to delete: %s", id, getErr)
+		}
+		return &struct{}{}, nil
+	})
+	if err != nil {
+		log.Warnf(ctx, "Timed out waiting for synced table %s to delete, proceeding anyway: %s", id, err)
+	}
+	return nil
 }
