@@ -25,11 +25,19 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const invalidRefreshTokenErrorCode = "INVALID_REFRESH_TOKEN"
+const (
+	unauthenticatedErrorCode  = "UNAUTHENTICATED"
+	invalidRefreshTokenReason = "INVALID_REFRESH_TOKEN"
+)
 
 type tokenErrorOutput struct {
-	ErrorCode string `json:"error_code"`
-	Message   string `json:"message"`
+	ErrorCode    string            `json:"error_code"`
+	Message      string            `json:"message"`
+	ErrorDetails tokenErrorDetails `json:"error_details"`
+}
+
+type tokenErrorDetails struct {
+	Reason string `json:"reason"`
 }
 
 func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthArgument) string {
@@ -117,8 +125,11 @@ func writeTokenErrorOutput(w io.Writer, err error) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(tokenErrorOutput{
-		ErrorCode: invalidRefreshTokenErrorCode,
+		ErrorCode: unauthenticatedErrorCode,
 		Message:   err.Error(),
+		ErrorDetails: tokenErrorDetails{
+			Reason: invalidRefreshTokenReason,
+		},
 	})
 }
 
