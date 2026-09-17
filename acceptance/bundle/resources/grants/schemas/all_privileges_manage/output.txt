@@ -6,6 +6,27 @@ Created schemas.grants_schema.grants
 Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
+>>> print_requests.py --method PATCH //permissions
+{
+  "method": "PATCH",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_all_priv_manage_[UNIQUE_NAME]",
+  "body": {
+    "changes": [
+      {
+        "add": [
+          "ALL_PRIVILEGES",
+          "MANAGE"
+        ],
+        "principal": "[USERNAME]"
+      }
+    ]
+  }
+}
+
+>>> [CLI] grants get schema main.schema_all_priv_manage_[UNIQUE_NAME] -o json
+ALL_PRIVILEGES
+MANAGE
+
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

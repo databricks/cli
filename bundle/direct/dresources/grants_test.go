@@ -177,14 +177,28 @@ func TestNormalizeAssignments(t *testing.T) {
 			},
 		},
 		{
-			// ALL_PRIVILEGES does not imply MANAGE, so MANAGE must survive the
-			// collapse instead of being dropped alongside the concrete privileges.
-			name: "keeps MANAGE alongside ALL_PRIVILEGES",
+			// ALL_PRIVILEGES does not imply MANAGE, READ_METADATA, EXTERNAL_USE_SCHEMA
+			// or EXTERNAL_USE_LOCATION, so all four must survive the collapse instead
+			// of being dropped alongside the concrete privileges (e.g. USE_CATALOG).
+			name: "keeps privileges not implied by ALL_PRIVILEGES",
 			input: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog, catalog.PrivilegeManage, catalog.PrivilegeAllPrivileges}},
+				{Principal: "alice", Privileges: []catalog.Privilege{
+					catalog.PrivilegeUseCatalog,
+					catalog.PrivilegeManage,
+					catalog.PrivilegeReadMetadata,
+					catalog.PrivilegeExternalUseSchema,
+					catalog.PrivilegeExternalUseLocation,
+					catalog.PrivilegeAllPrivileges,
+				}},
 			},
 			expected: []catalog.PrivilegeAssignment{
-				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage}},
+				{Principal: "alice", Privileges: []catalog.Privilege{
+					catalog.PrivilegeAllPrivileges,
+					catalog.PrivilegeExternalUseLocation,
+					catalog.PrivilegeExternalUseSchema,
+					catalog.PrivilegeManage,
+					catalog.PrivilegeReadMetadata,
+				}},
 			},
 		},
 	}
