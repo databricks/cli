@@ -235,6 +235,9 @@ func hasRunFilter() bool {
 // DBR runs will fail this check before any test runs.
 func requirePrerequisites(t *testing.T) bool {
 	return t.Run("prerequisites", func(t *testing.T) {
+		// A stray .git above the temp dir makes the CLI believe all temporary
+		// directories are git repositories; catch it here rather than chasing diffs.
+		internal.RequireTempDirNotInGitRepo(t)
 		// Scripts use jq 1.7 features (the pick/1 builtin and the `.foo.[]` iteration syntax).
 		internal.RequireJQ(t, "1.7")
 		// uv builds the databricks-bundles wheel and provides the test interpreter
