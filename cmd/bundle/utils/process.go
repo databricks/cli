@@ -89,6 +89,10 @@ type ProcessOptions struct {
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
+	// If true, state feature markers, rather than bundle configuration, determine
+	// which feature-specific state reader to use.
+	UseStateFeatures bool
+
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
@@ -258,7 +262,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 
-			if b.ConfiguresDeploymentHistory(ctx) {
+			recordsDeploymentHistory := useDeploymentHistoryStateReader(ctx, b, stateDesc, opts.UseStateFeatures)
+
+			if recordsDeploymentHistory {
 				var err error
 				dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 				if err != nil {
@@ -578,6 +584,14 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle) error {
 		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 	}
 	return b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID})
+}
+
+func useDeploymentHistoryStateReader(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, useStateFeatures bool) bool {
+	if useStateFeatures {
+		_, ok := stateDesc.Features[dstate.FeatureDeploymentHistory]
+		return ok
+	}
+	return b.ConfiguresDeploymentHistory(ctx)
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

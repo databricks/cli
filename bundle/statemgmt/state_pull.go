@@ -26,8 +26,9 @@ import (
 type AlwaysPull bool
 
 type StateDesc struct {
-	Serial  int    `json:"serial"`
-	Lineage string `json:"lineage"`
+	Serial   int                 `json:"serial"`
+	Lineage  string              `json:"lineage"`
+	Features map[string]struct{} `json:"features,omitempty"`
 
 	// additional fields describing state:
 	SourcePath string
