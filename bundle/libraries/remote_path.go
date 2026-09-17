@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -15,16 +16,32 @@ import (
 )
 
 // LocalLibraryPaths returns the local file paths of all libraries in the bundle
-// config that need to be uploaded. Callers must run ExpandGlobReferences first
-// so that glob patterns in job task libraries are already resolved in the config.
-// For dynamic_version wheel artifacts it computes the patched path from the
-// source file's mtime, reusing the cached file that "bundle plan" already
-// created rather than re-patching.
+// config that need to be uploaded. It expands any glob patterns that haven't
+// been resolved yet (ExpandGlobReferences only runs during Build, not when
+// applying a saved plan). For dynamic_version wheel artifacts it computes the
+// patched path from the source file's mtime, reusing the cached file that
+// "bundle plan" already created rather than re-patching.
 func LocalLibraryPaths(ctx context.Context, b *bundle.Bundle) ([]string, error) {
 	libs, err := collectLocalLibraries(b)
 	if err != nil {
 		return nil, err
 	}
+
+	// Expand any glob patterns in the collected paths. Job task library globs
+	// (e.g. "./dist/*.whl") are expanded by ExpandGlobReferences during Build but
+	// not when applying a saved plan, so they may still be present here.
+	expanded := make(map[string][]LocationToUpdate, len(libs))
+	for source, locs := range libs {
+		if strings.ContainsAny(source, "*?[") {
+			matches, _ := filepath.Glob(source)
+			for _, match := range matches {
+				expanded[match] = append(expanded[match], locs...)
+			}
+		} else {
+			expanded[source] = locs
+		}
+	}
+	libs = expanded
 
 	// For dynamic_version wheel artifacts, replace the original source path with
 	// the patched path. patchwheel.PatchWheel returns the already-cached result
