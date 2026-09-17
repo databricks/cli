@@ -213,7 +213,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// metadata diff and to reject a saved plan that predates the deployment's recorded version.
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
-	var recordsDeploymentHistory bool
 
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
@@ -225,7 +224,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 		cmd.SetContext(ctx)
 		if stateDesc.Engine.IsDirect() {
-			recordsDeploymentHistory = resolveDeploymentHistory(ctx, b, stateDesc)
+			resolveDeploymentHistory(ctx, b, stateDesc)
 		}
 
 		// Record the engine the resolved state uses now, so deploy telemetry reports
@@ -266,7 +265,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if needDirectState {
 			_, localPath := b.StateFilenameDirect(ctx)
 
-			if recordsDeploymentHistory {
+			if stateDesc.IsDMS() {
 				var err error
 				dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 				if err != nil {
