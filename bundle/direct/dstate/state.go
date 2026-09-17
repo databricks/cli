@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
@@ -969,31 +970,7 @@ func (db *DeploymentState) unlockedSave() error {
 		return err
 	}
 
-	dir := filepath.Dir(db.Path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
-	}
-
-	// CreateTemp creates the file with mode 0o600, matching the state file.
-	tmp, err := os.CreateTemp(dir, "."+filepath.Base(db.Path)+".tmp-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file for %#v: %w", db.Path, err)
-	}
-	tmpPath := tmp.Name()
-	// Cleans up the temp file on failure; a no-op once the rename succeeded.
-	defer os.Remove(tmpPath)
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return fmt.Errorf("failed to write %#v: %w", tmpPath, err)
-	}
-
-	// Close before the rename: on Windows the file must not be open for writing.
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("failed to close %#v: %w", tmpPath, err)
-	}
-
-	if err := os.Rename(tmpPath, db.Path); err != nil {
+	if err := atomicfile.Write(db.Path, data, 0o600, atomicfile.MkDir(0o755)); err != nil {
 		return fmt.Errorf("failed to save resources state to %#v: %w", db.Path, err)
 	}
 
