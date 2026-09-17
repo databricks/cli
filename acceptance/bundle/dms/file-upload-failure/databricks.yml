@@ -1,0 +1,20 @@
+bundle:
+  name: dms-file-upload-failure
+  deployment:
+    lock:
+      enabled: false
+
+experimental:
+  deployment_history: true
+
+workspace:
+  artifact_path: /Workspace/Users/${workspace.current_user.userName}/dms-file-upload-failure-artifacts
+
+permissions:
+  - user_name: ${workspace.current_user.userName}
+    level: CAN_MANAGE
+
+resources:
+  jobs:
+    foo:
+      name: foo

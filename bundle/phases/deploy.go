@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -201,55 +202,26 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	//
 	// The version is created only after approval; CompleteVersion is deferred before
 	// lock.Release and no-ops until then.
+	var stopHeartbeat func()
 	defer func() {
+		success := ctx.Err() == nil
+		if stopHeartbeat != nil {
+			stopHeartbeat()
+		}
+		// Release the version and workspace lock even after an upload is canceled.
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		defer cancel()
 		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			if _, err := b.DeploymentBundle.StateDB.CompleteVersion(cleanupCtx, success && !logdiag.HasError(ctx)); err != nil {
 				logdiag.LogError(ctx, err)
 			}
 		}
-		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
+		bundle.ApplyContext(cleanupCtx, b, lock.Release(lock.GoalDeploy))
 	}()
 
 	immutable := b.IsImmutableFolder()
 	if immutable && !stateEngine.IsDirect() {
 		logdiag.LogError(ctx, errors.New("experimental.immutable_folder is only supported with the direct deployment engine"))
-		return
-	}
-
-	if !immutable {
-		uploadLibraries(ctx, b, libs)
-		if logdiag.HasError(ctx) {
-			return
-		}
-
-		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
-		if logdiag.HasError(ctx) {
-			return
-		}
-	}
-
-	// From here on the files are uploaded, so report them however the rest of the
-	// deploy turns out. Deferred rather than repeated at each of the returns below, so
-	// that a new early return cannot silently drop it. On success logDeploySummary
-	// prints this line itself, between the per-resource lines and the resource summary,
-	// and sets the flag so the defer does not print it twice.
-	filesReported := false
-	defer func() {
-		if !filesReported {
-			logFileSummary(ctx, b)
-		}
-	}()
-
-	bundle.ApplySeqContext(
-		ctx, b,
-		deploy.StateUpdate(),
-		deploy.StatePush(),
-		permissions.ApplyWorkspaceRootPermissions(),
-		metrics.TrackUsedCompute(),
-		deploy.ResourcePathMkdir(),
-	)
-
-	if logdiag.HasError(ctx) {
 		return
 	}
 
@@ -277,14 +249,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if stateEngine.IsDirect() {
-		// Upgrade from read (opened by process.go) to write mode
-		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	}
-
 	if planFromFile {
 		// Initialize DeploymentBundle for applying the loaded plan
 		err := b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(ctx), plan)
@@ -295,8 +259,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	// InitForApply receives ctx and could log a diagnostic without returning an
-	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
-	// thus cannot log, so the earlier check is enough to guard the WAL open.)
+	// error, so re-check before deploying.
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -320,6 +283,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// IsDirect first: the state must be open to read its features, and only the direct engine opens it.
 	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
+		if firstDeploy && !b.Config.Bundle.Deployment.Lock.IsEnabled() {
+			// StatePush used to create this parent before registering the deployment.
+			// With locking enabled, lock acquisition has already created it.
+			if err := b.WorkspaceClient(ctx).Workspace.MkdirsByPath(ctx, b.Config.Workspace.StatePath); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+		}
 		createOrUpdateDeployment(ctx, b, dmsDeployment)
 		if logdiag.HasError(ctx) {
 			return
@@ -344,6 +315,55 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				return
 			}
 			logDeploymentVersion(ctx, b)
+			ctx, stopHeartbeat = startDeploymentHeartbeat(ctx, b)
+		}
+	}
+
+	// Upload only after planning, approval, and (for DMS deployments with changes)
+	// version creation. In particular, a failed CreateVersion must not leave files
+	// from an unrecorded deployment in the workspace.
+	if !immutable {
+		uploadLibraries(ctx, b, libs)
+		if logdiag.HasError(ctx) {
+			return
+		}
+
+		bundle.ApplySeqContext(ctx, b, files.Upload(outputHandler))
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
+	// From here on the files are uploaded, so report them however the rest of the
+	// deploy turns out. Deferred rather than repeated at each of the returns below, so
+	// that a new early return cannot silently drop it. On success logDeploySummary
+	// prints this line itself, between the per-resource lines and the resource summary,
+	// and sets the flag so the defer does not print it twice.
+	filesReported := false
+	defer func() {
+		if !filesReported {
+			logFileSummary(ctx, b)
+		}
+	}()
+
+	// Persist the inventory produced by sync, and apply permissions only after
+	// uploads have created the file and artifact directories (including custom paths).
+	bundle.ApplySeqContext(ctx, b,
+		deploy.StateUpdate(),
+		deploy.StatePush(),
+		permissions.ApplyWorkspaceRootPermissions(),
+		metrics.TrackUsedCompute(),
+		deploy.ResourcePathMkdir(),
+	)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	if stateEngine.IsDirect() {
+		// No resource state is written until uploads and their bookkeeping succeed.
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			logdiag.LogError(ctx, err)
+			return
 		}
 	}
 

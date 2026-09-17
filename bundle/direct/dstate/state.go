@@ -228,10 +228,9 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	deploymentID, client, versionID := db.DeploymentID, db.dmsClient, db.VersionID
 	db.mu.Unlock()
 
-	// A recording failure fails the version even when the caller counted the deploy a success: the
-	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
-	// this reads the drained buffer's error so a destroy whose uploads failed keeps its record.
-	if buf.Err() != nil {
+	// Uploads can fail before resource application starts, bypassing Finalize.
+	// Always close the buffer here too; Drain is idempotent after Finalize.
+	if buf.Drain() != nil {
 		success = false
 	}
 

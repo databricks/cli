@@ -34,7 +34,6 @@ Validation OK!
 
 === Recreation of the volume without --auto-approve should fail since prompting is not possible
 >>> errcode [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name}
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
 
 This action will result in the deletion or recreation of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
@@ -45,7 +44,6 @@ Error: the deployment requires destructive actions, but the current console does
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
 
-Files: 0 uploaded, 0 deleted
 
 Exit code: 1
 

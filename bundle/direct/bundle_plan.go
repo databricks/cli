@@ -67,9 +67,9 @@ func ValidatePlanAgainstState(stateDB *dstate.DeploymentState, plan *deployplan.
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
-// StateDB must already be open for write before calling this function.
+// StateDB must already be open for read or write before calling this function.
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) error {
-	b.StateDB.AssertOpenedForWrite()
+	b.StateDB.AssertOpenedForReadOrWrite()
 
 	err := b.init(client)
 	if err != nil {
