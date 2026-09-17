@@ -25,21 +25,21 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "features": null
 }
 
-=== Enabling recording warns and keeps using the existing non-DMS state
+=== Enabling recording is refused because the existing deployment is not recorded
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Warn: Deployment history setting (true) does not match the existing state (false). Using the existing state.
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Error: enabling experimental.deployment_history for an existing deployment is not supported
+
+Run "databricks bundle destroy" first, then deploy again with deployment history enabled
+
 
 >>> print_requests.py --dms //api/2.0/bundle --oneline
 
-=== Wiping the local cache still uses the non-DMS feature setting pulled from remote state
+=== Wiping the local cache still refuses after pulling the non-DMS state from the workspace
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Warn: Deployment history setting (true) does not match the existing state (false). Using the existing state.
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-existing-state-[UNIQUE_NAME]/default/files...
-Files: 4 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Error: enabling experimental.deployment_history for an existing deployment is not supported
+
+Run "databricks bundle destroy" first, then deploy again with deployment history enabled
+
 
 === A leftover local WAL with the wrong lineage is still refused
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
@@ -47,7 +47,8 @@ Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.js
 
 
 === Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone
->>> [CLI] bundle destroy --auto-approve
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle destroy --auto-approve
+Warn: Deployment history setting (true) does not match the existing state (false). Using the existing state.
 The following resources will be deleted:
   delete resources.jobs.one
 

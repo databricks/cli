@@ -6,13 +6,13 @@ dms_plan
 trace print_requests.py --dms //api/2.0/bundle --oneline
 trace jq '{state_version, features}' .databricks/bundle/default/resources.json
 
-title "Enabling recording warns and keeps using the existing non-DMS state"
-trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+title "Enabling recording is refused because the existing deployment is not recorded"
+musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --oneline
 
-title "Wiping the local cache still uses the non-DMS feature setting pulled from remote state"
+title "Wiping the local cache still refuses after pulling the non-DMS state from the workspace"
 rm -rf .databricks
-trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
+musterr trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 
 title "A leftover local WAL with the wrong lineage is still refused"
 mkdir -p .databricks/bundle/default
@@ -23,7 +23,7 @@ title "Destroy clears the deployment. With nothing recorded remotely the bundle 
 # Clear the stale WAL first: it was refused, not deleted, and destroy runs without recording, so it
 # would otherwise try to replay it and fail on the lineage mismatch.
 rm -f .databricks/bundle/default/resources.json.wal
-trace $CLI bundle destroy --auto-approve
+trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --oneline
 trace find.py 'resources[.]json[.]wal' --expect 0
