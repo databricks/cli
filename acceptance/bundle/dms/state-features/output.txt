@@ -22,16 +22,18 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 >>> print_requests.py --dms //resources --get --oneline
 {"method": "GET", "path": "/api/2.0/bundle/deployments/[NUMID]/resources"}
 
-=== Disabling deployment history warns, while plan, deploy, and destroy keep using DMS from state
+=== Disabling deployment history is refused by plan and deploy, while destroy keeps using DMS from state
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle plan
-Warn: Deployment history setting (false) does not match the existing state (true). Using the existing state.
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Error: deployment history setting (false) does not match the existing state (true)
+
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
+
 
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle deploy
-Warn: Deployment history setting (false) does not match the existing state (true). Using the existing state.
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-state-features-[UNIQUE_NAME]/default/files...
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Error: deployment history setting (false) does not match the existing state (true)
+
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
+
 
 >>> env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

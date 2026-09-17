@@ -321,14 +321,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				log.Warnf(ctx, "State was last deployed with CLI version %s but current version is %s", stateVersion, currentVersion)
 			}
 			if !opts.SkipEnforcingDeploymentHistorySetting {
-				if err := enforceDeploymentHistorySetting(ctx, b, stateDesc); err != nil {
+				if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 			}
 		} else if stateDesc.Engine.IsDirect() {
 			if !opts.SkipEnforcingDeploymentHistorySetting {
-				if err := enforceDeploymentHistorySetting(ctx, b, stateDesc); err != nil {
+				if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
@@ -586,7 +586,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
-		return enforceDeploymentHistorySetting(ctx, b, stateDesc)
+		return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
 	}
 
 	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
@@ -604,7 +604,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 		return err
 	}
-	return enforceDeploymentHistorySetting(ctx, b, stateDesc)
+	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
 }
 
 func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
@@ -619,7 +619,7 @@ func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *
 	return stateDesc.IsDMS()
 }
 
-func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requireMatch bool) error {
 	if stateDesc.SourcePath == "" {
 		return nil
 	}
@@ -627,6 +627,11 @@ func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stat
 	recorded := stateDesc.IsDMS()
 	if configured == recorded {
 		return nil
+	}
+	if requireMatch {
+		return fmt.Errorf(`deployment history setting (%t) does not match the existing state (%t)
+
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over`, configured, recorded)
 	}
 	if configured {
 		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
