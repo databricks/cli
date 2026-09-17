@@ -1,7 +1,7 @@
 package experimental
 
 import (
-	aircmd "github.com/databricks/cli/experimental/air/cmd"
+	aircmd "github.com/databricks/cli/cmd/air"
 	aitoolscmd "github.com/databricks/cli/experimental/aitools/cmd"
 	postgrescmd "github.com/databricks/cli/experimental/postgres/cmd"
 	"github.com/spf13/cobra"

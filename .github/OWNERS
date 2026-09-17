@@ -73,11 +73,13 @@
 /cmd/aitools/               team:eng-apps-devex team:ide @lennartkats-db
 /libs/aitools/              team:eng-apps-devex team:ide @lennartkats-db
 
+# AI Runtime
+/cmd/air/         team:ai-training
+/acceptance/air/  team:ai-training
+
 # CLI compatibility manifest
 /internal/build/cli-compat.json  team:eng-apps-devex team:platform
 /libs/clicompat/                 team:eng-apps-devex team:platform
 
 # Experimental
-/experimental/air/             team:ai-training
-/acceptance/experimental/air/  team:ai-training
 /experimental/aitools/      team:eng-apps-devex @lennartkats-db
