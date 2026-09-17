@@ -23,8 +23,14 @@ type Change struct {
 //   - func(T) (string, string) - typed function for specific element type T
 //   - func(any) (string, string) - generic function accepting any element
 //
-// The function returns (keyField, keyValue). The keyField is typically a field name
-// like "task_key", and keyValue is the value that uniquely identifies the element.
+// The function returns (keyField, keyValue). keyValue is the identity: elements are
+// matched across the two sides by keyValue alone. keyField is only used to render
+// the path (e.g. "task_key" -> [task_key='...']) and may vary between elements — a
+// permission, for instance, keys on "user_name", "service_principal_name", or
+// "group_name" depending on which is set. Because keyValue is the identity, a matched
+// element's own key field is never diffed: the same value carried under a different
+// key field (e.g. user_name vs service_principal_name for one principal) compares
+// equal rather than reporting a spurious change.
 type KeyFunc = any
 
 // keyFuncCaller wraps a KeyFunc and provides a type-checked Call method.

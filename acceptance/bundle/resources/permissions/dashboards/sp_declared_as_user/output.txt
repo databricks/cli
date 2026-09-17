@@ -25,15 +25,11 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 === Permissions node of the JSON plan{
   "action": "update",
   "changes": {
-    "[service_principal_name='[UUID]'].level": {
-      "action": "update",
-      "new": "CAN_READ",
-      "remote": "CAN_MANAGE"
-    },
     "[user_name='[UUID]'].level": {
       "action": "update",
       "old": "CAN_MANAGE",
-      "new": "CAN_READ"
+      "new": "CAN_READ",
+      "remote": "CAN_MANAGE"
     }
   }
 }
