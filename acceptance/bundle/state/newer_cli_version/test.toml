@@ -2,3 +2,5 @@ Ignore = [".databricks"]
 
 # The warning is emitted when reading the direct engine's resources.json.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# This fixture seeds file-backed state; DMS mismatch behavior is covered under bundle/dms.
+EnvMatrix.DMS = [""]
