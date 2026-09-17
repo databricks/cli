@@ -1,0 +1,27 @@
+# A local wheel referenced by a job library must be uploaded to its .../artifacts/.internal/
+# workspace path by both `bundle deploy` and `bundle deploy --plan`. Applying a saved plan
+# runs phases.FindLibraries to discover which local files to upload without re-running any
+# build commands. This test pins that both deploy paths upload the wheel identically.
+
+title "bundle deploy uploads the wheel"
+trace $CLI bundle deploy
+# An import-file request uploaded the wheel to its .../artifacts/.internal/ workspace path.
+# raw_body is the wheel's binary payload; drop it to keep the golden readable.
+trace print_requests.py //artifacts/.internal --del-field raw_body
+
+trace $CLI bundle destroy --auto-approve
+# Discard destroy's requests so the saved-plan deploy below starts from a clean recording.
+rm "$OUT_REQUESTS"
+
+title "bundle deploy --plan also uploads the wheel"
+# tmp.plan.json is the live plan (with features/serial for validation);
+# out.plan.json is the nostamp-stripped golden for cross-variant comparison.
+$CLI bundle plan -o json > tmp.plan.json
+$CLI bundle plan -o json | nostamp > out.plan.json
+trace $CLI bundle deploy --plan tmp.plan.json
+# The same import-file request uploads the wheel to the .../artifacts/.internal/ path the
+# job task points at, matching the plain `bundle deploy` above.
+trace print_requests.py //artifacts/.internal --del-field raw_body
+
+trace $CLI bundle destroy --auto-approve
+rm "$OUT_REQUESTS"

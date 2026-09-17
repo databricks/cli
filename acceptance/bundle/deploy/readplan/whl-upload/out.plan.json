@@ -8,12 +8,12 @@
         "value": {
           "deployment": {
             "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/whl-not-uploaded/default/state/metadata.json"
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/state/metadata.json"
           },
           "edit_mode": "UI_LOCKED",
           "format": "MULTI_TASK",
           "max_concurrent_runs": 1,
-          "name": "whl-not-uploaded-job",
+          "name": "whl-upload-job",
           "queue": {
             "enabled": true
           },
@@ -21,7 +21,7 @@
             {
               "libraries": [
                 {
-                  "whl": "/Workspace/Users/[USERNAME]/.bundle/whl-not-uploaded/default/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
                 }
               ],
               "new_cluster": {

@@ -82,7 +82,10 @@ type ProcessOptions struct {
 	Deploy          bool
 
 	// Path to pre-computed plan JSON file (direct engine only).
-	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
+	// When set, skips Build and PreDeployChecks phases, and loads the plan from
+	// the file instead of calculating it. Artifact uploads are handled directly
+	// inside Deploy by reading the remote paths from the plan's new_state and
+	// finding the matching local files.
 	ReadPlanPath string
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
@@ -347,12 +350,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	var plan *deployplan.Plan
-
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
+		// Artifact uploads are handled inside Deploy by extracting remote paths
+		// from the plan's new_state and finding the matching local files.
 		opts.Build = false
 		opts.PreDeployChecks = false
 
