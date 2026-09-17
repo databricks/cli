@@ -48,7 +48,6 @@ Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.js
 
 === Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle destroy --auto-approve
-Warn: Deployment history setting (true) does not match the existing state (false). Using the existing state.
 The following resources will be deleted:
   delete resources.jobs.one
 

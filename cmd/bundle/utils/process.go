@@ -90,8 +90,8 @@ type ProcessOptions struct {
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
 
-	// If true, an existing non-DMS state may be used even when deployment history is configured.
-	AllowDeploymentHistoryEnableMismatch bool
+	// If true, deployment history configuration is ignored after state is resolved.
+	SkipEnforcingDeploymentHistorySetting bool
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
@@ -320,12 +320,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if stateVersion := b.DeploymentBundle.StateDB.StateCLIVersion(); isNewerVersion(stateVersion, currentVersion) {
 				log.Warnf(ctx, "State was last deployed with CLI version %s but current version is %s", stateVersion, currentVersion)
 			}
-			if err := checkDeploymentHistoryMismatch(ctx, b, stateDesc, opts.AllowDeploymentHistoryEnableMismatch); err != nil {
+			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.SkipEnforcingDeploymentHistorySetting); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		} else if stateDesc.Engine.IsDirect() {
-			if err := checkDeploymentHistoryMismatch(ctx, b, stateDesc, opts.AllowDeploymentHistoryEnableMismatch); err != nil {
+			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.SkipEnforcingDeploymentHistorySetting); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -582,7 +582,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
-		return checkDeploymentHistoryMismatch(ctx, b, stateDesc, false)
+		return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
 	}
 
 	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
@@ -600,7 +600,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 		return err
 	}
-	return checkDeploymentHistoryMismatch(ctx, b, stateDesc, false)
+	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
 }
 
 func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
@@ -615,7 +615,10 @@ func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *
 	return stateDesc.IsDMS()
 }
 
-func checkDeploymentHistoryMismatch(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, allowEnableMismatch bool) error {
+func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, skip bool) error {
+	if skip {
+		return nil
+	}
 	if stateDesc.SourcePath == "" {
 		return nil
 	}
@@ -624,7 +627,7 @@ func checkDeploymentHistoryMismatch(ctx context.Context, b *bundle.Bundle, state
 	if configured == recorded {
 		return nil
 	}
-	if configured && !allowEnableMismatch {
+	if configured {
 		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
 
 Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
