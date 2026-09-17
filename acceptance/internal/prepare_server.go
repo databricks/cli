@@ -77,18 +77,6 @@ func staleOnceEnabled(testEnv []string) bool {
 	return engine == "direct"
 }
 
-// asyncDeleteEnabled reports whether the testserver should simulate asynchronous
-// synced-table deletion (the deleted table lingers until the next GET). Opt-in via
-// INJECT_ASYNC_DELETE_ON_DIRECT=1 and only meaningful for the direct engine, which
-// polls after delete; terraform recreates without polling and would hit the 409.
-func asyncDeleteEnabled(testEnv []string) bool {
-	if v, _ := lookupEnv(testEnv, "INJECT_ASYNC_DELETE_ON_DIRECT"); v != "1" {
-		return false
-	}
-	engine, _ := lookupEnv(testEnv, "DATABRICKS_BUNDLE_ENGINE")
-	return engine == "direct"
-}
-
 func lookupEnv(testEnv []string, key string) (string, bool) {
 	prefix := key + "="
 	for _, kv := range testEnv {
@@ -116,11 +104,6 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		// Use the eventual-consistency token so the testserver returns 404 on the
 		// first GET after a create, matching real cloud propagation delays.
 		token = testserver.EventualConsistencyTokenPrefix + tokenSuffix
-		testUser = testserver.TestUser
-	} else if asyncDeleteEnabled(testEnv) {
-		// Use the async-delete token so a deleted synced table lingers (DELETING)
-		// until the next GET, giving the direct engine's post-delete poll a window.
-		token = testserver.AsyncDeleteTokenPrefix + tokenSuffix
 		testUser = testserver.TestUser
 	} else {
 		token = testserver.UserNameTokenPrefix + tokenSuffix

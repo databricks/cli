@@ -44,16 +44,14 @@ const (
 	// itself a service principal.
 	GuestServicePrincipalTokenPrefix = "dbapi2"
 	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
-	// consistency: the first GET after a create returns 404 (not yet visible).
+	// consistency / propagation delays: the first GET after a create returns 404
+	// (not yet visible), and a deleted synced table lingers one more GET before it
+	// disappears (so the direct engine's post-delete poll has a window to traverse).
 	EventualConsistencyTokenPrefix = "dbapi3"
-	// AsyncDeleteTokenPrefix identifies workspaces that simulate asynchronous
-	// deletion: after a delete the resource lingers (in DELETING state) until the
-	// next GET. Used to exercise the direct engine's post-delete polling.
-	AsyncDeleteTokenPrefix    = "dbapi4"
-	UserID                    = "1000012345"
-	TestDefaultClusterId      = "0123-456789-cluster0"
-	TestDefaultWarehouseId    = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId = "0123-456789-pool0"
+	UserID                         = "1000012345"
+	TestDefaultClusterId           = "0123-456789-cluster0"
+	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId      = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -179,12 +177,12 @@ type FakeWorkspace struct {
 	url                string
 	isServicePrincipal bool
 
-	// asyncSyncedTableDelete makes synced-table deletion asynchronous: a deleted
-	// table lingers (in DELETING state) until the next GET, so the direct engine's
-	// post-delete poll (WaitAfterDelete) has a real window to traverse. Opt-in via
-	// AsyncDeleteTokenPrefix so the default (and terraform, which does not poll)
-	// keeps immediate deletion.
-	asyncSyncedTableDelete bool
+	// eventualConsistency simulates propagation delays (see EventualConsistencyTokenPrefix).
+	// For synced tables it makes deletion asynchronous: a deleted table lingers (in
+	// DELETING state) until the next GET, so the direct engine's post-delete poll
+	// (WaitAfterDelete) has a real window to traverse. Off by default, so the default
+	// path and terraform (which recreates without polling) keep immediate deletion.
+	eventualConsistency bool
 
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
@@ -439,10 +437,11 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 }
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
+	eventualConsistency := strings.HasPrefix(token, EventualConsistencyTokenPrefix)
 	return &FakeWorkspace{
-		url:                    url,
-		isServicePrincipal:     strings.HasPrefix(token, ServicePrincipalTokenPrefix),
-		asyncSyncedTableDelete: strings.HasPrefix(token, AsyncDeleteTokenPrefix),
+		url:                 url,
+		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		eventualConsistency: eventualConsistency,
 		directories: map[string]workspace.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
@@ -503,7 +502,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		McpServices:           map[string]catalog.McpService{},
 		ModelProviderServices: map[string]catalog.ModelProviderService{},
 		Volumes:               map[string]catalog.VolumeInfo{},
-		Dashboards:            NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
+		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
 		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:           map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{

@@ -1721,11 +1721,11 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 }
 
 // PostgresSyncedTableDelete deletes a postgres synced table. When the workspace
-// simulates asynchronous deletion, the record is not removed now: it is marked
-// DELETING and kept until the next GET (see PostgresSyncedTableGet), so a create
-// for the same name while it lingers still returns 409 — the race WaitAfterDelete
-// guards against. Otherwise (the default, and terraform, which does not poll) it
-// is removed immediately.
+// simulates eventual consistency, deletion is asynchronous: the record is not
+// removed now but marked DELETING and kept until the next GET (see
+// PostgresSyncedTableGet), so a create for the same name while it lingers still
+// returns 409 — the race WaitAfterDelete guards against. Otherwise (the default,
+// and terraform, which recreates without polling) it is removed immediately.
 func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	defer s.LockUnlock()()
 
@@ -1734,7 +1734,7 @@ func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 		return postgresNotFoundResponse("synced table")
 	}
 
-	if !s.asyncSyncedTableDelete {
+	if !s.eventualConsistency {
 		delete(s.PostgresSyncedTables, name)
 		return Response{Body: s.createOperationLocked(name, nil)}
 	}
