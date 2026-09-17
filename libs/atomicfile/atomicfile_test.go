@@ -97,3 +97,47 @@ func TestWriteMkDirCreatesParents(t *testing.T) {
 		assert.Equal(t, os.FileMode(0o700), info.Mode().Perm())
 	}
 }
+
+// MkDir wraps os.MkdirAll, which is a no-op on a directory that already exists
+// and never changes its mode. These two cases pin that down: whether the
+// requested mode matches the existing directory or not, the directory keeps the
+// mode it already had and the write still succeeds.
+func TestWriteMkDirExistingDirSameMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not honor unix directory modes")
+	}
+	dir := t.TempDir()
+	require.NoError(t, os.Chmod(dir, 0o700))
+	path := filepath.Join(dir, "out")
+
+	require.NoError(t, Write(path, []byte("x"), 0o600, MkDir(0o700)))
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "x", string(got))
+
+	info, err := os.Stat(dir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), info.Mode().Perm())
+}
+
+func TestWriteMkDirExistingDirDifferentMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not honor unix directory modes")
+	}
+	dir := t.TempDir()
+	require.NoError(t, os.Chmod(dir, 0o700))
+	path := filepath.Join(dir, "out")
+
+	// Ask for 0o755 even though the directory already exists at 0o700.
+	require.NoError(t, Write(path, []byte("x"), 0o600, MkDir(0o755)))
+
+	got, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "x", string(got))
+
+	// The existing directory keeps 0o700; MkDir does not widen it to 0o755.
+	info, err := os.Stat(dir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), info.Mode().Perm())
+}
