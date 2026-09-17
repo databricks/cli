@@ -46,10 +46,14 @@ const (
 	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
 	// consistency: the first GET after a create returns 404 (not yet visible).
 	EventualConsistencyTokenPrefix = "dbapi3"
-	UserID                         = "1000012345"
-	TestDefaultClusterId           = "0123-456789-cluster0"
-	TestDefaultWarehouseId         = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
-	TestDefaultInstancePoolId      = "0123-456789-pool0"
+	// AsyncDeleteTokenPrefix identifies workspaces that simulate asynchronous
+	// deletion: after a delete the resource lingers (in DELETING state) until the
+	// next GET. Used to exercise the direct engine's post-delete polling.
+	AsyncDeleteTokenPrefix    = "dbapi4"
+	UserID                    = "1000012345"
+	TestDefaultClusterId      = "0123-456789-cluster0"
+	TestDefaultWarehouseId    = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
@@ -175,6 +179,13 @@ type FakeWorkspace struct {
 	url                string
 	isServicePrincipal bool
 
+	// asyncSyncedTableDelete makes synced-table deletion asynchronous: a deleted
+	// table lingers (in DELETING state) until the next GET, so the direct engine's
+	// post-delete poll (WaitAfterDelete) has a real window to traverse. Opt-in via
+	// AsyncDeleteTokenPrefix so the default (and terraform, which does not poll)
+	// keeps immediate deletion.
+	asyncSyncedTableDelete bool
+
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
@@ -248,6 +259,11 @@ type FakeWorkspace struct {
 	// deletion of these — they go away only when the parent is deleted.
 	postgresImplicitBranches  map[string]bool
 	postgresImplicitEndpoints map[string]bool
+
+	// Synced tables the backend is still tearing down (only when asyncSyncedTableDelete
+	// is set): a GET returns the table once more (in DELETING state) before it
+	// disappears. See PostgresSyncedTableDelete.
+	postgresSyncedTablesDeleting map[string]bool
 
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
@@ -424,8 +440,9 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	return &FakeWorkspace{
-		url:                url,
-		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		url:                    url,
+		isServicePrincipal:     strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		asyncSyncedTableDelete: strings.HasPrefix(token, AsyncDeleteTokenPrefix),
 		directories: map[string]workspace.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
@@ -496,36 +513,37 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				State: sql.StateRunning,
 			},
 		},
-		ServingEndpoints:          map[string]serving.ServingEndpointDetailed{},
-		VectorSearchEndpoints:     map[string]vectorsearch.EndpointInfo{},
-		VectorSearchIndexes:       map[string]fakeVectorSearchIndex{},
-		Repos:                     map[string]workspace.RepoInfo{},
-		SecretScopes:              map[string]workspace.SecretScope{},
-		Secrets:                   map[string]map[string]string{},
-		Acls:                      map[string][]workspace.AclItem{},
-		Permissions:               map[string]iam.ObjectPermissions{},
-		Groups:                    map[string]iam.Group{},
-		DatabaseInstances:         map[string]database.DatabaseInstance{},
-		DatabaseCatalogs:          map[string]database.DatabaseCatalog{},
-		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
-		PostgresProjects:          map[string]postgres.Project{},
-		PostgresBranches:          map[string]postgres.Branch{},
-		PostgresCatalogs:          map[string]postgres.Catalog{},
-		PostgresDatabases:         map[string]postgres.Database{},
-		PostgresEndpoints:         map[string]postgres.Endpoint{},
-		PostgresRoles:             map[string]postgres.Role{},
-		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
-		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
-		PostgresOperations:        map[string]postgres.Operation{},
-		postgresImplicitBranches:  map[string]bool{},
-		postgresImplicitEndpoints: map[string]bool{},
-		clusterVenvs:              map[string]*clusterEnv{},
-		DmsDeployments:            map[string]*DmsDeployment{},
-		DmsDeploymentNodes:        map[string]string{},
-		Alerts:                    map[string]sql.AlertV2{},
-		Experiments:               map[string]ml.GetExperimentResponse{},
-		ModelRegistryModels:       map[string]ml.Model{},
-		ModelRegistryModelIDs:     map[string]string{},
+		ServingEndpoints:             map[string]serving.ServingEndpointDetailed{},
+		VectorSearchEndpoints:        map[string]vectorsearch.EndpointInfo{},
+		VectorSearchIndexes:          map[string]fakeVectorSearchIndex{},
+		Repos:                        map[string]workspace.RepoInfo{},
+		SecretScopes:                 map[string]workspace.SecretScope{},
+		Secrets:                      map[string]map[string]string{},
+		Acls:                         map[string][]workspace.AclItem{},
+		Permissions:                  map[string]iam.ObjectPermissions{},
+		Groups:                       map[string]iam.Group{},
+		DatabaseInstances:            map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:             map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables:         map[string]database.SyncedDatabaseTable{},
+		PostgresProjects:             map[string]postgres.Project{},
+		PostgresBranches:             map[string]postgres.Branch{},
+		PostgresCatalogs:             map[string]postgres.Catalog{},
+		PostgresDatabases:            map[string]postgres.Database{},
+		PostgresEndpoints:            map[string]postgres.Endpoint{},
+		PostgresRoles:                map[string]postgres.Role{},
+		PostgresSyncedTables:         map[string]postgres.SyncedTable{},
+		PostgresSnapshotSchedules:    map[string]postgres.SnapshotSchedule{},
+		PostgresOperations:           map[string]postgres.Operation{},
+		postgresImplicitBranches:     map[string]bool{},
+		postgresImplicitEndpoints:    map[string]bool{},
+		postgresSyncedTablesDeleting: map[string]bool{},
+		clusterVenvs:                 map[string]*clusterEnv{},
+		DmsDeployments:               map[string]*DmsDeployment{},
+		DmsDeploymentNodes:           map[string]string{},
+		Alerts:                       map[string]sql.AlertV2{},
+		Experiments:                  map[string]ml.GetExperimentResponse{},
+		ModelRegistryModels:          map[string]ml.Model{},
+		ModelRegistryModelIDs:        map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
 			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
 			// requires (ValidateClusterAccess rejects anything else), matching the cloud

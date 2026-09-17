@@ -16,9 +16,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
-// deleteSyncedTableTimeout caps the wait for a synced-table deletion to finish.
-// Deletion tears down the backing sync pipeline, which usually completes in a
-// minute or two but can take longer under load.
+// deleteSyncedTableTimeout is the default cap on the delete wait when the caller
+// sets none (RESOURCE_MAX_WAIT unset). Deletion tears down the backing sync
+// pipeline, which usually completes in a minute or two but can take longer under
+// load. The caller wraps this in waitCapped, so RESOURCE_MAX_WAIT overrides it.
 const deleteSyncedTableTimeout = 15 * time.Minute
 
 // PostgresSyncedTableRemote is the return type for DoRead. It embeds
@@ -146,28 +147,28 @@ func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _
 // recreate's follow-up create issued during the window is rejected with 409
 // ALREADY_EXISTS (observed on AWS). Because both the create's conflict check and
 // this GET read the one UC record, waiting for GET to stop returning the table
-// is enough to make the recreate safe. The framework calls this after dropping
-// state, so giving up leaves the bundle consistent (retry on next plan).
+// is enough to make the recreate safe.
 //
-// This wait is best-effort and never fails the deploy: only a successful GET
-// keeps us waiting. A 404 (gone) or 403 (the caller loses access once the
-// backing table is torn down) means we can proceed; any other error, or timing
-// out while the table still exists, is logged and tolerated. A genuinely
-// incomplete teardown then resurfaces as the 409 on the subsequent create,
-// which is the clearer place to report it.
+// A 404 (gone) or 403 (the caller loses access once the backing table is torn
+// down) means we can proceed. An unexpected error is logged and tolerated rather
+// than failing the recreate: a genuinely incomplete teardown then resurfaces as
+// the 409 on the subsequent create, which is the clearer place to report it.
+// Cancellation and deadline errors are propagated so the caller's cap
+// (waitCapped / RESOURCE_MAX_WAIT) governs how long to wait.
 func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id string) error {
 	_, err := retries.Poll[struct{}](ctx, deleteSyncedTableTimeout, func() (*struct{}, *retries.Err) {
 		_, getErr := r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: id})
-		if getErr == nil {
+		switch {
+		case getErr == nil:
 			return nil, retries.Continues("synced table still exists, waiting for deletion to complete")
+		case errors.Is(getErr, apierr.ErrResourceDoesNotExist), errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrPermissionDenied):
+			return &struct{}{}, nil
+		case errors.Is(getErr, context.Canceled), errors.Is(getErr, context.DeadlineExceeded):
+			return nil, retries.Halt(getErr)
+		default:
+			log.Warnf(ctx, "Ignoring unexpected error while waiting for synced table to delete: %s", getErr)
+			return &struct{}{}, nil
 		}
-		if !errors.Is(getErr, apierr.ErrResourceDoesNotExist) && !errors.Is(getErr, apierr.ErrNotFound) && !errors.Is(getErr, apierr.ErrPermissionDenied) {
-			log.Warnf(ctx, "Ignoring unexpected error while waiting for synced table %s to delete: %s", id, getErr)
-		}
-		return &struct{}{}, nil
 	})
-	if err != nil {
-		log.Warnf(ctx, "Timed out waiting for synced table %s to delete, proceeding anyway: %s", id, err)
-	}
-	return nil
+	return err
 }

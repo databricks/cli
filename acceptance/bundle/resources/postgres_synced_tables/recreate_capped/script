@@ -1,0 +1,26 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+export TIMESERIES_KEY=tpep_pickup_datetime
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+title "A recreate polls the deleting table until it is gone, then re-creates it"
+# The testserver keeps the deleted table visible (DELETING) for one more GET, so the
+# poll below observes present-then-gone and the create succeeds.
+export TIMESERIES_KEY=tpep_dropoff_datetime
+envsubst < databricks.yml.tmpl > databricks.yml
+rm -f "$OUT_REQUESTS"
+trace $CLI bundle deploy
+# The GET poll (present, then 404) sits between the DELETE and the re-create POST.
+trace print_requests.py --get --oneline --del-field body,q //postgres/synced_tables
+
+title "Capping the delete-wait to zero skips it; the create then races the still-deleting table"
+# With the wait skipped, the table is still DELETING when the create runs, so it fails
+# with 409 ALREADY_EXISTS. errcode keeps the script going so cleanup still runs.
+export TIMESERIES_KEY=tpep_pickup_datetime
+envsubst < databricks.yml.tmpl > databricks.yml
+trace DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=0 errcode $CLI bundle deploy

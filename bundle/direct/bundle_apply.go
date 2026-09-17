@@ -96,8 +96,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// Deletes are capped even with dependents: state is dropped before the wait, so a
 		// cut-short delete leaves the resource untracked while it tears down, and a dependency
 		// deleted after it may be rejected for still having a child. Accepted deliberately.
-		// Recreate's internal delete-wait is never routed through the cap at all, because it
-		// releases the name for the create that follows.
+		// Recreate's internal delete-wait (which releases the name for the create that follows)
+		// is also routed through this cap; cutting it short warns and lets the create surface
+		// any remaining name conflict.
 		unitWait := maxWait
 		if action != deployplan.Delete && hasBlockingDependents(g, resourceKey) {
 			unitWait = maxWaitUnset
