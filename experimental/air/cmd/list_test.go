@@ -193,6 +193,23 @@ func TestBuildListRow(t *testing.T) {
 	require.NotNil(t, row.StartedAt)
 }
 
+func TestBuildListRowWaitingForComputeStatus(t *testing.T) {
+	run := airRun(123, "me@example.com", "GPU_8xH100", 8, "exp")
+	run.State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}
+	run.Tasks[0].State = &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStatePending}
+
+	row := buildListRow(&run, "https://example.test", 0)
+	body, err := json.Marshal(row)
+	require.NoError(t, err)
+
+	assert.Equal(t, "PENDING", row.Status)
+	assert.Equal(t, listRowStatus(row), row.Status)
+	assert.JSONEq(t, `{
+		"run_id":"123","run_name":"run-123","user":"me@example.com","status":"PENDING",
+		"started_at":null,"is_sweep":false
+	}`, string(body))
+}
+
 func TestBuildListRowDashFallbacks(t *testing.T) {
 	// A run with no task, compute, or start time falls back to dashes and UNKNOWN.
 	row := buildListRow(&jobs.Run{RunId: 7}, "https://example.test", 0)
