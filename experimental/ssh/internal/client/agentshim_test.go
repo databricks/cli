@@ -105,7 +105,6 @@ func TestDownloadVerified(t *testing.T) {
 
 func TestSupportedAgents(t *testing.T) {
 	names := SupportedAgentNames()
-	// Limited to the agents whose ucode command accepts --workspace.
 	assert.Equal(t, []string{"claude", "codex"}, names)
 
 	// Each agent injects context by exactly one mechanism (flag OR home file);

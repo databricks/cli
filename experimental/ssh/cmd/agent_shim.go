@@ -10,7 +10,7 @@ import (
 func newAgentShimCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "agent-shim",
-		Short:  "Launch a ucode-configured coding agent (invoked on the remote)",
+		Short:  "Launch a coding agent configured against Unity AI Gateway (invoked on the remote)",
 		Hidden: true,
 	}
 	for _, agent := range client.SupportedAgentNames() {
@@ -22,7 +22,7 @@ func newAgentShimCommand() *cobra.Command {
 func newAgentShimAgentCommand(agent string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   agent,
-		Short: "Launch the ucode-configured " + agent + " agent",
+		Short: "Launch " + agent + " configured against Unity AI Gateway",
 		// Disable flag parsing: forward everything after the agent name to the agent verbatim.
 		DisableFlagParsing: true,
 	}

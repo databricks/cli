@@ -26,36 +26,35 @@ import (
 )
 
 const (
-	// agentDir (home-relative) is the shim's working area.
+	// home-relative directory to hold files/dependencies for the shim.
 	agentDir = ".agent-shim"
 
-	// shimDir holds the per-agent wrappers; must match remoteShimDir in client.go.
-	shimDir = agentDir + "/bin"
+	// directory which holds the per-agent wrappers; must match remoteShimDir in client.go.
+	binDir = agentDir + "/bin"
 
-	// ucodeRepo is the GitHub repo the shim installs ucode from.
-	ucodeRepo = "databricks/ucode"
+	// the GitHub repo the shim installs the Unity Gateway CLI from.
+	ugRepo = "databricks/unity-gateway"
 
-	// ucodeVersion pins the ucode release tag the shim installs, so a new upstream
-	// release can't change the toolchain out from under an SSH session unexpectedly.
-	ucodeVersion = "v0.1.0"
+	// pins the Unity Gateway CLI release tag the shim installs.
+	ugVersion = "v0.1.0"
 
-	// workspaceHomeEnv passes the user's workspace home to the shim for the agent context.
+	// environment variable used to pass the user's workspace home to the shim for the agent context.
 	workspaceHomeEnv = "DATABRICKS_WORKSPACE_HOME"
 
-	// depsDir (home-relative) holds toolchain deps (Node/npm) fetched when the image ships none.
+	// directory which holds toolchain deps (Node/npm) fetched when the image ships none.
 	depsDir = agentDir + "/deps"
 
-	// contextFile is the scratch file holding the Databricks session context.
+	// the file holding the Databricks session context.
 	contextFile = "agent-system-context.md"
 
-	// setupLockName (under agentDir) serializes first-run toolchain setup across
+	// lock file to serialize first-run toolchain setup across
 	// concurrent SSH clients sharing this driver's $HOME.
 	setupLockName = ".setup.lock"
 
-	// setupLockStaleAfter reclaims a setup lock left behind by a process that died
-	// mid-install. It is deliberately generous: a cold first run downloads uv,
-	// ucode, and Node, which can legitimately take minutes.
-	setupLockStaleAfter = 10 * time.Minute
+	// timeout to reclaim a setup lock left behind by a process that died
+	// mid-install. It is deliberately generous: a cold first run can download uv,
+	// ug, and Node
+	setupLockStaleAfter = 2 * time.Minute
 )
 
 type agentSpec struct {
@@ -66,8 +65,7 @@ type agentSpec struct {
 	contextHomeFile string
 }
 
-// supportedAgents are the agents the shim launches — limited to those whose ucode
-// command accepts --workspace (how we target the workspace headlessly).
+// Currently limited to the agents whose Unity Gateway CLI command supports --workspace
 var supportedAgents = []agentSpec{
 	{name: "claude", contextFlag: "--append-system-prompt-file"},
 	{name: "codex", contextHomeFile: ".codex/AGENTS.md"},
@@ -100,20 +98,20 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 	if err := probeAIGateway(ctx, client); err != nil {
 		return err
 	}
-	// ucode targets this workspace via --workspace, so it configures without prompting.
 	workspace := strings.TrimRight(client.Config.Host, "/")
 	return bootstrapAndLaunchAgent(ctx, agent, workspace, agentArgs)
 }
 
 // --- Unity AI Gateway preflight ---
 //
-// Kept in lockstep with ucode's probe_unity_gateway_capabilities
-// (databricks/ucode, src/ucode/databricks.py): probe the Unity Catalog
-// model-services API (v3) first, paging through it, then fall back to the legacy
-// AI Gateway endpoints API (v2). A path counts only when its JSON body actually
-// lists a usable resource — a 200 with an empty collection is "reachable but
-// empty", not "enabled". We fail fast with the same actionable guidance ucode
-// surfaces so the shim's preflight matches what ucode itself checks.
+// Kept in lockstep with Unity Gateway CLI's probe_unity_gateway_capabilities
+// (https://github.com/databricks/unity-gateway/blob/main/src/ucode/databricks.py)
+// Probe the Unity Catalog model-services API (v3) first, paging through it, then
+// fall back to the legacy AI Gateway endpoints API (v2). A path counts only when
+// its JSON body actually lists a usable resource — a 200 with an empty collection
+// is "reachable but empty", not "enabled". We fail fast with the same actionable
+// guidance Unity Gateway CLI surfaces so the shim's preflight matches what Unity
+// Gateway CLI itself checks.
 
 const (
 	modelServicesPath         = "/api/2.1/unity-catalog/model-services"
@@ -121,27 +119,19 @@ const (
 	modelServiceProbePageSize = 50
 	modelServiceProbeMaxPages = 20
 	aiGatewayDocsURL          = "https://docs.databricks.com/aws/en/ai-gateway/overview-beta"
-
-	// modelServiceEmptyDetail matches ucode's wording for a reachable model-services
-	// API that lists nothing the caller can use — almost always a UC grant gap.
 	modelServiceEmptyDetail = "reachable, no accessible model services returned; " +
 		"check USE CATALOG on system, and USE SCHEMA and EXECUTE on system.ai"
 )
 
-// gatewayProbe is the outcome of probing one AI Gateway API. resourceAvailable
-// means the API returned at least one usable resource; conclusive is false when
-// paging couldn't be completed, so "no resources" was never actually confirmed.
 type gatewayProbe struct {
 	reachable         bool
 	detail            string
+	// true if the API returned at least one usable resource
 	resourceAvailable bool
+	// false when paging couldn't be completed, so "no resources" was never actually confirmed
 	conclusive        bool
 }
 
-// probeAIGateway fails fast if the workspace's Unity AI Gateway can't run an
-// agent. It returns nil when the gateway is usable — logging a warning when it's
-// reachable but exposes no model services to this caller — and an actionable
-// error otherwise.
 func probeAIGateway(ctx context.Context, client *databricks.WorkspaceClient) error {
 	host := strings.TrimRight(client.Config.Host, "/")
 
@@ -185,8 +175,6 @@ func probeAIGateway(ctx context.Context, client *databricks.WorkspaceClient) err
 	}
 }
 
-// probeModelServices probes the UC model-services API (v3), paging until it finds
-// an accessible model service, exhausts the cursor, or hits the page cap.
 func probeModelServices(ctx context.Context, client *databricks.WorkspaceClient, host string) gatewayProbe {
 	pageToken := ""
 	for page := 0; page < modelServiceProbeMaxPages; page++ {
@@ -215,7 +203,6 @@ func probeModelServices(ctx context.Context, client *databricks.WorkspaceClient,
 	return gatewayProbe{reachable: true, detail: "reachable"}
 }
 
-// probeLegacyEndpoints probes the legacy AI Gateway endpoints API (v2).
 func probeLegacyEndpoints(ctx context.Context, client *databricks.WorkspaceClient, host string) gatewayProbe {
 	payload, reason := gatewayGetJSON(ctx, client, host+legacyEndpointsPath+"?page_size=1")
 	if payload == nil {
@@ -227,10 +214,6 @@ func probeLegacyEndpoints(ctx context.Context, client *databricks.WorkspaceClien
 	return gatewayProbe{reachable: true, detail: "reachable, no accessible endpoints returned", conclusive: true}
 }
 
-// gatewayGetJSON issues an authenticated GET expecting JSON. It returns the
-// decoded payload on HTTP 200, or (nil, reason) on any failure — mirroring
-// ucode's _http_get_json, including a short response-body excerpt so gateway auth
-// errors (e.g. a 400 whose body is "Invalid Token") stay visible in the reason.
 func gatewayGetJSON(ctx context.Context, client *databricks.WorkspaceClient, reqURL string) (any, string) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
@@ -274,16 +257,15 @@ var (
 	gatewayDetailV2 = regexp.MustCompile(`(?i)\bv2\b`)
 )
 
-// versionNeutralGatewayDetail rewrites the internal v2/v3 API labels in a failure
-// reason into user-facing terms, matching ucode so the error text stays in sync.
+// rewrite the internal v2/v3 API labels in a failure reason into user-facing terms
 func versionNeutralGatewayDetail(detail string) string {
 	detail = gatewayDetailV3.ReplaceAllString(detail, "model service")
 	return gatewayDetailV2.ReplaceAllString(detail, "legacy endpoint")
 }
 
-// looksLikeDefinitiveAuthFailure is true when retrying another workspace API
-// can't rescue the token. A bare 403 is left out: it can be endpoint-specific
-// authorization, so the preflight still tries the fallback before giving up.
+// returns true when retrying another workspace API can't rescue the token.
+// A bare 403 is left out: it can be endpoint-specific authorization, so the
+// preflight still tries the fallback before giving up.
 func looksLikeDefinitiveAuthFailure(reason string) bool {
 	if strings.Contains(reason, "HTTP 401") {
 		return true
@@ -291,8 +273,8 @@ func looksLikeDefinitiveAuthFailure(reason string) bool {
 	return strings.Contains(reason, "HTTP 400") && strings.Contains(strings.ToLower(reason), "invalid token")
 }
 
-// looksLikeScopeFailure matches a 403 that reports the OAuth token is missing a
-// required scope (which re-login can fix), as opposed to a plain permission 403.
+// matches a 403 that reports the OAuth token is missing a required scope (which
+// re-login can fix), as opposed to a plain permission 403.
 func looksLikeScopeFailure(reason string) bool {
 	l := strings.ToLower(reason)
 	return strings.Contains(l, "http 403") && strings.Contains(l, "oauth token") && strings.Contains(l, "required scopes")
@@ -302,11 +284,10 @@ func looksLikePermissionFailure(reason string) bool {
 	return strings.Contains(reason, "HTTP 403")
 }
 
-// gatewayTransientStatus matches the HTTP statuses worth retrying (429 + any 5xx).
 var gatewayTransientStatus = regexp.MustCompile(`HTTP (429|5\d\d)`)
 
-// looksLikeTransient is true for a probe failure that is likely temporary (rate
-// limit, server error, or a network/transport error) rather than a stable
+// returns true for a probe failure that is likely temporary (rate limit,
+// server error, or a network/transport error) rather than a stable
 // "disabled"/"unauthorized" verdict.
 func looksLikeTransient(reason string) bool {
 	return strings.HasPrefix(reason, "network error") || gatewayTransientStatus.MatchString(reason)
@@ -320,8 +301,6 @@ func aiGatewayScopeError(host, reason string) error {
 	return fmt.Errorf("the access token for %s is missing an OAuth scope required by the AI Gateway APIs (%s). Re-authenticate to mint a token with the needed scopes:\n  databricks auth login --host %s", host, reason, host)
 }
 
-// hasNonEmptyCollection reports whether payload is a JSON object with a non-empty
-// array at key.
 func hasNonEmptyCollection(payload any, key string) bool {
 	obj, ok := payload.(map[string]any)
 	if !ok {
@@ -331,8 +310,6 @@ func hasNonEmptyCollection(payload any, key string) bool {
 	return ok && len(arr) > 0
 }
 
-// stringField returns payload[key] when payload is a JSON object holding a string
-// there, else "".
 func stringField(payload any, key string) string {
 	obj, ok := payload.(map[string]any)
 	if !ok {
@@ -341,6 +318,8 @@ func stringField(payload any, key string) string {
 	s, _ := obj[key].(string)
 	return s
 }
+
+// --- end Unity AI Gateway preflight ---
 
 func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace string, agentArgs []string) error {
 	home, err := env.UserHomeDir(ctx)
@@ -351,11 +330,11 @@ func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace str
 	// Reconstruct the PATH tooling runs under on every launch rather than caching
 	// it: every entry is a known location, so deriving it can't restore a stale
 	// path (e.g. a versioned CLI dir from an older session). Drop the shim dir so
-	// ucode execs the real agent rather than this wrapper, then prepend uv/ucode's
-	// bin, this databricks CLI's own dir (so ucode finds it and skips its own
-	// install), and the Node bin ensureNode installs into.
-	removePath(ctx, filepath.Join(home, shimDir))
-	prependPath(ctx, filepath.Join(home, ".local", "bin"))
+	// Unity Gateway CLI execs the real agent rather than this wrapper, then prepend
+	// uv/ug's bin, this databricks CLI's own dir (so it's used by ug/the spawned agent),
+	// and the Node bin ensureNode installs into.
+	removePath(ctx, filepath.Join(home, binDir))
+	prependPath(ctx, filepath.Join(home, ".local", "bin")) // uv
 	if self, err := os.Executable(); err == nil {
 		prependPath(ctx, filepath.Dir(self))
 	}
@@ -370,27 +349,20 @@ func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace str
 	disableNpmUpdateNotifier(ctx)
 
 	// Put npm's global bin on PATH so an npm-installed agent binary resolves after
-	// ucode installs it.
+	// Unity Gateway CLI installs it.
 	if prefix := npmGlobalPrefix(ctx); prefix != "" {
 		prependPath(ctx, filepath.Join(prefix, "bin"))
 	}
 
-	return launchUcodeAgent(ctx, home, agent, workspace, agentArgs)
+	return launchAgent(ctx, home, agent, workspace, agentArgs)
 }
 
-// toolchainReady reports whether the agent toolchain is already installed, derived
-// purely from PATH (which the caller has already set up). ucode launches the agent
-// and npm provides the Node runtime agents like Claude Code need.
 func toolchainReady() bool {
-	_, ucodeErr := exec.LookPath("ucode")
+	_, ugErr := exec.LookPath("ucode")
 	_, npmErr := exec.LookPath("npm")
-	return ucodeErr == nil && npmErr == nil
+	return ugErr == nil && npmErr == nil
 }
 
-// ensureToolchain installs uv, ucode, and Node/npm when missing. It is a no-op
-// once the toolchain is present, and holds a machine-local lock while installing
-// so two first-run SSH clients sharing this $HOME don't concurrently install into
-// (and corrupt) the same paths.
 func ensureToolchain(ctx context.Context, home string) error {
 	if toolchainReady() {
 		return nil
@@ -404,11 +376,7 @@ func ensureToolchain(ctx context.Context, home string) error {
 	if toolchainReady() {
 		return nil
 	}
-	return installToolchain(ctx, home)
-}
 
-// installToolchain performs the actual installs. The caller holds the setup lock.
-func installToolchain(ctx context.Context, home string) error {
 	// 1. uv (installs into ~/.local/bin).
 	if _, err := exec.LookPath("uv"); err != nil {
 		cmdio.LogString(ctx, "Installing uv...")
@@ -417,16 +385,15 @@ func installToolchain(ctx context.Context, home string) error {
 		}
 	}
 
-	// 2. ucode (pinned stock upstream release).
+	// 2. Unity Gateway CLI (pinned stock upstream release).
 	if _, err := exec.LookPath("ucode"); err != nil {
-		cmdio.LogString(ctx, "Installing ucode...")
-		if err := runCommand(ctx, "uv", "tool", "install", "git+https://github.com/"+ucodeRepo+"@"+ucodeVersion); err != nil {
-			return fmt.Errorf("failed to install ucode: %w", err)
+		cmdio.LogString(ctx, "Installing Unity Gateway CLI...")
+		if err := runCommand(ctx, "uv", "tool", "install", "git+https://github.com/"+ugRepo+"@"+ugVersion); err != nil {
+			return fmt.Errorf("failed to install Unity Gateway CLI: %w", err)
 		}
 	}
 
-	// 3. Node/npm. Some agents (e.g. Claude Code) need it and serverless images
-	// don't ship it. It installs into depsDir/node/bin, already prepended to PATH.
+	// 3. Node/npm (installs into depsDir/node/bin)
 	if _, err := exec.LookPath("npm"); err != nil {
 		cmdio.LogString(ctx, "Installing npm...")
 		if _, err := ensureNode(ctx, home); err != nil {
@@ -437,10 +404,9 @@ func installToolchain(ctx context.Context, home string) error {
 	return nil
 }
 
-// acquireSetupLock takes a machine-local lock (an O_EXCL sentinel file, matching
-// the pattern in libs/versioncheck) serializing first-run setup across SSH
-// clients. It blocks until the lock is free, reclaiming one left behind by a dead
-// process after setupLockStaleAfter. The returned func releases the lock.
+// take a machine-local lock (an O_EXCL sentinel file) serializing first-run setup
+// across SSH clients. It blocks until the lock is free, reclaiming one left behind
+// by a dead process after setupLockStaleAfter. The returned func releases the lock.
 func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 	lockPath := filepath.Join(home, agentDir, setupLockName)
 	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
@@ -461,7 +427,7 @@ func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 			_ = os.Remove(lockPath)
 			continue
 		}
-		log.Infof(ctx, "waiting for a concurrent agent-shim setup to finish")
+		log.Infof(ctx, "waiting for a concurrent setup to finish")
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -470,12 +436,10 @@ func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 	}
 }
 
-// launchUcodeAgent launches the ucode-configured agent, replacing this process.
-// home is the already-resolved user home directory.
-func launchUcodeAgent(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) error {
-	ucodePath, err := exec.LookPath("ucode")
+func launchAgent(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) error {
+	ugPath, err := exec.LookPath("ucode")
 	if err != nil {
-		return fmt.Errorf("ucode not found on PATH after setup: %w", err)
+		return fmt.Errorf("Unity Gateway CLI not found on PATH after setup: %w", err)
 	}
 	contextArgs, err := injectAgentContext(ctx, home, agent)
 	if err != nil {
@@ -483,21 +447,20 @@ func launchUcodeAgent(ctx context.Context, home string, agent agentSpec, workspa
 	}
 	argv := []string{"ucode", agent.name}
 	if workspace != "" {
-		// Every supported agent accepts --workspace (the gate for supportedAgents).
 		argv = append(argv, "--workspace", workspace)
 	}
 	argv = append(argv, contextArgs...)
 	argv = append(argv, agentArgs...)
-	// Pass the session token as DATABRICKS_BEARER so stock ucode authenticates headlessly.
+	// Pass the session token as DATABRICKS_BEARER so Unity Gateway CLI authenticates headlessly.
 	if env.Get(ctx, "DATABRICKS_BEARER") == "" {
 		if token := env.Get(ctx, "DATABRICKS_TOKEN"); token != "" {
 			_ = os.Setenv("DATABRICKS_BEARER", token)
 		}
 	}
-	return execProcess(ucodePath, argv, os.Environ())
+	return execProcess(ugPath, argv, os.Environ())
 }
 
-// injectAgentContext puts the Databricks context where the agent reads it, returning any extra argv.
+// put the Databricks context where the agent reads it, returning any extra argv.
 func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]string, error) {
 	systemContext := agentSystemContext(env.Get(ctx, workspaceHomeEnv))
 	switch {
@@ -532,9 +495,9 @@ func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]st
 	}
 }
 
-// ensureNode downloads the latest Krypton LTS Node into deps/node once, returning
-// its bin. Linux-only by design: the shim runs on the serverless driver, so the
-// tarball name is hardcoded to linux while nodeDownloadArch guards the arch.
+// download the latest Krypton LTS Node into deps/node once, returning its bin.
+// Linux-only by design: the shim runs on the serverless driver, so the tarball
+// name is hardcoded to linux while nodeDownloadArch guards the arch.
 func ensureNode(ctx context.Context, home string) (string, error) {
 	depsRoot := filepath.Join(home, depsDir)
 	nodeDir := filepath.Join(depsRoot, "node")
@@ -584,8 +547,8 @@ func ensureNode(ctx context.Context, home string) (string, error) {
 	return nodeBin, nil
 }
 
-// downloadVerified fetches url to a temp file, failing unless its SHA256 matches
-// wantSum. The caller is responsible for removing the returned file.
+// fetch url to a temp file, failing unless its SHA256 matches wantSum. The caller
+// is responsible for removing the returned file.
 func downloadVerified(ctx context.Context, url, wantSum string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -621,7 +584,6 @@ func downloadVerified(ctx context.Context, url, wantSum string) (string, error) 
 	return f.Name(), nil
 }
 
-// nodeDownloadArch maps a Go arch to Node's release arch token, or "" if unsupported.
 func nodeDownloadArch(goarch string) string {
 	switch goarch {
 	case "amd64":
@@ -633,8 +595,6 @@ func nodeDownloadArch(goarch string) string {
 	}
 }
 
-// latestNodeTarball returns the linux tarball name and its SHA256 for arch from
-// the SHASUMS256.txt listing (lines of "<sha256>  <filename>").
 func latestNodeTarball(ctx context.Context, shasumsURL, arch string) (name, sum string, err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, shasumsURL, nil)
 	if err != nil {
@@ -658,16 +618,15 @@ func latestNodeTarball(ctx context.Context, shasumsURL, arch string) (name, sum 
 	return "", "", fmt.Errorf("no linux-%s Node tarball found in %s", arch, shasumsURL)
 }
 
-// disableNpmUpdateNotifier turns off npm's "new version available" box so it
-// doesn't clutter the agent session. Best-effort: it's cosmetic, so a failure
-// (e.g. npm not runnable) is logged and ignored rather than blocking the launch.
+// turn off npm's "new version available" box so it doesn't clutter the installation
+// progress. Best-effort: it's cosmetic, so a failure (e.g. npm not runnable) is
+// logged and ignored rather than blocking the launch.
 func disableNpmUpdateNotifier(ctx context.Context) {
 	if err := exec.CommandContext(ctx, "npm", "config", "set", "update-notifier", "false").Run(); err != nil {
 		log.Debugf(ctx, "failed to disable npm update-notifier: %v", err)
 	}
 }
 
-// npmGlobalPrefix returns `npm prefix -g`, or "" if npm isn't runnable.
 func npmGlobalPrefix(ctx context.Context) string {
 	out, err := exec.CommandContext(ctx, "npm", "prefix", "-g").Output()
 	if err != nil {
@@ -676,7 +635,6 @@ func npmGlobalPrefix(ctx context.Context) string {
 	return strings.TrimSpace(string(out))
 }
 
-// runCommand runs name with the given args, inheriting stdio and the process env.
 func runCommand(ctx context.Context, name string, args ...string) error {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin = os.Stdin
@@ -685,7 +643,6 @@ func runCommand(ctx context.Context, name string, args ...string) error {
 	return cmd.Run()
 }
 
-// runShell runs a shell snippet — for the curl|sh / curl|tar pipelines.
 func runShell(ctx context.Context, script string) error {
 	cmd := exec.CommandContext(ctx, "sh", "-c", script)
 	cmd.Stdin = os.Stdin
@@ -694,7 +651,6 @@ func runShell(ctx context.Context, script string) error {
 	return cmd.Run()
 }
 
-// prependPath puts dir at the front of $PATH, dropping any later duplicate.
 func prependPath(ctx context.Context, dir string) {
 	dirs := []string{dir}
 	for _, d := range filepath.SplitList(env.Get(ctx, "PATH")) {
@@ -705,7 +661,6 @@ func prependPath(ctx context.Context, dir string) {
 	_ = os.Setenv("PATH", strings.Join(dirs, string(os.PathListSeparator)))
 }
 
-// removePath drops every occurrence of dir from $PATH.
 func removePath(ctx context.Context, dir string) {
 	var dirs []string
 	for _, d := range filepath.SplitList(env.Get(ctx, "PATH")) {
@@ -716,7 +671,6 @@ func removePath(ctx context.Context, dir string) {
 	_ = os.Setenv("PATH", strings.Join(dirs, string(os.PathListSeparator)))
 }
 
-// agentSystemContext returns the Databricks session context; wsHome names the working directory.
 func agentSystemContext(wsHome string) string {
 	cwd := "the user's Databricks workspace home directory"
 	if wsHome != "" {
@@ -724,13 +678,7 @@ func agentSystemContext(wsHome string) string {
 	}
 	return fmt.Sprintf(`You are running inside a "databricks ssh connect" session on the driver node of a
 Databricks serverless cluster.
-- The "databricks" CLI is installed and already authenticated: DATABRICKS_HOST and
-  DATABRICKS_TOKEN are set in the environment, so "databricks ..." commands work with no
-  "databricks auth login". The same token governs Unity Catalog and serving-endpoint access.
-- This container is ephemeral; only paths under /Workspace persist across sessions. Your
-  working directory is %s.
-- DATABRICKS_TOKEN is a static session token that may expire during a long session; if
-  "databricks" calls start failing with auth errors, the session likely needs reconnecting.
-- You can run shell commands and use the "databricks" CLI to explore the workspace
-  (clusters, jobs, Unity Catalog, DBFS, etc.).`, cwd)
+- The "databricks" CLI is installed and already authenticated: DATABRICKS_HOST and DATABRICKS_TOKEN are set in the environment, so "databricks ..." commands work with no "databricks auth login". The same token governs Unity Catalog and serving-endpoint access.
+- This container is ephemeral; only paths under /Workspace and /Volumes persist across sessions. Your working directory is %s.
+- You can run shell commands and use the "databricks" CLI to explore the workspace.`, cwd)
 }
