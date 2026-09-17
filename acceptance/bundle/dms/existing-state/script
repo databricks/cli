@@ -23,6 +23,7 @@ title "Destroy clears the deployment. With nothing recorded remotely the bundle 
 # Clear the stale WAL first: it was refused, not deleted, and destroy runs without recording, so it
 # would otherwise try to replay it and fail on the lineage mismatch.
 rm -f .databricks/bundle/default/resources.json.wal
+# Keep the mismatched setting here to verify that destroy ignores configuration and follows state.
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle destroy --auto-approve
 trace DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true $CLI bundle deploy
 trace print_requests.py --dms //api/2.0/bundle --oneline
