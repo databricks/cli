@@ -121,6 +121,36 @@ func TestWriteMkDirExistingDirSameMode(t *testing.T) {
 	assert.Equal(t, os.FileMode(0o700), info.Mode().Perm())
 }
 
+// Write replaces a symlink at path with a regular file rather than following it
+// to the target: os.Rename swaps the path entry itself. This is intentional — an
+// atomic replace should not write through a link into some other file.
+func TestWriteReplacesSymlinkWithoutFollowing(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks is restricted on Windows")
+	}
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target")
+	require.NoError(t, os.WriteFile(target, []byte("original target"), 0o600))
+
+	link := filepath.Join(dir, "link")
+	require.NoError(t, os.Symlink(target, link))
+
+	require.NoError(t, Write(link, []byte("new"), 0o600))
+
+	// The link path now holds a regular file with the new content...
+	info, err := os.Lstat(link)
+	require.NoError(t, err)
+	assert.Zero(t, info.Mode()&os.ModeSymlink, "link should no longer be a symlink")
+	got, err := os.ReadFile(link)
+	require.NoError(t, err)
+	assert.Equal(t, "new", string(got))
+
+	// ...and the original target is untouched, proving the link was not followed.
+	targetContent, err := os.ReadFile(target)
+	require.NoError(t, err)
+	assert.Equal(t, "original target", string(targetContent))
+}
+
 func TestWriteMkDirExistingDirDifferentMode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Windows does not honor unix directory modes")
