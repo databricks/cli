@@ -122,4 +122,3 @@ func (e expandGlobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnosti
 
 	return diags
 }
-
