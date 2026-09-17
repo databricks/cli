@@ -3,6 +3,7 @@
 
 >>> [CLI] bundle plan
 Warn: State was last deployed with CLI version 99.0.0 but current version is [CLI_VERSION]
+Warn: Deployment history setting (true) does not match the existing state (false). Using the existing state.
 create jobs.my_job
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
@@ -10,6 +11,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 === State written by this CLI: no warning
 
 >>> [CLI] bundle plan
+Warn: Deployment history setting (true) does not match the existing state (false). Using the existing state.
 create jobs.my_job
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged

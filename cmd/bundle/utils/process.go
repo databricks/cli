@@ -316,6 +316,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if stateVersion := b.DeploymentBundle.StateDB.StateCLIVersion(); isNewerVersion(stateVersion, currentVersion) {
 				log.Warnf(ctx, "State was last deployed with CLI version %s but current version is %s", stateVersion, currentVersion)
 			}
+			warnDeploymentHistoryMismatch(ctx, b, stateDesc)
+		} else if stateDesc.Engine.IsDirect() {
+			warnDeploymentHistoryMismatch(ctx, b, stateDesc)
 		}
 
 		// These are not safe in plan/deploy because they insert empty config settings for deleted resources.
@@ -566,7 +569,11 @@ func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error
 func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 	_, localPath := b.StateFilenameDirect(ctx)
 	if !resolveDeploymentHistory(ctx, b, stateDesc) {
-		return b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{})
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+			return err
+		}
+		warnDeploymentHistoryMismatch(ctx, b, stateDesc)
+		return nil
 	}
 
 	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
@@ -581,7 +588,11 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if !cmdctx.HasWorkspaceClient(ctx) {
 		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
 	}
-	return b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID})
+	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+		return err
+	}
+	warnDeploymentHistoryMismatch(ctx, b, stateDesc)
+	return nil
 }
 
 func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
@@ -593,11 +604,18 @@ func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *
 		return configured
 	}
 
+	return stateDesc.IsDMS()
+}
+
+func warnDeploymentHistoryMismatch(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) {
+	if stateDesc.SourcePath == "" {
+		return
+	}
+	configured := b.ConfiguresDeploymentHistory(ctx)
 	recorded := stateDesc.IsDMS()
 	if configured != recorded {
 		log.Warnf(ctx, "Deployment history setting (%t) does not match the existing state (%t). Using the existing state.", configured, recorded)
 	}
-	return recorded
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly
