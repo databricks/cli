@@ -17,6 +17,7 @@ trace $CLI experimental air run -h config.mlflow_artifact_location
 trace $CLI experimental air run -h config.compute.pool_id
 trace $CLI experimental air run -h config.compute.priority_class
 trace $CLI experimental air run -h config.environment.dependencies
+trace $CLI experimental air run -h config.environment.version
 
 title "leaf field"
 trace $CLI experimental air run -h config.compute.accelerator_type

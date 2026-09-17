@@ -332,7 +332,15 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 		{
 			"version without deps",
 			environmentConfig{Version: stringOrInt{set: true, raw: "5"}},
-			"requires inline 'dependencies'",
+			"",
+		},
+		{
+			"version with empty deps",
+			environmentConfig{
+				Version:      stringOrInt{set: true, raw: "5"},
+				Dependencies: dependencies{set: true, list: []string{}},
+			},
+			"",
 		},
 		{
 			"version with inline deps ok",

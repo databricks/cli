@@ -99,6 +99,13 @@ config.environment.dependencies
   Type:     list of strings
   Required: no
 
+>>> [CLI] experimental air run -h config.environment.version
+config.environment.version
+  Client image version to pin.
+
+  Type:     string or int
+  Required: no
+
 === leaf field
 >>> [CLI] experimental air run -h config.compute.accelerator_type
 config.compute.accelerator_type
