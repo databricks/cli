@@ -137,6 +137,15 @@ def detached_descendants(server_pgid):
     return sorted(survivors, key=int)
 
 
+def has_children():
+    """Probe without reaping; WNOHANG returning None still means children exist."""
+    try:
+        os.waitid(os.P_ALL, 0, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+    except ChildProcessError:
+        return False
+    return True
+
+
 def wait_for_detached_descendants(server_pgid):
     """Hold the notebook open while detached work is still running.
 
@@ -154,7 +163,7 @@ def wait_for_detached_descendants(server_pgid):
     reported_at = 0.0
     while True:
         survivors = detached_descendants(server_pgid)
-        if not survivors:
+        if not survivors and not has_children():
             print("No detached processes left, releasing the run", flush=True)
             return
         now = time.monotonic()
