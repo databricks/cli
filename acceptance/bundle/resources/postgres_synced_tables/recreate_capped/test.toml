@@ -1,0 +1,11 @@
+# Local-only, direct-only: exercises the DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT cap on the
+# synced-table recreate delete-wait. INJECT_STALE_ON_DIRECT makes a deleted synced table
+# linger in DELETING until the next GET; capping the wait to 0 means the recreate does
+# not poll at all, so the follow-up create races the still-deleting table and fails with
+# 409 ALREADY_EXISTS. Verifies the give-up warning is rendered.
+# Not run on cloud (would need a real source table) or on terraform (recreates without
+# polling — the flag is direct-only). The recreate itself is covered against a real
+# workspace by ../recreate.
+Cloud = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Env.INJECT_STALE_ON_DIRECT = "1"

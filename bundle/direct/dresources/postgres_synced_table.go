@@ -3,10 +3,12 @@ package dresources
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -18,7 +20,7 @@ import (
 
 // deleteSyncedTableTimeout caps the post-delete poll so a stuck teardown does not
 // wait forever. Deletion tears down the backing sync pipeline, which normally
-// completes within a minute.
+// completes within a minute. DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT overrides it.
 const deleteSyncedTableTimeout = 5 * time.Minute
 
 // PostgresSyncedTableRemote is the return type for DoRead. It embeds
@@ -150,12 +152,31 @@ func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _
 //
 // A 404 (gone) or 403 (the caller loses access once the backing table is torn
 // down) means we can proceed; an unexpected error is logged and tolerated. If the
-// poll runs out deleteSyncedTableTimeout without the table disappearing, it gives
-// up and proceeds rather than failing the recreate — a still-incomplete teardown
-// then resurfaces as the create's 409. A cancelled deploy is propagated so it is
-// not mistaken for a completed teardown.
+// poll runs out its timeout without the table disappearing, it gives up and
+// proceeds rather than failing the recreate — a still-incomplete teardown then
+// resurfaces as the create's 409. A cancelled deploy is propagated so it is not
+// mistaken for a completed teardown.
+//
+// The timeout is deleteSyncedTableTimeout, overridden by
+// DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT (0 = do not wait at all). Unlike other
+// waits, the recreate delete-wait is not routed through the general cap in
+// apply.go (that path stays uncapped by design), so this reads the cap itself.
 func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id string) error {
-	_, err := retries.Poll[struct{}](ctx, deleteSyncedTableTimeout, func() (*struct{}, *retries.Err) {
+	timeout := deleteSyncedTableTimeout
+	if v, ok := bundleenv.ResourceMaxWait(ctx); ok {
+		// Apply already validated this to a non-negative number of seconds before any
+		// resource ran; fall back to the default if it is somehow unparsable.
+		if secs, err := strconv.Atoi(v); err == nil && secs >= 0 {
+			timeout = time.Duration(secs) * time.Second
+		}
+	}
+
+	if timeout == 0 {
+		log.Warnf(ctx, "Not waiting for synced table deletion (%s=0); it may still be in progress", bundleenv.ResourceMaxWaitVariable)
+		return nil
+	}
+
+	_, err := retries.Poll[struct{}](ctx, timeout, func() (*struct{}, *retries.Err) {
 		_, getErr := r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: id})
 		switch {
 		case getErr == nil:
@@ -172,7 +193,7 @@ func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id st
 	// A deploy cancellation (ctx.Err() != nil) is propagated; a plain poll timeout is
 	// not, since the create that follows will surface any still-incomplete teardown.
 	if err != nil && ctx.Err() == nil {
-		log.Warnf(ctx, "Gave up waiting for synced table to delete after %s, proceeding anyway: %s", deleteSyncedTableTimeout, err)
+		log.Warnf(ctx, "Stopped waiting for synced table deletion after %s; it may still be in progress", timeout)
 		return nil
 	}
 	return err
