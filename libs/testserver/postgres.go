@@ -1708,24 +1708,15 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 	if !exists {
 		return postgresNotFoundResponse("synced table")
 	}
-
-	// A table mid-deletion is returned once more (in DELETING state) and then
-	// removed, so the next GET sees 404. This lets WaitAfterDelete observe the
-	// asynchronous teardown deterministically: first GET still present, next gone.
-	if s.postgresSyncedTablesDeleting[name] {
-		delete(s.PostgresSyncedTables, name)
-		delete(s.postgresSyncedTablesDeleting, name)
-	}
-
 	return Response{Body: table}
 }
 
 // PostgresSyncedTableDelete deletes a postgres synced table. When the workspace
-// simulates eventual consistency, deletion is asynchronous: the record is not
-// removed now but marked DELETING and kept until the next GET (see
-// PostgresSyncedTableGet), so a create for the same name while it lingers still
-// returns 409 — the race WaitAfterDelete guards against. Otherwise (the default,
-// and terraform, which recreates without polling) it is removed immediately.
+// simulates eventual consistency, deletion is asynchronous and slow: the record is
+// not removed but left in DELETING, so GET keeps returning it and a create for the
+// same name keeps hitting 409 — the stuck-teardown race WaitAfterDelete waits out.
+// Otherwise (the default, and terraform, which recreates without polling) it is
+// removed immediately.
 func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	defer s.LockUnlock()()
 
@@ -1745,7 +1736,6 @@ func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	table.Status.DetailedState = postgres.SyncedTableStateSyncedTableOffline
 	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfoStateDeleting
 	s.PostgresSyncedTables[name] = table
-	s.postgresSyncedTablesDeleting[name] = true
 
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
