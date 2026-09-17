@@ -53,7 +53,7 @@ func Write(path string, data []byte, perm os.FileMode, opts ...Option) error {
 
 	// Temp file in the same directory so the rename stays on one filesystem.
 	// The "." prefix hides a leftover temp file and the ".tmp" suffix lets
-	// callers sweep leftovers with a "*.tmp" glob.
+	// callers sweep leftovers with a ".*.tmp" glob.
 	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".*.tmp")
 	if err != nil {
 		return fmt.Errorf("create temp file for %s: %w", path, err)
