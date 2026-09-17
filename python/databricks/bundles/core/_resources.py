@@ -33,7 +33,7 @@ class Resources(_GeneratedResources):
     - :meth:`load_resources_from_modules`
     - :meth:`load_resources_from_module`
 
-    Programmatic construction of resources is supported using :meth:`add_resource` and ``add_job`` methods.
+    Programmatic construction of resources is supported using :meth:`add_resource` and ``add_<resource>`` methods.
 
     Example:
 
