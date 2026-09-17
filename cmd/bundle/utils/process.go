@@ -587,6 +587,9 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
 	configured := b.ConfiguresDeploymentHistory(ctx)
 	if stateDesc.SourcePath == "" {
+		if configured {
+			stateDesc.Features = map[string]struct{}{dstate.FeatureDeploymentHistory: {}}
+		}
 		return configured
 	}
 

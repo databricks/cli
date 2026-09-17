@@ -17,7 +17,9 @@ func TestResolveDeploymentHistory(t *testing.T) {
 		Experimental: &config.Experimental{DeploymentHistory: true},
 	}}
 
-	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{}))
+	newState := &statemgmt.StateDesc{}
+	assert.True(t, resolveDeploymentHistory(t.Context(), b, newState))
+	assert.True(t, newState.IsDMS())
 	assert.False(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{SourcePath: "resources.json"}))
 	b.Config.Experimental.DeploymentHistory = false
 	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{
