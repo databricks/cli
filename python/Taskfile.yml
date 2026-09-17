@@ -70,6 +70,8 @@ tasks:
       - ../bundle/schema/jsonschema.json
     generates:
       - databricks/bundles/**
+      - docs/index.rst
+      - docs/databricks.bundles.*.rst
     cmds:
       - |
         find databricks/bundles -type d -mindepth 1 -maxdepth 1 \

@@ -6,6 +6,7 @@ from textwrap import dedent
 import codegen.aliases_patch as aliases_patch
 import codegen.generated_dataclass as generated_dataclass
 import codegen.generated_dataclass_patch as generated_dataclass_patch
+import codegen.generated_docs as generated_docs
 import codegen.generated_enum as generated_enum
 import codegen.generated_imports as generated_imports
 import codegen.generated_test_cases as generated_test_cases
@@ -55,6 +56,10 @@ def main(output: str):
 
     # Generate the per-resource ResourceTestCase data driving test_resources.py.
     generated_test_cases.write_test_cases(output, schemas)
+
+    # Generate the Sphinx .rst pages so the documented resource list stays in
+    # sync with the generated modules.
+    generated_docs.write_docs(output)
 
 
 def _transitively_mark_deprecated_and_private(
