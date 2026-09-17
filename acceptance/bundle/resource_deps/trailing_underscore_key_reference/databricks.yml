@@ -1,12 +1,11 @@
 bundle:
   name: test-bundle
 
-# Reproduce: a job whose resource key ends with an underscore (a valid, deployable
-# key) cannot be referenced with ${resources.jobs.<key>.id}. The reference regex
-# (libs/dyn/dynvar/ref.go) requires every path segment to end with a letter or digit,
-# so "producer_" is not recognized as a reference. The string is therefore left as-is
-# in an int field: validation only warns ("cannot parse ... as an integer") and drops
-# it, so run_job_task ends up with no job_id (see the empty run_job_task in output.txt).
+# A job resource key ending in an underscore (e.g. producer_) is a valid, deployable
+# key, and ${resources.jobs.producer_.id} now resolves like any other reference. The
+# reference regex (libs/dyn/dynvar/ref.go) allows trailing underscores (but not a
+# trailing hyphen). Before the fix the reference was silently dropped with a warning
+# and run_job_task ended up without a job_id.
 resources:
   jobs:
     producer_:

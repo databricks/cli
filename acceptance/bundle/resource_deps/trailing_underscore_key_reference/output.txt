@@ -1,33 +1,19 @@
 
 >>> [CLI] bundle validate
-Warning: cannot parse "${resources.jobs.producer_.id}" as an integer
-  at resources.jobs.consumer.tasks[0].run_job_task.job_id
-  in databricks.yml:19:21
-
-Warning: required field "job_id" is not set
-  at resources.jobs.consumer.tasks[0].run_job_task
-  in databricks.yml:19:13
-
 Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
-Found 2 warnings
+Validation OK!
 
 >>> [CLI] bundle validate --output json
-Warning: cannot parse "${resources.jobs.producer_.id}" as an integer
-  at resources.jobs.consumer.tasks[0].run_job_task.job_id
-  in databricks.yml:19:21
-
-Warning: required field "job_id" is not set
-  at resources.jobs.consumer.tasks[0].run_job_task
-  in databricks.yml:19:13
-
 [
   {
-    "run_job_task": {},
+    "run_job_task": {
+      "job_id": "${resources.jobs.producer_.id}"
+    },
     "task_key": "run_producer"
   }
 ]

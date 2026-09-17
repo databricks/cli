@@ -1,3 +1,1 @@
-Badness = "A job resource key ending in an underscore (e.g. producer_) is a valid, deployable key, but the reference regex (libs/dyn/dynvar/ref.go) does not match it, so ${resources.jobs.producer_.id} in run_job_task.job_id is silently dropped with only a warning instead of resolving. Ideally such keys would be referenceable."
-
 RecordRequests = false

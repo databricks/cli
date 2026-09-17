@@ -9,11 +9,12 @@ import (
 )
 
 // BaseVarDef matches a single dot-separated path segment in ${...} references.
-// A segment may have leading underscores before the first letter, and may contain
-// letters, digits, hyphens and underscores after that.
+// A segment may have leading underscores before the first letter, may contain
+// letters, digits, hyphens and underscores after that, and may end with trailing
+// underscores (but not a trailing hyphen).
 // Keep in sync with _base_var_def in python/databricks/bundles/core/_transform.py.
 // Behavioral parity is enforced by testdata/reference_vectors.json.
-const BaseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*`
+const BaseVarDef = `_*\p{L}+([-_]*[\p{L}\p{N}]+)*_*`
 
 var re = regexp.MustCompile(fmt.Sprintf(`\$\{(%s(\.%s(\[[0-9]+\])*)*(\[[0-9]+\])*)\}`, BaseVarDef, BaseVarDef))
 

@@ -195,6 +195,30 @@
       "match": false
     },
     {
+      "id": "segment-trailing-underscore-allowed",
+      "input": "${hello_.world_world}",
+      "match": true,
+      "references": ["hello_.world_world"],
+      "pure": true,
+      "path": "hello_.world_world"
+    },
+    {
+      "id": "last-segment-trailing-underscore",
+      "input": "${resources.jobs.producer_.id}",
+      "match": true,
+      "references": ["resources.jobs.producer_.id"],
+      "pure": true,
+      "path": "resources.jobs.producer_.id"
+    },
+    {
+      "id": "single-segment-trailing-double-underscore",
+      "input": "${producer__}",
+      "match": true,
+      "references": ["producer__"],
+      "pure": true,
+      "path": "producer__"
+    },
+    {
       "id": "second-segment-trailing-hyphen",
       "input": "${helloworld.world-world-}",
       "match": false
