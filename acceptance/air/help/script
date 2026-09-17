@@ -2,16 +2,16 @@
 # shows up as a diff here.
 
 title "help"
-trace $CLI experimental air --help
+trace $CLI air --help
 
 title "list help"
-trace $CLI experimental air list --help
+trace $CLI air list --help
 
 title "get help"
-trace $CLI experimental air get --help
+trace $CLI air get --help
 
 title "logs help"
-trace $CLI experimental air logs --help
+trace $CLI air logs --help
 
 title "cancel help"
-trace $CLI experimental air cancel --help
+trace $CLI air cancel --help

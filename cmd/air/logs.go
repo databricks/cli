@@ -36,9 +36,9 @@ func newLogsCommand() *cobra.Command {
 completed run.
 
 JOB_RUN_ID is the job run ID returned by "air run".`,
-		Example: `  databricks experimental air logs 123456789
-  databricks experimental air logs 123456789 --node 1 --retry 0
-  databricks experimental air logs 123456789 --download-to ./logs`,
+		Example: `  databricks air logs 123456789
+  databricks air logs 123456789 --node 1 --retry 0
+  databricks air logs 123456789 --download-to ./logs`,
 	}
 
 	cmd.Flags().IntVar(&node, "node", 0, "Fetch logs from this node")

@@ -1,7 +1,6 @@
 package experimental
 
 import (
-	aircmd "github.com/databricks/cli/cmd/air"
 	aitoolscmd "github.com/databricks/cli/experimental/aitools/cmd"
 	postgrescmd "github.com/databricks/cli/experimental/postgres/cmd"
 	"github.com/spf13/cobra"
@@ -22,7 +21,7 @@ These commands provide early access to new features that are still under
 development. They may change or be removed in future versions without notice.`,
 	}
 
-	cmd.AddCommand(aircmd.New())
+	cmd.AddCommand(newAirCmd())
 	cmd.AddCommand(aitoolscmd.NewAitoolsCmd())
 	cmd.AddCommand(newGenieCmd())
 	cmd.AddCommand(postgrescmd.New())

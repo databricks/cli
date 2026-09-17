@@ -1,12 +1,12 @@
 
 === list pools (text)
->>> [CLI] experimental air list pools
+>>> [CLI] air list pools
 ID                                       ACCELERATOR    RESERVED
 pool-8xh100-alpha                        GPU_8xH100     64
 pool-1xh100-beta                         GPU_1xH100     8
 
 === list pools (json)
->>> [CLI] experimental air list pools -o json
+>>> [CLI] air list pools -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",
@@ -27,7 +27,7 @@ pool-1xh100-beta                         GPU_1xH100     8
 }
 
 === get pool (text)
->>> [CLI] experimental air get pool pool-8xh100-alpha
+>>> [CLI] air get pool pool-8xh100-alpha
 Pool ID:                 pool-8xh100-alpha
 Accelerator Type:        GPU_8xH100
 Reserved Accelerators:   64
@@ -35,7 +35,7 @@ Used Accelerators:       40
 Idle Accelerators:       24
 
 === get pool (json)
->>> [CLI] experimental air get pool pool-8xh100-alpha -o json
+>>> [CLI] air get pool pool-8xh100-alpha -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",

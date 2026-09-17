@@ -7,14 +7,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// New returns the root command for the experimental AI runtime CLI.
+// New returns the root command for the AI Runtime CLI.
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "air",
-		Short: "Run and manage AI runtime training workloads",
-		Long: `Run and manage AI runtime training workloads on Databricks serverless GPU compute.
+		Short: "Run and manage AI Runtime training workloads",
+		Long: `Run and manage AI Runtime training workloads on Databricks serverless GPU compute.
 
-These commands are experimental and may change in future versions.`,
+These commands are under active development.`,
 	}
 
 	runCommand := newRunCommand()
