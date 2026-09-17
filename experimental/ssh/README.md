@@ -103,6 +103,10 @@ know before using it:
 Dedicated clusters only. On serverless the container is torn down with the run, so survivors
 die regardless and the flag is rejected.
 
+`databricks ssh setup` takes the same flag and bakes it into the host's `ProxyCommand`, so
+`ssh <name>` sessions ask for it too. That is the only place a configured host can set it: the
+`ProxyCommand` is the invocation that submits the run, and the mode is fixed at submission.
+
 A reconnect that omits the flag reuses a running server that was started with it, hold
 included, so a session that never asked for it can end up holding the cluster open. Asking for
 it against a server that was started without it starts a fresh server instead.

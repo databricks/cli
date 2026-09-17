@@ -28,6 +28,7 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 	var serverTimeout time.Duration
 	var autoStartCluster bool
 	var autoApprove bool
+	var keepDetachedProcesses bool
 
 	cmd.Flags().StringVar(&hostName, "name", "", "Host name to use in SSH config")
 	cmd.MarkFlagRequired("name")
@@ -37,6 +38,7 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "SSH server will terminate after this delay if there are no active connections")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&serverTimeout, "server-timeout", defaultServerTimeout, "Maximum lifetime of the SSH server; it is terminated after this duration even if clients are connected")
+	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep processes detached from the SSH session (tmux, setsid, nohup) running after the tunnel shuts down. Holds the cluster up until they exit or --server-timeout elapses")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, recreating existing SSH host configs without asking")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -50,15 +52,16 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
 		setupOpts := setup.SetupOptions{
-			HostName:         hostName,
-			ClusterID:        clusterID,
-			AutoStartCluster: autoStartCluster,
-			SSHConfigPath:    sshConfigPath,
-			ShutdownDelay:    shutdownDelay,
-			MaxClients:       maxClients,
-			ServerTimeout:    resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
-			Profile:          wsClient.Config.Profile,
-			AutoApprove:      autoApprove,
+			HostName:              hostName,
+			ClusterID:             clusterID,
+			AutoStartCluster:      autoStartCluster,
+			SSHConfigPath:         sshConfigPath,
+			ShutdownDelay:         shutdownDelay,
+			MaxClients:            maxClients,
+			ServerTimeout:         resolveServerTimeout(cmd.Flags(), serverTimeout, shutdownDelay),
+			KeepDetachedProcesses: keepDetachedProcesses,
+			Profile:               wsClient.Config.Profile,
+			AutoApprove:           autoApprove,
 		}
 		return setup.Setup(ctx, wsClient, setupOpts)
 	}
