@@ -16,4 +16,10 @@ title "the ai_runtime_task and additive job permission grants"
 # Include MLflow paths so an accidental experiment request appears in the golden output.
 trace print_requests.py --get //api/2.2/jobs/runs/submit //api/2.2/jobs/runs/get //api/2.0/permissions //api/2.0/mlflow --sort --unique
 
+title "submit a B300 workload with AI Runtime 6"
+trace $CLI experimental air run -f b300.yaml
+
+title "the B300 accelerator and runtime reach the submit payload"
+trace print_requests.py //api/2.2/jobs/runs/submit
+
 rm -fr .git
