@@ -27,18 +27,18 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Enabling recording is refused because the existing deployment is not recorded
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: enabling experimental.deployment_history for an existing deployment is not supported
+Error: deployment history setting (true) does not match the existing state (false)
 
-Run "databricks bundle destroy" first, then deploy again with deployment history enabled
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
 
 
 >>> print_requests.py --dms //api/2.0/bundle --oneline
 
 === Wiping the local cache still refuses after pulling the non-DMS state from the workspace
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: enabling experimental.deployment_history for an existing deployment is not supported
+Error: deployment history setting (true) does not match the existing state (false)
 
-Run "databricks bundle destroy" first, then deploy again with deployment history enabled
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
 
 
 === A leftover local WAL with the wrong lineage is still refused
