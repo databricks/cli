@@ -47,9 +47,9 @@ The workload is described by a YAML config file (see --file).
 
 To look up a config field, pass its path to -h:
 
-  databricks experimental air run -h config
-  databricks experimental air run -h config.compute
-  databricks experimental air run -h config.compute.accelerator_type
+  databricks air run -h config
+  databricks air run -h config.compute
+  databricks air run -h config.compute.accelerator_type
 
 The path must be a separate argument: cobra reserves -h as a boolean, so
 -h=config.compute and -hconfig.compute are not accepted.`,
@@ -197,7 +197,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 }
 
 func airLogsCommand(profile, runID string) string {
-	args := []string{"databricks", "experimental", "air", "logs", shellquote.BashArg(runID)}
+	args := []string{"databricks", "air", "logs", shellquote.BashArg(runID)}
 	if profile != "" {
 		args = append(args, "-p", shellquote.BashArg(profile))
 	}
@@ -205,7 +205,7 @@ func airLogsCommand(profile, runID string) string {
 }
 
 func airGetCommand(profile, runID string) string {
-	args := []string{"databricks", "experimental", "air", "get", shellquote.BashArg(runID)}
+	args := []string{"databricks", "air", "get", shellquote.BashArg(runID)}
 	if profile != "" {
 		args = append(args, "-p", shellquote.BashArg(profile))
 	}

@@ -1,21 +1,21 @@
 
 === command help
->>> [CLI] experimental air run --help
+>>> [CLI] air run --help
 Submit a training workload to Databricks serverless GPU compute.
 
 The workload is described by a YAML config file (see --file).
 
 To look up a config field, pass its path to -h:
 
-  databricks experimental air run -h config
-  databricks experimental air run -h config.compute
-  databricks experimental air run -h config.compute.accelerator_type
+  databricks air run -h config
+  databricks air run -h config.compute
+  databricks air run -h config.compute.accelerator_type
 
 The path must be a separate argument: cobra reserves -h as a boolean, so
 -h=config.compute and -hconfig.compute are not accepted.
 
 Usage:
-  databricks experimental air run [flags]
+  databricks air run [flags]
 
 Flags:
       --dry-run                  Validate the config without submitting
@@ -32,7 +32,7 @@ Global Flags:
   -t, --target string    bundle target to use (if applicable)
 
 === schema overview
->>> [CLI] experimental air run -h config
+>>> [CLI] air run -h config
 config
   The run YAML schema. Pass a field path for details, e.g. config.compute.accelerator_type.
 
@@ -58,7 +58,7 @@ config
 Use "-h config.<field>" for details on a field.
 
 === nested object lists its fields
->>> [CLI] experimental air run -h config.compute
+>>> [CLI] air run -h config.compute
 config.compute
   Which accelerators to run on and how many.
 
@@ -71,35 +71,35 @@ config.compute
 Use "-h config.compute.<field>" for details on a field.
 
 === new submission fields are documented
->>> [CLI] experimental air run -h config.mlflow_artifact_location
+>>> [CLI] air run -h config.mlflow_artifact_location
 config.mlflow_artifact_location
   DBFS location where MLflow artifacts are written. A /Volumes path is normalized to dbfs:/Volumes/... .
 
   Type:     string
   Required: no
 
->>> [CLI] experimental air run -h config.compute.pool_id
+>>> [CLI] air run -h config.compute.pool_id
 config.compute.pool_id
   GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air pools list'.
 
   Type:     string
   Required: no
 
->>> [CLI] experimental air run -h config.compute.priority_class
+>>> [CLI] air run -h config.compute.priority_class
 config.compute.priority_class
   Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires pool_id.
 
   Type:     string
   Required: no
 
->>> [CLI] experimental air run -h config.environment.dependencies
+>>> [CLI] air run -h config.environment.dependencies
 config.environment.dependencies
   Inline list of packages to install. Not allowed alongside unity_catalog_image.
 
   Type:     list of strings
   Required: no
 
->>> [CLI] experimental air run -h config.environment.version
+>>> [CLI] air run -h config.environment.version
 config.environment.version
   Client image version to pin.
 
@@ -107,7 +107,7 @@ config.environment.version
   Required: no
 
 === leaf field
->>> [CLI] experimental air run -h config.compute.accelerator_type
+>>> [CLI] air run -h config.compute.accelerator_type
 config.compute.accelerator_type
   Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively.
 
@@ -115,7 +115,7 @@ config.compute.accelerator_type
   Required: no
 
 === conditionally required leaf
->>> [CLI] experimental air run -h config.code_source.type
+>>> [CLI] air run -h config.code_source.type
 config.code_source.type
   Kind of code source. Must be "snapshot", the only supported type.
 
@@ -123,7 +123,7 @@ config.code_source.type
   Required: when code_source is set
 
 === union field reports both accepted shapes
->>> [CLI] experimental air run -h config.code_source.snapshot.git.remote
+>>> [CLI] air run -h config.code_source.snapshot.git.remote
 config.code_source.snapshot.git.remote
   No longer supported: the snapshot archives your local copy. Only false is accepted; use commit to pin a revision.
 
@@ -131,7 +131,7 @@ config.code_source.snapshot.git.remote
   Required: no
 
 === git-pinned subdirectory snapshots document root_path scoping
->>> [CLI] experimental air run -h config.code_source.snapshot.root_path
+>>> [CLI] air run -h config.code_source.snapshot.root_path
 config.code_source.snapshot.root_path
   Root of the code source to archive. A git-pinned subdirectory packages only that subtree.
 
@@ -139,7 +139,7 @@ config.code_source.snapshot.root_path
   Required: when code_source.snapshot is set
 
 === the config. prefix is optional
->>> [CLI] experimental air run -h compute.num_accelerators
+>>> [CLI] air run -h compute.num_accelerators
 config.compute.num_accelerators
   Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types.
 
@@ -147,11 +147,11 @@ config.compute.num_accelerators
   Required: no
 
 === unknown field suggests the near match
->>> [CLI] experimental air run -h config.compute.acclerator_type
+>>> [CLI] air run -h config.compute.acclerator_type
 Error: unknown config field "config.compute.acclerator_type"; did you mean "accelerator_type"?
 
 fields under "config.compute" are: accelerator_type, num_accelerators, pool_id, priority_class
 
 === free-form map keys are not schema fields
->>> [CLI] experimental air run -h config.parameters.learning_rate
+>>> [CLI] air run -h config.parameters.learning_rate
 Error: "config.parameters" holds user-defined keys, so "learning_rate" is not part of the schema; see "config.parameters" instead

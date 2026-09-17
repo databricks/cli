@@ -1,6 +1,6 @@
 
 === get (text)
->>> [CLI] experimental air get 123
+>>> [CLI] air get 123
 
 ╭─ Configuration ────────────────────────────────────────────────╮
 │                                                                │
@@ -35,7 +35,7 @@ Run URL:    [DATABRICKS_URL]/jobs/runs/123?o=[NUMID]
 MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 
 === get (json)
->>> [CLI] experimental air get 123 -o json
+>>> [CLI] air get 123 -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",
@@ -54,13 +54,13 @@ MLflow URL: [DATABRICKS_URL]/ml/experiments/exp1/runs/run1
 }
 
 === invalid run id
->>> [CLI] experimental air get notanumber
+>>> [CLI] air get notanumber
 Error: invalid JOB_RUN_ID "notanumber": must be a positive integer
 
 Exit code: 1
 
 === invalid run id (json)
->>> [CLI] experimental air get notanumber -o json
+>>> [CLI] air get notanumber -o json
 {
   "v": 1,
   "ts": "[TIMESTAMP]",

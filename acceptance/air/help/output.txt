@@ -1,12 +1,12 @@
 
 === help
->>> [CLI] experimental air --help
-Run and manage AI runtime training workloads on Databricks serverless GPU compute.
+>>> [CLI] air --help
+Run and manage AI Runtime training workloads on Databricks serverless GPU compute.
 
-These commands are experimental and may change in future versions.
+These commands are under active development.
 
 Usage:
-  databricks experimental air [command]
+  databricks air [command]
 
 Available Commands:
   cancel          Cancel one or more runs
@@ -26,10 +26,10 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
 
-Use "databricks experimental air [command] --help" for more information about a command.
+Use "databricks air [command] --help" for more information about a command.
 
 === list help
->>> [CLI] experimental air list --help
+>>> [CLI] air list --help
 List active runs for the current user.
 
 Filters:
@@ -41,7 +41,7 @@ Filters:
   user              Run creator identifier.
 
 Usage:
-  databricks experimental air list [flags]
+  databricks air list [flags]
 
 Examples:
   databricks experimental air list --filter accelerator_type=H100
@@ -65,13 +65,13 @@ Global Flags:
   -t, --target string    bundle target to use (if applicable)
 
 === get help
->>> [CLI] experimental air get --help
+>>> [CLI] air get --help
 Show status, configuration, and timing details for a specified run.
 
 JOB_RUN_ID is the job run ID returned by "air run".
 
 Usage:
-  databricks experimental air get JOB_RUN_ID [flags]
+  databricks air get JOB_RUN_ID [flags]
 
 Flags:
   -h, --help   help for get
@@ -83,12 +83,12 @@ Global Flags:
   -t, --target string    bundle target to use (if applicable)
 
 === pools help
->>> [CLI] experimental air pools --help
+>>> [CLI] air pools --help
 View provisioned GPU pools
 
 Usage:
-  databricks experimental air pools [flags]
-  databricks experimental air pools [command]
+  databricks air pools [flags]
+  databricks air pools [command]
 
 Available Commands:
   get         Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)
@@ -103,22 +103,22 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
 
-Use "databricks experimental air pools [command] --help" for more information about a command.
+Use "databricks air pools [command] --help" for more information about a command.
 
 === logs help
->>> [CLI] experimental air logs --help
+>>> [CLI] air logs --help
 Stream logs from an active run until it completes, or fetch logs from a
 completed run.
 
 JOB_RUN_ID is the job run ID returned by "air run".
 
 Usage:
-  databricks experimental air logs JOB_RUN_ID [flags]
+  databricks air logs JOB_RUN_ID [flags]
 
 Examples:
-  databricks experimental air logs [NUMID]
-  databricks experimental air logs [NUMID] --node 1 --retry 0
-  databricks experimental air logs [NUMID] --download-to ./logs
+  databricks air logs [NUMID]
+  databricks air logs [NUMID] --node 1 --retry 0
+  databricks air logs [NUMID] --download-to ./logs
 
 Flags:
       --download-to string   Download all logs to this directory instead of printing
@@ -135,14 +135,14 @@ Global Flags:
   -t, --target string    bundle target to use (if applicable)
 
 === cancel help
->>> [CLI] experimental air cancel --help
+>>> [CLI] air cancel --help
 Cancel one or more runs by job run ID, or use --all to cancel
 all active runs submitted by the current user.
 
 --all prompts for confirmation. Use --yes to skip the prompt.
 
 Usage:
-  databricks experimental air cancel [JOB_RUN_ID...] [flags]
+  databricks air cancel [JOB_RUN_ID...] [flags]
 
 Flags:
       --all    Cancel all of your active runs

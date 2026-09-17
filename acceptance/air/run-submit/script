@@ -10,7 +10,7 @@ git-repo-init
 sed "s/COMMIT_SHA/$(git rev-parse HEAD)/" run.yaml.tmpl > run.yaml
 
 title "submit with a git code_source"
-trace $CLI experimental air run -f run.yaml
+trace $CLI air run -f run.yaml
 
 title "the ai_runtime_task and additive job permission grants"
 # Include MLflow paths so an accidental experiment request appears in the golden output.

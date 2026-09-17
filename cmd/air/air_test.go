@@ -34,17 +34,15 @@ func TestRunErrorIncludesDebugTip(t *testing.T) {
 	airCommand := &cobra.Command{Use: "air"}
 	airCommand.AddCommand(runCommand)
 	wrapRunErrorWithDebugTip(runCommand)
-	experimentalCommand := &cobra.Command{Use: "experimental"}
-	experimentalCommand.AddCommand(airCommand)
 	rootCommand := &cobra.Command{Use: "databricks"}
 	rootCommand.PersistentFlags().Bool("debug", false, "")
-	rootCommand.AddCommand(experimentalCommand)
+	rootCommand.AddCommand(airCommand)
 
 	err := runCommand.RunE(runCommand, []string{"secret-value"})
 
 	assert.ErrorIs(t, err, originalErr)
 	assert.Contains(t, err.Error(), "use the --debug flag")
-	assert.Contains(t, err.Error(), "databricks --debug experimental air run …")
+	assert.Contains(t, err.Error(), "databricks --debug air run …")
 	assert.NotContains(t, err.Error(), "secret-value")
 }
 
