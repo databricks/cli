@@ -133,11 +133,10 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 	if state.FullName == "" {
 		return nil, errors.New("internal error: grants full_name must be resolved before deployment")
 	}
-	removedPrincipals := removedGrantPrincipals(state.EmbeddedSlice, entry)
 	_, err := r.client.Grants.Update(ctx, catalog.UpdatePermissions{
 		SecurableType:             state.SecurableType,
 		FullName:                  state.FullName,
-		Changes:                   buildGrantChanges(state.EmbeddedSlice, removedPrincipals),
+		Changes:                   buildGrantChanges(state.EmbeddedSlice, remoteGrantPrivileges(entry)),
 		OmitPermissionsInResponse: false,
 		ForceSendFields:           nil,
 	})
@@ -149,22 +148,39 @@ func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsSt
 // be confusing to explain wrt permissions. Deleting the resource is a state-only
 // cleanup (see PlanEntry.StateOnly).
 
-func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removedPrincipals []string) []catalog.PermissionsChange {
-	changes := make([]catalog.PermissionsChange, 0, len(desiredAssignments)+len(removedPrincipals))
+func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, remote map[string][]catalog.Privilege) []catalog.PermissionsChange {
+	changes := make([]catalog.PermissionsChange, 0, len(desiredAssignments)+len(remote))
+	desiredPrincipals := make(map[string]struct{}, len(desiredAssignments))
 	for _, ga := range desiredAssignments {
+		desiredPrincipals[ga.Principal] = struct{}{}
 		change := catalog.PermissionsChange{
 			Principal:       ga.Principal,
 			Add:             ga.Privileges,
 			Remove:          nil,
 			ForceSendFields: nil,
 		}
-		// Remove all other privileges unless ALL_PRIVILEGES is being granted
-		// (it would conflict with appearing in both Add and Remove).
-		if !slices.Contains(ga.Privileges, catalog.PrivilegeAllPrivileges) {
+		if slices.Contains(ga.Privileges, catalog.PrivilegeAllPrivileges) {
+			// ALL_PRIVILEGES cannot also appear in Remove (the backend rejects the
+			// duplicate), and removing it would not clear the privileges it does not
+			// imply anyway, so revoke by name the excluded privileges the principal
+			// still holds remotely but no longer wants.
+			change.Remove = revokedExcludedPrivileges(ga.Privileges, remote[ga.Principal])
+		} else {
+			// Removing ALL_PRIVILEGES clears every privilege the principal holds, so
+			// re-adding the desired set above reconciles it to exactly the config.
 			change.Remove = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
 		}
 		changes = append(changes, change)
 	}
+
+	// Principals present remotely but no longer desired: revoke everything.
+	var removedPrincipals []string
+	for principal := range remote {
+		if _, ok := desiredPrincipals[principal]; !ok {
+			removedPrincipals = append(removedPrincipals, principal)
+		}
+	}
+	slices.Sort(removedPrincipals)
 	for _, principal := range removedPrincipals {
 		changes = append(changes, catalog.PermissionsChange{
 			Principal:       principal,
@@ -176,8 +192,23 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, removed
 	return changes
 }
 
-// removedGrantPrincipals returns principals present in the remote state but absent from the desired assignments.
-func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, entry *PlanEntry) []string {
+// revokedExcludedPrivileges returns the privileges not implied by ALL_PRIVILEGES
+// (see allPrivilegesExcludes) that the principal holds remotely but no longer
+// desires, so they can be revoked by name alongside a (re)granted ALL_PRIVILEGES.
+func revokedExcludedPrivileges(desired, remotePrivileges []catalog.Privilege) []catalog.Privilege {
+	var remove []catalog.Privilege
+	for _, p := range allPrivilegesExcludes {
+		if slices.Contains(remotePrivileges, p) && !slices.Contains(desired, p) {
+			remove = append(remove, p)
+		}
+	}
+	return remove
+}
+
+// remoteGrantPrivileges maps each principal in the plan's remote state to the
+// privileges it currently holds, or nil when there is no remote state (e.g. on
+// create). The privileges are normalized the same way as the desired assignments.
+func remoteGrantPrivileges(entry *PlanEntry) map[string][]catalog.Privilege {
 	if entry == nil {
 		return nil
 	}
@@ -185,21 +216,12 @@ func removedGrantPrincipals(desiredAssignments []catalog.PrivilegeAssignment, en
 	if !ok || remote == nil {
 		return nil
 	}
-
-	desired := make(map[string]struct{}, len(desiredAssignments))
-	for _, a := range desiredAssignments {
-		if a.Principal != "" {
-			desired[a.Principal] = struct{}{}
-		}
-	}
-
-	var result []string
+	result := make(map[string][]catalog.Privilege, len(remote.EmbeddedSlice))
 	for _, a := range remote.EmbeddedSlice {
-		if _, ok := desired[a.Principal]; !ok {
-			result = append(result, a.Principal)
+		if a.Principal != "" {
+			result[a.Principal] = a.Privileges
 		}
 	}
-	slices.Sort(result)
 	return result
 }
 
@@ -239,19 +261,40 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 	return assignments, nil
 }
 
+// allPrivilegesExcludes are the privileges that ALL_PRIVILEGES does not imply, so
+// they are granted independently and must survive the collapse in
+// normalizeAssignments. UC excludes exactly these four from ALL_PRIVILEGES to
+// avoid accidental data exfiltration or privilege escalation; see
+// https://docs.databricks.com/aws/en/data-governance/unity-catalog/manage-privileges/privileges
+var allPrivilegesExcludes = []catalog.Privilege{
+	catalog.PrivilegeExternalUseLocation,
+	catalog.PrivilegeExternalUseSchema,
+	catalog.PrivilegeManage,
+	catalog.PrivilegeReadMetadata,
+}
+
 // normalizeAssignments sorts each assignment's privileges (the backend sorts
 // them, so we match that) and collapses a principal holding ALL_PRIVILEGES down
-// to just ALL_PRIVILEGES. The collapse is applied to both the config and read
-// sides, so config granting only ALL_PRIVILEGES matches a backend that reports
-// ALL_PRIVILEGES plus the concrete privileges it implies, instead of reporting a
-// perpetual update.
+// to ALL_PRIVILEGES plus any privilege ALL_PRIVILEGES does not imply. The collapse
+// is applied to both the config and read sides, so config granting ALL_PRIVILEGES
+// matches a backend that reports ALL_PRIVILEGES plus the concrete privileges it
+// implies, instead of reporting a perpetual update. The excluded privileges are
+// kept so they are not silently dropped from both the request and the drift check.
 func normalizeAssignments(assignments []catalog.PrivilegeAssignment) {
 	for i := range assignments {
-		if slices.Contains(assignments[i].Privileges, catalog.PrivilegeAllPrivileges) {
-			assignments[i].Privileges = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
+		privileges := assignments[i].Privileges
+		if slices.Contains(privileges, catalog.PrivilegeAllPrivileges) {
+			collapsed := []catalog.Privilege{catalog.PrivilegeAllPrivileges}
+			for _, p := range allPrivilegesExcludes {
+				if slices.Contains(privileges, p) {
+					collapsed = append(collapsed, p)
+				}
+			}
+			slices.Sort(collapsed)
+			assignments[i].Privileges = collapsed
 			continue
 		}
-		slices.Sort(assignments[i].Privileges)
+		slices.Sort(privileges)
 	}
 }
 

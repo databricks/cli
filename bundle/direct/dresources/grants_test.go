@@ -12,7 +12,7 @@ func TestBuildGrantChanges(t *testing.T) {
 	tests := []struct {
 		name     string
 		desired  []catalog.PrivilegeAssignment
-		removed  []string
+		remote   map[string][]catalog.Privilege
 		expected []catalog.PermissionsChange
 	}{
 		{
@@ -49,8 +49,8 @@ func TestBuildGrantChanges(t *testing.T) {
 					},
 				},
 			},
-			removed: []string{
-				"bob",
+			remote: map[string][]catalog.Privilege{
+				"bob": {catalog.PrivilegeAllPrivileges},
 			},
 			expected: []catalog.PermissionsChange{
 				{
@@ -67,11 +67,32 @@ func TestBuildGrantChanges(t *testing.T) {
 				},
 			},
 		},
+		{
+			// ALL_PRIVILEGES stays granted, so MANAGE (which it does not imply and
+			// which its removal would not clear) must be revoked by name.
+			name: "revokes excluded privilege dropped while keeping ALL_PRIVILEGES",
+			desired: []catalog.PrivilegeAssignment{
+				{
+					Principal:  "alice",
+					Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges},
+				},
+			},
+			remote: map[string][]catalog.Privilege{
+				"alice": {catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+			},
+			expected: []catalog.PermissionsChange{
+				{
+					Principal: "alice",
+					Add:       []catalog.Privilege{catalog.PrivilegeAllPrivileges},
+					Remove:    []catalog.Privilege{catalog.PrivilegeManage},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, buildGrantChanges(tt.desired, tt.removed))
+			assert.Equal(t, tt.expected, buildGrantChanges(tt.desired, tt.remote))
 		})
 	}
 }
@@ -153,6 +174,17 @@ func TestNormalizeAssignments(t *testing.T) {
 			},
 			expected: []catalog.PrivilegeAssignment{
 				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges}},
+			},
+		},
+		{
+			// ALL_PRIVILEGES does not imply MANAGE, so MANAGE must survive the
+			// collapse instead of being dropped alongside the concrete privileges.
+			name: "keeps MANAGE alongside ALL_PRIVILEGES",
+			input: []catalog.PrivilegeAssignment{
+				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog, catalog.PrivilegeManage, catalog.PrivilegeAllPrivileges}},
+			},
+			expected: []catalog.PrivilegeAssignment{
+				{Principal: "alice", Privileges: []catalog.Privilege{catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage}},
 			},
 		},
 	}
