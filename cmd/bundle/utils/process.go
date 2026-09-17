@@ -320,14 +320,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if stateVersion := b.DeploymentBundle.StateDB.StateCLIVersion(); isNewerVersion(stateVersion, currentVersion) {
 				log.Warnf(ctx, "State was last deployed with CLI version %s but current version is %s", stateVersion, currentVersion)
 			}
-			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.SkipEnforcingDeploymentHistorySetting); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if !opts.SkipEnforcingDeploymentHistorySetting {
+				if err := enforceDeploymentHistorySetting(ctx, b, stateDesc); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 			}
 		} else if stateDesc.Engine.IsDirect() {
-			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.SkipEnforcingDeploymentHistorySetting); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if !opts.SkipEnforcingDeploymentHistorySetting {
+				if err := enforceDeploymentHistorySetting(ctx, b, stateDesc); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 			}
 		}
 
@@ -582,7 +586,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 			return err
 		}
-		return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
+		return enforceDeploymentHistorySetting(ctx, b, stateDesc)
 	}
 
 	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
@@ -600,7 +604,7 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
 		return err
 	}
-	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
+	return enforceDeploymentHistorySetting(ctx, b, stateDesc)
 }
 
 func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
@@ -615,10 +619,7 @@ func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *
 	return stateDesc.IsDMS()
 }
 
-func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, skip bool) error {
-	if skip {
-		return nil
-	}
+func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 	if stateDesc.SourcePath == "" {
 		return nil
 	}
