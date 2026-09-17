@@ -248,17 +248,17 @@ func withSpinner(ctx context.Context, show bool, msg string, fn func() error) er
 // build and submit a payload that references their remote paths. Snapshot
 // sidecar writes must keep CreateParentDirectories because launch-directory
 // creation is concurrent, not ordered before snapshot staging.
-func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []uploadItem, uploadSnapshot func(context.Context) (snapshotResult, error)) (snapshotResult, error) {
+func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []uploadItem, stageSnapshot func(context.Context) (snapshotResult, error)) (snapshotResult, error) {
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
 		return uploadArtifacts(groupCtx, launchWriter, items)
 	})
 
 	var snap snapshotResult
-	if uploadSnapshot != nil {
+	if stageSnapshot != nil {
 		group.Go(func() error {
 			var err error
-			snap, err = uploadSnapshot(groupCtx)
+			snap, err = stageSnapshot(groupCtx)
 			return err
 		})
 	}
@@ -339,21 +339,21 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// Package and upload the code snapshot, if any, via DABs' artifact-upload
 	// plumbing; the remote code_source_path rides the ai_runtime_task. A run with no
 	// code_source leaves it empty. Snapshot is the only code_source type.
-	var uploadSnapshot func(context.Context) (snapshotResult, error)
+	var stageSnapshot func(context.Context) (snapshotResult, error)
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 		// Default snapshot tarballs land in the user's shared repo_snapshots dir;
-		// snapshotViaDABsUpload replaces this when remote_volume is configured.
+		// uploadSnapshot replaces this when remote_volume is configured.
 		snapshotArtifactPath := path.Join(base, ".air", "repo_snapshots")
-		uploadSnapshot = func(ctx context.Context) (snapshotResult, error) {
+		stageSnapshot = func(ctx context.Context) (snapshotResult, error) {
 			// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
-			return snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir)
+			return uploadSnapshot(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir)
 		}
 	}
 
 	var snap snapshotResult
 	err = withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
 		var stageErr error
-		snap, stageErr = stageRunArtifacts(ctx, fc, items, uploadSnapshot)
+		snap, stageErr = stageRunArtifacts(ctx, fc, items, stageSnapshot)
 		return stageErr
 	})
 	if err != nil {

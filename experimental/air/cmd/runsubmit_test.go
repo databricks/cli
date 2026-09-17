@@ -547,7 +547,7 @@ code_source:
 }
 
 // testSidecarStore builds a workspace filer + base path standing in for the run's
-// launch dir, where snapshotViaDABsUpload writes git provenance sidecars.
+// launch dir, where uploadSnapshot writes git provenance sidecars.
 func testSidecarStore(t *testing.T, w *databricks.WorkspaceClient) (filer.Filer, string) {
 	t.Helper()
 	base := "/Workspace/Users/tester@databricks.com/.air/cli_launch/test"
@@ -603,11 +603,11 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 	require.NotZero(t, snapshotUploads, "first submit should upload the tarball")
 	afterFirst := snapshotUploads
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	// Content-addressed name: not the bare dir, but a 16-hex-char fingerprint.
@@ -666,9 +666,9 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	// Same pinned commit → identical content-addressed remote path, uploaded once
@@ -710,7 +710,7 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	snap, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	assert.Empty(t, snap.GitStatePath)
