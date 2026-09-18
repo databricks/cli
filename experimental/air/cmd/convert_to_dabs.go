@@ -334,8 +334,11 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	// default channel) so a config without an explicit version still pins the version
 	// the workload would have run with — not an empty spec.
 	envVersion, deps := bundleEnvironmentDeps(ctx, cfg)
-	envSpec := map[string]dyn.Value{
-		"environment_version": nv(envVersion, 1),
+	envSpec := map[string]dyn.Value{}
+	if strings.HasPrefix(envVersion, databricksAIPrefix) {
+		envSpec["base_environment"] = nv("workspace-base-environments/"+envVersion, 1)
+	} else {
+		envSpec["environment_version"] = nv(envVersion, 1)
 	}
 	if len(deps) > 0 {
 		depVals := make([]dyn.Value, len(deps))
