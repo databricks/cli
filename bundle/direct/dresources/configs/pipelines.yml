@@ -41,6 +41,19 @@ ignore_remote_changes:
   - field: allow_duplicate_names
     reason: input_only
 
+# The backend stores these in a canonical case and normalizes whatever the request sent,
+# so a config value in a different case reads back changed and never converges. The
+# terraform provider suppresses the same diffs (channel via SetSuppressDiff; edition and
+# catalog via EqualFoldDiffSuppress), so this is not a regression when migrating to direct.
+# https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L176-L181
+normalize_case:
+  - field: channel
+    reason: backend_normalizes_case
+  - field: edition
+    reason: backend_normalizes_case
+  - field: catalog
+    reason: backend_normalizes_case
+
 ignore_local_changes:
   - field: deployment.version_id
     reason: auto
