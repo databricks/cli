@@ -10,8 +10,9 @@ resources:
         - principal: $CURRENT_USER_NAME
           privileges:
             - CREATE_TABLE
-        # This principal holds MANAGE, which ALL_PRIVILEGES does not imply. When it
-        # is removed from config, buildGrantChanges revokes it with
-        # Remove: [ALL_PRIVILEGES] — which does not clear MANAGE on the backend, so
-        # the principal never actually goes away.
+        # This principal holds MANAGE, which ALL_PRIVILEGES does not imply. Removing
+        # it exercises the revocation path: buildGrantChanges must revoke MANAGE by
+        # name (not just via Remove: [ALL_PRIVILEGES], which the backend does not
+        # apply to MANAGE), otherwise the principal lingers and the plan never
+        # converges.
         - { principal: deco-test-user@databricks.com, privileges: [MANAGE] } # TO_REMOVE
