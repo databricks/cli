@@ -236,21 +236,31 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
 
-		// Announce the auto-migration path here (only on deploy) so the user
-		// isn't surprised when MigrateToDirect commits state changes at the
-		// end. PullResourcesState is shared with non-deploy commands like
-		// `bundle debug states`, which would otherwise print the same hint
-		// even though they will not migrate.
-		if opts.Deploy && b.MigratingToDirect {
-			if requiredEngine.IsDefault {
-				// The user did not ask for direct; it is the default. Frame the
-				// auto-migration as an informational notice rather than a warning,
-				// and do not claim the user selected anything.
+		// Move a Terraform state to the direct engine before planning: when the direct
+		// engine is requested (the default) and the existing state still uses Terraform,
+		// convert it to a direct-engine state in memory and open the state DB with it, so
+		// the deploy runs on the direct engine. The deploy's normal Finalize commits
+		// resources.json only if it records changes, and terraform.tfstate is backed up
+		// only then. Read-only commands (e.g. "bundle debug states") set none of these
+		// options and keep reading the Terraform state as-is.
+		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
+		if b.MigratingToDirect && needsState {
+			if opts.Deploy && requiredEngine.IsDefault {
 				cmdio.LogString(ctx, "Notice: the direct deployment engine is the default as of CLI v1.14.0.\n\n"+
-					"This bundle will be automatically migrated to use the direct deployment engine after this deployment.\n\n"+
+					"This bundle will be automatically migrated to use the direct deployment engine.\n\n"+
 					"Learn more: https://docs.databricks.com/dev-tools/bundles/direct\n")
-			} else {
-				log.Warnf(ctx, "Direct engine selected via %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
+			}
+			// Commit the migration on deploy (write resources.json, push it, back up
+			// terraform.tfstate) so it completes even if the deploy is a no-op; plan and
+			// other read-only paths keep it in memory.
+			migrated, err := statemgmt.OpenMigratedTerraformState(ctx, b, opts.Deploy)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("migrating Terraform state to the direct engine: %w", err))
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			if migrated {
+				stateDesc.Engine = engine.EngineDirect
+				b.Metrics.StateEngine = engine.EngineDirect
 			}
 		}
 
@@ -264,8 +274,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
+		// A migrated-from-Terraform state is already open (seeded in memory above), so skip the disk open.
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
-		if needDirectState {
+		if needDirectState && !b.DeploymentBundle.StateDB.IsOpen() {
 			_, localPath := b.StateFilenameDirect(ctx)
 
 			if stateDesc.IsDMS() {
@@ -487,7 +498,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
-		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && stateDesc.HasRemoteTerraformState() {
+		// A migrating deploy already backed up terraform.tfstate when it committed the
+		// converted state above; this handles a plain direct deploy that still finds a
+		// lingering remote terraform state.
+		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && !b.MigratingToDirect && stateDesc.HasRemoteTerraformState() {
 			statemgmt.BackupRemoteTerraformState(ctx, b)
 
 			if logdiag.HasError(ctx) {

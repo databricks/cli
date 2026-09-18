@@ -7,25 +7,21 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_migration_telemetry
-direct_drymigrate_success true
-direct_drymigrate_warnings false
 
 === Redeploy with nothing set: direct is the default, so auto-migration triggers
 >>> [CLI] bundle deploy
 Notice: the direct deployment engine is the default as of CLI v1.14.0.
 
-This bundle will be automatically migrated to use the direct deployment engine after this deployment.
+This bundle will be automatically migrated to use the direct deployment engine.
 
 Learn more: https://docs.databricks.com/dev-tools/bundles/direct
 
+Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
-Migrating state to direct deployment engine (selected via default)...
-Migrated 1 resource to direct deployment engine.
 
 >>> print_migration_telemetry
-direct_migrated_via_default true
 
 === Direct-engine state is now in place; terraform state is backed up
 

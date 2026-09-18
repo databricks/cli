@@ -1,0 +1,1 @@
+* Migrate existing Terraform deployment state to the direct engine before deploying (previously done after a Terraform deploy), so the deploy runs on the direct engine. ([#6749](https://github.com/databricks/cli/pull/6749))

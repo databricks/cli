@@ -7,23 +7,18 @@ Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_migration_telemetry
-direct_drymigrate_success true
-direct_drymigrate_warnings false
 
 === Opt in to direct engine via config and redeploy: dry-run is clean, auto-migration triggers
 >>> update_file.py databricks.yml name: test-bundle name: test-bundle
   engine: direct
 
 >>> [CLI] bundle deploy
-Warn: Direct engine selected via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11 but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
-Migrating state to direct deployment engine (selected via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11)...
-Migrated 1 resource to direct deployment engine.
 
 >>> print_migration_telemetry
-direct_migrated_via_config true
 
 === Direct-engine state is now in place; terraform state is backed up
 
