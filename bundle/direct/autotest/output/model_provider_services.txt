@@ -1,0 +1,16 @@
+# field | from | to | verdict | detail
+
+parent                                       absent     x          BASE_ERROR  unexpected model provider service name "model-provider-services/.test-model-provider-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       absent     y          BASE_ERROR  unexpected model provider service name "model-provider-services/.test-model-provider-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       x          absent     BASE_ERROR  unexpected model provider service name "model-provider-services/x.test-model-provider-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       x          y          BASE_ERROR  unexpected model provider service name "model-provider-services/x.test-model-provider-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       y          absent     BASE_ERROR  unexpected model provider service name "model-provider-services/y.test-model-provider-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       y          x          BASE_ERROR  unexpected model provider service name "model-provider-services/y.test-model-provider-service-[UNIQUE_NAME]" (want three dot-separated components)
+
+=== summary
+OK                         174
+OK_RECREATE                23
+SUPPRESSED                 4
+NOT_OBSERVABLE             3
+SKIPPED                    3
+BASE_ERROR                 6

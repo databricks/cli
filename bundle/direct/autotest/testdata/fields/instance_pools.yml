@@ -1,0 +1,26 @@
+# Value library for instance pools. See ../../README.md.
+
+# Confirmed on aws (2026-09): a pool cannot be catalog-tested there. aws refuses to delete a pool
+# ("Can't delete pool ... Duplicate"), rejects node_type_id/disk_spec edits on an existing pool
+# ("field change is not supported on existing pools"), ignores custom_tags updates, and validates
+# spark versions and disk types -- none of which the fake server enforces.
+local_only: a real workspace refuses to delete a pool, and most fields recreate
+base:
+  instance_pool_name: test-instance-pool-$UNIQUE_NAME
+  node_type_id: $NODE_TYPE_ID
+  custom_tags:
+    team: eng
+  preloaded_spark_versions:
+    - $DEFAULT_SPARK_VERSION
+
+skip:
+  # A preloaded image needs custom containers enabled for the workspace, which a test
+  # workspace does not have ("Custom containers is turned off for your deployment").
+  preloaded_docker_images: needs custom containers enabled for the workspace
+  # Naming a second node type, which differs per cloud and the suite has no variable for.
+  node_type_flexibility: needs a second node type, which differs per cloud
+  # Only one of aws_/azure_/gcp_attributes applies, decided by the workspace's cloud, and the
+  # backend fills in defaults for the one that does -- so a value set here cannot be cleared.
+  aws_attributes: cloud-specific; only one of the three attribute blocks applies
+  azure_attributes: cloud-specific; only one of the three attribute blocks applies
+  gcp_attributes: cloud-specific; only one of the three attribute blocks applies

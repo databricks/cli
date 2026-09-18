@@ -1,0 +1,16 @@
+# field | from | to | verdict | detail
+
+parent                                       absent     x          BASE_ERROR  unexpected mcp service name "mcp-services/.test-mcp-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       absent     y          BASE_ERROR  unexpected mcp service name "mcp-services/.test-mcp-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       x          absent     BASE_ERROR  unexpected mcp service name "mcp-services/x.test-mcp-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       x          y          BASE_ERROR  unexpected mcp service name "mcp-services/x.test-mcp-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       y          absent     BASE_ERROR  unexpected mcp service name "mcp-services/y.test-mcp-service-[UNIQUE_NAME]" (want three dot-separated components)
+parent                                       y          x          BASE_ERROR  unexpected mcp service name "mcp-services/y.test-mcp-service-[UNIQUE_NAME]" (want three dot-separated components)
+
+=== summary
+OK                         22
+OK_RECREATE                6
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+SKIPPED                    2
+BASE_ERROR                 6

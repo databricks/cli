@@ -20,6 +20,23 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 		}
 	}
 
+	// Unity Catalog validates both name parts and the volume type before anything else, so a cleared
+	// one is refused rather than stored under a full name with an empty segment.
+	for field, value := range map[string]string{"catalog_name": volume.CatalogName, "schema_name": volume.SchemaName} {
+		if value == "" {
+			return ucInvalidNameResponse("CreateVolume", "managedcatalog.volume.VolumeInfo."+field, value)
+		}
+	}
+	if volume.VolumeType == "" {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message":    "CreateVolume Missing required field: volume_type",
+			},
+		}
+	}
+
 	// UC normalizes schema and volume names to lowercase.
 	volume.SchemaName = strings.ToLower(volume.SchemaName)
 	volume.Name = strings.ToLower(volume.Name)

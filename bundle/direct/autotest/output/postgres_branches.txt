@@ -1,0 +1,21 @@
+# field | from | to | verdict | detail
+
+is_protected                                 absent     false      UPDATE_MASK_OMITTED  Field 'spec.is_protected' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+is_protected                                 true       absent     UPDATE_MASK_OMITTED  Field 'spec.is_protected' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    absent     false      UPDATE_MASK_OMITTED  Field 'spec.expiration' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    absent     true       UPDATE_MASK_OMITTED  Field 'spec.expiration' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    false      absent     BASE_ERROR  Invalid 'no_expiry' value: must be true to disable expiration. Provide 'ttl' or 'expire_time' instead. (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    false      true       BASE_ERROR  Invalid 'no_expiry' value: must be true to disable expiration. Provide 'ttl' or 'expire_time' instead. (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    true       absent     UPDATE_MASK_OMITTED  Field 'spec.expiration' is in update_mask but not provided in request (400 INVALID_PARAMETER_VALUE)
+no_expiry                                    true       false      BACKEND_ERROR  Invalid 'no_expiry' value: must be true to disable expiration. Provide 'ttl' or 'expire_time' instead. (400 INVALID_PARAMETER_VALUE)
+
+=== summary
+OK                         7
+OK_RECREATE                2
+OK_ID_FIELD_REQUIRED       4
+UPDATE_MASK_OMITTED        5
+OK_INERT                   6
+SUPPRESSED                 3
+BACKEND_ERROR              1
+SKIPPED                    5
+BASE_ERROR                 2

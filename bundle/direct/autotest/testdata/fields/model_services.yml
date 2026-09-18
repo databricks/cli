@@ -1,0 +1,19 @@
+# Value library for model services. See ../../README.md.
+#
+# parent references the pre-existing main.default schema and model_service_id is the other half of the
+# server-derived id; both are immutable, so a change recreates. A config block is required on create --
+# the backend refuses one without it ("config is required") -- so base seeds a routing config to a
+# pay-per-token system foundation model, which needs no workspace infrastructure to provision. Shape
+# follows acceptance/bundle/resources/model_services/lifecycle.
+base:
+  parent: schemas/main.default
+  model_service_id: test-model-service-$UNIQUE_NAME
+  comment: test model service
+  config:
+    routing:
+      destinations:
+        - name: primary
+          destination_type: DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL
+          pay_per_token_config:
+            model: models/system.ai.databricks-gpt-5
+          traffic_percentage: 100

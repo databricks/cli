@@ -1,0 +1,20 @@
+# Value library for postgres catalogs. See ../../README.md.
+#
+# branch is the immutable parent reference (the catalog's name is derived from it), so it is
+# skipped rather than fuzzed. A postgres catalog has no update API, so every other field change
+# recreates.
+clouds: [aws]
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+
+skip:
+  branch: the catalog's immutable parent reference
+
+base:
+  catalog_id: test_pg_catalog_$UNIQUE_NAME
+  branch: ${resources.postgres_projects.postgres_projects.name}/branches/production
+  postgres_database: appdb
+  create_database_if_missing: true

@@ -615,7 +615,7 @@ func AddDefaultHandlers(server *Server) {
 	// Registered Models:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+		return MapGetUC(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"], "Registered Model")
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
@@ -1216,7 +1216,8 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
 		name := "projects/" + req.Vars["project_id"]
-		return req.Workspace.PostgresProjectDelete(name)
+		purge := req.URL.Query().Get("purge") == "true"
+		return req.Workspace.PostgresProjectDelete(name, purge)
 	})
 
 	// Postgres Branches:

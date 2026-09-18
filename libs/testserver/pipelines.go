@@ -23,6 +23,21 @@ func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
 	}
 }
 
+// validatePipelineDeployment mirrors the backend's refusal of a deployment block with no kind: the
+// block is optional, but one that is there has to say what kind it is.
+func validatePipelineDeployment(deployment *pipelines.PipelineDeployment) *Response {
+	if deployment == nil || deployment.Kind != "" {
+		return nil
+	}
+	return &Response{
+		StatusCode: 400,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "Missing required field: spec.deployment.kind",
+		},
+	}
+}
+
 func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -33,6 +48,10 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
 			StatusCode: 400,
 		}
+	}
+
+	if response := validatePipelineDeployment(spec.Deployment); response != nil {
+		return *response
 	}
 
 	// Unity Catalog requires target_schema_name to be a single schema segment, so a
@@ -110,10 +129,32 @@ func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response 
 		}
 	}
 
+	if response := validatePipelineDeployment(spec.Deployment); response != nil {
+		return *response
+	}
+
 	item, exists := s.Pipelines[pipelineId]
 	if !exists {
 		return Response{
 			StatusCode: 404,
+		}
+	}
+
+	// A pipeline that has a storage location is not a Unity Catalog pipeline, and the backend will
+	// not convert one into the other in place. Verified directly (aws, 2026-09): a pipeline created
+	// with neither storage nor catalog is given a default storage location, and a later PUT adding
+	// a catalog is refused -- so a backend-assigned storage counts, not just one the user wrote.
+	// Only the fake server having allowed it hid the fact that the engine neither recreates nor
+	// rejects the change: it sends the update and the API refuses it.
+	if item.Spec != nil && item.Spec.Storage != "" && spec.Catalog != "" && spec.Catalog != item.Spec.Catalog {
+		return Response{
+			StatusCode: 400,
+			Body: map[string]string{
+				"error_code": "INVALID_PARAMETER_VALUE",
+				"message": fmt.Sprintf("Cannot add catalog to an existing pipeline with defined storage location, "+
+					"if you want to use UC create a new pipeline and set catalog.\nExisting storage location: %q\nRequested catalog: %q",
+					item.Spec.Storage, spec.Catalog),
+			},
 		}
 	}
 

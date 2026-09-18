@@ -1,0 +1,39 @@
+# field | from | to | verdict | detail
+
+schedule[0].daily_schedule.hour              1          absent     CANNOT_DELETE  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].daily_schedule.hour              2          absent     CANNOT_DELETE  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].daily_schedule.hour              absent     1          CANNOT_DELETE  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].daily_schedule.hour              absent     2          CANNOT_DELETE  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.day             1          2          BASE_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.day             1          absent     BASE_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.day             2          1          BASE_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.day             2          absent     BASE_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.day             absent     1          BACKEND_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.day             absent     2          BACKEND_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.hour            1          2          BASE_ERROR  Field 'schedule.monthly_schedule.day' is required, expected non-default value (not 0)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.hour            1          absent     BASE_ERROR  Field 'schedule.monthly_schedule.day' is required, expected non-default value (not 0)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.hour            2          1          BASE_ERROR  Field 'schedule.monthly_schedule.day' is required, expected non-default value (not 0)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.hour            2          absent     BASE_ERROR  Field 'schedule.monthly_schedule.day' is required, expected non-default value (not 0)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.hour            absent     1          BACKEND_ERROR  Field 'schedule.monthly_schedule.day' is required, expected non-default value (not 0)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].monthly_schedule.hour            absent     2          BACKEND_ERROR  Field 'schedule.monthly_schedule.day' is required, expected non-default value (not 0)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.day_of_week      FRIDAY     MONDAY     BASE_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.day_of_week      FRIDAY     absent     BASE_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.day_of_week      MONDAY     FRIDAY     BASE_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.day_of_week      MONDAY     absent     BASE_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.day_of_week      absent     FRIDAY     BACKEND_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.day_of_week      absent     MONDAY     BACKEND_ERROR  'hour' is required and must be in [0, 23] (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.hour             1          2          BASE_ERROR  Field 'schedule.weekly_schedule.day_of_week' is required, expected non-default value (not DAY_OF_WEEK_UNSPECIFIED)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.hour             1          absent     BASE_ERROR  Field 'schedule.weekly_schedule.day_of_week' is required, expected non-default value (not DAY_OF_WEEK_UNSPECIFIED)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.hour             2          1          BASE_ERROR  Field 'schedule.weekly_schedule.day_of_week' is required, expected non-default value (not DAY_OF_WEEK_UNSPECIFIED)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.hour             2          absent     BASE_ERROR  Field 'schedule.weekly_schedule.day_of_week' is required, expected non-default value (not DAY_OF_WEEK_UNSPECIFIED)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.hour             absent     1          BACKEND_ERROR  Field 'schedule.weekly_schedule.day_of_week' is required, expected non-default value (not DAY_OF_WEEK_UNSPECIFIED)! (400 INVALID_PARAMETER_VALUE)
+schedule[0].weekly_schedule.hour             absent     2          BACKEND_ERROR  Field 'schedule.weekly_schedule.day_of_week' is required, expected non-default value (not DAY_OF_WEEK_UNSPECIFIED)! (400 INVALID_PARAMETER_VALUE)
+
+=== summary
+OK                         6
+CANNOT_DELETE              4
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+BACKEND_ERROR              8
+SKIPPED                    2
+BASE_ERROR                 16

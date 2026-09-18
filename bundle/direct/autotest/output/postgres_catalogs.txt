@@ -1,0 +1,10 @@
+# field | from | to | verdict | detail
+
+
+=== summary
+OK_RECREATE                8
+OK_ID_FIELD_REQUIRED       4
+CANNOT_DELETE_REQUIRED     4
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+SKIPPED                    2

@@ -1,0 +1,10 @@
+# field | from | to | verdict | detail
+
+
+=== summary
+OK                         394
+CANNOT_DELETE_REQUIRED     2
+OK_INERT                   12
+SUPPRESSED                 23
+NOT_OBSERVABLE             15
+SKIPPED                    38
