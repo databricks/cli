@@ -55,7 +55,7 @@ type bricklensLogsQuery struct {
 // getBricklensLogs fetches one page of logs. The API client is built once by the
 // caller and reused across the poll loop. It returns the raw error so the caller
 // can classify it via classifyLogError.
-func getBricklensLogs(ctx context.Context, apiClient *client.DatabricksClient, runID int64, q bricklensLogsQuery) (*bricklensLogsResponse, error) {
+func getBricklensLogs(ctx context.Context, apiClient *client.DatabricksClient, headers map[string]string, runID int64, q bricklensLogsQuery) (*bricklensLogsResponse, error) {
 	query := map[string]any{
 		// Always sent: the tail path relies on an explicit false for newest-first.
 		"ascending": strconv.FormatBool(q.ascending),
@@ -81,7 +81,7 @@ func getBricklensLogs(ctx context.Context, apiClient *client.DatabricksClient, r
 
 	var resp bricklensLogsResponse
 	path := fmt.Sprintf(bricklensLogsPathFmt, runID)
-	if err := apiClient.Do(ctx, http.MethodGet, path, nil, nil, query, &resp); err != nil {
+	if err := apiClient.Do(ctx, http.MethodGet, path, headers, nil, query, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -256,6 +257,7 @@ func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out
 		ctx:       ctx,
 		w:         w,
 		apiClient: apiClient,
+		headers:   auth.WorkspaceIDHeaders(w.Config),
 		out:       out,
 		req:       req,
 		status:    status,
@@ -270,6 +272,7 @@ type bricklensStreamer struct {
 	ctx       context.Context
 	w         *databricks.WorkspaceClient
 	apiClient *client.DatabricksClient
+	headers   map[string]string
 	out       io.Writer
 	req       logRequest
 	status    logRunStatus
@@ -607,7 +610,7 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 
 	transientFailures := 0
 	for {
-		resp, err := getBricklensLogs(st.ctx, st.apiClient, st.req.runID, q)
+		resp, err := getBricklensLogs(st.ctx, st.apiClient, st.headers, st.req.runID, q)
 		if err == nil {
 			return resp, nil
 		}

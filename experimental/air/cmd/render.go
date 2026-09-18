@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -184,7 +185,7 @@ func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceCli
 	// For a GET the SDK serializes the request value into query parameters, so
 	// run_id is passed as the request, mirroring the other raw calls in this package.
 	query := map[string]any{"run_id": runID}
-	if err := apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, nil, nil, query, &resp); err != nil {
+	if err := apiClient.Do(ctx, http.MethodGet, jobsRunsGetPath, auth.WorkspaceIDHeaders(w.Config), nil, query, &resp); err != nil {
 		log.Warnf(ctx, "air get: could not read environment for run %d: %v", runID, err)
 		return ""
 	}
