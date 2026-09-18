@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -469,7 +470,7 @@ func downloadArtifact(ctx context.Context, w *databricks.WorkspaceClient, mlflow
 		"run_id": mlflowRunID,
 		"path":   artifactPath,
 	}
-	err = apiClient.Do(ctx, http.MethodGet, "/api/2.0/mlflow/artifacts/credentials-for-read", nil, nil, query, &resp)
+	err = apiClient.Do(ctx, http.MethodGet, "/api/2.0/mlflow/artifacts/credentials-for-read", auth.WorkspaceIDHeaders(w.Config), nil, query, &resp)
 	if err != nil {
 		return "", fmt.Errorf("failed to get read credentials for %s: %w", artifactPath, err)
 	}
