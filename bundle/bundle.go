@@ -32,7 +32,6 @@ import (
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 const internalFolder = ".internal"
@@ -178,17 +177,8 @@ type Bundle struct {
 	// which lists everything tracked, this counts only what actually changed.
 	FileCounts libsync.FileCounts
 
-	// Stores an initialized copy of this bundle's Terraform wrapper.
-	Terraform *tfexec.Terraform
-
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
-
-	// TerraformPlanPath is the path to the plan from the terraform CLI
-	TerraformPlanPath string
-
-	// If true, the plan is empty and applying it will not do anything
-	TerraformPlanIsEmpty bool
 
 	// (direct only) deployment implementation and state
 	DeploymentBundle direct.DeploymentBundle
