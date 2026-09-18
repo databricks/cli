@@ -1,1 +1,0 @@
-* Fixed the direct engine not fully revoking a UC grant when the principal held a privilege ALL_PRIVILEGES does not imply (`MANAGE`, `READ_METADATA`, `EXTERNAL_USE_SCHEMA`, `EXTERNAL_USE_LOCATION`), which left it behind and made the plan never converge. ([#6743](https://github.com/databricks/cli/pull/6743))
