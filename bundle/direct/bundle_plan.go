@@ -681,20 +681,18 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	if !newOk || !remoteOk {
 		return "", false
 	}
-	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
-		return reason, true
-	}
-	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok {
-		// A field under both rules is normalized on both axes: strip trailing slashes
-		// (if it is also a normalize_slash field) before comparing case-insensitively,
-		// so a value differing by slash and case at once still converges.
-		newVal, remoteVal := newStr, remoteStr
-		if _, slash := findMatchingRule(path, cfg.NormalizeSlash); slash {
-			newVal, remoteVal = strings.TrimRight(newVal, "/"), strings.TrimRight(remoteVal, "/")
-		}
-		if strings.EqualFold(newVal, remoteVal) {
+	// normalize_slash strips trailing slashes and normalize_case folds letter case. A field
+	// under both rules is normalized on both axes, so trim first and then fold: a value
+	// differing by slash and case at once still converges.
+	newVal, remoteVal := newStr, remoteStr
+	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok {
+		newVal, remoteVal = strings.TrimRight(newVal, "/"), strings.TrimRight(remoteVal, "/")
+		if newVal == remoteVal {
 			return reason, true
 		}
+	}
+	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newVal, remoteVal) {
+		return reason, true
 	}
 	return "", false
 }
