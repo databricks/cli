@@ -1,0 +1,1 @@
+* Deprecate `--region` in `databricks auth docker configure` ahead of its removal in the next release, infer the Artifact Registry region when it is omitted, and add `databricks auth docker host --profile <name>` to show the profile's registry host and credential-helper status. ([#6781](https://github.com/databricks/cli/pull/6781))

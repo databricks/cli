@@ -22,6 +22,24 @@ type Registry struct {
 	Host        string
 }
 
+// ValidateWorkspaceHost checks that a workspace host can be used to derive an Artifact Registry host.
+func ValidateWorkspaceHost(workspaceHost string) error {
+	_, err := registryDNSZoneForWorkspaceHost(workspaceHost)
+	return err
+}
+
+// ValidateRegion checks that a region can be used as an Artifact Registry hostname label.
+func ValidateRegion(region string) error {
+	region = strings.TrimSpace(region)
+	if region == "" {
+		return errors.New("region is required")
+	}
+	if !isDNSLabel(region) {
+		return fmt.Errorf("invalid region %q", region)
+	}
+	return nil
+}
+
 // RegistryHost builds a registry host in the workspace's cloud and environment DNS zone.
 func RegistryHost(workspaceID, region, workspaceHost string) (string, error) {
 	workspaceID = strings.TrimSpace(workspaceID)
@@ -29,14 +47,11 @@ func RegistryHost(workspaceID, region, workspaceHost string) (string, error) {
 	if workspaceID == "" {
 		return "", errors.New("workspace ID is required")
 	}
-	if region == "" {
-		return "", errors.New("region is required")
-	}
 	if !isDNSLabel(workspaceID) {
 		return "", fmt.Errorf("invalid workspace ID %q", workspaceID)
 	}
-	if !isDNSLabel(region) {
-		return "", fmt.Errorf("invalid region %q", region)
+	if err := ValidateRegion(region); err != nil {
+		return "", err
 	}
 	dnsZone, err := registryDNSZoneForWorkspaceHost(workspaceHost)
 	if err != nil {
