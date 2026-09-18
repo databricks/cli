@@ -172,17 +172,15 @@ func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id st
 			return nil, retries.Continues("synced table still exists, waiting for deletion to complete")
 		case errors.Is(getErr, apierr.ErrResourceDoesNotExist), errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrPermissionDenied):
 			return &struct{}{}, nil
-		case errors.Is(getErr, context.Canceled), errors.Is(getErr, context.DeadlineExceeded):
-			return nil, retries.Halt(getErr)
 		default:
-			log.Warnf(ctx, "Ignoring unexpected error while waiting for synced table to delete: %s", getErr)
-			return &struct{}{}, nil
+			return nil, retries.Halt(getErr)
 		}
 	})
-	// A deploy cancellation (ctx.Err() != nil) is propagated; a plain poll timeout is
-	// not, since the create that follows will surface any still-incomplete teardown.
+	// A cancelled deploy (ctx.Err() != nil) propagates. Anything else — a poll timeout or
+	// an unexpected backend error — stops the wait but does not fail the recreate: a
+	// still-incomplete teardown resurfaces as the create's 409, a clearer place to report it.
 	if err != nil && ctx.Err() == nil {
-		log.Warnf(ctx, "Stopped waiting for synced table deletion after %s; it may still be in progress", timeout)
+		log.Warnf(ctx, "Stopped waiting for synced table to finish deleting, proceeding anyway: %s", err)
 		return nil
 	}
 	return err
