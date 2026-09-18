@@ -18,7 +18,7 @@ func bench(b *testing.B, job1, job2 string) {
 	total := 0
 
 	for b.Loop() {
-		changes, err := GetStructDiff(&x, &y, nil)
+		changes, err := GetStructDiff(&x, &y)
 		if err != nil {
 			b.Fatalf("error: %s", err)
 		}

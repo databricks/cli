@@ -5,8 +5,8 @@ import (
 	"maps"
 	"reflect"
 	"slices"
-	"strings"
 
+	"github.com/databricks/cli/libs/structs/registry"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
@@ -18,64 +18,17 @@ type Change struct {
 	New  any
 }
 
-// KeyFunc extracts a key field name and value from a slice element.
-// It can be either:
-//   - func(T) (string, string) - typed function for specific element type T
-//   - func(any) (string, string) - generic function accepting any element
-//
-// The function returns (keyField, keyValue). The keyField is typically a field name
-// like "task_key", and keyValue is the value that uniquely identifies the element.
-type KeyFunc = any
-
-// keyFuncCaller wraps a KeyFunc and provides a type-checked Call method.
-type keyFuncCaller struct {
-	fn      reflect.Value
-	argType reflect.Type
-}
-
-func newKeyFuncCaller(fn any) (*keyFuncCaller, error) {
-	v := reflect.ValueOf(fn)
-	if v.Kind() != reflect.Func {
-		return nil, fmt.Errorf("KeyFunc must be a function, got %T", fn)
-	}
-	t := v.Type()
-	if t.NumIn() != 1 {
-		return nil, fmt.Errorf("KeyFunc must have exactly 1 parameter, got %d", t.NumIn())
-	}
-	if t.NumOut() != 2 {
-		return nil, fmt.Errorf("KeyFunc must return exactly 2 values, got %d", t.NumOut())
-	}
-	if t.Out(0).Kind() != reflect.String || t.Out(1).Kind() != reflect.String {
-		return nil, fmt.Errorf("KeyFunc must return (string, string), got (%v, %v)", t.Out(0), t.Out(1))
-	}
-	return &keyFuncCaller{fn: v, argType: t.In(0)}, nil
-}
-
-func (c *keyFuncCaller) call(elem any) (string, string) {
-	elemValue := reflect.ValueOf(elem)
-	out := c.fn.Call([]reflect.Value{elemValue})
-	keyField := out[0].String()
-	keyValue := out[1].String()
-	return keyField, keyValue
-}
-
-// diffContext holds configuration for the diff operation.
-type diffContext struct {
-	sliceKeys map[string]KeyFunc
-}
-
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
 // Respects ForceSendFields if present.
 // Types of a and b must match exactly, otherwise returns an error.
 //
-// The sliceKeys parameter maps path patterns to functions that extract
-// key field/value pairs from slice elements. When provided, slices at matching
-// paths are compared as maps keyed by (keyField, keyValue) instead of by index.
-// Path patterns use dot notation (e.g., "tasks" or "job.tasks").
-// The [*] wildcard matches any slice index in the path.
-// Note, key wildcard is not supported yet ("a.*.c")
-// Pass nil if no slice key functions are needed.
-func GetStructDiff(a, b any, sliceKeys map[string]KeyFunc) ([]Change, error) {
+// A slice whose element type is registered as a keyed slice (see libs/structs/registry)
+// is matched by key value instead of by index. The element is addressed in the path as
+// [='value'] — the key field is omitted, because the value identifies the element.
+// A diff on a matched element's own key field is therefore not a real change and is
+// dropped, which lets the same identity carried under a different field (e.g. user_name
+// vs service_principal_name for one principal) compare equal.
+func GetStructDiff(a, b any) ([]Change, error) {
 	v1 := reflect.ValueOf(a)
 	v2 := reflect.ValueOf(b)
 
@@ -94,8 +47,7 @@ func GetStructDiff(a, b any, sliceKeys map[string]KeyFunc) ([]Change, error) {
 		return nil, fmt.Errorf("type mismatch: %v vs %v", v1.Type(), v2.Type())
 	}
 
-	ctx := &diffContext{sliceKeys: sliceKeys}
-	if err := diffValues(ctx, nil, v1, v2, &changes); err != nil {
+	if err := diffValues(nil, v1, v2, &changes); err != nil {
 		return nil, err
 	}
 	return changes, nil
@@ -103,7 +55,7 @@ func GetStructDiff(a, b any, sliceKeys map[string]KeyFunc) ([]Change, error) {
 
 // diffValues appends changes between v1 and v2 to the slice.  path is the current
 // JSON-style path (dot + brackets).  At the root path is "".
-func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) error {
+func diffValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) error {
 	if !v1.IsValid() {
 		if !v2.IsValid() {
 			return nil
@@ -164,25 +116,25 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 
 	switch kind {
 	case reflect.Pointer:
-		return diffValues(ctx, path, v1.Elem(), v2.Elem(), changes)
+		return diffValues(path, v1.Elem(), v2.Elem(), changes)
 	case reflect.Struct:
-		return diffStruct(ctx, path, v1, v2, changes)
+		return diffStruct(path, v1, v2, changes)
 	case reflect.Slice, reflect.Array:
-		if keyFunc := ctx.findKeyFunc(path); keyFunc != nil {
-			return diffSliceByKey(ctx, path, v1, v2, keyFunc, changes)
+		if keyFields := registry.KeyFields(v1Type.Elem()); keyFields != nil {
+			return diffSliceByKey(path, v1, v2, keyFields, changes)
 		} else if v1.Len() != v2.Len() {
 			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 		} else {
 			for i := range v1.Len() {
 				node := structpath.NewIndex(path, i)
-				if err := diffValues(ctx, node, v1.Index(i), v2.Index(i), changes); err != nil {
+				if err := diffValues(node, v1.Index(i), v2.Index(i), changes); err != nil {
 					return err
 				}
 			}
 		}
 	case reflect.Map:
 		if v1Type.Key().Kind() == reflect.String {
-			return diffMapStringKey(ctx, path, v1, v2, changes)
+			return diffMapStringKey(path, v1, v2, changes)
 		} else {
 			deepEqualValues(path, v1, v2, changes)
 		}
@@ -198,7 +150,7 @@ func deepEqualValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[
 	}
 }
 
-func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {
+func diffStruct(path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {
 	t := s1.Type()
 	forced1 := getForceSendFields(s1)
 	forced2 := getForceSendFields(s2)
@@ -213,7 +165,7 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 		// anonymous field carrying a json name is not one of these: encoding/json serializes it
 		// as a nested object, so it is handled as a named field below.
 		if structaccess.IsFlattenedEmbed(sf) {
-			if err := diffValues(ctx, path, s1.Field(i), s2.Field(i), changes); err != nil {
+			if err := diffValues(path, s1.Field(i), s2.Field(i), changes); err != nil {
 				return err
 			}
 			continue
@@ -262,14 +214,14 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			node = structpath.NewDotString(path, fieldName)
 		}
 
-		if err := diffValues(ctx, node, v1Field, v2Field, changes); err != nil {
+		if err := diffValues(node, v1Field, v2Field, changes); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
+func diffMapStringKey(path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
 		// Caller guarantees the key kind is String; use Value.String() rather
@@ -288,7 +240,7 @@ func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflec
 		v1 := m1.MapIndex(k)
 		v2 := m2.MapIndex(k)
 		node := structpath.NewBracketString(path, ks)
-		if err := diffValues(ctx, node, v1, v2, changes); err != nil {
+		if err := diffValues(node, v1, v2, changes); err != nil {
 			return err
 		}
 	}
@@ -310,138 +262,74 @@ func getForceSendFields(v reflect.Value) []string {
 	return nil
 }
 
-// findKeyFunc returns the KeyFunc for the given path, or nil if none matches.
-// Path patterns support [*] to match any slice index.
-func (ctx *diffContext) findKeyFunc(path *structpath.PathNode) KeyFunc {
-	if ctx.sliceKeys == nil {
-		return nil
-	}
-	pathStr := pathToPattern(path)
-	return ctx.sliceKeys[pathStr]
-}
-
-// pathToPattern converts a PathNode to a pattern string for matching.
-// Slice indices and key-value pairs are converted to [*] wildcard.
-func pathToPattern(path *structpath.PathNode) string {
-	if path == nil {
-		return ""
-	}
-
-	components := path.AsSlice()
-	var result strings.Builder
-
-	for i, node := range components {
-		if _, ok := node.Index(); ok {
-			result.WriteString("[*]")
-		} else if _, _, ok := node.KeyValue(); ok {
-			result.WriteString("[*]")
-		} else if key, ok := node.StringKey(); ok {
-			if i != 0 {
-				result.WriteString(".")
+// appendSkippingKeyFields appends pairChanges to changes, dropping any change on an
+// element's own key field: a direct child of node whose field name is one of
+// keyFields. Such a diff is not a real change — the element is matched by key value,
+// so a key-field difference only means the same identity is carried under a different
+// field (e.g. service_principal_name vs user_name).
+func appendSkippingKeyFields(changes *[]Change, pairChanges []Change, node *structpath.PathNode, keyFields []string) {
+	for _, ch := range pairChanges {
+		if ch.Path.Parent() == node {
+			if field, ok := ch.Path.StringKey(); ok && slices.Contains(keyFields, field) {
+				continue
 			}
-			result.WriteString(key)
 		}
+		*changes = append(*changes, ch)
 	}
-
-	return result.String()
 }
 
-// sliceElement holds a slice element with its key information.
-type sliceElement struct {
-	keyField string
-	keyValue string
-	value    reflect.Value
-}
-
-// validateKeyFuncElementType verifies that the first element type in the sequence
-// is assignable to the expected type. If the sequence is empty, it succeeds.
-func validateKeyFuncElementType(seq reflect.Value, expected reflect.Type) error {
-	if seq.Len() == 0 {
-		return nil
-	}
-	elem := seq.Index(0)
-	if !elem.Type().AssignableTo(expected) {
-		return fmt.Errorf("KeyFunc expects %v, got %v", expected, elem.Type())
-	}
-	return nil
-}
-
-// diffSliceByKey compares two slices using the provided key function.
-// Elements are matched by their (keyField, keyValue) pairs instead of by index.
-// Duplicate keys are allowed and matched in order.
-func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc KeyFunc, changes *[]Change) error {
-	caller, err := newKeyFuncCaller(keyFunc)
-	if err != nil {
-		return err
-	}
-
-	// Validate element types up-front to avoid runtime panics and to return a clear error.
-	if err := validateKeyFuncElementType(v1, caller.argType); err != nil {
-		return err
-	}
-	if err := validateKeyFuncElementType(v2, caller.argType); err != nil {
-		return err
-	}
-
-	// Build lists of elements grouped by key, preserving order within each key
-	elements1 := make(map[string][]sliceElement)
-	elements2 := make(map[string][]sliceElement)
+// diffSliceByKey compares two slices whose element type is a registered keyed slice.
+// Elements are matched by their key value (registry.ElementKey) instead of by index,
+// and addressed as [='value']. Duplicate keys are allowed and matched in order.
+func diffSliceByKey(path *structpath.PathNode, v1, v2 reflect.Value, keyFields []string, changes *[]Change) error {
+	// Build lists of elements grouped by key value, preserving order within each key.
+	elements1 := make(map[string][]reflect.Value)
+	elements2 := make(map[string][]reflect.Value)
 	seen := make(map[string]bool)
 	var orderedKeys []string
 
-	// Build from first slice
-	for i := range v1.Len() {
-		elem := v1.Index(i)
-		keyField, keyValue := caller.call(elem.Interface())
-		elements1[keyValue] = append(elements1[keyValue], sliceElement{keyField: keyField, keyValue: keyValue, value: elem})
-		if !seen[keyValue] {
-			seen[keyValue] = true
-			orderedKeys = append(orderedKeys, keyValue)
+	group := func(v reflect.Value, into map[string][]reflect.Value) {
+		for i := range v.Len() {
+			elem := v.Index(i)
+			key, _ := registry.ElementKey(elem)
+			into[key] = append(into[key], elem)
+			if !seen[key] {
+				seen[key] = true
+				orderedKeys = append(orderedKeys, key)
+			}
 		}
 	}
+	group(v1, elements1)
+	group(v2, elements2)
 
-	// Build from second slice
-	for i := range v2.Len() {
-		elem := v2.Index(i)
-		keyField, keyValue := caller.call(elem.Interface())
-		elements2[keyValue] = append(elements2[keyValue], sliceElement{keyField: keyField, keyValue: keyValue, value: elem})
-		if !seen[keyValue] {
-			seen[keyValue] = true
-			orderedKeys = append(orderedKeys, keyValue)
-		}
-	}
+	for _, key := range orderedKeys {
+		list1 := elements1[key]
+		list2 := elements2[key]
 
-	// Compare elements by key in original order
-	for _, keyValue := range orderedKeys {
-		list1 := elements1[keyValue]
-		list2 := elements2[keyValue]
+		// The element is addressed by value only ([='value']); the key field is omitted,
+		// so both sides render identically even when they carry the same identity under a
+		// different field. Resolution back to an element is the type-aware resolver's job
+		// (structaccess, via the registry).
+		node := structpath.NewKeyValue(path, "", key)
 
-		var keyField string
-		if len(list1) > 0 {
-			keyField = list1[0].keyField
-		} else {
-			keyField = list2[0].keyField
-		}
-
-		// Match elements in order
+		// Match elements in order.
 		minLen := min(len(list1), len(list2))
 		for i := range minLen {
-			node := structpath.NewKeyValue(path, keyField, keyValue)
-			if err := diffValues(ctx, node, list1[i].value, list2[i].value, changes); err != nil {
+			var pairChanges []Change
+			if err := diffValues(node, list1[i], list2[i], &pairChanges); err != nil {
 				return err
 			}
+			appendSkippingKeyFields(changes, pairChanges, node, keyFields)
 		}
 
 		// Handle extra elements in old (deleted)
 		for i := minLen; i < len(list1); i++ {
-			node := structpath.NewKeyValue(path, keyField, keyValue)
-			*changes = append(*changes, Change{Path: node, Old: list1[i].value.Interface(), New: nil})
+			*changes = append(*changes, Change{Path: node, Old: list1[i].Interface(), New: nil})
 		}
 
 		// Handle extra elements in new (added)
 		for i := minLen; i < len(list2); i++ {
-			node := structpath.NewKeyValue(path, keyField, keyValue)
-			*changes = append(*changes, Change{Path: node, Old: nil, New: list2[i].value.Interface()})
+			*changes = append(*changes, Change{Path: node, Old: nil, New: list2[i].Interface()})
 		}
 	}
 	return nil

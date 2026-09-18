@@ -253,6 +253,16 @@ func keyedElementChanges(changes ResourceChanges) (removes, adds []keyedElement)
 		if !ok {
 			continue
 		}
+		// The path addresses the element by value only ([='value']), so the key field
+		// name is not in the path; recover it from the element (the member the registry
+		// recognises as a key field). Renaming needs the name to strip the key when
+		// comparing bodies and to address the key field in the rewrite.
+		if keyField == "" {
+			keyField = mapKeyField(change.Value)
+		}
+		if keyField == "" {
+			continue
+		}
 		element := keyedElement{
 			path:     path,
 			parent:   node.Parent().String(),

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/databricks/cli/libs/structs/registry"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -202,6 +203,20 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 		// Element must be a struct to have fields
 		if elemDeref.Kind() != reflect.Struct {
 			return reflect.Value{}, fmt.Errorf("%s: key-value syntax requires slice elements to be structs, got %s", path.String(), elemDeref.Kind())
+		}
+
+		if key == "" {
+			// Field-agnostic key ([='value']): the key field is not encoded in the path,
+			// so identify the element from its type via the registry — match when value
+			// equals any of the element type's key fields. This is how the same identity
+			// under a different field (e.g. user_name vs service_principal_name) resolves.
+			if matches, ok := registry.ElementHasValue(elemDeref, value); ok {
+				if matches {
+					return elem, nil
+				}
+				continue
+			}
+			return reflect.Value{}, fmt.Errorf("%s: field-agnostic key on unregistered element type %s", path.String(), elemDeref.Type())
 		}
 
 		// Try to get the field value

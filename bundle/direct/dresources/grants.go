@@ -7,10 +7,15 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/structs/registry"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+func init() {
+	registry.Register[catalog.PrivilegeAssignment]("principal")
+}
 
 var grantResourceToSecurableType = map[string]string{
 	"catalogs":                "catalog",
@@ -87,18 +92,6 @@ func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 // no state entry.
 func (*ResourceGrants) IsEmptyState(state *GrantsState) bool {
 	return len(state.EmbeddedSlice) == 0
-}
-
-func grantKey(x catalog.PrivilegeAssignment) (string, string) {
-	return "principal", x.Principal
-}
-
-func (*ResourceGrants) KeyedSlices() map[string]any {
-	// Empty key because EmbeddedSlice appears at the root path of
-	// GrantsState (no "grants" prefix in struct walker paths).
-	return map[string]any{
-		"": grantKey,
-	}
 }
 
 func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, error) {

@@ -8,7 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.shared_field_job
-  tasks[task_key='shared'].max_retries: remove
+  tasks[='shared'].max_retries: remove
 
 
 

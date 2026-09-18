@@ -49,13 +49,13 @@
         ]
       },
       "changes": {
-        "[principal='deco-test-user@databricks.com'].privileges[0]": {
+        "[='deco-test-user@databricks.com'].privileges[0]": {
           "action": "update",
           "old": "CREATE_SCHEMA",
           "new": "USE_CATALOG",
           "remote": "CREATE_SCHEMA"
         },
-        "[principal='deco-test-user@databricks.com'].privileges[1]": {
+        "[='deco-test-user@databricks.com'].privileges[1]": {
           "action": "update",
           "old": "USE_CATALOG",
           "new": "USE_SCHEMA",

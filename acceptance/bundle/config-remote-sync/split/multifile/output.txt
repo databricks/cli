@@ -8,7 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.multifile_job
-  tasks[task_key='from_second_file'].timeout_seconds: add
+  tasks[='from_second_file'].timeout_seconds: add
 
 
 
@@ -37,8 +37,8 @@ Resource: resources.jobs.multifile_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.multifile_job
-  tasks[task_key='in_both_files'].max_retries: replace
-  tasks[task_key='in_both_files'].timeout_seconds: replace
+  tasks[='in_both_files'].max_retries: replace
+  tasks[='in_both_files'].timeout_seconds: replace
 
 
 
@@ -71,7 +71,7 @@ Resource: resources.jobs.multifile_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.multifile_job
-  tasks[task_key='same_field_both_files'].max_retries: replace
+  tasks[='same_field_both_files'].max_retries: replace
 
 
 

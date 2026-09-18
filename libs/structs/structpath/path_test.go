@@ -51,6 +51,13 @@ func TestPathAndPatternNode(t *testing.T) {
 			String:      "[name='foo']",
 			KeyValue:    []string{"name", "foo"},
 		},
+		{
+			name:        "field-agnostic key value",
+			pathNode:    NewKeyValue(nil, "", "foo"),
+			patternNode: NewPatternKeyValue(nil, "", "foo"),
+			String:      "[='foo']",
+			KeyValue:    []string{"", "foo"},
+		},
 
 		// Two node tests
 		{

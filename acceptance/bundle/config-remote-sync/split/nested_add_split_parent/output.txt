@@ -8,8 +8,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.nested_add_job
-  tasks[task_key='mid_new']: add
-  tasks[task_key='zzz_shared'].depends_on[task_key='mid_new']: add
+  tasks[='mid_new']: add
+  tasks[='zzz_shared'].depends_on[='mid_new']: add
 
 
 

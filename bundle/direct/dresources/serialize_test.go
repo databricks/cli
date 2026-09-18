@@ -54,7 +54,7 @@ func assertJSONRoundTrip(t *testing.T, v any, label string) {
 	// ForceSendFields and json:"-" fields, which are intentionally not serialized.
 	// Free-form any fields must be populated with []any/map[string]any (as JSON
 	// decoding yields) so they round-trip to the same concrete type.
-	changes, err := structdiff.GetStructDiff(v, back, nil)
+	changes, err := structdiff.GetStructDiff(v, back)
 	require.NoError(t, err)
 	require.Empty(t, changes, "%s lost %d field(s) in JSON round-trip:%s", label, len(changes), formatChanges(changes))
 }
