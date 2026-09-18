@@ -8,16 +8,10 @@ Created schemas.pipeline_storage
 Files: 0 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
-=== The delete never completes; the capped wait gives up and the create hits the still-deleting table
+=== The delete never completes; the capped wait times out and the recreate fails
 >>> DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=1 errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-capped-postgres-synced-table-[UNIQUE_NAME]/default/files...
-Warn: deploying resources.postgres_synced_tables.my_table: Stopped waiting for synced table to finish deleting, proceeding anyway: timed out: synced table still exists, waiting for deletion to complete
-Error: cannot recreate resources.postgres_synced_tables.my_table: synced table with such id already exists (409 ALREADY_EXISTS)
-
-Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/synced_tables?synced_table_id=lakebase_test_[UNIQUE_NAME].public.trips_synced
-HTTP Status: 409 Conflict
-API error_code: ALREADY_EXISTS
-API message: synced table with such id already exists
+Error: cannot recreate resources.postgres_synced_tables.my_table: waiting after deleting id=synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced: timed out: synced table still exists, waiting for deletion to complete
 
 Files: 0 uploaded, 0 deleted
 

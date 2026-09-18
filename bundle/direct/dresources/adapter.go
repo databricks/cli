@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type (
@@ -674,12 +675,17 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) 
 }
 
 // WaitAfterDelete waits for the resource to be fully removed after DoDelete.
-// If the resource doesn't implement this method, this is a no-op.
+// If the resource doesn't implement this method, this is a no-op. A NotFound error
+// is the outcome the wait is polling for (the resource is gone), so it is treated as
+// success rather than propagated.
 func (a *Adapter) WaitAfterDelete(ctx context.Context, id string) error {
 	if a.waitAfterDelete == nil {
 		return nil // no-op if not implemented
 	}
 	_, err := a.waitAfterDelete.Call(ctx, id)
+	if apierr.IsMissing(err) {
+		return nil
+	}
 	return err
 }
 

@@ -2,14 +2,11 @@ package dresources
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -148,12 +145,10 @@ func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _
 // this GET read the one UC record, waiting for GET to stop returning the table
 // is enough to make the recreate safe.
 //
-// A 404 (gone) or 403 (the caller loses access once the backing table is torn
-// down) means we can proceed; an unexpected error is logged and tolerated. If the
-// poll runs out its timeout without the table disappearing, it gives up and
-// proceeds rather than failing the recreate — a still-incomplete teardown then
-// resurfaces as the create's 409. A cancelled deploy is propagated so it is not
-// mistaken for a completed teardown.
+// The poll surfaces the terminal read error: the framework maps a NotFound to
+// success (the table is finally gone — see Adapter.WaitAfterDelete) and propagates
+// anything else. So a poll timeout, an unexpected backend error, or a cancelled
+// deploy fails the recreate rather than racing the create into a 409.
 //
 // The poll runs up to deleteSyncedTableTimeout, shortened to RESOURCE_MAX_WAIT when
 // that is smaller. The engine resolves that env var once and passes it via context
@@ -167,21 +162,10 @@ func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id st
 
 	_, err := retries.Poll[struct{}](ctx, timeout, func() (*struct{}, *retries.Err) {
 		_, getErr := r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: id})
-		switch {
-		case getErr == nil:
-			return nil, retries.Continues("synced table still exists, waiting for deletion to complete")
-		case errors.Is(getErr, apierr.ErrResourceDoesNotExist), errors.Is(getErr, apierr.ErrNotFound), errors.Is(getErr, apierr.ErrPermissionDenied):
-			return &struct{}{}, nil
-		default:
+		if getErr != nil {
 			return nil, retries.Halt(getErr)
 		}
+		return nil, retries.Continues("synced table still exists, waiting for deletion to complete")
 	})
-	// A cancelled deploy (ctx.Err() != nil) propagates. Anything else — a poll timeout or
-	// an unexpected backend error — stops the wait but does not fail the recreate: a
-	// still-incomplete teardown resurfaces as the create's 409, a clearer place to report it.
-	if err != nil && ctx.Err() == nil {
-		log.Warnf(ctx, "Stopped waiting for synced table to finish deleting, proceeding anyway: %s", err)
-		return nil
-	}
 	return err
 }

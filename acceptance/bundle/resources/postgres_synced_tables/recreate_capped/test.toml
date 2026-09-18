@@ -1,9 +1,8 @@
 # Local-only, direct-only: exercises the DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT cap on the
 # synced-table recreate delete-wait. INJECT_STALE_ON_DIRECT makes the testserver's synced
 # table deletion never complete (it stays DELETING), so the post-delete poll would wait
-# forever; capping it to 1s makes the wait give up, and the follow-up create then races
-# the still-deleting table and fails with 409 ALREADY_EXISTS. Verifies the give-up warning
-# is rendered.
+# forever; capping it to 1s makes the wait time out, which fails the recreate. Verifies
+# the cap and the resulting error are rendered.
 # Not run on cloud (would need a real source table) or on terraform (recreates without
 # polling — the flag is direct-only). The recreate itself is covered against a real
 # workspace by ../recreate.
