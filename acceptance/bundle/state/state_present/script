@@ -8,9 +8,9 @@ echo '{"version": 4, "serial": 1, "lineage": "test-lineage"}' > .databricks/bund
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'terraform' 'tf-provider' '!direct'
 
-# An empty env var defaults to direct, which migrates the terraform state in memory (no commit), so plan runs on direct.
+# An empty env var still reads the engine off the state, so plan runs on terraform.
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
-trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
+trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'terraform' 'tf-provider' '!direct'
 
 title 'Adding resources.json with lower serial does not change anything'
 rm .databricks/bundle/default/terraform/terraform.tfstate
@@ -31,9 +31,9 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle destroy --auto-approve
 
 rm "$OUT_REQUESTS"
 # The destroy above ran on the higher-serial direct state and removed it, leaving only
-# the terraform state the deploy created. This deploy migrates it to direct and commits, so it runs on direct.
+# the terraform state the deploy created, so this deploy runs on terraform and migrates.
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
-trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
+trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'terraform' 'tf-provider' '!engine/direct'
 trace print_state.py | jq .serial | contains.py "7"
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy

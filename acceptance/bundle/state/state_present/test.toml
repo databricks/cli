@@ -4,5 +4,3 @@ EnvMatrix.DMS = [""]
 
 RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
-
-Ignore = [".databricks"]
