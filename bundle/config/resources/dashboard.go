@@ -78,6 +78,7 @@ func (c DashboardConfig) MarshalJSON() ([]byte, error) {
 
 type Dashboard struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	DashboardConfig
 
 	Permissions []Permission `json:"permissions,omitempty"`
