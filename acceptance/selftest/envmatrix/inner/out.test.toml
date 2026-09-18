@@ -1,6 +1,6 @@
 Cloud = false
 EnvMatrix.B_REGULAR_VAR = ["hello"]
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.FIRST = ["one111", "two222"]
 EnvMatrix.SECOND = ["variantA", "variantB"]
 EnvMatrix.THIRD = ["three $FIRST"]

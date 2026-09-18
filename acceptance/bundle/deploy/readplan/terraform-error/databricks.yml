@@ -1,7 +1,0 @@
-bundle:
-  name: test-bundle
-
-resources:
-  jobs:
-    job:
-      name: test-job
