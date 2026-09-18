@@ -5,12 +5,13 @@ resources:
   pipelines:
     foo:
       name: test-pipeline-$UNIQUE_NAME
-      catalog: main
+      # channel/edition are stored by the backend in canonical upper case and catalog in
+      # lower case. Declaring them in a different case here must still converge
+      # (normalize_case), otherwise every deploy replays an update -- which cancels a
+      # continuous pipeline's running update.
+      catalog: MAIN
       target: test_schema_$UNIQUE_NAME
       continuous: true
-      # channel and edition are stored by the backend in canonical upper case. Declaring
-      # them in a different case here must still converge (normalize_case), otherwise every
-      # deploy replays an update -- which cancels a continuous pipeline's running update.
       channel: current
       edition: pro
       libraries:
