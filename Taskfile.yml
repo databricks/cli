@@ -286,6 +286,11 @@ tasks:
     cmds:
       - "uv run --script tools/validate_nextchanges.py"
 
+  check-codeowners:
+    desc: Check that CLI maintainers are the first owner on every CODEOWNERS rule
+    cmds:
+      - 'uv run -p ">=3.11" --no-project python tools/validate_codeowners.py'
+
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
     env:
@@ -324,7 +329,7 @@ tasks:
       - "uv run --script tools/validate_agents_setup.py"
 
   checks:
-    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles, agent setup)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, codeowners, lockfiles, agent setup)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with the whitespace scanner.
     cmds:
@@ -332,6 +337,7 @@ tasks:
       - task: ws
       - task: deadcode
       - task: check-changelog
+      - task: check-codeowners
       - task: check-lockfiles
       - task: check-agents-setup
 
