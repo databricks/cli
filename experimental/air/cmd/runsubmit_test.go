@@ -455,8 +455,8 @@ environment:
 	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
 }
 
-// A working-tree code_source is packaged into a tarball, uploaded via DABs' artifact
-// plumbing, and its remote code_source_path attached to the submitted task.
+// A working-tree code_source is packaged into a tarball, uploaded via libs/filer,
+// and its remote code_source_path attached to the submitted task.
 func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -491,7 +491,7 @@ code_source:
 	loaded, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	// The DABs upload path logs via cmdio; the real `air run` context carries it.
+	// The upload path logs via cmdio; the real `air run` context carries it.
 	ctx := cmdio.MockDiscard(t.Context())
 	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
@@ -504,8 +504,8 @@ code_source:
 	assert.Equal(t, int32(1), meCalls.Load(), "code-source submission should resolve the workspace base once")
 }
 
-// A git-pinned code_source is git-archived at the commit, uploaded via DABs' artifact
-// plumbing, and its remote code_source_path attached to the submitted task.
+// A git-pinned code_source is git-archived at the commit, uploaded via libs/filer,
+// and its remote code_source_path attached to the submitted task.
 func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -633,7 +633,7 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 	})
 	// Track which snapshot tarballs get uploaded, preserving fake-workspace
 	// persistence so the second submit's cache-existence Stat sees the first upload.
-	// Dedupe by path: the DABs uploader mkdirs-and-retries the import on a missing
+	// Dedupe by path: the filer mkdirs-and-retries the import on a missing
 	// parent dir, so one logical upload can hit this route more than once.
 	uploaded := map[string]bool{}
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
@@ -722,8 +722,8 @@ code_source:
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-// remote_volume uploads the snapshot to a UC Volume: DABs' artifact uploader handles
-// /Volumes destinations natively, so code_source_path lands under the Volume path.
+// remote_volume uploads the snapshot to a UC Volume: snapshotUploadFiler routes
+// /Volumes destinations to a Files API filer, so code_source_path lands under the Volume path.
 func TestSubmitWorkloadWithRemoteVolumeCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)

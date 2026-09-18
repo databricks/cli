@@ -336,9 +336,9 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		return 0, "", err
 	}
 
-	// Package and upload the code snapshot, if any, via DABs' artifact-upload
-	// plumbing; the remote code_source_path rides the ai_runtime_task. A run with no
-	// code_source leaves it empty. Snapshot is the only code_source type.
+	// Package and upload the code snapshot, if any; the remote code_source_path
+	// rides the ai_runtime_task. A run with no code_source leaves it empty.
+	// Snapshot is the only code_source type.
 	var stageSnapshot func(context.Context) (snapshotResult, error)
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 		// Default snapshot tarballs land in the user's shared repo_snapshots dir;
