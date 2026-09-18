@@ -88,6 +88,42 @@ func TestBuildGrantChanges(t *testing.T) {
 				},
 			},
 		},
+		{
+			// Removing a principal that holds MANAGE: ALL_PRIVILEGES removal clears
+			// everything it implies, and MANAGE (which it does not imply) is revoked
+			// by name so the principal is fully removed instead of lingering.
+			name: "revokes excluded privilege of a removed principal",
+			remote: map[string][]catalog.Privilege{
+				"alice": {catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+			},
+			expected: []catalog.PermissionsChange{
+				{
+					Principal: "alice",
+					Remove:    []catalog.Privilege{catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+				},
+			},
+		},
+		{
+			// Downgrading a principal off ALL_PRIVILEGES: MANAGE must be revoked by
+			// name too, since removing ALL_PRIVILEGES does not clear it.
+			name: "revokes excluded privilege when downgrading off ALL_PRIVILEGES",
+			desired: []catalog.PrivilegeAssignment{
+				{
+					Principal:  "alice",
+					Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
+				},
+			},
+			remote: map[string][]catalog.Privilege{
+				"alice": {catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+			},
+			expected: []catalog.PermissionsChange{
+				{
+					Principal: "alice",
+					Add:       []catalog.Privilege{catalog.PrivilegeSelect},
+					Remove:    []catalog.Privilege{catalog.PrivilegeAllPrivileges, catalog.PrivilegeManage},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

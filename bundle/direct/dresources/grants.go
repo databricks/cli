@@ -153,24 +153,12 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, remote 
 	desiredPrincipals := make(map[string]struct{}, len(desiredAssignments))
 	for _, ga := range desiredAssignments {
 		desiredPrincipals[ga.Principal] = struct{}{}
-		change := catalog.PermissionsChange{
+		changes = append(changes, catalog.PermissionsChange{
 			Principal:       ga.Principal,
 			Add:             ga.Privileges,
-			Remove:          nil,
+			Remove:          grantRemovals(ga.Privileges, remote[ga.Principal]),
 			ForceSendFields: nil,
-		}
-		if slices.Contains(ga.Privileges, catalog.PrivilegeAllPrivileges) {
-			// ALL_PRIVILEGES cannot also appear in Remove (the backend rejects the
-			// duplicate), and removing it would not clear the privileges it does not
-			// imply anyway, so revoke by name the excluded privileges the principal
-			// still holds remotely but no longer wants.
-			change.Remove = revokedExcludedPrivileges(ga.Privileges, remote[ga.Principal])
-		} else {
-			// Removing ALL_PRIVILEGES clears every privilege the principal holds, so
-			// re-adding the desired set above reconciles it to exactly the config.
-			change.Remove = []catalog.Privilege{catalog.PrivilegeAllPrivileges}
-		}
-		changes = append(changes, change)
+		})
 	}
 
 	// Principals present remotely but no longer desired: revoke everything.
@@ -185,16 +173,30 @@ func buildGrantChanges(desiredAssignments []catalog.PrivilegeAssignment, remote 
 		changes = append(changes, catalog.PermissionsChange{
 			Principal:       principal,
 			Add:             nil,
-			Remove:          []catalog.Privilege{catalog.PrivilegeAllPrivileges},
+			Remove:          grantRemovals(nil, remote[principal]),
 			ForceSendFields: nil,
 		})
 	}
 	return changes
 }
 
+// grantRemovals returns the privileges to revoke for a principal so the backend
+// converges to desired. When ALL_PRIVILEGES stays desired it must not appear in
+// Remove (the backend rejects the same privilege in Add and Remove), so only the
+// no-longer-wanted excluded privileges are revoked. Otherwise ALL_PRIVILEGES is
+// removed to clear everything it implies, plus the excluded privileges by name
+// because ALL_PRIVILEGES does not imply them and its removal would leave them behind.
+func grantRemovals(desired, remotePrivileges []catalog.Privilege) []catalog.Privilege {
+	remove := revokedExcludedPrivileges(desired, remotePrivileges)
+	if slices.Contains(desired, catalog.PrivilegeAllPrivileges) {
+		return remove
+	}
+	return append([]catalog.Privilege{catalog.PrivilegeAllPrivileges}, remove...)
+}
+
 // revokedExcludedPrivileges returns the privileges not implied by ALL_PRIVILEGES
 // (see allPrivilegesExcludes) that the principal holds remotely but no longer
-// desires, so they can be revoked by name alongside a (re)granted ALL_PRIVILEGES.
+// desires, so they can be revoked by name.
 func revokedExcludedPrivileges(desired, remotePrivileges []catalog.Privilege) []catalog.Privilege {
 	var remove []catalog.Privilege
 	for _, p := range allPrivilegesExcludes {
