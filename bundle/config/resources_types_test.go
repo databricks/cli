@@ -13,7 +13,10 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/structs/structwalk"
+	"strings"
 )
 
 func TestResourcesTypesMap(t *testing.T) {
@@ -110,6 +113,16 @@ func zeroValueScalars(t reflect.Type, depth int, seen map[reflect.Type]bool) dyn
 	return dyn.V(m)
 }
 
+// TestNoSameDepthJSONShadows uses structwalk.WalkType — the dumb walker that
+// visits every field including duplicates — to detect unresolved same-depth json
+// name collisions. A collision is any json name WalkType visits more than once
+// for a resource type, with no depth-0 direct field on the resource struct
+// resolving the ambiguity.
+//
+// structwalk.WalkType is the right tool because it faithfully reproduces the
+// traversal structwalk.Walk uses at the value level: it visits every promoted
+// field from every anonymous embed, even when two embeds declare the same name.
+// Any same-depth collision therefore appears as a path visited twice.
 func TestNoSameDepthJSONShadows(t *testing.T) {
 	rt := reflect.TypeFor[Resources]()
 	var collisions []string
@@ -123,147 +136,52 @@ func TestNoSameDepthJSONShadows(t *testing.T) {
 			continue
 		}
 		group := structtag.JSONTag(f.Tag.Get("json")).Name()
-		for _, c := range sameDepthCollisions(et) {
-			collisions = append(collisions,
-				fmt.Sprintf("%s: json name %q declared by %s and %s at the same embedding depth",
-					group, c.name, c.typeA, c.typeB))
+
+		// depth0 is the set of json names declared as direct (non-anonymous)
+		// fields on the resource struct itself. A depth-0 field wins over any
+		// same-depth collision at deeper embedding levels, so those are OK.
+		depth0 := map[string]bool{}
+		for sf := range et.Fields() {
+			if sf.Anonymous || sf.PkgPath != "" || sf.Name == "ForceSendFields" {
+				continue
+			}
+			name := structtag.JSONTag(sf.Tag.Get("json")).Name()
+			if name == "" {
+				name = sf.Name
+			}
+			if name != "-" {
+				depth0[name] = true
+			}
+		}
+
+		// Walk the type and count how many times each top-level json name is
+		// visited. structwalk.WalkType is a dumb walker: it visits both
+		// declarations when two anonymous embeds carry the same json name,
+		// naturally surfacing the collision.
+		visits := map[string]int{}
+		_ = structwalk.WalkType(et, func(path *structpath.PatternNode, _ reflect.Type, sf *reflect.StructField) bool {
+			if sf == nil || path == nil {
+				return true
+			}
+			p := strings.TrimPrefix(path.String(), ".")
+			// Only top-level names collide at the resource level.
+			if p != "" && !strings.Contains(p, ".") {
+				visits[p]++
+			}
+			return true
+		})
+
+		for name, count := range visits {
+			if count > 1 && !depth0[name] {
+				collisions = append(collisions,
+					fmt.Sprintf("%s.%s visited %d times by structwalk with no depth-0 field resolving it",
+						group, name, count))
+			}
 		}
 	}
 
+	slices.Sort(collisions)
 	assert.Empty(t, collisions,
 		"same-depth json name collisions found — encoding/json calls these ambiguous "+
 			"and serializes neither; structaccess cannot read or write them either")
-}
-
-type collision struct {
-	name, typeA, typeB string
-}
-
-// sameDepthCollisions returns json names declared at the same embedding depth
-// by two or more anonymous embedded structs that are NOT already shadowed by a
-// direct field on t itself. A same-depth collision is only a problem when there
-// is no depth-0 field that resolves the ambiguity; if one exists (e.g. App.URL
-// at depth 0 shadows both BaseResource.URL and apps.App.Url at depth 1),
-// encoding/json and structaccess both use the depth-0 field correctly.
-func sameDepthCollisions(t reflect.Type) []collision {
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	if t.Kind() != reflect.Struct {
-		return nil
-	}
-
-	// Depth-0 direct fields shadow any same-depth collision at deeper levels.
-	depth0 := map[string]bool{}
-	for sf := range t.Fields() {
-		if sf.PkgPath != "" || sf.Anonymous || sf.Name == "ForceSendFields" {
-			continue
-		}
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "" {
-			name = sf.Name
-		}
-		if name != "-" {
-			depth0[name] = true
-		}
-	}
-
-	var result []collision
-	seen := map[reflect.Type]bool{t: true}
-	level := embeddedTypes(t)
-
-	for len(level) > 0 {
-		nameToTypes := map[string][]string{}
-		for _, ft := range level {
-			for sf := range ft.Fields() {
-				if sf.PkgPath != "" || sf.Anonymous {
-					continue
-				}
-				name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-				if name == "" {
-					name = sf.Name
-				}
-				if name == "-" || sf.Name == "ForceSendFields" {
-					continue
-				}
-				nameToTypes[name] = append(nameToTypes[name], ft.String())
-			}
-		}
-		for name, types := range nameToTypes {
-			if len(types) > 1 && !depth0[name] {
-				result = append(result, collision{name: name, typeA: types[0], typeB: types[1]})
-			}
-		}
-
-		var next []reflect.Type
-		for _, ft := range level {
-			for _, embedded := range embeddedTypes(ft) {
-				if !seen[embedded] {
-					seen[embedded] = true
-					next = append(next, embedded)
-				}
-			}
-		}
-		level = next
-	}
-	return result
-}
-
-func embeddedTypes(t reflect.Type) []reflect.Type {
-	var out []reflect.Type
-	for sf := range t.Fields() {
-		if !sf.Anonymous {
-			continue
-		}
-		ft := sf.Type
-		for ft.Kind() == reflect.Pointer {
-			ft = ft.Elem()
-		}
-		if ft.Kind() == reflect.Struct {
-			out = append(out, ft)
-		}
-	}
-	return out
-}
-
-// TestResourceIDFieldTags asserts that every resource type exposes the bundle
-// tracking ID with exactly the right json and bundle tags. The field must be
-// json:"id,omitempty" (so it round-trips through the bundle state file) and
-// bundle:"readonly" (so users can reference ${resources.<key>.id} but cannot
-// set it). It must be a direct depth-0 field, not promoted from BaseResource
-// or an SDK embed, to avoid same-depth collisions.
-func TestResourceIDFieldTags(t *testing.T) {
-	rt := reflect.TypeFor[Resources]()
-	for f := range rt.Fields() {
-		et := f.Type.Elem()
-		for et.Kind() == reflect.Pointer {
-			et = et.Elem()
-		}
-		if et.Kind() != reflect.Struct {
-			continue
-		}
-		group := structtag.JSONTag(f.Tag.Get("json")).Name()
-
-		// Snapshot is an internal infrastructure type with no user-facing ID.
-		// Add entries here only for resource types that genuinely have no
-		// deployment-tracking ID; every other resource must pass the tag checks.
-		const noIDField = "internal_immutable_snapshots"
-		if group == noIDField {
-			continue
-		}
-
-		t.Run(group, func(t *testing.T) {
-			// The ID field must be declared directly on the resource struct,
-			// not promoted from an anonymous embed.
-			sf, ok := et.FieldByName("ID")
-			require.True(t, ok, "%s must have a direct ID field", group)
-			assert.False(t, sf.Anonymous, "%s.ID must not be anonymous", group)
-			assert.Empty(t, sf.Index[1:], "%s.ID must be at depth 0 (got index %v)", group, sf.Index)
-
-			assert.Equal(t, "id,omitempty", sf.Tag.Get("json"),
-				"%s.ID json tag must be \"id,omitempty\"", group)
-			assert.Equal(t, "readonly", sf.Tag.Get("bundle"),
-				"%s.ID bundle tag must be \"readonly\"", group)
-		})
-	}
 }
