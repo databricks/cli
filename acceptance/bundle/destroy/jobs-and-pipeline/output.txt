@@ -74,7 +74,7 @@ Exit code: 1
 
 === Assert destroy leaves the bundle state dir clean:
 
->>> find .databricks -name terraform -prune -o -print
+>>> find.py --include-dirs --prune terraform$ ^\.databricks(/|$)
 .databricks
 .databricks/.gitignore
 .databricks/bundle

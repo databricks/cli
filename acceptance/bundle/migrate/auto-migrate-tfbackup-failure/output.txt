@@ -24,9 +24,9 @@ direct_migrate_commit_error true
 
 === Local state was NOT rewritten (still terraform)
 
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py ^\.databricks/bundle/.*resources\.json$
 
->>> find .databricks/bundle -name terraform.tfstate* -type f
+>>> find.py ^\.databricks/bundle/.*terraform\.tfstate
 .databricks/bundle/default/terraform/terraform.tfstate
 
 === Retry recovers: subsequent deploy re-does the backup and completes
@@ -39,8 +39,8 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Local state is now direct
 
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py ^\.databricks/bundle/.*resources\.json$
 .databricks/bundle/default/resources.json
 
->>> find .databricks/bundle -name terraform.tfstate* -type f
+>>> find.py ^\.databricks/bundle/.*terraform\.tfstate
 .databricks/bundle/default/terraform/terraform.tfstate

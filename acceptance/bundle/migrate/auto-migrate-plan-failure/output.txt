@@ -30,9 +30,9 @@ Warn: Direct engine was selected but the migration reported issues; automatic mi
 direct_migrate_plan_error true
 
 === Local state was NOT rewritten (still terraform)
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py ^\.databricks/bundle/.*resources\.json$
 
->>> find .databricks/bundle -name terraform.tfstate* -type f
+>>> find.py ^\.databricks/bundle/.*terraform\.tfstate
 .databricks/bundle/default/terraform/terraform.tfstate
 
 === Retry: plan check passes this time, migration succeeds
@@ -48,8 +48,8 @@ Migrated 1 resource to direct deployment engine.
 direct_migrated_via_env true
 
 === Local state is now direct
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py ^\.databricks/bundle/.*resources\.json$
 .databricks/bundle/default/resources.json
 
->>> find .databricks/bundle -name terraform.tfstate* -type f
+>>> find.py ^\.databricks/bundle/.*terraform\.tfstate
 .databricks/bundle/default/terraform/terraform.tfstate.backup
