@@ -1,0 +1,17 @@
+Ignore = [
+  "home",
+]
+RecordRequests = true
+IncludeRequestHeaders = ["X-Databricks-Workspace-Id"]
+
+[[Server]]
+Pattern = "GET /api/2.0/ai-compute-manager/compute-options"
+Response.Body = '''
+{
+  "compute_options": [
+    {"hardware_accelerator": "GPU_1xA10", "display_name": "1x A10", "multi_node_supported": true},
+    {"hardware_accelerator": "GPU_8xH100", "display_name": "8x H100", "multi_node_supported": true},
+    {"hardware_accelerator": "GPU_8xB300", "display_name": "8x B300", "multi_node_supported": true}
+  ]
+}
+'''
