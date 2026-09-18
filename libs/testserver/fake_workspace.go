@@ -44,7 +44,9 @@ const (
 	// itself a service principal.
 	GuestServicePrincipalTokenPrefix = "dbapi2"
 	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
-	// consistency: the first GET after a create returns 404 (not yet visible).
+	// consistency / propagation delays: the first GET after a create returns 404
+	// (not yet visible), and a deleted synced table stays in DELETING instead of
+	// disappearing (so the direct engine's post-delete poll has a teardown to wait out).
 	EventualConsistencyTokenPrefix = "dbapi3"
 	UserID                         = "1000012345"
 	TestDefaultClusterId           = "0123-456789-cluster0"
@@ -174,6 +176,13 @@ type FakeWorkspace struct {
 	mu                 sync.Mutex
 	url                string
 	isServicePrincipal bool
+
+	// eventualConsistency simulates propagation delays (see EventualConsistencyTokenPrefix).
+	// For synced tables it makes deletion slow: a deleted table stays in DELETING and keeps
+	// being returned by GET, so the direct engine's post-delete poll (WaitAfterDelete) has a
+	// real teardown to wait out. Off by default, so the default path and terraform (which
+	// recreates without polling) keep immediate deletion.
+	eventualConsistency bool
 
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
@@ -423,9 +432,11 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 }
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
+	eventualConsistency := strings.HasPrefix(token, EventualConsistencyTokenPrefix)
 	return &FakeWorkspace{
-		url:                url,
-		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		url:                 url,
+		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		eventualConsistency: eventualConsistency,
 		directories: map[string]workspace.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
@@ -486,7 +497,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		McpServices:           map[string]catalog.McpService{},
 		ModelProviderServices: map[string]catalog.ModelProviderService{},
 		Volumes:               map[string]catalog.VolumeInfo{},
-		Dashboards:            NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
+		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
 		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
 		GenieSpaces:           map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
