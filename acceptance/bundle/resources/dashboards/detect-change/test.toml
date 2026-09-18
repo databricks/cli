@@ -3,7 +3,7 @@ Cloud = true
 Ignore = [
     "databricks.yml",
     "plan_raw.terraform.json",
-    "plan_raw.direct.json",
+    "plan_raw.json",
 ]
 
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to

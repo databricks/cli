@@ -3,7 +3,6 @@
 # in the full cloud sweep). Output is projected to the policy tag so it is cloud-portable.
 Cloud = true
 CloudSlow = true
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 RecordRequests = false
 

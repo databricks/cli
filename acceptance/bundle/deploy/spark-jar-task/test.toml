@@ -1,5 +1,4 @@
 Cloud = true
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 
 Ignore = [
     'myjar/PrintArgs.jar',

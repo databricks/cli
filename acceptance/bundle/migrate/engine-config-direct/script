@@ -1,2 +1,0 @@
-# engine: direct is allowed; fails at "no state" not at engine check
-trace musterr $CLI bundle deployment migrate

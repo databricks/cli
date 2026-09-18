@@ -14,7 +14,7 @@ print_requests() {
     # is the assertion that the wait actually fired.
     # --unique collapses the repeated identical poll GETs (one on the testserver,
     # many on a real workspace that provisions asynchronously) to a stable count.
-    trace print_requests.py --get --unique '//vector-search/indexes' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    trace print_requests.py --get --unique '//vector-search/indexes' > out.requests.${name}.json
     rm -f "$OUT_REQUESTS"
 }
 

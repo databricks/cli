@@ -1,2 +1,0 @@
-RecordRequests = true
-IncludeRequestHeaders = ["User-Agent"]

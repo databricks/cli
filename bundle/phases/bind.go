@@ -33,14 +33,18 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, st
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
-	if engine.IsDirect() {
+	if !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
+		return
+	}
+
+	{
 		if stateDesc.IsDMS() {
 			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
 			return
 		}
 
 		// Direct engine: import into temp state, run plan, check for changes
-		// This follows the same pattern as terraform import
 		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
 		if !ok {
 			groupName = opts.ResourceType
@@ -98,17 +102,6 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, st
 			logdiag.LogError(ctx, err)
 			return
 		}
-	} else {
-		// Terraform engine: use terraform import
-		bundle.ApplySeqContext(
-			ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Import(opts),
-		)
-		if logdiag.HasError(ctx) {
-			return
-		}
 	}
 
 	statemgmt.PushResourcesState(ctx, b, engine)
@@ -135,28 +128,21 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
-	if engine.IsDirect() {
-		groupName, ok := terraform.TerraformToGroupName[tfResourceType]
-		if !ok {
-			groupName = tfResourceType
-		}
-		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
-		_, statePath := b.StateFilenameDirect(ctx)
-		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	} else {
-		bundle.ApplySeqContext(
-			ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Unbind(bundleType, tfResourceType, resourceKey),
-		)
-		if logdiag.HasError(ctx) {
-			return
-		}
+	if !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
+		return
+	}
+
+	groupName, ok := terraform.TerraformToGroupName[tfResourceType]
+	if !ok {
+		groupName = tfResourceType
+	}
+	fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
+	_, statePath := b.StateFilenameDirect(ctx)
+	err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	statemgmt.PushResourcesState(ctx, b, engine)

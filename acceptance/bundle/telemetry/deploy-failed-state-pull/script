@@ -7,7 +7,7 @@ cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .b
 # state_engine is engine-specific, so capture it per-engine. state_file_size_bytes is
 # dropped: it is os.Stat of the (committed) resources.json, whose byte count can shift
 # with line-ending conversion across platforms.
-cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata | if . then del(.state_file_size_bytes) else . end' > out.resources_metadata.$DATABRICKS_BUNDLE_ENGINE.txt
+cat telemetry.json | jq '.entry.databricks_cli_log.bundle_deploy_event.resources_metadata | if . then del(.state_file_size_bytes) else . end' > out.resources_metadata.txt
 
 rm "$OUT_REQUESTS"
 rm telemetry.json

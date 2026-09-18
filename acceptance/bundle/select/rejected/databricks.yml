@@ -1,7 +1,0 @@
-bundle:
-  name: select-rejected
-
-resources:
-  jobs:
-    my_job:
-      name: my-job

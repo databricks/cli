@@ -1,4 +1,3 @@
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [[Repls]]
 Old = 'uv uv \S+(?: \([^)]+\))?'

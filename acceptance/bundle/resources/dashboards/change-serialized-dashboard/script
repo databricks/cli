@@ -36,9 +36,7 @@ add_repl "$dashboard_id" DASHBOARD_ID
 # serialized_dashboard is stored in direct-engine state as a content hash, not the full JSON
 # (terraform stores it verbatim), so this check is direct-only. The full content still reached
 # the API (out.post.requests.txt) and stays in the plan's new_state.
-if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
-    print_state.py | gron.py | grep serialized_dashboard > out.state.direct.txt
-fi
+print_state.py | gron.py | grep serialized_dashboard > out.state.txt
 
 # No-op re-plan: the hash in state compares equal to the config, so the stored hash does not
 # produce a phantom serialized_dashboard update.
@@ -49,9 +47,7 @@ export PAGE_NAME="name2"
 deploy_dashboard
 
 # The edit changes the content, so state holds the new hash (direct-only, as above).
-if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
-    print_state.py | gron.py | grep serialized_dashboard > out.state_after_update.direct.txt
-fi
+print_state.py | gron.py | grep serialized_dashboard > out.state_after_update.txt
 
 # Print API requests made to create parent_path or create / update the dashboard.
 # Terraform serialized OUTPUT_ONLY fields in the request body while direct does not.
@@ -61,7 +57,7 @@ cat "$OUT_REQUESTS" | \
  jq 'select(.method == "PATCH")' | \
  jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' | \
  sed 's/\\r\\n/\\n/g' \
- > out.patch.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+ > out.patch.requests.txt
 
 cat "$OUT_REQUESTS" | \
  jq 'select(.method == "POST")' | \

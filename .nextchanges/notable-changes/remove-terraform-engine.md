@@ -1,0 +1,1 @@
+* Remove the Terraform deployment engine. Bundles pinning `engine: terraform` (or `DATABRICKS_BUNDLE_ENGINE=terraform`) now error and should either move to the direct engine or downgrade to CLI v1.18.x. ([#6746](https://github.com/databricks/cli/pull/6746))

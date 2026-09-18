@@ -10,4 +10,3 @@ Ignore = [".databricks", ".ssh"]
 # test — when they did, they raced each other writing to the same
 # ~/.databricks/sandbox.json file. An empty list would run once locally
 # but on both direct and terraform CI runners, defeating the point.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

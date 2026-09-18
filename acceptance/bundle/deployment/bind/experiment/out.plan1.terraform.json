@@ -1,8 +1,0 @@
-{
-  "plan": {
-    "resources.experiments.experiment1": {
-      "action": "skip",
-      "name_change": null
-    }
-  }
-}

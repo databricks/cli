@@ -28,39 +28,36 @@ Selected 2 changed tests (limit=50, 0 not selected)
 === Touching an invariant config runs every invariant test, for that config only
 
 >>> selection M:acceptance/bundle/invariant/configs/job.yml.tmpl
-Selected 5 changed tests (limit=50, 0 not selected)
-    5  ^bundle$/^invariant$/^continue_293$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^delete_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^destroy_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^migrate$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=true$/^INPUT_CONFIG=job\.yml\.tmpl$
+Selected 4 changed tests (limit=50, 0 not selected)
+    5  ^bundle$/^invariant$/^continue_293$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^delete_idempotent$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^destroy_idempotent$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^no_drift$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^no_drift$/^DMS=true$/^INPUT_CONFIG=job\.yml\.tmpl$
 
 === Adding one invariant config and touching another: only the new variant is new
 
 >>> selection A:acceptance/bundle/invariant/configs/pipeline.yml.tmpl M:acceptance/bundle/invariant/configs/job.yml.tmpl
-Selected 10 changed tests (limit=50, 0 not selected)
-   10  ^bundle$/^invariant$/^continue_293$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
-   10  ^bundle$/^invariant$/^delete_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
-   10  ^bundle$/^invariant$/^destroy_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
-   10  ^bundle$/^invariant$/^migrate$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
-   10  ^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
-   10  ^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=true$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^continue_293$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^delete_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^destroy_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^migrate$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=true$/^INPUT_CONFIG=job\.yml\.tmpl$
+Selected 8 changed tests (limit=50, 0 not selected)
+   10  ^bundle$/^invariant$/^continue_293$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
+   10  ^bundle$/^invariant$/^delete_idempotent$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
+   10  ^bundle$/^invariant$/^destroy_idempotent$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
+   10  ^bundle$/^invariant$/^no_drift$/^DMS=$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
+   10  ^bundle$/^invariant$/^no_drift$/^DMS=true$/^INPUT_CONFIG=pipeline\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^continue_293$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^delete_idempotent$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^destroy_idempotent$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^no_drift$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^no_drift$/^DMS=true$/^INPUT_CONFIG=job\.yml\.tmpl$
 
 === A config an invariant test excludes does not select that test
 
 >>> selection M:acceptance/bundle/invariant/configs/vector_search_index.yml.tmpl
 Selected 3 changed tests (limit=50, 0 not selected)
-    5  ^bundle$/^invariant$/^delete_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=vector_search_index\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^destroy_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=vector_search_index\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=vector_search_index\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^no_drift$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=true$/^INPUT_CONFIG=vector_search_index\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^delete_idempotent$/^DMS=$/^INPUT_CONFIG=vector_search_index\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^destroy_idempotent$/^DMS=$/^INPUT_CONFIG=vector_search_index\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^no_drift$/^DMS=$/^INPUT_CONFIG=vector_search_index\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^no_drift$/^DMS=true$/^INPUT_CONFIG=vector_search_index\.yml\.tmpl$
 
 === Renaming a fixture out of a test selects the test that lost it
 
@@ -71,7 +68,7 @@ Selected 1 changed tests (limit=50, 0 not selected)
 === The limit keeps the highest scoring tests
 
 >>> selection -limit 3 A:acceptance/selftest/basic/script M:acceptance/selftest/diff/script M:acceptance/bundle/invariant/configs/job.yml.tmpl
-Selected 3 changed tests (limit=3, 4 not selected)
+Selected 3 changed tests (limit=3, 3 not selected)
    10  ^selftest$/^basic$
-    5  ^bundle$/^invariant$/^continue_293$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
-    5  ^bundle$/^invariant$/^delete_idempotent$/^DATABRICKS_BUNDLE_ENGINE=direct$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^continue_293$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$
+    5  ^bundle$/^invariant$/^delete_idempotent$/^DMS=$/^INPUT_CONFIG=job\.yml\.tmpl$

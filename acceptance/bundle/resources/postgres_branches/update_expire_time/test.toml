@@ -1,6 +1,6 @@
 # expire_time, ttl and no_expiry are three sides of one oneof, and the API accepts them
 # in update_mask only under the group name spec.expiration. Both engines apply the change;
-# out.requests.direct.json records the group mask the direct engine now sends.
+# out.requests.json records the group mask the direct engine now sends.
 
 
 # Local only: a real workspace caps how far ahead a branch may expire and answers

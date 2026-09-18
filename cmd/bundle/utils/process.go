@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -234,23 +235,23 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// it even when the deploy fails or is cancelled before deployCore runs.
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 
-		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
-
-		// Announce the auto-migration path here (only on deploy) so the user
-		// isn't surprised when MigrateToDirect commits state changes at the
-		// end. PullResourcesState is shared with non-deploy commands like
-		// `bundle debug states`, which would otherwise print the same hint
-		// even though they will not migrate.
-		if opts.Deploy && b.MigratingToDirect {
-			if requiredEngine.IsDefault {
-				// The user did not ask for direct; it is the default. Frame the
-				// auto-migration as an informational notice rather than a warning,
-				// and do not claim the user selected anything.
-				cmdio.LogString(ctx, "Notice: the direct deployment engine is the default as of CLI v1.14.0.\n\n"+
-					"This bundle will be automatically migrated to use the direct deployment engine after this deployment.\n\n"+
-					"Learn more: https://docs.databricks.com/dev-tools/bundles/direct\n")
-			} else {
-				log.Warnf(ctx, "Direct engine selected via %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
+		// The Terraform deployment engine was removed in v1.19.0. When the existing
+		// state still uses Terraform, migrate it to the direct engine in memory before
+		// planning/deploying: the converted state is opened read-only, and the deploy's
+		// normal Finalize commits resources.json (and terraform.tfstate is backed up)
+		// only if the deploy records changes. Read-only commands such as "bundle debug
+		// states" set none of these options and keep reading the Terraform state as-is,
+		// and "bundle deployment migrate" reads it itself and is not routed here.
+		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
+		if needsState && !stateDesc.Engine.IsDirect() {
+			migrated, err := statemgmt.OpenMigratedTerraformState(ctx, b)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("migrating Terraform state to the direct engine: %w", err))
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			if migrated {
+				b.MigratingToDirect = true
+				stateDesc.Engine = engine.EngineDirect
 			}
 		}
 
@@ -264,8 +265,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
+		// A migrated-from-Terraform state is already open (seeded in memory above), so skip the disk open.
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
-		if needDirectState {
+		if needDirectState && !b.DeploymentBundle.StateDB.IsOpen() {
 			_, localPath := b.StateFilenameDirect(ctx)
 
 			if stateDesc.IsDMS() {
@@ -487,11 +489,25 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
-		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && stateDesc.HasRemoteTerraformState() {
-			statemgmt.BackupRemoteTerraformState(ctx, b)
-
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() {
+			if b.MigratingToDirect {
+				// Migrated from Terraform in memory this deploy: resources.json exists only
+				// if Finalize committed a non-empty WAL (the deploy recorded changes). Back
+				// up terraform.tfstate (local + remote) in that case; when the WAL was empty
+				// nothing was committed, so leave the Terraform state intact and let the next
+				// deploy migrate again.
+				_, localDirectPath := b.StateFilenameDirect(ctx)
+				if _, err := os.Stat(localDirectPath); err == nil {
+					if err := statemgmt.BackupTerraformState(ctx, b); err != nil {
+						logdiag.LogError(ctx, err)
+						return b, stateDesc, root.ErrAlreadyPrinted
+					}
+				}
+			} else if stateDesc.HasRemoteTerraformState() {
+				statemgmt.BackupRemoteTerraformState(ctx, b)
+				if logdiag.HasError(ctx) {
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 			}
 		}
 	}
@@ -511,18 +527,28 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	configEngine := b.Config.Bundle.Engine
 
 	if configEngine != engine.EngineNotSet {
+		parsed, ok := engine.Parse(string(configEngine))
+		if !ok {
+			return engine.EngineSetting{}, fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
+		}
+		if parsed == engine.EngineTerraform {
+			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
+		}
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
 			loc := locs[0]
 			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
 		}
-		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}, nil
+		return engine.EngineSetting{Type: parsed, Source: source, ConfigType: parsed}, nil
 	}
 
 	envEngine, err := engine.FromEnv(ctx)
 	if err != nil {
 		return engine.EngineSetting{}, err
+	}
+	if envEngine == engine.EngineTerraform {
+		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
 	}
 	if envEngine != engine.EngineNotSet {
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil
