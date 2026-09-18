@@ -108,7 +108,8 @@ func TestWarnIfMultiInstanceAppLogs(t *testing.T) {
 	warnIfMultiInstanceAppLogs(cmd, "my-app", &apps.App{ComputeMaxInstances: 2})
 
 	assert.Contains(t, stderr.String(), `Warning: app "my-app" is configured to run up to 2 instances`)
-	assert.Contains(t, stderr.String(), "streams logs from a single app instance")
+	assert.Contains(t, stderr.String(), "streams logs from one app instance selected for this session")
+	assert.Contains(t, stderr.String(), "use app telemetry")
 }
 
 func TestWarnIfMultiInstanceAppLogsSkipsSingleInstanceApps(t *testing.T) {

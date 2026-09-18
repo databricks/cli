@@ -295,7 +295,7 @@ func warnIfMultiInstanceAppLogs(cmd *cobra.Command, appName string, app *apps.Ap
 
 	fmt.Fprintf(
 		cmd.ErrOrStderr(),
-		"Warning: app %q is configured to run up to %d instances. This command streams logs from a single app instance; enable app telemetry to view logs across all instances.\n",
+		"Warning: app %q is configured to run up to %d instances. This command streams logs from one app instance selected for this session; use app telemetry to view logs across all instances.\n",
 		appName,
 		configuredInstanceCount(app),
 	)
