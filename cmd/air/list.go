@@ -100,9 +100,9 @@ Filters:
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
   user              Run creator identifier.`,
-		Example: `  databricks experimental air list --filter accelerator_type=H100
+		Example: `  databricks air list --filter accelerator_type=H100
 
-  databricks experimental air list --all-status \
+  databricks air list --all-status \
     --filter 'experiment=qwen*' \
     --filter num_accelerators=8 \
     --filter user=person@example.com`,
