@@ -54,6 +54,12 @@ Destroy: 2 deleted
 
 === Cleanup bundle 2
 >>> [CLI] bundle destroy --auto-approve
+Notice: the direct deployment engine is the default as of CLI v1.14.0.
+
+This bundle will be automatically migrated to use the direct deployment engine.
+
+Learn more: https://docs.databricks.com/dev-tools/bundles/direct
+
 The following resources will be deleted:
   delete resources.jobs.test_job
   delete resources.pipelines.test_pipeline
