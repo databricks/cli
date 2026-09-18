@@ -1,0 +1,1 @@
+* Fixed the direct engine dropping `MANAGE`, `READ_METADATA`, `EXTERNAL_USE_SCHEMA` and `EXTERNAL_USE_LOCATION` grants when they were combined with `ALL_PRIVILEGES`. ([#6733](https://github.com/databricks/cli/pull/6733))

@@ -105,7 +105,10 @@ func newGetCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
-		Short: "Show status, configuration, and timing details for a specific run",
+		Short: "Show status, configuration, and timing details for a specified run",
+		Long: `Show status, configuration, and timing details for a specified run.
+
+JOB_RUN_ID is the job run ID returned by "air run".`,
 		Annotations: map[string]string{
 			"template": getTemplate,
 		},

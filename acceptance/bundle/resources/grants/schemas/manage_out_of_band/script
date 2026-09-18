@@ -1,0 +1,30 @@
+SCHEMA_FULL_NAME=main.schema_manage_oob_$UNIQUE_NAME
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# Out of band, grant MANAGE in addition to the ALL_PRIVILEGES the config declares
+# for the same principal. Unlike a concrete privilege, MANAGE is not implied by
+# ALL_PRIVILEGES, so it shows up as real drift the deploy must reconcile. Both
+# engines detect the same drift, so the plan output is identical between them.
+envsubst < update.json > update.resolved.json
+trace $CLI grants update schema "$SCHEMA_FULL_NAME" --json @update.resolved.json > /dev/null
+
+# The first plan reports drift: MANAGE is present remotely but not in the config.
+trace $CLI bundle plan
+
+# After deploying, both engines converge: the follow-up plan reports no changes.
+# The deploy summary diverges between engines (each revokes MANAGE its own way),
+# so deploy with -qq to keep the output engine-stable.
+trace $CLI bundle deploy -qq
+trace $CLI bundle plan
+
+# MANAGE must be gone; only ALL_PRIVILEGES remains.
+$CLI grants get schema "$SCHEMA_FULL_NAME" | gron.py --noindex | sort | contains.py ALL_PRIVILEGES '!MANAGE' > /dev/null

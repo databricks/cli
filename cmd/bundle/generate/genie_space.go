@@ -320,7 +320,7 @@ func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) {
 
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {
-		if err := utils.OpenDirectStateForRead(ctx, b); err != nil {
+		if err := utils.OpenDirectStateForRead(ctx, b, stateDesc); err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}

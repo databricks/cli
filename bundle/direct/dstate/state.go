@@ -76,12 +76,10 @@ func assertNoUnsupportedFeatures(features map[string]struct{}) error {
 // The caller should delete the stale WAL and proceed normally.
 var errStaleWAL = errors.New("stale WAL")
 
-// ErrUnsettingRecording is returned by Open when a recorded state is opened without recording - the
-// config turned the feature off, or an operation that never records (unbind) reached it. Callers
-// present an operation-appropriate message via errors.Is.
-var ErrUnsettingRecording = errors.New(`unsetting experimental.deployment_history is not supported
-
-This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle`)
+// ErrUnsettingRecording is returned by Open when an operation that does not support deployment
+// history (such as unbind) reaches a recorded state. Callers present an operation-appropriate
+// message via errors.Is.
+var ErrUnsettingRecording = errors.New("this operation is not supported for a deployment that records deployment history")
 
 type DeploymentState struct {
 	Path    string
@@ -574,12 +572,9 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		db.Data.Features[FeatureDeploymentHistory] = struct{}{}
 		recorded = true
 	case recording && !recorded:
-		return errors.New(`this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
+		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
 
-To record this bundle's history, start it over as a new deployment:
-  1. remove experimental.deployment_history from your bundle configuration
-  2. run "databricks bundle destroy" to delete the existing resources
-  3. add experimental.deployment_history back and deploy again`)
+Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
 	case !recording && recorded:
 		return ErrUnsettingRecording
 	}
