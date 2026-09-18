@@ -7,10 +7,6 @@
   "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
 }
 {
-  "method": "GET",
-  "path": "/api/2.0/vector-search/indexes/main.default.vs_index_[UNIQUE_NAME]"
-}
-{
   "method": "POST",
   "path": "/api/2.0/vector-search/indexes",
   "body": {
