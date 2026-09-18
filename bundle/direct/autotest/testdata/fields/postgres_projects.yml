@@ -1,0 +1,34 @@
+# Value library for postgres projects. See ../../README.md.
+
+# Postgres (Lakebase) is only offered on aws, so the catalog for this type runs there.
+#
+# A deleted project holds its resource name until the soft delete is purged: "A soft-deleted
+# project currently has this resource name." So a recreate that keeps the same name -- changing
+# an immutable field like pg_version -- fails the create half, while a recreate that renames
+# (project_id) creates a fresh name and succeeds. The fake server models this (libs/testserver/
+# postgres.go) so the local catalog matches what aws does.
+clouds: [aws]
+base:
+  project_id: test-pg-project-$UNIQUE_NAME
+  display_name: Test Postgres Project
+  enable_pg_native_login: false
+  custom_tags:
+    - key: team
+      value: eng
+
+skip:
+  # A branch reference, not a name: the API answers a bare string with "Field 'default_branch'
+  # expects 'projects/<project>/branches/<branch>'". Naming one needs a branch that exists, and
+  # this fixture creates only the project.
+  default_branch: names a branch resource the fixture does not create
+
+  # The real API refuses a pg_setting on the create it is sent with: "setting cannot be changed;
+  # setting: work_mem" (aws, 2026-08). Seeding one made the whole type undeployable there, and the
+  # 12 rows it bought were all engine errors already -- every transition of this map was rejected
+  # for naming spec.default_endpoint_settings.pg_settings in update_mask without providing it.
+  default_endpoint_settings.pg_settings: the API rejects a setting on the create that carries it
+
+fields:
+  # project_id is part of the resource's hierarchical name, so a change recreates it.
+  project_id: [pgproj1, pgproj2]
+  pg_version: [16, 17]

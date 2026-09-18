@@ -1,0 +1,30 @@
+# Value library for postgres databases. See ../../README.md.
+#
+# parent (the owning branch) and role (the owning role) are immutable/required resource
+# references, skipped rather than fuzzed with garbage. postgres_database is updatable, but the
+# engine masks it without sending the value, so aws rejects the update -- the fake server now
+# validates the update_mask the same way (libs/testserver/postgres.go).
+clouds: [aws]
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+  postgres_branches:
+    parent: ${resources.postgres_projects.postgres_projects.name}
+    branch_id: test-branch-$UNIQUE_NAME
+    no_expiry: true
+  postgres_roles:
+    parent: ${resources.postgres_branches.postgres_branches.name}
+    role_id: test-role-$UNIQUE_NAME
+    postgres_role: app_role
+
+skip:
+  parent: the database's immutable parent branch reference
+  role: the owning role reference; a required value with no realistic garbage form
+
+base:
+  parent: ${resources.postgres_branches.postgres_branches.name}
+  database_id: test-database-$UNIQUE_NAME
+  postgres_database: app_db
+  role: ${resources.postgres_roles.postgres_roles.name}

@@ -1,0 +1,26 @@
+# Value library for dashboards. See ../../README.md.
+
+base:
+  warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+  display_name: test-dashboard-$UNIQUE_NAME
+  file_path: ./dashboard.lvdash.json
+
+skip:
+  # Must name a workspace folder that exists, and this suite provisions only the bundle's own.
+  # A dashboard also cannot be moved between folders without being recreated, and the recreate
+  # then fails against a folder that is not there.
+  parent_path: needs a second workspace folder to exist
+  # Must name an existing SQL warehouse, and dashboards need one, so a value-to-value move
+  # would need a second warehouse.
+  warehouse_id: needs a second SQL warehouse to exist
+
+  # A concurrency token the backend assigns: it can be sent on an update to say which version
+  # was last read, but its value is never the caller's. genie_spaces declares the same field
+  # spec:output_only in resources.generated.yml and dashboards does not, which is an asymmetry
+  # in the generated annotations rather than anything this suite can settle.
+  etag: a concurrency token whose value the backend assigns
+
+  # Query parameters on the create call (json:"-", url:"dataset_catalog"), not part of the
+  # dashboard, so the backend never echoes them and nothing can be observed about them here.
+  dataset_catalog: a query parameter on create, never returned by a read
+  dataset_schema: a query parameter on create, never returned by a read

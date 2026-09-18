@@ -1,0 +1,23 @@
+# Value library for postgres branches. See ../../README.md.
+#
+# parent is the immutable parent project reference, and source_branch / source_snapshot /
+# source_branch_lsn name other resources (a branch, a snapshot, an LSN) the fixture does not
+# create -- all skipped rather than fuzzed with garbage. no_expiry is one side of the expiration
+# oneof: aws rejects an explicit false, which the fake server now mirrors.
+clouds: [aws]
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+
+skip:
+  parent: the branch's immutable parent project reference
+  source_branch: names a source branch the fixture does not create
+  source_snapshot: names a snapshot the fixture does not create
+  source_branch_lsn: an LSN on a source branch the fixture does not create
+
+base:
+  parent: ${resources.postgres_projects.postgres_projects.name}
+  branch_id: test-branch-$UNIQUE_NAME
+  no_expiry: true

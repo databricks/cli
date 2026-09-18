@@ -23,6 +23,12 @@ func (s *FakeWorkspace) SecretsUcCreateSecret(req Request) Response {
 		}
 	}
 
+	// Unity Catalog validates the name before anything else, in the same words it uses for a schema, so
+	// a cleared one is refused rather than stored under a full name ending in a dot.
+	if inputSecret.Name == "" {
+		return ucInvalidNameResponse("CreateSecretRequest", "managedcatalog.SecretInfo.name", inputSecret.Name)
+	}
+
 	if s.UCSecrets == nil {
 		s.UCSecrets = make(map[string]catalog.Secret)
 	}

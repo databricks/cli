@@ -1,0 +1,17 @@
+# field | from | to | verdict | detail
+
+name                                         absent     x-UNIQUE   BASE_ERROR  AI Search endpoint name must contain less than 50 characters, contain only lowercase alphanumeric characters, '_', '-' or '.', and start and end with ...umeric character. (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-UNIQUE   BASE_ERROR  AI Search endpoint name must contain less than 50 characters, contain only lowercase alphanumeric characters, '_', '-' or '.', and start and end with ...umeric character. (400 INVALID_PARAMETER_VALUE)
+name                                         x-UNIQUE   absent     BACKEND_ERROR  AI Search endpoint name must contain less than 50 characters, contain only lowercase alphanumeric characters, '_', '-' or '.', and start and end with ...umeric character. (400 INVALID_PARAMETER_VALUE)
+name                                         y-UNIQUE   absent     BACKEND_ERROR  AI Search endpoint name must contain less than 50 characters, contain only lowercase alphanumeric characters, '_', '-' or '.', and start and end with ...umeric character. (400 INVALID_PARAMETER_VALUE)
+target_qps                                   1          absent     UPDATE_IGNORED
+target_qps                                   2          absent     UPDATE_IGNORED
+
+=== summary
+OK                         10
+OK_RECREATE                4
+CANNOT_DELETE_REQUIRED     4
+UPDATE_IGNORED             2
+BACKEND_ERROR              2
+SKIPPED                    2
+BASE_ERROR                 2

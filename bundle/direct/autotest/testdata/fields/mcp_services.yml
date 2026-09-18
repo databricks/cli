@@ -1,0 +1,13 @@
+# Value library for MCP services. See ../../README.md.
+#
+# Kept local: aws requires the create to carry a config with a source -- "config requires a
+# source: config.source_connection or config.internal". source_connection references a UC
+# connection to a real MCP server (external infrastructure the fixture cannot provision), and
+# config.internal is not in the SDK this CLI builds against. So there is no self-contained config
+# the fixture can send, and the type stays local.
+local_only: aws requires config.source_connection (a real UC connection) or config.internal (not in the SDK)
+
+base:
+  parent: schemas/main.default
+  mcp_service_id: test-mcp-service-$UNIQUE_NAME
+  comment: test mcp service
