@@ -9,17 +9,12 @@ title "Reopening version 3 reads resources from DMS and produces a no-op plan"
 trace $CLI bundle plan
 trace print_requests.py --dms //resources --get --oneline
 
-title "Disabling deployment history refuses plan, deploy, and destroy"
+title "Disabling deployment history is refused by plan and deploy, while destroy keeps using DMS from state"
 update_file.py databricks.yml 'deployment_history: true' 'deployment_history: false'
 for command in plan deploy; do
-    trace musterr env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle "$command" 2>&1 | contains.py "unsetting experimental.deployment_history is not supported"
+    musterr trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle "$command"
 done
-trace musterr env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle destroy --auto-approve 2>&1 | contains.py "unsetting experimental.deployment_history is not supported"
+trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle destroy --auto-approve
 trace print_requests.py --dms //api/2.0/bundle --oneline
-
-title "Reenabling deployment history still reads the unchanged resources from DMS"
-update_file.py databricks.yml 'deployment_history: false' 'deployment_history: true'
-trace $CLI bundle plan
-trace print_requests.py --dms //resources --get --oneline
 
 rm -f "$OUT_REQUESTS"

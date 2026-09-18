@@ -25,35 +25,29 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
   "features": null
 }
 
-=== Enabling recording is refused: this deployment already exists but the service has no record of it, and treating the service as authoritative would create its resources a second time
+=== Enabling recording is refused because the existing deployment is not recorded
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
+Error: deployment history setting (true) does not match the existing state (false)
 
-To record this bundle's history, start it over as a new deployment:
-  1. remove experimental.deployment_history from your bundle configuration
-  2. run "databricks bundle destroy" to delete the existing resources
-  3. add experimental.deployment_history back and deploy again
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
 
 
 >>> print_requests.py --dms //api/2.0/bundle --oneline
 
-=== The check is against the remote state, not the local cache: wiping .databricks still refuses, because the deploy pulls the state back from the workspace
+=== Wiping the local cache still refuses after pulling the non-DMS state from the workspace
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
+Error: deployment history setting (true) does not match the existing state (false)
 
-To record this bundle's history, start it over as a new deployment:
-  1. remove experimental.deployment_history from your bundle configuration
-  2. run "databricks bundle destroy" to delete the existing resources
-  3. add experimental.deployment_history back and deploy again
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
 
 
-=== A leftover local WAL is refused: a recorded deployment writes none, so one can only have come from a deploy that did not record
+=== A leftover local WAL with the wrong lineage is still refused
 >>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle deploy
-Error: unexpected WAL file found at [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal: this deployment records deployment history, which does not write one
+Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage ("stale") does not match state lineage ("[UUID]")
 
 
 === Destroy clears the deployment. With nothing recorded remotely the bundle is treated as new, so recording can be enabled once the stale WAL is gone
->>> [CLI] bundle destroy --auto-approve
+>>> DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.one
 

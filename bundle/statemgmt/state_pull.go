@@ -27,8 +27,9 @@ import (
 type AlwaysPull bool
 
 type StateDesc struct {
-	Serial  int    `json:"serial"`
-	Lineage string `json:"lineage"`
+	Serial   int                 `json:"serial"`
+	Lineage  string              `json:"lineage"`
+	Features map[string]struct{} `json:"features,omitempty"`
 
 	// additional fields describing state:
 	SourcePath string
@@ -55,6 +56,12 @@ func (s *StateDesc) HasRemoteTerraformState() bool {
 		}
 	}
 	return false
+}
+
+// IsDMS reports whether the state records deployment history in the deployment metadata service.
+func (s *StateDesc) IsDMS() bool {
+	_, ok := s.Features["deployment_history"]
+	return ok
 }
 
 func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
