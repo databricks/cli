@@ -228,96 +228,38 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 	return reflect.Value{}, &NotFoundError{fmt.Sprintf("%s: no element found with %s=%q", path.String(), key, value)}
 }
 
-// findFieldInStruct searches for a field by JSON key in a single struct (no embedding).
-// Returns: fieldValue, structField, found
-func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.StructField, bool) {
-	t := v.Type()
-	for i := range t.NumField() {
-		sf := t.Field(i)
-		if sf.PkgPath != "" { // unexported
-			continue
-		}
-		if sf.Anonymous { // skip embedded fields
-			continue
-		}
-
-		// Read JSON tag using structtag helper
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" {
-			name = ""
-		}
-
-		if sf.Name == EmbeddedSliceFieldName {
-			continue // EmbeddedSlice fields are not accessible by name
-		}
-		if name != "" && name == key {
-			// Skip fields marked as internal or readonly via bundle tag
-			btag := structtag.BundleTag(sf.Tag.Get("bundle"))
-			if btag.Internal() || btag.ReadOnly() {
-				continue
-			}
-			return v.Field(i), sf, true
-		}
-	}
-	return reflect.Value{}, reflect.StructField{}, false
-}
-
-// findStructFieldByKey searches exported fields of struct v for a field matching key.
-// It matches json tag name (when present and not "-") only.
-// It also searches embedded anonymous structs recursively (flattening semantics), which
-// FindStructFieldByKeyType does too: a bundle resource embeds a config struct that embeds
-// the SDK request struct, so its fields sit two levels down.
+// findStructFieldByKey resolves key against the type of v and then navigates v along the
+// index chain the resolution produced.
+//
+// Resolving on the type is what keeps Get, Set and ValidatePattern agreeing with each other
+// and with encoding/json: the type decides which of two same-named fields wins, whether the
+// name is ambiguous, and by which path the winner is reached. Navigating the value afterwards
+// means a nil pointer on that path reads as an absent field, rather than the search falling
+// through to a deeper field of the same name that the wire format never carries.
+//
 // Returns: fieldValue, structField, owner (the struct value declaring the field), found
 func findStructFieldByKey(v reflect.Value, key string) (reflect.Value, reflect.StructField, reflect.Value, bool) {
-	// First pass: direct fields
-	if fv, sf, found := findFieldInStruct(v, key); found {
-		return fv, sf, v, true
+	index, sf, ok := findFieldIndexByKeyType(v.Type(), key)
+	if !ok {
+		return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
 	}
 
-	// Second pass: search embedded anonymous structs (flattening semantics) breadth-first, one
-	// level of embedding at a time. Not depth-first: encoding/json resolves a name declared at
-	// two embedding depths in favour of the shallower one, so descending fully into the first
-	// embed could pick a field three levels down over the same name two levels down in a
-	// later one -- and then reading or writing the field would not be the field serialized
-	// under that name.
-	level := embeddedStructs(v)
-	for len(level) > 0 {
-		var next []reflect.Value
-		for _, fv := range level {
-			if out, sf, found := findFieldInStruct(fv, key); found {
-				return out, sf, fv, true
+	cur := v
+	var owner reflect.Value
+	for _, i := range index {
+		for cur.Kind() == reflect.Pointer {
+			if cur.IsNil() {
+				return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
 			}
-			next = append(next, embeddedStructs(fv)...)
+			cur = cur.Elem()
 		}
-		level = next
+		if cur.Kind() != reflect.Struct {
+			return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
+		}
+		owner = cur
+		cur = cur.Field(i)
 	}
-
-	return reflect.Value{}, reflect.StructField{}, reflect.Value{}, false
-}
-
-// embeddedStructs returns the anonymous struct fields of v, dereferenced, skipping any that
-// cannot be descended into.
-func embeddedStructs(v reflect.Value) []reflect.Value {
-	var out []reflect.Value
-	t := v.Type()
-	for i := range t.NumField() {
-		if !t.Field(i).Anonymous {
-			continue
-		}
-		fv := v.Field(i)
-		for fv.Kind() == reflect.Pointer {
-			if fv.IsNil() {
-				// Not initialized; can't descend.
-				break
-			}
-			fv = fv.Elem()
-		}
-		if fv.Kind() != reflect.Struct {
-			continue
-		}
-		out = append(out, fv)
-	}
-	return out
+	return cur, sf, owner, true
 }
 
 // forceSendFields returns the ForceSendFields slice a struct declares itself. A struct that
