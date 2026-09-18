@@ -11,7 +11,7 @@ Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
   git_source: add
-  tasks[task_key='main'].notebook_task.notebook_path: replace
+  tasks[='main'].notebook_task.notebook_path: replace
 
 Resource: resources.pipelines.my_pipeline
   root_path: replace

@@ -63,7 +63,7 @@ func TestGetStructDiffOpaqueAtRoot(t *testing.T) {
 		{"value", *a, *b},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			changes, err := GetStructDiff(tt.a, tt.b, nil)
+			changes, err := GetStructDiff(tt.a, tt.b)
 			require.NoError(t, err)
 			require.Len(t, changes, 1)
 			assert.Empty(t, changes[0].Path.String())

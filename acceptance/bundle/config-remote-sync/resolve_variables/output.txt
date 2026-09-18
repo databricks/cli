@@ -10,22 +10,22 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
-  environments[environment_key='default'].spec.dependencies: replace
-  environments[environment_key='secondary']: add
-  parameters[name='catalog'].default: replace
-  parameters[name='data_catalog']: add
-  parameters[name='deploy_env']: add
-  parameters[name='deploy_target']: add
-  parameters[name='env'].default: replace
-  parameters[name='file_sourced']: add
-  parameters[name='region']: add
-  parameters[name='some_schema']: add
+  environments[='default'].spec.dependencies: replace
+  environments[='secondary']: add
+  parameters[='catalog'].default: replace
+  parameters[='data_catalog']: add
+  parameters[='deploy_env']: add
+  parameters[='deploy_target']: add
+  parameters[='env'].default: replace
+  parameters[='file_sourced']: add
+  parameters[='region']: add
+  parameters[='some_schema']: add
   tags['deployment']: add
   tags['dev']: remove
-  tasks[task_key='main'].notebook_task.base_parameters['source_path']: replace
-  tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
-  tasks[task_key='run_pipeline_again']: add
-  tasks[task_key='secondary']: add
+  tasks[='main'].notebook_task.base_parameters['source_path']: replace
+  tasks[='run_pipeline'].pipeline_task.full_refresh: replace
+  tasks[='run_pipeline_again']: add
+  tasks[='secondary']: add
 
 Resource: resources.pipelines.my_pipeline
   environment.dependencies: replace

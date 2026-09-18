@@ -6,10 +6,19 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/libs/structs/registry"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
+
+func init() {
+	// A permission is identified by whichever principal field is set. The backend may
+	// return the same principal under a different field (e.g. a user_name holding a
+	// service principal's application ID comes back as service_principal_name), so all
+	// three are key fields and the field difference is not treated as a change.
+	registry.Register[StatePermission]("user_name", "service_principal_name", "group_name")
+}
 
 // GetAPIRequestObjectType is used by direct to construct a request to permissions API:
 // https://github.com/databricks/terraform-provider-databricks/blob/430902d/permissions/permission_definitions.go#L775C24-L775C32
@@ -144,27 +153,6 @@ func toStatePermissions(ps any) ([]StatePermission, error) {
 		}
 	}
 	return result, nil
-}
-
-func permissionKey(x StatePermission) (string, string) {
-	if x.UserName != "" {
-		return "user_name", x.UserName
-	}
-	if x.ServicePrincipalName != "" {
-		return "service_principal_name", x.ServicePrincipalName
-	}
-	if x.GroupName != "" {
-		return "group_name", x.GroupName
-	}
-	return "", ""
-}
-
-func (*ResourcePermissions) KeyedSlices() map[string]any {
-	// Empty key because EmbeddedSlice appears at the root path of
-	// PermissionsState (no "permissions" prefix in struct walker paths).
-	return map[string]any{
-		"": permissionKey,
-	}
 }
 
 // parsePermissionsID extracts the object type and ID from a permissions ID string.

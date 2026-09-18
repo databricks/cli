@@ -159,50 +159,50 @@
           "reason": "empty",
           "remote": {}
         },
-        "environments[environment_key='test_env'].spec.dependencies[0]": {
+        "environments[='test_env'].spec.dependencies[0]": {
           "action": "update",
           "old": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl",
           "new": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
           "remote": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
         },
-        "tasks[task_key='ServerlessTestTask'].email_notifications": {
+        "tasks[='ServerlessTestTask'].email_notifications": {
           "action": "skip",
           "reason": "empty",
           "remote": {}
         },
-        "tasks[task_key='ServerlessTestTask'].run_if": {
+        "tasks[='ServerlessTestTask'].run_if": {
           "action": "skip",
           "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
-        "tasks[task_key='ServerlessTestTask'].timeout_seconds": {
+        "tasks[='ServerlessTestTask'].timeout_seconds": {
           "action": "skip",
           "reason": "empty",
           "remote": 0
         },
-        "tasks[task_key='TestTask'].email_notifications": {
+        "tasks[='TestTask'].email_notifications": {
           "action": "skip",
           "reason": "empty",
           "remote": {}
         },
-        "tasks[task_key='TestTask'].for_each_task.task.libraries[0].whl": {
+        "tasks[='TestTask'].for_each_task.task.libraries[0].whl": {
           "action": "update",
           "old": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl",
           "new": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
           "remote": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
         },
-        "tasks[task_key='TestTask'].libraries[0].whl": {
+        "tasks[='TestTask'].libraries[0].whl": {
           "action": "update",
           "old": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl",
           "new": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
           "remote": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
         },
-        "tasks[task_key='TestTask'].run_if": {
+        "tasks[='TestTask'].run_if": {
           "action": "skip",
           "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
-        "tasks[task_key='TestTask'].timeout_seconds": {
+        "tasks[='TestTask'].timeout_seconds": {
           "action": "skip",
           "reason": "empty",
           "remote": 0

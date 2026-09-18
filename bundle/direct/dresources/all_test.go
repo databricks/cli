@@ -1067,7 +1067,7 @@ func (f *testIgnoreFilter) filterChanges(changes []structdiff.Change) []structdi
 // requireEqual compares two structs and fails the test if there are differences
 // that are not in the ignore_remote_changes list.
 func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
-	changes, err := structdiff.GetStructDiff(expected, actual, nil)
+	changes, err := structdiff.GetStructDiff(expected, actual)
 	require.NoError(t, err)
 	relevantChanges := f.filterChanges(changes)
 	require.Empty(t, relevantChanges, msgAndArgs...)

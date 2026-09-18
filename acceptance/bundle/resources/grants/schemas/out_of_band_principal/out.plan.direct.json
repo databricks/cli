@@ -47,7 +47,7 @@
         "full_name": "main.schema_out_of_band_principal_[UNIQUE_NAME]"
       },
       "changes": {
-        "[principal='deco-test-user@databricks.com']": {
+        "[='deco-test-user@databricks.com']": {
           "action": "update",
           "remote": {
             "principal": "deco-test-user@databricks.com",

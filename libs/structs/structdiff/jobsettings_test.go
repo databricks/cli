@@ -444,16 +444,16 @@ const jobExampleResponseNils = `
 func testEqual(t *testing.T, input string) {
 	var x, y jobs.JobSettings
 	require.NoError(t, json.Unmarshal([]byte(input), &x))
-	changes, err := GetStructDiff(x, x, nil)
+	changes, err := GetStructDiff(x, x)
 	require.NoError(t, err)
 	require.Nil(t, changes)
 
 	require.NoError(t, json.Unmarshal([]byte(input), &y))
-	changes, err = GetStructDiff(x, y, nil)
+	changes, err = GetStructDiff(x, y)
 	require.NoError(t, err)
 	require.Nil(t, changes)
 
-	changes, err = GetStructDiff(&x, &y, nil)
+	changes, err = GetStructDiff(&x, &y)
 	require.NoError(t, err)
 	require.Nil(t, changes)
 }
@@ -471,7 +471,7 @@ func TestJobDiff(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(jobExampleResponseZeroes), &zero))
 	require.NoError(t, json.Unmarshal([]byte(jobExampleResponseNils), &nils))
 
-	changes, err := GetStructDiff(job, zero, nil)
+	changes, err := GetStructDiff(job, zero)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(changes), 75)
 	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
@@ -488,7 +488,7 @@ func TestJobDiff(t *testing.T) {
 	assert.Equal(t, "string", changes[3].Old)
 	assert.Empty(t, changes[3].New)
 
-	changes, err = GetStructDiff(job, nils, nil)
+	changes, err = GetStructDiff(job, nils)
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(changes), 77)
 	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
@@ -509,7 +509,7 @@ func TestJobDiff(t *testing.T) {
 	assert.Equal(t, "string", changes[3].Old)
 	assert.Nil(t, changes[3].New)
 
-	changes, err = GetStructDiff(zero, nils, nil)
+	changes, err = GetStructDiff(zero, nils)
 	require.NoError(t, err)
 	assert.GreaterOrEqual(t, len(changes), 58)
 	assert.Equal(t, "budget_policy_id", changes[0].Path.String())
