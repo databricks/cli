@@ -1,1 +1,1 @@
-* Fix `bundle deploy` failing with "Invalid python file reference" for jobs that use `git_source` with a `spark_python_task` on the direct engine.
+* Fix `bundle deploy` failing with "Invalid python file reference" for jobs that use `git_source` with a `spark_python_task` on the direct engine. ([#6751](https://github.com/databricks/cli/pull/6751))
