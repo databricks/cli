@@ -3,7 +3,6 @@ package resourcemutator
 import (
 	"context"
 	"fmt"
-	"maps"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -22,7 +21,7 @@ type setRunAs struct{}
 //  1. Sets the run_as field for jobs to the value of the run_as field in the bundle.
 //
 //  2. Validates that the bundle run_as configuration is valid in the context of the bundle.
-//     If the run_as identity differs from the deployment identity, DABs only
+//     If the run_as user is different from the current deployment user, DABs only
 //     supports a subset of resources.
 func SetRunAs() bundle.Mutator {
 	return &setRunAs{}
@@ -74,22 +73,14 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 
 	if runAs.GroupName != "" {
 		identity = fmt.Sprintf("group %q", runAs.GroupName)
-		for _, key := range slices.Sorted(maps.Keys(b.Config.Resources.Pipelines)) {
-			if b.Config.Resources.Pipelines[key].RunAs == nil {
-				diags = diags.Extend(diag.Diagnostics{{
-					Summary:   "pipelines do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on this pipeline to override the bundle run_as",
-					Locations: []dyn.Location{b.Config.GetLocation("resources.pipelines." + key)},
-					Severity:  diag.Error,
-				}})
+		for _, pipeline := range b.Config.Resources.Pipelines {
+			if pipeline.RunAs == nil {
+				return diag.Errorf("this CLI version cannot configure run_as.group_name for pipelines; set run_as.user_name or run_as.service_principal_name on each pipeline")
 			}
 		}
-		for _, key := range slices.Sorted(maps.Keys(b.Config.Resources.Alerts)) {
-			if b.Config.Resources.Alerts[key].RunAs == nil {
-				diags = diags.Extend(diag.Diagnostics{{
-					Summary:   "alerts do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on this alert to override the bundle run_as",
-					Locations: []dyn.Location{b.Config.GetLocation("resources.alerts." + key)},
-					Severity:  diag.Error,
-				}})
+		for _, alert := range b.Config.Resources.Alerts {
+			if alert.RunAs == nil {
+				return diag.Errorf("alerts do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on each alert")
 			}
 		}
 	}
@@ -243,11 +234,7 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// experimental.use_legacy_run_as flag.
 	if b.Config.Experimental != nil && b.Config.Experimental.UseLegacyRunAs {
 		if b.Config.Value().Get("run_as").Get("group_name").Kind() != dyn.KindInvalid {
-			return diag.Diagnostics{{
-				Summary:   "run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity",
-				Locations: b.Config.GetLocations("run_as.group_name"),
-				Severity:  diag.Error,
-			}}
+			return diag.Errorf("run_as.group_name is not supported with experimental.use_legacy_run_as; disable experimental.use_legacy_run_as to use a group identity")
 		}
 		setPipelineOwnersToRunAsIdentity(b)
 		setRunAsForJobs(b)
