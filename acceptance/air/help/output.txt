@@ -1,0 +1,144 @@
+
+=== help
+>>> [CLI] air --help
+Run and manage AI Runtime training workloads on Databricks serverless GPU compute.
+
+These commands are under active development.
+
+Usage:
+  databricks air [command]
+
+Available Commands:
+  cancel          Cancel one or more runs
+  convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
+  get             Show status, configuration, and timing details for a specified run
+  list            List active runs for the current user
+  logs            Stream or fetch logs for a run
+  run             Submit a training workload from a YAML config
+
+Flags:
+  -h, --help   help for air
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks air [command] --help" for more information about a command.
+
+=== list help
+>>> [CLI] air list --help
+List active runs for the current user.
+
+Filters:
+  Use --filter KEY=VALUE per condition. A run must match every condition.
+
+  accelerator_type  Accelerator type, such as A10 or H100.
+  experiment        Case-insensitive glob matched against the experiment name.
+  num_accelerators  Total GPU count.
+  user              Run creator identifier.
+
+Usage:
+  databricks air list [flags]
+  databricks air list [command]
+
+Examples:
+  databricks air list --filter accelerator_type=H100
+
+  databricks air list --all-status \
+    --filter 'experiment=qwen*' \
+    --filter num_accelerators=8 \
+    --filter user=person@example.com
+
+Available Commands:
+  pools       List the GPU pools available to the current workspace
+
+Flags:
+      --all-status           Show runs in all states (default: active only)
+      --all-users            Show runs from all users
+      --filter stringArray   Filter runs by KEY=VALUE (repeatable)
+  -h, --help                 help for list
+      --limit int            Maximum number of runs to show (default 20)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks air list [command] --help" for more information about a command.
+
+=== get help
+>>> [CLI] air get --help
+Show status, configuration, and timing details for a specified run.
+
+JOB_RUN_ID is the job run ID returned by "air run".
+
+Usage:
+  databricks air get JOB_RUN_ID [flags]
+  databricks air get [command]
+
+Available Commands:
+  pool        Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)
+
+Flags:
+  -h, --help   help for get
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks air get [command] --help" for more information about a command.
+
+=== logs help
+>>> [CLI] air logs --help
+Stream logs from an active run until it completes, or fetch logs from a
+completed run.
+
+JOB_RUN_ID is the job run ID returned by "air run".
+
+Usage:
+  databricks air logs JOB_RUN_ID [flags]
+
+Examples:
+  databricks air logs [NUMID]
+  databricks air logs [NUMID] --node 1 --retry 0
+  databricks air logs [NUMID] --download-to ./logs
+
+Flags:
+      --download-to string   Download all logs to this directory instead of printing
+  -h, --help                 help for logs
+      --minutes int          Fetch only logs from the last N minutes
+      --node int             Fetch logs from this node
+      --retry int            View logs from a specific retry attempt; -1 means latest (default -1)
+      --tail int             Print the last N existing lines before following, or from a completed run (default 10000)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+=== cancel help
+>>> [CLI] air cancel --help
+Cancel one or more runs by job run ID, or use --all to cancel
+all active runs submitted by the current user.
+
+--all prompts for confirmation. Use --yes to skip the prompt.
+
+Usage:
+  databricks air cancel [JOB_RUN_ID...] [flags]
+
+Flags:
+      --all    Cancel all of your active runs
+  -h, --help   help for cancel
+  -y, --yes    Skip the confirmation prompt
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
