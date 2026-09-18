@@ -30,9 +30,9 @@ const SourceDefault = "default"
 // Terraform deployment engine, via bundle.engine or DATABRICKS_BUNDLE_ENGINE.
 // "terraform" is still recognized as a value so we can point at this specific
 // removal rather than reporting it as an unrecognized setting.
-const TerraformRemovedMessage = `the Terraform deployment engine has been removed in Databricks CLI v1.18.0
+const TerraformRemovedMessage = `the Terraform deployment engine has been removed in Databricks CLI v1.19.0
 
-Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, downgrade to CLI v1.17.x.
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, downgrade to CLI v1.18.x.
 See https://docs.databricks.com/dev-tools/bundles/direct for details`
 
 // Parse returns EngineType from string. "terraform" still parses successfully so

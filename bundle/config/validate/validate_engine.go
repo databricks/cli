@@ -41,8 +41,8 @@ func (v *validateEngine) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnos
 	if parsed == engine.EngineTerraform {
 		return diag.Diagnostics{{
 			Severity:  diag.Error,
-			Summary:   "the Terraform deployment engine has been removed in Databricks CLI v1.18.0",
-			Detail:    `Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, downgrade to CLI v1.17.x. See https://docs.databricks.com/dev-tools/bundles/direct for details.`,
+			Summary:   "the Terraform deployment engine has been removed in Databricks CLI v1.19.0",
+			Detail:    `Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, downgrade to CLI v1.18.x. See https://docs.databricks.com/dev-tools/bundles/direct for details.`,
 			Locations: []dyn.Location{loc},
 		}}
 	}
