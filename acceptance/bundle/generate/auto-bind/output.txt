@@ -10,37 +10,12 @@ Created job with ID: [NUMID]
 >>> [CLI] bundle generate job --key test_job --existing-job-id [NUMID] --config-dir resources --source-dir src --bind
 File successfully saved to src/test.py
 Job configuration successfully saved to resources/test_job.job.yml
-Successfully bound job with an id '[NUMID]'
+Error: bind is not supported for a bundle target that records deployment history
 
->>> ls src/
-test.py
-
->>> cat resources/test_job.job.yml
-      name: auto-bind-job-[UNIQUE_NAME]
-
-=== Deploy the bound job:
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
-Updated jobs.test_job
-Files: 7 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
-=== Destroy the bundle:
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.test_job
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]
-
-Destroy: 1 deleted
-
-=== Check that job is bound and does not exist after bundle is destroyed:
->>> errcode [CLI] jobs get [NUMID] --output json
-Error: Job [NUMID] does not exist.
-
-Exit code: 1
 
 === Delete the tmp folder:
 >>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test
 
 >>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]
+
+Exit code: 1

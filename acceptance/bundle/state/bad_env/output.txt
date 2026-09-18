@@ -1,12 +1,12 @@
 
 >>> musterr [CLI] bundle plan
-Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'terraform' or 'direct')
+Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'direct')
 
 >>> musterr [CLI] bundle deploy
-Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'terraform' or 'direct')
+Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'direct')
 
 >>> musterr [CLI] bundle summary
-Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'terraform' or 'direct')
+Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'direct')
 
 >>> musterr [CLI] bundle destroy --auto-approve
-Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'terraform' or 'direct')
+Error: unexpected setting for DATABRICKS_BUNDLE_ENGINE="abc" (expected 'direct')

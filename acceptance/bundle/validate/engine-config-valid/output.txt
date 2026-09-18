@@ -9,15 +9,14 @@ Workspace:
 Validation OK!
 
 >>> [CLI] bundle validate -t terraform-target
-Warning: the terraform deployment engine is deprecated and will stop working in a future version of the CLI
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.19.0
   in databricks.yml:10:15
 
-See https://docs.databricks.com/aws/en/dev-tools/bundles/direct for how to migrate to the direct deployment engine
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, downgrade to CLI v1.18.x. See https://docs.databricks.com/dev-tools/bundles/direct for details.
 
 Name: test-engine-config-valid
 Target: terraform-target
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-engine-config-valid/terraform-target
 
-Found 1 warning
+Found 1 error
+
+Exit code: 1
