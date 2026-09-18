@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +32,7 @@ const (
 	defaultTailLines        = 200
 	defaultPrefetchWindow   = 2 * time.Second
 	defaultHandshakeTimeout = 30 * time.Second
+	appRouterCookieName     = "__Host-databricks-app-router"
 )
 
 var allowedSources = []string{"APP", "SYSTEM"}
@@ -111,6 +113,8 @@ Examples:
 			if app.Url == "" {
 				return fmt.Errorf("app %s does not have a public URL; deploy and start it before streaming logs", name)
 			}
+			warnIfMultiInstanceAppLogs(cmd, name, app)
+			routingCookie := logStreamRoutingCookie(app)
 
 			wsURL, err := buildLogsURL(app.Url)
 			if err != nil {
@@ -184,6 +188,7 @@ Examples:
 				Origin:           normalizeOrigin(app.Url),
 				Token:            initialToken.AccessToken,
 				TokenProvider:    tokenProvider,
+				RoutingCookie:    routingCookie,
 				AppStatusChecker: appStatusChecker,
 				Search:           searchTerm,
 				Sources:          sourceMap,
@@ -281,6 +286,41 @@ func buildSourceFilter(values []string) (map[string]struct{}, error) {
 		return nil, nil
 	}
 	return filter, nil
+}
+
+func warnIfMultiInstanceAppLogs(cmd *cobra.Command, appName string, app *apps.App) {
+	if !isMultiInstanceApp(app) {
+		return
+	}
+
+	fmt.Fprintf(
+		cmd.ErrOrStderr(),
+		"Warning: app %q is configured to run up to %d instances. This command streams logs from one app instance selected for this session.\nUse app telemetry to view logs from all instances or a specific live or historical instance.\n",
+		appName,
+		configuredInstanceCount(app),
+	)
+}
+
+func logStreamRoutingCookie(app *apps.App) string {
+	if !isMultiInstanceApp(app) {
+		return ""
+	}
+
+	return (&http.Cookie{
+		Name:  appRouterCookieName,
+		Value: uuid.NewString(),
+	}).String()
+}
+
+func isMultiInstanceApp(app *apps.App) bool {
+	return configuredInstanceCount(app) > 1
+}
+
+func configuredInstanceCount(app *apps.App) int {
+	if app.ComputeMaxInstances > app.ComputeMinInstances {
+		return app.ComputeMaxInstances
+	}
+	return app.ComputeMinInstances
 }
 
 func newLogStreamDialer(cfg *config.Config) *websocket.Dialer {

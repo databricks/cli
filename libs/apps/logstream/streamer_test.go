@@ -223,6 +223,38 @@ func TestLogStreamerFiltersSources(t *testing.T) {
 	assert.NotContains(t, output, "sys")
 }
 
+func TestLogStreamerSendsRoutingCookie(t *testing.T) {
+	t.Parallel()
+
+	const routingCookie = "__Host-databricks-app-router=00000000-0000-0000-0000-000000000001"
+
+	upgrader := websocket.Upgrader{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, routingCookie, r.Header.Get("Cookie"))
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if !assert.NoError(t, err) {
+			return
+		}
+		defer conn.Close()
+
+		_, _, _ = conn.ReadMessage()
+		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
+	}))
+	defer server.Close()
+
+	streamer := &logStreamer{
+		dialer:        &websocket.Dialer{},
+		url:           toWebSocketURL(server.URL),
+		token:         "test",
+		routingCookie: routingCookie,
+		writer:        &bytes.Buffer{},
+		formatter:     newLogFormatter(false, flags.OutputText),
+	}
+
+	require.NoError(t, streamer.Run(t.Context()))
+}
+
 func TestFormatLogEntryColorizesWhenEnabled(t *testing.T) {
 	entry := &wsEntry{Source: "app", Timestamp: 1, Message: "hello\n"}
 
