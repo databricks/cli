@@ -3,10 +3,10 @@ package mutator
 import (
 	"context"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -25,12 +25,15 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
+	// Use CurrentWorkspaceID (API call) rather than the config fast-path so
+	// that stale or mis-scoped workspace_id values in .databrickscfg or
+	// databricks.yml never pollute the ?w= query parameter in resource URLs.
+	workspaceID, err := b.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
-	err = initializeForWorkspace(b, workspaceID, host)
+	err = initializeForWorkspace(b, strconv.FormatInt(workspaceID, 10), host)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -6,6 +6,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/testserver"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -148,4 +150,46 @@ func TestInitializeURLsWithoutOrgId(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, "https://adb-123456.azuredatabricks.net/jobs/1", b.Config.Resources.Jobs["job1"].URL)
+}
+
+// TestInitializeURLsApplyUsesAPINotConfig verifies that Apply uses
+// CurrentWorkspaceID (an API call that returns X-Databricks-Org-Id) rather
+// than Config.WorkspaceID. If a stale or mis-scoped workspace_id is present in
+// .databrickscfg or databricks.yml, it must not leak into the ?w= parameter.
+func TestInitializeURLsApplyUsesAPINotConfig(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	// AddDefaultHandlers registers a /Me handler that returns
+	// X-Databricks-Org-Id: 900800700600 — the authoritative workspace ID.
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:        server.URL,
+		Token:       "testtoken",
+		WorkspaceID: "stale-wrong-id", // simulates a mis-scoped config value
+	})
+	require.NoError(t, err)
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						ID:          "1",
+						JobSettings: jobs.JobSettings{Name: "job1"},
+					},
+				},
+			},
+		},
+	}
+	b.SetWorkpaceClient(w)
+
+	diags := InitializeURLs().Apply(t.Context(), b)
+	require.NoError(t, diags.Error())
+
+	// URL must use the org ID from the API response (900800700600), not the
+	// stale "stale-wrong-id" from Config.WorkspaceID.
+	require.Equal(t,
+		server.URL+"/jobs/1?w=900800700600",
+		b.Config.Resources.Jobs["job1"].URL,
+	)
 }
