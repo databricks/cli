@@ -138,7 +138,9 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// Wait for asynchronous teardown to finish before re-creating the same
 	// name. Done after DeleteState so the bundle stays consistent if the wait
 	// times out — the resource is no longer tracked in state, retry on next plan.
-	err = d.Adapter.WaitAfterDelete(ctx, oldID)
+	// The general delete-wait stays uncapped; we only pass the already-resolved
+	// RESOURCE_MAX_WAIT so a resource that opts in can bound its own poll by it.
+	err = d.Adapter.WaitAfterDelete(dresources.WithResourceMaxWait(ctx, d.MaxWait), oldID)
 	if err != nil {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}

@@ -3,12 +3,10 @@ package dresources
 import (
 	"context"
 	"errors"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -20,7 +18,7 @@ import (
 
 // deleteSyncedTableTimeout caps the post-delete poll so a stuck teardown does not
 // wait forever. Deletion tears down the backing sync pipeline, which normally
-// completes within a minute. DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT overrides it.
+// completes within a minute. DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT shortens it further.
 const deleteSyncedTableTimeout = 5 * time.Minute
 
 // PostgresSyncedTableRemote is the return type for DoRead. It embeds
@@ -157,18 +155,14 @@ func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _
 // resurfaces as the create's 409. A cancelled deploy is propagated so it is not
 // mistaken for a completed teardown.
 //
-// The timeout is deleteSyncedTableTimeout, overridden by a positive
-// DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT. Unlike other waits, the recreate delete-wait
-// is not routed through the general cap in apply.go (that path stays uncapped by
-// design), so this reads the cap itself.
+// The poll runs up to deleteSyncedTableTimeout, shortened to RESOURCE_MAX_WAIT when
+// that is smaller. The engine resolves that env var once and passes it via context
+// (WithResourceMaxWait); the general delete-wait in apply.go stays uncapped, so only
+// this resource bounds itself by it.
 func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id string) error {
 	timeout := deleteSyncedTableTimeout
-	if v, ok := bundleenv.ResourceMaxWait(ctx); ok {
-		// Apply already validated this to a non-negative number of seconds before any
-		// resource ran; a positive value overrides the default.
-		if secs, err := strconv.Atoi(v); err == nil && secs > 0 {
-			timeout = time.Duration(secs) * time.Second
-		}
+	if maxWait, ok := resourceMaxWait(ctx); ok && maxWait > 0 {
+		timeout = min(timeout, maxWait)
 	}
 
 	_, err := retries.Poll[struct{}](ctx, timeout, func() (*struct{}, *retries.Err) {
