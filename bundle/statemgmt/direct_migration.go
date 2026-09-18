@@ -69,7 +69,7 @@ func OpenMigratedTerraformState(ctx context.Context, b *bundle.Bundle, commit bo
 		return true, nil
 	}
 
-	tempStatePath, resourceCount, _, _, err := convertTFStateToDirect(ctx, b, tfState)
+	tempStatePath, resourceCount, _, cfg, err := convertTFStateToDirect(ctx, b, tfState)
 	cleanupTemp := true
 	if tempStatePath != "" {
 		defer func() {
@@ -84,9 +84,19 @@ func OpenMigratedTerraformState(ctx context.Context, b *bundle.Bundle, commit bo
 	}
 
 	if commit {
-		// Finalize the migration: push resources.json to the workspace, move it into
-		// place locally, and back up terraform.tfstate. commitMigration renames the temp
-		// file into resources.json, so it must not be cleaned up here.
+		// Plan against the converted state first; if it fails, the migration is not
+		// committed. The terraform engine is still available, so warn and fall back to
+		// deploying on terraform (the temp file is cleaned up by the deferred Remove).
+		if err := checkPlanOnTempState(ctx, b, tempStatePath, cfg); err != nil {
+			log.Warnf(ctx, "migration to the direct engine failed its plan check; deploying on terraform this time: %v", err)
+			return false, nil
+		}
+
+		// Plan is clean: finalize the migration by pushing resources.json to the
+		// workspace, moving it into place locally, and backing up terraform.tfstate.
+		// commitMigration renames the temp file into resources.json, so it must not be
+		// cleaned up here. The migration commits even if the deploy that follows is a
+		// no-op, so it completes in one deploy.
 		cleanupTemp = false
 		if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 			return false, err

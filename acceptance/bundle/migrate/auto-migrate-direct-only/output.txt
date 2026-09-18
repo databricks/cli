@@ -12,7 +12,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> update_file.py databricks.yml name: test-bundle name: test-bundle
   engine: direct
 
-=== Plan skips the direct-only resource, since this run still uses terraform
+=== Plan runs on the direct engine (state migrated in memory), so the direct-only resource is planned
 >>> [CLI] bundle plan
 create instance_pools.pool
 
@@ -24,7 +24,7 @@ json.plan.resources.instance_pools.pool.new_state.value.idle_instance_autotermin
 json.plan.resources.instance_pools.pool.new_state.value.instance_pool_name = "My Pool";
 json.plan.resources.instance_pools.pool.new_state.value.node_type_id = "Standard_DS3_v2";
 
-=== Deploy migrates the state, skipping the direct-only resource
+=== Deploy commits the migration and creates the direct-only resource
 >>> [CLI] bundle deploy
 Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -34,7 +34,7 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_migration_telemetry
 
-=== The direct-only resource is created on the next deploy
+=== Redeploy is a no-op: state is already on the direct engine
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
