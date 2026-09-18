@@ -5,4 +5,3 @@ RecordRequests = true
 # auto-added CAN_MANAGE ACL serializes as service_principal_name. Make the
 # local fake report the deployer as a service principal to match.
 IsServicePrincipal = true
-

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -234,15 +235,24 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// it even when the deploy fails or is cancelled before deployCore runs.
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 
-		// The Terraform engine was removed in v1.18.0. A bundle whose existing state
-		// still uses Terraform cannot be deployed, planned, or read via a plan file
-		// until its state is migrated. Reject those paths up front with an actionable
-		// error; destroy/bind/unbind guard themselves in their phase entry points, and
-		// "bundle deployment migrate" reads the Terraform state itself so must not be
-		// blocked here.
-		if (opts.Deploy || opts.PreDeployChecks || opts.ReadPlanPath != "") && !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New(phases.TerraformStateRemovedMessage))
-			return b, stateDesc, root.ErrAlreadyPrinted
+		// The Terraform deployment engine was removed in v1.19.0. When the existing
+		// state still uses Terraform, migrate it to the direct engine in memory before
+		// planning/deploying: the converted state is opened read-only, and the deploy's
+		// normal Finalize commits resources.json (and terraform.tfstate is backed up)
+		// only if the deploy records changes. Read-only commands such as "bundle debug
+		// states" set none of these options and keep reading the Terraform state as-is,
+		// and "bundle deployment migrate" reads it itself and is not routed here.
+		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
+		if needsState && !stateDesc.Engine.IsDirect() {
+			migrated, err := statemgmt.OpenMigratedTerraformState(ctx, b)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("migrating Terraform state to the direct engine: %w", err))
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			if migrated {
+				b.MigratingToDirect = true
+				stateDesc.Engine = engine.EngineDirect
+			}
 		}
 
 		// --select is only supported by the direct engine, which tracks resource
@@ -255,8 +265,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
+		// A migrated-from-Terraform state is already open (seeded in memory above), so skip the disk open.
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
-		if needDirectState {
+		if needDirectState && !b.DeploymentBundle.StateDB.IsOpen() {
 			_, localPath := b.StateFilenameDirect(ctx)
 
 			if stateDesc.IsDMS() {
@@ -478,11 +489,25 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
-		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && stateDesc.HasRemoteTerraformState() {
-			statemgmt.BackupRemoteTerraformState(ctx, b)
-
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() {
+			if b.MigratingToDirect {
+				// Migrated from Terraform in memory this deploy: resources.json exists only
+				// if Finalize committed a non-empty WAL (the deploy recorded changes). Back
+				// up terraform.tfstate (local + remote) in that case; when the WAL was empty
+				// nothing was committed, so leave the Terraform state intact and let the next
+				// deploy migrate again.
+				_, localDirectPath := b.StateFilenameDirect(ctx)
+				if _, err := os.Stat(localDirectPath); err == nil {
+					if err := statemgmt.BackupTerraformState(ctx, b); err != nil {
+						logdiag.LogError(ctx, err)
+						return b, stateDesc, root.ErrAlreadyPrinted
+					}
+				}
+			} else if stateDesc.HasRemoteTerraformState() {
+				statemgmt.BackupRemoteTerraformState(ctx, b)
+				if logdiag.HasError(ctx) {
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
 			}
 		}
 	}

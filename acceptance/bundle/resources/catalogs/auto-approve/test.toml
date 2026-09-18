@@ -7,4 +7,3 @@ Ignore = [
     "catalog.yml",
     "test-file-*.txt",
 ]
-

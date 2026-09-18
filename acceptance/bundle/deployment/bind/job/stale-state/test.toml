@@ -4,4 +4,3 @@ Ignore = [
   "databricks_v2.yml",
   "stale_state.json",
 ]
-
