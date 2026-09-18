@@ -25,7 +25,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-const invalidRefreshTokenErrorCode = "INVALID_REFRESH_TOKEN"
+const unauthenticatedErrorCode = "UNAUTHENTICATED"
 
 type tokenErrorOutput struct {
 	ErrorCode string `json:"error_code"`
@@ -117,7 +117,7 @@ func writeTokenErrorOutput(w io.Writer, err error) error {
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(tokenErrorOutput{
-		ErrorCode: invalidRefreshTokenErrorCode,
+		ErrorCode: unauthenticatedErrorCode,
 		Message:   err.Error(),
 	})
 }
