@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 )
@@ -72,7 +73,7 @@ func listUsagePolicies(ctx context.Context, w *databricks.WorkspaceClient, polic
 		}
 
 		var resp usagePoliciesResponse
-		err = apiClient.Do(ctx, http.MethodGet, serverlessPoliciesPath, nil, nil, query, &resp)
+		err = apiClient.Do(ctx, http.MethodGet, serverlessPoliciesPath, auth.WorkspaceIDHeaders(w.Config), nil, query, &resp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list usage policies: %w", err)
 		}

@@ -148,11 +148,19 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 
 		if !jsonOut {
 			out := cmd.OutOrStdout()
+			perNode, err := gpusPerNode(gpuType(cfg.Compute.AcceleratorType))
+			if err != nil {
+				return err
+			}
+			monitoringMessage := "Monitoring run and streaming logs..."
+			if cfg.Compute.NumAccelerators > perNode {
+				monitoringMessage = fmt.Sprintf("Monitoring run and streaming logs from node 0 of %d...", cfg.Compute.NumAccelerators/perNode)
+			}
 			// The MLflow links stream in via the logs below, so don't poll here.
 			printSubmitResult(ctx, out, runIDStr, dashboardURL)
 			// Separate the submit summary from the streamed logs.
 			fmt.Fprintln(out)
-			fmt.Fprintln(out, "Monitoring run and streaming logs...")
+			fmt.Fprintln(out, monitoringMessage)
 			printLogsDivider(ctx, out)
 			return handleWatchResult(out, w.Config.Profile, runIDStr, runLogs(watchCtx, cmd, req))
 		}

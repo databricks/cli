@@ -1,8 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 envsubst < resources.yml.tmpl > resources.yml
 
-SNAPSHOTS_DIR=".databricks/bundle/default/sync-snapshots"
-
 # double slash at the start prevents Windows to apply replacements to the path
 DEPLOYMENT_PATH="//Workspace/Users/${CURRENT_USER_NAME}/.bundle/${UNIQUE_NAME}"
 
@@ -16,12 +14,13 @@ cleanup() {
   title "Assert job is deleted:\n"
   errcode $CLI jobs get "${JOB_ID}" 2>&1
 
-  title "Assert snapshot file is deleted: "
-  if [ -d ${SNAPSHOTS_DIR} ] && [ -z "$(ls -A ${SNAPSHOTS_DIR})" ]; then
-      echo "Directory exists and is empty"
-  else
-      echo "Directory either does not exist or is not empty. This is unexpected by this test"
-  fi
+  # Print the whole state tree so a lingering snapshot file or an empty scaffolding
+  # dir (e.g. sync-snapshots/ or .internal/) both show up. The terraform engine dir is
+  # pruned: its contents differ by engine and embed the provider version and OS/arch,
+  # which would make the golden fragile. The bundle scaffolding we care about lives
+  # directly under the target dir, so it is still covered.
+  title "Assert destroy leaves the bundle state dir clean:\n"
+  trace find .databricks -name terraform -prune -o -print | sort
 
   title "Assert bundle deployment path is deleted"
   trace errcode $CLI workspace get-status "${DEPLOYMENT_PATH}"

@@ -14,10 +14,12 @@ const (
 	gpuType1xA10  gpuType = "GPU_1xA10"
 	gpuType8xH100 gpuType = "GPU_8xH100"
 	gpuType1xH100 gpuType = "GPU_1xH100"
+	gpuType8xB300 gpuType = "GPU_8xB300"
 )
 
-// gpuTypes lists every valid type. Used for validation error messages.
-var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100}
+// gpuTypes lists every accelerator type understood by this CLI.
+// Workspace availability is enforced by the server.
+var gpuTypes = []gpuType{gpuType1xA10, gpuType1xH100, gpuType8xH100, gpuType8xB300}
 
 func validGPUTypesHint() string {
 	names := make([]string, len(gpuTypes))
@@ -31,7 +33,7 @@ func validGPUTypesHint() string {
 // exact: the server's lookup is case-sensitive.
 func parseGPUType(value string) (gpuType, error) {
 	switch gpuType(value) {
-	case gpuType1xA10, gpuType8xH100, gpuType1xH100:
+	case gpuType1xA10, gpuType8xH100, gpuType1xH100, gpuType8xB300:
 		return gpuType(value), nil
 	}
 	return "", fmt.Errorf("invalid GPU type %q: %s", value, validGPUTypesHint())
@@ -78,7 +80,7 @@ func gpusPerNode(g gpuType) (int, error) {
 	switch g {
 	case gpuType1xA10, gpuType1xH100:
 		return 1, nil
-	case gpuType8xH100:
+	case gpuType8xH100, gpuType8xB300:
 		return 8, nil
 	}
 	// Unreachable: callers resolve g through parseGPUType first, which rejects
@@ -89,10 +91,10 @@ func gpusPerNode(g gpuType) (int, error) {
 // computeConfig is the `compute` block of the run YAML: which accelerators to
 // use and how many.
 type computeConfig struct {
-	NumAccelerators       int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types."`
-	AcceleratorType       string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
-	ProvisionedCapacityID *string `yaml:"provisioned_capacity_id" help:"Pre-provisioned AIR capacity reservation id. Must be 1-255 characters. Contact your Databricks account team to provision capacity."`
-	PriorityClass         *string `yaml:"priority_class" help:"Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires provisioned_capacity_id."`
+	NumAccelerators int     `yaml:"num_accelerators" help:"Total number of GPUs to allocate. Must be a positive multiple of the accelerator type's per-node GPU count. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for supported GPU types."`
+	AcceleratorType string  `yaml:"accelerator_type" help:"Which accelerator to run on, e.g. GPU_1xA10. See https://docs.databricks.com/aws/en/machine-learning/ai-runtime/cli/yaml-config#reference for the current list of supported GPU types. Matched case-sensitively."`
+	PoolID          *string `yaml:"pool_id" help:"GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air list pools'."`
+	PriorityClass   *string `yaml:"priority_class" help:"Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires pool_id."`
 }
 
 // validate checks the compute block against the backend's constraints.
@@ -114,15 +116,15 @@ func (c *computeConfig) validate() error {
 		return fmt.Errorf("compute.num_accelerators for %s must be a multiple of %d, got %d", c.AcceleratorType, perNode, c.NumAccelerators)
 	}
 
-	if c.ProvisionedCapacityID != nil {
-		v := strings.TrimSpace(*c.ProvisionedCapacityID)
+	if c.PoolID != nil {
+		v := strings.TrimSpace(*c.PoolID)
 		if v == "" {
-			return errors.New("compute.provisioned_capacity_id cannot be empty")
+			return errors.New("compute.pool_id cannot be empty")
 		}
 		if len(v) > 255 {
-			return fmt.Errorf("compute.provisioned_capacity_id must be 255 characters or less, got %d", len(v))
+			return fmt.Errorf("compute.pool_id must be 255 characters or less, got %d", len(v))
 		}
-		*c.ProvisionedCapacityID = v
+		*c.PoolID = v
 	}
 
 	if c.PriorityClass != nil {
@@ -130,10 +132,10 @@ func (c *computeConfig) validate() error {
 		if err != nil {
 			return fmt.Errorf("compute.priority_class: %w", err)
 		}
-		// A priority class only ranks pending work within a reservation, so it
-		// requires one.
-		if c.ProvisionedCapacityID == nil {
-			return errors.New("compute.priority_class requires compute.provisioned_capacity_id — priority applies only to a pre-provisioned capacity reservation")
+		// A priority class only ranks pending work within a pool, so it requires
+		// one.
+		if c.PoolID == nil {
+			return errors.New("compute.priority_class requires compute.pool_id — priority applies only within a GPU pool")
 		}
 		*c.PriorityClass = string(p)
 	}

@@ -16,6 +16,7 @@ import (
 
 type VectorSearchIndex struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	vectorsearch.CreateVectorIndexRequest
 
 	// List of grants to apply on this vector search index.

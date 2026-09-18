@@ -119,12 +119,12 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	}
 }
 
-func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, provisionedCapacityID, priorityClass, unityCatalogImagePath string) (int64, error) {
+func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string) (int64, error) {
 	// None of these fields are modeled by the SDK's AiRuntimeTask, so a run that
 	// sets any of them has to go through the raw /api/2.2 body. priority_class only
-	// ever appears alongside a reservation (validation enforces it), but route on
+	// ever appears alongside a pool (validation enforces it), but route on
 	// all of them so none can be silently dropped.
-	if provisionedCapacityID == "" && priorityClass == "" && unityCatalogImagePath == "" {
+	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" {
 		wait, err := w.Jobs.Submit(ctx, payload)
 		if err != nil {
 			return 0, err
@@ -142,7 +142,7 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 	if err := decoder.Decode(&body); err != nil {
 		return 0, fmt.Errorf("failed to decode AIR submit payload: %w", err)
 	}
-	if err := injectReservationFields(body, provisionedCapacityID, priorityClass); err != nil {
+	if err := injectPoolFields(body, poolID, priorityClass); err != nil {
 		return 0, err
 	}
 	if unityCatalogImagePath != "" {
@@ -165,11 +165,11 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 	return response.RunId, nil
 }
 
-// injectReservationFields sets the reservation-only fields the SDK does not
-// model onto the decoded submit body: priority_class rides directly on the
-// ai_runtime_task, while provisioned_capacity_id rides on the deployment's
-// compute spec. Each is set only when non-empty.
-func injectReservationFields(body map[string]any, provisionedCapacityID, priorityClass string) error {
+// injectPoolFields sets the pool-only fields the SDK does not model onto the
+// decoded submit body: priority_class rides directly on the ai_runtime_task,
+// while provisioned_capacity_id (the wire name for the pool) rides on the
+// deployment's compute spec. Each is set only when non-empty.
+func injectPoolFields(body map[string]any, poolID, priorityClass string) error {
 	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
 	if err != nil {
 		return err
@@ -177,7 +177,7 @@ func injectReservationFields(body map[string]any, provisionedCapacityID, priorit
 	if priorityClass != "" {
 		aiRuntimeTask["priority_class"] = priorityClass
 	}
-	if provisionedCapacityID != "" {
+	if poolID != "" {
 		deployments, ok := aiRuntimeTask["deployments"].([]any)
 		if !ok || len(deployments) != 1 {
 			return errors.New("AIR submit payload must contain exactly one deployment")
@@ -190,7 +190,7 @@ func injectReservationFields(body map[string]any, provisionedCapacityID, priorit
 		if !ok {
 			return errors.New("AIR submit payload is missing deployment compute")
 		}
-		computeSpec["provisioned_capacity_id"] = provisionedCapacityID
+		computeSpec["provisioned_capacity_id"] = poolID
 	}
 	return nil
 }
@@ -248,17 +248,17 @@ func withSpinner(ctx context.Context, show bool, msg string, fn func() error) er
 // build and submit a payload that references their remote paths. Snapshot
 // sidecar writes must keep CreateParentDirectories because launch-directory
 // creation is concurrent, not ordered before snapshot staging.
-func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []uploadItem, uploadSnapshot func(context.Context) (snapshotResult, error)) (snapshotResult, error) {
+func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []uploadItem, stageSnapshot func(context.Context) (snapshotResult, error)) (snapshotResult, error) {
 	group, groupCtx := errgroup.WithContext(ctx)
 	group.Go(func() error {
 		return uploadArtifacts(groupCtx, launchWriter, items)
 	})
 
 	var snap snapshotResult
-	if uploadSnapshot != nil {
+	if stageSnapshot != nil {
 		group.Go(func() error {
 			var err error
-			snap, err = uploadSnapshot(groupCtx)
+			snap, err = stageSnapshot(groupCtx)
 			return err
 		})
 	}
@@ -331,29 +331,29 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	if err != nil {
 		return 0, "", err
 	}
-	items, err := buildArtifacts(cfg, configPath)
+	items, err := buildArtifacts(cfg)
 	if err != nil {
 		return 0, "", err
 	}
 
-	// Package and upload the code snapshot, if any, via DABs' artifact-upload
-	// plumbing; the remote code_source_path rides the ai_runtime_task. A run with no
-	// code_source leaves it empty. Snapshot is the only code_source type.
-	var uploadSnapshot func(context.Context) (snapshotResult, error)
+	// Package and upload the code snapshot, if any; the remote code_source_path
+	// rides the ai_runtime_task. A run with no code_source leaves it empty.
+	// Snapshot is the only code_source type.
+	var stageSnapshot func(context.Context) (snapshotResult, error)
 	if cfg.CodeSource != nil && cfg.CodeSource.Snapshot != nil {
 		// Default snapshot tarballs land in the user's shared repo_snapshots dir;
-		// snapshotViaDABsUpload replaces this when remote_volume is configured.
+		// uploadSnapshot replaces this when remote_volume is configured.
 		snapshotArtifactPath := path.Join(base, ".air", "repo_snapshots")
-		uploadSnapshot = func(ctx context.Context) (snapshotResult, error) {
+		stageSnapshot = func(ctx context.Context) (snapshotResult, error) {
 			// Sidecars land in the run's launch dir (funcDir) via fc, next to command.sh.
-			return snapshotViaDABsUpload(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir)
+			return uploadSnapshot(ctx, w, cfg.CodeSource.Snapshot, configPath, snapshotArtifactPath, fc, funcDir)
 		}
 	}
 
 	var snap snapshotResult
 	err = withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
 		var stageErr error
-		snap, stageErr = stageRunArtifacts(ctx, fc, items, uploadSnapshot)
+		snap, stageErr = stageRunArtifacts(ctx, fc, items, stageSnapshot)
 		return stageErr
 	})
 	if err != nil {
@@ -364,19 +364,22 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	payload := buildSubmitPayload(cfg, commandPath, dlRuntimeImage(ctx, runtimeVersion), usagePolicyID, snap, deps)
 	payload.IdempotencyToken = token
 
-	provisionedCapacityID := ""
-	if cfg.Compute.ProvisionedCapacityID != nil {
-		provisionedCapacityID = *cfg.Compute.ProvisionedCapacityID
+	// The pool id is sent on the wire as provisioned_capacity_id (the backend's
+	// name for a GPU pool); only the user-facing YAML field is pool_id.
+	poolID := ""
+	if cfg.Compute.PoolID != nil {
+		poolID = *cfg.Compute.PoolID
 	}
 	priorityClass := ""
 	if cfg.Compute.PriorityClass != nil {
 		priorityClass = *cfg.Compute.PriorityClass
 	}
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
-	runID, err := submitRun(ctx, w, payload, provisionedCapacityID, priorityClass, cfg.unityCatalogImagePath())
+	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath())
 	if err != nil {
 		return 0, "", err
 	}
+	applySubmittedPermissions(ctx, w, runID, cfg.Permissions)
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil

@@ -20,8 +20,9 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, stateDesc *statemgmt.StateDesc) {
 	log.Info(ctx, "Phase: bind")
+	engine := stateDesc.Engine
 
 	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalBind))
 	if logdiag.HasError(ctx) {
@@ -33,7 +34,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 	}()
 
 	if engine.IsDirect() {
-		if b.ConfiguresDeploymentHistory(ctx) {
+		if stateDesc.IsDMS() {
 			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
 			return
 		}

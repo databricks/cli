@@ -3,10 +3,30 @@ package utils
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestResolveDeploymentHistory(t *testing.T) {
+	b := &bundle.Bundle{Config: config.Root{
+		Experimental: &config.Experimental{DeploymentHistory: true},
+	}}
+
+	newState := &statemgmt.StateDesc{}
+	assert.True(t, resolveDeploymentHistory(t.Context(), b, newState))
+	assert.True(t, newState.IsDMS())
+	assert.False(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{SourcePath: "resources.json"}))
+	b.Config.Experimental.DeploymentHistory = false
+	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{
+		SourcePath: "resources.json",
+		Features:   map[string]struct{}{dstate.FeatureDeploymentHistory: {}},
+	}))
+}
 
 func TestIsNewerVersion(t *testing.T) {
 	tests := []struct {

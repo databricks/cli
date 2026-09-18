@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -1219,8 +1220,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID, newState)
 	require.NoError(t, err)
 
+	// WaitAfterDelete polls until the resource reads back gone; a NotFound is that
+	// success and the caller (DeploymentUnit.waitDeleted) maps it to nil, so accept it here too.
 	err = adapter.WaitAfterDelete(ctx, createdID)
-	require.NoError(t, err)
+	if !apierr.IsMissing(err) {
+		require.NoError(t, err)
+	}
 
 	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)

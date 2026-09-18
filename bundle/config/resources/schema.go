@@ -16,6 +16,7 @@ import (
 
 type Schema struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.CreateSchema
 	// List of grants to apply on this schema.
 	Grants []catalog.PrivilegeAssignment `json:"grants,omitempty"`

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/log"
@@ -120,5 +120,5 @@ func (lc *loginConfig) save(ctx context.Context) error {
 		return err
 	}
 	log.Debugf(ctx, "Writing auth configuration to: %s", authFile)
-	return os.WriteFile(authFile, raw, ownerRW)
+	return atomicfile.Write(authFile, raw, ownerRW)
 }

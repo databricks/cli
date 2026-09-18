@@ -5,5 +5,3 @@ compute:
   num_accelerators: 1
 environment:
   version: databricks_ai_v5
-  dependencies:
-    - accelerate

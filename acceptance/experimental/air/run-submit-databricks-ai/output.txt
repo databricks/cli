@@ -1,5 +1,5 @@
 
-=== submit with a Databricks AI environment
+=== submit with a Databricks AI environment and no dependencies
 >>> [CLI] experimental air run -f run.yaml
 Submitting experiment: databricks-ai-v5-smoke
 Submitted workload with Job Run ID: 555
@@ -9,7 +9,7 @@ Tip: use --watch when submitting a run to stream logs to your terminal.
 Stream logs after submission using:
   databricks experimental air logs 555
 
-=== submit accepts a Databricks AI environment version
+=== submit includes the Databricks AI environment version and omits dependencies
 >>> print_requests.py //api/2.2/jobs/runs/submit
 {
   "method": "POST",
@@ -19,10 +19,7 @@ Stream logs after submission using:
       {
         "environment_key": "default",
         "spec": {
-          "base_environment": "workspace-base-environments/databricks_ai_v5",
-          "dependencies": [
-            "accelerate"
-          ]
+          "base_environment": "workspace-base-environments/databricks_ai_v5"
         }
       }
     ],

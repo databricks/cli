@@ -65,6 +65,9 @@ type runConfig struct {
 	Permissions               []permission   `yaml:"permissions" help:"Who may view or manage the run, as a list of principal plus level grants."`
 	UsagePolicyName           *string        `yaml:"usage_policy_name" help:"Usage policy to bill the run to, by name. Max 127 characters. Mutually exclusive with usage_policy_id."`
 	UsagePolicyID             *string        `yaml:"usage_policy_id" help:"Usage policy to bill the run to, by id. Mutually exclusive with usage_policy_name."`
+
+	// artifactYAML is the source-derived config serialized for upload after overrides.
+	artifactYAML []byte
 }
 
 // validate runs structural validation over the whole config, returning the first
@@ -250,7 +253,7 @@ func validateSecretRefs(secrets map[string]string) error {
 // settings.
 type environmentConfig struct {
 	Dependencies      dependencies `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside unity_catalog_image."`
-	Version           stringOrInt  `yaml:"version" help:"Client image version to pin. Only valid alongside inline dependencies."`
+	Version           stringOrInt  `yaml:"version" help:"Client image version to pin."`
 	UnityCatalogImage string       `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside dependencies or version."`
 }
 
@@ -276,11 +279,6 @@ func (e *environmentConfig) validate() error {
 		return nil
 	}
 
-	// version pins the client image version, which is only meaningful alongside an
-	// inline dependency set.
-	if e.Version.set && !e.Dependencies.set {
-		return errors.New("'environment.version' requires inline 'dependencies' (a list of packages)")
-	}
 	if e.Version.set {
 		version, err := validateRuntimeVersion(e.Version.raw, "environment.version")
 		if err != nil {

@@ -65,6 +65,9 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, aiRuntimeEnvironmentKey, p.Environments[0].EnvironmentKey)
 	require.NotNil(t, p.Environments[0].Spec)
 	assert.Equal(t, "5", p.Environments[0].Spec.EnvironmentVersion)
+	environmentJSON, err := json.Marshal(p.Environments[0].Spec)
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"environment_version":"5"}`, string(environmentJSON))
 
 	require.Len(t, p.Tasks, 1)
 	task := p.Tasks[0]
@@ -85,7 +88,25 @@ func TestBuildSubmitPayload(t *testing.T) {
 	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu8xH100, AcceleratorCount: 16}, at.Deployments[0].Compute)
 }
 
-func TestSubmitRunInjectsProvisionedCapacityID(t *testing.T) {
+func TestBuildSubmitPayloadB300(t *testing.T) {
+	cfg := &runConfig{
+		ExperimentName: "b300",
+		Command:        new("nvidia-smi"),
+		Compute:        &computeConfig{AcceleratorType: "GPU_8xB300", NumAccelerators: 8},
+	}
+
+	p := buildSubmitPayload(cfg, "/d/command.sh", "databricks_ai_v6", "", snapshotResult{}, nil)
+	require.Len(t, p.Environments, 1)
+	require.NotNil(t, p.Environments[0].Spec)
+	assert.Equal(t, "workspace-base-environments/databricks_ai_v6", p.Environments[0].Spec.BaseEnvironment)
+	assert.Empty(t, p.Environments[0].Spec.EnvironmentVersion)
+	require.Len(t, p.Tasks, 1)
+	require.NotNil(t, p.Tasks[0].AiRuntimeTask)
+	require.Len(t, p.Tasks[0].AiRuntimeTask.Deployments, 1)
+	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorType("GPU_8xB300"), AcceleratorCount: 8}, p.Tasks[0].AiRuntimeTask.Deployments[0].Compute)
+}
+
+func TestSubmitRunInjectsPoolID(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
 	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
@@ -452,8 +473,8 @@ environment:
 	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
 }
 
-// A working-tree code_source is packaged into a tarball, uploaded via DABs' artifact
-// plumbing, and its remote code_source_path attached to the submitted task.
+// A working-tree code_source is packaged into a tarball, uploaded via libs/filer,
+// and its remote code_source_path attached to the submitted task.
 func TestSubmitWorkloadWithCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -488,7 +509,7 @@ code_source:
 	loaded, err := loadRunConfig(cfgPath)
 	require.NoError(t, err)
 
-	// The DABs upload path logs via cmdio; the real `air run` context carries it.
+	// The upload path logs via cmdio; the real `air run` context carries it.
 	ctx := cmdio.MockDiscard(t.Context())
 	_, _, err = submitWorkload(ctx, w, loaded, cfgPath, "idem", false)
 	require.NoError(t, err)
@@ -501,8 +522,8 @@ code_source:
 	assert.Equal(t, int32(1), meCalls.Load(), "code-source submission should resolve the workspace base once")
 }
 
-// A git-pinned code_source is git-archived at the commit, uploaded via DABs' artifact
-// plumbing, and its remote code_source_path attached to the submitted task.
+// A git-pinned code_source is git-archived at the commit, uploaded via libs/filer,
+// and its remote code_source_path attached to the submitted task.
 func TestSubmitWorkloadWithGitPinnedCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)
@@ -544,7 +565,7 @@ code_source:
 }
 
 // testSidecarStore builds a workspace filer + base path standing in for the run's
-// launch dir, where snapshotViaDABsUpload writes git provenance sidecars.
+// launch dir, where uploadSnapshot writes git provenance sidecars.
 func testSidecarStore(t *testing.T, w *databricks.WorkspaceClient) (filer.Filer, string) {
 	t.Helper()
 	base := "/Workspace/Users/tester@databricks.com/.air/cli_launch/test"
@@ -600,11 +621,11 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 	require.NotZero(t, snapshotUploads, "first submit should upload the tarball")
 	afterFirst := snapshotUploads
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	// Content-addressed name: not the bare dir, but a 16-hex-char fingerprint.
@@ -630,7 +651,7 @@ func TestSubmitWorkloadGitArchiveCaching(t *testing.T) {
 	})
 	// Track which snapshot tarballs get uploaded, preserving fake-workspace
 	// persistence so the second submit's cache-existence Stat sees the first upload.
-	// Dedupe by path: the DABs uploader mkdirs-and-retries the import on a missing
+	// Dedupe by path: the filer mkdirs-and-retries the import on a missing
 	// parent dir, so one logical upload can hit this route more than once.
 	uploaded := map[string]bool{}
 	server.Handle("POST", "/api/2.0/workspace-files/import-file/{path...}", func(req testserver.Request) any {
@@ -663,9 +684,9 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	first, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	first, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
-	second, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	second, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	// Same pinned commit → identical content-addressed remote path, uploaded once
@@ -707,7 +728,7 @@ code_source:
 
 	ctx := cmdio.MockDiscard(t.Context())
 	sidecarStore, sidecarBase := testSidecarStore(t, w)
-	snap, err := snapshotViaDABsUpload(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
+	snap, err := uploadSnapshot(ctx, w, loaded.CodeSource.Snapshot, cfgPath, testSnapshotArtifactPath, sidecarStore, sidecarBase)
 	require.NoError(t, err)
 
 	assert.Empty(t, snap.GitStatePath)
@@ -719,8 +740,8 @@ code_source:
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-// remote_volume uploads the snapshot to a UC Volume: DABs' artifact uploader handles
-// /Volumes destinations natively, so code_source_path lands under the Volume path.
+// remote_volume uploads the snapshot to a UC Volume: snapshotUploadFiler routes
+// /Volumes destinations to a Files API filer, so code_source_path lands under the Volume path.
 func TestSubmitWorkloadWithRemoteVolumeCodeSource(t *testing.T) {
 	server := testserver.New(t)
 	t.Cleanup(server.Close)

@@ -14,6 +14,7 @@ import (
 
 type VectorSearchEndpoint struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	vectorsearch.CreateEndpoint
 
 	Permissions []VectorSearchEndpointPermission `json:"permissions,omitempty"`

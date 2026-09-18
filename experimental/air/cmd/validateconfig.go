@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -44,7 +45,7 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 	}
 
 	var resp validateConfigResponse
-	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, nil, nil, validateConfigRequest(cfg, commandPath), &resp)
+	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(w.Config), nil, validateConfigRequest(cfg, commandPath), &resp)
 	if err != nil {
 		if endpointUnavailable(err) || serverError(err) {
 			return nil
@@ -66,7 +67,9 @@ func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
 		compute["accelerator_count"] = cfg.Compute.NumAccelerators
-		putOpt(compute, "provisioned_capacity_id", cfg.Compute.ProvisionedCapacityID)
+		// Wire field stays provisioned_capacity_id (the backend name); the YAML
+		// field is pool_id.
+		putOpt(compute, "provisioned_capacity_id", cfg.Compute.PoolID)
 	}
 	task := map[string]any{
 		"experiment":  cfg.ExperimentName,

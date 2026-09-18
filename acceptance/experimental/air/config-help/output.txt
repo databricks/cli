@@ -63,10 +63,10 @@ config.compute
   Which accelerators to run on and how many.
 
   Fields:
-    num_accelerators         Total number of GPUs to allocate.
-    accelerator_type         Which accelerator to run on, e.g. GPU_1xA10.
-    provisioned_capacity_id  Pre-provisioned AIR capacity reservation id.
-    priority_class           Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest).
+    num_accelerators  Total number of GPUs to allocate.
+    accelerator_type  Which accelerator to run on, e.g. GPU_1xA10.
+    pool_id           GPU pool to run on, by id.
+    priority_class    Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest).
 
 Use "-h config.compute.<field>" for details on a field.
 
@@ -78,16 +78,16 @@ config.mlflow_artifact_location
   Type:     string
   Required: no
 
->>> [CLI] experimental air run -h config.compute.provisioned_capacity_id
-config.compute.provisioned_capacity_id
-  Pre-provisioned AIR capacity reservation id. Must be 1-255 characters. Contact your Databricks account team to provision capacity.
+>>> [CLI] experimental air run -h config.compute.pool_id
+config.compute.pool_id
+  GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air list pools'.
 
   Type:     string
   Required: no
 
 >>> [CLI] experimental air run -h config.compute.priority_class
 config.compute.priority_class
-  Scheduling priority within the reservation: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires provisioned_capacity_id.
+  Scheduling priority within the pool: BEST_EFFORT (lowest, preemptable), NORMAL, or CRITICAL (highest). Requires pool_id.
 
   Type:     string
   Required: no
@@ -97,6 +97,13 @@ config.environment.dependencies
   Inline list of packages to install. Not allowed alongside unity_catalog_image.
 
   Type:     list of strings
+  Required: no
+
+>>> [CLI] experimental air run -h config.environment.version
+config.environment.version
+  Client image version to pin.
+
+  Type:     string or int
   Required: no
 
 === leaf field
@@ -143,7 +150,7 @@ config.compute.num_accelerators
 >>> [CLI] experimental air run -h config.compute.acclerator_type
 Error: unknown config field "config.compute.acclerator_type"; did you mean "accelerator_type"?
 
-fields under "config.compute" are: accelerator_type, num_accelerators, priority_class, provisioned_capacity_id
+fields under "config.compute" are: accelerator_type, num_accelerators, pool_id, priority_class
 
 === free-form map keys are not schema fields
 >>> [CLI] experimental air run -h config.parameters.learning_rate
