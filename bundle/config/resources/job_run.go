@@ -20,6 +20,9 @@ type JobRun struct {
 	BaseResource
 	jobs.RunNow
 
+	// DependsOn lists job runs that must succeed before this run starts.
+	DependsOn []string `json:"depends_on,omitempty"`
+
 	// Lifecycle shadows BaseResource.Lifecycle so job_runs can set triggers.
 	Lifecycle *JobRunLifecycle `json:"lifecycle,omitempty"`
 

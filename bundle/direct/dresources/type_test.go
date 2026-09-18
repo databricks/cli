@@ -62,7 +62,8 @@ var knownMissingInRemoteType = map[string][]string{
 		"zip_path",
 	},
 	"job_runs": {
-		// Local-only trigger fingerprints under lifecycle.
+		// Local-only dependency IDs and trigger fingerprints.
+		"depends_on",
 		"lifecycle",
 	},
 }

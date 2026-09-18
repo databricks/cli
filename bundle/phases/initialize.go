@@ -191,6 +191,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Reject configured job_runs.idempotency_token; the CLI sets it on run-now.
 		validate.ValidateJobRunIdempotencyToken(),
 
+		// Require job_runs.depends_on entries to reference existing job run IDs.
+		validate.ValidateJobRunDependencies(),
+
 		// Reject invalid job_runs.lifecycle.triggers (empty, false, prevent_destroy).
 		mutator.ValidateJobRunTriggers(),
 

@@ -113,6 +113,8 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			MaxWait:     unitWait,
 		}
 
+		var waitedAfterSkip bool
+
 		if action == deployplan.Delete {
 			if entry.IsStateOnlyDelete() {
 				// The resource is already deleted remotely (Gone) or has no delete
@@ -135,7 +137,29 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return true
 		}
 
-		// We don't keep NewState around for 'skip' nodes
+		// We don't keep NewState around for 'skip' nodes. A skipped resource can
+		// still be in progress after an earlier deploy abandoned its wait, so resume
+		// that wait before releasing any blocking dependents.
+		if action == deployplan.Skip && hasBlockingDependents(g, resourceKey) {
+			id := b.StateDB.GetResourceID(resourceKey)
+			if id == "" {
+				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state", errorPrefix))
+				return false
+			}
+			waitCtx := d.withResourceKey(ctx)
+			remoteState, err := retryOnTransient(waitCtx, func() (any, error) {
+				return d.Adapter.WaitAfterSkip(waitCtx, id, entry.RemoteState)
+			})
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: waiting for skipped resource id=%s: %w", errorPrefix, id, err))
+				return false
+			}
+			if err := d.SetRemoteState(remoteState); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
+			waitedAfterSkip = d.RemoteState != nil
+		}
 
 		if action != deployplan.Skip {
 			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
@@ -186,10 +210,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			err = d.refreshRemoteState(ctx, id)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
-				return false
+			if !waitedAfterSkip {
+				err = d.refreshRemoteState(ctx, id)
+				if err != nil {
+					logdiag.LogError(ctx, fmt.Errorf("%s: failed to read remote state: %w", errorPrefix, err))
+					return false
+				}
 			}
 			b.RemoteStateCache.Store(resourceKey, d.RemoteState)
 		}
