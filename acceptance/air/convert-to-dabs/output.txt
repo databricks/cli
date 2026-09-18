@@ -103,7 +103,7 @@ job and its uploaded files with:
   [CLI] bundle destroy
 
 === convert a B300 run using the current SDK
->>> [CLI] experimental air convert-to-dabs b300.yaml --output-dir generated-b300
+>>> [CLI] air convert-to-dabs b300.yaml --output-dir generated-b300
 Wrote a Databricks Asset Bundle to generated-b300:
   databricks.yml
   generated_artifacts/training_config.yaml
@@ -169,7 +169,7 @@ Workspace:
 Found 1 warning
 
 === databricks_ai versions use a base environment
->>> [CLI] experimental air convert-to-dabs databricks-ai.yaml --force
+>>> [CLI] air convert-to-dabs databricks-ai.yaml --force
 Wrote a Databricks Asset Bundle to .:
   databricks.yml
   generated_artifacts/training_config.yaml
