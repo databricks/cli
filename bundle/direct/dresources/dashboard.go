@@ -398,7 +398,7 @@ func (r *ResourceDashboard) DoDelete(ctx context.Context, id string, _ *Dashboar
 	})
 }
 
-func (r *ResourceDashboard) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *DashboardState) error {
+func (r *ResourceDashboard) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _, _ *DashboardState) error {
 	switch path.String() {
 	case "etag":
 		// change.New is always nil for etag because it's not present in the config

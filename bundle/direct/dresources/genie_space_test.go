@@ -182,20 +182,20 @@ func TestGenieSpaceOverrideChangeDescEtag(t *testing.T) {
 
 	t.Run("Skip when stored matches remote", func(t *testing.T) {
 		change := &ChangeDesc{Old: "etag-7", Remote: "etag-7"}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), etagPath, change, nil))
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), etagPath, change, nil, nil))
 		assert.Equal(t, deployplan.Skip, change.Action)
 	})
 
 	t.Run("Update when stored differs from remote", func(t *testing.T) {
 		change := &ChangeDesc{Old: "etag-7", Remote: "etag-8"}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), etagPath, change, nil))
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), etagPath, change, nil, nil))
 		assert.Equal(t, deployplan.Update, change.Action)
 	})
 
 	t.Run("Other paths are untouched", func(t *testing.T) {
 		titlePath := structpath.MustParsePath("title")
 		change := &ChangeDesc{Action: deployplan.Update, Old: "a", Remote: "b"}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), titlePath, change, nil))
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), titlePath, change, nil, nil))
 		assert.Equal(t, deployplan.Update, change.Action)
 	})
 }
