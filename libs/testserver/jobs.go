@@ -81,9 +81,8 @@ func validateJobGitSource(gitSource *jobs.GitSource) *Response {
 // validateSparkPythonTasks mirrors the Jobs API validation of
 // spark_python_task.python_file. The backend only treats a task as git-sourced
 // when source == GIT is set explicitly (it does not infer it from the job's
-// git_source), so a bare repo-relative python_file is rejected unless source is
-// GIT. See ElasticSparkRpcValidatorHook.validateSparkPythonTask /
-// validatePythonFilePath in the universe repo.
+// git_source), so a bare repo-relative python_file is rejected unless the
+// task's source is GIT.
 func validateSparkPythonTasks(tasks []jobs.Task) *Response {
 	for _, task := range tasks {
 		if response := validateSparkPythonTask(task.SparkPythonTask); response != nil {
