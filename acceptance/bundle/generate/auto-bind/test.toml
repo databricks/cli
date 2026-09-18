@@ -11,3 +11,7 @@ Ignore = [
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
 # Setting this environment variable prevents that conversion on windows.
 Env.MSYS_NO_PATHCONV = "1"
+
+# bind is not supported for a target that records deployment history, so exercise
+# only the non-recording variant.
+EnvMatrix.DMS = [""]
