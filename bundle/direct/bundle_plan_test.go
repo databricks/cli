@@ -604,3 +604,108 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
 }
+
+func TestShouldSkipNormalized(t *testing.T) {
+	slashPat, err := structpath.ParsePattern("storage_root")
+	require.NoError(t, err)
+	casePat, err := structpath.ParsePattern("channel")
+	require.NoError(t, err)
+	bothPat, err := structpath.ParsePattern("weird")
+	require.NoError(t, err)
+
+	cfg := &dresources.ResourceLifecycleConfig{
+		NormalizeSlash: []dresources.FieldRule{{Field: slashPat, Reason: "slash"}, {Field: bothPat, Reason: "slash"}},
+		NormalizeCase:  []dresources.FieldRule{{Field: casePat, Reason: "case"}, {Field: bothPat, Reason: "case"}},
+	}
+
+	tests := []struct {
+		name       string
+		path       string
+		newVal     any
+		remoteVal  any
+		wantReason string
+		wantSkip   bool
+	}{
+		{
+			name:       "slash rule, slash-only diff",
+			path:       "storage_root",
+			newVal:     "s3://b/x/",
+			remoteVal:  "s3://b/x",
+			wantReason: "slash",
+			wantSkip:   true,
+		},
+		{
+			name:       "slash rule stays case-sensitive",
+			path:       "storage_root",
+			newVal:     "s3://b/X",
+			remoteVal:  "s3://b/x",
+			wantReason: "",
+			wantSkip:   false,
+		},
+		{
+			name:       "case rule, case-only diff",
+			path:       "channel",
+			newVal:     "current",
+			remoteVal:  "CURRENT",
+			wantReason: "case",
+			wantSkip:   true,
+		},
+		{
+			name:       "case rule, genuine diff",
+			path:       "channel",
+			newVal:     "current",
+			remoteVal:  "preview",
+			wantReason: "",
+			wantSkip:   false,
+		},
+		{
+			name:       "both rules, slash-only diff",
+			path:       "weird",
+			newVal:     "Foo/",
+			remoteVal:  "Foo",
+			wantReason: "slash",
+			wantSkip:   true,
+		},
+		{
+			name:       "both rules, case-only diff",
+			path:       "weird",
+			newVal:     "PRO",
+			remoteVal:  "pro",
+			wantReason: "case",
+			wantSkip:   true,
+		},
+		{
+			name:       "both rules, slash and case diff",
+			path:       "weird",
+			newVal:     "Foo/",
+			remoteVal:  "foo",
+			wantReason: "case",
+			wantSkip:   true,
+		},
+		{
+			name:       "both rules, genuine diff",
+			path:       "weird",
+			newVal:     "foo",
+			remoteVal:  "bar",
+			wantReason: "",
+			wantSkip:   false,
+		},
+		{
+			name:       "non-string change",
+			path:       "channel",
+			newVal:     1,
+			remoteVal:  2,
+			wantReason: "",
+			wantSkip:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := structpath.ParsePath(tt.path)
+			require.NoError(t, err)
+			reason, ok := shouldSkipNormalized(cfg, path, &deployplan.ChangeDesc{New: tt.newVal, Remote: tt.remoteVal})
+			assert.Equal(t, tt.wantSkip, ok)
+			assert.Equal(t, tt.wantReason, reason)
+		})
+	}
+}

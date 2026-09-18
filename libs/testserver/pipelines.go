@@ -96,6 +96,13 @@ func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
 	if spec.Storage == "" && spec.Catalog == "" {
 		spec.Storage = "dbfs:/pipelines/" + pipelineId
 	}
+	// The backend stores channel and edition as canonical upper-case enums (CURRENT/PREVIEW,
+	// CORE/PRO/ADVANCED) and catalog as a lower-case UC identifier, normalizing whatever case
+	// the request used. A deploy that sends a different case then reads back the canonical
+	// value; without case-insensitive diffing this drifts on every plan. Mirror that here.
+	spec.Channel = strings.ToUpper(spec.Channel)
+	spec.Edition = strings.ToUpper(spec.Edition)
+	spec.Catalog = strings.ToLower(spec.Catalog)
 }
 
 func (s *FakeWorkspace) PipelineUpdate(req Request, pipelineId string) Response {

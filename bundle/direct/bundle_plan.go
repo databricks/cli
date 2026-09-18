@@ -666,11 +666,12 @@ func classifyIDField(cfg *dresources.ResourceLifecycleConfig, path *structpath.P
 	return deployplan.Undefined, "", false
 }
 
-// shouldSkipNormalized skips a change that is a false diff caused by UC API
-// normalization: the API strips trailing slashes from storage URLs
-// (normalize_slash). The direct engine saves local config to state, so without
-// this the next plan sees the original value against the normalized remote value
-// and triggers a spurious recreate/update.
+// shouldSkipNormalized skips a change that is a false diff caused by backend
+// normalization: the UC API strips trailing slashes from storage URLs
+// (normalize_slash), and some fields are stored in a canonical case such as
+// upper-case enums (normalize_case). The direct engine saves local config to
+// state, so without this the next plan sees the original value against the
+// normalized remote value and triggers a spurious recreate/update.
 func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
 		return "", false
@@ -680,7 +681,17 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 	if !newOk || !remoteOk {
 		return "", false
 	}
-	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok && strings.TrimRight(newStr, "/") == strings.TrimRight(remoteStr, "/") {
+	// normalize_slash strips trailing slashes and normalize_case folds letter case. A field
+	// under both rules is normalized on both axes, so trim first and then fold: a value
+	// differing by slash and case at once still converges.
+	newVal, remoteVal := newStr, remoteStr
+	if reason, ok := findMatchingRule(path, cfg.NormalizeSlash); ok {
+		newVal, remoteVal = strings.TrimRight(newVal, "/"), strings.TrimRight(remoteVal, "/")
+		if newVal == remoteVal {
+			return reason, true
+		}
+	}
+	if reason, ok := findMatchingRule(path, cfg.NormalizeCase); ok && strings.EqualFold(newVal, remoteVal) {
 		return reason, true
 	}
 	return "", false
