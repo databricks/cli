@@ -9,8 +9,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 === Add a direct-only resource to the config
 >>> update_file.py databricks.yml #instance_pools instance_pools
 
-=== Opt in via env var only: deploy migrates the state, ignoring the direct-only resource
+=== Opt in via env var only: deploy migrates the state and creates the direct-only resource
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
 Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created instance_pools.pool
@@ -18,8 +19,9 @@ Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_migration_telemetry
+direct_migrated_via_env true
 
-=== The direct-only resource is created on the next deploy
+=== Redeploy is a no-op: state is already on the direct engine
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 

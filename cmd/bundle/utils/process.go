@@ -236,32 +236,34 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
 
-		// Move a Terraform state to the direct engine before planning: when the direct
-		// engine is requested (the default) and the existing state still uses Terraform,
-		// convert it to a direct-engine state in memory and open the state DB with it, so
-		// the deploy runs on the direct engine. The deploy's normal Finalize commits
-		// resources.json only if it records changes, and terraform.tfstate is backed up
-		// only then. Read-only commands (e.g. "bundle debug states") set none of these
-		// options and keep reading the Terraform state as-is.
+		// Migrate a Terraform state to the direct engine before planning/deploying: when
+		// the direct engine is requested (the default) and the existing state still uses
+		// Terraform, convert and commit it (resources.json written and pushed,
+		// terraform.tfstate backed up) so the run proceeds on the direct engine. If the
+		// migration's plan check fails, MigrateToDirect leaves the Terraform state intact
+		// and warns; the run then falls back to the terraform engine. Read-only commands
+		// (e.g. "bundle debug states") set none of these options and keep reading the
+		// Terraform state as-is.
 		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
 		if b.MigratingToDirect && needsState {
-			if opts.Deploy && requiredEngine.IsDefault {
+			if requiredEngine.IsDefault {
 				cmdio.LogString(ctx, "Notice: the direct deployment engine is the default as of CLI v1.14.0.\n\n"+
 					"This bundle will be automatically migrated to use the direct deployment engine.\n\n"+
 					"Learn more: https://docs.databricks.com/dev-tools/bundles/direct\n")
 			}
-			// Commit the migration on deploy (write resources.json, push it, back up
-			// terraform.tfstate) so it completes even if the deploy is a no-op; plan and
-			// other read-only paths keep it in memory.
-			migrated, err := statemgmt.OpenMigratedTerraformState(ctx, b, opts.Deploy)
-			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("migrating Terraform state to the direct engine: %w", err))
+			statemgmt.MigrateToDirect(ctx, b, requiredEngine)
+			if logdiag.HasError(ctx) {
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-			if migrated {
-				stateDesc.Engine = engine.EngineDirect
-				b.Metrics.StateEngine = engine.EngineDirect
+			// Re-resolve state: the migration may have committed resources.json (direct),
+			// swept an empty terraform state (direct), or left terraform intact if its plan
+			// check failed (the run then proceeds on terraform).
+			ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
+			cmd.SetContext(ctx)
+			b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 		}
 
 		// --select is only supported by the direct engine, which tracks resource

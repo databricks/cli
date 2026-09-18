@@ -1,9 +1,34 @@
 
 === Deploy with bundle.engine: direct and an empty terraform state — sweep, don't migrate
 >>> [CLI] bundle deploy
+Removing empty terraform state; direct engine will be used on the next deploy (selected via bundle.engine setting at [TEST_TMP_DIR]/databricks.yml:3:11)...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-contains error: 'Removing empty terraform state' not found in the output.
+
+=== Terraform state is renamed to .backup; no resources.json (empty state, nothing to persist)
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup
+
+=== Sweep is recorded in telemetry as via-config
+
+>>> print_migration_telemetry
+direct_migrated_via_config true
+
+=== Sweep also affected the workspace: .backup uploaded, terraform.tfstate deleted
+
+>>> print_requests.py //workspace-files/import-file //workspace/delete --sort
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/script"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+"POST /api/2.0/workspace/delete"
+"POST /api/2.0/workspace/delete"
+contains error: 'terraform.tfstate.backup' not found in the output.
 
 Exit code: 1

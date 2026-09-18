@@ -11,10 +11,20 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Notice: the direct deployment engine is the default as of CLI v1.14.0.
+
+This bundle will be automatically migrated to use the direct deployment engine.
+
+Learn more: https://docs.databricks.com/dev-tools/bundles/direct
+
+Migrating state to direct deployment engine (selected via default)...
+Migrated 1 resource to direct deployment engine.
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> print_requests.py --get //api/2.1/unity-catalog/schemas
 "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/terraform auth/pat"
-contains error: 'engine/direct' not found in the output.
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/terraform engine/direct auth/pat"
+
+=== Adding resources.json with lower serial does not change anythingrm: .databricks/bundle/default/terraform/terraform.tfstate: No such file or directory
 
 Exit code: 1

@@ -51,6 +51,14 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:5:3
 
+Notice: the direct deployment engine is the default as of CLI v1.14.0.
+
+This bundle will be automatically migrated to use the direct deployment engine.
+
+Learn more: https://docs.databricks.com/dev-tools/bundles/direct
+
+Migrating state to direct deployment engine (selected via default)...
+Migrated 2 resources to direct deployment engine.
 
 >>> [CLI] pipelines get [UUID]
 
@@ -82,45 +90,8 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:5:3
 
-Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/production/resources.json
-
-Validate the migration by running "databricks bundle plan", there should be no actions planned.
-
-The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
-
-To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/production/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/production/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/production/terraform/terraform.tfstate
-
-
->>> print_state.py
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - user_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:5:3
-
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - user_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:5:3
-
+Error: already using direct engine
+Details: [TEST_TMP_DIR]/.databricks/bundle/production/resources.json: local direct state serial=5 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle destroy --auto-approve
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
@@ -145,3 +116,5 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production
 
 Destroy: 1 deleted
+
+Exit code: 1

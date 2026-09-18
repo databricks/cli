@@ -41,99 +41,13 @@ Please forward these warnings to dabs-feedback@databricks.com`
 // migration is skipped.
 const autoMigrateStoppedNotice = `Direct engine was selected but the migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
 
-// OpenMigratedTerraformState converts the bundle's terraform state to a direct-engine
-// state and opens b.DeploymentBundle.StateDB with it, pointed at the resources.json path
-// in read mode. Returns false when there is no terraform state to migrate (the caller
-// then opens the direct state normally).
-//
-// When commit is false (plan and other read-only paths) the converted state is held in
-// memory and nothing is written to disk. When commit is true (deploy) the migration is
-// finalized: resources.json is written and pushed to the workspace and terraform.tfstate
-// is backed up, so the migration completes even if the subsequent deploy is a no-op.
-func OpenMigratedTerraformState(ctx context.Context, b *bundle.Bundle, commit bool) (bool, error) {
-	_, localTerraformPath := b.StateFilenameTerraform(ctx)
-	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
-	if err != nil {
-		return false, fmt.Errorf("parsing terraform state: %w", err)
-	}
-	if tfState == nil {
-		return false, nil
-	}
-
-	_, localDirectPath := b.StateFilenameDirect(ctx)
-
-	// A terraform state with no managed resources carries nothing to migrate; seed an
-	// empty direct database at the incremented serial so the deploy runs on direct.
-	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
-		b.DeploymentBundle.StateDB.OpenWithData(localDirectPath, dstate.NewDatabase(tfState.Lineage, tfState.Serial+1))
-		return true, nil
-	}
-
-	tempStatePath, resourceCount, _, cfg, err := convertTFStateToDirect(ctx, b, tfState)
-	cleanupTemp := true
-	if tempStatePath != "" {
-		defer func() {
-			if cleanupTemp {
-				_ = os.Remove(tempStatePath)
-				_ = os.Remove(tempStatePath + ".wal")
-			}
-		}()
-	}
-	if err != nil {
-		return false, err
-	}
-
-	if commit {
-		// Plan against the converted state first; if it fails, the migration is not
-		// committed. The terraform engine is still available, so warn and fall back to
-		// deploying on terraform (the temp file is cleaned up by the deferred Remove).
-		if err := checkPlanOnTempState(ctx, b, tempStatePath, cfg); err != nil {
-			log.Warnf(ctx, "migration to the direct engine failed its plan check; deploying on terraform this time: %v", err)
-			return false, nil
-		}
-
-		// Plan is clean: finalize the migration by pushing resources.json to the
-		// workspace, moving it into place locally, and backing up terraform.tfstate.
-		// commitMigration renames the temp file into resources.json, so it must not be
-		// cleaned up here. The migration commits even if the deploy that follows is a
-		// no-op, so it completes in one deploy.
-		cleanupTemp = false
-		if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
-			return false, err
-		}
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localDirectPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-			return false, fmt.Errorf("opening migrated state: %w", err)
-		}
-		return true, nil
-	}
-
-	// Load the converted state file into memory. It was just written by this CLI, so it
-	// is at the current schema version and needs no migration.
-	raw, err := os.ReadFile(tempStatePath)
-	if err != nil {
-		return false, fmt.Errorf("reading migrated state: %w", err)
-	}
-	var data dstate.Database
-	if err := json.Unmarshal(raw, &data); err != nil {
-		return false, fmt.Errorf("parsing migrated state: %w", err)
-	}
-
-	b.DeploymentBundle.StateDB.OpenWithData(localDirectPath, data)
-	return true, nil
-}
-
-// MigrateToDirect performs a dry-run migration of the just-deployed terraform
-// state to the direct engine and records the outcome in deploy telemetry.
-//
-// The converted state is written to a temporary file. If the dry-run is clean
-// and requestedEngine resolves to "direct" (which is the default, and can also
-// be set explicitly via bundle.engine or the DATABRICKS_BUNDLE_ENGINE env var),
-// the temp state is committed (renamed to resources.json, terraform.tfstate is
-// backed up, and the new state is pushed to the workspace). Otherwise the temp
-// state is deleted and only telemetry is recorded. Any failure is surfaced as a
-// warning so it never fails a deploy that already succeeded.
-//
-//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
+// MigrateToDirect migrates the bundle's terraform state to the direct engine when the
+// direct engine is requested (the default). It converts the state, plan-checks the
+// result, and on success commits it: resources.json is written and pushed to the
+// workspace and terraform.tfstate is backed up. If the plan check fails the migration is
+// not committed and a warning is emitted (the deploy then proceeds on the terraform
+// engine, which is still available). Called before plan/deploy; the outcome is recorded
+// in deploy telemetry.
 func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
@@ -241,8 +155,6 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 // Individual planning errors are emitted as warnings with warnPrefix so they
 // are visible without failing the deploy. The plan is run in an isolated
 // context so its diagnostics do not affect the deploy's own error state.
-//
-//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath string, cfg *config.Root) error {
 	planCtx := logdiag.IsolatedContext(ctx)
 	logdiag.SetCollect(planCtx, true)
@@ -271,8 +183,6 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 // recordDryRunNoop records dry-run telemetry for a no-op case (no state, or
 // state with no managed resources) when direct was NOT selected. On the
 // migrating paths the caller uses direct_migrate_* keys instead.
-//
-//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	if requestedEngine.Type == engine.EngineDirect {
 		return
@@ -287,8 +197,6 @@ func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 // set only when the config populated the setting, so it's the correct signal for
 // "was this a durable opt-in?" — env-only opt-ins are the ones with
 // ConfigType == EngineNotSet and IsDefault false.
-//
-//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	switch {
 	case requestedEngine.IsDefault:
@@ -309,8 +217,6 @@ func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSett
 // Contrast with BackupRemoteTerraformState, which only handles the remote
 // half and swallows errors via log.Warnf for best-effort direct-engine
 // cleanup on unrelated code paths.
-//
-//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 func BackupTerraformState(ctx context.Context, b *bundle.Bundle) error {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
@@ -447,8 +353,6 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 // the remote terraform state. Remote push happens FIRST: if we swapped local
 // state and then failed to push, this machine would prefer direct state while
 // the workspace still has terraform state, so other machines would diverge.
-//
-//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string, resourceCount int) error {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	_, localDirectPath := b.StateFilenameDirect(ctx)
@@ -500,8 +404,6 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 // direct state landed but the terraform state stayed, the workspace has two
 // authoritative files, and an older CLI (or `validateStates`) will refuse to
 // use them. Fail loudly so the caller can record telemetry and warn the user.
-//
-//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 func pushDirectState(ctx context.Context, b *bundle.Bundle, localPath string) error {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
