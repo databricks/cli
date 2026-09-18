@@ -6,12 +6,24 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/structs/registry"
 	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// Register the local test types used by the keyed-slice tests below. EmbedItem is
+// deliberately left unregistered so TestGetStructDiffEmbedTag exercises the unkeyed
+// (index/whole-slice) path.
+func init() {
+	registry.Register[Task]("task_key")
+	registry.Register[Dep]("task_key")
+	registry.Register[Item]("id")
+	registry.Register[principal]("user_name", "service_principal_name")
+	registry.Register[keyedEmbedItem]("name")
+}
 
 type B struct{ S string }
 
@@ -442,7 +454,7 @@ func TestGetStructDiff(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, nil)
+			got, err := GetStructDiff(tt.a, tt.b)
 
 			assert.Equal(t, tt.want, resolveChanges(got))
 
@@ -454,7 +466,7 @@ func TestGetStructDiff(t *testing.T) {
 		})
 
 		t.Run(tt.name+" mirror", func(t *testing.T) {
-			got, err := GetStructDiff(tt.b, tt.a, nil)
+			got, err := GetStructDiff(tt.b, tt.a)
 
 			var mirrorWant []ResolvedChange
 			for _, ch := range tt.want {
@@ -475,13 +487,13 @@ func TestGetStructDiff(t *testing.T) {
 		})
 
 		t.Run(tt.name+" equal A", func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.a, nil)
+			got, err := GetStructDiff(tt.a, tt.a)
 			assert.NoError(t, err)
 			assert.Nil(t, got)
 		})
 
 		t.Run(tt.name+" equal B", func(t *testing.T) {
-			got, err := GetStructDiff(tt.b, tt.b, nil)
+			got, err := GetStructDiff(tt.b, tt.b)
 			assert.NoError(t, err)
 			assert.Nil(t, got)
 		})
@@ -502,10 +514,6 @@ type EmbedItem struct {
 type EmbedContainer struct {
 	ObjectID      string      `json:"object_id"`
 	EmbeddedSlice []EmbedItem `json:"items,omitempty"`
-}
-
-func embedItemKey(item EmbedItem) (string, string) {
-	return "name", item.Name
 }
 
 func TestGetStructDiffEmbedTag(t *testing.T) {
@@ -549,53 +557,60 @@ func TestGetStructDiffEmbedTag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, nil)
+			got, err := GetStructDiff(tt.a, tt.b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
 	}
 }
 
-func TestGetStructDiffEmbedTagWithKeyFunc(t *testing.T) {
-	// The EmbeddedSlice field appears at root path, so key pattern is "".
-	sliceKeys := map[string]KeyFunc{
-		"": embedItemKey,
-	}
+// keyedEmbedItem is a registered keyed element (by "name"); keyedEmbedContainer holds
+// it as an EmbeddedSlice, so the elements are addressed at the container's root path.
+type keyedEmbedItem struct {
+	Name  string `json:"name,omitempty"`
+	Level string `json:"level,omitempty"`
+}
 
+type keyedEmbedContainer struct {
+	ObjectID      string           `json:"object_id"`
+	EmbeddedSlice []keyedEmbedItem `json:"items,omitempty"`
+}
+
+func TestGetStructDiffEmbedTagWithKeyFunc(t *testing.T) {
 	tests := []struct {
 		name string
-		a, b EmbedContainer
+		a, b keyedEmbedContainer
 		want []ResolvedChange
 	}{
 		{
 			name: "reorder with key func",
-			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob", Level: "reader"}}},
-			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "bob", Level: "reader"}, {Name: "alice", Level: "admin"}}},
+			a:    keyedEmbedContainer{ObjectID: "abc", EmbeddedSlice: []keyedEmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob", Level: "reader"}}},
+			b:    keyedEmbedContainer{ObjectID: "abc", EmbeddedSlice: []keyedEmbedItem{{Name: "bob", Level: "reader"}, {Name: "alice", Level: "admin"}}},
 			want: nil,
 		},
 		{
 			name: "field change with key func",
-			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}}},
-			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "reader"}}},
-			want: []ResolvedChange{{Field: "[name='alice'].level", Old: "admin", New: "reader"}},
+			a:    keyedEmbedContainer{ObjectID: "abc", EmbeddedSlice: []keyedEmbedItem{{Name: "alice", Level: "admin"}}},
+			b:    keyedEmbedContainer{ObjectID: "abc", EmbeddedSlice: []keyedEmbedItem{{Name: "alice", Level: "reader"}}},
+			want: []ResolvedChange{{Field: "[='alice'].level", Old: "admin", New: "reader"}},
 		},
 		{
 			name: "element added with key func",
-			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice"}}},
-			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice"}, {Name: "bob", Level: "reader"}}},
-			want: []ResolvedChange{{Field: "[name='bob']", Old: nil, New: EmbedItem{Name: "bob", Level: "reader"}}},
+			a:    keyedEmbedContainer{ObjectID: "abc", EmbeddedSlice: []keyedEmbedItem{{Name: "alice"}}},
+			b:    keyedEmbedContainer{ObjectID: "abc", EmbeddedSlice: []keyedEmbedItem{{Name: "alice"}, {Name: "bob", Level: "reader"}}},
+			want: []ResolvedChange{{Field: "[='bob']", Old: nil, New: keyedEmbedItem{Name: "bob", Level: "reader"}}},
 		},
 		{
 			name: "element removed with key func",
-			a:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob"}}},
-			b:    EmbedContainer{ObjectID: "abc", EmbeddedSlice: []EmbedItem{{Name: "alice", Level: "admin"}}},
-			want: []ResolvedChange{{Field: "[name='bob']", Old: EmbedItem{Name: "bob"}, New: nil}},
+			a:    keyedEmbedContainer{ObjectID: "abc", EmbeddedSlice: []keyedEmbedItem{{Name: "alice", Level: "admin"}, {Name: "bob"}}},
+			b:    keyedEmbedContainer{ObjectID: "abc", EmbeddedSlice: []keyedEmbedItem{{Name: "alice", Level: "admin"}}},
+			want: []ResolvedChange{{Field: "[='bob']", Old: keyedEmbedItem{Name: "bob"}, New: nil}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
@@ -615,20 +630,10 @@ type principalContainer struct {
 	EmbeddedSlice []principal `json:"items,omitempty"`
 }
 
-// principalKey returns a varying key field depending on which identity field is set.
-func principalKey(p principal) (string, string) {
-	if p.UserName != "" {
-		return "user_name", p.UserName
-	}
-	return "service_principal_name", p.SpName
-}
-
-// TestGetStructDiffKeyFieldSwap covers a KeyFunc whose key field varies per element:
-// the same identity value carried under a different field is not a change, but a
-// non-key field still diffs.
+// TestGetStructDiffKeyFieldSwap covers a registered type whose key field varies per
+// element (principal: user_name or service_principal_name): the same identity value
+// carried under a different field is not a change, but a non-key field still diffs.
 func TestGetStructDiffKeyFieldSwap(t *testing.T) {
-	sliceKeys := map[string]KeyFunc{"": principalKey}
-
 	tests := []struct {
 		name string
 		a, b principalContainer
@@ -644,19 +649,19 @@ func TestGetStructDiffKeyFieldSwap(t *testing.T) {
 			name: "field swap with level change reports only the level",
 			a:    principalContainer{EmbeddedSlice: []principal{{SpName: "X", Level: "CAN_MANAGE"}}},
 			b:    principalContainer{EmbeddedSlice: []principal{{UserName: "X", Level: "CAN_READ"}}},
-			want: []ResolvedChange{{Field: "[service_principal_name='X'].level", Old: "CAN_MANAGE", New: "CAN_READ"}},
+			want: []ResolvedChange{{Field: "[='X'].level", Old: "CAN_MANAGE", New: "CAN_READ"}},
 		},
 		{
 			name: "same field, level change",
 			a:    principalContainer{EmbeddedSlice: []principal{{UserName: "X", Level: "CAN_MANAGE"}}},
 			b:    principalContainer{EmbeddedSlice: []principal{{UserName: "X", Level: "CAN_READ"}}},
-			want: []ResolvedChange{{Field: "[user_name='X'].level", Old: "CAN_MANAGE", New: "CAN_READ"}},
+			want: []ResolvedChange{{Field: "[='X'].level", Old: "CAN_MANAGE", New: "CAN_READ"}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
@@ -680,19 +685,7 @@ type Job struct {
 	Tasks []Task `json:"tasks,omitempty"`
 }
 
-func taskKeyFunc(task Task) (string, string) {
-	return "task_key", task.TaskKey
-}
-
-func depKeyFunc(dep Dep) (string, string) {
-	return "task_key", dep.TaskKey
-}
-
 func TestGetStructDiffSliceKeys(t *testing.T) {
-	sliceKeys := map[string]KeyFunc{
-		"tasks": taskKeyFunc,
-	}
-
 	tests := []struct {
 		name string
 		a, b any
@@ -714,27 +707,27 @@ func TestGetStructDiffSliceKeys(t *testing.T) {
 			name: "slice with same keys field change",
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "changed"}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='a'].description", Old: "one", New: "changed"}},
+			want: []ResolvedChange{{Field: "tasks[='a'].description", Old: "one", New: "changed"}},
 		},
 		{
 			name: "slice element added",
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='b']", Old: nil, New: Task{TaskKey: "b", Description: "two"}}},
+			want: []ResolvedChange{{Field: "tasks[='b']", Old: nil, New: Task{TaskKey: "b", Description: "two"}}},
 		},
 		{
 			name: "slice element removed",
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='b']", Old: Task{TaskKey: "b", Description: "two"}, New: nil}},
+			want: []ResolvedChange{{Field: "tasks[='b']", Old: Task{TaskKey: "b", Description: "two"}, New: nil}},
 		},
 		{
 			name: "slice element replaced",
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "b", Description: "two"}}},
 			want: []ResolvedChange{
-				{Field: "tasks[task_key='a']", Old: Task{TaskKey: "a", Description: "one"}, New: nil},
-				{Field: "tasks[task_key='b']", Old: nil, New: Task{TaskKey: "b", Description: "two"}},
+				{Field: "tasks[='a']", Old: Task{TaskKey: "a", Description: "one"}, New: nil},
+				{Field: "tasks[='b']", Old: nil, New: Task{TaskKey: "b", Description: "two"}},
 			},
 		},
 		{
@@ -742,15 +735,15 @@ func TestGetStructDiffSliceKeys(t *testing.T) {
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}, {TaskKey: "c", Description: "three"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "c", Description: "changed"}, {TaskKey: "a", Description: "one"}}},
 			want: []ResolvedChange{
-				{Field: "tasks[task_key='b']", Old: Task{TaskKey: "b", Description: "two"}, New: nil},
-				{Field: "tasks[task_key='c'].description", Old: "three", New: "changed"},
+				{Field: "tasks[='b']", Old: Task{TaskKey: "b", Description: "two"}, New: nil},
+				{Field: "tasks[='c'].description", Old: "three", New: "changed"},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
@@ -758,11 +751,6 @@ func TestGetStructDiffSliceKeys(t *testing.T) {
 }
 
 func TestGetStructDiffNestedDependsOn(t *testing.T) {
-	sliceKeys := map[string]KeyFunc{
-		"tasks":               taskKeyFunc,
-		"tasks[*].depends_on": depKeyFunc,
-	}
-
 	tests := []struct {
 		name string
 		a, b Job
@@ -778,19 +766,19 @@ func TestGetStructDiffNestedDependsOn(t *testing.T) {
 			name: "depends_on field change",
 			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a", Outcome: "success"}}}}},
 			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a", Outcome: "failed"}}}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='a'].outcome", Old: "success", New: "failed"}},
+			want: []ResolvedChange{{Field: "tasks[='c'].depends_on[='a'].outcome", Old: "success", New: "failed"}},
 		},
 		{
 			name: "depends_on element added",
 			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}}}}},
 			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='b']", Old: nil, New: Dep{TaskKey: "b"}}},
+			want: []ResolvedChange{{Field: "tasks[='c'].depends_on[='b']", Old: nil, New: Dep{TaskKey: "b"}}},
 		},
 		{
 			name: "depends_on element removed",
 			a:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}, {TaskKey: "b"}}}}},
 			b:    Job{Tasks: []Task{{TaskKey: "c", DependsOn: []Dep{{TaskKey: "a"}}}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='c'].depends_on[task_key='b']", Old: Dep{TaskKey: "b"}, New: nil}},
+			want: []ResolvedChange{{Field: "tasks[='c'].depends_on[='b']", Old: Dep{TaskKey: "b"}, New: nil}},
 		},
 		{
 			name: "tasks and depends_on both reordered no diff",
@@ -808,7 +796,7 @@ func TestGetStructDiffNestedDependsOn(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
@@ -828,15 +816,7 @@ type Root struct {
 	Nested []Nested `json:"nested,omitempty"`
 }
 
-func itemKeyFunc(item Item) (string, string) {
-	return "id", item.ID
-}
-
 func TestGetStructDiffNestedSliceKeys(t *testing.T) {
-	sliceKeys := map[string]KeyFunc{
-		"nested[*].items": itemKeyFunc,
-	}
-
 	tests := []struct {
 		name string
 		a, b any
@@ -852,92 +832,26 @@ func TestGetStructDiffNestedSliceKeys(t *testing.T) {
 			name: "nested slice field change",
 			a:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 1}}}}},
 			b:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 99}}}}},
-			want: []ResolvedChange{{Field: "nested[0].items[id='x'].value", Old: 1, New: 99}},
+			want: []ResolvedChange{{Field: "nested[0].items[='x'].value", Old: 1, New: 99}},
 		},
 		{
 			name: "nested slice element added",
 			a:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 1}}}}},
 			b:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 1}, {ID: "y", Value: 2}}}}},
-			want: []ResolvedChange{{Field: "nested[0].items[id='y']", Old: nil, New: Item{ID: "y", Value: 2}}},
+			want: []ResolvedChange{{Field: "nested[0].items[='y']", Old: nil, New: Item{ID: "y", Value: 2}}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
 	}
 }
 
-func TestGetStructDiffSliceKeysInvalidFunc(t *testing.T) {
-	tests := []struct {
-		name    string
-		keyFunc any
-		errMsg  string
-	}{
-		{
-			name:    "not a function",
-			keyFunc: "not a function",
-			errMsg:  "KeyFunc must be a function, got string",
-		},
-		{
-			name:    "wrong number of parameters",
-			keyFunc: func() (string, string) { return "", "" },
-			errMsg:  "KeyFunc must have exactly 1 parameter, got 0",
-		},
-		{
-			name:    "too many parameters",
-			keyFunc: func(a, b Task) (string, string) { return "", "" },
-			errMsg:  "KeyFunc must have exactly 1 parameter, got 2",
-		},
-		{
-			name:    "wrong number of returns",
-			keyFunc: func(t Task) string { return "" },
-			errMsg:  "KeyFunc must return exactly 2 values, got 1",
-		},
-		{
-			name:    "wrong first return type",
-			keyFunc: func(t Task) (int, string) { return 0, "" },
-			errMsg:  "KeyFunc must return (string, string), got (int, string)",
-		},
-		{
-			name:    "wrong second return type",
-			keyFunc: func(t Task) (string, int) { return "", 0 },
-			errMsg:  "KeyFunc must return (string, string), got (string, int)",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sliceKeys := map[string]KeyFunc{"tasks": tt.keyFunc}
-			a := Job{Tasks: []Task{{TaskKey: "a"}}}
-			b := Job{Tasks: []Task{{TaskKey: "a"}}}
-			_, err := GetStructDiff(a, b, sliceKeys)
-			assert.EqualError(t, err, tt.errMsg)
-		})
-	}
-}
-
-func TestGetStructDiffSliceKeysWrongArgType(t *testing.T) {
-	// Function expects Item but slice contains Task
-	sliceKeys := map[string]KeyFunc{
-		"tasks": func(item Item) (string, string) {
-			return "id", item.ID
-		},
-	}
-	a := Job{Tasks: []Task{{TaskKey: "a"}}}
-	b := Job{Tasks: []Task{{TaskKey: "b"}}}
-	_, err := GetStructDiff(a, b, sliceKeys)
-	assert.EqualError(t, err, "KeyFunc expects structdiff.Item, got structdiff.Task")
-}
-
 func TestGetStructDiffSliceKeysDuplicates(t *testing.T) {
-	sliceKeys := map[string]KeyFunc{
-		"tasks": taskKeyFunc,
-	}
-
 	tests := []struct {
 		name string
 		a, b Job
@@ -953,34 +867,34 @@ func TestGetStructDiffSliceKeysDuplicates(t *testing.T) {
 			name: "duplicates with field change",
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "changed"}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='a'].description", Old: "2", New: "changed"}},
+			want: []ResolvedChange{{Field: "tasks[='a'].description", Old: "2", New: "changed"}},
 		},
 		{
 			name: "extra in old is deleted",
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='a']", Old: Task{TaskKey: "a", Description: "2"}, New: nil}},
+			want: []ResolvedChange{{Field: "tasks[='a']", Old: Task{TaskKey: "a", Description: "2"}, New: nil}},
 		},
 		{
 			name: "extra in new is added",
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
-			want: []ResolvedChange{{Field: "tasks[task_key='a']", Old: nil, New: Task{TaskKey: "a", Description: "2"}}},
+			want: []ResolvedChange{{Field: "tasks[='a']", Old: nil, New: Task{TaskKey: "a", Description: "2"}}},
 		},
 		{
 			name: "two in old one in new with change",
 			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
 			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "changed"}}},
 			want: []ResolvedChange{
-				{Field: "tasks[task_key='a'].description", Old: "1", New: "changed"},
-				{Field: "tasks[task_key='a']", Old: Task{TaskKey: "a", Description: "2"}, New: nil},
+				{Field: "tasks[='a'].description", Old: "1", New: "changed"},
+				{Field: "tasks[='a']", Old: Task{TaskKey: "a", Description: "2"}, New: nil},
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
@@ -1007,7 +921,7 @@ func TestDiffTaggedEmbedIsReportedUnderItsName(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"leaf":{"value":"after"},"own":"o"}`, string(blob))
 
-	changes, err := GetStructDiff(before, after, nil)
+	changes, err := GetStructDiff(before, after)
 	require.NoError(t, err)
 	require.Len(t, changes, 1)
 	assert.Equal(t, "leaf.value", changes[0].Path.String())
@@ -1030,7 +944,7 @@ func TestGetStructDiffNamedStringMapKey(t *testing.T) {
 	a := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "a", "post": "x"}}
 	b := namedKeyMapHolder{M: map[namedMapKey]string{"pre": "b", "post": "x"}}
 
-	got, err := GetStructDiff(&a, &b, nil)
+	got, err := GetStructDiff(&a, &b)
 	assert.NoError(t, err)
 	assert.Equal(t, []ResolvedChange{{Field: "m['pre']", Old: "a", New: "b"}}, resolveChanges(got))
 }
@@ -1089,7 +1003,7 @@ func TestGetStructDiffWholeBlock(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, nil)
+			got, err := GetStructDiff(tt.a, tt.b)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})

@@ -10,7 +10,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.test_job
-  tasks[task_key='test'].new_cluster.spark_conf: add
+  tasks[='test'].new_cluster.spark_conf: add
 
 
 

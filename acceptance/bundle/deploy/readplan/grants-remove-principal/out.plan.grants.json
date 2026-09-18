@@ -39,7 +39,7 @@
     ]
   },
   "changes": {
-    "[principal='extra@example.test']": {
+    "[='extra@example.test']": {
       "action": "update",
       "old": {
         "principal": "extra@example.test",

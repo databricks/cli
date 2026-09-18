@@ -8,7 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.twoblock_job
-  tasks[task_key='omega'].timeout_seconds: add
+  tasks[='omega'].timeout_seconds: add
 
 
 
@@ -27,9 +27,9 @@ Resource: resources.jobs.twoblock_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.twoblock_job
-  tasks[task_key='shared'].max_retries: replace
-  tasks[task_key='shared'].min_retry_interval_millis: add
-  tasks[task_key='shared'].timeout_seconds: replace
+  tasks[='shared'].max_retries: replace
+  tasks[='shared'].min_retry_interval_millis: add
+  tasks[='shared'].timeout_seconds: replace
 
 
 

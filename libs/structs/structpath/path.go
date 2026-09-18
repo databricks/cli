@@ -466,6 +466,11 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 			if ch >= '0' && ch <= '9' {
 				currentToken.WriteByte(ch)
 				state = stateIndex
+			} else if ch == '=' {
+				// Field-agnostic keyed element: [='value']. The key field is omitted;
+				// resolution is by value (the resolver has the type to match it).
+				keyValueKey = ""
+				state = stateKeyValueEquals
 			} else if ch == '\'' {
 				state = stateMapKey
 			} else if ch == '*' {

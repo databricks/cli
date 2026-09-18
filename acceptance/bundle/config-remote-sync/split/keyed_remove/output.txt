@@ -9,8 +9,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.remove_job
-  tasks[task_key='alpha']: remove
-  tasks[task_key='gamma']: remove
+  tasks[='alpha']: remove
+  tasks[='gamma']: remove
 
 
 
@@ -43,7 +43,7 @@ Resource: resources.jobs.remove_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.twoblock_remove_job
-  tasks[task_key='both']: remove
+  tasks[='both']: remove
 
 
 

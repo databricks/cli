@@ -15,38 +15,38 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle plan -o json
 {
-  "job_clusters[job_cluster_key='job_cluster'].new_cluster.custom_tags": {
+  "job_clusters[='job_cluster'].new_cluster.custom_tags": {
     "action": "skip",
     "reason": "remote_addition",
     "remote": {
       "CostCenter": "from-policy"
     }
   },
-  "job_clusters[job_cluster_key='job_cluster'].new_cluster.spark_version": {
+  "job_clusters[='job_cluster'].new_cluster.spark_version": {
     "action": "skip",
     "reason": "remote_addition",
     "remote": "13.3.x-snapshot-scala2.12"
   },
-  "tasks[task_key='for_each'].for_each_task.task.new_cluster.custom_tags": {
+  "tasks[='for_each'].for_each_task.task.new_cluster.custom_tags": {
     "action": "skip",
     "reason": "remote_addition",
     "remote": {
       "CostCenter": "from-policy"
     }
   },
-  "tasks[task_key='for_each'].for_each_task.task.new_cluster.spark_version": {
+  "tasks[='for_each'].for_each_task.task.new_cluster.spark_version": {
     "action": "skip",
     "reason": "remote_addition",
     "remote": "13.3.x-snapshot-scala2.12"
   },
-  "tasks[task_key='task_cluster'].new_cluster.custom_tags": {
+  "tasks[='task_cluster'].new_cluster.custom_tags": {
     "action": "skip",
     "reason": "remote_addition",
     "remote": {
       "CostCenter": "from-policy"
     }
   },
-  "tasks[task_key='task_cluster'].new_cluster.spark_version": {
+  "tasks[='task_cluster'].new_cluster.spark_version": {
     "action": "skip",
     "reason": "remote_addition",
     "remote": "13.3.x-snapshot-scala2.12"

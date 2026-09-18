@@ -32,8 +32,6 @@ func webhooks(ids ...string) []jobs.Webhook {
 // TestJobWebhookNotificationsOrderInsensitive verifies that a webhook list
 // reordered by the Jobs API produces no diff, but a changed set still does.
 func TestJobWebhookNotificationsOrderInsensitive(t *testing.T) {
-	keys := (&ResourceJob{}).KeyedSlices()
-
 	config := jobs.JobSettings{
 		WebhookNotifications: &jobs.WebhookNotifications{
 			OnSuccess: webhooks("a", "b", "c"),
@@ -78,13 +76,13 @@ func TestJobWebhookNotificationsOrderInsensitive(t *testing.T) {
 		},
 	}
 
-	changes, err := structdiff.GetStructDiff(config, remote, keys)
+	changes, err := structdiff.GetStructDiff(config, remote)
 	require.NoError(t, err)
 	assert.Empty(t, changes)
 
 	// A genuinely different destination set is still detected.
 	remote.WebhookNotifications.OnSuccess = webhooks("a", "b", "d")
-	changes, err = structdiff.GetStructDiff(config, remote, keys)
+	changes, err = structdiff.GetStructDiff(config, remote)
 	require.NoError(t, err)
 	assert.NotEmpty(t, changes)
 }

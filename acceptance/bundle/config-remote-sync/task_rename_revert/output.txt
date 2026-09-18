@@ -9,21 +9,31 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.sample_job
-  tasks[task_key='new_task']: remove
-  tasks[task_key='new_task_2']: add
+  tasks[='new_task']: remove
+  tasks[='new_task_2']: add
 
 
 
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -6,5 +6,5 @@
+@@ -6,11 +6,11 @@
      sample_job:
        tasks:
 -        - task_key: new_task
-+        - task_key: new_task_2
-           notebook_task:
-             notebook_path: /Users/{{workspace_user_name}}/new_task
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/new_task
+-          new_cluster:
+-            spark_version: 13.3.x-snapshot-scala2.12
++        - new_cluster:
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
++          notebook_task:
++            notebook_path: '/Users/{{workspace_user_name}}/new_task'
++          task_key: new_task_2
+
+ targets:
 
 === Rename task back to new_task remotely
 
@@ -31,21 +41,21 @@ Resource: resources.jobs.sample_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.sample_job
-  tasks[task_key='new_task']: add
-  tasks[task_key='new_task_2']: remove
+  tasks[='new_task']: add
+  tasks[='new_task_2']: remove
 
 
 
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -6,5 +6,5 @@
-     sample_job:
-       tasks:
--        - task_key: new_task_2
-+        - task_key: new_task
+@@ -12,5 +12,5 @@
            notebook_task:
-             notebook_path: /Users/{{workspace_user_name}}/new_task
+             notebook_path: '/Users/{{workspace_user_name}}/new_task'
+-          task_key: new_task_2
++          task_key: new_task
+
+ targets:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

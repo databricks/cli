@@ -9,10 +9,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.rename_job
-  tasks[task_key='a_shared']: add
-  tasks[task_key='shared']: remove
-  tasks[task_key='solo']: remove
-  tasks[task_key='z_solo']: add
+  tasks[='a_shared']: add
+  tasks[='shared']: remove
+  tasks[='solo']: remove
+  tasks[='z_solo']: add
 
 
 
@@ -21,26 +21,34 @@ Resource: resources.jobs.rename_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -14,5 +14,5 @@
+@@ -14,9 +14,10 @@
      rename_job:
        tasks:
 -        - task_key: shared
-+        - task_key: a_shared
-           max_retries: 1
+-          max_retries: 1
++        - max_retries: 1
            notebook_task:
-@@ -37,7 +37,7 @@
+-            notebook_path: /Users/{{workspace_user_name}}/shared
+-
++            notebook_path: '/Users/{{workspace_user_name}}/shared'
++          task_key: a_shared
++          timeout_seconds: 45
++        - {notebook_task: {notebook_path: '/Users/{{workspace_user_name}}/solo'}, task_key: z_solo}
+     # A single block, to check that a removal earlier in the list shifts the
+     # position a later rename has to be written at.
+@@ -36,8 +37,3 @@
+       jobs:
          rename_job:
-           tasks:
+-          tasks:
 -            - task_key: shared
-+            - task_key: a_shared
-               timeout_seconds: 45
+-              timeout_seconds: 45
 -            - task_key: solo
-+            - task_key: z_solo
-               notebook_task:
-                 notebook_path: /Users/{{workspace_user_name}}/solo
+-              notebook_task:
+-                notebook_path: /Users/{{workspace_user_name}}/solo
++          tasks: []
 
 >>> grep -c task_key: a_shared databricks.yml
-2
+1
 
 >>> grep -c task_key: z_solo databricks.yml
 1
@@ -50,9 +58,9 @@ Resource: resources.jobs.rename_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.shift_job
-  tasks[task_key='aaa']: remove
-  tasks[task_key='mmm']: remove
-  tasks[task_key='mmm2']: add
+  tasks[='aaa']: remove
+  tasks[='mmm']: remove
+  tasks[='mmm2']: add
 
 
 
@@ -61,15 +69,17 @@ Resource: resources.jobs.shift_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -23,7 +23,5 @@
+@@ -24,8 +24,6 @@
      shift_job:
        tasks:
 -        - task_key: aaa
 -          max_retries: 1
 -        - task_key: mmm
-+        - task_key: mmm2
-           max_retries: 2
+-          max_retries: 2
++        - max_retries: 2
++          task_key: mmm2
          - task_key: zzz
+           max_retries: 3
 
 >>> grep -c task_key: zzz databricks.yml
 1
@@ -79,9 +89,9 @@ Resource: resources.jobs.shift_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.rename_job
-  tasks[task_key='a_shared']: remove
-  tasks[task_key='b_shared']: add
-  tasks[task_key='z_solo']: replace
+  tasks[='a_shared']: remove
+  tasks[='b_shared']: add
+  tasks[='z_solo']: replace
 
 
 
@@ -90,17 +100,28 @@ Resource: resources.jobs.rename_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -37,5 +37,5 @@
-             - task_key: a_shared
-               timeout_seconds: 45
--            - task_key: z_solo
--              notebook_task:
-+            - notebook_task:
-                 notebook_path: /Users/{{workspace_user_name}}/solo
-+              task_key: z_solo
+@@ -14,10 +14,12 @@
+     rename_job:
+       tasks:
+-        - max_retries: 1
++        - max_retries: 7
+           notebook_task:
+-            notebook_path: '/Users/{{workspace_user_name}}/shared'
+-          task_key: a_shared
++            notebook_path: /Users/{{workspace_user_name}}/shared
++          task_key: b_shared
+           timeout_seconds: 45
+-        - {notebook_task: {notebook_path: '/Users/{{workspace_user_name}}/solo'}, task_key: z_solo}
++        - notebook_task:
++            notebook_path: /Users/{{workspace_user_name}}/solo
++          task_key: z_solo
+     # A single block, to check that a removal earlier in the list shifts the
+     # position a later rename has to be written at.
 
 >>> grep -c task_key: a_shared databricks.yml
-2
+0
+
+Exit code: 1
 
 >>> grep -c timeout_seconds: 45 databricks.yml
 1

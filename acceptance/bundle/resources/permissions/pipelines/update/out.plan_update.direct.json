@@ -76,7 +76,7 @@
         ]
       },
       "changes": {
-        "[user_name='viewer@example.com'].level": {
+        "[='viewer@example.com'].level": {
           "action": "update",
           "old": "CAN_VIEW",
           "new": "CAN_MANAGE",

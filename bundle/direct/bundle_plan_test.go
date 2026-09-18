@@ -563,9 +563,9 @@ func TestPrepareChangesWholeBlockOverlap(t *testing.T) {
 	newState := threeWayOuter{Field: &threeWayMid{A: &threeWayInner{B: "old", C: "newc"}}}
 	remote := threeWayOuter{Field: &threeWayMid{A: nil}}
 
-	localDiff, err := structdiff.GetStructDiff(old, newState, nil)
+	localDiff, err := structdiff.GetStructDiff(old, newState)
 	require.NoError(t, err)
-	remoteDiff, err := structdiff.GetStructDiff(remote, newState, nil)
+	remoteDiff, err := structdiff.GetStructDiff(remote, newState)
 	require.NoError(t, err)
 
 	changes, err := prepareChanges(t.Context(), nil, localDiff, remoteDiff, old, remote)

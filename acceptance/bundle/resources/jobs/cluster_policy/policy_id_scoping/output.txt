@@ -12,14 +12,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 {
-  "job_clusters[job_cluster_key='gated'].new_cluster.custom_tags": {
+  "job_clusters[='gated'].new_cluster.custom_tags": {
     "action": "skip",
     "reason": "remote_addition",
     "remote": {
       "CostCenter": "from-policy"
     }
   },
-  "job_clusters[job_cluster_key='ungated'].new_cluster.custom_tags": {
+  "job_clusters[='ungated'].new_cluster.custom_tags": {
     "action": "update",
     "remote": {
       "Injected": "out-of-band"
