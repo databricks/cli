@@ -37,6 +37,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
 )
@@ -262,6 +263,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if migrated {
 				stateDesc.Engine = engine.EngineDirect
 				b.Metrics.StateEngine = engine.EngineDirect
+				// PullResourcesState set the user-agent engine tag from the (terraform)
+				// state file; the run now uses the direct engine, so update it to match.
+				ctx = useragent.InContext(ctx, "engine", string(engine.EngineDirect))
+				cmd.SetContext(ctx)
 			}
 		}
 
