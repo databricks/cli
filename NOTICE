@@ -25,21 +25,9 @@ hashicorp/go-version - https://github.com/hashicorp/go-version
 Copyright 2014 HashiCorp, Inc.
 License - https://github.com/hashicorp/go-version/blob/main/LICENSE
 
-hashicorp/hc-install - https://github.com/hashicorp/hc-install
-Copyright 2020 HashiCorp, Inc.
-License - https://github.com/hashicorp/hc-install/blob/main/LICENSE
-
-hashicorp/terraform-exec - https://github.com/hashicorp/terraform-exec
-Copyright 2020 HashiCorp, Inc.
-License - https://github.com/hashicorp/terraform-exec/blob/main/LICENSE
-
 hashicorp/terraform-json - https://github.com/hashicorp/terraform-json
 Copyright 2019 HashiCorp, Inc.
 License - https://github.com/hashicorp/terraform-json/blob/main/LICENSE
-
-hashicorp/terraform - https://github.com/hashicorp/terraform
-Copyright 2014 HashiCorp, Inc.
-License - https://github.com/hashicorp/terraform/blob/v1.5.5/LICENSE
 
 ---
 

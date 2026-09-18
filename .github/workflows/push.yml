@@ -115,8 +115,6 @@ jobs:
         # recording filter, the direct cell would run every bundle test twice, since
         # bundle/test.toml matrixes deployment-history recording on top of the engine.
         deployment:
-          - name: "terraform"
-            envfilter: "DATABRICKS_BUNDLE_ENGINE=terraform"
           - name: "direct"
             envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DMS="
           - name: "directdms"
