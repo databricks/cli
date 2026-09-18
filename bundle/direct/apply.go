@@ -140,7 +140,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// times out — the resource is no longer tracked in state, retry on next plan.
 	// The general delete-wait stays uncapped; we only pass the already-resolved
 	// RESOURCE_MAX_WAIT so a resource that opts in can bound its own poll by it.
-	err = d.Adapter.WaitAfterDelete(dresources.WithResourceMaxWait(ctx, d.MaxWait), oldID)
+	err = d.waitDeleted(dresources.WithResourceMaxWait(ctx, d.MaxWait), oldID)
 	if err != nil {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
@@ -280,7 +280,7 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	// The two diverge once MaxWait is set: this wait is capped, Recreate's is not,
 	// because only Recreate needs the name released for the create that follows.
 	_, err = waitCapped(ctx, d.MaxWait, "deletion of "+d.ResourceKey, func(ctx context.Context) (struct{}, error) {
-		return struct{}{}, d.Adapter.WaitAfterDelete(ctx, oldID)
+		return struct{}{}, d.waitDeleted(ctx, oldID)
 	})
 	if err != nil {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
@@ -297,6 +297,16 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 // may enter that state only after the plan is saved. We re-read rather than match
 // the delete error because the backend returns a generic 400 BAD_REQUEST (see
 // apps/src/utils/AppsStatusUtils.scala) that carries no distinct SDK sentinel.
+// waitDeleted runs the resource's post-delete wait, treating a NotFound as the
+// success it is polling for — the resource is gone.
+func (d *DeploymentUnit) waitDeleted(ctx context.Context, id string) error {
+	err := d.Adapter.WaitAfterDelete(ctx, id)
+	if apierr.IsMissing(err) {
+		return nil
+	}
+	return err
+}
+
 func (d *DeploymentUnit) deleteConfirmedGone(ctx context.Context, id string) bool {
 	remote, err := d.Adapter.DoRead(ctx, id)
 	if apierr.IsMissing(err) {
