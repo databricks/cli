@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/migrate"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -26,128 +25,90 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-// warnPrefix labels warnings emitted by the post-deploy dry-run so they are not
-// confused with warnings from the user-invoked `bundle migrate` command.
-const warnPrefix = "post-deploy dry-run migration to direct: "
+// warnPrefix labels warnings emitted while converting terraform state to the direct
+// engine, distinguishing them from the user-invoked "bundle deployment migrate".
+const warnPrefix = "migration to direct: "
 
-// feedbackNotice is appended after the dry-run warnings to reassure the user the
-// deploy is unaffected and to ask them to report the warnings.
-const feedbackNotice = `The warnings above are from a dry-run migration to the direct deployment engine (https://docs.databricks.com/aws/en/dev-tools/bundles/direct).
-Your deployment is not affected and works normally, but you may experience these issues when migrating to the direct deployment engine.
-Please forward these warnings to dabs-feedback@databricks.com`
-
-// autoMigrateStoppedNotice is emitted when the direct engine is selected but the
-// dry-run migration surfaced errors or warnings, so the automatic post-deploy
-// migration is skipped.
-const autoMigrateStoppedNotice = `Direct engine was selected but the migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
-
-// MigrateToDirect migrates the bundle's terraform state to the direct engine when the
-// direct engine is requested (the default). It converts the state, plan-checks the
-// result, and on success commits it: resources.json is written and pushed to the
-// workspace and terraform.tfstate is backed up. If the plan check fails the migration is
-// not committed and a warning is emitted (the deploy then proceeds on the terraform
-// engine, which is still available). Called before plan/deploy; the outcome is recorded
-// in deploy telemetry.
-func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
+// MigrateTerraformState converts the bundle's terraform state to a direct-engine state
+// and opens b.DeploymentBundle.StateDB with it. Returns false when there is no terraform
+// state to migrate (the caller then opens the direct state normally).
+//
+// When commit is false (plan) the converted state is opened in memory and nothing is
+// written to disk or the workspace. When commit is true (deploy) the migration is
+// plan-checked first; on success resources.json is written and pushed and
+// terraform.tfstate is backed up, so it completes even if the deploy is a no-op. If the
+// plan check fails the migration is not committed and a warning is emitted; the caller
+// then proceeds on the terraform engine, which is still available.
+func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, commit bool) (bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
-		log.Warnf(ctx, "%sfailed to parse terraform state: %v", warnPrefix, err)
-		if requestedEngine.Type == engine.EngineDirect {
-			b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
-			log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
-		} else {
-			b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, false)
-		}
-		return
+		return false, fmt.Errorf("parsing terraform state: %w", err)
 	}
-
 	if tfState == nil {
-		// No terraform state file to migrate; nothing to do either way.
-		return
+		return false, nil
 	}
 
-	// A terraform.tfstate that has no databricks_* resources AND no managed
-	// resources of any kind has no state to migrate. Gate the sweep on both:
-	// Attrs is empty when the file has zero managed resources; IDs is empty
-	// when nothing maps to a known DABs group. Sweeping when Attrs is
-	// non-empty (unknown TF resource types in the state) would destroy state
-	// the CLI doesn't recognize, so restrict the sweep to the truly-empty
-	// case and let the populated path handle everything else.
+	_, localDirectPath := b.StateFilenameDirect(ctx)
+
+	// A terraform state with no managed resources carries nothing to migrate. On deploy,
+	// sweep the empty terraform state aside so the direct engine is used from now on; on
+	// plan, just open an empty direct database in memory. No resources.json is written.
 	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
-		if requestedEngine.Type != engine.EngineDirect {
-			recordDryRunNoop(b, requestedEngine)
-			return
+		if commit {
+			cmdio.LogString(ctx, "Removing empty terraform state; the direct engine will be used from now on...")
+			if err := BackupTerraformState(ctx, b); err != nil {
+				return false, err
+			}
 		}
-		cmdio.LogString(ctx, "Removing empty terraform state; direct engine will be used on the next deploy (selected via "+requestedEngine.Source+")...")
-		if err := BackupTerraformState(ctx, b); err != nil {
-			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
-			log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
-			return
-		}
-		recordAutoMigrateSource(b, requestedEngine)
-		return
+		b.DeploymentBundle.StateDB.OpenWithData(localDirectPath, dstate.NewDatabase(tfState.Lineage, tfState.Serial+1))
+		return true, nil
 	}
 
-	tempStatePath, resourceCount, hasWarnings, cfg, err := convertTFStateToDirect(ctx, b, tfState)
+	tempStatePath, resourceCount, _, cfg, err := convertTFStateToDirect(ctx, b, tfState)
+	cleanupTemp := true
 	if tempStatePath != "" {
-		// The temp file sits next to the real resources.json path (same
-		// filesystem, so commitMigration's os.Rename works even when
-		// os.TempDir() is on a different volume). Clean up the temp file
-		// and its WAL sibling — commitMigration renames the state file out
-		// of the way on success, so these Removes are no-ops in that case.
 		defer func() {
-			_ = os.Remove(tempStatePath)
-			_ = os.Remove(tempStatePath + ".wal")
+			if cleanupTemp {
+				_ = os.Remove(tempStatePath)
+				_ = os.Remove(tempStatePath + ".wal")
+			}
 		}()
 	}
-
 	if err != nil {
-		log.Warnf(ctx, "%s%v", warnPrefix, err)
-	}
-	if hasWarnings || err != nil {
-		log.Warnf(ctx, "%s", feedbackNotice)
+		return false, err
 	}
 
-	// The direct engine was not selected (the user opted out with
-	// engine: terraform) — the conversion was only a dry run for fleet-wide
-	// telemetry, so record dry-run outcome only.
-	if requestedEngine.Type != engine.EngineDirect {
-		b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, err == nil)
-		b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, hasWarnings)
-		return
+	if commit {
+		// Plan-check the converted state; if it fails, do not commit and fall back to the
+		// terraform engine (the temp file is cleaned up by the deferred Remove).
+		if err := checkPlanOnTempState(ctx, b, tempStatePath, cfg); err != nil {
+			log.Warnf(ctx, "migration to the direct engine failed its plan check; deploying on terraform this time: %v", err)
+			return false, nil
+		}
+		// Commit: move resources.json into place, push it, and back up terraform.tfstate.
+		cleanupTemp = false
+		if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
+			return false, err
+		}
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localDirectPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+			return false, fmt.Errorf("opening migrated state: %w", err)
+		}
+		return true, nil
 	}
 
-	// From here on, direct is the engine to migrate to: use the migrate_* telemetry keys.
+	// Plan (no commit): load the converted state into memory. It was just written by this
+	// CLI, so it is at the current schema version and needs no migration.
+	raw, err := os.ReadFile(tempStatePath)
 	if err != nil {
-		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
+		return false, fmt.Errorf("reading migrated state: %w", err)
 	}
-	if hasWarnings {
-		b.Metrics.SetBoolValue(metrics.DirectMigrateWarnings, true)
+	var data dstate.Database
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return false, fmt.Errorf("parsing migrated state: %w", err)
 	}
-
-	if err != nil || hasWarnings {
-		log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
-		return
-	}
-
-	if planErr := checkPlanOnTempState(ctx, b, tempStatePath, cfg); planErr != nil {
-		log.Warnf(ctx, "%s%v", warnPrefix, planErr)
-		log.Warnf(ctx, "%s", feedbackNotice)
-		b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
-		log.Warnf(ctx, "%s", autoMigrateStoppedNotice)
-		return
-	}
-
-	cmdio.LogString(ctx, "Migrating state to direct deployment engine (selected via "+requestedEngine.Source+")...")
-
-	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
-		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
-		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
-		return
-	}
-
-	recordAutoMigrateSource(b, requestedEngine)
+	b.DeploymentBundle.StateDB.OpenWithData(localDirectPath, data)
+	return true, nil
 }
 
 // checkPlanOnTempState opens the migrated state at tempStatePath in read mode,
@@ -178,34 +139,6 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 
 	_, err := planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg)
 	return err
-}
-
-// recordDryRunNoop records dry-run telemetry for a no-op case (no state, or
-// state with no managed resources) when direct was NOT selected. On the
-// migrating paths the caller uses direct_migrate_* keys instead.
-func recordDryRunNoop(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
-	if requestedEngine.Type == engine.EngineDirect {
-		return
-	}
-	b.Metrics.SetBoolValue(metrics.DirectDryMigrateSuccess, true)
-	b.Metrics.SetBoolValue(metrics.DirectDryMigrateWarnings, false)
-}
-
-// recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry
-// keys. requestedEngine.Type may resolve to direct from the config, the env var,
-// or the default (config wins over env in ResolveEngineSetting). ConfigType is
-// set only when the config populated the setting, so it's the correct signal for
-// "was this a durable opt-in?" — env-only opt-ins are the ones with
-// ConfigType == EngineNotSet and IsDefault false.
-func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSetting) {
-	switch {
-	case requestedEngine.IsDefault:
-		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaDefault, true)
-	case requestedEngine.ConfigType == engine.EngineDirect:
-		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaConfig, true)
-	default:
-		b.Metrics.SetBoolValue(metrics.DirectAutoMigrateViaEnv, true)
-	}
 }
 
 // BackupTerraformState moves the terraform state to .backup both remotely

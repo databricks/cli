@@ -251,19 +251,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					"This bundle will be automatically migrated to use the direct deployment engine.\n\n"+
 					"Learn more: https://docs.databricks.com/dev-tools/bundles/direct\n")
 			}
-			statemgmt.MigrateToDirect(ctx, b, requiredEngine)
-			if logdiag.HasError(ctx) {
+			// commit only on deploy: plan opens the converted state in memory and writes
+			// nothing. When the migration's plan check fails it is not committed and the
+			// run falls back to the terraform engine (migrated stays false).
+			migrated, err := statemgmt.MigrateTerraformState(ctx, b, opts.Deploy)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("migrating Terraform state to the direct engine: %w", err))
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-			// Re-resolve state: the migration may have committed resources.json (direct),
-			// swept an empty terraform state (direct), or left terraform intact if its plan
-			// check failed (the run then proceeds on terraform).
-			ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
-			if logdiag.HasError(ctx) {
-				return b, stateDesc, root.ErrAlreadyPrinted
+			if migrated {
+				stateDesc.Engine = engine.EngineDirect
+				b.Metrics.StateEngine = engine.EngineDirect
 			}
-			cmd.SetContext(ctx)
-			b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 		}
 
 		// --select is only supported by the direct engine, which tracks resource
