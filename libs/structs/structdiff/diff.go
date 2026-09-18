@@ -209,8 +209,10 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			continue
 		}
 
-		// Continue traversing embedded structs. Do not add the key to the path though.
-		if sf.Anonymous {
+		// Continue traversing embedded structs. Do not add the key to the path though. An
+		// anonymous field carrying a json name is not one of these: encoding/json serializes it
+		// as a nested object, so it is handled as a named field below.
+		if structaccess.IsFlattenedEmbed(sf) {
 			if err := diffValues(ctx, path, s1.Field(i), s2.Field(i), changes); err != nil {
 				return err
 			}
@@ -270,13 +272,13 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
-		// Key is always string at this point
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		// Caller guarantees the key kind is String; use Value.String() rather
+		// than a .(string) assertion, which panics on a named string key type
+		// (e.g. `type ScriptHook string`) whose dynamic type is not string.
+		keySet[k.String()] = k
 	}
 	for _, k := range m2.MapKeys() {
-		ks := k.Interface().(string)
-		keySet[ks] = k
+		keySet[k.String()] = k
 	}
 
 	keys := slices.Sorted(maps.Keys(keySet))

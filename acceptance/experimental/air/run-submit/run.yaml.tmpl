@@ -3,6 +3,13 @@ command: python train.py
 compute:
   accelerator_type: GPU_1xH100
   num_accelerators: 1
+permissions:
+  - user_name: alice@example.com
+    level: CAN_MANAGE
+  - group_name: data-team
+    level: CAN_VIEW
+  - service_principal_name: training-sp
+    level: CAN_MANAGE_RUN
 code_source:
   type: snapshot
   snapshot:

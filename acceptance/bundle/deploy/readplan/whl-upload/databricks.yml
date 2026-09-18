@@ -1,0 +1,29 @@
+bundle:
+  name: whl-upload
+
+artifacts:
+  my_test_code:
+    type: whl
+    # Pre-built wheel with dynamic_version: true. deploy --plan reads the patched
+    # filename directly from the plan's new_state and finds the cached local file,
+    # so no build command or glob re-expansion is needed.
+    files:
+      - source: ./dist/*.whl
+    dynamic_version: true
+
+resources:
+  jobs:
+    my_job:
+      name: whl-upload-job
+      tasks:
+        - task_key: main
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 1
+          python_wheel_task:
+            package_name: my_test_code
+            entry_point: run
+          libraries:
+            # Local wheel, prebuilt (no build: step) to keep the test hermetic.
+            - whl: ./dist/*.whl

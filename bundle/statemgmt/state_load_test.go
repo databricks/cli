@@ -26,40 +26,44 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	}
 
 	state := ExportedResourcesMap{
-		"resources.jobs.test_job":                                       {ID: "1"},
-		"resources.job_runs.test_job_run":                               {ID: "1"},
-		"resources.pipelines.test_pipeline":                             {ID: "1"},
-		"resources.models.test_mlflow_model":                            {ID: "1"},
-		"resources.experiments.test_mlflow_experiment":                  {ID: "1"},
-		"resources.model_serving_endpoints.test_model_serving":          {ID: "1"},
-		"resources.registered_models.test_registered_model":             {ID: "1"},
-		"resources.quality_monitors.test_monitor":                       {ID: "1"},
-		"resources.catalogs.test_catalog":                               {ID: "1"},
-		"resources.schemas.test_schema":                                 {ID: "1"},
-		"resources.external_locations.test_external_location":           {ID: "1"},
-		"resources.volumes.test_volume":                                 {ID: "1"},
-		"resources.clusters.test_cluster":                               {ID: "1"},
-		"resources.dashboards.test_dashboard":                           {ID: "1"},
-		"resources.genie_spaces.test_genie_space":                       {ID: "1"},
-		"resources.apps.test_app":                                       {ID: "app1"},
-		"resources.secret_scopes.test_secret_scope":                     {ID: "secret_scope1"},
-		"resources.sql_warehouses.test_sql_warehouse":                   {ID: "1"},
-		"resources.database_instances.test_database_instance":           {ID: "1"},
-		"resources.database_catalogs.test_database_catalog":             {ID: "1"},
-		"resources.synced_database_tables.test_synced_database_table":   {ID: "1"},
-		"resources.alerts.test_alert":                                   {ID: "1"},
-		"resources.postgres_projects.test_postgres_project":             {ID: "projects/test-project"},
-		"resources.postgres_branches.test_postgres_branch":              {ID: "projects/test-project/branches/main"},
-		"resources.postgres_endpoints.test_postgres_endpoint":           {ID: "projects/test-project/branches/main/endpoints/primary"},
-		"resources.postgres_catalogs.test_postgres_catalog":             {ID: "catalogs/test_catalog"},
-		"resources.postgres_databases.test_postgres_database":           {ID: "projects/test-project/branches/main/databases/test-db"},
-		"resources.postgres_roles.test_postgres_role":                   {ID: "projects/test-project/branches/main/roles/test-role"},
-		"resources.postgres_synced_tables.test_postgres_synced_table":   {ID: "synced_tables/main.public.test_synced_table"},
-		"resources.vector_search_endpoints.test_vector_search_endpoint": {ID: "vs-endpoint-1"},
-		"resources.vector_search_indexes.test_vector_search_index":      {ID: "vs-index-1"},
-		"resources.instance_pools.test_instance_pool":                   {ID: "1"},
-		"resources.secrets.test_secret":                                 {ID: "main.default.test_secret"},
-		"resources.cluster_policies.test_cluster_policy":                {ID: "cp-1"},
+		"resources.jobs.test_job":                                               {ID: "1"},
+		"resources.job_runs.test_job_run":                                       {ID: "1"},
+		"resources.pipelines.test_pipeline":                                     {ID: "1"},
+		"resources.models.test_mlflow_model":                                    {ID: "1"},
+		"resources.experiments.test_mlflow_experiment":                          {ID: "1"},
+		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
+		"resources.model_services.test_model_service":                           {ID: "main.default.test_model_service"},
+		"resources.mcp_services.test_mcp_service":                               {ID: "main.default.test_mcp_service"},
+		"resources.model_provider_services.test_model_provider_service":         {ID: "main.default.test_model_provider_service"},
+		"resources.registered_models.test_registered_model":                     {ID: "1"},
+		"resources.quality_monitors.test_monitor":                               {ID: "1"},
+		"resources.catalogs.test_catalog":                                       {ID: "1"},
+		"resources.schemas.test_schema":                                         {ID: "1"},
+		"resources.external_locations.test_external_location":                   {ID: "1"},
+		"resources.volumes.test_volume":                                         {ID: "1"},
+		"resources.clusters.test_cluster":                                       {ID: "1"},
+		"resources.dashboards.test_dashboard":                                   {ID: "1"},
+		"resources.genie_spaces.test_genie_space":                               {ID: "1"},
+		"resources.apps.test_app":                                               {ID: "app1"},
+		"resources.secret_scopes.test_secret_scope":                             {ID: "secret_scope1"},
+		"resources.sql_warehouses.test_sql_warehouse":                           {ID: "1"},
+		"resources.database_instances.test_database_instance":                   {ID: "1"},
+		"resources.database_catalogs.test_database_catalog":                     {ID: "1"},
+		"resources.synced_database_tables.test_synced_database_table":           {ID: "1"},
+		"resources.alerts.test_alert":                                           {ID: "1"},
+		"resources.postgres_projects.test_postgres_project":                     {ID: "projects/test-project"},
+		"resources.postgres_branches.test_postgres_branch":                      {ID: "projects/test-project/branches/main"},
+		"resources.postgres_endpoints.test_postgres_endpoint":                   {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.postgres_catalogs.test_postgres_catalog":                     {ID: "catalogs/test_catalog"},
+		"resources.postgres_databases.test_postgres_database":                   {ID: "projects/test-project/branches/main/databases/test-db"},
+		"resources.postgres_roles.test_postgres_role":                           {ID: "projects/test-project/branches/main/roles/test-role"},
+		"resources.postgres_synced_tables.test_postgres_synced_table":           {ID: "synced_tables/main.public.test_synced_table"},
+		"resources.postgres_snapshot_schedules.test_postgres_snapshot_schedule": {ID: "projects/test-project/branches/main/snapshot-schedule"},
+		"resources.vector_search_endpoints.test_vector_search_endpoint":         {ID: "vs-endpoint-1"},
+		"resources.vector_search_indexes.test_vector_search_index":              {ID: "vs-index-1"},
+		"resources.instance_pools.test_instance_pool":                           {ID: "1"},
+		"resources.secrets.test_secret":                                         {ID: "main.default.test_secret"},
+		"resources.cluster_policies.test_cluster_policy":                        {ID: "cp-1"},
 	}
 	err := StateToBundle(t.Context(), state, &config)
 	assert.NoError(t, err)
@@ -146,6 +150,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "synced_tables/main.public.test_synced_table", config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
 
+	assert.Equal(t, "projects/test-project/branches/main/snapshot-schedule", config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
+
 	assert.Equal(t, "vs-endpoint-1", config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
@@ -160,6 +167,14 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "main.default.test_secret", config.Resources.Secrets["test_secret"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Secrets["test_secret"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_model_service", config.Resources.ModelServices["test_model_service"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServices["test_model_service"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_mcp_service", config.Resources.McpServices["test_mcp_service"].ID)
+	assert.Equal(t, "main.default.test_model_provider_service", config.Resources.ModelProviderServices["test_model_provider_service"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.McpServices["test_mcp_service"].ModifiedStatus)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelProviderServices["test_model_provider_service"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -385,6 +400,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+				"test_postgres_snapshot_schedule": {
+					PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+						Branch: "projects/test-project/branches/main",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -410,6 +432,30 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_cluster_policy": {
 					CreatePolicy: compute.CreatePolicy{
 						Name: "test_cluster_policy",
+					},
+				},
+			},
+			ModelServices: map[string]*resources.ModelService{
+				"test_model_service": {
+					ModelServiceConfig: resources.ModelServiceConfig{
+						Parent:         "schemas/main.default",
+						ModelServiceId: "test_model_service",
+					},
+				},
+			},
+			McpServices: map[string]*resources.McpService{
+				"test_mcp_service": {
+					McpServiceConfig: resources.McpServiceConfig{
+						Parent:       "schemas/main.default",
+						McpServiceId: "test_mcp_service",
+					},
+				},
+			},
+			ModelProviderServices: map[string]*resources.ModelProviderService{
+				"test_model_provider_service": {
+					ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+						Parent:                 "schemas/main.default",
+						ModelProviderServiceId: "test_model_provider_service",
 					},
 				},
 			},
@@ -509,6 +555,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Empty(t, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSyncedTables["test_postgres_synced_table"].ModifiedStatus)
 
+	assert.Empty(t, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresSnapshotSchedules["test_postgres_snapshot_schedule"].ModifiedStatus)
+
 	assert.Empty(t, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.VectorSearchEndpoints["test_vector_search_endpoint"].ModifiedStatus)
 
@@ -520,6 +569,14 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.ClusterPolicies["test_cluster_policy"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ClusterPolicies["test_cluster_policy"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.ModelServices["test_model_service"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServices["test_model_service"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.McpServices["test_mcp_service"].ID)
+	assert.Empty(t, config.Resources.ModelProviderServices["test_model_provider_service"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.McpServices["test_mcp_service"].ModifiedStatus)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelProviderServices["test_model_provider_service"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -892,6 +949,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+				"test_postgres_snapshot_schedule": {
+					PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+						Branch: "projects/test-project/branches/main",
+					},
+				},
+			},
 			VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 				"test_vector_search_endpoint": {
 					CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -937,6 +1001,48 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_cluster_policy_new": {
 					CreatePolicy: compute.CreatePolicy{
 						Name: "test_cluster_policy_new",
+					},
+				},
+			},
+			ModelServices: map[string]*resources.ModelService{
+				"test_model_service": {
+					ModelServiceConfig: resources.ModelServiceConfig{
+						Parent:         "schemas/main.default",
+						ModelServiceId: "test_model_service",
+					},
+				},
+				"test_model_service_new": {
+					ModelServiceConfig: resources.ModelServiceConfig{
+						Parent:         "schemas/main.default",
+						ModelServiceId: "test_model_service_new",
+					},
+				},
+			},
+			McpServices: map[string]*resources.McpService{
+				"test_mcp_service": {
+					McpServiceConfig: resources.McpServiceConfig{
+						Parent:       "schemas/main.default",
+						McpServiceId: "test_mcp_service",
+					},
+				},
+				"test_mcp_service_new": {
+					McpServiceConfig: resources.McpServiceConfig{
+						Parent:       "schemas/main.default",
+						McpServiceId: "test_mcp_service_new",
+					},
+				},
+			},
+			ModelProviderServices: map[string]*resources.ModelProviderService{
+				"test_model_provider_service": {
+					ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+						Parent:                 "schemas/main.default",
+						ModelProviderServiceId: "test_model_provider_service",
+					},
+				},
+				"test_model_provider_service_new": {
+					ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+						Parent:                 "schemas/main.default",
+						ModelProviderServiceId: "test_model_provider_service_new",
 					},
 				},
 			},
@@ -1001,6 +1107,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.instance_pools.test_instance_pool_old":                   {ID: "2"},
 		"resources.cluster_policies.test_cluster_policy":                    {ID: "cp-1"},
 		"resources.cluster_policies.test_cluster_policy_old":                {ID: "cp-2"},
+		"resources.model_services.test_model_service":                       {ID: "main.default.test_model_service"},
+		"resources.model_services.test_model_service_old":                   {ID: "main.default.test_model_service_old"},
+		"resources.mcp_services.test_mcp_service":                           {ID: "main.default.test_mcp_service"},
+		"resources.model_provider_services.test_model_provider_service":     {ID: "main.default.test_model_provider_service"},
+		"resources.mcp_services.test_mcp_service_old":                       {ID: "main.default.test_mcp_service_old"},
+		"resources.model_provider_services.test_model_provider_service_old": {ID: "main.default.test_model_provider_service_old"},
 		"resources.secrets.test_secret":                                     {ID: "main.default.test_secret"},
 		"resources.secrets.test_secret_old":                                 {ID: "main.default.test_secret_old"},
 	}
@@ -1211,6 +1323,26 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ClusterPolicies["test_cluster_policy_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.ClusterPolicies["test_cluster_policy_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ClusterPolicies["test_cluster_policy_new"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_model_service", config.Resources.ModelServices["test_model_service"].ID)
+	assert.Empty(t, config.Resources.ModelServices["test_model_service"].ModifiedStatus)
+	assert.Equal(t, "main.default.test_model_service_old", config.Resources.ModelServices["test_model_service_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServices["test_model_service_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.ModelServices["test_model_service_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServices["test_model_service_new"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_mcp_service", config.Resources.McpServices["test_mcp_service"].ID)
+	assert.Equal(t, "main.default.test_model_provider_service", config.Resources.ModelProviderServices["test_model_provider_service"].ID)
+	assert.Empty(t, config.Resources.McpServices["test_mcp_service"].ModifiedStatus)
+	assert.Empty(t, config.Resources.ModelProviderServices["test_model_provider_service"].ModifiedStatus)
+	assert.Equal(t, "main.default.test_mcp_service_old", config.Resources.McpServices["test_mcp_service_old"].ID)
+	assert.Equal(t, "main.default.test_model_provider_service_old", config.Resources.ModelProviderServices["test_model_provider_service_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.McpServices["test_mcp_service_old"].ModifiedStatus)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelProviderServices["test_model_provider_service_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.McpServices["test_mcp_service_new"].ID)
+	assert.Empty(t, config.Resources.ModelProviderServices["test_model_provider_service_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.McpServices["test_mcp_service_new"].ModifiedStatus)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelProviderServices["test_model_provider_service_new"].ModifiedStatus)
 
 	assert.Equal(t, "main.default.test_secret", config.Resources.Secrets["test_secret"].ID)
 	assert.Empty(t, config.Resources.Secrets["test_secret"].ModifiedStatus)

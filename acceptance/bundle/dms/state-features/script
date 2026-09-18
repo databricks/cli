@@ -1,0 +1,20 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Deploy records version 3 and the deployment_history feature, with resources held in DMS"
+trace $CLI bundle deploy
+trace jq '{state_version, features, state}' .databricks/bundle/default/resources.json
+rm -f "$OUT_REQUESTS"
+
+title "Reopening version 3 reads resources from DMS and produces a no-op plan"
+trace $CLI bundle plan
+trace print_requests.py --dms //resources --get --oneline
+
+title "Disabling deployment history is refused by plan and deploy, while destroy keeps using DMS from state"
+update_file.py databricks.yml 'deployment_history: true' 'deployment_history: false'
+for command in plan deploy; do
+    musterr trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle "$command"
+done
+trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle destroy --auto-approve
+trace print_requests.py --dms //api/2.0/bundle --oneline
+
+rm -f "$OUT_REQUESTS"

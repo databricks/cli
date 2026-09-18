@@ -8,7 +8,7 @@ from databricks.bundles.core._resource_mutator import ResourceMutator
 from databricks.bundles.core._resource_type import _ResourceType
 from databricks.bundles.jobs._models.job import Job
 from databricks_tests.core._generated import test_cases
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 test_case_ids = [tpe.plural_name for _, tpe in test_cases]
 
@@ -37,7 +37,7 @@ def test_add_job():
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource_type(tc: TestCase, tpe: _ResourceType):
+def test_add_resource_type(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     tc.add_resource(
@@ -61,7 +61,7 @@ def test_add_job_dict():
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource_type_dict(tc: TestCase, tpe: _ResourceType):
+def test_add_resource_type_dict(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     tc.add_resource(
@@ -86,7 +86,7 @@ def test_add_job_location():
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource_type_location(tc: TestCase, tpe: _ResourceType):
+def test_add_resource_type_location(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
     location = Location(file="my_file", line=1, column=2)
 
@@ -118,7 +118,7 @@ def test_add_job_location_automatic():
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource_type_location_automatic(tc: TestCase, tpe: _ResourceType):
+def test_add_resource_type_location_automatic(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     tc.add_resource(
@@ -140,7 +140,7 @@ def test_add_resource_type_location_automatic(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resource(tc: TestCase, tpe: _ResourceType):
+def test_add_resource(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     resources.add_resource("my_resource", tc.dataclass_example)
@@ -150,7 +150,7 @@ def test_add_resource(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_resources(tc: TestCase, tpe: _ResourceType):
+def test_add_resources(tc: ResourceTestCase, tpe: _ResourceType):
     resources_1 = Resources()
     resources_2 = Resources()
 
@@ -162,7 +162,7 @@ def test_add_resources(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_mutator(tc: TestCase, tpe: _ResourceType):
+def test_mutator(tc: ResourceTestCase, tpe: _ResourceType):
     @tc.mutator
     def my_func(bundle, resource):
         return resource
@@ -176,7 +176,7 @@ def test_mutator(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_mutator_export(tc: TestCase, tpe: _ResourceType):
+def test_mutator_export(tc: ResourceTestCase, tpe: _ResourceType):
     import databricks.bundles.core
 
     assert tc.mutator.__name__ in databricks.bundles.core.__all__, (
@@ -185,7 +185,7 @@ def test_mutator_export(tc: TestCase, tpe: _ResourceType):
 
 
 @pytest.mark.parametrize("tc,tpe", test_cases, ids=test_case_ids)
-def test_add_duplicate_resource(tc: TestCase, tpe: _ResourceType):
+def test_add_duplicate_resource(tc: ResourceTestCase, tpe: _ResourceType):
     resources = Resources()
 
     copy_1 = replace(tc.dataclass_example)

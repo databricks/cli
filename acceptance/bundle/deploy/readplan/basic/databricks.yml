@@ -1,6 +1,11 @@
 bundle:
   name: test-bundle
 
+# The raw plans deploy --plan reads live in the bundle root; keep them out of the file count.
+sync:
+  exclude:
+    - tmp.plan_*.json
+
 resources:
   jobs:
     job:

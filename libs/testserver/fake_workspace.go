@@ -44,7 +44,9 @@ const (
 	// itself a service principal.
 	GuestServicePrincipalTokenPrefix = "dbapi2"
 	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
-	// consistency: the first GET after a create returns 404 (not yet visible).
+	// consistency / propagation delays: the first GET after a create returns 404
+	// (not yet visible), and a deleted synced table stays in DELETING instead of
+	// disappearing (so the direct engine's post-delete poll has a teardown to wait out).
 	EventualConsistencyTokenPrefix = "dbapi3"
 	UserID                         = "1000012345"
 	TestDefaultClusterId           = "0123-456789-cluster0"
@@ -175,6 +177,13 @@ type FakeWorkspace struct {
 	url                string
 	isServicePrincipal bool
 
+	// eventualConsistency simulates propagation delays (see EventualConsistencyTokenPrefix).
+	// For synced tables it makes deletion slow: a deleted table stays in DELETING and keeps
+	// being returned by GET, so the direct engine's post-delete poll (WaitAfterDelete) has a
+	// real teardown to wait out. Off by default, so the default path and terraform (which
+	// recreates without polling) keep immediate deletion.
+	eventualConsistency bool
+
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
@@ -204,6 +213,9 @@ type FakeWorkspace struct {
 	Catalogs              map[string]catalog.CatalogInfo
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
+	ModelServices         map[string]catalog.ModelService
+	McpServices           map[string]catalog.McpService
+	ModelProviderServices map[string]catalog.ModelProviderService
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
@@ -229,14 +241,15 @@ type FakeWorkspace struct {
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
 
-	PostgresProjects     map[string]postgres.Project
-	PostgresBranches     map[string]postgres.Branch
-	PostgresCatalogs     map[string]postgres.Catalog
-	PostgresDatabases    map[string]postgres.Database
-	PostgresEndpoints    map[string]postgres.Endpoint
-	PostgresRoles        map[string]postgres.Role
-	PostgresSyncedTables map[string]postgres.SyncedTable
-	PostgresOperations   map[string]postgres.Operation
+	PostgresProjects          map[string]postgres.Project
+	PostgresBranches          map[string]postgres.Branch
+	PostgresCatalogs          map[string]postgres.Catalog
+	PostgresDatabases         map[string]postgres.Database
+	PostgresEndpoints         map[string]postgres.Endpoint
+	PostgresRoles             map[string]postgres.Role
+	PostgresSyncedTables      map[string]postgres.SyncedTable
+	PostgresSnapshotSchedules map[string]postgres.SnapshotSchedule
+	PostgresOperations        map[string]postgres.Operation
 
 	// Branches and endpoints that the server provisioned implicitly together
 	// with their parent (e.g. the production branch on a new project, or the
@@ -248,6 +261,15 @@ type FakeWorkspace struct {
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
 	clusterVenvs map[string]*clusterEnv
+
+	// DmsDeployments holds Deployment Metadata Service (DMS) records, keyed by
+	// deployment ID. Each record carries its versions and latest resource state.
+	DmsDeployments map[string]*DmsDeployment
+
+	// DmsDeploymentNodes maps deployment ID to the workspace node CreateDeployment made for
+	// it. An ID appears here before DmsDeployments has a record, which its first version
+	// creates, so the node is what makes the ID valid in between.
+	DmsDeploymentNodes map[string]string
 
 	// sshTunnelHostKeyPEM is the SSH host key every sshd of this workspace's tunnel
 	// serves, generated on first use. See sshTunnelHostKey.
@@ -410,9 +432,11 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 }
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
+	eventualConsistency := strings.HasPrefix(token, EventualConsistencyTokenPrefix)
 	return &FakeWorkspace{
-		url:                url,
-		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		url:                 url,
+		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		eventualConsistency: eventualConsistency,
 		directories: map[string]workspace.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
@@ -456,23 +480,26 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:                map[int64]jobs.Job{},
-		JobRuns:             map[int64]jobs.Run{},
-		JobRunOutputs:       map[int64]jobs.RunOutput{},
-		JobRunIdempotency:   map[string]int64{},
-		Grants:              map[string][]catalog.PrivilegeAssignment{},
-		Pipelines:           map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:     map[string]bool{},
-		Monitors:            map[string]catalog.MonitorInfo{},
-		Apps:                map[string]apps.App{},
-		Catalogs:            map[string]catalog.CatalogInfo{},
-		ExternalLocations:   map[string]catalog.ExternalLocationInfo{},
-		Schemas:             map[string]catalog.SchemaInfo{},
-		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
-		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
-		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
-		GenieSpaces:         map[string]dashboards.GenieSpace{},
+		Jobs:                  map[int64]jobs.Job{},
+		JobRuns:               map[int64]jobs.Run{},
+		JobRunOutputs:         map[int64]jobs.RunOutput{},
+		JobRunIdempotency:     map[string]int64{},
+		Grants:                map[string][]catalog.PrivilegeAssignment{},
+		Pipelines:             map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:       map[string]bool{},
+		Monitors:              map[string]catalog.MonitorInfo{},
+		Apps:                  map[string]apps.App{},
+		Catalogs:              map[string]catalog.CatalogInfo{},
+		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},
+		Schemas:               map[string]catalog.SchemaInfo{},
+		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
+		ModelServices:         map[string]catalog.ModelService{},
+		McpServices:           map[string]catalog.McpService{},
+		ModelProviderServices: map[string]catalog.ModelProviderService{},
+		Volumes:               map[string]catalog.VolumeInfo{},
+		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
+		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
+		GenieSpaces:           map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,
@@ -499,10 +526,13 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresEndpoints:         map[string]postgres.Endpoint{},
 		PostgresRoles:             map[string]postgres.Role{},
 		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
+		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
+		DmsDeployments:            map[string]*DmsDeployment{},
+		DmsDeploymentNodes:        map[string]string{},
 		Alerts:                    map[string]sql.AlertV2{},
 		Experiments:               map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:       map[string]ml.Model{},

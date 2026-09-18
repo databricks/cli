@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -32,8 +33,16 @@ func createWebsocketConnection(ctx context.Context, client *databricks.Workspace
 	}
 
 	// websocket connection manages lifecycle of the response object, no need to close the body
-	conn, _, err := websocket.DefaultDialer.Dial(req.URL.String(), req.Header) // nolint:bodyclose
+	conn, resp, err := websocket.DefaultDialer.DialContext(ctx, req.URL.String(), req.Header)
+	if resp != nil {
+		resp.Body.Close()
+	}
 	if err != nil {
+		// Only the server's explicit session refusals bypass the retry budget.
+		// Other responses, including 408, can come from an intermediary.
+		if dial.Reattach && resp != nil && (resp.StatusCode == http.StatusConflict || resp.StatusCode == http.StatusGone) {
+			return nil, errors.Join(proxy.ErrReattachRejected, fmt.Errorf("reattach failed (HTTP %d): %w", resp.StatusCode, err))
+		}
 		return nil, fmt.Errorf("failed to establish websocket connection: %w", err)
 	}
 
@@ -69,6 +78,7 @@ func buildProxyWebsocketURL(host, workspaceID, clusterID string, serverPort int,
 	u.Path = fmt.Sprintf("/driver-proxy-api/o/%s/%s/%d/ssh", workspaceID, clusterID, serverPort)
 	query := url.Values{"id": {dial.ConnID}}
 	if dial.ResumeCapable {
+		query.Set(proxy.ResumeVersionParameter, strconv.Itoa(proxy.ResumeProtocolVersion))
 		// Sending "delivered" at all is what tells the server this client speaks the resume
 		// protocol, so it buffers its own output for replay from the start of the session.
 		query.Set("delivered", strconv.FormatInt(dial.Delivered, 10))

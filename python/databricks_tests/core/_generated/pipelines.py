@@ -20,12 +20,12 @@ from databricks.bundles.pipelines._models.pipelines_environment import (
     PipelinesEnvironment,
 )
 from databricks.bundles.pipelines._models.run_as import RunAs
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_pipeline,
             dict_example={
                 "clusters": [{}],

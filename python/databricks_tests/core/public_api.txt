@@ -17,9 +17,12 @@ __all__ = [
     app_mutator,
     catalog_mutator,
     cluster_mutator,
+    cluster_policy_mutator,
+    dashboard_mutator,
     database_catalog_mutator,
     database_instance_mutator,
     external_location_mutator,
+    genie_space_mutator,
     instance_pool_mutator,
     job_mutator,
     job_run_mutator,
@@ -27,10 +30,14 @@ __all__ = [
     load_resources_from_module,
     load_resources_from_modules,
     load_resources_from_package_module,
+    mcp_service_mutator,
     mlflow_experiment_mutator,
     mlflow_model_mutator,
+    model_provider_service_mutator,
+    model_service_mutator,
     model_serving_endpoint_mutator,
     pipeline_mutator,
+    postgres_snapshot_schedule_mutator,
     quality_monitor_mutator,
     registered_model_mutator,
     schema_mutator,
@@ -87,20 +94,27 @@ class Resources:
     def add_app(self, resource_name: str, app: AppParam, *, location: Union[Location, None] = None) -> None
     def add_catalog(self, resource_name: str, catalog: CatalogParam, *, location: Union[Location, None] = None) -> None
     def add_cluster(self, resource_name: str, cluster: ClusterParam, *, location: Union[Location, None] = None) -> None
+    def add_cluster_policy(self, resource_name: str, cluster_policy: ClusterPolicyParam, *, location: Union[Location, None] = None) -> None
+    def add_dashboard(self, resource_name: str, dashboard: DashboardParam, *, location: Union[Location, None] = None) -> None
     def add_database_catalog(self, resource_name: str, database_catalog: DatabaseCatalogParam, *, location: Union[Location, None] = None) -> None
     def add_database_instance(self, resource_name: str, database_instance: DatabaseInstanceParam, *, location: Union[Location, None] = None) -> None
     def add_diagnostic_error(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostic_warning(self, msg: str, *, detail: Union[str, None] = None, path: Union[tuple[str, ...], None] = None, location: Union[Location, None] = None) -> None
     def add_diagnostics(self, other: Diagnostics) -> None
     def add_external_location(self, resource_name: str, external_location: ExternalLocationParam, *, location: Union[Location, None] = None) -> None
+    def add_genie_space(self, resource_name: str, genie_space: GenieSpaceParam, *, location: Union[Location, None] = None) -> None
     def add_instance_pool(self, resource_name: str, instance_pool: InstancePoolParam, *, location: Union[Location, None] = None) -> None
     def add_job(self, resource_name: str, job: JobParam, *, location: Union[Location, None] = None) -> None
     def add_job_run(self, resource_name: str, job_run: JobRunParam, *, location: Union[Location, None] = None) -> None
     def add_location(self, path: tuple[str, ...], location: Location) -> None
+    def add_mcp_service(self, resource_name: str, mcp_service: McpServiceParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_experiment(self, resource_name: str, mlflow_experiment: MlflowExperimentParam, *, location: Union[Location, None] = None) -> None
     def add_mlflow_model(self, resource_name: str, mlflow_model: MlflowModelParam, *, location: Union[Location, None] = None) -> None
+    def add_model_provider_service(self, resource_name: str, model_provider_service: ModelProviderServiceParam, *, location: Union[Location, None] = None) -> None
+    def add_model_service(self, resource_name: str, model_service: ModelServiceParam, *, location: Union[Location, None] = None) -> None
     def add_model_serving_endpoint(self, resource_name: str, model_serving_endpoint: ModelServingEndpointParam, *, location: Union[Location, None] = None) -> None
     def add_pipeline(self, resource_name: str, pipeline: PipelineParam, *, location: Union[Location, None] = None) -> None
+    def add_postgres_snapshot_schedule(self, resource_name: str, postgres_snapshot_schedule: PostgresSnapshotScheduleParam, *, location: Union[Location, None] = None) -> None
     def add_quality_monitor(self, resource_name: str, quality_monitor: QualityMonitorParam, *, location: Union[Location, None] = None) -> None
     def add_registered_model(self, resource_name: str, registered_model: RegisteredModelParam, *, location: Union[Location, None] = None) -> None
     def add_resource(self, resource_name: str, resource: Resource, *, location: Union[Location, None] = None) -> None
@@ -116,18 +130,25 @@ class Resources:
     @property alerts -> dict[str, Alert]
     @property apps -> dict[str, App]
     @property catalogs -> dict[str, Catalog]
+    @property cluster_policies -> dict[str, ClusterPolicy]
     @property clusters -> dict[str, Cluster]
+    @property dashboards -> dict[str, Dashboard]
     @property database_catalogs -> dict[str, DatabaseCatalog]
     @property database_instances -> dict[str, DatabaseInstance]
     @property diagnostics -> Diagnostics
     @property experiments -> dict[str, MlflowExperiment]
     @property external_locations -> dict[str, ExternalLocation]
+    @property genie_spaces -> dict[str, GenieSpace]
     @property instance_pools -> dict[str, InstancePool]
     @property job_runs -> dict[str, JobRun]
     @property jobs -> dict[str, Job]
+    @property mcp_services -> dict[str, McpService]
+    @property model_provider_services -> dict[str, ModelProviderService]
+    @property model_services -> dict[str, ModelService]
     @property model_serving_endpoints -> dict[str, ModelServingEndpoint]
     @property models -> dict[str, MlflowModel]
     @property pipelines -> dict[str, Pipeline]
+    @property postgres_snapshot_schedules -> dict[str, PostgresSnapshotSchedule]
     @property quality_monitors -> dict[str, QualityMonitor]
     @property registered_models -> dict[str, RegisteredModel]
     @property schemas -> dict[str, Schema]
@@ -172,6 +193,14 @@ def catalog_mutator(function: Callable) -> ResourceMutator[Catalog]
 @overload def cluster_mutator(function: Callable[[Cluster], Cluster]) -> ResourceMutator[Cluster]
 def cluster_mutator(function: Callable) -> ResourceMutator[Cluster]
 
+@overload def cluster_policy_mutator(function: Callable[[Bundle, ClusterPolicy], ClusterPolicy]) -> ResourceMutator[ClusterPolicy]
+@overload def cluster_policy_mutator(function: Callable[[ClusterPolicy], ClusterPolicy]) -> ResourceMutator[ClusterPolicy]
+def cluster_policy_mutator(function: Callable) -> ResourceMutator[ClusterPolicy]
+
+@overload def dashboard_mutator(function: Callable[[Bundle, Dashboard], Dashboard]) -> ResourceMutator[Dashboard]
+@overload def dashboard_mutator(function: Callable[[Dashboard], Dashboard]) -> ResourceMutator[Dashboard]
+def dashboard_mutator(function: Callable) -> ResourceMutator[Dashboard]
+
 @overload def database_catalog_mutator(function: Callable[[Bundle, DatabaseCatalog], DatabaseCatalog]) -> ResourceMutator[DatabaseCatalog]
 @overload def database_catalog_mutator(function: Callable[[DatabaseCatalog], DatabaseCatalog]) -> ResourceMutator[DatabaseCatalog]
 def database_catalog_mutator(function: Callable) -> ResourceMutator[DatabaseCatalog]
@@ -183,6 +212,10 @@ def database_instance_mutator(function: Callable) -> ResourceMutator[DatabaseIns
 @overload def external_location_mutator(function: Callable[[Bundle, ExternalLocation], ExternalLocation]) -> ResourceMutator[ExternalLocation]
 @overload def external_location_mutator(function: Callable[[ExternalLocation], ExternalLocation]) -> ResourceMutator[ExternalLocation]
 def external_location_mutator(function: Callable) -> ResourceMutator[ExternalLocation]
+
+@overload def genie_space_mutator(function: Callable[[Bundle, GenieSpace], GenieSpace]) -> ResourceMutator[GenieSpace]
+@overload def genie_space_mutator(function: Callable[[GenieSpace], GenieSpace]) -> ResourceMutator[GenieSpace]
+def genie_space_mutator(function: Callable) -> ResourceMutator[GenieSpace]
 
 @overload def instance_pool_mutator(function: Callable[[Bundle, InstancePool], InstancePool]) -> ResourceMutator[InstancePool]
 @overload def instance_pool_mutator(function: Callable[[InstancePool], InstancePool]) -> ResourceMutator[InstancePool]
@@ -204,6 +237,10 @@ def load_resources_from_modules(modules: Iterable[module]) -> Resources
 
 def load_resources_from_package_module(package_module: module) -> Resources
 
+@overload def mcp_service_mutator(function: Callable[[Bundle, McpService], McpService]) -> ResourceMutator[McpService]
+@overload def mcp_service_mutator(function: Callable[[McpService], McpService]) -> ResourceMutator[McpService]
+def mcp_service_mutator(function: Callable) -> ResourceMutator[McpService]
+
 @overload def mlflow_experiment_mutator(function: Callable[[Bundle, MlflowExperiment], MlflowExperiment]) -> ResourceMutator[MlflowExperiment]
 @overload def mlflow_experiment_mutator(function: Callable[[MlflowExperiment], MlflowExperiment]) -> ResourceMutator[MlflowExperiment]
 def mlflow_experiment_mutator(function: Callable) -> ResourceMutator[MlflowExperiment]
@@ -212,6 +249,14 @@ def mlflow_experiment_mutator(function: Callable) -> ResourceMutator[MlflowExper
 @overload def mlflow_model_mutator(function: Callable[[MlflowModel], MlflowModel]) -> ResourceMutator[MlflowModel]
 def mlflow_model_mutator(function: Callable) -> ResourceMutator[MlflowModel]
 
+@overload def model_provider_service_mutator(function: Callable[[Bundle, ModelProviderService], ModelProviderService]) -> ResourceMutator[ModelProviderService]
+@overload def model_provider_service_mutator(function: Callable[[ModelProviderService], ModelProviderService]) -> ResourceMutator[ModelProviderService]
+def model_provider_service_mutator(function: Callable) -> ResourceMutator[ModelProviderService]
+
+@overload def model_service_mutator(function: Callable[[Bundle, ModelService], ModelService]) -> ResourceMutator[ModelService]
+@overload def model_service_mutator(function: Callable[[ModelService], ModelService]) -> ResourceMutator[ModelService]
+def model_service_mutator(function: Callable) -> ResourceMutator[ModelService]
+
 @overload def model_serving_endpoint_mutator(function: Callable[[Bundle, ModelServingEndpoint], ModelServingEndpoint]) -> ResourceMutator[ModelServingEndpoint]
 @overload def model_serving_endpoint_mutator(function: Callable[[ModelServingEndpoint], ModelServingEndpoint]) -> ResourceMutator[ModelServingEndpoint]
 def model_serving_endpoint_mutator(function: Callable) -> ResourceMutator[ModelServingEndpoint]
@@ -219,6 +264,10 @@ def model_serving_endpoint_mutator(function: Callable) -> ResourceMutator[ModelS
 @overload def pipeline_mutator(function: Callable[[Bundle, Pipeline], Pipeline]) -> ResourceMutator[Pipeline]
 @overload def pipeline_mutator(function: Callable[[Pipeline], Pipeline]) -> ResourceMutator[Pipeline]
 def pipeline_mutator(function: Callable) -> ResourceMutator[Pipeline]
+
+@overload def postgres_snapshot_schedule_mutator(function: Callable[[Bundle, PostgresSnapshotSchedule], PostgresSnapshotSchedule]) -> ResourceMutator[PostgresSnapshotSchedule]
+@overload def postgres_snapshot_schedule_mutator(function: Callable[[PostgresSnapshotSchedule], PostgresSnapshotSchedule]) -> ResourceMutator[PostgresSnapshotSchedule]
+def postgres_snapshot_schedule_mutator(function: Callable) -> ResourceMutator[PostgresSnapshotSchedule]
 
 @overload def quality_monitor_mutator(function: Callable[[Bundle, QualityMonitor], QualityMonitor]) -> ResourceMutator[QualityMonitor]
 @overload def quality_monitor_mutator(function: Callable[[QualityMonitor], QualityMonitor]) -> ResourceMutator[QualityMonitor]
@@ -267,16 +316,23 @@ singular_name=alert plural_name=alerts resource_type=Alert
 singular_name=app plural_name=apps resource_type=App
 singular_name=catalog plural_name=catalogs resource_type=Catalog
 singular_name=cluster plural_name=clusters resource_type=Cluster
+singular_name=cluster_policy plural_name=cluster_policies resource_type=ClusterPolicy
+singular_name=dashboard plural_name=dashboards resource_type=Dashboard
 singular_name=database_catalog plural_name=database_catalogs resource_type=DatabaseCatalog
 singular_name=database_instance plural_name=database_instances resource_type=DatabaseInstance
 singular_name=external_location plural_name=external_locations resource_type=ExternalLocation
+singular_name=genie_space plural_name=genie_spaces resource_type=GenieSpace
 singular_name=instance_pool plural_name=instance_pools resource_type=InstancePool
 singular_name=job plural_name=jobs resource_type=Job
 singular_name=job_run plural_name=job_runs resource_type=JobRun
+singular_name=mcp_service plural_name=mcp_services resource_type=McpService
 singular_name=mlflow_experiment plural_name=experiments resource_type=MlflowExperiment
 singular_name=mlflow_model plural_name=models resource_type=MlflowModel
+singular_name=model_provider_service plural_name=model_provider_services resource_type=ModelProviderService
+singular_name=model_service plural_name=model_services resource_type=ModelService
 singular_name=model_serving_endpoint plural_name=model_serving_endpoints resource_type=ModelServingEndpoint
 singular_name=pipeline plural_name=pipelines resource_type=Pipeline
+singular_name=postgres_snapshot_schedule plural_name=postgres_snapshot_schedules resource_type=PostgresSnapshotSchedule
 singular_name=quality_monitor plural_name=quality_monitors resource_type=QualityMonitor
 singular_name=registered_model plural_name=registered_models resource_type=RegisteredModel
 singular_name=schema plural_name=schemas resource_type=Schema

@@ -108,6 +108,15 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {CreateServingEndpoint: serving.CreateServingEndpoint{Name: "servingendpoint1"}},
 				},
+				ModelServices: map[string]*resources.ModelService{
+					"modelservice1": {ModelServiceConfig: resources.ModelServiceConfig{Parent: "schemas/main.default", ModelServiceId: "modelservice1"}},
+				},
+				McpServices: map[string]*resources.McpService{
+					"mcpservice1": {McpServiceConfig: resources.McpServiceConfig{Parent: "schemas/main.default", McpServiceId: "mcpservice1"}},
+				},
+				ModelProviderServices: map[string]*resources.ModelProviderService{
+					"modelproviderservice1": {ModelProviderServiceConfig: resources.ModelProviderServiceConfig{Parent: "schemas/main.default", ModelProviderServiceId: "modelproviderservice1"}},
+				},
 				RegisteredModels: map[string]*resources.RegisteredModel{
 					"registeredmodel1": {CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{Name: "registeredmodel1"}},
 				},
@@ -302,6 +311,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"postgres_synced_table1": {
 						PostgresSyncedTableConfig: resources.PostgresSyncedTableConfig{
 							SyncedTableId: "catalog.schema.table1",
+						},
+					},
+				},
+				PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+					"postgres_snapshot_schedule1": {
+						PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+							Branch: "projects/project1/branches/branch1",
 						},
 					},
 				},

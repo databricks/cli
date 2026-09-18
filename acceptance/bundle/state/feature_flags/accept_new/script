@@ -1,0 +1,13 @@
+mkdir -p .databricks/bundle/default
+cp "$STATE_FILE" .databricks/bundle/default/resources.json
+
+DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=$(jq '.features | has("deployment_history")' "$STATE_FILE")
+export DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY
+
+trace $CLI bundle plan | contains.py "Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged"
+trace cmp "$STATE_FILE" .databricks/bundle/default/resources.json
+
+trace $CLI bundle deploy
+trace jq '.state_version' .databricks/bundle/default/resources.json
+# Deployment upgrades the version and preserves the input's feature flags.
+diff <(jq -S '.features' "$STATE_FILE") <(jq -S '.features // {}' .databricks/bundle/default/resources.json)

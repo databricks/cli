@@ -15,12 +15,12 @@ from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint_p
 from databricks.bundles.vector_search_endpoints._models.vector_search_endpoint_permission_level import (
     VectorSearchEndpointPermissionLevel,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_vector_search_endpoint,
             dict_example={
                 "endpoint_type": "STORAGE_OPTIMIZED",

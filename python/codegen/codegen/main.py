@@ -53,7 +53,7 @@ def main(output: str):
     # decorators, and the core package __init__).
     generated_wiring.write_wiring(output)
 
-    # Generate the per-resource TestCase data driving test_resources.py.
+    # Generate the per-resource ResourceTestCase data driving test_resources.py.
     generated_test_cases.write_test_cases(output, schemas)
 
 

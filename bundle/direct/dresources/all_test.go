@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -95,6 +96,30 @@ var testConfig map[string]any = map[string]any{
 	"synced_database_tables": &resources.SyncedDatabaseTable{
 		SyncedDatabaseTable: database.SyncedDatabaseTable{
 			Name: "main.myschema.my_synced_table",
+		},
+	},
+
+	"model_services": &resources.ModelService{
+		ModelServiceConfig: resources.ModelServiceConfig{
+			Parent:         "schemas/main.default",
+			ModelServiceId: "my_model_service",
+			Comment:        "Test model service",
+		},
+	},
+
+	"mcp_services": &resources.McpService{
+		McpServiceConfig: resources.McpServiceConfig{
+			Parent:       "schemas/main.default",
+			McpServiceId: "my_mcp_service",
+			Comment:      "Test mcp service",
+		},
+	},
+
+	"model_provider_services": &resources.ModelProviderService{
+		ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+			Parent:                 "schemas/main.default",
+			ModelProviderServiceId: "my_model_provider_service",
+			Comment:                "Test model provider service",
 		},
 	},
 
@@ -742,6 +767,39 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"model_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_service",
+			FullName:      "main.myschema.mymodelservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"mcp_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "mcp_service",
+			FullName:      "main.myschema.mymcpservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"model_provider_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_provider_service",
+			FullName:      "main.myschema.myproviderservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
@@ -786,6 +844,29 @@ var testDeps = map[string]prepareWorkspace{
 				Parent:     "projects/test-project-for-branch",
 				BranchId:   "test-branch",
 				BranchSpec: postgres.BranchSpec{},
+			},
+		}, nil
+	},
+
+	"postgres_snapshot_schedules": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Creating the project implicitly provisions the root "production"
+		// branch, the only branch a snapshot schedule may target.
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-snapshot-schedule",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Snapshot Schedule",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresSnapshotSchedule{
+			PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+				Branch: "projects/test-project-for-snapshot-schedule/branches/production",
 			},
 		}, nil
 	},
@@ -1139,8 +1220,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID, newState)
 	require.NoError(t, err)
 
+	// WaitAfterDelete polls until the resource reads back gone; a NotFound is that
+	// success and the caller (DeploymentUnit.waitDeleted) maps it to nil, so accept it here too.
 	err = adapter.WaitAfterDelete(ctx, createdID)
-	require.NoError(t, err)
+	if !apierr.IsMissing(err) {
+		require.NoError(t, err)
+	}
 
 	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
@@ -1150,7 +1235,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// A resource that implements no DoDelete (permissions, grants, job_runs)
+	// leaves the resource in place, so DoRead still succeeds afterwards.
+	// postgres_snapshot_schedules does implement DoDelete but has no delete
+	// endpoint: it disables the schedule by setting an empty cadence set, and the
+	// schedule remains readable (it is intrinsic to the branch).
+	deleteIsNoop := !adapter.HasDoDelete() || group == "postgres_snapshot_schedules"
 	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.

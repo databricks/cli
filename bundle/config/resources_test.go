@@ -137,6 +137,7 @@ func TestBundleResourcePluralNamesResolveInWorkspaceURLs(t *testing.T) {
 		"postgres_endpoints":           true,
 		"postgres_projects":            true,
 		"postgres_roles":               true,
+		"postgres_snapshot_schedules":  true,
 		"secret_scopes":                true,
 		"internal_immutable_snapshots": true,
 	}
@@ -242,6 +243,21 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateServingEndpoint: serving.CreateServingEndpoint{},
 			},
 		},
+		ModelServices: map[string]*resources.ModelService{
+			"my_model_service": {
+				ModelServiceConfig: resources.ModelServiceConfig{},
+			},
+		},
+		McpServices: map[string]*resources.McpService{
+			"my_mcp_service": {
+				McpServiceConfig: resources.McpServiceConfig{},
+			},
+		},
+		ModelProviderServices: map[string]*resources.ModelProviderService{
+			"my_model_provider_service": {
+				ModelProviderServiceConfig: resources.ModelProviderServiceConfig{},
+			},
+		},
 		SecretScopes: map[string]*resources.SecretScope{
 			"my_secret_scope": {
 				Name: "0",
@@ -338,6 +354,13 @@ func TestResourcesBindSupport(t *testing.T) {
 				},
 			},
 		},
+		PostgresSnapshotSchedules: map[string]*resources.PostgresSnapshotSchedule{
+			"my_postgres_snapshot_schedule": {
+				PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+					Branch: "projects/my-postgres-project/branches/my-postgres-branch",
+				},
+			},
+		},
 		VectorSearchEndpoints: map[string]*resources.VectorSearchEndpoint{
 			"my_vector_search_endpoint": {
 				CreateEndpoint: vectorsearch.CreateEndpoint{
@@ -382,6 +405,9 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockAlertsV2API().EXPECT().GetAlertById(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockQualityMonitorsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockServingEndpointsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAiGatewayAPI().EXPECT().GetModelService(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAiGatewayAPI().EXPECT().GetMcpService(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockAiGatewayAPI().EXPECT().GetModelProviderService(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
 		{Name: "0"},
 	}, nil)
@@ -396,6 +422,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPostgresAPI().EXPECT().GetDatabase(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetSyncedTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetSnapshotSchedule(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockPostgresAPI().EXPECT().GetRole(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchEndpointsAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockVectorSearchIndexesAPI().EXPECT().GetIndexByIndexName(mock.Anything, mock.Anything).Return(nil, nil)

@@ -24,12 +24,12 @@ from databricks.bundles.instance_pools._models.lifecycle import Lifecycle
 from databricks.bundles.instance_pools._models.node_type_flexibility import (
     NodeTypeFlexibility,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_instance_pool,
             dict_example={
                 "aws_attributes": {},

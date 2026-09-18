@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
-	"os"
 	"slices"
 	"strings"
 
 	"github.com/databricks/cli/libs/filer"
 	"go.yaml.in/yaml/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 // Launch artifact basenames, uploaded into the run's cli_launch directory. The
@@ -40,21 +41,19 @@ type uploadItem struct {
 // fileWriter is the subset of filer.Filer the upload path needs; a narrow
 // interface keeps buildArtifacts/upload testable without a live workspace.
 type fileWriter interface {
+	Mkdir(ctx context.Context, name string) error
 	Write(ctx context.Context, name string, reader io.Reader, mode ...filer.WriteMode) error
 }
 
-// buildArtifacts assembles the files to upload for a run: the merged config, the
-// inline command as a script, and hyperparameters. configPath is the local YAML
-// path.
+// buildArtifacts assembles the files to upload for a run: the final config, the
+// inline command as a script, and hyperparameters.
 //
 // Dependencies are not uploaded here; they ride inline on the serverless
 // environment's spec.dependencies (see buildSubmitPayload).
-func buildArtifacts(cfg *runConfig, configPath string) ([]uploadItem, error) {
-	// TODO(DABs): with no _bases_/overrides ported yet, the merged config is the
-	// file as-is; once those land, upload the re-serialized merged YAML instead.
-	configData, err := os.ReadFile(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config %s: %w", configPath, err)
+func buildArtifacts(cfg *runConfig) ([]uploadItem, error) {
+	configData := cfg.artifactYAML
+	if len(configData) == 0 {
+		return nil, errors.New("serialized config YAML is unavailable")
 	}
 	if len(configData) > maxConfigYAMLBytes {
 		return nil, fmt.Errorf("config YAML is %.2f MB, over the %d MB limit; reduce 'parameters' or 'command'",
@@ -127,16 +126,25 @@ func secretEnvVarEntries(secrets map[string]string) []secretEnvVarEntry {
 	return out
 }
 
-// uploadArtifacts writes each artifact into the launch directory, overwriting and
-// creating parents as needed.
+// uploadArtifacts creates the launch directory once, then writes all artifacts
+// concurrently. Each write overwrites an existing file but does not repeat parent
+// directory creation.
 //
 // TODO(DABs): this client-side upload could move onto libs/sync / a bundle deploy
 // so the CLI reuses DABs' file-staging machinery instead of writing files itself.
 func uploadArtifacts(ctx context.Context, w fileWriter, items []uploadItem) error {
-	for _, it := range items {
-		if err := w.Write(ctx, it.name, bytes.NewReader(it.data), filer.OverwriteIfExists, filer.CreateParentDirectories); err != nil {
-			return fmt.Errorf("failed to upload %s: %w", it.name, err)
-		}
+	if err := w.Mkdir(ctx, "."); err != nil {
+		return fmt.Errorf("failed to create launch directory: %w", err)
 	}
-	return nil
+
+	group, groupCtx := errgroup.WithContext(ctx)
+	for _, item := range items {
+		group.Go(func() error {
+			if err := w.Write(groupCtx, item.name, bytes.NewReader(item.data), filer.OverwriteIfExists); err != nil {
+				return fmt.Errorf("failed to upload %s: %w", item.name, err)
+			}
+			return nil
+		})
+	}
+	return group.Wait()
 }

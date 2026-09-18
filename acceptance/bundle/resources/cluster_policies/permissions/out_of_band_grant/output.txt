@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_drift/default/files...
 Created cluster_policies.test_cluster_policy
 Created cluster_policies.test_cluster_policy.permissions
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan is a no-op immediately after deploy
@@ -48,7 +48,7 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_cluster_policy_permissions_drift/default/files...
 Updated cluster_policies.test_cluster_policy.permissions
-Files: 2 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //permissions/cluster-policies

@@ -89,7 +89,12 @@ func newListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Args:  root.NoArgs,
-		Short: "List your active runs for the current profile (use --all-status for finished runs)",
+		Short: "List active runs for the current user",
+		Long: `List active runs in the workspace selected by the current profile.
+
+By default, this command shows active runs submitted by the current user. Use
+--all-status to include completed runs and --all-users to include runs submitted
+by other users.`,
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -159,6 +164,8 @@ func newListCommand() *cobra.Command {
 		}
 		return renderListText(cmd, fetcher, limit)
 	}
+
+	cmd.AddCommand(newListPoolsCommand())
 
 	return cmd
 }

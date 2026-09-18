@@ -13,12 +13,12 @@ from databricks.bundles.apps._models.telemetry_export_destination import (
 )
 from databricks.bundles.core import Resources, app_mutator
 from databricks.bundles.core._generated.apps import _resource_type
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_app,
             dict_example={
                 "compute_size": "MEDIUM",

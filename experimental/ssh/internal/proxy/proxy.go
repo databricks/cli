@@ -29,7 +29,15 @@ var (
 	// ErrHandoverFailed marks a handover that ended the session. A handover that only failed
 	// to dial its replacement does not end the session and is not reported with this.
 	ErrHandoverFailed = errors.New("proxy handover failed")
+	// ErrReattachRejected marks a permanent rejection, such as an expired session.
+	ErrReattachRejected = errors.New("the server rejected session reattachment")
 )
+
+// ResumeProtocolVersion requires flow control and explicit session completion.
+// Version 1 could terminate a healthy session when its replay window filled.
+const ResumeProtocolVersion = 2
+
+const ResumeVersionParameter = "resume_version"
 
 var (
 	errProxyEOF             = errors.New("proxy EOF error")
@@ -44,10 +52,9 @@ var (
 	errSendFailedResumable = errors.New("send failed on a resumable connection")
 )
 
-// proxyResumeGrace is how long the server holds a dropped session - sshd, its client slot and its
-// buffered output - waiting for the client to come back. Longer than proxyResumeBudget so the
-// server never reaps a client that is still trying. It is a var so tests can shorten it.
-var proxyResumeGrace = 90 * time.Second
+// proxyResumeGrace outlasts the client's retry budget so the server does not reap
+// a session while its client is still trying to reconnect.
+const proxyResumeGrace = 90 * time.Second
 
 const (
 	// Same as gorilla/websocket default read/write buffer sizes. Bigger payloads will be split into multiple ws frames.
@@ -72,27 +79,44 @@ const (
 	// Bounds the wait for the peer's first frame on a reattached connection, which carries the
 	// offset to replay from. The connection is new, but the peer may be wedged.
 	proxyResumeHandshakeTimeout = 10 * time.Second
-	// Cap on payload held for replay, per direction. The unacknowledged window is bounded by
-	// the TCP send buffer plus whatever the driver proxy holds, and acks land every
-	// proxyAckThreshold bytes, so this is never approached in practice. Reaching it means the
-	// peer stopped acknowledging, i.e. the connection is already beyond saving.
-	proxyResumeBufferLimit = 1 << 20
+	// Cap on unacknowledged payload held for replay, per direction. At 120 ms RTT,
+	// an 8 MiB window sustains over 500 Mbit/s before backpressure pauses the source.
+	proxyResumeBufferLimit = 8 << 20
 	// How much payload may be delivered before we tell the peer about it, so it can release
 	// its replay buffer. Small enough to keep the window far below proxyResumeBufferLimit.
 	proxyAckThreshold = 64 << 10
+	// Acknowledge the tail of an idle stream, including the final bytes before EOF.
+	proxyAckInterval       = 100 * time.Millisecond
+	proxyCloseWriteTimeout = time.Second
+	proxySessionFinished   = "finished"
 )
+
+// proxyEOFDrainTimeout bounds how long the source's EOF waits for the peer to acknowledge the tail
+// of the stream. A peer whose own receiving loop is wedged reads without ever acknowledging, and
+// waiting for it indefinitely outlives the ssh client that spawned us - on the server side it also
+// pins sshd and a client slot, which is what keeps the compute alive. The tail is at most one
+// replay window and acknowledgements are sent every proxyAckInterval, so this only expires when the
+// peer has genuinely stopped delivering. Long enough to cover a reattach that lands right at EOF.
+// A var so tests can shorten it.
+var proxyEOFDrainTimeout = proxyResumeGrace
 
 // resumeState is the per-connection bookkeeping a resumable transport needs. It is nil unless
 // both ends negotiated resume, in which case the proxy behaves exactly as it did before.
 type resumeState struct {
 	// Outgoing payload that may still have to be replayed.
 	sendBuf *sendBuffer
-	// Total payload bytes written to the destination. The peer replays from this offset, so it
-	// only advances after a successful write.
+	// Total payload bytes received from the peer and written to sshd's stdin on the server or
+	// stdout on the client. The peer replays from this offset, so it only advances after a
+	// successful write.
 	delivered atomic.Int64
 	// The delivered count we last told the peer about, so an ack is only sent once the number
 	// has actually moved.
 	acked atomic.Int64
+	// Coalesces acknowledgments so the receiving loop never waits for a write lock.
+	ackNeeded chan struct{}
+	// Protected by handoverMutex. Written before any new payload on a replacement
+	// socket, after the receiving loop is free to drain the peer's replay.
+	replay []byte
 	// Carries the replacement connection to a parked receiving loop. Only the server uses it:
 	// it cannot dial, so it waits here for the client's inbound reattach request. Buffered so a
 	// client that reattaches before this side has noticed the drop is picked up rather than missed.
@@ -103,13 +127,24 @@ type resumeState struct {
 	parked chan struct{}
 	// Throttles the sending loop while a reattach is in progress.
 	gate sendGate
+	// Serializes inbound reattach attempts, including retiring the old socket.
+	reattachMu sync.Mutex
+	// How many times the connection has dropped, so the exit path can tell a tunnel that kept
+	// dropping apart from an SSH server that never answered. The two need different messages.
+	drops atomic.Int64
+	// Closed when the session stops, so an HTTP handler cannot revive it.
+	done  chan struct{}
+	grace time.Duration
 }
 
 func newResumeState() *resumeState {
 	return &resumeState{
-		sendBuf: newSendBuffer(proxyResumeBufferLimit),
-		resumed: make(chan *websocket.Conn, 1),
-		parked:  make(chan struct{}, 1),
+		sendBuf:   newSendBuffer(proxyResumeBufferLimit),
+		ackNeeded: make(chan struct{}, 1),
+		resumed:   make(chan *websocket.Conn, 1),
+		parked:    make(chan struct{}, 1),
+		done:      make(chan struct{}),
+		grace:     proxyResumeGrace,
 	}
 }
 
@@ -233,15 +268,36 @@ func (pc *proxyConnection) resumable() bool {
 	return pc.resume != nil
 }
 
+// droppedConnections reports how many times this session's connection has dropped.
+func (pc *proxyConnection) droppedConnections() int64 {
+	if !pc.resumable() {
+		return 0
+	}
+	return pc.resume.drops.Load()
+}
+
 func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.Writer) error {
 	g, gCtx := errgroup.WithContext(ctx)
+	var finished atomic.Bool
+	if pc.resumable() {
+		g.Go(func() error {
+			pc.runAckLoop(gCtx)
+			return nil
+		})
+	}
 	g.Go(func() error {
 		err := pc.runSendingLoop(gCtx, src)
+		if errors.Is(err, errProxyEOF) {
+			finished.Store(true)
+		}
 		// Always return a non nil error to cancel the errgroup context
 		return errors.Join(err, errSendingLoopStopped)
 	})
 	g.Go(func() error {
 		err := pc.runReceivingLoop(gCtx, dst)
+		if errors.Is(err, errProxyEOF) {
+			finished.Store(true)
+		}
 		// Always return a non nil error to cancel the errgroup context
 		return errors.Join(err, errReceivingLoopStopped)
 	})
@@ -253,7 +309,14 @@ func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.
 		// Both loops can still be stuck on conn.ReadMessage or src.Read and won't notice context cancellation,
 		// so we close the connection and the source (sshd stdout pipe or ssh client stdio) to unblock them.
 		<-gCtx.Done()
-		return errors.Join(pc.close(), pc.closeConnection(), pc.closeSource(src))
+		if pc.resumable() {
+			close(pc.resume.done)
+		}
+		var closeErr error
+		if finished.Load() || ctx.Err() != nil {
+			closeErr = pc.close()
+		}
+		return errors.Join(closeErr, pc.closeConnection(), pc.closeSource(src))
 	})
 	err := g.Wait()
 	if err == nil || isNormalClosure(err) {
@@ -308,6 +371,9 @@ func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) er
 				if err := pc.resume.gate.wait(ctx); err != nil {
 					return err
 				}
+				if err := pc.resume.sendBuf.waitForSpace(ctx, n); err != nil {
+					return err
+				}
 			}
 			// This will block during handover - we stop sending anything except the close message.
 			// Meanwhile the "src" (sshd server stdout or ssh client stdin) will be buffered/blocked on the OS side until we start reading from it again.
@@ -326,6 +392,22 @@ func (pc *proxyConnection) runSendingLoop(ctx context.Context, src io.Reader) er
 		}
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
+				if pc.resumable() {
+					// EOF may accompany the last payload of a failed write. Keep the session alive
+					// until replay delivers and acknowledges those bytes - but only for
+					// proxyEOFDrainTimeout: a peer that reads without ever acknowledging would
+					// otherwise hold the session open forever, long after the ssh client that
+					// spawned us is gone. Our own cancellation still ends it immediately.
+					drainCtx, cancel := context.WithTimeout(ctx, proxyEOFDrainTimeout)
+					err := pc.resume.sendBuf.waitForSpace(drainCtx, proxyResumeBufferLimit)
+					cancel()
+					if err != nil && ctx.Err() != nil {
+						return ctx.Err()
+					}
+					if err != nil {
+						log.Warnf(ctx, "The peer never acknowledged the last bytes of the session: %v", err)
+					}
+				}
 				return errors.Join(errProxyEOF, readErr)
 			} else {
 				return fmt.Errorf("failed to read from source: %w", readErr)
@@ -346,7 +428,16 @@ func (pc *proxyConnection) sendMessage(mt int, data []byte) error {
 		}
 	}
 	conn := pc.conn.Load()
-	err := conn.WriteMessage(mt, data)
+	var err error
+	if pc.resumable() && len(pc.resume.replay) > 0 {
+		err = conn.WriteMessage(websocket.BinaryMessage, pc.resume.replay)
+		if err == nil {
+			pc.resume.replay = nil
+		}
+	}
+	if err == nil {
+		err = conn.WriteMessage(mt, data)
+	}
 	if err != nil && pc.resumable() {
 		// This failure costs no data whatever the message type: a binary payload was buffered
 		// above, and control/ack messages are regenerated after the resume. gorilla latches a
@@ -375,19 +466,46 @@ func (pc *proxyConnection) sendControlMessage(delivered int64) error {
 	return pc.sendMessage(websocket.TextMessage, payload)
 }
 
-// ackDelivered reports our delivered count to the peer once it has moved far enough to be worth
-// a frame. A failure is not fatal: the ack is only an optimisation that keeps the peer's replay
-// buffer small, and a genuinely broken connection is reported by the loops themselves.
-func (pc *proxyConnection) ackDelivered(ctx context.Context) {
+// ackDelivered queues an acknowledgment without blocking reads. A synchronous
+// write here deadlocks with a handover waiting for this loop to read a close frame.
+func (pc *proxyConnection) ackDelivered() {
 	delivered := pc.resume.delivered.Load()
 	if delivered-pc.resume.acked.Load() < proxyAckThreshold {
 		return
 	}
-	if err := pc.sendControlMessage(delivered); err != nil {
-		log.Debugf(ctx, "Failed to acknowledge %d delivered bytes: %v", delivered, err)
-		return
+	pc.requestAck()
+}
+
+// requestAck coalesces wakeups; the writer reads the latest delivered count.
+func (pc *proxyConnection) requestAck() {
+	select {
+	case pc.resume.ackNeeded <- struct{}{}:
+	default:
 	}
-	pc.resume.acked.Store(delivered)
+}
+
+// runAckLoop keeps acknowledgment writes independent of payload reads and source
+// backpressure. A failed write closes the socket and lets the receiver reattach.
+func (pc *proxyConnection) runAckLoop(ctx context.Context) {
+	ticker := time.NewTicker(proxyAckInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if pc.resume.delivered.Load() == pc.resume.acked.Load() {
+				continue
+			}
+		case <-pc.resume.ackNeeded:
+		}
+		delivered := pc.resume.delivered.Load()
+		if err := pc.sendControlMessage(delivered); err != nil {
+			log.Debugf(ctx, "Failed to acknowledge %d delivered bytes: %v", delivered, err)
+			continue
+		}
+		pc.resume.acked.Store(delivered)
+	}
 }
 
 // sendPing writes a keepalive ping on the current connection. Unlike sendMessage it takes neither
@@ -396,7 +514,11 @@ func (pc *proxyConnection) ackDelivered(ctx context.Context) {
 // close() and the sending loop also need.
 func (pc *proxyConnection) sendPing() error {
 	conn := pc.conn.Load()
-	return conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(proxyPingWriteTimeout))
+	err := conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(proxyPingWriteTimeout))
+	if err != nil && pc.resumable() {
+		conn.Close()
+	}
+	return err
 }
 
 func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) error {
@@ -407,47 +529,54 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 		conn := pc.conn.Load()
 		mt, data, err := conn.ReadMessage()
 		if err != nil {
-			// During handover a normal closure is expected, but any other error must stop the read loop (and eventually terminate the ssh session).
+			// A normal closure completes handover. An interrupted handover needs
+			// reattachment to recover bytes the close-frame exchange did not drain.
 			if handover := pc.handoverState.Load(); handover != nil {
 				var closeConnSignal error
 				if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 					closeConnSignal = errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket during handover: %w", err))
 				}
 				// Signal the current connection is closed to the handover initiator (initiateHandover or acceptHandover).
-				if err := handover.signalConnectionClosed(closeConnSignal); err != nil {
-					return err
-				}
+				handoverErr := handover.signalConnectionClosed(closeConnSignal)
 				// Wait for the handover initiator to swap the connection.
 				// While we wait for the handover to complete, the new connection might be getting incoming messages.
 				// They will be buffered by the TCP stack and will be read by us after the handover is complete.
-				if err := handover.waitForConnectionToSwap(); err != nil {
-					return err
+				if handoverErr == nil {
+					handoverErr = handover.waitForConnectionToSwap()
 				}
 				// Continue with the receiving loop, pc.conn is now the new connection.
-				continue
-			} else {
-				if errors.Is(err, io.EOF) || websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-					return errors.Join(errProxyEOF, err)
-				}
-				// A read that fails once our own context is cancelled is the teardown, not a drop:
-				// start's context watcher closes the connection to unblock this very read, and
-				// only after the context is done, so cancellation is always visible here first.
-				// Neither branch below fits - a reattach would warn the user about a drop on every
-				// clean exit and could not succeed anyway (its redial budget comes from this same
-				// context), and ErrWebsocketDropped would bill an ordinary exit to a tunnel failure.
-				if ctx.Err() != nil {
-					return ctx.Err()
-				}
-				// An unexpected drop. With resume negotiated the session state on both ends
-				// outlives the connection, so reattach instead of ending the session.
-				if pc.resumable() {
-					if resumeErr := pc.reattach(ctx); resumeErr != nil {
-						return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to reattach after the connection dropped: %w", resumeErr))
-					}
+				if handoverErr == nil {
 					continue
 				}
-				return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket: %w", err))
+				if !pc.resumable() {
+					return handoverErr
+				}
 			}
+			closeErr, closed := errors.AsType[*websocket.CloseError](err)
+			finished := closed && closeErr.Code == websocket.CloseNormalClosure && closeErr.Text == proxySessionFinished
+			if finished || (!pc.resumable() && (errors.Is(err, io.EOF) || websocket.IsCloseError(err, websocket.CloseNormalClosure))) {
+				return errors.Join(errProxyEOF, err)
+			}
+			// A read that fails once our own context is cancelled is the teardown, not a drop:
+			// start's context watcher closes the connection to unblock this very read, and
+			// only after the context is done, so cancellation is always visible here first.
+			// Neither branch below fits - a reattach would warn the user about a drop on every
+			// clean exit and could not succeed anyway (its redial budget comes from this same
+			// context), and ErrWebsocketDropped would bill an ordinary exit to a tunnel failure.
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			// An unexpected drop. With resume negotiated the session state on both ends
+			// outlives the connection, so reattach instead of ending the session.
+			if pc.resumable() {
+				conn.Close()
+				pc.resume.drops.Add(1)
+				if resumeErr := pc.reattach(ctx); resumeErr != nil {
+					return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to reattach after the connection dropped: %w", resumeErr))
+				}
+				continue
+			}
+			return errors.Join(ErrWebsocketDropped, fmt.Errorf("failed to read from websocket: %w", err))
 		}
 
 		if mt == websocket.TextMessage && pc.resumable() {
@@ -461,21 +590,30 @@ func (pc *proxyConnection) runReceivingLoop(ctx context.Context, dst io.Writer) 
 		if mt != websocket.BinaryMessage {
 			return errors.New("received non-binary websocket message")
 		}
-		if _, err := dst.Write(data); err != nil {
+		n, err := dst.Write(data)
+		if err != nil {
 			return fmt.Errorf("failed to copy to writer: %w", err)
+		}
+		if n != len(data) {
+			return fmt.Errorf("failed to copy to writer: %w", io.ErrShortWrite)
 		}
 		if pc.resumable() {
 			// Only count what actually reached the destination: this is the offset the peer
 			// replays from, so counting an unwritten byte would silently lose it.
 			pc.resume.delivered.Add(int64(len(data)))
-			pc.ackDelivered(ctx)
+			pc.ackDelivered()
 		}
 	}
 }
 
 func (pc *proxyConnection) close() error {
 	// Keep in mind that pc.sendMessage blocks during handover
-	err := pc.sendMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	reason := ""
+	if pc.resumable() {
+		reason = proxySessionFinished
+	}
+	// WriteControl can run alongside a blocked data write or handover.
+	err := pc.conn.Load().WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, reason), time.Now().Add(proxyCloseWriteTimeout))
 	if err != nil {
 		if isNormalClosure(err) || errors.Is(err, websocket.ErrCloseSent) {
 			return nil
@@ -547,6 +685,7 @@ func (pc *proxyConnection) initiateHandover(ctx context.Context) error {
 	// (it does so when it receives an /ssh request with known connection ID and starts AcceptHandover process).
 	// Receiving loop will signal about closed connection to the coord.connClosed channel.
 	if err := handoverState.waitForConnectionToClose(); err != nil {
+		pc.conn.Load().Close()
 		newConn.Close()
 		return err
 	}
@@ -599,6 +738,7 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	}
 	err = currentConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "handover"))
 	if err != nil {
+		currentConn.Close()
 		newConn.Close()
 		return fmt.Errorf("failed to send close message to the current connection: %w", err)
 	}
@@ -607,6 +747,7 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	// On the client its done automatically by the websocket library with the default close handler.
 	// On the server we then receive a close error in the RunReceivingLoop and signal about it to the coord.connClosed channel.
 	if err := handoverState.waitForConnectionToClose(); err != nil {
+		currentConn.Close()
 		newConn.Close()
 		return err
 	}

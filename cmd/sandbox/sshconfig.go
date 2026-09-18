@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 )
@@ -119,15 +120,7 @@ func writeManagedConfig(path, content string) error {
 	if existing, err := os.ReadFile(path); err == nil && bytes.Equal(existing, []byte(content)) {
 		return nil
 	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, []byte(content), 0o600); err != nil {
-		return fmt.Errorf("writing %s: %w", tmp, err)
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("renaming %s to %s: %w", tmp, path, err)
-	}
-	return nil
+	return atomicfile.Write(path, []byte(content), 0o600)
 }
 
 // ensureMainIncludesManaged makes sure ~/.ssh/config begins with an
@@ -162,15 +155,7 @@ func ensureMainIncludesManaged(mainPath, managedPath string) error {
 		buf.Write(existing)
 	}
 
-	tmp := mainPath + ".tmp"
-	if err := os.WriteFile(tmp, buf.Bytes(), 0o600); err != nil {
-		return fmt.Errorf("writing %s: %w", tmp, err)
-	}
-	if err := os.Rename(tmp, mainPath); err != nil {
-		_ = os.Remove(tmp)
-		return fmt.Errorf("renaming %s to %s: %w", tmp, mainPath, err)
-	}
-	return nil
+	return atomicfile.Write(mainPath, buf.Bytes(), 0o600)
 }
 
 // hasOurMarkedBlock reports whether the given config text already has

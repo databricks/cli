@@ -56,6 +56,7 @@ type Resources struct {
 	DisableLegacyFeaturesSetting                 map[string]any `json:"databricks_disable_legacy_features_setting,omitempty"`
 	DisasterRecoveryFailoverGroup                map[string]any `json:"databricks_disaster_recovery_failover_group,omitempty"`
 	DisasterRecoveryStableUrl                    map[string]any `json:"databricks_disaster_recovery_stable_url,omitempty"`
+	Domain                                       map[string]any `json:"databricks_domain,omitempty"`
 	Endpoint                                     map[string]any `json:"databricks_endpoint,omitempty"`
 	EnhancedSecurityMonitoringWorkspaceSetting   map[string]any `json:"databricks_enhanced_security_monitoring_workspace_setting,omitempty"`
 	Entitlements                                 map[string]any `json:"databricks_entitlements,omitempty"`
@@ -134,6 +135,7 @@ type Resources struct {
 	Repo                                         map[string]any `json:"databricks_repo,omitempty"`
 	RestrictWorkspaceAdminsSetting               map[string]any `json:"databricks_restrict_workspace_admins_setting,omitempty"`
 	RfaAccessRequestDestinations                 map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
+	Sandbox                                      map[string]any `json:"databricks_sandbox,omitempty"`
 	Schema                                       map[string]any `json:"databricks_schema,omitempty"`
 	Secret                                       map[string]any `json:"databricks_secret,omitempty"`
 	SecretAcl                                    map[string]any `json:"databricks_secret_acl,omitempty"`
@@ -218,28 +220,29 @@ func NewResources() *Resources {
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),
 		ComplianceSecurityProfileWorkspaceSetting: make(map[string]any),
-		Connection:                                  make(map[string]any),
-		Credential:                                  make(map[string]any),
-		CustomAppIntegration:                        make(map[string]any),
-		Dashboard:                                   make(map[string]any),
-		DataClassificationCatalogConfig:             make(map[string]any),
-		DataQualityMonitor:                          make(map[string]any),
-		DataQualityRefresh:                          make(map[string]any),
-		DatabaseDatabaseCatalog:                     make(map[string]any),
-		DatabaseInstance:                            make(map[string]any),
-		DatabaseSyncedDatabaseTable:                 make(map[string]any),
-		DbfsFile:                                    make(map[string]any),
-		DefaultNamespaceSetting:                     make(map[string]any),
-		Directory:                                   make(map[string]any),
-		DisableLegacyAccessSetting:                  make(map[string]any),
-		DisableLegacyDbfsSetting:                    make(map[string]any),
-		DisableLegacyFeaturesSetting:                make(map[string]any),
-		DisasterRecoveryFailoverGroup:               make(map[string]any),
-		DisasterRecoveryStableUrl:                   make(map[string]any),
-		Endpoint:                                    make(map[string]any),
-		EnhancedSecurityMonitoringWorkspaceSetting:  make(map[string]any),
-		Entitlements:                                make(map[string]any),
-		EntityTagAssignment:                         make(map[string]any),
+		Connection:                      make(map[string]any),
+		Credential:                      make(map[string]any),
+		CustomAppIntegration:            make(map[string]any),
+		Dashboard:                       make(map[string]any),
+		DataClassificationCatalogConfig: make(map[string]any),
+		DataQualityMonitor:              make(map[string]any),
+		DataQualityRefresh:              make(map[string]any),
+		DatabaseDatabaseCatalog:         make(map[string]any),
+		DatabaseInstance:                make(map[string]any),
+		DatabaseSyncedDatabaseTable:     make(map[string]any),
+		DbfsFile:                        make(map[string]any),
+		DefaultNamespaceSetting:         make(map[string]any),
+		Directory:                       make(map[string]any),
+		DisableLegacyAccessSetting:      make(map[string]any),
+		DisableLegacyDbfsSetting:        make(map[string]any),
+		DisableLegacyFeaturesSetting:    make(map[string]any),
+		DisasterRecoveryFailoverGroup:   make(map[string]any),
+		DisasterRecoveryStableUrl:       make(map[string]any),
+		Domain:                          make(map[string]any),
+		Endpoint:                        make(map[string]any),
+		EnhancedSecurityMonitoringWorkspaceSetting: make(map[string]any),
+		Entitlements:        make(map[string]any),
+		EntityTagAssignment: make(map[string]any),
 		EnvironmentsDefaultWorkspaceBaseEnvironment: make(map[string]any),
 		EnvironmentsWorkspaceBaseEnvironment:        make(map[string]any),
 		ExternalLocation:                            make(map[string]any),
@@ -314,6 +317,7 @@ func NewResources() *Resources {
 		Repo:                                        make(map[string]any),
 		RestrictWorkspaceAdminsSetting:              make(map[string]any),
 		RfaAccessRequestDestinations:                make(map[string]any),
+		Sandbox:                                     make(map[string]any),
 		Schema:                                      make(map[string]any),
 		Secret:                                      make(map[string]any),
 		SecretAcl:                                   make(map[string]any),

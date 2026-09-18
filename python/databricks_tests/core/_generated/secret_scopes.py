@@ -14,12 +14,12 @@ from databricks.bundles.secret_scopes._models.secret_scope_permission import (
 from databricks.bundles.secret_scopes._models.secret_scope_permission_level import (
     SecretScopePermissionLevel,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_secret_scope,
             dict_example={
                 "backend_type": "DATABRICKS",

@@ -1,16 +1,16 @@
 print_all_requests() {
-    jq --sort-keys 'select(.path | contains("/jobs"))' < out.requests.txt
-    rm out.requests.txt
+    jq --sort-keys 'select(.path | contains("/jobs"))' < "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < out.requests.txt
-    rm out.requests.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs")))' < "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 print_requests_short() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs"))) | (.body.name // .body.new_settings.name // empty)' < out.requests.txt
-    rm out.requests.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/jobs"))) | (.body.name // .body.new_settings.name // empty)' < "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 trace $CLI bundle plan

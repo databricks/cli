@@ -13,12 +13,12 @@ from databricks.bundles.database_instances._models.permission import Permission
 from databricks.bundles.database_instances._models.permission_level import (
     PermissionLevel,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_database_instance,
             dict_example={
                 "lifecycle": {},

@@ -209,3 +209,23 @@ func embeddedStructTypes(t reflect.Type) []reflect.Type {
 	}
 	return out
 }
+
+// IsFlattenedEmbed reports whether the field is an embed encoding/json flattens into the
+// outer object. An anonymous field that carries a json *name* is a named field instead: it
+// serializes as a nested object under that name. The name is what matters, not the presence
+// of a tag: `json:",omitempty"` leaves the name empty, so such a field is still flattened.
+func IsFlattenedEmbed(sf reflect.StructField) bool {
+	if !sf.Anonymous {
+		return false
+	}
+	if structtag.JSONTag(sf.Tag.Get("json")).Name() != "" {
+		return false
+	}
+	// Only an anonymous *struct* is promoted. An embedded scalar, slice or interface
+	// is a member named after its type, not a flattened embed.
+	ft := sf.Type
+	for ft.Kind() == reflect.Pointer {
+		ft = ft.Elem()
+	}
+	return ft.Kind() == reflect.Struct
+}

@@ -63,6 +63,13 @@ type ServerOptions struct {
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) error {
 	ctx, logBuf := captureWarnLogs(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Filesystem registration is best-effort on compute without reachable daemons.
+	if err := registerFuseCredentials(ctx, client); err != nil {
+		log.Warnf(ctx, "Failed to register SSH filesystem credentials; file access may depend on the bootstrap notebook: %v", err)
+	}
 
 	port, err := findAvailablePort(opts.DefaultPort, opts.PortRange)
 	if err != nil {
@@ -129,7 +136,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 // "none of them" - the negotiation this endpoint exists for.
 func serveCapabilities(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]bool{"resume": true}); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]int{proxy.ResumeVersionParameter: proxy.ResumeProtocolVersion}); err != nil {
 		http.Error(w, "Failed to write capabilities", http.StatusInternalServerError)
 	}
 }

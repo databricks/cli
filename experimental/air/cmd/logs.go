@@ -21,7 +21,7 @@ import (
 func newLogsCommand() *cobra.Command {
 	var (
 		node       int
-		lines      int
+		tail       int
 		minutes    int
 		retry      int
 		downloadTo string
@@ -32,11 +32,17 @@ func newLogsCommand() *cobra.Command {
 		Use:   "logs JOB_RUN_ID",
 		Args:  root.ExactArgs(1),
 		Short: "Stream or fetch logs for a run",
-		Long:  `Stream logs from an active run, or fetch logs from a completed run.`,
+		Long: `Stream logs from an active run until it completes, or fetch logs from a
+completed run.
+
+JOB_RUN_ID is the job run ID returned by "air run".`,
+		Example: `  databricks experimental air logs 123456789
+  databricks experimental air logs 123456789 --node 1 --retry 0
+  databricks experimental air logs 123456789 --download-to ./logs`,
 	}
 
 	cmd.Flags().IntVar(&node, "node", 0, "Fetch logs from this node")
-	cmd.Flags().IntVar(&lines, "lines", 0, "For completed runs, print the last N lines (default 10000)")
+	cmd.Flags().IntVar(&tail, "tail", 0, "Print the last N existing lines before following, or from a completed run (default 10000)")
 	cmd.Flags().IntVar(&minutes, "minutes", 0, "Fetch only logs from the last N minutes")
 	cmd.Flags().IntVar(&retry, "retry", -1, "View logs from a specific retry attempt; -1 means latest")
 	cmd.Flags().StringVar(&downloadTo, "download-to", "", "Download all logs to this directory instead of printing")
@@ -64,20 +70,20 @@ func newLogsCommand() *cobra.Command {
 
 		// A download always writes the full log, so a tail or time window would be
 		// silently dropped.
-		if downloadTo != "" && (cmd.Flags().Changed("lines") || minutes > 0) {
+		if downloadTo != "" && (cmd.Flags().Changed("tail") || minutes > 0) {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("--download-to writes complete logs, so it cannot be combined with --lines or --minutes"))
+				errors.New("--download-to writes complete logs, so it cannot be combined with --tail or --minutes"))
 		}
 
-		// --lines (line tail) and --minutes (time window) answer the same question
+		// --tail (line tail) and --minutes (time window) answer the same question
 		// two ways, so reject both together rather than silently honoring one.
-		if lines > 0 && minutes > 0 {
+		if tail > 0 && minutes > 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				errors.New("cannot combine --lines with --minutes: --lines tails by line count, --minutes by time window"))
+				errors.New("cannot combine --tail with --minutes: --tail selects by line count, --minutes by time window"))
 		}
-		if lines < 0 {
+		if cmd.Flags().Changed("tail") && tail <= 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
-				fmt.Errorf("invalid --lines %d: must be positive", lines))
+				fmt.Errorf("invalid --tail %d: must be positive", tail))
 		}
 		if minutes < 0 {
 			return renderError(ctx, cmd, "INVALID_ARGS", "PERMANENT", false,
@@ -98,11 +104,10 @@ func newLogsCommand() *cobra.Command {
 				fmt.Errorf("invalid JOB_RUN_ID %q: must be a positive integer", args[0]))
 		}
 
-		// -1 signals "unset" (use the default cap); an explicit --lines 0 stays 0
-		// and prints nothing.
+		// -1 signals "unset" (use the default cap).
 		tailLines := -1
-		if cmd.Flags().Changed("lines") {
-			tailLines = lines
+		if cmd.Flags().Changed("tail") {
+			tailLines = tail
 		}
 
 		// Only the streaming path prints resume guidance, so only it catches the
@@ -116,14 +121,15 @@ func newLogsCommand() *cobra.Command {
 		}
 
 		err = runLogs(streamCtx, cmd, logRequest{
-			runID:         runID,
-			node:          node,
-			nodeSet:       cmd.Flags().Changed("node"),
-			attempt:       retry,
-			windowMinutes: minutes,
-			tailLines:     tailLines,
-			downloadTo:    downloadTo,
-			jsonOutput:    root.OutputType(cmd) == flags.OutputJSON,
+			runID:            runID,
+			node:             node,
+			nodeSet:          cmd.Flags().Changed("node"),
+			attempt:          retry,
+			windowMinutes:    minutes,
+			tailLines:        tailLines,
+			boundInitialLogs: minutes == 0,
+			downloadTo:       downloadTo,
+			jsonOutput:       root.OutputType(cmd) == flags.OutputJSON,
 		})
 		if downloadTo != "" || root.OutputType(cmd) == flags.OutputJSON {
 			return err

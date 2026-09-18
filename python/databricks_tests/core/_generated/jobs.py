@@ -28,12 +28,12 @@ from databricks.bundles.jobs._models.queue_settings import QueueSettings
 from databricks.bundles.jobs._models.task import Task
 from databricks.bundles.jobs._models.trigger_settings import TriggerSettings
 from databricks.bundles.jobs._models.webhook_notifications import WebhookNotifications
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_job,
             dict_example={
                 "continuous": {},

@@ -13,6 +13,7 @@ import (
 
 type QualityMonitor struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	// This struct defines the creation payload for a monitor.
 	catalog.CreateMonitor
@@ -59,8 +60,4 @@ func (s *QualityMonitor) InitializeURL(baseURL url.URL) {
 
 func (s *QualityMonitor) GetName() string {
 	return s.TableName
-}
-
-func (s *QualityMonitor) GetURL() string {
-	return s.URL
 }

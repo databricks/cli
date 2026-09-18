@@ -36,6 +36,7 @@ func (c PostgresEndpointConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresEndpoint struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresEndpointConfig
 }
 
@@ -66,13 +67,14 @@ func (e *PostgresEndpoint) ResourceDescription() ResourceDescription {
 }
 
 func (e *PostgresEndpoint) GetName() string {
-	// Endpoints don't have a user-visible name field
-	return ""
+	// Endpoints have no name field of their own; the resource name is the ID
+	// ("projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}").
+	return e.ID
 }
 
-func (e *PostgresEndpoint) GetURL() string {
+func (e *PostgresEndpoint) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (e *PostgresEndpoint) InitializeURL(_ url.URL) {

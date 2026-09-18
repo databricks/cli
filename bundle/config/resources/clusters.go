@@ -13,6 +13,7 @@ import (
 
 type Cluster struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	compute.ClusterSpec
 
 	// Lifecycle shadows BaseResource.Lifecycle to add support for lifecycle.started.
@@ -64,8 +65,4 @@ func (s *Cluster) InitializeURL(baseURL url.URL) {
 
 func (s *Cluster) GetName() string {
 	return s.ClusterName
-}
-
-func (s *Cluster) GetURL() string {
-	return s.URL
 }

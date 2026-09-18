@@ -25,20 +25,13 @@ func (c *runConfig) maxRetries() int {
 	return *c.MaxRetries
 }
 
-// dockerImageURL returns the custom docker image URL, or "" when none is set.
-func (c *runConfig) dockerImageURL() string {
-	if c.Environment != nil && c.Environment.DockerImage != nil {
-		return c.Environment.DockerImage.URL
-	}
-	return ""
-}
-
-// dockerImage returns the environment.docker_image block, or nil when unset.
-func (c *runConfig) dockerImage() *dockerImageConfig {
+// unityCatalogImagePath returns the configured Unity Catalog image reference,
+// or "" when none is set.
+func (c *runConfig) unityCatalogImagePath() string {
 	if c.Environment == nil {
-		return nil
+		return ""
 	}
-	return c.Environment.DockerImage
+	return c.Environment.UnityCatalogImage
 }
 
 // inlineDependencies returns the inline package list from

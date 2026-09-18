@@ -1,0 +1,23 @@
+SCHEMA_FULL_NAME=main.schema_all_priv_manage_$UNIQUE_NAME
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+# The PATCH sent to the backend must add both MANAGE and ALL_PRIVILEGES: ALL_PRIVILEGES
+# does not imply MANAGE, so dropping MANAGE here silently strips the grant. Both engines
+# send the same request.
+trace print_requests.py --method PATCH //permissions
+
+# Read the grants back: both MANAGE and ALL_PRIVILEGES must be present. Privilege order
+# is backend-controlled, so extract and sort the principal's privileges into a stable list.
+trace $CLI grants get schema "$SCHEMA_FULL_NAME" -o json | jq -r ".privilege_assignments[] | select(.principal == env.CURRENT_USER_NAME) | .privileges[]" | sort
+
+# A follow-up plan must report no changes.
+trace $CLI bundle plan

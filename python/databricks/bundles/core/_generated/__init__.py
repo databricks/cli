@@ -8,9 +8,17 @@ from databricks.bundles.core._generated.catalogs import (
     _CatalogResources,
     catalog_mutator,
 )
+from databricks.bundles.core._generated.cluster_policies import (
+    _ClusterPolicyResources,
+    cluster_policy_mutator,
+)
 from databricks.bundles.core._generated.clusters import (
     _ClusterResources,
     cluster_mutator,
+)
+from databricks.bundles.core._generated.dashboards import (
+    _DashboardResources,
+    dashboard_mutator,
 )
 from databricks.bundles.core._generated.database_catalogs import (
     _DatabaseCatalogResources,
@@ -28,6 +36,10 @@ from databricks.bundles.core._generated.external_locations import (
     _ExternalLocationResources,
     external_location_mutator,
 )
+from databricks.bundles.core._generated.genie_spaces import (
+    _GenieSpaceResources,
+    genie_space_mutator,
+)
 from databricks.bundles.core._generated.instance_pools import (
     _InstancePoolResources,
     instance_pool_mutator,
@@ -37,6 +49,18 @@ from databricks.bundles.core._generated.job_runs import (
     job_run_mutator,
 )
 from databricks.bundles.core._generated.jobs import _JobResources, job_mutator
+from databricks.bundles.core._generated.mcp_services import (
+    _McpServiceResources,
+    mcp_service_mutator,
+)
+from databricks.bundles.core._generated.model_provider_services import (
+    _ModelProviderServiceResources,
+    model_provider_service_mutator,
+)
+from databricks.bundles.core._generated.model_services import (
+    _ModelServiceResources,
+    model_service_mutator,
+)
 from databricks.bundles.core._generated.model_serving_endpoints import (
     _ModelServingEndpointResources,
     model_serving_endpoint_mutator,
@@ -48,6 +72,10 @@ from databricks.bundles.core._generated.models import (
 from databricks.bundles.core._generated.pipelines import (
     _PipelineResources,
     pipeline_mutator,
+)
+from databricks.bundles.core._generated.postgres_snapshot_schedules import (
+    _PostgresSnapshotScheduleResources,
+    postgres_snapshot_schedule_mutator,
 )
 from databricks.bundles.core._generated.quality_monitors import (
     _QualityMonitorResources,
@@ -91,16 +119,23 @@ __all__ = [
     "app_mutator",
     "catalog_mutator",
     "cluster_mutator",
+    "cluster_policy_mutator",
+    "dashboard_mutator",
     "database_catalog_mutator",
     "database_instance_mutator",
     "external_location_mutator",
+    "genie_space_mutator",
     "instance_pool_mutator",
     "job_mutator",
     "job_run_mutator",
+    "mcp_service_mutator",
     "mlflow_experiment_mutator",
     "mlflow_model_mutator",
+    "model_provider_service_mutator",
+    "model_service_mutator",
     "model_serving_endpoint_mutator",
     "pipeline_mutator",
+    "postgres_snapshot_schedule_mutator",
     "quality_monitor_mutator",
     "registered_model_mutator",
     "schema_mutator",
@@ -118,17 +153,24 @@ class _GeneratedResources(
     _AlertResources,
     _AppResources,
     _CatalogResources,
+    _ClusterPolicyResources,
     _ClusterResources,
+    _DashboardResources,
     _DatabaseCatalogResources,
     _DatabaseInstanceResources,
     _MlflowExperimentResources,
     _ExternalLocationResources,
+    _GenieSpaceResources,
     _InstancePoolResources,
     _JobRunResources,
     _JobResources,
+    _McpServiceResources,
+    _ModelProviderServiceResources,
+    _ModelServiceResources,
     _ModelServingEndpointResources,
     _MlflowModelResources,
     _PipelineResources,
+    _PostgresSnapshotScheduleResources,
     _QualityMonitorResources,
     _RegisteredModelResources,
     _SchemaResources,
@@ -148,17 +190,24 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         alerts,
         apps,
         catalogs,
+        cluster_policies,
         clusters,
+        dashboards,
         database_catalogs,
         database_instances,
         experiments,
         external_locations,
+        genie_spaces,
         instance_pools,
         job_runs,
         jobs,
+        mcp_services,
+        model_provider_services,
+        model_services,
         model_serving_endpoints,
         models,
         pipelines,
+        postgres_snapshot_schedules,
         quality_monitors,
         registered_models,
         schemas,
@@ -175,17 +224,24 @@ def _all_resource_types() -> "tuple[_ResourceType, ...]":
         alerts._resource_type(),
         apps._resource_type(),
         catalogs._resource_type(),
+        cluster_policies._resource_type(),
         clusters._resource_type(),
+        dashboards._resource_type(),
         database_catalogs._resource_type(),
         database_instances._resource_type(),
         experiments._resource_type(),
         external_locations._resource_type(),
+        genie_spaces._resource_type(),
         instance_pools._resource_type(),
         job_runs._resource_type(),
         jobs._resource_type(),
+        mcp_services._resource_type(),
+        model_provider_services._resource_type(),
+        model_services._resource_type(),
         model_serving_endpoints._resource_type(),
         models._resource_type(),
         pipelines._resource_type(),
+        postgres_snapshot_schedules._resource_type(),
         quality_monitors._resource_type(),
         registered_models._resource_type(),
         schemas._resource_type(),

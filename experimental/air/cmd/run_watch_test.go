@@ -93,9 +93,9 @@ func watchServerMLflow(t *testing.T, resultState string) *httptest.Server {
 	return srv
 }
 
-func runWatchCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL string) error {
+func runWatchCmdWithConfig(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL, config string) error {
 	t.Helper()
-	cfgPath := writeConfigFile(t, "run.yaml", minimalConfig)
+	cfgPath := writeConfigFile(t, "run.yaml", config)
 	cmd := withOutput(newRunCommand(), out)
 	require.NoError(t, cmd.Flags().Set("file", cfgPath))
 	require.NoError(t, cmd.Flags().Set("watch", "true"))
@@ -107,6 +107,19 @@ func runWatchCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL strin
 	return cmd.RunE(cmd, nil)
 }
 
+func runWatchCmd(t *testing.T, out flags.Output, buf *bytes.Buffer, srvURL string) error {
+	t.Helper()
+	return runWatchCmdWithConfig(t, out, buf, srvURL, minimalConfig)
+}
+
+const multinodeWatchConfig = `
+experiment_name: my-run
+command: python train.py
+compute:
+  accelerator_type: GPU_8xH100
+  num_accelerators: 16
+`
+
 func TestRunWatchStreamsLogs(t *testing.T) {
 	var buf bytes.Buffer
 	err := runWatchCmd(t, flags.OutputText, &buf, watchServer(t, "SUCCESS").URL)
@@ -116,6 +129,7 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
 	assert.Contains(t, out, "View job run at: ")
 	assert.Contains(t, out, "Monitoring run and streaming logs...")
+	assert.NotContains(t, out, "from node 0")
 	// A "Logs" divider separates the submit summary from the streamed logs.
 	assert.Contains(t, out, "Logs")
 	assert.Contains(t, out, "───")
@@ -123,9 +137,17 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 	assert.Contains(t, out, "step 1\nstep 2")
 }
 
+func TestRunWatchMultinodeIdentifiesStreamedNode(t *testing.T) {
+	var buf bytes.Buffer
+	err := runWatchCmdWithConfig(t, flags.OutputText, &buf, watchServer(t, "SUCCESS").URL, multinodeWatchConfig)
+	require.NoError(t, err)
+
+	assert.Contains(t, buf.String(), "Monitoring run and streaming logs from node 0 of 2...")
+}
+
 func TestRunWatchJSONEmitsSubmittedThenLogs(t *testing.T) {
 	var buf bytes.Buffer
-	err := runWatchCmd(t, flags.OutputJSON, &buf, watchServer(t, "SUCCESS").URL)
+	err := runWatchCmdWithConfig(t, flags.OutputJSON, &buf, watchServer(t, "SUCCESS").URL, multinodeWatchConfig)
 	require.NoError(t, err)
 
 	all := buf.String()
@@ -137,6 +159,7 @@ func TestRunWatchJSONEmitsSubmittedThenLogs(t *testing.T) {
 	assert.Contains(t, all, `"type":"STATUS"`)
 	assert.Contains(t, all, `"type":"LOG"`)
 	assert.Contains(t, all, `"line":"step 1"`)
+	assert.NotContains(t, all, "Monitoring run and streaming logs")
 	// The last line is the closing terminal-status envelope carrying SUCCESS.
 	assert.Contains(t, lines[len(lines)-1], `"status":"SUCCESS"`)
 	assert.Contains(t, lines[len(lines)-1], `"run_id":"777"`)

@@ -37,6 +37,7 @@ func (c PostgresDatabaseConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresDatabase struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresDatabaseConfig
 }
 
@@ -70,13 +71,14 @@ func (d *PostgresDatabase) ResourceDescription() ResourceDescription {
 }
 
 func (d *PostgresDatabase) GetName() string {
-	// Databases don't have a user-visible name field.
-	return ""
+	// Databases have no name field of their own; the resource name is the ID
+	// ("projects/{project_id}/branches/{branch_id}/databases/{database_id}").
+	return d.ID
 }
 
-func (d *PostgresDatabase) GetURL() string {
+func (d *PostgresDatabase) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (d *PostgresDatabase) InitializeURL(_ url.URL) {

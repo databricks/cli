@@ -13,6 +13,7 @@ import (
 
 type MlflowExperiment struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	ml.CreateExperiment
 
 	Permissions []MlflowExperimentPermission `json:"permissions,omitempty"`
@@ -55,8 +56,4 @@ func (s *MlflowExperiment) InitializeURL(baseURL url.URL) {
 
 func (s *MlflowExperiment) GetName() string {
 	return s.Name
-}
-
-func (s *MlflowExperiment) GetURL() string {
-	return s.URL
 }

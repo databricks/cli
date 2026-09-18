@@ -1,0 +1,9 @@
+# Runs once: the sorting is independent of the deployment engine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = []
+
+# Only "Fruit:" lines are sorted; every other line delimits the runs.
+SortLines.fruit = '^Fruit: '
+
+# The inherited deploy_actions pattern is irrelevant here, and switching it off
+# exercises SortLinesOn.
+SortLinesOn.deploy_actions = false

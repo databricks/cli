@@ -20,12 +20,12 @@ from databricks.bundles.sql_warehouses._models.sql_warehouse_permission import (
 from databricks.bundles.sql_warehouses._models.warehouse_permission_level import (
     WarehousePermissionLevel,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_sql_warehouse,
             dict_example={
                 "channel": {},

@@ -11,12 +11,12 @@ from databricks.bundles.models._models.model_tag import ModelTag
 from databricks.bundles.models._models.registered_model_permission_level import (
     RegisteredModelPermissionLevel,
 )
-from databricks_tests.core._resource_test_case import TestCase
+from databricks_tests.core._resource_test_case import ResourceTestCase
 
 
 def _test_case():
     return (
-        TestCase(
+        ResourceTestCase(
             add_resource=Resources.add_mlflow_model,
             dict_example={
                 "lifecycle": {},

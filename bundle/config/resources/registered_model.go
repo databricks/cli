@@ -13,6 +13,7 @@ import (
 
 type RegisteredModel struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
@@ -59,8 +60,4 @@ func (s *RegisteredModel) InitializeURL(baseURL url.URL) {
 
 func (s *RegisteredModel) GetName() string {
 	return s.Name
-}
-
-func (s *RegisteredModel) GetURL() string {
-	return s.URL
 }
