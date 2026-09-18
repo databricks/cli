@@ -98,12 +98,13 @@ Filters:
   accelerator_type  Accelerator type, such as A10 or H100.
   experiment        Case-insensitive glob matched against the experiment name.
   num_accelerators  Total GPU count.
-  user              Run creator.`,
+  user              Run creator identifier.`,
 		Example: `  databricks experimental air list --filter accelerator_type=H100
 
   databricks experimental air list --all-status \
     --filter 'experiment=qwen*' \
-    --filter num_accelerators=8`,
+    --filter num_accelerators=8 \
+    --filter user=person@example.com`,
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
