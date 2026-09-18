@@ -1,6 +1,40 @@
 setup_docker_auth
+cat >> "$HOME/.databrickscfg" <<'ENDCFG'
+workspace_id = 900800700600
+ENDCFG
+registry_host=900800700600.container.us-west-2.localhost
 
-mkdir -p "$HOME/.databricks"
-cp token-cache.json "$HOME/.databricks/token-cache.json"
+title "Cached token\n"
+printf '%s\n' "$registry_host" | trace $CLI auth docker token --no-force-refresh | jq -S .
 
-printf '%s\n' "$TEST_DAR_REGISTRY_HOST" | trace "$CLI" auth docker token | jq -S .
+title "Refreshed token by default\n"
+printf '%s\n' "$registry_host" | trace $CLI auth docker token | jq -S .
+
+title "No profile for the workspace\n"
+printf '%s\n' "111222333.container.us-west-2.localhost" | trace musterr $CLI auth docker token
+
+title "Not an Artifact Registry host\n"
+printf '%s\n' "registry.example.test" | trace musterr $CLI auth docker token
+
+title "Profile flag not supported\n"
+printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token --profile docker-test
+
+title "Test-server registry never matches a remote workspace\n"
+cat >> "$HOME/.databrickscfg" <<'ENDCFG'
+
+[remote]
+host = https://workspace.cloud.databricks.test
+auth_type = databricks-cli
+workspace_id = 444555666
+ENDCFG
+printf '%s\n' "444555666.container.us-west-2.localhost" | trace musterr $CLI auth docker token
+
+title "Multiple profiles for the workspace\n"
+cat >> "$HOME/.databrickscfg" <<ENDCFG
+
+[duplicate]
+host = $DATABRICKS_HOST_ORIG
+auth_type = databricks-cli
+workspace_id = 900800700600
+ENDCFG
+printf '%s\n' "$registry_host" | trace musterr $CLI auth docker token

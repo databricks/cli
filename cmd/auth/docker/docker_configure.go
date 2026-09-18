@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -20,24 +19,14 @@ import (
 )
 
 type configureDockerDeps struct {
-	profiler            profile.Profiler
-	newWorkspaceClient  func(*databricks.Config) (*databricks.WorkspaceClient, error)
-	resolveWorkspaceID  func(context.Context, *databricks.WorkspaceClient) (string, error)
-	executable          func() (string, error)
-	registryHost        func(string, string, string) (string, error)
+	dockerProfileDeps
 	installShim         func(string) (dockercredentials.ShimInstallResult, error)
 	setCredentialHelper func(string, string) error
 }
 
 func defaultConfigureDockerDeps() configureDockerDeps {
 	return configureDockerDeps{
-		profiler: profile.DefaultProfiler,
-		newWorkspaceClient: func(cfg *databricks.Config) (*databricks.WorkspaceClient, error) {
-			return databricks.NewWorkspaceClient(cfg)
-		},
-		resolveWorkspaceID:  authlib.ResolveWorkspaceID,
-		executable:          os.Executable,
-		registryHost:        dockercredentials.RegistryHost,
+		dockerProfileDeps:   defaultDockerProfileDeps(),
 		installShim:         dockercredentials.InstallShim,
 		setCredentialHelper: dockercredentials.SetCredentialHelper,
 	}
@@ -47,30 +36,30 @@ func newDockerConfigureCommand() *cobra.Command {
 	return newDockerConfigureCommandWithDeps(defaultConfigureDockerDeps())
 }
 
+// newDockerConfigureCommandWithDeps resolves and validates workspace metadata before changing Docker state.
 func newDockerConfigureCommandWithDeps(deps configureDockerDeps) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "configure [PROFILE] --region REGION",
+		Use:   "configure [PROFILE]",
 		Short: "(Experimental) Configure Docker authentication for Databricks Artifact Registry",
 		Long: `(Experimental) Configure Docker authentication for Databricks Artifact Registry.
 
 This command installs docker-credential-databricks and configures Docker to use
 it for the selected workspace's Artifact Registry host. If the selected profile
 does not already include a workspace_id, the command resolves and saves it so
-the Docker helper can map the registry host back to the profile. The required
-region must match the workspace home region because it cannot be inferred from
-the profile. Select the workspace with [PROFILE] or --profile; --host,
---account-id, and --workspace-id are not supported.`,
+the Docker helper can map the registry host back to the profile. The registry
+region is inferred from the workspace's metastore. Select the workspace with
+[PROFILE] or --profile; --host, --account-id, and --workspace-id are not
+supported. The deprecated --region flag is retained for compatibility; omit it
+because it will be fully removed in the next release.`,
 		Args: cobra.MaximumNArgs(1),
 	}
-	var region string
-	cmd.Flags().StringVar(&region, "region", "", "Cloud region for the Databricks Artifact Registry host; must match the workspace home region")
+	var regionFlag string
+	cmd.Flags().StringVar(&regionFlag, "region", "", "Artifact Registry region; we recommend omitting this flag because the region is inferred automatically")
+	cmd.Flags().Lookup("region").Deprecated = "--region will be fully removed in the next release"
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		if err := errorOnUnsupportedConfigureDockerFlags(cmd); err != nil {
 			return err
-		}
-		if region == "" {
-			return errors.New("--region is required because workspace region cannot be inferred from this profile; it must match the workspace home region")
 		}
 
 		profileName, err := configureDockerProfileName(ctx, cmd, args, deps.profiler)
@@ -78,24 +67,53 @@ the profile. Select the workspace with [PROFILE] or --profile; --host,
 			return err
 		}
 
-		p, err := loadAndValidateConfigureDockerProfile(ctx, profileName, deps.profiler)
+		p, err := loadAndValidateDockerProfile(ctx, profileName, deps.profiler)
 		if err != nil {
 			return err
+		}
+		if err := validateDockerWorkspaceHost(p, deps.validateWorkspaceHost); err != nil {
+			return err
+		}
+		regionProvided := cmd.Flags().Changed("region")
+		region := strings.TrimSpace(regionFlag)
+		if regionProvided {
+			if err := dockercredentials.ValidateRegion(region); err != nil {
+				return err
+			}
 		}
 
 		executable, err := deps.executable()
 		if err != nil {
 			return fmt.Errorf("locate databricks executable: %w", err)
 		}
-		workspaceID, err := resolveConfigureDockerWorkspaceID(ctx, p, executable, deps)
-		if err != nil {
-			return err
+		needsWorkspaceClient := !regionProvided || p.WorkspaceID == "" || p.WorkspaceID == authlib.WorkspaceIDNone
+		var w *databricks.WorkspaceClient
+		if needsWorkspaceClient {
+			w, err = newDockerWorkspaceClient(ctx, p, executable, deps.dockerProfileDeps)
+			if err != nil {
+				return err
+			}
 		}
-		registryHost, err := deps.registryHost(workspaceID, region, p.Host)
+		workspaceID, err := resolveDockerWorkspaceID(ctx, p, w, deps.dockerProfileDeps)
 		if err != nil {
 			return err
 		}
 		if err := ensureConfigureDockerUniqueProfile(ctx, deps.profiler, p, workspaceID); err != nil {
+			return err
+		}
+		if !regionProvided {
+			w.Config.WorkspaceID = workspaceID
+			region, err = deps.resolveWorkspaceRegion(ctx, w)
+			if err != nil {
+				return rewriteDockerProfileError(ctx, p, fmt.Errorf("resolve workspace region for profile %q: %w", p.Name, err))
+			}
+			region = strings.TrimSpace(region)
+			if region == "" {
+				return fmt.Errorf("resolve workspace region for profile %q: metastore summary did not include a region", p.Name)
+			}
+		}
+		registryHost, err := deps.registryHost(workspaceID, region, p.Host)
+		if err != nil {
 			return err
 		}
 		if p.WorkspaceID == "" || p.WorkspaceID == authlib.WorkspaceIDNone {
@@ -108,7 +126,7 @@ the profile. Select the workspace with [PROFILE] or --profile; --host,
 		if err != nil {
 			return fmt.Errorf("install Docker credential helper: %w", err)
 		}
-		dockerConfigPath, err := configureDockerConfigPath(ctx)
+		dockerConfigPath, err := dockerConfigPath(ctx)
 		if err != nil {
 			return err
 		}
@@ -139,6 +157,7 @@ func errorOnUnsupportedConfigureDockerFlags(cmd *cobra.Command) error {
 	return nil
 }
 
+// configureDockerProfileName resolves profile selectors from highest to lowest precedence, prompting only as a last resort.
 func configureDockerProfileName(ctx context.Context, cmd *cobra.Command, args []string, profiler profile.Profiler) (string, error) {
 	profileFlag := cmd.Flag("profile")
 	profileName := ""
@@ -180,7 +199,7 @@ func configureDockerProfileName(ctx context.Context, cmd *cobra.Command, args []
 	})
 }
 
-func loadAndValidateConfigureDockerProfile(ctx context.Context, profileName string, profiler profile.Profiler) (profile.Profile, error) {
+func loadAndValidateDockerProfile(ctx context.Context, profileName string, profiler profile.Profiler) (profile.Profile, error) {
 	profiles, err := profiler.LoadProfiles(ctx, profile.WithName(profileName))
 	if err != nil {
 		return profile.Profile{}, err
@@ -194,11 +213,8 @@ func loadAndValidateConfigureDockerProfile(ctx context.Context, profileName stri
 	return profiles[0], nil
 }
 
-func resolveConfigureDockerWorkspaceID(ctx context.Context, p profile.Profile, executable string, deps configureDockerDeps) (string, error) {
-	if p.WorkspaceID != "" && p.WorkspaceID != authlib.WorkspaceIDNone {
-		return p.WorkspaceID, nil
-	}
-
+// newDockerWorkspaceClient restricts authentication loading to the already-selected profile.
+func newDockerWorkspaceClient(ctx context.Context, p profile.Profile, executable string, deps dockerProfileDeps) (*databricks.WorkspaceClient, error) {
 	cfg := &databricks.Config{
 		Profile:           p.Name,
 		Host:              p.Host,
@@ -210,13 +226,23 @@ func resolveConfigureDockerWorkspaceID(ctx context.Context, p profile.Profile, e
 	}
 	w, err := deps.newWorkspaceClient(cfg)
 	if err != nil {
-		return "", fmt.Errorf("load workspace profile %q: %w. Run databricks auth login --host <workspace-url> and retry with that profile", p.Name, err)
+		err = fmt.Errorf("load workspace profile %q: %w. Run databricks auth login --host <workspace-url> and retry with that profile", p.Name, err)
+		return nil, rewriteDockerProfileError(ctx, p, err)
 	}
-	// The selected profile may contain the CLI-only "none" sentinel, which the SDK would send as a routing header.
+	return w, nil
+}
+
+// resolveDockerWorkspaceID clears the CLI-only "none" sentinel because it must not become a workspace routing header.
+func resolveDockerWorkspaceID(ctx context.Context, p profile.Profile, w *databricks.WorkspaceClient, deps dockerProfileDeps) (string, error) {
+	if p.WorkspaceID != "" && p.WorkspaceID != authlib.WorkspaceIDNone {
+		return p.WorkspaceID, nil
+	}
+
 	w.Config.WorkspaceID = ""
 	workspaceID, err := deps.resolveWorkspaceID(ctx, w)
 	if err != nil {
-		return "", fmt.Errorf("resolve workspace ID for profile %q: %w. Run databricks auth login --host <workspace-url> and retry with that profile", p.Name, err)
+		err = fmt.Errorf("resolve workspace ID for profile %q: %w. Run databricks auth login --host <workspace-url> and retry with that profile", p.Name, err)
+		return "", rewriteDockerProfileError(ctx, p, err)
 	}
 	return workspaceID, nil
 }
@@ -255,7 +281,7 @@ func persistConfigureDockerWorkspaceID(ctx context.Context, p profile.Profile, w
 	})
 }
 
-func configureDockerConfigPath(ctx context.Context) (string, error) {
+func dockerConfigPath(ctx context.Context) (string, error) {
 	if dockerConfig := env.Get(ctx, "DOCKER_CONFIG"); dockerConfig != "" {
 		return filepath.Join(dockerConfig, "config.json"), nil
 	}

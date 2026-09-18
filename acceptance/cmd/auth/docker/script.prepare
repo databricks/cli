@@ -15,13 +15,25 @@ setup_docker_auth() {
 
     export DATABRICKS_AUTH_STORAGE=plaintext
     export DATABRICKS_LOG_LEVEL=error
-    export TEST_DAR_REGISTRY_HOST=123456789.container.us-west-2.cloud.databricks.com
 
     cat > "$HOME/.databrickscfg" <<ENDCFG
 [docker-test]
 host = $DATABRICKS_HOST_ORIG
 auth_type = databricks-cli
-workspace_id = 123456789
 ENDCFG
 
+    mkdir -p "$HOME/.databricks"
+    cp "$TESTDIR/../token-cache.json" "$HOME/.databricks/token-cache.json"
+}
+
+# configure installs docker-credential-databricks next to the running CLI, so run a copy outside the shared build directory.
+install_databricks_cli() {
+    mkdir -p "$HOME/bin"
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+        cp "$(cygpath -u "$CLI")" "$HOME/bin/databricks.exe"
+    else
+        cp "$CLI" "$HOME/bin/databricks"
+        chmod +x "$HOME/bin/databricks"
+    fi
+    export PATH="$HOME/bin:$PATH"
 }

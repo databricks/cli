@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/dockercredentials"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -69,6 +70,16 @@ func configureDockerRegistryHostStub(t *testing.T, wantWorkspaceID, wantRegion, 
 	}
 }
 
+func configureDockerRegionStub(region string) func(context.Context, *databricks.WorkspaceClient) (string, error) {
+	return func(context.Context, *databricks.WorkspaceClient) (string, error) {
+		return region, nil
+	}
+}
+
+func allowConfigureDockerWorkspaceHost(string) error {
+	return nil
+}
+
 func writeConfigureDockerExecutable(t *testing.T, dir string) string {
 	t.Helper()
 	name := "databricks"
@@ -81,73 +92,155 @@ func writeConfigureDockerExecutable(t *testing.T, dir string) string {
 	return path
 }
 
-func TestConfigureDockerCommandWritesDockerConfigAndShim(t *testing.T) {
-	ctx, stderr := cmdio.NewTestContextWithStderr(t.Context())
-	dir := t.TempDir()
-	configFile := filepath.Join(dir, ".databrickscfg")
-	dockerDir := filepath.Join(dir, "docker")
-	binDir := filepath.Join(dir, "bin")
-	workspaceHost := "https://workspace.staging.cloud.databricks.test"
+func TestConfigureDockerCommandUsesExplicitRegionWhileResolvingWorkspaceID(t *testing.T) {
+	t.Parallel()
 
-	writeConfigureDockerProfile(t, ctx, configFile, &config.Config{
-		Profile:     "DEFAULT",
-		Host:        workspaceHost,
-		WorkspaceID: "123456789",
-		AuthType:    authlib.AuthTypeDatabricksCli,
+	ctx := env.Set(cmdio.MockDiscard(t.Context()), "DOCKER_CONFIG", t.TempDir())
+	workspaceHost := "https://workspace.cloud.databricks.test"
+	stopErr := errors.New("stop after registry host")
+	deps := defaultConfigureDockerDeps()
+	deps.profiler = profile.InMemoryProfiler{Profiles: profile.Profiles{{
+		Name:     "DEFAULT",
+		Host:     workspaceHost,
+		AuthType: authlib.AuthTypeDatabricksCli,
+	}}}
+	deps.validateWorkspaceHost = allowConfigureDockerWorkspaceHost
+	deps.executable = func() (string, error) { return "/usr/local/bin/databricks", nil }
+	deps.newWorkspaceClient = func(cfg *databricks.Config) (*databricks.WorkspaceClient, error) {
+		return &databricks.WorkspaceClient{Config: (*config.Config)(cfg)}, nil
+	}
+	deps.resolveWorkspaceID = func(context.Context, *databricks.WorkspaceClient) (string, error) {
+		return "123456789", nil
+	}
+	deps.resolveWorkspaceRegion = func(context.Context, *databricks.WorkspaceClient) (string, error) {
+		return "", errors.New("metastore summary called")
+	}
+	deps.registryHost = func(workspaceID, region, host string) (string, error) {
+		assert.Equal(t, "123456789", workspaceID)
+		assert.Equal(t, "us-west-2", region)
+		assert.Equal(t, workspaceHost, host)
+		return "", stopErr
+	}
+
+	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT", "--region", "us-west-2")
+	err := cmd.Execute()
+	assert.ErrorIs(t, err, stopErr)
+}
+
+func TestConfigureDockerCommandRejectsInvalidExplicitRegionBeforeWorkspaceClient(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		region string
+		want   string
+	}{
+		{name: "empty", region: "", want: "region is required"},
+		{name: "whitespace", region: "   ", want: "region is required"},
+		{name: "invalid DNS label", region: "-us-west-2", want: `invalid region "-us-west-2"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := env.Set(cmdio.MockDiscard(t.Context()), "DOCKER_CONFIG", t.TempDir())
+			workspaceClientErr := errors.New("workspace client created")
+			deps := defaultConfigureDockerDeps()
+			deps.profiler = profile.InMemoryProfiler{Profiles: profile.Profiles{{
+				Name:     "DEFAULT",
+				Host:     "https://workspace.cloud.databricks.test",
+				AuthType: authlib.AuthTypeDatabricksCli,
+			}}}
+			deps.validateWorkspaceHost = allowConfigureDockerWorkspaceHost
+			deps.executable = func() (string, error) { return "/usr/local/bin/databricks", nil }
+			deps.newWorkspaceClient = func(*databricks.Config) (*databricks.WorkspaceClient, error) {
+				return nil, workspaceClientErr
+			}
+
+			cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT", "--region", tt.region)
+			err := cmd.Execute()
+			assert.ErrorContains(t, err, tt.want)
+			assert.NotErrorIs(t, err, workspaceClientErr)
+		})
+	}
+}
+
+func TestConfigureDockerCommandReturnsMetastoreSummaryErrorBeforeMutation(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	dockerDir := t.TempDir()
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(testserver.Request) any {
+		return testserver.Response{
+			StatusCode: http.StatusInternalServerError,
+			Body: map[string]any{
+				"error_code": "INTERNAL_ERROR",
+				"message":    "summary failed",
+			},
+		}
 	})
 
-	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	t.Setenv("DOCKER_CONFIG", dockerDir)
-	t.Setenv("PATH", binDir)
-
-	registryHost := "123456789.container.us-west-2.staging.cloud.databricks.test"
 	deps := defaultConfigureDockerDeps()
-	databricksPath := writeConfigureDockerExecutable(t, binDir)
-	deps.executable = func() (string, error) {
-		return databricksPath, nil
-	}
-	deps.registryHost = configureDockerRegistryHostStub(t, "123456789", "us-west-2", workspaceHost, registryHost)
-
-	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "--profile", "DEFAULT", "--region", "us-west-2")
-	require.NoError(t, cmd.Execute())
-
-	helpers := readCredentialHelpers(t, filepath.Join(dockerDir, "config.json"))
-	assert.Equal(t, dockercredentials.HelperName, helpers[registryHost])
-
-	helperName := "docker-credential-databricks"
-	if runtime.GOOS == "windows" {
-		helperName += ".cmd"
-	}
-	_, err := os.Stat(filepath.Join(binDir, helperName))
-	require.NoError(t, err)
-	assert.Contains(t, stderr.String(), registryHost)
-	assert.Contains(t, stderr.String(), filepath.ToSlash(filepath.Join(dockerDir, "config.json")))
-}
-
-func TestConfigureDockerCommandDocumentsRegionRequirement(t *testing.T) {
-	cmd := newDockerConfigureCommandWithDeps(defaultConfigureDockerDeps())
-
-	assert.Equal(t, "configure [PROFILE] --region REGION", cmd.Use)
-	assert.Contains(t, cmd.Flag("region").Usage, "workspace home region")
-}
-
-func TestConfigureDockerCommandRequiresRegion(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	dir := t.TempDir()
-	configFile := filepath.Join(dir, ".databrickscfg")
-
-	writeConfigureDockerProfile(t, ctx, configFile, &config.Config{
-		Profile:     "DEFAULT",
+	deps.validateWorkspaceHost = allowConfigureDockerWorkspaceHost
+	deps.profiler = profile.InMemoryProfiler{Profiles: profile.Profiles{{
+		Name:        "DEFAULT",
 		Host:        "https://workspace.cloud.databricks.test",
 		WorkspaceID: "123456789",
 		AuthType:    authlib.AuthTypeDatabricksCli,
+	}}}
+	deps.executable = func() (string, error) { return "/usr/local/bin/databricks", nil }
+	deps.newWorkspaceClient = func(cfg *databricks.Config) (*databricks.WorkspaceClient, error) {
+		cfg.Host = server.URL
+		cfg.Token = "test-token"
+		cfg.AuthType = "pat"
+		cfg.Profile = ""
+		return databricks.NewWorkspaceClient(cfg)
+	}
+	deps.installShim = func(string) (dockercredentials.ShimInstallResult, error) {
+		t.Fatal("installShim should not be called")
+		return dockercredentials.ShimInstallResult{}, nil
+	}
+
+	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT")
+	err := cmd.Execute()
+	assert.ErrorContains(t, err, `resolve workspace region for profile "DEFAULT": summary failed`)
+	assert.NoFileExists(t, filepath.Join(dockerDir, "config.json"))
+}
+
+func TestConfigureDockerCommandRejectsEmptyMetastoreRegionBeforeMutation(t *testing.T) {
+	ctx := cmdio.MockDiscard(t.Context())
+	dockerDir := t.TempDir()
+	server := testserver.New(t)
+	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(testserver.Request) any {
+		return map[string]any{"metastore_id": "metastore-id"}
 	})
 
-	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
+	t.Setenv("DOCKER_CONFIG", dockerDir)
+	deps := defaultConfigureDockerDeps()
+	deps.validateWorkspaceHost = allowConfigureDockerWorkspaceHost
+	deps.profiler = profile.InMemoryProfiler{Profiles: profile.Profiles{{
+		Name:        "DEFAULT",
+		Host:        "https://workspace.cloud.databricks.test",
+		WorkspaceID: "123456789",
+		AuthType:    authlib.AuthTypeDatabricksCli,
+	}}}
+	deps.executable = func() (string, error) { return "/usr/local/bin/databricks", nil }
+	deps.newWorkspaceClient = func(cfg *databricks.Config) (*databricks.WorkspaceClient, error) {
+		cfg.Host = server.URL
+		cfg.Token = "test-token"
+		cfg.AuthType = "pat"
+		cfg.Profile = ""
+		return databricks.NewWorkspaceClient(cfg)
+	}
+	deps.installShim = func(string) (dockercredentials.ShimInstallResult, error) {
+		t.Fatal("installShim should not be called")
+		return dockercredentials.ShimInstallResult{}, nil
+	}
 
-	cmd := newDockerConfigureTestCommand(ctx, "docker", "configure", "DEFAULT")
+	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT")
 	err := cmd.Execute()
-	assert.ErrorContains(t, err, "--region is required because workspace region cannot be inferred from this profile; it must match the workspace home region")
+	assert.ErrorContains(t, err, `resolve workspace region for profile "DEFAULT": metastore summary did not include a region`)
+	assert.NoFileExists(t, filepath.Join(dockerDir, "config.json"))
 }
 
 func TestConfigureDockerCommandRejectsAccountOnlyProfile(t *testing.T) {
@@ -166,7 +259,7 @@ func TestConfigureDockerCommandRejectsAccountOnlyProfile(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
 	t.Setenv("DOCKER_CONFIG", dockerDir)
 
-	cmd := newDockerConfigureTestCommand(ctx, "docker", "configure", "account", "--region", "us-west-2")
+	cmd := newDockerConfigureTestCommand(ctx, "docker", "configure", "account")
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, "databricks auth login --host <workspace-url>")
 	assert.NoFileExists(t, filepath.Join(dockerDir, "config.json"))
@@ -201,8 +294,13 @@ func TestConfigureDockerCommandPersistsResolvedWorkspaceID(t *testing.T) {
 		}
 	})
 	testserver.AddDefaultHandlers(server)
+	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(req testserver.Request) any {
+		assert.Equal(t, "999999", req.Headers.Get(authlib.WorkspaceIDHeader))
+		return map[string]any{"region": "us-west-2"}
+	})
 
 	deps := defaultConfigureDockerDeps()
+	deps.validateWorkspaceHost = allowConfigureDockerWorkspaceHost
 	databricksPath := writeConfigureDockerExecutable(t, filepath.Join(dir, "bin"))
 	deps.executable = func() (string, error) {
 		return databricksPath, nil
@@ -219,7 +317,7 @@ func TestConfigureDockerCommandPersistsResolvedWorkspaceID(t *testing.T) {
 	}
 	deps.registryHost = configureDockerRegistryHostStub(t, "999999", "us-west-2", workspaceHost, "999999.container.us-west-2.gcp.databricks.test")
 
-	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "workspace", "--region", "us-west-2")
+	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "workspace")
 	require.NoError(t, cmd.Execute())
 
 	raw, err := os.ReadFile(configFile)
@@ -228,49 +326,6 @@ func TestConfigureDockerCommandPersistsResolvedWorkspaceID(t *testing.T) {
 
 	helpers := readCredentialHelpers(t, filepath.Join(dockerDir, "config.json"))
 	assert.Equal(t, dockercredentials.HelperName, helpers["999999.container.us-west-2.gcp.databricks.test"])
-}
-
-func TestConfigureDockerCommandRejectsUnsupportedWorkspaceHostBeforeProfileAndDockerConfigMutation(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	dir := t.TempDir()
-	configFile := filepath.Join(dir, ".databrickscfg")
-	dockerDir := filepath.Join(dir, "docker")
-
-	writeConfigureDockerProfile(t, ctx, configFile, &config.Config{
-		Profile:  "DEFAULT",
-		Host:     "https://workspace.example.test",
-		AuthType: authlib.AuthTypeDatabricksCli,
-	})
-	before, err := os.ReadFile(configFile)
-	require.NoError(t, err)
-
-	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("DOCKER_CONFIG", dockerDir)
-	t.Setenv("HOME", filepath.Join(dir, "home"))
-
-	deps := defaultConfigureDockerDeps()
-	deps.newWorkspaceClient = func(cfg *databricks.Config) (*databricks.WorkspaceClient, error) {
-		return &databricks.WorkspaceClient{Config: (*config.Config)(cfg)}, nil
-	}
-	deps.resolveWorkspaceID = func(context.Context, *databricks.WorkspaceClient) (string, error) {
-		return "123456789", nil
-	}
-	deps.installShim = func(string) (dockercredentials.ShimInstallResult, error) {
-		t.Fatal("installShim should not be called")
-		return dockercredentials.ShimInstallResult{}, nil
-	}
-	deps.setCredentialHelper = func(string, string) error {
-		t.Fatal("setCredentialHelper should not be called")
-		return nil
-	}
-
-	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT", "--region", "us-west-2")
-	err = cmd.Execute()
-	assert.ErrorContains(t, err, `"workspace.example.test" is not a supported Databricks workspace host`)
-	after, err := os.ReadFile(configFile)
-	require.NoError(t, err)
-	assert.Equal(t, string(before), string(after))
-	assert.NoFileExists(t, filepath.Join(dockerDir, "config.json"))
 }
 
 func TestConfigureDockerCommandRejectsUnsupportedAuthProfiles(t *testing.T) {
@@ -305,7 +360,7 @@ func TestConfigureDockerCommandRejectsUnsupportedAuthProfiles(t *testing.T) {
 
 	for _, profileName := range []string{"pat", "m2m", "blank-auth"} {
 		t.Run(profileName, func(t *testing.T) {
-			cmd := newDockerConfigureTestCommand(ctx, "docker", "configure", profileName, "--region", "us-west-2")
+			cmd := newDockerConfigureTestCommand(ctx, "docker", "configure", profileName)
 			err := cmd.Execute()
 			assert.ErrorContains(t, err, "requires a profile created by databricks auth login")
 			assert.NoFileExists(t, filepath.Join(dockerDir, "config.json"))
@@ -330,9 +385,9 @@ func TestConfigureDockerCommandRejectsExplicitInheritedFlags(t *testing.T) {
 	t.Setenv("HOME", filepath.Join(dir, "home"))
 
 	cases := [][]string{
-		{"docker", "configure", "DEFAULT", "--region", "us-west-2", "--host", "https://other.cloud.databricks.test"},
-		{"docker", "configure", "DEFAULT", "--region", "us-west-2", "--account-id", "abc"},
-		{"docker", "configure", "DEFAULT", "--region", "us-west-2", "--workspace-id", "987654321"},
+		{"docker", "configure", "DEFAULT", "--host", "https://other.cloud.databricks.test"},
+		{"docker", "configure", "DEFAULT", "--account-id", "abc"},
+		{"docker", "configure", "DEFAULT", "--workspace-id", "987654321"},
 	}
 
 	for _, args := range cases {
@@ -344,88 +399,24 @@ func TestConfigureDockerCommandRejectsExplicitInheritedFlags(t *testing.T) {
 	}
 }
 
-func TestConfigureDockerCommandRejectsAmbiguousWorkspaceIDBeforeDockerConfig(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	dir := t.TempDir()
-	configFile := filepath.Join(dir, ".databrickscfg")
-	dockerDir := filepath.Join(dir, "docker")
-
-	for _, name := range []string{"one", "two"} {
-		writeConfigureDockerProfile(t, ctx, configFile, &config.Config{
-			Profile:     name,
-			Host:        "https://" + name + ".cloud.databricks.test",
-			WorkspaceID: "123456789",
-			AuthType:    authlib.AuthTypeDatabricksCli,
-		})
-	}
-
-	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-	t.Setenv("DOCKER_CONFIG", dockerDir)
-	t.Setenv("HOME", filepath.Join(dir, "home"))
-
-	deps := defaultConfigureDockerDeps()
-	deps.registryHost = func(workspaceID, region, _ string) (string, error) {
-		return workspaceID + ".container." + region + ".cloud.databricks.test", nil
-	}
-	deps.installShim = func(string) (dockercredentials.ShimInstallResult, error) {
-		t.Fatal("installShim should not be called")
-		return dockercredentials.ShimInstallResult{}, nil
-	}
-	deps.setCredentialHelper = func(string, string) error {
-		t.Fatal("setCredentialHelper should not be called")
-		return nil
-	}
-
-	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "one", "--region", "us-west-2")
-	err := cmd.Execute()
-	assert.ErrorContains(t, err, "multiple Databricks profiles match workspace ID 123456789")
-	assert.ErrorContains(t, err, "Remove duplicate workspace_id entries")
-	assert.NoFileExists(t, filepath.Join(dockerDir, "config.json"))
-}
-
-func TestConfigureDockerCommandRejectsSameWorkspaceIDInDifferentEnvironment(t *testing.T) {
-	ctx := cmdio.MockDiscard(t.Context())
-	dir := t.TempDir()
-	configFile := filepath.Join(dir, ".databrickscfg")
-
-	writeConfigureDockerProfile(t, ctx, configFile, &config.Config{
-		Profile:     "prod",
+func TestConfigureDockerRejectsSameWorkspaceIDInDifferentEnvironment(t *testing.T) {
+	p := profile.Profile{
+		Name:        "prod",
 		Host:        "https://workspace.cloud.databricks.test",
 		WorkspaceID: "123456789",
 		AuthType:    authlib.AuthTypeDatabricksCli,
-	})
-	writeConfigureDockerProfile(t, ctx, configFile, &config.Config{
-		Profile:     "dev",
-		Host:        "https://workspace.dev.cloud.databricks.test",
-		WorkspaceID: "123456789",
-		AuthType:    authlib.AuthTypeDatabricksCli,
-	})
-
-	t.Setenv("DATABRICKS_CONFIG_FILE", configFile)
-
-	deps := defaultConfigureDockerDeps()
-	deps.executable = func() (string, error) {
-		return filepath.Join(dir, "databricks"), nil
 	}
-	deps.registryHost = func(workspaceID, region, workspaceHost string) (string, error) {
-		zone := ".cloud.databricks.test"
-		if workspaceHost == "https://workspace.dev.cloud.databricks.test" {
-			zone = ".dev.cloud.databricks.test"
-		}
-		return workspaceID + ".container." + region + zone, nil
-	}
-	deps.installShim = func(string) (dockercredentials.ShimInstallResult, error) {
-		t.Fatal("installShim should not be called")
-		return dockercredentials.ShimInstallResult{}, nil
-	}
-	deps.setCredentialHelper = func(string, string) error {
-		t.Fatal("setCredentialHelper should not be called")
-		return nil
-	}
-
-	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "prod", "--region", "us-west-2")
-	err := cmd.Execute()
-	assert.ErrorContains(t, err, "multiple Databricks profiles match workspace ID 123456789")
+	profiler := profile.InMemoryProfiler{Profiles: profile.Profiles{
+		p,
+		{
+			Name:        "dev",
+			Host:        "https://workspace.dev.cloud.databricks.test",
+			WorkspaceID: p.WorkspaceID,
+			AuthType:    authlib.AuthTypeDatabricksCli,
+		},
+	}}
+	err := ensureConfigureDockerUniqueProfile(t.Context(), profiler, p, p.WorkspaceID)
+	assert.ErrorContains(t, err, "multiple Databricks profiles match workspace ID 123456789: prod and dev")
 }
 
 func TestConfigureDockerAllowsUnsupportedDuplicateProfile(t *testing.T) {
@@ -467,6 +458,8 @@ func TestConfigureDockerCommandInstallsShimBeforeDockerConfig(t *testing.T) {
 	t.Setenv("HOME", filepath.Join(dir, "home"))
 
 	deps := defaultConfigureDockerDeps()
+	deps.validateWorkspaceHost = allowConfigureDockerWorkspaceHost
+	deps.resolveWorkspaceRegion = configureDockerRegionStub("us-west-2")
 	deps.executable = func() (string, error) {
 		return "/usr/local/bin/databricks", nil
 	}
@@ -479,7 +472,7 @@ func TestConfigureDockerCommandInstallsShimBeforeDockerConfig(t *testing.T) {
 		return nil
 	}
 
-	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT", "--region", "us-west-2")
+	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT")
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, "install failed")
 	assert.NoFileExists(t, filepath.Join(dockerDir, "config.json"))
@@ -492,6 +485,8 @@ func TestConfigureDockerCommandWarnsAboutPATHAndPATHEXT(t *testing.T) {
 	t.Setenv("DOCKER_CONFIG", t.TempDir())
 
 	deps := defaultConfigureDockerDeps()
+	deps.validateWorkspaceHost = allowConfigureDockerWorkspaceHost
+	deps.resolveWorkspaceRegion = configureDockerRegionStub("us-west-2")
 	deps.profiler = profile.InMemoryProfiler{Profiles: profile.Profiles{
 		{
 			Name:        "DEFAULT",
@@ -502,6 +497,9 @@ func TestConfigureDockerCommandWarnsAboutPATHAndPATHEXT(t *testing.T) {
 	}}
 	deps.executable = func() (string, error) {
 		return "/usr/local/bin/databricks", nil
+	}
+	deps.newWorkspaceClient = func(cfg *databricks.Config) (*databricks.WorkspaceClient, error) {
+		return &databricks.WorkspaceClient{Config: (*config.Config)(cfg)}, nil
 	}
 	deps.registryHost = configureDockerRegistryHostStub(t, "123456789", "us-west-2", workspaceHost, registryHost)
 	deps.installShim = func(string) (dockercredentials.ShimInstallResult, error) {
@@ -514,7 +512,7 @@ func TestConfigureDockerCommandWarnsAboutPATHAndPATHEXT(t *testing.T) {
 		return nil
 	}
 
-	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT", "--region", "us-west-2")
+	cmd := newDockerConfigureTestCommandWithDeps(ctx, deps, "docker", "configure", "DEFAULT")
 	require.NoError(t, cmd.Execute())
 	assert.Contains(t, stderr.String(), "PATH")
 	assert.Contains(t, stderr.String(), ".CMD is in PATHEXT on Windows")

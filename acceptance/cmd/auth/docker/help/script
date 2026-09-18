@@ -1,2 +1,4 @@
 trace "$CLI" auth --help
 trace "$CLI" auth docker --help
+trace "$CLI" auth docker configure --help
+trace "$CLI" auth docker host --help

@@ -4,9 +4,23 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/stretchr/testify/assert"
 )
+
+type invalidRefreshTokenTestError struct {
+	error
+}
+
+func (e *invalidRefreshTokenTestError) As(target any) bool {
+	invalidRefreshToken, ok := target.(**u2m.InvalidRefreshTokenError)
+	if !ok {
+		return false
+	}
+	*invalidRefreshToken = new(u2m.InvalidRefreshTokenError)
+	return true
+}
 
 func TestValidateDockerCredentialProfile(t *testing.T) {
 	tests := []struct {
