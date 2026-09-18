@@ -1,4 +1,3 @@
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # The fake uv is a bash script, so this test cannot run on Windows runners
 # (mirrors acceptance/cmd/psql).

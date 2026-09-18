@@ -1,5 +1,4 @@
 Cloud = true
 CloudSlow = true
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DATA_SECURITY_MODE = ["USER_ISOLATION", "SINGLE_USER"]
 EnvMatrix.DMS = ["", "true"]

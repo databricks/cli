@@ -2,7 +2,6 @@ Cloud = true
 
 # Deployment Metadata Service (DMS) recording is only supported by the direct
 # engine; it is a no-op on terraform.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 
 RecordRequests = true

@@ -6,4 +6,3 @@ Cloud = false
 
 Ignore = [".databricks", "databricks.yml"]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

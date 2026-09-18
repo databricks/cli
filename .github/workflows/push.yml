@@ -111,14 +111,14 @@ jobs:
             runner:
               labels: macos-latest
 
-        # Each cell runs the suite once. envfilter picks the variants it covers: without the
-        # recording filter, the direct cell would run every bundle test twice, since
-        # bundle/test.toml matrixes deployment-history recording on top of the engine.
+        # Each cell runs the suite once. envfilter picks the variants it covers: the plain
+        # cell excludes the deployment-history recording variant (DMS=true), which the
+        # directdms cell covers, so bundle/test.toml's DMS matrix does not run every test twice.
         deployment:
           - name: "direct"
-            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DMS="
+            envfilter: "DMS="
           - name: "directdms"
-            envfilter: "DATABRICKS_BUNDLE_ENGINE=direct,DMS=true"
+            envfilter: "DMS=true"
 
         # Include "event_name" in the matrix so we can include/exclude based on it.
         event:

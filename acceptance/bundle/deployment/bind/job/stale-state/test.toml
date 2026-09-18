@@ -5,4 +5,3 @@ Ignore = [
   "stale_state.json",
 ]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

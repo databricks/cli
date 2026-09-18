@@ -39,8 +39,8 @@ add_repl "$(echo "$UPDATE_RESP" | jq -r '.etag')" ETAG_2
 title "Try to redeploy the bundle and confirm that the out of band modification is detected:"
 trace $CLI bundle plan
 # Save raw plan (with DMS headers), then apply nostamp for golden file
-trace $CLI bundle plan -o json > plan_raw.$DATABRICKS_BUNDLE_ENGINE.json
-cat plan_raw.$DATABRICKS_BUNDLE_ENGINE.json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > plan_raw.json
+cat plan_raw.json | nostamp > out.plan.json
 trace errcode $CLI bundle deploy
 
 title "Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored:"
@@ -52,7 +52,7 @@ trace errcode $CLI bundle deploy --force
 cat "$OUT_REQUESTS" | \
  jq 'select(.method == "PATCH")' | \
  jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
- > out.patch.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+ > out.patch.requests.txt
 
 # POST requests are the same across both modes
 cat "$OUT_REQUESTS" | \

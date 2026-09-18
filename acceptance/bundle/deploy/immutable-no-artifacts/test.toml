@@ -3,7 +3,6 @@ RecordRequests = true
 EnvMatrix.READPLAN = ["", "1"]
 
 # immutable_folder only works with the direct engine.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [
     "databricks.yml",

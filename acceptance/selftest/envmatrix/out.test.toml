@@ -1,4 +1,3 @@
 Cloud = false
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.FIRST = ["overriden-in-inner"]
 EnvMatrix.THIRD = ["three $FIRST"]

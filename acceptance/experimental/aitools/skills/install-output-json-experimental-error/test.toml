@@ -6,7 +6,6 @@ Ignore = [
     "home",
 ]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # The requested skill is experimental (repo_dir=experimental); the script omits
 # --experimental so resolution fails before any skill file is fetched.

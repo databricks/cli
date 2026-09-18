@@ -3,7 +3,6 @@ RecordRequests = true
 
 Ignore = [".databricks"]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [[Repls]]
 Old = '(resources\.json|terraform\.tfstate)'

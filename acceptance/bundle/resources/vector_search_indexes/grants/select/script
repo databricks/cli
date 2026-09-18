@@ -16,4 +16,4 @@ trace $CLI bundle plan
 
 trace $CLI grants get table "${index_name}" | jq --sort-keys
 
-trace print_requests.py '//vector-search/indexes' '//permissions' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py '//vector-search/indexes' '//permissions' > out.requests.json

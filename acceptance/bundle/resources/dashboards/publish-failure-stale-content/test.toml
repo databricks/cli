@@ -7,7 +7,6 @@ Ignore = [
     "databricks.yml",
 ]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [[Repls]]
 Old = '\?[ow]=\d+'

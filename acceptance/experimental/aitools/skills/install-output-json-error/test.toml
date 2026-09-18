@@ -6,7 +6,6 @@ Ignore = [
     "home",
 ]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # The manifest has one skill; the script asks for a different one so the resolve
 # fails with a skill-not-found error.

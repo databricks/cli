@@ -18,4 +18,4 @@ EOF
 # carries BOTH the whole "schedule" block and the "schedule.timezone_id" leaf
 # instead of merging them into leaves.
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp > out.plan.direct.json
+$CLI bundle plan -o json | nostamp > out.plan.json

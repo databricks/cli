@@ -3,14 +3,14 @@ mkdir -p .databricks
 
 trace $CLI bundle plan
 $CLI bundle plan -o json > .databricks/tmp.plan_create.json
-nostamp < .databricks/tmp.plan_create.json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+nostamp < .databricks/tmp.plan_create.json > out.plan_create.json
 $CLI bundle deploy $(readplanarg .databricks/tmp.plan_create.json)
 trace print_requests.py //jobs --nostamp > out.create.requests.json
 
-print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json
+print_state.py > out.state.json
 trace $CLI bundle plan
 trace $CLI bundle plan -o json > .databricks/tmp.plan_skip.json
-nostamp < .databricks/tmp.plan_skip.json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+nostamp < .databricks/tmp.plan_skip.json > out.plan_skip.json
 
 $CLI bundle deploy $(readplanarg .databricks/tmp.plan_skip.json)
 trace print_requests.py //jobs --nostamp
@@ -19,7 +19,7 @@ title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
 $CLI bundle plan -o json > .databricks/tmp.plan_update.json
-nostamp < .databricks/tmp.plan_update.json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+nostamp < .databricks/tmp.plan_update.json > out.plan_update.json
 
 $CLI bundle deploy $(readplanarg .databricks/tmp.plan_update.json)
 trace print_requests.py //jobs --nostamp | jq 'del(.body.new_settings.run_as, .body.new_settings.webhook_notifications, .body.new_settings.email_notifications)' > out.update.requests.json

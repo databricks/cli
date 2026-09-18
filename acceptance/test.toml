@@ -25,9 +25,6 @@ Env.PYTHONUTF8 = "1"
 # A test that needs the raw order sets SortLinesOn.deploy_actions = false.
 SortLines.deploy_actions = '^(Created|Updated|Deleted|Recreated|Resized) \S+$'
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
-
 # >>> datetime.datetime.fromtimestamp(18000000000)
 # datetime.datetime(2027, 1, 15, 9, 0)
 # >>> datetime.datetime.fromtimestamp(1900000000)

@@ -1,6 +1,6 @@
 cleanup() {
-    $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
-    print_requests.py --sort //unity &> out.destroy_requests.$DATABRICKS_BUNDLE_ENGINE.json
+    $CLI bundle destroy --auto-approve &> out.destroy.txt
+    print_requests.py --sort //unity &> out.destroy_requests.json
 }
 
 envsubst < databricks.yml.tmpl > databricks.yml
@@ -8,8 +8,8 @@ trace $CLI bundle validate -o json | jq .resources
 trace $CLI bundle plan
 trace print_requests.py --get //unity
 trap cleanup EXIT
-trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-print_requests.py --get //unity &> out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace errcode $CLI bundle deploy &> out.deploy.txt
+print_requests.py --get //unity &> out.deploy.requests.json
 
 # Terraform could not deploy, so it still shows up here; direct shows no drift:
-$CLI bundle plan &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+$CLI bundle plan &> out.plan_after_deploy.txt

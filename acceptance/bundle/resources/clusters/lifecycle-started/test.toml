@@ -3,7 +3,6 @@ RecordRequests = true
 
 Ignore = [".databricks", "databricks.yml"]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [[Repls]]
 Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"

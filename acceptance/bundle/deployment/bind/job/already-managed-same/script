@@ -4,5 +4,5 @@ trace $CLI bundle deploy
 
 job_id=$(read_id.py foo)
 
-trace musterr $CLI bundle deployment bind foo $job_id &> out.bind.$DATABRICKS_BUNDLE_ENGINE.txt
+trace musterr $CLI bundle deployment bind foo $job_id &> out.bind.txt
 trace $CLI bundle plan | contains.py "1 unchanged"

@@ -22,7 +22,7 @@ YAML
 trace $CLI bundle plan
 trace $CLI bundle deploy
 
-trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
 
 title "Plan again: the addition must leave no drift behind"
 trace $CLI bundle plan
