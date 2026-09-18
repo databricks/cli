@@ -25,7 +25,7 @@ func TestValidateEngineDirect(t *testing.T) {
 	assert.Empty(t, diags)
 }
 
-func TestValidateEngineTerraformDeprecated(t *testing.T) {
+func TestValidateEngineTerraformRemoved(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
@@ -37,8 +37,8 @@ func TestValidateEngineTerraformDeprecated(t *testing.T) {
 	bundletest.SetLocation(b, "bundle.engine", []dyn.Location{loc})
 	diags := ValidateEngine().Apply(t.Context(), b)
 	assert.Len(t, diags, 1)
-	assert.Equal(t, diag.Warning, diags[0].Severity)
-	assert.Contains(t, diags[0].Summary, "deprecated")
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Contains(t, diags[0].Summary, "removed")
 	assert.Equal(t, []dyn.Location{loc}, diags[0].Locations)
 }
 
