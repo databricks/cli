@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
@@ -86,17 +85,12 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		state statemgmt.ExportedResourcesMap
 		err   error
 	)
-	if stateEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
-		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
-		// Capture the finalized state for deploy telemetry. It carries each
-		// resource's state-size in bytes (from the WAL replay Finalize just
-		// did), so telemetry needs no extra read or parse of the state file.
-		b.Metrics.ResourceState = state
-	} else {
-		bundle.ApplyContext(ctx, b, terraform.Apply())
-		state, err = terraform.ParseResourcesState(ctx, b)
-	}
+	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
+	state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
+	// Capture the finalized state for deploy telemetry. It carries each
+	// resource's state-size in bytes (from the WAL replay Finalize just
+	// did), so telemetry needs no extra read or parse of the state file.
+	b.Metrics.ResourceState = state
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
@@ -381,76 +375,22 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	logDeploySummary(ctx, b, plan, stateEngine)
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
-
-	// Migrate the state to the direct engine, if the user opted in (via
-	// bundle.engine or DATABRICKS_BUNDLE_ENGINE) and a dry-run of the migration
-	// comes back clean. Without the opt-in, or when the dry-run reports problems,
-	// nothing is written: only the outcome is recorded in telemetry, and the
-	// deploy is unaffected.
-	//
-	// Last, after the deploy has reported what it did: this is post-deploy work,
-	// and its warnings read as belonging to the deploy if they precede the
-	// summary.
-	//
-	// Gated on the deploy alone, which the early return above already guarantees
-	// — not on the postdeploy script. The resources were applied before that
-	// script ran, so the state is worth migrating even if it failed, the same
-	// reasoning that prints the summary ahead of it.
-	if !stateEngine.IsDirect() {
-		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
-	}
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
-	if engine.IsDirect() {
-		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
-		}
-		if len(b.Select) > 0 {
-			plan.FilterToSelected(b.Select)
-		}
-		return plan
-	}
-
-	// b.Select is rejected for the terraform engine in ProcessBundleRet, so it is
-	// never set here.
-
-	bundle.ApplySeqContext(
-		ctx, b,
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Plan(terraform.PlanGoal("deploy")),
-	)
-
-	if logdiag.HasError(ctx) {
+	if !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
 		return nil
 	}
 
-	tf := b.Terraform
-	if tf == nil {
-		logdiag.LogError(ctx, errors.New("terraform not initialized"))
-		return nil
-	}
-
-	plan, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), &b.Config)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return nil
 	}
-
-	for _, group := range b.Config.Resources.AllResources() {
-		for rKey := range group.Resources {
-			resourceKey := "resources." + group.Description.PluralName + "." + rKey
-			if _, ok := plan.Plan[resourceKey]; !ok {
-				plan.Plan[resourceKey] = &deployplan.PlanEntry{
-					Action: deployplan.Skip,
-				}
-			}
-		}
+	if len(b.Select) > 0 {
+		plan.FilterToSelected(b.Select)
 	}
-
 	return plan
 }
 

@@ -234,24 +234,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// it even when the deploy fails or is cancelled before deployCore runs.
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 
-		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
-
-		// Announce the auto-migration path here (only on deploy) so the user
-		// isn't surprised when MigrateToDirect commits state changes at the
-		// end. PullResourcesState is shared with non-deploy commands like
-		// `bundle debug states`, which would otherwise print the same hint
-		// even though they will not migrate.
-		if opts.Deploy && b.MigratingToDirect {
-			if requiredEngine.IsDefault {
-				// The user did not ask for direct; it is the default. Frame the
-				// auto-migration as an informational notice rather than a warning,
-				// and do not claim the user selected anything.
-				cmdio.LogString(ctx, "Notice: the direct deployment engine is the default as of CLI v1.14.0.\n\n"+
-					"This bundle will be automatically migrated to use the direct deployment engine after this deployment.\n\n"+
-					"Learn more: https://docs.databricks.com/dev-tools/bundles/direct\n")
-			} else {
-				log.Warnf(ctx, "Direct engine selected via %s but the existing state uses %q. Deploying on %q; will attempt to migrate the state to the direct engine after this deploy.", requiredEngine.Source, stateDesc.Engine, stateDesc.Engine)
-			}
+		// The Terraform engine was removed in v1.18.0. A bundle whose existing state
+		// still uses Terraform cannot be deployed, planned, or read via a plan file
+		// until its state is migrated. Reject those paths up front with an actionable
+		// error; destroy/bind/unbind guard themselves in their phase entry points, and
+		// "bundle deployment migrate" reads the Terraform state itself so must not be
+		// blocked here.
+		if (opts.Deploy || opts.PreDeployChecks || opts.ReadPlanPath != "") && !stateDesc.Engine.IsDirect() {
+			logdiag.LogError(ctx, errors.New(phases.TerraformStateRemovedMessage))
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
 		// --select is only supported by the direct engine, which tracks resource
@@ -511,18 +502,28 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	configEngine := b.Config.Bundle.Engine
 
 	if configEngine != engine.EngineNotSet {
+		parsed, ok := engine.Parse(string(configEngine))
+		if !ok {
+			return engine.EngineSetting{}, fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
+		}
+		if parsed == engine.EngineTerraform {
+			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
+		}
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
 			loc := locs[0]
 			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
 		}
-		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}, nil
+		return engine.EngineSetting{Type: parsed, Source: source, ConfigType: parsed}, nil
 	}
 
 	envEngine, err := engine.FromEnv(ctx)
 	if err != nil {
 		return engine.EngineSetting{}, err
+	}
+	if envEngine == engine.EngineTerraform {
+		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
 	}
 	if envEngine != engine.EngineNotSet {
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil

@@ -25,8 +25,7 @@ Env.PYTHONUTF8 = "1"
 # A test that needs the raw order sets SortLinesOn.deploy_actions = false.
 SortLines.deploy_actions = '^(Created|Updated|Deleted|Recreated|Resized) \S+$'
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
 
 # >>> datetime.datetime.fromtimestamp(18000000000)

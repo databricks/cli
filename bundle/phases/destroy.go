@@ -12,10 +12,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -141,24 +139,17 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 }
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
-	if engine.IsDirect() {
-		// Not reported per resource: destroy names them up front for consent and then
-		// reports only a count, so there is no per-resource output to report into.
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
-	} else {
-		// Core destructive mutators for destroy. These require informed user consent.
-		bundle.ApplyContext(ctx, b, terraform.Apply())
-	}
+	// Not reported per resource: destroy names them up front for consent and then
+	// reports only a count, so there is no per-resource output to report into.
+	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
 
 	// Flush WAL to local state file before deleting remote files.
 	// Warn instead of hard-error: resources are already deleted, so proceed
 	// with file cleanup regardless of whether state flush succeeds.
-	if engine.IsDirect() {
-		if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
-			diags := diag.WarningFromErr(err)
-			if len(diags) > 0 {
-				logdiag.LogDiag(ctx, diags[0])
-			}
+	if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+		diags := diag.WarningFromErr(err)
+		if len(diags) > 0 {
+			logdiag.LogDiag(ctx, diags[0])
 		}
 	}
 
@@ -166,7 +157,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		// Complete version before deleting remote files; the deployment node is under statePath.
 		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
 		if err != nil {
@@ -214,12 +205,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	// mismatch. Destroy runs on a single engine, so remove only that engine's
 	// state file. Log a removal failure but keep going; the destroy already
 	// succeeded and its summary is printed above.
-	var localStatePath string
-	if engine.IsDirect() {
-		_, localStatePath = b.StateFilenameDirect(ctx)
-	} else {
-		_, localStatePath = b.StateFilenameTerraform(ctx)
-	}
+	_, localStatePath := b.StateFilenameDirect(ctx)
 	if err := os.Remove(localStatePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		logdiag.LogError(ctx, err)
 	}
@@ -282,6 +268,11 @@ func removeEmptyDirs(dir string, depth int) (bool, error) {
 func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	log.Info(ctx, "Phase: destroy")
 
+	if !engine.IsDirect() {
+		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
+		return
+	}
+
 	ok, err := assertRootPathExists(ctx, b)
 	if err != nil {
 		logdiag.LogError(ctx, err)
@@ -316,44 +307,10 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	if !engine.IsDirect() {
-		bundle.ApplySeqContext(
-			ctx, b,
-			// We need to resolve artifact variable (how we do it in build phase)
-			// because some of the to-be-destroyed resource might use this variable.
-			// Not resolving might lead to terraform "Reference to undeclared resource" error
-			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
-			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
-
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("destroy")),
-		)
-	}
-
-	if logdiag.HasError(ctx) {
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
+	if err != nil {
+		logdiag.LogError(ctx, err)
 		return
-	}
-
-	var plan *deployplan.Plan
-	if engine.IsDirect() {
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	} else {
-		tf := b.Terraform
-		if tf == nil {
-			logdiag.LogError(ctx, errors.New("terraform not initialized"))
-			return
-		}
-
-		plan, err = terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
 	}
 
 	hasApproval, err := approvalForDestroy(ctx, b, plan, engine)
