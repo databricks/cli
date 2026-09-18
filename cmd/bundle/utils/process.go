@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -251,7 +250,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 					"This bundle will be automatically migrated to use the direct deployment engine.\n\n"+
 					"Learn more: https://docs.databricks.com/dev-tools/bundles/direct\n")
 			}
-			migrated, err := statemgmt.OpenMigratedTerraformState(ctx, b)
+			// Commit the migration on deploy (write resources.json, push it, back up
+			// terraform.tfstate) so it completes even if the deploy is a no-op; plan and
+			// other read-only paths keep it in memory.
+			migrated, err := statemgmt.OpenMigratedTerraformState(ctx, b, opts.Deploy)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("migrating Terraform state to the direct engine: %w", err))
 				return b, stateDesc, root.ErrAlreadyPrinted
@@ -496,25 +498,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 
-		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() {
-			if b.MigratingToDirect {
-				// Migrated from Terraform in memory this deploy: resources.json exists only
-				// if Finalize committed a non-empty WAL (the deploy recorded changes). Back
-				// up terraform.tfstate (local + remote) in that case; when the WAL was empty
-				// nothing was committed, so leave the Terraform state intact and let the next
-				// deploy migrate again.
-				_, localDirectPath := b.StateFilenameDirect(ctx)
-				if _, err := os.Stat(localDirectPath); err == nil {
-					if err := statemgmt.BackupTerraformState(ctx, b); err != nil {
-						logdiag.LogError(ctx, err)
-						return b, stateDesc, root.ErrAlreadyPrinted
-					}
-				}
-			} else if stateDesc.HasRemoteTerraformState() {
-				statemgmt.BackupRemoteTerraformState(ctx, b)
-				if logdiag.HasError(ctx) {
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
+		// A migrating deploy already backed up terraform.tfstate when it committed the
+		// converted state above; this handles a plain direct deploy that still finds a
+		// lingering remote terraform state.
+		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && !b.MigratingToDirect && stateDesc.HasRemoteTerraformState() {
+			statemgmt.BackupRemoteTerraformState(ctx, b)
+
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
 	}

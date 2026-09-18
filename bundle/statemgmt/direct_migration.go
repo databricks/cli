@@ -42,12 +42,15 @@ Please forward these warnings to dabs-feedback@databricks.com`
 const autoMigrateStoppedNotice = `Direct engine was selected but the migration reported issues; automatic migration to the direct deployment engine is stopped. Address the issues above or run "databricks bundle deployment migrate" manually.`
 
 // OpenMigratedTerraformState converts the bundle's terraform state to a direct-engine
-// state in memory and opens b.DeploymentBundle.StateDB with it, pointed at the
-// resources.json path in read mode. Nothing is written to disk: the deploy's normal
-// Finalize persists resources.json only if the WAL records changes, and
-// BackupTerraformState is called afterwards only when it does. Returns false when there
-// is no terraform state to migrate (the caller then opens the direct state normally).
-func OpenMigratedTerraformState(ctx context.Context, b *bundle.Bundle) (bool, error) {
+// state and opens b.DeploymentBundle.StateDB with it, pointed at the resources.json path
+// in read mode. Returns false when there is no terraform state to migrate (the caller
+// then opens the direct state normally).
+//
+// When commit is false (plan and other read-only paths) the converted state is held in
+// memory and nothing is written to disk. When commit is true (deploy) the migration is
+// finalized: resources.json is written and pushed to the workspace and terraform.tfstate
+// is backed up, so the migration completes even if the subsequent deploy is a no-op.
+func OpenMigratedTerraformState(ctx context.Context, b *bundle.Bundle, commit bool) (bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
@@ -66,13 +69,32 @@ func OpenMigratedTerraformState(ctx context.Context, b *bundle.Bundle) (bool, er
 		return true, nil
 	}
 
-	tempStatePath, _, _, _, err := convertTFStateToDirect(ctx, b, tfState)
+	tempStatePath, resourceCount, _, _, err := convertTFStateToDirect(ctx, b, tfState)
+	cleanupTemp := true
 	if tempStatePath != "" {
-		defer os.Remove(tempStatePath)
-		defer os.Remove(tempStatePath + ".wal")
+		defer func() {
+			if cleanupTemp {
+				_ = os.Remove(tempStatePath)
+				_ = os.Remove(tempStatePath + ".wal")
+			}
+		}()
 	}
 	if err != nil {
 		return false, err
+	}
+
+	if commit {
+		// Finalize the migration: push resources.json to the workspace, move it into
+		// place locally, and back up terraform.tfstate. commitMigration renames the temp
+		// file into resources.json, so it must not be cleaned up here.
+		cleanupTemp = false
+		if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
+			return false, err
+		}
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localDirectPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+			return false, fmt.Errorf("opening migrated state: %w", err)
+		}
+		return true, nil
 	}
 
 	// Load the converted state file into memory. It was just written by this CLI, so it
@@ -101,7 +123,6 @@ func OpenMigratedTerraformState(ctx context.Context, b *bundle.Bundle) (bool, er
 // state is deleted and only telemetry is recorded. Any failure is surfaced as a
 // warning so it never fails a deploy that already succeeded.
 //
-//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 //deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engine.EngineSetting) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
@@ -278,6 +299,8 @@ func recordAutoMigrateSource(b *bundle.Bundle, requestedEngine engine.EngineSett
 // Contrast with BackupRemoteTerraformState, which only handles the remote
 // half and swallows errors via log.Warnf for best-effort direct-engine
 // cleanup on unrelated code paths.
+//
+//deadcode:allow superseded by the pre-deploy migration; removed in the stacked terraform-removal PR
 func BackupTerraformState(ctx context.Context, b *bundle.Bundle) error {
 	f, err := deploy.StateFiler(ctx, b)
 	if err != nil {
