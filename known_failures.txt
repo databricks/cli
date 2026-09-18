@@ -13,8 +13,3 @@
 # We also support wildcards inside the path
 # acceptance TestAccept/bundle/*/DMS=true/    # all DMS=true permutations
 # acceptance TestAccept/bundle/*/something    # all test paths ending in /something
-
-# Need to convert to acceptance tests; terraform registry is not accessible from CI.
-* TestSparkJarTaskDeployAndRunOnVolumes
-* TestSparkJarTaskDeployAndRunOnWorkspace
-* TestGenerateFromExistingJobAndDeploy
