@@ -1,0 +1,16 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+export TIMESERIES_KEY=tpep_pickup_datetime
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+title "The delete completes asynchronously; the create races it, then the recreate polls and retries"
+# The testserver keeps the deleted table in DELETING until the next GET, so the create
+# right after the delete first hits 409 ALREADY_EXISTS. The recreate then waits for the
+# old table to disappear and retries the create, which succeeds.
+export TIMESERIES_KEY=tpep_dropoff_datetime
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy

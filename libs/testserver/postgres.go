@@ -1708,6 +1708,13 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 	if !exists {
 		return postgresNotFoundResponse("synced table")
 	}
+
+	// Simulated asynchronous deletion: a table left in DELETING is returned once more
+	// and then removed, so a poll observes present-then-gone (see PostgresSyncedTableDelete).
+	if s.eventualConsistency && table.Status != nil && table.Status.UnityCatalogProvisioningState == postgres.ProvisioningInfoStateDeleting {
+		delete(s.PostgresSyncedTables, name)
+	}
+
 	return Response{Body: table}
 }
 

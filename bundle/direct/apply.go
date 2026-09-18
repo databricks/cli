@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/retries"
 )
 
 func (d *DeploymentUnit) withResourceKey(ctx context.Context) context.Context {
@@ -124,9 +126,8 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
 	}
 
-	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
-	// leaves no malformed (empty-ID) entry behind. The next plan will see "no
-	// state" and retry as Create.
+	// Drop the state entry so a subsequent failure of Create leaves no malformed
+	// (empty-ID) entry behind. The next plan will see "no state" and retry as Create.
 	//
 	// Recorded as a recreate rather than a delete: if the create below fails, this is the
 	// operation DMS is left with, and it says the resource is mid-recreate.
@@ -135,18 +136,39 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("deleting state: %w", err)
 	}
 
-	// Wait for asynchronous teardown to finish before re-creating the same
-	// name. Done after DeleteState so the bundle stays consistent if the wait
-	// times out — the resource is no longer tracked in state, retry on next plan.
-	// The general delete-wait stays uncapped; we only pass the already-resolved
-	// RESOURCE_MAX_WAIT so a resource that opts in can bound its own poll by it.
-	// A NotFound means the resource is gone, which is the success the wait polls for.
-	err = d.Adapter.WaitAfterDelete(dresources.WithResourceMaxWait(ctx, d.MaxWait), oldID)
-	if err != nil && !apierr.IsMissing(err) {
-		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
+	// Create as usual. DoDelete can be asynchronous, so if the create fails while the
+	// old resource is in fact still alive, the create likely raced the not-yet-finished
+	// delete (e.g. a 409 ALREADY_EXISTS). In that case wait for the old resource to
+	// disappear (capped) and retry the create once — regardless of whether it went away
+	// in time. If the old resource is already gone the failure is unrelated, so propagate.
+	//
+	// Only meaningful when the resource actually deletes: without a DoDelete (e.g.
+	// job_runs) the old resource always reads back "alive", so an unrelated create
+	// failure must not trigger the wait.
+	err = d.Create(ctx, db, newState)
+	if err == nil || !d.Adapter.HasDoDelete() || d.deleteConfirmedGone(ctx, oldID) {
+		return err
 	}
 
+	log.Warnf(ctx, "Create failed while old id=%s still exists; waiting for its deletion to complete, then retrying: %s", oldID, err)
+	d.waitForDeleted(ctx, oldID)
 	return d.Create(ctx, db, newState)
+}
+
+// recreateWaitForDeleteTimeout caps how long a recreate waits for the old resource to
+// disappear after the create raced its still-in-flight deletion.
+const recreateWaitForDeleteTimeout = 5 * time.Minute
+
+// waitForDeleted polls until the resource reads back gone or the cap elapses. The
+// outcome is advisory — the caller retries the create regardless — so nothing is
+// returned.
+func (d *DeploymentUnit) waitForDeleted(ctx context.Context, id string) {
+	_, _ = retries.Poll[struct{}](ctx, recreateWaitForDeleteTimeout, func() (*struct{}, *retries.Err) {
+		if d.deleteConfirmedGone(ctx, id) {
+			return &struct{}{}, nil
+		}
+		return nil, retries.Continues("old resource still exists, waiting for deletion to complete")
+	})
 }
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {

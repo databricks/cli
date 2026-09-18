@@ -15,7 +15,7 @@ import (
 
 // deleteSyncedTableTimeout caps the post-delete poll so a stuck teardown does not
 // wait forever. Deletion tears down the backing sync pipeline, which normally
-// completes within a minute. DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT shortens it further.
+// completes within a minute.
 const deleteSyncedTableTimeout = 5 * time.Minute
 
 // PostgresSyncedTableRemote is the return type for DoRead. It embeds
@@ -150,17 +150,9 @@ func (r *ResourcePostgresSyncedTable) DoDelete(ctx context.Context, id string, _
 // anything else. So a poll timeout, an unexpected backend error, or a cancelled
 // deploy fails the recreate rather than racing the create into a 409.
 //
-// The poll runs up to deleteSyncedTableTimeout, shortened to RESOURCE_MAX_WAIT when
-// that is smaller. The engine resolves that env var once and passes it via context
-// (WithResourceMaxWait); the general delete-wait in apply.go stays uncapped, so only
-// this resource bounds itself by it.
+// The poll runs up to deleteSyncedTableTimeout.
 func (r *ResourcePostgresSyncedTable) WaitAfterDelete(ctx context.Context, id string) error {
-	timeout := deleteSyncedTableTimeout
-	if maxWait, ok := resourceMaxWait(ctx); ok && maxWait > 0 {
-		timeout = min(timeout, maxWait)
-	}
-
-	_, err := retries.Poll[struct{}](ctx, timeout, func() (*struct{}, *retries.Err) {
+	_, err := retries.Poll[struct{}](ctx, deleteSyncedTableTimeout, func() (*struct{}, *retries.Err) {
 		_, getErr := r.client.Postgres.GetSyncedTable(ctx, postgres.GetSyncedTableRequest{Name: id})
 		if getErr != nil {
 			return nil, retries.Halt(getErr)
