@@ -1,0 +1,17 @@
+bundle:
+  name: schema-grants-remove-principal-manage-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_remove_principal_manage_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - CREATE_TABLE
+        # This principal holds MANAGE, which ALL_PRIVILEGES does not imply. When it
+        # is removed from config, buildGrantChanges revokes it with
+        # Remove: [ALL_PRIVILEGES] — which does not clear MANAGE on the backend, so
+        # the principal never actually goes away.
+        - { principal: deco-test-user@databricks.com, privileges: [MANAGE] } # TO_REMOVE

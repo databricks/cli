@@ -1,0 +1,25 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+trace $CLI grants get schema main.schema_remove_principal_manage_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py "$CURRENT_USER_NAME" 'deco-test-user@databricks.com'
+
+# Remove the MANAGE principal from config.
+grep -v 'TO_REMOVE' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+
+trace $CLI bundle deploy
+
+# The removed principal must be gone. With the cloud-matching testserver it is NOT:
+# Remove: [ALL_PRIVILEGES] leaves MANAGE behind.
+trace $CLI grants get schema main.schema_remove_principal_manage_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl
+
+# Because the principal lingers remotely, every subsequent plan/deploy keeps trying
+# to revoke it: a perpetual update.
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI bundle plan

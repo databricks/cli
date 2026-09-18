@@ -1,0 +1,5 @@
+# Direct-engine-specific bug: the direct engine revokes a removed principal with
+# Remove: [ALL_PRIVILEGES], which does not clear MANAGE. Terraform sends a precise
+# Remove: [MANAGE] and converges, so the output would diverge between engines —
+# restrict to direct.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
