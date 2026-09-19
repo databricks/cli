@@ -788,6 +788,171 @@ func TestForceRefreshToken_RecoversConcurrentCacheUpdate(t *testing.T) {
 	}
 }
 
+func TestForceRefreshToken_ReusesTokenRefreshedWhileWaitingForLock(t *testing.T) {
+	now := time.Now()
+	old := &oauth2.Token{
+		AccessToken:  "old-access",
+		RefreshToken: "old-refresh",
+		Expiry:       now.Add(time.Hour),
+	}
+	other := &oauth2.Token{
+		AccessToken:  "other-process-access",
+		RefreshToken: "other-process-refresh",
+		Expiry:       now.Add(time.Hour),
+	}
+	locked := false
+	unlocked := false
+	c := &tokenStoreMock{
+		lookup: func(key string) (*oauth2.Token, error) {
+			// The second lookup is the one made under the lock, by which time
+			// the process that held it has written its own refreshed token.
+			if locked {
+				return other, nil
+			}
+			return old, nil
+		},
+		store: func(key string, tok *oauth2.Token) error {
+			t.Fatalf("store(): want no write, got %q", tok.AccessToken)
+			return nil
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	if err != nil {
+		t.Fatalf("NewBasicAccountOAuthArgument(): %v", err)
+	}
+	p, err := NewPersistentAuth(
+		t.Context(),
+		WithTokenStore(c),
+		WithStoreLock(func(context.Context) (func(), error) {
+			locked = true
+			return func() { unlocked = true }, nil
+		}),
+		// An empty transport fails the test if a token exchange is attempted.
+		WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{}}),
+		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+		WithOAuthArgument(arg),
+	)
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): %v", err)
+	}
+	defer p.Close()
+
+	tok, err := p.ForceRefreshToken()
+	if err != nil {
+		t.Fatalf("ForceRefreshToken(): want no error, got %v", err)
+	}
+	if tok.AccessToken != other.AccessToken {
+		t.Errorf("ForceRefreshToken(): want access token %q, got %q", other.AccessToken, tok.AccessToken)
+	}
+	if !unlocked {
+		t.Error("ForceRefreshToken(): want the store lock released")
+	}
+}
+
+func TestForceRefreshToken_RefreshesWhenCacheUnchangedUnderLock(t *testing.T) {
+	old := &oauth2.Token{
+		AccessToken:  "old-access",
+		RefreshToken: "old-refresh",
+		Expiry:       time.Now().Add(time.Hour),
+	}
+	stored := ""
+	unlocked := false
+	c := &tokenStoreMock{
+		lookup: func(key string) (*oauth2.Token, error) {
+			return old, nil
+		},
+		store: func(key string, tok *oauth2.Token) error {
+			stored = tok.AccessToken
+			return nil
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	if err != nil {
+		t.Fatalf("NewBasicAccountOAuthArgument(): %v", err)
+	}
+	p, err := NewPersistentAuth(
+		t.Context(),
+		WithTokenStore(c),
+		WithStoreLock(func(context.Context) (func(), error) {
+			return func() { unlocked = true }, nil
+		}),
+		WithHttpClient(&http.Client{
+			Transport: fixtures.SliceTransport{
+				{
+					Method:   "POST",
+					Resource: "/oidc/accounts/xyz/v1/token",
+					Response: `access_token=refreshed&refresh_token=refreshed-refresh&expires_in=3600`,
+					ResponseHeaders: map[string][]string{
+						"Content-Type": {"application/x-www-form-urlencoded"},
+					},
+				},
+			},
+		}),
+		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+		WithOAuthArgument(arg),
+	)
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): %v", err)
+	}
+	defer p.Close()
+
+	tok, err := p.ForceRefreshToken()
+	if err != nil {
+		t.Fatalf("ForceRefreshToken(): want no error, got %v", err)
+	}
+	if tok.AccessToken != "refreshed" {
+		t.Errorf("ForceRefreshToken(): want access token 'refreshed', got %q", tok.AccessToken)
+	}
+	if stored != "refreshed" {
+		t.Errorf("store(): want 'refreshed' written, got %q", stored)
+	}
+	if !unlocked {
+		t.Error("ForceRefreshToken(): want the store lock released")
+	}
+}
+
+func TestForceRefreshToken_FailsWhenStoreLockFails(t *testing.T) {
+	c := &tokenStoreMock{
+		lookup: func(key string) (*oauth2.Token, error) {
+			return &oauth2.Token{
+				AccessToken:  "old-access",
+				RefreshToken: "old-refresh",
+				Expiry:       time.Now().Add(time.Hour),
+			}, nil
+		},
+		store: func(key string, tok *oauth2.Token) error {
+			t.Fatalf("store(): want no write, got %q", tok.AccessToken)
+			return nil
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	if err != nil {
+		t.Fatalf("NewBasicAccountOAuthArgument(): %v", err)
+	}
+	p, err := NewPersistentAuth(
+		t.Context(),
+		WithTokenStore(c),
+		WithStoreLock(func(context.Context) (func(), error) {
+			return nil, errors.New("lock unavailable")
+		}),
+		WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{}}),
+		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+		WithOAuthArgument(arg),
+	)
+	if err != nil {
+		t.Fatalf("NewPersistentAuth(): %v", err)
+	}
+	defer p.Close()
+
+	_, err = p.ForceRefreshToken()
+	if err == nil {
+		t.Fatal("ForceRefreshToken(): want an error, got none")
+	}
+	if !strings.Contains(err.Error(), "lock unavailable") {
+		t.Errorf("ForceRefreshToken(): want the lock error, got %v", err)
+	}
+}
+
 func TestIsFreshReplacement(t *testing.T) {
 	now := time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC)
 	old := &oauth2.Token{AccessToken: "old", Expiry: now.Add(time.Hour)}
