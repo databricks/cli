@@ -275,8 +275,7 @@ def run_ssh_server():
     if usage_policy_id:
         server_args.append(f"--usage-policy-id={usage_policy_id}")
 
-    # The server does not hold the run open itself; it uses this to persist the mode for
-    # reconnects and to warn about detached work it is about to leave behind when the mode is off.
+    # The server uses this to defer idle shutdown while detached work is running.
     if keep_detached_processes:
         server_args.append("--keep-detached-processes")
 

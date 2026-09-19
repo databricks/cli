@@ -76,32 +76,34 @@ By default nothing outlives the session: when the last client disconnects, the s
 down after `--shutdown-delay` and the bootstrap notebook sweeps every process it parents,
 including work that was deliberately detached with `tmux`, `setsid` or `nohup`.
 
-`databricks ssh connect --cluster=<id> --keep-detached-processes` changes that. On teardown
-the tunnel terminates only its own process group - the server and its `sshd` children - and
-then holds the job run open for as long as any detached process is still running. Things to
-know before using it:
+`--keep-detached-processes` prevents idle shutdown while detached work is still running.
+It works with dedicated clusters and serverless compute:
 
-- **It holds the cluster up.** A `RUNNING` job run suppresses autotermination, so the cluster
-  keeps accruing DBUs until the last detached process exits. The bound is the run's own
-  lifetime, `--server-timeout` (24h by default), which is therefore the knob to reach for when
-  the cost is what matters; multi-day work still belongs in Jobs/DABs. Note also that
-  reconnecting starts a new run rather than rejoining the one being held open, so each session
-  with live detached work leaves its own run behind.
-- **Releasing the run is not the end of the work.** Once the hold is released the cluster
-  starts its own autotermination countdown, which is the last thing that reaps survivors -
-  detached work does not count as cluster activity, however busy it is.
-- **The notebook has to stay alive, not just the process.** Workspace filesystem access is
-  authorized by walking the live process tree for a registered ancestor, and the bootstrap
-  notebook is that ancestor. A detached process that outlives it keeps `/dbfs` and REST API
-  access but loses `/Workspace` and `/Volumes` with `EPERM` - which is why the group-scoped
-  teardown is tied to holding the run open and not enabled on its own. Work that finishes
-  while the run is held never sees this; work still running when `--server-timeout` expires
-  does, and from there every workspace path fails, including in a new window opened inside a
-  surviving `tmux`, because the `tmux` server - not the shell - is what lost its registered
-  ancestor. So size `--server-timeout` to the work you intend to leave behind.
+```sh
+databricks ssh connect --cluster=<id> --keep-detached-processes
+databricks ssh connect --name=my-session --keep-detached-processes
+```
 
-Dedicated clusters only. On serverless the container is torn down with the run, so survivors
-die regardless and the flag is rejected.
+When `--shutdown-delay` elapses with no SSH clients, the server checks for detached processes.
+If it finds any, it stays available for reconnection and checks again every 15 seconds.
+Once no detached work remains, it shuts down. A reconnect cancels the pending check; after
+the last client disconnects again, the full `--shutdown-delay` applies again. If the process
+tree cannot be read, the server postpones shutdown and retries rather than risking the work.
+
+- **It keeps compute running.** On dedicated clusters the active job also
+  suppresses autotermination. An idle `tmux` session counts as detached work even after the
+  command in its pane finishes; close the session when you no longer need it.
+- **Reconnect to the same session.** Use the same cluster ID or serverless connection name.
+  The existing server and notebook remain alive, so a reconnect can attach to the original
+  `tmux` session rather than creating a replacement run.
+- **The maximum lifetime still applies.** `--server-timeout` (24h by default) bounds the job
+  from its start, regardless of connected clients or detached work. The flag does not
+  survive a job cancellation, notebook restart, or compute termination. Multi-day work
+  belongs in Jobs/DABs.
+- **The notebook must remain alive too.** It anchors the detached processes' workspace
+  filesystem access. If the SSH server exits for another reason, the bootstrap still
+  preserves detached work and holds the run open, as before. This fallback preserves work,
+  not SSH access: it does not restart the server inside that run.
 
 `databricks ssh setup` takes the same flag and bakes it into the host's `ProxyCommand`, so
 `ssh <name>` sessions ask for it too. That is the only place a configured host can set it: the

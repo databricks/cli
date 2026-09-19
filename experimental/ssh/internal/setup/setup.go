@@ -30,8 +30,8 @@ type SetupOptions struct {
 	// Maximum lifetime of the SSH server, will be added as a --server-timeout flag to the ProxyCommand.
 	// Also fixed at submission time.
 	ServerTimeout time.Duration
-	// Whether the tunnel keeps processes detached from the SSH session running after it shuts
-	// down, will be added as a --keep-detached-processes flag to the ProxyCommand. Fixed at
+	// Whether detached work prevents idle shutdown, added as --keep-detached-processes
+	// to the ProxyCommand. Fixed at
 	// submission time like the two above, so this is the only place a host configured through
 	// setup can ask for it.
 	KeepDetachedProcesses bool

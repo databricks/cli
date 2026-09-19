@@ -45,12 +45,11 @@ func TestReportDetachedDescendantsWarning(t *testing.T) {
 		assert.Empty(t, logs.String())
 	})
 
-	// The flag is rejected for serverless, so pointing at it there would be misleading.
-	t.Run("stays quiet on serverless", func(t *testing.T) {
+	t.Run("warns on serverless", func(t *testing.T) {
 		ctx, logs := captureWarnLogs(t.Context())
 		reportDetachedDescendants(ctx, ServerOptions{Serverless: true}, procWithDetachedWork(t), testServerPid)
 
-		assert.Empty(t, logs.String())
+		assert.Contains(t, logs.String(), "--keep-detached-processes")
 	})
 
 	t.Run("stays quiet when nothing was left behind", func(t *testing.T) {

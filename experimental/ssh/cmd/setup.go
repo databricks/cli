@@ -38,7 +38,7 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "SSH server will terminate after this delay if there are no active connections")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&serverTimeout, "server-timeout", defaultServerTimeout, "Maximum lifetime of the SSH server; it is terminated after this duration even if clients are connected")
-	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep processes detached from the SSH session (tmux, setsid, nohup) running after the tunnel shuts down. Holds the cluster up until they exit or --server-timeout elapses")
+	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep the SSH server and detached processes (tmux, setsid, nohup) running while detached work remains, bounded by --server-timeout")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, recreating existing SSH host configs without asking")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {

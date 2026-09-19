@@ -47,11 +47,7 @@ type ServerOptions struct {
 	// UsagePolicyID the job was submitted with. Persisted to metadata.json so reconnects
 	// can tell which usage policy the running server was started under.
 	UsagePolicyID string
-	// KeepDetachedProcesses is whether the bootstrap notebook holds the job run open for
-	// detached processes after this server exits. False means it does not: the notebook
-	// sweeps them as it always has. The server does not hold the run open itself; it only
-	// needs the value to persist it for reconnects and to decide whether to warn about work
-	// it is about to destroy.
+	// KeepDetachedProcesses prevents idle shutdown while detached processes are running.
 	KeepDetachedProcesses bool
 	// The directory to store sshd configuration
 	ConfigDir string
@@ -140,10 +136,18 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 		}))
 	}()
 
+	idleErr := make(chan error, 1)
+	go func() {
+		idleErr <- waitForIdleShutdown(ctx, connections, opts.KeepDetachedProcesses, procRoot, os.Getpid())
+	}()
+
 	select {
 	case err := <-listenErr:
 		return err
-	case <-connections.TimedOut:
+	case err := <-idleErr:
+		if err != nil {
+			return err
+		}
 		// Return rather than exiting in place, so the notebook that started us gets to run
 		// its teardown and this process reports the shutdown through the CLI's normal path.
 		log.Info(ctx, fmt.Sprintf("No SSH clients for %v, shutting down...", opts.ShutdownDelay))
@@ -164,12 +168,11 @@ func reportDetachedDescendants(ctx context.Context, opts ServerOptions, root str
 
 	// Warning, not info: without --keep-detached-processes these processes do not outlive the
 	// run, and until now they vanished with no explanation anywhere. The client reads this
-	// back through /logs. Serverless is excluded because the container teardown takes them
-	// regardless, so the flag cannot help there and is rejected for it.
-	if len(pids) > 0 && !opts.KeepDetachedProcesses && !opts.Serverless {
+	// back through /logs.
+	if len(pids) > 0 && !opts.KeepDetachedProcesses {
 		log.Warnf(ctx, "Shutting down with %d detached process(es) still running (pids %s). "+
 			"They do not survive the end of this run. To keep them, reconnect with "+
-			"\"databricks ssh connect --keep-detached-processes\", which holds the run open while they run.",
+			"\"databricks ssh connect --keep-detached-processes\", which keeps the SSH server running while they run.",
 			len(pids), formatPids(pids))
 	}
 

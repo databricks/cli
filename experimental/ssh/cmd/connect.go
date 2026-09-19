@@ -67,7 +67,7 @@ Connect to a dedicated cluster:
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().DurationVar(&serverTimeout, "server-timeout", defaultServerTimeout, "Maximum lifetime of the SSH server; it is terminated after this duration even if clients are connected")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
-	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep processes detached from the SSH session (tmux, setsid, nohup) running after the tunnel shuts down. Holds the cluster up until they exit or --server-timeout elapses (dedicated clusters only)")
+	cmd.Flags().BoolVar(&keepDetachedProcesses, "keep-detached-processes", false, "Keep the SSH server and detached processes (tmux, setsid, nohup) running while detached work remains, bounded by --server-timeout")
 
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name to reuse across sessions (serverless only)")
 	cmd.Flags().StringVar(&accelerator, "accelerator", "", "Serverless GPU accelerator type (GPU_1xA10 or GPU_8xH100)")

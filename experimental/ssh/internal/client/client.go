@@ -130,11 +130,7 @@ type ClientOptions struct {
 	AutoApprove bool
 	// Id of the usage policy to use for the serverless SSH server job. Serverless only.
 	UsagePolicyID string
-	// Whether the bootstrap notebook holds the job run open after the SSH server shuts down,
-	// for as long as processes detached from the session (tmux, setsid, nohup) keep running,
-	// so they keep their workspace filesystem access intact. False, the default, keeps
-	// today's behaviour: the run ends with the server and nothing outlives it. The run's own
-	// timeout (--server-timeout) is what bounds the hold. Dedicated clusters only.
+	// Whether detached processes prevent idle shutdown of the SSH server. Bounded by --server-timeout.
 	KeepDetachedProcesses bool
 }
 
@@ -147,11 +143,6 @@ func (o *ClientOptions) Validate() error {
 	}
 	if o.UsagePolicyID != "" && o.ClusterID != "" {
 		return errors.New("--usage-policy-id flag can only be used with serverless compute (--name flag)")
-	}
-	// On serverless the container goes away with the run, so nothing survives the server
-	// however long the notebook holds the run open.
-	if o.KeepDetachedProcesses && o.ClusterID == "" {
-		return errors.New("--keep-detached-processes flag can only be used with a dedicated cluster (--cluster flag)")
 	}
 	if o.Accelerator != "" && o.Accelerator != "GPU_1xA10" && o.Accelerator != "GPU_8xH100" {
 		return fmt.Errorf("invalid accelerator value: %q, expected %q or %q", o.Accelerator, "GPU_1xA10", "GPU_8xH100")
@@ -261,9 +252,9 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	} else {
 		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
 			executablePath, o.ClusterID, o.AutoStartCluster, o.ShutdownDelay.String())
-		if o.KeepDetachedProcesses {
-			proxyCommand += " --keep-detached-processes"
-		}
+	}
+	if o.KeepDetachedProcesses {
+		proxyCommand += " --keep-detached-processes"
 	}
 
 	// Both of these are fixed when the server job is submitted, and for a host configured by

@@ -122,9 +122,8 @@ func TestValidate(t *testing.T) {
 			opts: client.ClientOptions{ConnectionName: "my-conn", UsagePolicyID: "pol-1"},
 		},
 		{
-			name:    "keep detached processes with serverless",
-			opts:    client.ClientOptions{ConnectionName: "my-conn", KeepDetachedProcesses: true},
-			wantErr: "--keep-detached-processes flag can only be used with a dedicated cluster (--cluster flag)",
+			name: "keep detached processes with serverless",
+			opts: client.ClientOptions{ConnectionName: "my-conn", KeepDetachedProcesses: true},
 		},
 		{
 			name: "keep detached processes with cluster ID",
@@ -349,6 +348,11 @@ func TestToProxyCommand(t *testing.T) {
 			name: "dedicated cluster keeping detached processes",
 			opts: client.ClientOptions{ClusterID: "abc-123", KeepDetachedProcesses: true, ShutdownDelay: 5 * time.Minute},
 			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=5m0s --keep-detached-processes",
+		},
+		{
+			name: "serverless keeping detached processes",
+			opts: client.ClientOptions{ConnectionName: "my-conn", KeepDetachedProcesses: true, ShutdownDelay: 5 * time.Minute},
+			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=5m0s --keep-detached-processes",
 		},
 		{
 			name: "with metadata",
