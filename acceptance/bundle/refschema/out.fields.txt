@@ -914,6 +914,8 @@ resources.internal_immutable_snapshots.*.remote_root	string	INPUT
 resources.internal_immutable_snapshots.*.zip_path	string	INPUT	STATE
 resources.job_runs.*.dbt_commands	[]string	ALL
 resources.job_runs.*.dbt_commands[*]	string	ALL
+resources.job_runs.*.depends_on	[]string	INPUT	STATE
+resources.job_runs.*.depends_on[*]	string	INPUT	STATE
 resources.job_runs.*.id	string	INPUT
 resources.job_runs.*.idempotency_token	string	ALL
 resources.job_runs.*.jar_params	[]string	ALL

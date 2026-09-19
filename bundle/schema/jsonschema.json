@@ -1411,6 +1411,10 @@
                         "doNotSuggest": true,
                         "deprecated": true
                       },
+                      "depends_on": {
+                        "description": "Job runs that must finish successfully before this run starts. Each entry must reference a job run ID, for example `${resources.job_runs.prepare.id}`. When a dependency re-runs, this run re-runs after it succeeds.",
+                        "$ref": "#/$defs/slice/string"
+                      },
                       "jar_params": {
                         "description": "[Private Preview] A list of parameters for jobs with Spark JAR tasks, for example `\"jar_params\": [\"john doe\", \"35\"]`.\nThe parameters are used to invoke the main function of the main class specified in the Spark JAR task.\nIf not specified upon `run-now`, it defaults to an empty list.\njar_params cannot be specified in conjunction with notebook_params.\nThe JSON representation of this field (for example `{\"jar_params\":[\"john doe\",\"35\"]}`) cannot exceed 10,000 bytes.\n\n⚠ **Deprecation note** Use [job parameters](https://docs.databricks.com/jobs/job-parameters.html#job-parameter-pushdown) to pass information down to tasks.",
                         "$ref": "#/$defs/slice/string",

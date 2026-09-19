@@ -42,6 +42,11 @@ class JobRun(Resource):
     The ID of the job to be executed
     """
 
+    depends_on: VariableOrList[str] = field(default_factory=list)
+    """
+    Job runs that must finish successfully before this run starts. Each entry must reference a job run ID, for example `${resources.job_runs.prepare.id}`. When a dependency re-runs, this run re-runs after it succeeds.
+    """
+
     job_parameters: VariableOrDict[str] = field(default_factory=dict)
     """
     Job-level parameters used in the run. for example `"param": "overriding_val"`
@@ -93,6 +98,11 @@ class JobRunDict(TypedDict, total=False):
     job_id: VariableOr[int]
     """
     The ID of the job to be executed
+    """
+
+    depends_on: VariableOrList[str]
+    """
+    Job runs that must finish successfully before this run starts. Each entry must reference a job run ID, for example `${resources.job_runs.prepare.id}`. When a dependency re-runs, this run re-runs after it succeeds.
     """
 
     job_parameters: VariableOrDict[str]

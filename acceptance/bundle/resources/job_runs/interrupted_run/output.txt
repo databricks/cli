@@ -2,6 +2,7 @@
 === the deploy stops waiting before the run finishes
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
+Created jobs.downstream_job
 Created jobs.my_job
 Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: Fault injected by test. (403 INJECTED)
 
@@ -9,6 +10,8 @@ Endpoint: GET [DATABRICKS_URL]/api/2.2/jobs/runs/get?run_id=[MY_RUN_ID]
 HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
+
+Error: cannot create resources.job_runs.downstream_run: dependency failed: resources.job_runs.my_run
 
 Files: 3 uploaded, 0 deleted
 
@@ -31,51 +34,92 @@ Exit code: 1
   }
 }
 
-=== a run that is still going is skipped
->>> jq .plan["resources.job_runs.my_run"] tmp.plan.json
+=== a run that is still going is skipped and blocks its dependent
+>>> jq {upstream: .plan["resources.job_runs.my_run"], downstream: .plan["resources.job_runs.downstream_run"]} tmp.plan.json
 {
-  "depends_on": [
-    {
-      "node": "resources.jobs.my_job",
-      "label": "${resources.jobs.my_job.id}"
-    }
-  ],
-  "action": "skip",
-  "remote_state": {
-    "job_id": [MY_JOB_ID],
-    "run_id": [MY_RUN_ID],
-    "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
-    "run_type": "JOB_RUN",
-    "state": {
-      "life_cycle_state": "RUNNING"
+  "upstream": {
+    "depends_on": [
+      {
+        "node": "resources.jobs.my_job",
+        "label": "${resources.jobs.my_job.id}"
+      }
+    ],
+    "action": "skip",
+    "remote_state": {
+      "job_id": [MY_JOB_ID],
+      "run_id": [MY_RUN_ID],
+      "run_name": "my-job",
+      "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
+      "run_type": "JOB_RUN",
+      "state": {
+        "life_cycle_state": "RUNNING"
+      }
+    },
+    "changes": {
+      "result_state": {
+        "action": "skip",
+        "reason": "run in progress",
+        "new": "SUCCESS"
+      }
     }
   },
-  "changes": {
-    "result_state": {
-      "action": "skip",
-      "reason": "run in progress",
-      "new": "SUCCESS"
+  "downstream": {
+    "depends_on": [
+      {
+        "node": "resources.job_runs.my_run",
+        "label": "${resources.job_runs.my_run.id}"
+      },
+      {
+        "node": "resources.jobs.downstream_job",
+        "label": "${resources.jobs.downstream_job.id}"
+      }
+    ],
+    "action": "create",
+    "new_state": {
+      "value": {
+        "depends_on": [
+          "[MY_RUN_ID]"
+        ],
+        "job_id": [NUMID],
+        "result_state": "SUCCESS"
+      }
     }
   }
 }
 
-=== Badness: the next deploy does not wait for that run
+=== the next deploy resumes waiting before starting the dependent run
 >>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
+Output from job_runs.downstream_run: id=[NUMID]: Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
+Output from job_runs.downstream_run: id=[NUMID]: SUCCESS
+Created job_runs.downstream_run
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Resources: 1 created, 0 changed, 0 deleted, 3 unchanged
 
-=== the same run is still tracked, and nothing was cancelled, deleted or triggered
+=== both successful runs are tracked
 >>> read_state.py job_runs my_run id result_state
 job_runs my_run id='[MY_RUN_ID]' result_state=None
 
->>> print_requests.py //jobs
+>>> read_state.py job_runs downstream_run id depends_on result_state
+job_runs downstream_run id='[NUMID]' depends_on=['[MY_RUN_ID]'] result_state=None
+
+>>> print_requests.py //jobs/run-now
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/run-now",
+  "body": {
+    "idempotency_token": "[UUID]",
+    "job_id": [NUMID]
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.jobs.downstream_job
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default
 
-Destroy: 1 deleted
+Destroy: 2 deleted

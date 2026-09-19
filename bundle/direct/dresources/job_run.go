@@ -35,6 +35,10 @@ type JobRunLifecycleState struct {
 type JobRunState struct {
 	jobs.RunNow
 
+	// Local-only resolved run IDs used to order job runs. DoCreate sends only
+	// RunNow, so these are never included in the Jobs API request.
+	DependsOn []string `json:"depends_on,omitempty"`
+
 	// Always SUCCESS during planning and cleared before persistence.
 	ResultState jobs.RunResultState `json:"result_state,omitempty"`
 
@@ -90,6 +94,7 @@ func (*ResourceJobRun) New(client *databricks.WorkspaceClient) *ResourceJobRun {
 func (*ResourceJobRun) PrepareState(input *resources.JobRun) *JobRunState {
 	state := &JobRunState{
 		RunNow:      input.RunNow,
+		DependsOn:   slices.Clone(input.DependsOn),
 		ResultState: jobs.RunResultStateSuccess,
 		Lifecycle:   nil,
 	}
@@ -181,6 +186,7 @@ func (r *ResourceJobRun) DoRead(ctx context.Context, id string) (*JobRunRemote, 
 func (*ResourceJobRun) RemapState(remote *JobRunRemote) *JobRunState {
 	return &JobRunState{
 		RunNow:      remote.RunNow,
+		DependsOn:   nil,
 		ResultState: remote.ResultState,
 		Lifecycle:   nil,
 	}
@@ -204,6 +210,15 @@ func (r *ResourceJobRun) DoCreate(ctx context.Context, config *JobRunState) (str
 // WaitAfterCreate blocks until the run finishes, so a resource referencing its
 // output (e.g. state.result_state) sees a settled run. Only SUCCESS continues the deploy.
 func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobRunState) (*JobRunRemote, error) {
+	return r.waitForRun(ctx, id)
+}
+
+// WaitAfterSkip resumes waiting for a previously triggered run when another
+// resource depends on it. This covers deploys interrupted during WaitAfterCreate.
+func (r *ResourceJobRun) WaitAfterSkip(ctx context.Context, id string, remote *JobRunRemote) (*JobRunRemote, error) {
+	if runIsTerminal(remote.State.LifeCycleState) && remote.ResultState == jobs.RunResultStateSuccess {
+		return remote, nil
+	}
 	return r.waitForRun(ctx, id)
 }
 

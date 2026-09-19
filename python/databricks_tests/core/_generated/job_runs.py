@@ -15,6 +15,7 @@ def _test_case():
         ResourceTestCase(
             add_resource=Resources.add_job_run,
             dict_example={
+                "depends_on": ["depends_on"],
                 "job_id": 0,
                 "job_parameters": {"key": "value"},
                 "lifecycle": {},
@@ -24,6 +25,7 @@ def _test_case():
                 "queue": {"enabled": True},
             },
             dataclass_example=JobRun(
+                depends_on=["depends_on"],
                 job_id=0,
                 job_parameters={"key": "value"},
                 lifecycle=JobRunLifecycle(),
