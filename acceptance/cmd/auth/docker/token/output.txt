@@ -1,0 +1,6 @@
+
+>>> [CLI] auth docker token
+{
+  "Secret": "oauth-token",
+  "Username": "oauthtoken"
+}

@@ -81,8 +81,8 @@ resources:
 }
 
 func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
-	// Rules mirror the schemas backend_defaults in resources.yml, but the test is
-	// deliberately self-contained so that edits to resources.yml don't break it.
+	// Rules mirror the schemas backend_defaults in schemas.yml, but the test is
+	// deliberately self-contained so that edits to schemas.yml don't break it.
 	// The real wiring is covered by acceptance/bundle/resources/schemas/drift.
 	managedDefaults, err := structpath.ParsePattern("properties['unity.catalog.managed.*.defaults.*']")
 	require.NoError(t, err)
@@ -406,8 +406,8 @@ func bundleWithSkippedJobRun(t *testing.T, remote *dresources.JobRunRemote) *Dep
 }
 
 func TestShouldSkipRemoteAddition(t *testing.T) {
-	// Rules mirror clusters/jobs ignore_remote_additions in resources.yml, but the test is
-	// deliberately self-contained so edits to resources.yml don't break it. The real wiring
+	// Rules mirror clusters/jobs ignore_remote_additions in clusters.yml and jobs.yml, but the
+	// test is deliberately self-contained so edits to those files don't break it. The real wiring
 	// is covered by acceptance/bundle/resources/cluster_policies/*.
 	jobCluster, err := structpath.ParsePattern("job_clusters[*].new_cluster")
 	require.NoError(t, err)

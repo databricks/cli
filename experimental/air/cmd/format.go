@@ -82,6 +82,7 @@ var gpuDisplayNames = map[string]string{
 	"GPU_1xA10":  "A10",
 	"GPU_8xH100": "H100",
 	"GPU_1xH100": "H100",
+	"GPU_8xB300": "B300",
 }
 
 // isRunning reports whether a run is currently executing (lifecycle RUNNING), as

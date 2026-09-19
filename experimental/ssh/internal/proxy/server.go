@@ -2,10 +2,12 @@ package proxy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/databricks/cli/libs/log"
@@ -20,6 +22,7 @@ type proxyServer struct {
 	ctx                 context.Context
 	connections         *ConnectionsManager
 	createServerCommand createServerCommandFunc
+	resumeGrace         time.Duration
 }
 
 func NewProxyServer(ctx context.Context, connections *ConnectionsManager, createServerCommand createServerCommandFunc) *proxyServer {
@@ -27,6 +30,7 @@ func NewProxyServer(ctx context.Context, connections *ConnectionsManager, create
 		ctx:                 ctx,
 		connections:         connections,
 		createServerCommand: createServerCommand,
+		resumeGrace:         proxyResumeGrace,
 	}
 }
 
@@ -36,12 +40,69 @@ func (server *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing 'id' query parameter", http.StatusBadRequest)
 		return
 	}
-	ctx := log.NewContext(server.ctx, log.GetLogger(server.ctx).With("session", id))
-	if conn, exists := server.connections.Get(id); exists && conn != nil {
-		server.handleExistingConnection(ctx, w, r, conn)
-	} else {
-		server.handleNewConnection(ctx, w, r, id)
+	req, err := parseDialRequest(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+	ctx := log.NewContext(server.ctx, log.GetLogger(server.ctx).With("session", id))
+	conn, exists := server.connections.Get(id)
+	switch {
+	case exists && conn != nil && req.Reattach:
+		server.handleReattach(ctx, w, r, conn, req)
+	case exists && conn != nil:
+		server.handleExistingConnection(ctx, w, r, conn)
+	case req.Reattach:
+		// The session is gone: its grace period expired, or the server restarted. Say so instead
+		// of starting a fresh one. A new sshd would answer the client's replayed bytes with a
+		// fresh SSH handshake, and ssh would fail on a corrupted MAC rather than a clear error.
+		log.Info(ctx, "Reattach requested for a session that no longer exists")
+		http.Error(w, "Session no longer exists", http.StatusGone)
+	default:
+		server.handleNewConnection(ctx, w, r, id, req)
+	}
+}
+
+// parseDialRequest reads the resume protocol's query parameters. Both are absent for a client
+// that does not speak it, which leaves the session non-resumable on this side too.
+func parseDialRequest(r *http.Request) (DialRequest, error) {
+	query := r.URL.Query()
+	req := DialRequest{
+		ConnID:   query.Get("id"),
+		Reattach: query.Get("reattach") == "1",
+	}
+	if raw := query.Get("delivered"); raw != "" {
+		if query.Get(ResumeVersionParameter) != strconv.Itoa(ResumeProtocolVersion) {
+			return DialRequest{}, fmt.Errorf("session resume requires %s=%d", ResumeVersionParameter, ResumeProtocolVersion)
+		}
+		delivered, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || delivered < 0 {
+			return DialRequest{}, fmt.Errorf("invalid 'delivered' query parameter: %q", raw)
+		}
+		req.Delivered = delivered
+		req.ResumeCapable = true
+	}
+	if req.Reattach && !req.ResumeCapable {
+		return DialRequest{}, errors.New("'reattach' requires the 'delivered' query parameter")
+	}
+	if query.Has(ResumeVersionParameter) && !req.ResumeCapable {
+		return DialRequest{}, errors.New("'resume_version' requires the 'delivered' query parameter")
+	}
+	return req, nil
+}
+
+func (server *proxyServer) handleReattach(ctx context.Context, w http.ResponseWriter, r *http.Request, conn *proxyConnection, req DialRequest) {
+	if !conn.resumable() {
+		log.Info(ctx, "Reattach requested for a session that was not started as resumable")
+		http.Error(w, "Session is not resumable", http.StatusConflict)
+		return
+	}
+	log.Info(ctx, "Client reattaching to a dropped connection")
+	if err := conn.acceptReattach(ctx, w, r, req.Delivered); err != nil {
+		log.Errorf(ctx, "Failed to accept the reattach: %v", err)
+		return
+	}
+	log.Info(ctx, "Reattach accepted")
 }
 
 func (server *proxyServer) handleExistingConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, conn *proxyConnection) {
@@ -55,8 +116,16 @@ func (server *proxyServer) handleExistingConnection(ctx context.Context, w http.
 	}
 }
 
-func (server *proxyServer) handleNewConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, id string) {
-	conn := newProxyConnection(nil)
+func (server *proxyServer) handleNewConnection(ctx context.Context, w http.ResponseWriter, r *http.Request, id string, req DialRequest) {
+	// The server never dials, so it passes no connection factory: reattaching, for it, means
+	// waiting for the client to come back.
+	var conn *proxyConnection
+	if req.ResumeCapable {
+		conn = newResumableProxyConnection(nil)
+		conn.resume.grace = server.resumeGrace
+	} else {
+		conn = newProxyConnection(nil)
+	}
 	if !server.connections.TryAdd(id, conn) {
 		log.Info(ctx, "Maximum clients reached, rejecting connection")
 		http.Error(w, "Maximum clients reached", http.StatusServiceUnavailable)
@@ -106,7 +175,8 @@ func runServerProxy(ctx context.Context, proxy *proxyConnection, createServerCom
 
 	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		defer closeProxyConnection(ctx, proxy)
+		// Let the sending loop drain stdout and receive its final acknowledgment
+		// before closing the websocket, even if the process has already exited.
 		// Waiting on the underlying Process, not the command itself.
 		// Command.Wait needs to be called to release all resources,
 		// but it's only safe to do so after we've finished reading from stdout,

@@ -29,58 +29,32 @@ class RateLimit:
 
     key: VariableOr[RateLimitRateLimitKey]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Scope key. Determines whether `principal` is required.
+    Scope of the rate limit. Depending on this value, the limit applies to a
+    principal, the service as a whole, or each user by default.
     """
 
     renewal_period: VariableOr[RateLimitRateLimitRenewalPeriod]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Renewal period.
+    Renewal period.
     """
 
     principal: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Principal this limit applies to: user email, group name, or service
-    principal application ID. Required unless `key` is
-    `RATE_LIMIT_KEY_SERVICE`, `RATE_LIMIT_KEY_USER_DEFAULT`, or
-    `RATE_LIMIT_KEY_REQUEST_TAG` (which must not set a principal).
-    """
-
-    request_tag_key: VariableOrOptional[str] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Request tag key this limit applies to. Required when `key` is
-    `RATE_LIMIT_KEY_REQUEST_TAG`, forbidden otherwise.
-    """
-
-    request_tag_value: VariableOrOptional[str] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Request tag value this limit applies to. Only valid when `key` is
-    `RATE_LIMIT_KEY_REQUEST_TAG`. Leave unset to apply the limit to every
-    value of `request_tag_key` (an any-value default); a set value is a
-    specific override for that value.
+    Principal this limit applies to: user email, group name, or service
+    principal application ID. Required when `key` applies to a user, group, or
+    service principal; otherwise it must be unset.
     """
 
     requests: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Max requests allowed within a renewal period. Leave unset for no request limit.
+    Maximum requests allowed in one renewal period. Leave unset for no request
+    limit. Set to `0` to deny all requests.
     """
 
     tokens: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Max tokens allowed within a renewal period. Leave unset for no token limit.
+    Maximum tokens allowed in one renewal period. Leave unset for no token
+    limit. Set to `0` to deny all requests.
     """
 
     @classmethod
@@ -96,58 +70,32 @@ class RateLimitDict(TypedDict, total=False):
 
     key: VariableOr[RateLimitRateLimitKeyParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Scope key. Determines whether `principal` is required.
+    Scope of the rate limit. Depending on this value, the limit applies to a
+    principal, the service as a whole, or each user by default.
     """
 
     renewal_period: VariableOr[RateLimitRateLimitRenewalPeriodParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Renewal period.
+    Renewal period.
     """
 
     principal: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Principal this limit applies to: user email, group name, or service
-    principal application ID. Required unless `key` is
-    `RATE_LIMIT_KEY_SERVICE`, `RATE_LIMIT_KEY_USER_DEFAULT`, or
-    `RATE_LIMIT_KEY_REQUEST_TAG` (which must not set a principal).
-    """
-
-    request_tag_key: VariableOrOptional[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Request tag key this limit applies to. Required when `key` is
-    `RATE_LIMIT_KEY_REQUEST_TAG`, forbidden otherwise.
-    """
-
-    request_tag_value: VariableOrOptional[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Request tag value this limit applies to. Only valid when `key` is
-    `RATE_LIMIT_KEY_REQUEST_TAG`. Leave unset to apply the limit to every
-    value of `request_tag_key` (an any-value default); a set value is a
-    specific override for that value.
+    Principal this limit applies to: user email, group name, or service
+    principal application ID. Required when `key` applies to a user, group, or
+    service principal; otherwise it must be unset.
     """
 
     requests: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Max requests allowed within a renewal period. Leave unset for no request limit.
+    Maximum requests allowed in one renewal period. Leave unset for no request
+    limit. Set to `0` to deny all requests.
     """
 
     tokens: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Max tokens allowed within a renewal period. Leave unset for no token limit.
+    Maximum tokens allowed in one renewal period. Leave unset for no token
+    limit. Set to `0` to deny all requests.
     """
 
 

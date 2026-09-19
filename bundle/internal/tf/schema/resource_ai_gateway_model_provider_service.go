@@ -33,9 +33,7 @@ type ResourceAiGatewayModelProviderServiceConfigAnthropicDirect struct {
 	ApiKey *ResourceAiGatewayModelProviderServiceConfigAnthropicDirectApiKey `json:"api_key,omitempty"`
 }
 
-type ResourceAiGatewayModelProviderServiceConfigAnthropicRelayed struct {
-	PlanType string `json:"plan_type,omitempty"`
-}
+type ResourceAiGatewayModelProviderServiceConfigAnthropicRelayed struct{}
 
 type ResourceAiGatewayModelProviderServiceConfigAnthropic struct {
 	Direct  *ResourceAiGatewayModelProviderServiceConfigAnthropicDirect  `json:"direct,omitempty"`
@@ -99,7 +97,6 @@ type ResourceAiGatewayModelProviderServiceConfigGeminiEnterprise struct {
 }
 
 type ResourceAiGatewayModelProviderServiceConfigInferenceTable struct {
-	Disabled        bool   `json:"disabled,omitempty"`
 	IsDeleted       bool   `json:"is_deleted,omitempty"`
 	Parent          string `json:"parent"`
 	Table           string `json:"table,omitempty"`
@@ -150,13 +147,11 @@ type ResourceAiGatewayModelProviderServiceConfigOpenai struct {
 }
 
 type ResourceAiGatewayModelProviderServiceConfigRateLimits struct {
-	Key             string `json:"key"`
-	Principal       string `json:"principal,omitempty"`
-	RenewalPeriod   string `json:"renewal_period"`
-	RequestTagKey   string `json:"request_tag_key,omitempty"`
-	RequestTagValue string `json:"request_tag_value,omitempty"`
-	Requests        int    `json:"requests,omitempty"`
-	Tokens          int    `json:"tokens,omitempty"`
+	Key           string `json:"key"`
+	Principal     string `json:"principal,omitempty"`
+	RenewalPeriod string `json:"renewal_period"`
+	Requests      int    `json:"requests,omitempty"`
+	Tokens        int    `json:"tokens,omitempty"`
 }
 
 type ResourceAiGatewayModelProviderServiceConfigTargets struct {
@@ -196,7 +191,6 @@ type ResourceAiGatewayModelProviderService struct {
 	MetastoreId            string                                               `json:"metastore_id,omitempty"`
 	ModelProviderServiceId string                                               `json:"model_provider_service_id"`
 	Name                   string                                               `json:"name,omitempty"`
-	Owner                  string                                               `json:"owner,omitempty"`
 	Parent                 string                                               `json:"parent"`
 	ProviderConfig         *ResourceAiGatewayModelProviderServiceProviderConfig `json:"provider_config,omitempty"`
 	UpdateTime             string                                               `json:"update_time,omitempty"`

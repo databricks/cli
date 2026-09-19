@@ -1,0 +1,59 @@
+
+>>> [CLI] auth --help
+Authentication related commands. For more information regarding how
+authentication for the Databricks CLI and SDKs work please refer to the documentation
+linked below.
+
+AWS: https://docs.databricks.com/dev-tools/auth/index.html
+Azure: https://learn.microsoft.com/azure/databricks/dev-tools/auth
+GCP: https://docs.gcp.databricks.com/dev-tools/auth/index.html
+
+Usage:
+  databricks auth [command]
+
+Available Commands:
+  describe    Describes the credentials and the source of those credentials, being used by the CLI to authenticate
+  docker      (Experimental) Manage Docker authentication for Databricks Artifact Registry
+  login       Log into a Databricks workspace or account
+  logout      Log out of a Databricks profile
+  profiles    Lists profiles from ~/.databrickscfg
+  switch      Set the default profile
+  token       Get authentication token
+
+Flags:
+      --account-id string     Databricks Account ID
+  -h, --help                  help for auth
+      --host string           Databricks Host
+      --workspace-id string   Databricks Workspace ID
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks auth [command] --help" for more information about a command.
+
+>>> [CLI] auth docker --help
+(Experimental) Manage Docker authentication for Databricks Artifact Registry
+
+Usage:
+  databricks auth docker [command]
+
+Available Commands:
+  configure   (Experimental) Configure Docker authentication for Databricks Artifact Registry
+  token       (Experimental) Generate a Docker credential
+
+Flags:
+  -h, --help   help for docker
+
+Global Flags:
+      --account-id string     Databricks Account ID
+      --debug                 enable debug logging
+      --host string           Databricks Host
+  -o, --output type           output type: text or json (default text)
+  -p, --profile string        ~/.databrickscfg profile
+  -t, --target string         bundle target to use (if applicable)
+      --workspace-id string   Databricks Workspace ID
+
+Use "databricks auth docker [command] --help" for more information about a command.

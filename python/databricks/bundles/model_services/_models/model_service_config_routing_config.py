@@ -14,10 +14,6 @@ from databricks.bundles.model_services._models.model_service_config_fallback_con
     ModelServiceConfigFallbackConfig,
     ModelServiceConfigFallbackConfigParam,
 )
-from databricks.bundles.model_services._models.model_service_config_routing_config_traffic_splitting import (
-    ModelServiceConfigRoutingConfigTrafficSplitting,
-    ModelServiceConfigRoutingConfigTrafficSplittingParam,
-)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -26,48 +22,25 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelServiceConfigRoutingConfig:
     """
-    Routing configuration for a model service, nesting destinations, routing
-    strategy, and fallback under a single sub-message.
+    Routing configuration for a model service, nesting destinations and
+    fallback under a single sub-message.
     """
 
     destinations: VariableOrList[ModelServiceConfigDestinationConfig] = field(
         default_factory=list
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Primary routing destinations. At most 10 are allowed. At least one is
-    required on CreateModelService; on UpdateModelService it is required only
-    when `config.routing` (or a `config.routing.*` subpath) appears in
-    `update_mask`.
+    Primary routing destinations. At most 10 are allowed. At least one is
+    required on Create. On Update, provide this list when replacing the full
+    `config` or updating `config.routing.destinations`; other granular routing
+    updates do not require resending destinations. The intermediate
+    `config.routing` mask path is not supported.
     """
 
     fallback: VariableOrOptional[ModelServiceConfigFallbackConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Fallback routing config, applied after primary destinations fail.
-    """
-
-    first_token_timeout: VariableOrOptional[str] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Timeout for the first token of a streaming response. If a destination does
-    not return its first token within this duration, AI Gateway aborts the
-    attempt and fails over to the next destination. Applies to streaming
-    requests only. Leave unset for no first-token timeout.
-    """
-
-    traffic_splitting: VariableOrOptional[
-        ModelServiceConfigRoutingConfigTrafficSplitting
-    ] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Marker message selecting request-based traffic splitting. Traffic is
-    distributed according to each destination's traffic_percentage value;
-    no configuration lives on this message itself.
+    Fallback routing applied after a primary destination fails. Fallback
+    destinations are tried in the listed order.
     """
 
     @classmethod
@@ -83,40 +56,17 @@ class ModelServiceConfigRoutingConfigDict(TypedDict, total=False):
 
     destinations: VariableOrList[ModelServiceConfigDestinationConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Primary routing destinations. At most 10 are allowed. At least one is
-    required on CreateModelService; on UpdateModelService it is required only
-    when `config.routing` (or a `config.routing.*` subpath) appears in
-    `update_mask`.
+    Primary routing destinations. At most 10 are allowed. At least one is
+    required on Create. On Update, provide this list when replacing the full
+    `config` or updating `config.routing.destinations`; other granular routing
+    updates do not require resending destinations. The intermediate
+    `config.routing` mask path is not supported.
     """
 
     fallback: VariableOrOptional[ModelServiceConfigFallbackConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Fallback routing config, applied after primary destinations fail.
-    """
-
-    first_token_timeout: VariableOrOptional[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Timeout for the first token of a streaming response. If a destination does
-    not return its first token within this duration, AI Gateway aborts the
-    attempt and fails over to the next destination. Applies to streaming
-    requests only. Leave unset for no first-token timeout.
-    """
-
-    traffic_splitting: VariableOrOptional[
-        ModelServiceConfigRoutingConfigTrafficSplittingParam
-    ]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Marker message selecting request-based traffic splitting. Traffic is
-    distributed according to each destination's traffic_percentage value;
-    no configuration lives on this message itself.
+    Fallback routing applied after a primary destination fails. Fallback
+    destinations are tried in the listed order.
     """
 
 

@@ -1,6 +1,6 @@
 === First deploy (crashes on job_03) ===
 
->>> errcode [CLI] bundle deploy
+>>> errcode [CLI] bundle deploy -q
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-chain-test/default/files...
 [PROCESS_KILLED]
 
@@ -11,7 +11,7 @@ Exit code: [KILLED]
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
-  "state_version": 2
+  "state_version": 3
 }
 {
   "k": "resources.jobs.job_01",

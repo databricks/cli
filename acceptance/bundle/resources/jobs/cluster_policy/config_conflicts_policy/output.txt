@@ -3,6 +3,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created cluster_policies.my_policy
 Error: cannot create resources.jobs.my_job: Cluster validation error: Validation failed for custom_tags, CostCenter must be from-policy (is "not-what-the-policy-says") (400 INVALID_PARAMETER_VALUE)
 
 Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create

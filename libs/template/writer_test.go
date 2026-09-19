@@ -7,6 +7,8 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -40,6 +42,37 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 
 	assert.Equal(t, "/foo/bar", w.configPath)
 	assert.IsType(t, &filer.WorkspaceFilesExtensionsClient{}, w.outputFiler)
+}
+
+func TestWriterWithFullTelemetryTemplateEnumArgs(t *testing.T) {
+	// Enum values can be strings, integers or numbers; booleans are always
+	// reported. Non-enum, non-boolean values are not reported.
+	w := &writerWithFullTelemetry{}
+	w.config = &config{
+		values: map[string]any{
+			"str_enum": "v2",
+			"int_enum": int64(2),
+			"num_enum": 1.5,
+			"flag":     true,
+			"freeform": "some-user-value",
+		},
+		schema: &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"str_enum": {Type: jsonschema.StringType, Enum: []any{"v1", "v2"}},
+				"int_enum": {Type: jsonschema.IntegerType, Enum: []any{int64(1), int64(2)}},
+				"num_enum": {Type: jsonschema.NumberType, Enum: []any{1.5, 2.5}},
+				"flag":     {Type: jsonschema.BooleanType},
+				"freeform": {Type: jsonschema.StringType},
+			},
+		},
+	}
+
+	assert.Equal(t, []protos.BundleInitTemplateEnumArg{
+		{Key: "flag", Value: "true"},
+		{Key: "int_enum", Value: "2"},
+		{Key: "num_enum", Value: "1.5"},
+		{Key: "str_enum", Value: "v2"},
+	}, w.templateEnumArgs())
 }
 
 func TestMaterializeForNonTemplateDirectory(t *testing.T) {

@@ -37,57 +37,40 @@ class ModelServiceConfigDestinationConfig:
 
     destination_type: VariableOr[ModelServiceConfigDestinationConfigDestinationType]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Backing-model category. Determines which oneof variant is populated.
+    Backing-model category. Provide the matching type-specific configuration
+    and leave the other type-specific configurations unset.
     """
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] User-facing label for this destination, used in routing references.
+    User-facing label for this destination, used in routing references.
     """
 
     external_model_config: VariableOrOptional[ModelServiceConfigExternalModelConfig] = (
         None
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Configuration for an external-foundation-model destination. Provider auth
-    and provider-specific cloud configuration are owned by a separate, governed
-    ModelProviderService entity referenced via `model_provider_service`; the
-    platform resolves the provider at invocation time.
+    Configuration for an external model reached through a model provider service.
     """
 
     pay_per_token_config: VariableOrOptional[ModelServiceConfigPayPerTokenConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Configuration for a pay-per-token foundation-model destination. Identifies
-    the foundation model by its UC resource name; the platform resolves it to a
-    Model Serving endpoint at request time.
+    Configuration for a pay-per-token Databricks foundation model.
     """
 
     provisioned_throughput_config: VariableOrOptional[
         ModelServiceConfigProvisionedThroughputConfig
     ] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Configuration for a provisioned-throughput foundation-model destination.
-    References a pre-existing Model Serving endpoint that serves the model;
-    sizing (provisioned throughput, burst scaling, model version) is owned by
-    the Model Serving endpoint itself, not by this message.
+    Configuration for a provisioned-throughput Databricks foundation model.
     """
 
     traffic_percentage: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Share of traffic sent to this destination, 0-100. Optional on fallback
-    destinations; see FallbackConfig.
+    Percentage of primary traffic sent to this destination, from 0 to 100.
+    Required when there is more than one primary destination, in which case the
+    primary percentages must sum to 100; a single primary destination receives
+    all traffic. Fallback destinations are ordered and do not use this field.
     """
 
     @classmethod
@@ -105,57 +88,40 @@ class ModelServiceConfigDestinationConfigDict(TypedDict, total=False):
         ModelServiceConfigDestinationConfigDestinationTypeParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Backing-model category. Determines which oneof variant is populated.
+    Backing-model category. Provide the matching type-specific configuration
+    and leave the other type-specific configurations unset.
     """
 
     name: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] User-facing label for this destination, used in routing references.
+    User-facing label for this destination, used in routing references.
     """
 
     external_model_config: VariableOrOptional[
         ModelServiceConfigExternalModelConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Configuration for an external-foundation-model destination. Provider auth
-    and provider-specific cloud configuration are owned by a separate, governed
-    ModelProviderService entity referenced via `model_provider_service`; the
-    platform resolves the provider at invocation time.
+    Configuration for an external model reached through a model provider service.
     """
 
     pay_per_token_config: VariableOrOptional[ModelServiceConfigPayPerTokenConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Configuration for a pay-per-token foundation-model destination. Identifies
-    the foundation model by its UC resource name; the platform resolves it to a
-    Model Serving endpoint at request time.
+    Configuration for a pay-per-token Databricks foundation model.
     """
 
     provisioned_throughput_config: VariableOrOptional[
         ModelServiceConfigProvisionedThroughputConfigParam
     ]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Configuration for a provisioned-throughput foundation-model destination.
-    References a pre-existing Model Serving endpoint that serves the model;
-    sizing (provisioned throughput, burst scaling, model version) is owned by
-    the Model Serving endpoint itself, not by this message.
+    Configuration for a provisioned-throughput Databricks foundation model.
     """
 
     traffic_percentage: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Share of traffic sent to this destination, 0-100. Optional on fallback
-    destinations; see FallbackConfig.
+    Percentage of primary traffic sent to this destination, from 0 to 100.
+    Required when there is more than one primary destination, in which case the
+    primary percentages must sum to 100; a single primary destination receives
+    all traffic. Fallback destinations are ordered and do not use this field.
     """
 
 

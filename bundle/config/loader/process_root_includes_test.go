@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/loader"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,6 +97,49 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
 	require.NoError(t, diags.Error())
 	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
+}
+
+// The expanded include list must be visible in both the typed and the dynamic
+// configuration: the per-file includes are applied without their own mutator scope, so
+// nothing converts the typed field back into the dynamic tree afterwards.
+func TestProcessRootIncludesUpdatesDynamicValue(t *testing.T) {
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Include: []string{
+				"*.yml",
+			},
+		},
+	}
+
+	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
+	testutil.Touch(t, b.BundleRootPath, "a.yml")
+
+	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	require.NoError(t, diags.Error())
+	assert.Equal(t, []string{"a.yml"}, b.Config.Include)
+
+	assert.Equal(t, []any{"a.yml"}, b.Config.Value().Get("include").AsAny())
+}
+
+// An empty include list must stay absent from the dynamic tree: the typed field is
+// omitempty, so writing [] would add an empty "include" to `bundle validate -o json`.
+func TestProcessRootIncludesEmptyOmitsDynamicValue(t *testing.T) {
+	b := &bundle.Bundle{
+		BundleRootPath: t.TempDir(),
+		Config: config.Root{
+			Include: []string{
+				"*.yml",
+			},
+		},
+	}
+
+	testutil.Touch(t, b.BundleRootPath, "databricks.yml")
+
+	diags := bundle.Apply(t.Context(), b, loader.ProcessRootIncludes())
+	require.NoError(t, diags.Error())
+	assert.Empty(t, b.Config.Include)
+	assert.Equal(t, dyn.KindInvalid, b.Config.Value().Get("include").Kind())
 }
 
 func TestProcessRootIncludesNotExists(t *testing.T) {

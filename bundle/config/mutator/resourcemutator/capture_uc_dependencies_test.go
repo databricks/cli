@@ -142,6 +142,16 @@ func TestCaptureUCDependencies(t *testing.T) {
 						Name: "mycatalog.myschema.myindex",
 					}},
 				},
+				McpServices: map[string]*resources.McpService{
+					"my_mcp_service": {McpServiceConfig: resources.McpServiceConfig{
+						Parent: "schemas/mycatalog.myschema", McpServiceId: "mymcp",
+					}},
+				},
+				ModelProviderServices: map[string]*resources.ModelProviderService{
+					"my_mps": {ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+						Parent: "schemas/mycatalog.myschema", ModelProviderServiceId: "mymps",
+					}},
+				},
 			},
 		},
 	}
@@ -180,6 +190,12 @@ func TestCaptureUCDependencies(t *testing.T) {
 
 	// Vector search index (three-part "catalog.schema.index" name).
 	assert.Equal(t, catalogRef+"."+schemaRef+".myindex", b.Config.Resources.VectorSearchIndexes["my_index"].Name)
+
+	// MCP service (same compound parent field).
+	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.McpServices["my_mcp_service"].Parent)
+
+	// Model provider service (same compound parent field).
+	assert.Equal(t, "schemas/"+catalogRef+"."+schemaRef, b.Config.Resources.ModelProviderServices["my_mps"].Parent)
 }
 
 // Pipeline schema and target are mutually exclusive; only the populated field
@@ -346,4 +362,89 @@ func TestCaptureUCDependenciesNilResources(t *testing.T) {
 
 	d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
 	require.Nil(t, d)
+}
+
+func TestSplitUCName(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		n        int
+		expected []string
+		ok       bool
+	}{
+		{"three_part", "catalog.schema.index", 3, []string{"catalog", "schema", "index"}, true},
+		{"two_part", "catalog.schema", 2, []string{"catalog", "schema"}, true},
+		{"too_many_components", "a.b.c.d", 3, nil, false},
+		{"too_few_components", "a.b", 3, nil, false},
+		{"single_component", "a", 3, nil, false},
+		{"empty", "", 3, nil, false},
+		{"reference_over_counts", "${resources.catalogs.c.name}.schema.index", 3, nil, false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			parts, ok := splitUCName(tc.input, tc.n)
+			assert.Equal(t, tc.ok, ok)
+			assert.Equal(t, tc.expected, parts)
+		})
+	}
+}
+
+// A vector search index name that already contains a ${resources...} reference is left
+// untouched: a mix of references and literals is not supported. Only a fully literal name
+// with exactly three components has its catalog and schema captured.
+func TestCaptureUCDependenciesVectorSearchIndexReferences(t *testing.T) {
+	newBundle := func(indexName string) *bundle.Bundle {
+		return &bundle.Bundle{
+			Config: config.Root{
+				Resources: config.Resources{
+					Catalogs: map[string]*resources.Catalog{
+						"dev_catalog": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+					},
+					Schemas: map[string]*resources.Schema{
+						"my_schema": {CreateSchema: catalog.CreateSchema{CatalogName: "catalog1", Name: "myschema"}},
+					},
+					VectorSearchIndexes: map[string]*resources.VectorSearchIndex{
+						"idx": {CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{Name: indexName}},
+					},
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			"all_literal_captured",
+			"catalog1.myschema.myindex",
+			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
+		},
+		{
+			"catalog_reference_with_literal_schema_unsupported",
+			"${resources.catalogs.dev_catalog.name}.myschema.myindex",
+			"${resources.catalogs.dev_catalog.name}.myschema.myindex",
+		},
+		{
+			"fully_referenced_unchanged",
+			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
+			"${resources.catalogs.dev_catalog.name}.${resources.schemas.my_schema.name}.myindex",
+		},
+		{
+			"more_than_three_components_skipped",
+			"catalog1.myschema.my.index",
+			"catalog1.myschema.my.index",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			b := newBundle(tc.input)
+			d := bundle.Apply(t.Context(), b, CaptureUCDependencies())
+			require.Nil(t, d)
+			assert.Equal(t, tc.expected, b.Config.Resources.VectorSearchIndexes["idx"].Name)
+		})
+	}
 }

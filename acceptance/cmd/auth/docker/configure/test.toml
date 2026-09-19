@@ -1,0 +1,11 @@
+Ignore = [
+    "home",
+]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Timeout = "15s"
+
+# git-bash can't resolve/exec the installed .cmd shim on Windows; that path is
+# covered by Go unit tests in libs/dockercredentials. Run this end-to-end on Unix.
+GOOS.windows = false

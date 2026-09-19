@@ -5,47 +5,76 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 )
 
-// seenNano keys the dedup set. Distinct lines can share a nano (each rank stamps
-// from its own clock), so the body disambiguates them.
-type seenNano struct {
+// seenRecord keys the dedup set. Older responses without record IDs fall back
+// to timestamp and body, since distinct lines can share a timestamp.
+type seenRecord struct {
+	recordID string
+	nano     int64
+	body     string
+}
+
+type seenEntry struct {
+	key  seenRecord
 	nano int64
-	body string
 }
 
 // seenSet is an insertion-ordered set bounded to a capacity, evicting the
 // oldest-inserted entry first.
 type seenSet struct {
 	cap   int
-	items map[seenNano]*list.Element
+	items map[seenRecord]*list.Element
 	order *list.List
 }
 
 func newSeenSet(capacity int) *seenSet {
 	return &seenSet{
 		cap:   capacity,
-		items: make(map[seenNano]*list.Element),
+		items: make(map[seenRecord]*list.Element),
 		order: list.New(),
 	}
 }
 
-func (s *seenSet) has(nano int64, body string) bool {
-	_, ok := s.items[seenNano{nano, body}]
+func seenRecordKey(record logRecord) seenRecord {
+	if record.RecordID != "" {
+		return seenRecord{recordID: record.RecordID}
+	}
+	return seenRecord{nano: record.nano(), body: record.Body}
+}
+
+func (s *seenSet) has(record logRecord) bool {
+	_, ok := s.items[seenRecordKey(record)]
 	return ok
 }
 
-func (s *seenSet) add(nano int64, body string) {
-	key := seenNano{nano, body}
+func (s *seenSet) add(record logRecord) int64 {
+	key := seenRecordKey(record)
 	if _, ok := s.items[key]; ok {
-		return
+		return 0
 	}
-	s.items[key] = s.order.PushBack(key)
+	s.items[key] = s.order.PushBack(seenEntry{key: key, nano: record.nano()})
 	if s.order.Len() > s.cap {
 		oldest := s.order.Front()
 		s.order.Remove(oldest)
-		delete(s.items, oldest.Value.(seenNano))
+		evicted := oldest.Value.(seenEntry)
+		delete(s.items, evicted.key)
+		return evicted.nano
+	}
+	return 0
+}
+
+func (s *seenSet) removeBefore(nano int64) {
+	for element := s.order.Front(); element != nil; {
+		next := element.Next()
+		entry := element.Value.(seenEntry)
+		if entry.nano != 0 && entry.nano < nano {
+			s.order.Remove(element)
+			delete(s.items, entry.key)
+		}
+		element = next
 	}
 }
 
@@ -143,10 +172,24 @@ func printTerminalEvent(out io.Writer, runID, status, dashboardURL string) {
 	fmt.Fprintln(out, string(b))
 }
 
-// emitLogLine writes one log line: raw in text mode, or a JSONL LOG event under
-// --json. In --json mode a line matching a fatal-failure pattern also emits an
-// ALERT event first, giving an agent an immediate actionable signal.
+const (
+	missingRequirementsNoticePrefix = "No co-located requirements.yaml at "
+	missingRequirementsNoticeSuffix = "; skipping requirements.yaml install."
+)
+
+// suppressLogLine reports whether a backend log line should be omitted.
+func suppressLogLine(body string) bool {
+	// This backend-derived notice is non-actionable noise because requirements.yaml
+	// is not supported by Databricks Air and is rejected earlier.
+	return strings.HasPrefix(body, missingRequirementsNoticePrefix) &&
+		strings.HasSuffix(body, missingRequirementsNoticeSuffix)
+}
+
+// emitLogLine writes one relevant log line.
 func emitLogLine(out io.Writer, req logRequest, body string) {
+	if suppressLogLine(body) {
+		return
+	}
 	if !req.jsonOutput {
 		fmt.Fprintln(out, body)
 		return

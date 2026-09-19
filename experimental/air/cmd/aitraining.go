@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 )
@@ -61,7 +62,7 @@ func listAiTrainingWorkflows(ctx context.Context, w *databricks.WorkspaceClient,
 		}
 
 		var resp aiTrainingWorkflowsResponse
-		err = apiClient.Do(ctx, http.MethodGet, aiTrainingWorkflowsPath, nil, nil, query, &resp)
+		err = apiClient.Do(ctx, http.MethodGet, aiTrainingWorkflowsPath, auth.WorkspaceIDHeaders(w.Config), nil, query, &resp)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list training workflows: %w", err)
 		}

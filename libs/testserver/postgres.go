@@ -1711,14 +1711,32 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 	return Response{Body: table}
 }
 
-// PostgresSyncedTableDelete deletes a postgres synced table.
+// PostgresSyncedTableDelete deletes a postgres synced table. When the workspace
+// simulates eventual consistency, deletion is asynchronous and slow: the record is
+// not removed but left in DELETING, so GET keeps returning it and a create for the
+// same name keeps hitting 409 — the stuck-teardown race WaitAfterDelete waits out.
+// Otherwise (the default, and terraform, which recreates without polling) it is
+// removed immediately.
 func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresSyncedTables[name]; !exists {
+	table, exists := s.PostgresSyncedTables[name]
+	if !exists {
 		return postgresNotFoundResponse("synced table")
 	}
-	delete(s.PostgresSyncedTables, name)
+
+	if !s.eventualConsistency {
+		delete(s.PostgresSyncedTables, name)
+		return Response{Body: s.createOperationLocked(name, nil)}
+	}
+
+	if table.Status == nil {
+		table.Status = &postgres.SyncedTableSyncedTableStatus{}
+	}
+	table.Status.DetailedState = postgres.SyncedTableStateSyncedTableOffline
+	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfoStateDeleting
+	s.PostgresSyncedTables[name] = table
+
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
 

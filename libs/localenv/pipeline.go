@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
@@ -509,7 +510,7 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 		p.res.BackupPath = filepath.ToSlash(backup)
 	}
 
-	if err := os.WriteFile(pyproject, mergedBytes, 0o644); err != nil {
+	if err := atomicfile.Write(pyproject, mergedBytes, 0o644); err != nil {
 		code := ErrMerge
 		if greenfield {
 			code = ErrWrite

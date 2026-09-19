@@ -37,6 +37,7 @@ func (c PostgresDatabaseConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresDatabase struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresDatabaseConfig
 }
 

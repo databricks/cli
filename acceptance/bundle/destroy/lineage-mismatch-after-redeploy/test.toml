@@ -1,6 +1,7 @@
-# Lineage is a direct-engine concept (a UUID minted per deployment history),
-# so this scenario only applies to the direct engine.
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# Both engines keep a lineage-bearing local state file, so the destroy scenario and its
+# fix (and the lingering-state failure) apply to both. The mismatch error names the
+# engine-specific state file; the Repls below align the terraform and direct forms so
+# both engines share one output.txt.
 
 # .databricks.machineA is the stashed local state; may linger if the test fails mid-run.
 Ignore = [".databricks.machineA"]
@@ -10,3 +11,14 @@ Ignore = [".databricks.machineA"]
 [[Repls]]
 Old = 'serial=[0-9]+'
 New = 'serial=[SERIAL]'
+
+# Align the terraform vs direct state-file listing in the lineage-mismatch error so the
+# matrix variants produce identical output. Scoped by the ": remote/local <engine> state"
+# suffix so the find.py argument above is left untouched.
+[[Repls]]
+Old = '\.databricks/bundle/default/(resources\.json|terraform/terraform\.tfstate): local (direct|terraform) state'
+New = '.databricks/bundle/default/[STATE_FILE]: local [ENGINE] state'
+
+[[Repls]]
+Old = '(resources\.json|terraform\.tfstate): remote (direct|terraform) state'
+New = '[STATE_FILE]: remote [ENGINE] state'

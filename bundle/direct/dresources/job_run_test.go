@@ -310,7 +310,7 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 	}
 }
 
-// resources.yml ignores remote drift on everything the RunNow request carries,
+// job_runs.yml ignores remote drift on everything the RunNow request carries,
 // since GetRun does not echo it back faithfully, and leaves result_state alone.
 func TestJobRunIgnoresEveryRequestField(t *testing.T) {
 	adapters, err := InitAll(nil)
@@ -380,29 +380,6 @@ func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	assert.NotEqual(t, tokens[0], tokens[1])
 	// Token must not leak into persisted state.
 	assert.Empty(t, config.IdempotencyToken)
-}
-
-func TestJobRunDeleteLeavesFinishedRunAlone(t *testing.T) {
-	var cancelled atomic.Bool
-	server := testserver.New(t)
-	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req testserver.Request) any {
-		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
-			LifeCycleState: jobs.RunLifeCycleStateTerminated,
-			ResultState:    jobs.RunResultStateSuccess,
-		}}
-	})
-	server.Handle("POST", "/api/2.2/jobs/runs/cancel", func(req testserver.Request) any {
-		cancelled.Store(true)
-		return testserver.Response{}
-	})
-	server.Handle("POST", "/api/2.2/jobs/runs/delete", func(req testserver.Request) any {
-		return testserver.Response{}
-	})
-	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
-
-	require.NoError(t, r.DoDelete(t.Context(), "123", &JobRunState{}))
-
-	assert.False(t, cancelled.Load(), "a run that already finished has nothing to cancel")
 }
 
 func TestJobRunOverrideChangeDescTriggerRemoved(t *testing.T) {

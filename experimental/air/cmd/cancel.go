@@ -44,7 +44,10 @@ func newCancelCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cancel [JOB_RUN_ID...]",
 		Short: "Cancel one or more runs",
-		Long:  `Cancel one or more runs by ID, or cancel all of your active runs with --all.`,
+		Long: `Cancel one or more runs by job run ID, or use --all to cancel
+all active runs submitted by the current user.
+
+--all prompts for confirmation. Use --yes to skip the prompt.`,
 	}
 
 	cmd.Flags().BoolVar(&all, "all", false, "Cancel all of your active runs")

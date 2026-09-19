@@ -658,8 +658,9 @@ type ResourceJobSparkSubmitTask struct {
 }
 
 type ResourceJobTaskAiRuntimeTaskDeploymentsCompute struct {
-	AcceleratorCount int    `json:"accelerator_count"`
-	AcceleratorType  string `json:"accelerator_type"`
+	AcceleratorCount      int    `json:"accelerator_count"`
+	AcceleratorType       string `json:"accelerator_type"`
+	ProvisionedCapacityId string `json:"provisioned_capacity_id,omitempty"`
 }
 
 type ResourceJobTaskAiRuntimeTaskDeployments struct {
@@ -761,8 +762,9 @@ type ResourceJobTaskEmailNotifications struct {
 }
 
 type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeploymentsCompute struct {
-	AcceleratorCount int    `json:"accelerator_count"`
-	AcceleratorType  string `json:"accelerator_type"`
+	AcceleratorCount      int    `json:"accelerator_count"`
+	AcceleratorType       string `json:"accelerator_type"`
+	ProvisionedCapacityId string `json:"provisioned_capacity_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments struct {

@@ -37,6 +37,7 @@ func (c PostgresSnapshotScheduleConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresSnapshotSchedule struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresSnapshotScheduleConfig
 }
 

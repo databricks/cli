@@ -1,0 +1,12 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle plan -o json | jq 'del(.features)' > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --get //permissions
+trace $CLI bundle deploy
+trace print_requests.py //permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Assert the end result: the grant is applied on the model service securable.
+trace $CLI grants get model_service main.myschema.myservice | jq --sort-keys
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //permissions > out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json

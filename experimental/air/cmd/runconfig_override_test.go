@@ -139,11 +139,11 @@ func TestLoadRunConfigWithOverrides(t *testing.T) {
 	})
 
 	t.Run("intermediate maps are auto-created", func(t *testing.T) {
-		cfg, err := loadRunConfigWithOverrides(t.Context(), writeConfig(t, overrideBaseConfig), []string{"environment.docker_image.url=my/img:1"})
+		cfg, err := loadRunConfigWithOverrides(t.Context(), writeConfig(t, overrideBaseConfig), []string{"code_source.type=snapshot", "code_source.snapshot.root_path=/Workspace/x"})
 		require.NoError(t, err)
-		require.NotNil(t, cfg.Environment)
-		require.NotNil(t, cfg.Environment.DockerImage)
-		assert.Equal(t, "my/img:1", cfg.Environment.DockerImage.URL)
+		require.NotNil(t, cfg.CodeSource)
+		require.NotNil(t, cfg.CodeSource.Snapshot)
+		assert.Equal(t, "/Workspace/x", cfg.CodeSource.Snapshot.RootPath)
 	})
 
 	t.Run("unity catalog image override applies", func(t *testing.T) {

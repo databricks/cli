@@ -1,0 +1,9 @@
+# Target override for job_a lives in a different file than its base definition.
+# UniqueResourceKeys allows a resource to span files inside a target block, so this
+# must merge into job_a rather than error or produce a second resource.
+targets:
+  dev:
+    resources:
+      jobs:
+        job_a:
+          max_concurrent_runs: 4

@@ -1,0 +1,10 @@
+provided_id_fields:
+  # parent and branch_id are immutable (part of hierarchical name, not in API spec)
+  - field: parent
+    reason: id_field
+  - field: branch_id
+    reason: id_field
+ignore_local_changes:
+  # replace_existing only takes effect on create; toggling it later is a no-op.
+  - field: replace_existing
+    reason: "input_only; cannot be updated after create"

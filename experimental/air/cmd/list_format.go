@@ -37,7 +37,7 @@ func buildListRow(run *jobs.Run, host string, workspaceID int64) listRow {
 		RunID:         strconv.FormatInt(run.RunId, 10),
 		RunName:       run.RunName,
 		User:          run.CreatorUserName,
-		Status:        runStatus(run.State),
+		Status:        displayRunStatus(run),
 		DisplayStatus: displayRunStatus(run),
 		StartedAt:     startedAt,
 		IsSweep:       isSweep(run),

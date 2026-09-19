@@ -19,6 +19,12 @@ Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
 
+# The direct engine reports resources as soon as each one is applied, and resources are
+# applied in parallel, so the order of these lines is not deterministic. Sort each run of
+# them before comparing, so tests pin which resources were applied, not the order.
+# A test that needs the raw order sets SortLinesOn.deploy_actions = false.
+SortLines.deploy_actions = '^(Created|Updated|Deleted|Recreated|Resized) \S+$'
+
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]
 EnvRepl.DATABRICKS_BUNDLE_ENGINE = false

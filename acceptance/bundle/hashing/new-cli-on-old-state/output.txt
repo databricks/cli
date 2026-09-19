@@ -1,0 +1,7 @@
+
+=== Old CLI (predates hashing) deploys: state holds the full serialized_dashboard
+json.state.resources.dashboards.dashboard1.state.serialized_dashboard = "{\"pages\":[{\"name\":\"main\",\"displayName\":\"Sales Overview\",\"layout\":[{\"widget\":{\"name\":\"counter1\"}}]}]}\n";
+
+=== Current CLI reads the old state without a phantom update
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

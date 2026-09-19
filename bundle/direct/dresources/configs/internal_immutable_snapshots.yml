@@ -1,0 +1,2 @@
+recreate_on_changes:
+  - reason: immutable

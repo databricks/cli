@@ -26,6 +26,8 @@ var unsupportedResources = []string{
 	"quality_monitors",
 	"registered_models",
 	"model_services",
+	"mcp_services",
+	"model_provider_services",
 	"database_catalogs",
 	"synced_database_tables",
 	"postgres_branches",

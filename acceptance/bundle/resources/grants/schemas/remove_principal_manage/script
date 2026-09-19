@@ -1,0 +1,36 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+trace $CLI grants get schema main.schema_remove_principal_manage_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl | contains.py "$CURRENT_USER_NAME" 'deco-test-user@databricks.com'
+
+# Flush the grant requests; we only want to record the revoke request below.
+print_requests.py --method PATCH //permissions > LOG.grant_requests
+
+# Remove the MANAGE principal from config.
+grep -v 'TO_REMOVE' databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+
+# The plan revokes the removed principal. The per-resource change diff is a direct
+# engine concept (terraform's plan JSON does not expose it), so record it for direct.
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
+    $CLI bundle plan -o json | jq '.plan["resources.schemas.grants_schema.grants"].changes' > out.plan.changes.direct.json
+fi
+
+# Deploy with -qq: the direct variant writes out.plan.changes.direct.json into the
+# bundle root above, so the "Files: N uploaded" count would differ between engines.
+trace $CLI bundle deploy -qq
+
+# The revoke request (engine-specific): the direct engine removes MANAGE by name in
+# addition to ALL_PRIVILEGES, terraform removes MANAGE directly. Removing only
+# ALL_PRIVILEGES would leave MANAGE behind on the backend.
+print_requests.py --method PATCH //permissions > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+
+# The removed principal is gone, and the deploy converges (no perpetual update) on
+# both engines.
+trace $CLI grants get schema main.schema_remove_principal_manage_$UNIQUE_NAME | gron.py --noindex | sort_lines.py --repl
+trace $CLI bundle plan

@@ -18,19 +18,15 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelServiceConfigFallbackConfig:
     """
-    Fallback routing, applied after the primary destination returns a retryable
-    error. Traversal is in list order; the attempt count is the length of the
-    list.
+    Fallback routing applied after a primary destination fails. Fallback
+    destinations are tried in the listed order.
     """
 
     destinations: VariableOrList[ModelServiceConfigDestinationConfig] = field(
         default_factory=list
     )
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Ordered list of fallback destinations. Traversal is in list order; the
-    attempt count is the length of the list. At most 5 are allowed.
+    Fallback destinations, tried in the listed order. At most 5 are allowed.
     """
 
     @classmethod
@@ -46,10 +42,7 @@ class ModelServiceConfigFallbackConfigDict(TypedDict, total=False):
 
     destinations: VariableOrList[ModelServiceConfigDestinationConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Ordered list of fallback destinations. Traversal is in list order; the
-    attempt count is the length of the list. At most 5 are allowed.
+    Fallback destinations, tried in the listed order. At most 5 are allowed.
     """
 
 

@@ -33,9 +33,7 @@ type DataSourceAiGatewayModelProviderServiceConfigAnthropicDirect struct {
 	ApiKey *DataSourceAiGatewayModelProviderServiceConfigAnthropicDirectApiKey `json:"api_key,omitempty"`
 }
 
-type DataSourceAiGatewayModelProviderServiceConfigAnthropicRelayed struct {
-	PlanType string `json:"plan_type,omitempty"`
-}
+type DataSourceAiGatewayModelProviderServiceConfigAnthropicRelayed struct{}
 
 type DataSourceAiGatewayModelProviderServiceConfigAnthropic struct {
 	Direct  *DataSourceAiGatewayModelProviderServiceConfigAnthropicDirect  `json:"direct,omitempty"`
@@ -99,7 +97,6 @@ type DataSourceAiGatewayModelProviderServiceConfigGeminiEnterprise struct {
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigInferenceTable struct {
-	Disabled        bool   `json:"disabled,omitempty"`
 	IsDeleted       bool   `json:"is_deleted,omitempty"`
 	Parent          string `json:"parent"`
 	Table           string `json:"table,omitempty"`
@@ -150,13 +147,11 @@ type DataSourceAiGatewayModelProviderServiceConfigOpenai struct {
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigRateLimits struct {
-	Key             string `json:"key"`
-	Principal       string `json:"principal,omitempty"`
-	RenewalPeriod   string `json:"renewal_period"`
-	RequestTagKey   string `json:"request_tag_key,omitempty"`
-	RequestTagValue string `json:"request_tag_value,omitempty"`
-	Requests        int    `json:"requests,omitempty"`
-	Tokens          int    `json:"tokens,omitempty"`
+	Key           string `json:"key"`
+	Principal     string `json:"principal,omitempty"`
+	RenewalPeriod string `json:"renewal_period"`
+	Requests      int    `json:"requests,omitempty"`
+	Tokens        int    `json:"tokens,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServiceConfigTargets struct {
@@ -195,7 +190,6 @@ type DataSourceAiGatewayModelProviderService struct {
 	Etag           string                                                 `json:"etag,omitempty"`
 	MetastoreId    string                                                 `json:"metastore_id,omitempty"`
 	Name           string                                                 `json:"name"`
-	Owner          string                                                 `json:"owner,omitempty"`
 	ProviderConfig *DataSourceAiGatewayModelProviderServiceProviderConfig `json:"provider_config,omitempty"`
 	UpdateTime     string                                                 `json:"update_time,omitempty"`
 	UpdatedBy      string                                                 `json:"updated_by,omitempty"`

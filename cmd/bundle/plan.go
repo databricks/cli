@@ -91,7 +91,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 					}
 					// A state-only delete has no backend effect; keep it in the JSON
 					// plan but omit it from the human-readable action list.
-					if action.StateOnly {
+					if action.IsStateOnlyDelete() {
 						continue
 					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")

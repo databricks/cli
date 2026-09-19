@@ -53,7 +53,6 @@ environment:
     - torch==2.3.0
     - numpy
   version: 5
-  unity_catalog_image: main.air.training:prod
 env_variables:
   FOO: bar
 secrets:
@@ -87,13 +86,24 @@ permissions:
 	assert.Equal(t, []string{"torch==2.3.0", "numpy"}, cfg.Environment.Dependencies.list)
 	assert.True(t, cfg.Environment.Version.set)
 	assert.Equal(t, "5", cfg.Environment.Version.raw)
-	assert.Equal(t, "main.air.training:prod", cfg.Environment.UnityCatalogImage)
 	require.NotNil(t, cfg.CodeSource)
 	require.NotNil(t, cfg.CodeSource.Snapshot)
 	require.NotNil(t, cfg.CodeSource.Snapshot.Git)
 	require.NotNil(t, cfg.CodeSource.Snapshot.Git.Branch)
 	assert.Equal(t, "main", *cfg.CodeSource.Snapshot.Git.Branch)
 	assert.Len(t, cfg.Permissions, 2)
+}
+
+// TestLoadRunConfigUnityCatalogImage covers parsing environment.unity_catalog_image,
+// which is mutually exclusive with dependencies/version.
+func TestLoadRunConfigUnityCatalogImage(t *testing.T) {
+	cfg, err := loadRunConfig(writeConfig(t, minimalConfig+`
+environment:
+  unity_catalog_image: main.air.training:prod
+`))
+	require.NoError(t, err)
+	require.NotNil(t, cfg.Environment)
+	assert.Equal(t, "main.air.training:prod", cfg.Environment.UnityCatalogImage)
 }
 
 // TestLoadRunConfig_PolymorphicFields exercises the str|int and bool|str unions
@@ -147,6 +157,28 @@ func TestLoadRunConfig_UnknownFieldRejected(t *testing.T) {
 			assert.Contains(t, err.Error(), tt.errFrag)
 		})
 	}
+}
+
+func TestLoadRunConfig_ErrorLineNumbersUseSource(t *testing.T) {
+	path := writeConfig(t, `# first comment
+# second comment
+experiment_name: smoke
+command: echo hi
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+unknown_field: true
+`)
+
+	t.Run("without overrides", func(t *testing.T) {
+		_, err := loadRunConfig(path)
+		require.ErrorContains(t, err, "line 8: field unknown_field")
+	})
+
+	t.Run("with overrides", func(t *testing.T) {
+		_, err := loadRunConfigWithOverrides(t.Context(), path, []string{"compute.num_accelerators=2"})
+		require.ErrorContains(t, err, "line 8: field unknown_field")
+	})
 }
 
 func TestLoadRunConfig_Errors(t *testing.T) {
@@ -267,27 +299,9 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 		errFrag string
 	}{
 		{
-			"docker image alone ok",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "org/repo:tag"}},
-			"",
-		},
-		{
 			"unity catalog image alone ok",
 			environmentConfig{UnityCatalogImage: "main.air.training:prod"},
 			"",
-		},
-		{
-			"docker image with deps conflicts",
-			environmentConfig{
-				DockerImage:  &dockerImageConfig{URL: "org/repo:tag"},
-				Dependencies: dependencies{set: true, list: []string{"torch"}},
-			},
-			"not allowed: dependencies",
-		},
-		{
-			"empty docker url",
-			environmentConfig{DockerImage: &dockerImageConfig{URL: "  "}},
-			"docker_image.url cannot be empty",
 		},
 		{
 			"unity catalog image bad format",
@@ -300,17 +314,33 @@ func TestEnvironmentConfigValidate(t *testing.T) {
 			"environment.unity_catalog_image must be in the format",
 		},
 		{
-			"docker image with unity catalog image conflicts",
+			"unity catalog image with deps conflicts",
 			environmentConfig{
-				DockerImage:       &dockerImageConfig{URL: "org/repo:tag"},
 				UnityCatalogImage: "main.air.training:prod",
+				Dependencies:      dependencies{set: true, list: []string{"torch"}},
 			},
-			"not allowed: unity_catalog_image",
+			"not allowed: dependencies",
+		},
+		{
+			"unity catalog image with version conflicts",
+			environmentConfig{
+				UnityCatalogImage: "main.air.training:prod",
+				Version:           stringOrInt{set: true, raw: "5"},
+			},
+			"not allowed: version",
 		},
 		{
 			"version without deps",
 			environmentConfig{Version: stringOrInt{set: true, raw: "5"}},
-			"requires inline 'dependencies'",
+			"",
+		},
+		{
+			"version with empty deps",
+			environmentConfig{
+				Version:      stringOrInt{set: true, raw: "5"},
+				Dependencies: dependencies{set: true, list: []string{}},
+			},
+			"",
 		},
 		{
 			"version with inline deps ok",
@@ -458,7 +488,7 @@ func TestResolveConfigField(t *testing.T) {
 		{"bare path", "compute.accelerator_type", "config.compute.accelerator_type", "string", ""},
 		{"top-level required", "config.experiment_name", "config.experiment_name", "string", "yes"},
 		{"int leaf", "config.max_retries", "config.max_retries", "int", ""},
-		{"conditionally required", "config.environment.docker_image.url", "config.environment.docker_image.url", "string", "when environment.docker_image is set"},
+		{"conditionally required", "config.code_source.type", "config.code_source.type", "string", "when code_source is set"},
 		{"through a slice", "config.permissions.level", "config.permissions.level", "string", "when a grant is listed"},
 		{"free-form map", "config.parameters", "config.parameters", "map of string to any", ""},
 		{"deeply nested", "config.code_source.snapshot.root_path", "config.code_source.snapshot.root_path", "string", "when code_source.snapshot is set"},
@@ -668,7 +698,7 @@ func TestRunCommandHelp_UnknownConfigPath(t *testing.T) {
 func TestConfigSchemaSharedByHelpAndOverride(t *testing.T) {
 	paths := []string{
 		"compute.num_accelerators",
-		"environment.docker_image.url",
+		"environment.unity_catalog_image",
 		"code_source.snapshot.root_path",
 		"env_variables.MY_VAR", // free-form sub-path
 	}

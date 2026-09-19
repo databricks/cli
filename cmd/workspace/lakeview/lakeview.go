@@ -530,8 +530,11 @@ func newGetPublished() *cobra.Command {
 
   Get the current published dashboard.
 
-  Requires one of the following entitlements: Workspace access, Databricks SQL
-  access, or Consumer access.
+  The caller must be a workspace user with one of the following entitlements:
+  Workspace access, Databricks SQL access, or Consumer access.
+
+  Account-level users who are not members of the workspace cannot call this
+  endpoint, even if the dashboard has been shared with them.
 
   Arguments:
     DASHBOARD_ID: UUID identifying the published dashboard.`
@@ -939,7 +942,8 @@ func newMigrate() *cobra.Command {
 	cmd.Short = `Migrate dashboard.`
 	cmd.Long = `Migrate dashboard.
 
-  Migrates a classic SQL dashboard to Lakeview.
+  Deprecated: Legacy dashboard migration is no longer supported. Use Lakeview
+  (AI/BI) dashboards instead.
 
   Arguments:
     SOURCE_DASHBOARD_ID: UUID of the dashboard to be migrated.`

@@ -69,6 +69,12 @@ func TestLogsFlagValidation(t *testing.T) {
 			wantMsg: "invalid --tail",
 		},
 		{
+			name:    "zero tail rejected",
+			args:    []string{"5"},
+			flags:   map[string]string{"tail": "0"},
+			wantMsg: "invalid --tail",
+		},
+		{
 			name:    "negative minutes rejected",
 			args:    []string{"5"},
 			flags:   map[string]string{"minutes": "-1"},

@@ -92,7 +92,7 @@ func newApplyEnvironment() *cobra.Command {
 
 Apply the latest environment to the pipeline.
 
-  * Applies the current pipeline environment onto the pipeline compute. The
+  Applies the current pipeline environment onto the pipeline compute. The
   environment applied can be used by subsequent dev-mode updates.`
 
 	cmd.Annotations = make(map[string]string)

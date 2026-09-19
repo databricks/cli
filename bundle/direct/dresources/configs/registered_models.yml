@@ -1,0 +1,37 @@
+ignore_remote_changes:
+  # Output-only timestamp/user fields populated by the backend on read.
+  # The user never sets them, so remote-only differences are ignored here
+  # rather than zeroed in RemapState.
+  - field: created_at
+    reason: output_only
+  - field: created_by
+    reason: output_only
+  - field: updated_at
+    reason: output_only
+  - field: updated_by
+    reason: output_only
+  # Aliases are managed on model versions through a separate API, and DoRead
+  # passes IncludeAliases=false, so GET never echoes them back. Without this a
+  # config that sets aliases reports a perpetual update (remote stays empty).
+  - field: aliases
+    reason: input_only
+provided_id_fields:
+  # The name can technically be updated without recreate. We recreate for now though
+  # to match TF implementation.
+  - field: name
+    reason: terraform_compat
+  - field: catalog_name
+    reason: id_field
+  - field: schema_name
+    reason: id_field
+recreate_on_changes:
+  - field: storage_location
+    reason: immutable
+backend_defaults:
+  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/catalog/resource_registered_model.go#L28
+  # m["storage_location"].Computed = true
+  - field: storage_location
+  # owner, full_name, metastore_id are Computed in TF (backend-set output fields).
+  - field: owner
+  - field: full_name
+  - field: metastore_id

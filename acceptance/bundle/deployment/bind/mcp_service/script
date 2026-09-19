@@ -1,0 +1,5 @@
+trace $CLI bundle deployment bind mcp1 main.myschema.mysvc --auto-approve
+trace $CLI bundle summary
+
+trace $CLI bundle deployment unbind mcp1
+trace $CLI bundle summary

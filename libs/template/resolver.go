@@ -4,9 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/git"
+)
+
+const (
+	// bundleExamplesRepoName is the display name we record in telemetry for
+	// template initializations from the bundle-examples repo.
+	bundleExamplesRepoName = "bundle-examples"
+
+	// bundleExamplesHost and bundleExamplesPath identify the Databricks
+	// bundle-examples repository. GitHub resolves the owner and repo
+	// case-insensitively, so isBundleExamplesRepo compares against these with
+	// EqualFold.
+	bundleExamplesHost = "github.com"
+	bundleExamplesPath = "databricks/" + bundleExamplesRepoName
 )
 
 type gitUrlPrefix struct {
@@ -45,6 +60,81 @@ func matchGitUrlPrefix(url string) *gitUrlPrefix {
 func IsGitRepoUrl(url string) bool {
 	p := matchGitUrlPrefix(url)
 	return p != nil && !p.invalid
+}
+
+// gitHostAndPath extracts the host and the "owner/repo" path from a Git URL. It
+// recognizes the same URL forms as matchGitUrlPrefix (scheme-based https:// and
+// ssh://, and scp-like git@host:owner/repo), so it agrees with the rest of the
+// resolver on what counts as a Git URL; ok is false for anything else (e.g. a
+// local path). Userinfo, port, a trailing ".git" and surrounding slashes are
+// stripped.
+//
+// For scheme URLs the host comes from the parsed authority rather than by
+// stripping to the last "@", so a path that embeds an "@" (e.g.
+// "https://attacker.example/foo@github.com/...") is not mistaken for the host.
+func gitHostAndPath(rawurl string) (host, path string, ok bool) {
+	prefix := matchGitUrlPrefix(rawurl)
+	if prefix == nil || prefix.invalid {
+		return "", "", false
+	}
+
+	if prefix.prefix == "git@" {
+		// scp-like syntax: git@host:owner/repo (no scheme; host and path are
+		// separated by a colon).
+		_, rest, _ := strings.Cut(rawurl, "@")
+		h, p, found := strings.Cut(rest, ":")
+		if !found {
+			return "", "", false
+		}
+		host, path = h, p
+	} else {
+		u, err := url.Parse(rawurl)
+		if err != nil {
+			return "", "", false
+		}
+		// Hostname strips any userinfo and port.
+		host, path = u.Hostname(), u.Path
+	}
+
+	path = strings.TrimSuffix(strings.Trim(path, "/"), ".git")
+	return host, path, host != "" && path != ""
+}
+
+// isBundleExamplesRepo reports whether a Git URL points at the Databricks
+// bundle-examples repository. Because that repo is first-party public content,
+// template initializations from it are safe to record in telemetry.
+func isBundleExamplesRepo(rawurl string) bool {
+	host, path, ok := gitHostAndPath(rawurl)
+	return ok && strings.EqualFold(host, bundleExamplesHost) && strings.EqualFold(path, bundleExamplesPath)
+}
+
+// customWriter returns the writer for a template that is not a registered
+// first-party template. Custom template definitions may contain PII, so we
+// record only minimal telemetry for them. The bundle-examples repo is the
+// exception: it is first-party, so we record verbose telemetry (the template
+// name and its enum args), qualifying the repo name with the template
+// subdirectory that identifies the specific template within the repo.
+//
+// The template directory must stay within the cloned repo. A directory that
+// escapes it (e.g. "../../local-template") would make the git reader load an
+// arbitrary local template whose definition may contain PII; such a template is
+// not first-party, so it falls back to the minimal writer.
+func customWriter(templatePathOrUrl, templateDir string, isGit bool) Writer {
+	if isGit && isBundleExamplesRepo(templatePathOrUrl) && (templateDir == "" || filepath.IsLocal(templateDir)) {
+		name := bundleExamplesRepoName
+		// Recording the template directory in telemetry is safe here even though
+		// it is user-supplied: LogTelemetry only runs after a successful
+		// materialize, so it always resolves to a public template in the
+		// first-party bundle-examples repo, not user-private data.
+		//
+		// Clean it so equivalent inputs ("contrib/x", "./contrib/x", "contrib/x/.")
+		// map to one identifier; a cleaned "." means the repo root.
+		if dir := filepath.ToSlash(filepath.Clean(templateDir)); dir != "." {
+			name += "/" + dir
+		}
+		return &writerWithFullTelemetry{defaultWriter: defaultWriter{name: TemplateName(name)}}
+	}
+	return &defaultWriter{name: Custom}
 }
 
 // ResolveReader resolves a template path/URL to a Reader (built-in, git or local)
@@ -142,17 +232,14 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 	//
 	// We resolve the appropriate reader according to the reference provided by the user.
 	if tmpl == nil {
-		reader, _, err := ResolveReader(r.TemplatePathOrUrl, r.TemplateDir, ref)
+		reader, isGit, err := ResolveReader(r.TemplatePathOrUrl, r.TemplateDir, ref)
 		if err != nil {
 			return nil, err
 		}
 		tmpl = &Template{
 			name:   Custom,
 			Reader: reader,
-			// We use a writer that does not log verbose telemetry for custom templates.
-			// This is important because template definitions can contain PII that we
-			// do not want to centralize.
-			Writer: &defaultWriter{name: Custom},
+			Writer: customWriter(r.TemplatePathOrUrl, r.TemplateDir, isGit),
 		}
 	}
 	err = tmpl.Writer.Configure(ctx, r.ConfigFile, r.OutputDir)

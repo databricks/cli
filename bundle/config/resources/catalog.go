@@ -15,6 +15,7 @@ import (
 
 type Catalog struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	catalog.CreateCatalog
 
 	// List of grants to apply on this catalog.

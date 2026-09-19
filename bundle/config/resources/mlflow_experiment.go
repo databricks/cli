@@ -13,6 +13,7 @@ import (
 
 type MlflowExperiment struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	ml.CreateExperiment
 
 	Permissions []MlflowExperimentPermission `json:"permissions,omitempty"`

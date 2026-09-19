@@ -1,7 +1,7 @@
 [project]
 name = "demo"
 requires-python = ">=3.12"
-dependencies = ["pip==24.0"]
+dependencies = ["pip==26.2"]
 
 [dependency-groups]
 dev = ["databricks-connect~=16.0.0"]

@@ -3,15 +3,16 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Fake workspace settles a run on the first successful poll, so both the deploy
-# wait and destroy's refresh are faulted: delete sees an in-progress run.
-fault.py "GET /api/2.2/jobs/runs/get" 403 0 2
+# The fault ends the deploy's wait while the run is still going, leaving an
+# in-progress run tracked in state, as an interrupted deploy would.
+fault.py "GET /api/2.2/jobs/runs/get" 403 0 1
 
 title "the deploy stops waiting before the run finishes"
 trace errcode $CLI bundle deploy
 trace read_id.py my_run
 
-# jobs/runs/delete rejects an active run, so the run is cancelled first.
-title "destroy cancels the run before deleting it"
+# A run is a historical record, so destroy leaves it alone even while it is
+# still going: it only drops the state entry, with no cancel and no delete.
+title "destroy leaves the unfinished run alone"
 trace $CLI bundle destroy --auto-approve
 trace print_requests.py //jobs/runs

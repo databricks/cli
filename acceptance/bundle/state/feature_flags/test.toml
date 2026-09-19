@@ -1,3 +1,6 @@
 Ignore = [".databricks"]
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DMS = [""]
+
+# New-CLI tests use the source build; pin them to this week's release (v1.17.0) once published.

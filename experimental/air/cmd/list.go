@@ -89,7 +89,22 @@ func newListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
 		Args:  root.NoArgs,
-		Short: "List your active runs for the current profile (use --all-status for finished runs)",
+		Short: "List active runs for the current user",
+		Long: `List active runs for the current user.
+
+Filters:
+  Use --filter KEY=VALUE per condition. A run must match every condition.
+
+  accelerator_type  Accelerator type, such as A10 or H100.
+  experiment        Case-insensitive glob matched against the experiment name.
+  num_accelerators  Total GPU count.
+  user              Run creator identifier.`,
+		Example: `  databricks experimental air list --filter accelerator_type=H100
+
+  databricks experimental air list --all-status \
+    --filter 'experiment=qwen*' \
+    --filter num_accelerators=8 \
+    --filter user=person@example.com`,
 	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
@@ -97,7 +112,7 @@ func newListCommand() *cobra.Command {
 	cmd.Flags().IntVar(&limit, "limit", 20, "Maximum number of runs to show")
 	cmd.Flags().BoolVar(&allStatus, "all-status", false, "Show runs in all states (default: active only)")
 	cmd.Flags().BoolVar(&allUsers, "all-users", false, "Show runs from all users")
-	cmd.Flags().StringArrayVar(&filters, "filter", nil, "Filter runs, e.g. experiment=foo* (repeatable)")
+	cmd.Flags().StringArrayVar(&filters, "filter", nil, "Filter runs by KEY=VALUE (repeatable)")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -159,6 +174,8 @@ func newListCommand() *cobra.Command {
 		}
 		return renderListText(cmd, fetcher, limit)
 	}
+
+	cmd.AddCommand(newListPoolsCommand())
 
 	return cmd
 }

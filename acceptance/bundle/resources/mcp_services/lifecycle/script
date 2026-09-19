@@ -1,0 +1,36 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CONN="mcp_conn_$UNIQUE_NAME"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    # Only created on cloud (see below); tolerate its absence locally.
+    if [ -n "$CLOUD_ENV" ]; then
+        $CLI connections delete "main.default.$CONN" >/dev/null 2>&1 || true
+    fi
+}
+trap cleanup EXIT
+
+# On a real workspace the MCP service must point at an existing UC connection.
+# Use a SCHEMA-SCOPED connection (parent schemas/main.default): schema-level
+# connections need only schema privileges, not metastore CREATE CONNECTION.
+# is_mcp_connection is a metastore-level option (rejected on schema-level
+# connections), so this is a plain HTTP connection, which the mcp_service
+# accepts as its source_connection. The mock testserver doesn't validate
+# source_connection, so this only runs on cloud.
+if [ -n "$CLOUD_ENV" ]; then
+    # DEBUG (temporary): silent on success; prints the error if create fails.
+    if ! conn_out=$($CLI connections create --json "{\"name\":\"$CONN\",\"connection_type\":\"HTTP\",\"parent\":\"schemas/main.default\",\"options\":{\"host\":\"https://mcp-$UNIQUE_NAME.example.invalid\",\"port\":\"443\",\"base_path\":\"/mcp\",\"bearer_token\":\"dummy-token\"}}" 2>&1); then
+        echo "DEBUG connections create failed:"
+        echo "$conn_out"
+    fi
+fi
+
+trace $CLI bundle deploy
+
+MCP_ID=$($CLI bundle summary --output json | jq -r '.resources.mcp_services.mcp.id')
+
+trace $CLI ai-gateway get-mcp-service "mcp-services/$MCP_ID" | jq '{name, comment}'
+
+# Verify there is no drift right after deploy.
+trace $CLI bundle plan

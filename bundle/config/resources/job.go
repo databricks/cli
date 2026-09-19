@@ -14,6 +14,7 @@ import (
 
 type Job struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	jobs.JobSettings
 
 	Permissions []JobPermission `json:"permissions,omitempty"`

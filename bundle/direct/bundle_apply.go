@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/terraform_dabs_map"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -16,7 +17,11 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan) {
+// Apply deploys every node in plan, respecting dependency order. When reportApplied
+// is set, each resource is reported as soon as it is applied, so a long deploy shows
+// what it has done and a failing one still reports the resources it did apply. Nodes
+// run in parallel, so the lines come out in completion order, which varies per run.
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, plan *deployplan.Plan, reportApplied bool) {
 	if plan == nil {
 		panic("Planning is not done")
 	}
@@ -109,10 +114,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if action == deployplan.Delete {
-			if entry.Gone || entry.StateOnly {
-				// Either planning confirmed the resource is already deleted remotely
-				// (Gone), or the resource has no delete operation (StateOnly). Both
-				// cases only remove it from the state, without calling the delete API.
+			if entry.IsStateOnlyDelete() {
+				// The resource is already deleted remotely (Gone) or has no delete
+				// operation (StateOnly); either way only remove it from the state,
+				// without calling the delete API.
 				err = b.StateDB.DeleteState(ctx, resourceKey, false)
 			} else {
 				err = d.Destroy(ctx, &b.StateDB)
@@ -120,6 +125,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
+			}
+			// A state-only delete performs no backend operation, so don't report it,
+			// consistent with the summary (CountActions excludes it) and the terraform
+			// path in logDeploySummary.
+			if reportApplied && !entry.IsStateOnlyDelete() {
+				cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
 			}
 			return true
 		}
@@ -155,6 +166,12 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				b.StateDB.RecordFailure(resourceKey, failedID, err)
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false
+			}
+
+			// Reported before the remote-state refresh below: the resource is already
+			// deployed at this point, so the line is accurate even if the refresh fails.
+			if reportApplied {
+				cmdio.LogString(ctx, deployplan.AppliedLine(resourceKey, action))
 			}
 		}
 

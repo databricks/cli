@@ -21,9 +21,7 @@ class ModelServiceConfigPayPerTokenConfig:
 
     model: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Resource name of the UC model.
+    Resource name of the Unity Catalog model.
     Format: `models/{catalog}.{schema}.{model}`.
     """
 
@@ -40,9 +38,7 @@ class ModelServiceConfigPayPerTokenConfigDict(TypedDict, total=False):
 
     model: VariableOr[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Resource name of the UC model.
+    Resource name of the Unity Catalog model.
     Format: `models/{catalog}.{schema}.{model}`.
     """
 

@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	bundleenv "github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -82,12 +83,18 @@ type ProcessOptions struct {
 	Deploy          bool
 
 	// Path to pre-computed plan JSON file (direct engine only).
-	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
+	// When set, skips Build and PreDeployChecks phases, and loads the plan from
+	// the file instead of calculating it. Artifact uploads are handled directly
+	// inside Deploy by reading the remote paths from the plan's new_state and
+	// finding the matching local files.
 	ReadPlanPath string
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
 	// (after state is opened and IDs loaded, before deferred Finalize).
 	PostStateFunc func(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error
+
+	// If true, deployment history configuration is ignored after state is resolved.
+	SkipEnforcingDeploymentHistorySetting bool
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
@@ -219,6 +226,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		cmd.SetContext(ctx)
+		if stateDesc.Engine.IsDirect() {
+			resolveDeploymentHistory(ctx, b, stateDesc)
+		}
 
 		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.
@@ -255,59 +265,65 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
+		var localPath string
 		if needDirectState {
-			_, localPath := b.StateFilenameDirect(ctx)
-
-			if b.ConfiguresDeploymentHistory(ctx) {
-				var err error
-				dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
-				if err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-
-				// Stamp the deployment and the version this run records onto every job and pipeline so
-				// the plan carries them. version_id is always known (last recorded + 1); deployment_id
-				// does not exist until a first deploy creates it, so it is left off here and the deploy
-				// phase stamps the created id.
-				// The service reports the version as a string; parse it here so everything below
-				// carries a number.
-				lastVersionID := 0
-				if dmsDeployment != nil && dmsDeployment.LastVersionId != "" {
-					lastVersionID, err = strconv.Atoi(dmsDeployment.LastVersionId)
-					if err != nil {
-						logdiag.LogError(ctx, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err))
-						return b, stateDesc, root.ErrAlreadyPrinted
-					}
-				}
-				nextVersion := lastVersionID + 1
-				muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
-				if dmsDeploymentID != "" {
-					bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
-						b.Config.Bundle.Deployment.DeploymentID = dmsDeploymentID
-						b.Config.Bundle.Deployment.LatestVersionID = lastVersionID
-					})
-					muts = append(muts, metadata.AnnotateDeployment(dmsDeploymentID))
-				}
-				bundle.ApplySeqContext(ctx, b, muts...)
-				if logdiag.HasError(ctx) {
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-				// StateDB.Open builds the DMS client from the workspace client on the context.
-				if !cmdctx.HasWorkspaceClient(ctx) {
-					ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
-				}
-				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-			} else {
+			_, localPath = b.StateFilenameDirect(ctx)
+			if !stateDesc.IsDMS() {
 				if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
 					logdiag.LogError(ctx, err)
 					return b, stateDesc, root.ErrAlreadyPrinted
 				}
 			}
+		}
 
+		if stateDesc.Engine.IsDirect() && !opts.SkipEnforcingDeploymentHistorySetting {
+			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
+
+		if needDirectState && stateDesc.IsDMS() {
+			var err error
+			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+
+			// Stamp the deployment and the version this run records onto every job and pipeline so
+			// the plan carries them. version_id is always known (last recorded + 1); deployment_id
+			// does not exist until a first deploy creates it, so it is left off here and the deploy
+			// phase stamps the created id.
+			lastVersionID, err := parseLastVersionID(dmsDeployment)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			nextVersion := lastVersionID + 1
+			muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(nextVersion)}
+			if dmsDeploymentID != "" {
+				bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
+					b.Config.Bundle.Deployment.DeploymentID = dmsDeploymentID
+					b.Config.Bundle.Deployment.LatestVersionID = lastVersionID
+				})
+				muts = append(muts, metadata.AnnotateDeployment(dmsDeploymentID))
+			}
+			bundle.ApplySeqContext(ctx, b, muts...)
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			// StateDB.Open builds the DMS client from the workspace client on the context.
+			if !cmdctx.HasWorkspaceClient(ctx) {
+				ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+			}
+			if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
+
+		if needDirectState {
 			// Warn when the state was last written by a newer CLI than the one
 			// running now. The state schema version is a hard gate (dstate.Open
 			// rejects a too-new state_version), but a state can be written by a
@@ -352,12 +368,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	var plan *deployplan.Plan
-
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
+		// Artifact uploads are handled inside Deploy by extracting remote paths
+		// from the plan's new_state and finding the matching local files.
 		opts.Build = false
 		opts.PreDeployChecks = false
 
@@ -546,6 +563,89 @@ func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceCl
 		return "", nil, err
 	}
 	return deploymentID, deployment, nil
+}
+
+// parseLastVersionID parses the deployment's last recorded version, which the service reports
+// as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
+func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
+	if dmsDeployment == nil || dmsDeployment.LastVersionId == "" {
+		return 0, nil
+	}
+	v, err := strconv.Atoi(dmsDeployment.LastVersionId)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err)
+	}
+	return v, nil
+}
+
+// OpenDirectStateForRead opens the direct-engine state database read-only. When the bundle
+// records deployment history the local state file is only a tombstone, so the resources are
+// read from the deployment metadata service instead.
+func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+	_, localPath := b.StateFilenameDirect(ctx)
+	if !resolveDeploymentHistory(ctx, b, stateDesc) {
+		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+			return err
+		}
+		return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
+	}
+
+	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
+	if err != nil {
+		return err
+	}
+	lastVersionID, err := parseLastVersionID(dmsDeployment)
+	if err != nil {
+		return err
+	}
+	// StateDB.Open builds the DMS client from the workspace client on the context, so ensure one is set.
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		ctx = cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
+	}
+	if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: dmsDeploymentID, LastVersionID: lastVersionID}); err != nil {
+		return err
+	}
+	return enforceDeploymentHistorySetting(ctx, b, stateDesc, false)
+}
+
+func resolveDeploymentHistory(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) bool {
+	configured := configuresDeploymentHistory(ctx, b)
+	if stateDesc.SourcePath == "" {
+		if configured {
+			stateDesc.Features = map[string]struct{}{dstate.FeatureDeploymentHistory: {}}
+		}
+		return configured
+	}
+
+	return stateDesc.IsDMS()
+}
+
+func enforceDeploymentHistorySetting(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requireMatch bool) error {
+	if stateDesc.SourcePath == "" {
+		return nil
+	}
+	configured := configuresDeploymentHistory(ctx, b)
+	recorded := stateDesc.IsDMS()
+	if configured == recorded {
+		return nil
+	}
+	if requireMatch {
+		return fmt.Errorf(`deployment history setting (%t) does not match the existing state (%t)
+
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over`, configured, recorded)
+	}
+	if configured {
+		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
+
+Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
+	}
+	log.Warnf(ctx, "Deployment history setting (%t) does not match the existing state (%t). Using the existing state.", configured, recorded)
+	return nil
+}
+
+func configuresDeploymentHistory(ctx context.Context, b *bundle.Bundle) bool {
+	configured := b.Config.Experimental != nil && b.Config.Experimental.DeploymentHistory
+	return bundleenv.RecordsDeploymentHistory(ctx, configured)
 }
 
 // isNewerVersion reports whether the state's recorded CLI version is strictly

@@ -21,6 +21,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 }
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan
 update dashboards.my_dashboard
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged

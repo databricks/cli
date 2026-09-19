@@ -138,8 +138,11 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// Wait for asynchronous teardown to finish before re-creating the same
 	// name. Done after DeleteState so the bundle stays consistent if the wait
 	// times out — the resource is no longer tracked in state, retry on next plan.
-	err = d.Adapter.WaitAfterDelete(ctx, oldID)
-	if err != nil {
+	// The general delete-wait stays uncapped; we only pass the already-resolved
+	// RESOURCE_MAX_WAIT so a resource that opts in can bound its own poll by it.
+	// A NotFound means the resource is gone, which is the success the wait polls for.
+	err = d.Adapter.WaitAfterDelete(dresources.WithResourceMaxWait(ctx, d.MaxWait), oldID)
+	if err != nil && !apierr.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
@@ -280,7 +283,8 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	_, err = waitCapped(ctx, d.MaxWait, "deletion of "+d.ResourceKey, func(ctx context.Context) (struct{}, error) {
 		return struct{}{}, d.Adapter.WaitAfterDelete(ctx, oldID)
 	})
-	if err != nil {
+	// A NotFound means the resource is gone, which is the success the wait polls for.
+	if err != nil && !apierr.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
@@ -320,13 +324,19 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-// saveState saves a state with sensitive fields replaced by a placeholder value so secrets are never written
-// to disk in plaintext.
+// saveState compacts the state (replacing fields declared in hashed_fields
+// with content hashes, see dresources.CompactState) before persisting it. Fields already
+// smaller than a hash placeholder are persisted as is. Sensitive fields are replaced by a
+// placeholder value so secrets are never written to disk in plaintext.
 func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
-	if err := zeroSensitiveFields(d.Adapter, state); err != nil {
+	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), state)
+	if err != nil {
+		return fmt.Errorf("compacting state: %w", err)
+	}
+	if err := zeroSensitiveFields(d.Adapter, compacted); err != nil {
 		return fmt.Errorf("redacting state: %w", err)
 	}
-	return db.SaveState(ctx, d.ResourceKey, newID, state, dependsOn)
+	return db.SaveState(ctx, d.ResourceKey, newID, compacted, dependsOn)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

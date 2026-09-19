@@ -321,3 +321,39 @@ func TestWalkSkip(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"A", "B", "Inner", "D"}, seen)
 }
+
+// TestWalkTypeSameDepthCollisionIsVisitedTwice codifies the contract that
+// WalkType is a *dumb* walker: when two anonymous embedded structs both declare
+// the same json name at the same embedding depth, WalkType visits the path
+// twice — once per embed. It makes no attempt to resolve ambiguity.
+//
+// This property is intentional: it lets callers (e.g. the shadow-collision
+// guard in bundle/config) detect same-depth conflicts simply by counting
+// visits per path.
+func TestWalkTypeSameDepthCollisionIsVisitedTwice(t *testing.T) {
+	// Two anonymous embeds that both carry json:"id" — same embedding depth,
+	// same json name. encoding/json calls this ambiguous and serializes neither.
+	type EmbedA struct {
+		ID string `json:"id,omitempty"`
+	}
+	type EmbedB struct {
+		ID string `json:"id,omitempty"` //nolint:govet // repeated tag is the point
+	}
+	type Root struct {
+		EmbedA
+		EmbedB //nolint:govet // same-depth collision is what this test demonstrates
+	}
+
+	visits := map[string]int{}
+	require.NoError(t, WalkType(reflect.TypeFor[Root](), func(path *structpath.PatternNode, _ reflect.Type, _ *reflect.StructField) bool {
+		if path != nil {
+			visits[path.String()]++
+		}
+		return true
+	}))
+
+	// "id" must be visited exactly twice — once from EmbedA and once from EmbedB.
+	assert.Equal(t, 2, visits["id"],
+		"WalkType must visit a same-depth collision once per declaring embed; "+
+			"encoding/json would serialize neither field")
+}

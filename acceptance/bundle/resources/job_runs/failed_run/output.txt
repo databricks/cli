@@ -2,6 +2,7 @@
 === a run that finishes FAILED fails the deploy
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Created jobs.my_job
 Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [RUN_URL]
 Error: cannot create resources.job_runs.my_run: waiting after creating id=[MY_RUN_ID]: run did not succeed: FAILED: Task main failed with message: Workload failed, see run output for details.
 task "main": RuntimeError: intentional failure
@@ -65,7 +66,7 @@ Error: cannot create resources.jobs.downstream_job: dependency failed: resources
 
 Files: 0 uploaded, 0 deleted
 
-=== run-now was issued once per deploy, and the recreate deleted the failed run
+=== run-now was issued once per deploy, and the recreate left the failed run alone
 >>> print_requests.py --keep //jobs/run-now
 {
   "method": "POST",
@@ -85,19 +86,11 @@ Files: 0 uploaded, 0 deleted
 }
 
 >>> print_requests.py //jobs/runs/delete
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/runs/delete",
-  "body": {
-    "run_id": [MY_RUN_ID]
-  }
-}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.job_runs.my_run
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Destroy: 2 deleted
+Destroy: 1 deleted

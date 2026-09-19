@@ -1,0 +1,17 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
+  mutators:
+    - "mutators:update_mcp_service"
+
+resources:
+  mcp_services:
+    my_mcp_service_1:
+      parent: "schemas/main.default"
+      mcp_service_id: "my_mcp_service_1"
+      comment: "My MCP service"

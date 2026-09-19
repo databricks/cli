@@ -22,9 +22,11 @@ CUDA out of memory
 >>> [CLI] experimental air logs 123 --tail 1
 CUDA out of memory
 
-=== logs with --tail 0 prints no log lines
+=== logs with --tail 0 is rejected
 >>> [CLI] experimental air logs 123 --tail 0
-No logs available for run 123. Run terminated in state SUCCESS
+Error: invalid --tail 0: must be positive
+
+Exit code: 1
 
 === logs from a specific retry
 >>> [CLI] experimental air logs 123 --retry 0

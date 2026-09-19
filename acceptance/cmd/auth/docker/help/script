@@ -1,0 +1,2 @@
+trace "$CLI" auth --help
+trace "$CLI" auth docker --help

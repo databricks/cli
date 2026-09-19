@@ -47,7 +47,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 === The raw recorded state the service holds for this deployment
 >>> print_state.py --no-dms
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "features": {
@@ -113,7 +113,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 0 unchanged
 === The raw recorded state after redeploy
 >>> print_state.py --no-dms
 {
- "state_version": 2,
+ "state_version": 3,
  "cli_version": "[CLI_VERSION]",
  "lineage": "[UUID]",
  "features": {

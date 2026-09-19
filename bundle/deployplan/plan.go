@@ -59,8 +59,9 @@ func (p *Plan) CountActions() ActionCounts {
 		case Delete:
 			// A state-only delete touches nothing in the backend and only drops the
 			// state entry, so it is not a real action: leave it out of the tally
-			// entirely rather than misreport it as deleted or unchanged.
-			if entry.StateOnly {
+			// entirely rather than misreport it as deleted or unchanged. This matches
+			// how `bundle destroy` counts its own deletions.
+			if entry.IsStateOnlyDelete() {
 				continue
 			}
 			c.Delete++
@@ -139,6 +140,14 @@ type PlanEntry struct {
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
+}
+
+// IsStateOnlyDelete reports whether applying this delete only drops the state entry
+// without any backend call: the resource is already gone remotely (Gone) or has no
+// delete operation (StateOnly). Such deletes are omitted from human output, excluded
+// from the resource counts, and need no destructive-action approval.
+func (e *PlanEntry) IsStateOnlyDelete() bool {
+	return e.Gone || e.StateOnly
 }
 
 type DependsOnEntry struct {

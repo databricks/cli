@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
@@ -49,10 +48,9 @@ var deployApprovalGroups = []approvalGroup{
 func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
 	actions := plan.GetActions()
 
-	// Deletes that only clean up the state — the resource is already gone remotely
-	// (Gone) or has no delete operation (StateOnly) — are not destructive and need
-	// no approval.
-	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.Gone || a.StateOnly })
+	// Deletes that only clean up the state (already gone remotely, or no delete
+	// operation) are not destructive and need no approval.
+	actions = slices.DeleteFunc(actions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
 
 	err := checkForPreventDestroy(b, actions)
 	if err != nil {
@@ -89,7 +87,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 		err   error
 	)
 	if stateEngine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
 		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
 		// Capture the finalized state for deploy telemetry. It carries each
 		// resource's state-size in bytes (from the WAL replay Finalize just
@@ -118,6 +116,12 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	)
 }
 
+// reportPerResource reports whether the deploy should list resources individually
+// (-q and -qq drop those lines).
+func reportPerResource(b *bundle.Bundle) bool {
+	return b.Quiet < bundle.QuietSummary
+}
+
 // logFileSummary reports what the file sync did. Separate from the resource summary
 // because a deploy that only changes business logic (a .py or .sql file) leaves every
 // resource unchanged, so without this line its summary is all zeros and looks like a
@@ -132,26 +136,23 @@ func logFileSummary(ctx context.Context, b *bundle.Bundle) {
 
 // logDeploySummary prints the per-resource actions that were applied followed by the
 // resource summary line. -q drops the per-resource lines, -qq drops the summary too.
-// The past-tense verb is the short action name plus "d" (create→Created,
-// delete→Deleted, ...), capitalized to match the sentence case of other output.
-// "bundle plan" keeps the lower-case present tense, so the two are still
-// distinguishable at a glance.
-func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+// The direct engine prints its own lines as it goes, so only the terraform engine
+// reports them from the plan here.
+func logDeploySummary(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType) {
 	if b.Quiet >= bundle.QuietAll {
 		return
 	}
 
-	if b.Quiet < bundle.QuietSummary {
+	// The direct engine already printed these lines as each resource was applied.
+	if reportPerResource(b) && !stateEngine.IsDirect() {
 		for _, action := range plan.GetActions() {
 			if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Undefined {
 				continue
 			}
-			// A state-only delete performs no backend operation, so don't report it.
-			if action.StateOnly {
+			if action.IsStateOnlyDelete() {
 				continue
 			}
-			verb := action.ActionType.StringShort() + "d"
-			cmdio.LogString(ctx, strings.ToUpper(verb[:1])+verb[1:]+" "+strings.TrimPrefix(action.ResourceKey, "resources."))
+			cmdio.LogString(ctx, deployplan.AppliedLine(action.ResourceKey, action.ActionType))
 		}
 	}
 
@@ -216,7 +217,24 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	if !immutable {
-		uploadLibraries(ctx, b, libs)
+		if plan != nil {
+			// Applying a saved plan: upload the local artifact files the plan was
+			// computed against. LocalLibraryPaths expands any library globs that
+			// haven't been processed yet and computes patched paths for
+			// dynamic_version wheels from the cache left by "bundle plan".
+			planLocalPaths, err := libraries.LocalLibraryPaths(ctx, b)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			planLibs := make(map[string][]libraries.LocationToUpdate, len(planLocalPaths))
+			for _, p := range planLocalPaths {
+				planLibs[p] = nil
+			}
+			uploadLibraries(ctx, b, planLibs)
+		} else {
+			uploadLibraries(ctx, b, libs)
+		}
 		if logdiag.HasError(ctx) {
 			return
 		}
@@ -360,7 +378,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// still propagates. Earlier failures report the files only, since the plan
 	// counts would then describe what was intended rather than what was applied.
 	filesReported = true
-	logDeploySummary(ctx, b, plan)
+	logDeploySummary(ctx, b, plan, stateEngine)
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 

@@ -118,13 +118,9 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 	// idempotency_token is intentionally not mapped: it dedups a single runs/submit
 	// call, which has no analogue for a persistent, repeatedly-runnable bundle job.
 	//
-	// usage_policy_name resolution is not ported (mirrors the submit path), and
-	// docker images have no ai_runtime_task representation yet.
+	// usage_policy_name resolution is not ported (mirrors the submit path).
 	if cfg.UsagePolicyName != nil {
 		return nil, nil, errors.New("usage_policy_name is not yet supported by convert-to-dabs")
-	}
-	if cfg.Environment != nil && cfg.Environment.DockerImage != nil {
-		return nil, nil, errors.New("environment.docker_image is not yet supported by convert-to-dabs")
 	}
 	if snap := codeSnapshot(cfg); snap != nil {
 		// remote_volume points the code archive at a specific UC Volume. The bundle's
@@ -156,7 +152,7 @@ func convertToDabs(ctx context.Context, cfg *runConfig, configPath, bundleDir st
 	// their paths from command_path. It no longer produces a requirements.yaml —
 	// file-form deps are folded into the environments[] spec — so there is nothing to
 	// filter out here.
-	artifacts, err := buildArtifacts(cfg, configPath)
+	artifacts, err := buildArtifacts(cfg)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -338,8 +334,11 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	// default channel) so a config without an explicit version still pins the version
 	// the workload would have run with — not an empty spec.
 	envVersion, deps := bundleEnvironmentDeps(ctx, cfg)
-	envSpec := map[string]dyn.Value{
-		"environment_version": nv(envVersion, 1),
+	envSpec := map[string]dyn.Value{}
+	if strings.HasPrefix(envVersion, databricksAIPrefix) {
+		envSpec["base_environment"] = nv("workspace-base-environments/"+envVersion, 1)
+	} else {
+		envSpec["environment_version"] = nv(envVersion, 1)
 	}
 	if len(deps) > 0 {
 		depVals := make([]dyn.Value, len(deps))

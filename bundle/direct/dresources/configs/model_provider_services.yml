@@ -1,0 +1,9 @@
+provided_id_fields:
+  # parent + model_provider_service_id compose the server-derived resource
+  # name (model-provider-services/{catalog}.{schema}.{model_provider_service}),
+  # which is the ID the resource is fetched by. Both immutable; a local
+  # change recreates. DoRead reconstructs them from the returned name.
+  - field: parent
+    reason: id_field
+  - field: model_provider_service_id
+    reason: id_field

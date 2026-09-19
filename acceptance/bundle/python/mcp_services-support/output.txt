@@ -1,0 +1,28 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_mcp_service"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "mcp_services": {
+      "my_mcp_service_1": {
+        "comment": "My MCP service (updated)",
+        "mcp_service_id": "my_mcp_service_1",
+        "parent": "schemas/main.default"
+      },
+      "my_mcp_service_2": {
+        "comment": "My MCP service (2) (updated)",
+        "mcp_service_id": "my_mcp_service_2",
+        "parent": "schemas/main.default"
+      }
+    }
+  }
+}
