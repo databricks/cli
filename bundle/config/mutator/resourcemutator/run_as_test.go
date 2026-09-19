@@ -1,6 +1,7 @@
 package resourcemutator
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 
@@ -318,5 +319,123 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		}
 		diags := bundle.Apply(t.Context(), b, SetRunAs())
 		require.NoError(t, diags.Error())
+	}
+}
+
+func TestRunAsIdentities(t *testing.T) {
+	for _, tc := range []struct {
+		runAs     string
+		wantError bool
+	}{
+		{`null`, true},
+		{`{}`, true},
+		{`{user_name: ""}`, true},
+		{`{service_principal_name: ""}`, true},
+		{`{group_name: ""}`, true},
+		{`{user_name: user}`, false},
+		{`{service_principal_name: sp}`, false},
+		{`{group_name: group}`, false},
+		{`{user_name: "", service_principal_name: "", group_name: ""}`, true},
+		{`{user_name: "", service_principal_name: "", group_name: group}`, false},
+		{`{user_name: user, service_principal_name: sp}`, true},
+		{`{user_name: user, group_name: group}`, true},
+		{`{service_principal_name: sp, group_name: group}`, true},
+		{`{user_name: user, service_principal_name: sp, group_name: group}`, true},
+	} {
+		t.Run(tc.runAs, func(t *testing.T) {
+			yaml := "workspace: {current_user: {userName: deployer}}\nrun_as: " + tc.runAs
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			if tc.wantError {
+				require.ErrorContains(t, diags.Error(), "run_as section must specify exactly one non-empty identity: user_name, service_principal_name, or group_name")
+				assert.Equal(t, []dyn.Location{r.GetLocation("run_as")}, diags[0].Locations)
+			} else {
+				require.NoError(t, diags.Error())
+			}
+		})
+	}
+}
+
+func TestRunAsLegacyGroup(t *testing.T) {
+	for _, runAs := range []string{`{group_name: group}`, `{group_name: ""}`} {
+		t.Run(runAs, func(t *testing.T) {
+			yaml := "workspace: {current_user: {userName: deployer}}\nexperimental: {use_legacy_run_as: true}\nrun_as: " + runAs
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			require.ErrorContains(t, diags.Error(), "run_as.group_name is not supported with experimental.use_legacy_run_as")
+		})
+	}
+}
+
+func TestRunAsGroupResources(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		resource  string
+		wantError string
+	}{
+		{name: "pipeline", resource: `pipelines: {test: {}}`, wantError: "this CLI version cannot configure run_as.group_name for pipelines"},
+		{name: "alert", resource: `alerts: {test: {}}`, wantError: "alerts do not support run_as.group_name"},
+		{name: "model serving", resource: `model_serving_endpoints: {test: {}}`, wantError: "Run as identity: group \"group\""},
+		{name: "pipeline user override", resource: `pipelines: {test: {run_as: {user_name: user}}}`},
+		{name: "alert sp override", resource: `alerts: {test: {run_as: {service_principal_name: sp}}}`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			yaml := "run_as: {group_name: group}\nworkspace: {current_user: {userName: group}}\nresources:\n  " + tc.resource
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			before := b.Config.Value().Get("resources")
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			if tc.wantError != "" {
+				require.Error(t, diags.Error())
+				assert.Contains(t, diags.Error().Error(), tc.wantError)
+			} else {
+				require.NoError(t, diags.Error())
+				assert.Equal(t, before, b.Config.Value().Get("resources"))
+			}
+		})
+	}
+}
+
+func TestRunAsGroupInheritance(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		root   string
+		target string
+		want   jobs.JobRunAs
+	}{
+		{name: "root group", root: `{group_name: group}`, target: `{}`, want: jobs.JobRunAs{GroupName: "group"}},
+		{name: "target group replaces user", root: `{user_name: user}`, target: `{run_as: {group_name: group}}`, want: jobs.JobRunAs{GroupName: "group"}},
+		{name: "target user replaces group", root: `{group_name: group}`, target: `{run_as: {user_name: user}}`, want: jobs.JobRunAs{UserName: "user"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			yaml := fmt.Sprintf(`
+workspace: {current_user: {userName: deployer}}
+run_as: %s
+targets:
+  test: %s
+resources:
+  jobs:
+    inherited: {}
+    user: {run_as: {user_name: other_user}}
+    sp: {run_as: {service_principal_name: other_sp}}
+    group: {run_as: {group_name: other_group}}
+`, tc.root, tc.target)
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			require.NoError(t, r.MergeTargetOverrides("test"))
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+			require.NoError(t, diags.Error())
+			assert.Equal(t, &tc.want, b.Config.RunAs)
+			assert.Equal(t, &tc.want, b.Config.Resources.Jobs["inherited"].RunAs)
+			assert.Equal(t, &jobs.JobRunAs{UserName: "other_user"}, b.Config.Resources.Jobs["user"].RunAs)
+			assert.Equal(t, &jobs.JobRunAs{ServicePrincipalName: "other_sp"}, b.Config.Resources.Jobs["sp"].RunAs)
+			assert.Equal(t, &jobs.JobRunAs{GroupName: "other_group"}, b.Config.Resources.Jobs["group"].RunAs)
+		})
 	}
 }
