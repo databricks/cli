@@ -225,10 +225,10 @@ func TestCLICredentialsConfigure_ThreadsResolvedTokenStore(t *testing.T) {
 	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
 	require.NoError(t, err)
 
-	// Two opts expected: WithOAuthArgument and WithTokenStore. The length
-	// check is the most resilient way to assert both were passed without
-	// poking at u2m's unexported state.
-	assert.Len(t, receivedOpts, 2)
+	// Three opts expected: WithOAuthArgument, WithTokenStore and
+	// WithStoreLock. The length check is the most resilient way to assert they
+	// were passed without poking at u2m's unexported state.
+	assert.Len(t, receivedOpts, 3)
 }
 
 func TestCLICredentialsConfigure_ClientID(t *testing.T) {
@@ -242,25 +242,25 @@ func TestCLICredentialsConfigure_ClientID(t *testing.T) {
 			name:     "U2M config file client ID",
 			authType: "databricks-cli",
 			source:   config.SourceFile,
-			wantOpts: 3,
+			wantOpts: 4,
 		},
 		{
 			name:     "U2M environment client ID",
 			authType: "databricks-cli",
 			source:   config.SourceEnv,
-			wantOpts: 3,
+			wantOpts: 4,
 		},
 		{
 			name:     "U2M dynamic client ID",
 			authType: "databricks-cli",
 			source:   config.SourceDynamicConfig,
-			wantOpts: 3,
+			wantOpts: 4,
 		},
 		{
 			name:     "non-U2M config file client ID",
 			authType: "oauth-m2m",
 			source:   config.SourceFile,
-			wantOpts: 2,
+			wantOpts: 3,
 		},
 	}
 
@@ -341,7 +341,7 @@ func TestCLICredentialsConfigure_HonorsConfigFileSecureMode(t *testing.T) {
 			// The presence of the second opt is verified by the sibling
 			// test; here we just need Configure to succeed end-to-end when
 			// the config file selects secure storage.
-			assert.Len(t, opts, 2)
+			assert.Len(t, opts, 3)
 			return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{AccessToken: "tok"}, nil
 			}), nil
