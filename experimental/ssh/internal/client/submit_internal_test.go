@@ -72,6 +72,22 @@ func TestBuildSSHServerSubmitRun(t *testing.T) {
 		assert.Equal(t, "abc-123", got.Tasks[0].ExistingClusterId)
 		assert.Empty(t, got.Tasks[0].EnvironmentKey)
 		assert.Empty(t, got.Environments)
+		// False is what tells the bootstrap to sweep detached work as it always has.
+		assert.Equal(t, "false", got.Tasks[0].NotebookTask.BaseParameters["keepDetachedProcesses"])
+	})
+
+	t.Run("dedicated cluster keeping detached processes", func(t *testing.T) {
+		opts := ClientOptions{
+			ClusterID:             "abc-123",
+			ServerTimeout:         24 * time.Hour,
+			KeepDetachedProcesses: true,
+		}
+		got := buildSSHServerSubmitRun("v1", "scope", notebookPath, "", opts)
+
+		assert.Equal(t, "true", got.Tasks[0].NotebookTask.BaseParameters["keepDetachedProcesses"])
+		// The hold happens inside the run, so the run's own timeout is what bounds it.
+		assert.Equal(t, int(24*time.Hour.Seconds()), got.TimeoutSeconds)
+		assert.Equal(t, int(24*time.Hour.Seconds()), got.Tasks[0].TimeoutSeconds)
 	})
 
 	t.Run("server lifecycle", func(t *testing.T) {

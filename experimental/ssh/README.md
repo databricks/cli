@@ -70,6 +70,52 @@ See [filesystem troubleshooting](./FAILURE_MODES.md#filesystem-access-after-the-
 To reproduce and test the known `ssh connect` failure modes (container missing `sshd`, or a
 container that can't run the Python bootstrap), see [FAILURE_MODES.md](./FAILURE_MODES.md).
 
+## Keeping detached processes alive
+
+By default nothing outlives the session: when the last client disconnects, the server shuts
+down after `--shutdown-delay` and the bootstrap notebook sweeps every process it parents,
+including work that was deliberately detached with `tmux`, `setsid` or `nohup`.
+
+`--keep-detached-processes` prevents idle shutdown while detached work is still running.
+It works with dedicated clusters and serverless compute:
+
+```sh
+databricks ssh connect --cluster=<id> --keep-detached-processes
+databricks ssh connect --name=my-session --keep-detached-processes
+```
+
+When `--shutdown-delay` elapses with no SSH clients, the server checks for detached processes.
+If it finds any, it stays available for reconnection and checks again every 15 seconds.
+Once no detached work remains, it shuts down. A reconnect cancels the pending check; after
+the last client disconnects again, the full `--shutdown-delay` applies again. If the process
+tree cannot be read, the server postpones shutdown and retries rather than risking the work.
+
+- **It keeps compute running.** On dedicated clusters the active job also
+  suppresses autotermination. An idle `tmux` session counts as detached work even after the
+  command in its pane finishes; close the session when you no longer need it.
+- **Reconnect to the same session.** Use the same cluster ID or serverless connection name.
+  The existing server and notebook remain alive, so a reconnect can attach to the original
+  `tmux` session rather than creating a replacement run.
+- **The maximum lifetime still applies.** `--server-timeout` (24h by default) bounds the job
+  from its start, regardless of connected clients or detached work. The flag does not
+  survive a job cancellation, notebook restart, or compute termination. Multi-day work
+  belongs in Jobs/DABs.
+- **The notebook must remain alive too.** It anchors the detached processes' workspace
+  filesystem access. If the SSH server exits for another reason, the bootstrap still
+  preserves detached work and holds the run open, as before. This fallback preserves work,
+  not SSH access: it does not restart the server inside that run.
+
+`databricks ssh setup` takes the same flag and bakes it into the host's `ProxyCommand`, so
+`ssh <name>` sessions ask for it too. That is the only place a configured host can set it: the
+`ProxyCommand` is the invocation that submits the run, and the mode is fixed at submission.
+
+A reconnect that omits the flag reuses a running server that was started with it, hold
+included, so a session that never asked for it can end up holding the cluster open. Asking for
+it against a server that was started without it starts a fresh server instead.
+
+When the flag is *not* set and the server does find detached processes at teardown, it logs a
+warning naming them, so work that is about to be swept is no longer lost silently.
+
 ## Design
 
 High level:
