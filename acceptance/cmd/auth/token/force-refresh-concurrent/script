@@ -1,0 +1,19 @@
+setup_test_profile
+setup_test_token_cache
+
+# Several processes ask for a forced refresh of the same profile at once. They
+# all read the same cached refresh token, so the refresh and the cache write
+# have to be serialized across processes for every invocation to succeed.
+for i in 1 2 3 4 5; do
+    $CLI auth token --profile test-profile --force-refresh > "token_$i.json" 2> "err_$i.txt" &
+done
+wait
+
+title "Access tokens returned\n"
+cat token_*.json | jq -r .access_token | sort | uniq -c
+
+title "\nErrors\n"
+cat err_*.txt
+
+title "\nCached token after the refreshes\n"
+jq -r '.tokens["test-profile"].access_token' ./home/.databricks/token-cache.json

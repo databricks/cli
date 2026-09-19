@@ -1,0 +1,12 @@
+Ignore = [
+    "token_1.json",
+    "token_2.json",
+    "token_3.json",
+    "token_4.json",
+    "token_5.json",
+    "err_1.txt",
+    "err_2.txt",
+    "err_3.txt",
+    "err_4.txt",
+    "err_5.txt",
+]
