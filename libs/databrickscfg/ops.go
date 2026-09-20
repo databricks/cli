@@ -258,6 +258,32 @@ func SetConfiguredAuthStorage(ctx context.Context, value, configFilePath string)
 	return writeConfigFile(ctx, configFile)
 }
 
+// SaveResourcesToProfile writes (or clears) the `resources` key on a profile
+// section. `resources` is a comma-separated list of RFC 8707 resource indicators
+// requested during U2M login. An empty list removes the key. The profile
+// section must already exist.
+//
+// TODO: this value should ideally be passed with other values in Config.
+// This requires updating the SDK first, and then this dependency. The current
+// code is a short-cut to allow the CLI to support resources without having to
+// go through that cross-repos loop.
+func SaveResourcesToProfile(ctx context.Context, profileName, configFilePath string, resources []string) error {
+	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
+	if err != nil {
+		return err
+	}
+	section, err := configFile.GetSection(profileName)
+	if err != nil {
+		return fmt.Errorf("profile %q not found: %w", profileName, err)
+	}
+	if len(resources) == 0 {
+		section.DeleteKey("resources")
+	} else {
+		section.Key("resources").SetValue(strings.Join(resources, ","))
+	}
+	return writeConfigFile(ctx, configFile)
+}
+
 // ClearDefaultProfile removes the default_profile key from the [__settings__]
 // section if the current default matches the given profile name.
 func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
