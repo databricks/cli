@@ -291,6 +291,9 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
 		allArgs = append(allArgs, u2m.WithClientID(clientID))
 	}
+	if resources := u2mResourcesFromProfile(existingProfile); len(resources) > 0 {
+		allArgs = append(allArgs, u2m.WithResources(resources))
+	}
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
 	if err != nil {
@@ -447,6 +450,10 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		scopesList = splitScopes(existingProfile.Scopes)
 	}
 
+	// Preserve RFC 8707 resource indicators from the existing profile so the
+	// inline login requests the same resources the user previously configured.
+	resourcesList := u2mResourcesFromProfile(existingProfile)
+
 	oauthArgument, err := loginArgs.ToOAuthArgument()
 	if err != nil {
 		return "", nil, err
@@ -460,6 +467,9 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 	}
 	if len(scopesList) > 0 {
 		persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
+	}
+	if len(resourcesList) > 0 {
+		persistentAuthOpts = append(persistentAuthOpts, u2m.WithResources(resourcesList))
 	}
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 	if err != nil {
@@ -489,6 +499,12 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 		ClientID:    u2mClientIDFromProfile(existingProfile),
 	}, clearKeys...)
 	if err != nil {
+		return "", nil, err
+	}
+	// TODO: resources is not supported in the SDK yet. This function is
+	// a short-cut to add the property to the profile until it is supported
+	// in the SDK.
+	if err := databrickscfg.SaveResourcesToProfile(ctx, profileName, env.Get(ctx, "DATABRICKS_CONFIG_FILE"), resourcesList); err != nil {
 		return "", nil, err
 	}
 	if err := storeLoginToken(ctx, tokenStore, mode, oauthArgument, token); err != nil {

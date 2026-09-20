@@ -82,6 +82,22 @@ client_id = custom-client-id
 	assert.False(t, profiles[0].HasClientCredentials)
 }
 
+func TestLoadProfilesResources(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), ".databrickscfg")
+	err := os.WriteFile(configPath, []byte(`[u2m]
+host = https://workspace.test
+auth_type = databricks-cli
+resources = https://workspace.test/ai-gateway/mcp/system.ai.github,https://workspace.test/ai-gateway/mcp/system.ai.slack
+`), 0o600)
+	require.NoError(t, err)
+
+	ctx := env.Set(t.Context(), "DATABRICKS_CONFIG_FILE", configPath)
+	profiles, err := (FileProfilerImpl{}).LoadProfiles(ctx, MatchAllProfiles)
+	require.NoError(t, err)
+	require.Len(t, profiles, 1)
+	assert.Equal(t, "https://workspace.test/ai-gateway/mcp/system.ai.github,https://workspace.test/ai-gateway/mcp/system.ai.slack", profiles[0].Resources)
+}
+
 func TestLoadProfilesMatchWorkspace(t *testing.T) {
 	ctx := t.Context()
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
