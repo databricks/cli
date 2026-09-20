@@ -962,6 +962,6 @@ func TestWriteTokenErrorOutput(t *testing.T) {
 
 	var got tokenErrorOutput
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &got))
-	assert.Equal(t, invalidRefreshTokenErrorCode, got.ErrorCode)
+	assert.Equal(t, unauthenticatedErrorCode, got.ErrorCode)
 	assert.Equal(t, "refresh token is invalid", got.Message)
 }
