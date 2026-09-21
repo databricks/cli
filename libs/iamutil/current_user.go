@@ -30,8 +30,7 @@ func GetCurrentUser(ctx context.Context, w *databricks.WorkspaceClient) (*iam.Us
 		if err == nil {
 			return user, nil
 		}
-		var apiErr *apierr.APIError
-		if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusInternalServerError {
+		if apiErr, ok := errors.AsType[*apierr.APIError](err); ok && apiErr.StatusCode == http.StatusInternalServerError {
 			return nil, retries.Continue(err)
 		}
 		return nil, retries.Halt(err)
