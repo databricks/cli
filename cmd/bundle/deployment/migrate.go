@@ -176,7 +176,7 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 			return err
 		}
 
-		if _, err := stateDB.Finalize(ctx); err != nil {
+		if _, err := stateDB.FlushAndClose(ctx); err != nil {
 			logdiag.LogError(ctx, err)
 		}
 		if logdiag.HasError(ctx) {

@@ -339,7 +339,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return tempStatePath, resourceCount, hasWarnings, nil, err
 	}
 
-	if _, err := stateDB.Finalize(ctx); err != nil {
+	if _, err := stateDB.FlushAndClose(ctx); err != nil {
 		return tempStatePath, resourceCount, hasWarnings, nil, err
 	}
 
