@@ -129,39 +129,41 @@ type logRunStatus struct {
 	latestAttempt int
 }
 
-// retryTracker reports each retry once whether WAITING_FOR_RETRY appears before
-// or after Jobs exposes the next attempt_number.
+// retryTracker reports each retry once across either Jobs transition:
+//
+//  1. Attempt N enters WAITING_FOR_RETRY: report retry N+1.
+//  2. Attempt N+1 appears: report retry N+1 only if transition 1 was missed.
 type retryTracker struct {
-	announced       int
-	observedAttempt int
-	waiting         bool
+	lastReportedRetry           int
+	lastObservedAttempt         int
+	lastObservedWaitingForRetry bool
 }
 
 func newRetryTracker(status logRunStatus) *retryTracker {
 	return &retryTracker{
-		announced:       status.latestAttempt,
-		observedAttempt: status.latestAttempt,
-		waiting:         status.latestTaskLifeCycleState == string(jobs.RunLifeCycleStateWaitingForRetry),
+		lastReportedRetry:           status.latestAttempt,
+		lastObservedAttempt:         status.latestAttempt,
+		lastObservedWaitingForRetry: status.latestTaskLifeCycleState == string(jobs.RunLifeCycleStateWaitingForRetry),
 	}
 }
 
 func (t *retryTracker) observe(status logRunStatus) (int, bool) {
-	waiting := status.latestTaskLifeCycleState == string(jobs.RunLifeCycleStateWaitingForRetry)
+	waitingForRetry := status.latestTaskLifeCycleState == string(jobs.RunLifeCycleStateWaitingForRetry)
 	retry := 0
-	if status.latestAttempt > t.observedAttempt {
-		t.observedAttempt = status.latestAttempt
-		t.waiting = waiting
+	if status.latestAttempt > t.lastObservedAttempt {
+		t.lastObservedAttempt = status.latestAttempt
+		t.lastObservedWaitingForRetry = waitingForRetry
 		retry = status.latestAttempt
-	} else if status.latestAttempt == t.observedAttempt {
-		if waiting && !t.waiting {
+	} else if status.latestAttempt == t.lastObservedAttempt {
+		if waitingForRetry && !t.lastObservedWaitingForRetry {
 			retry = status.latestAttempt + 1
 		}
-		t.waiting = waiting
+		t.lastObservedWaitingForRetry = waitingForRetry
 	}
-	if retry <= t.announced || retry <= 0 {
+	if retry <= t.lastReportedRetry || retry <= 0 {
 		return 0, false
 	}
-	t.announced = retry
+	t.lastReportedRetry = retry
 	return retry, true
 }
 
