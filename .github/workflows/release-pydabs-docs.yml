@@ -1,4 +1,4 @@
-name: update-pydabs-docs
+name: release-pydabs-docs
 
 # Rebuild the PyDABs Python reference docs after every release and publish the
 # HTML to the `gh-pages` branch (served at https://databricks.github.io/cli/python/).
