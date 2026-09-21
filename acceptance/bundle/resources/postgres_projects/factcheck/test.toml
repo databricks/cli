@@ -1,0 +1,17 @@
+# Raw-API factcheck: the same updates run under update_mask=* and update_mask=spec,
+# to document where the two masks agree and differ against the real API. No bundle,
+# no engine — run once.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DMS = []
+
+[[Repls]]
+# * reports the first field missing from the body; which one is not contractual.
+Old = "Field 'spec\\.[a-z_.]+' is in update_mask but not provided"
+New = "Field '[SPEC_FIELD]' is in update_mask but not provided"
+Order = 1
+
+[[Repls]]
+# The whole-spec 500 carries a per-request trace id.
+Old = '\[TraceId: [0-9a-f]+\]'
+New = '[TraceId: [TRACE_ID]]'
+Order = 1
