@@ -7,7 +7,7 @@ resources:
       catalog_name: main
       name: test-schema-$UNIQUE_NAME
       comment: This is a test schema # CAN_REMOVE
-      # CANNOT_REMOVE: properties is a map, and ForceSendFields is inert for maps (#6343), so
+      # CANNOT_REMOVE: properties is a map, and ForceSendFields is inert for maps, so
       # clearing the whole map drops it from the request and the old value drifts back every plan.
       # Kept on one line so a future fix can flip it to CAN_REMOVE and have grep -v strip it cleanly.
       properties: {"tier": "bronze"}

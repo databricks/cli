@@ -7,7 +7,7 @@ resources:
       project_id: test-pg-project-$UNIQUE_NAME
       # CANNOT_REMOVE: clearing display_name adds spec.display_name to the update_mask but drops
       # the field from the request body (omitempty), which the backend rejects with 400
-      # "Field 'spec.display_name' is in update_mask but not provided in request" (#6343 class).
+      # "Field 'spec.display_name' is in update_mask but not provided in request".
       display_name: Test Postgres Project
       enable_pg_native_login: false
       # CANNOT_REMOVE: same update_mask 400 as display_name above — clearing it adds

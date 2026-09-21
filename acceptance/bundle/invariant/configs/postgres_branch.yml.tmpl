@@ -13,6 +13,6 @@ resources:
       branch_id: test-branch-$UNIQUE_NAME
       # CANNOT_REMOVE: clearing no_expiry adds spec.expiration to the update_mask but drops the field
       # from the request body (omitempty), which the backend rejects with 400 "in update_mask but not
-      # provided in request" (#6343 class). (is_protected behaves the same but is omitted here: a
+      # provided in request". (is_protected behaves the same but is omitted here: a
       # protected branch cannot be deleted, which wedges the test's destroy-based cleanup.)
       no_expiry: true

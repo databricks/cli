@@ -20,7 +20,7 @@ resources:
       endpoint_type: ENDPOINT_TYPE_READ_WRITE
       # CANNOT_REMOVE: clearing these adds them to the update_mask but drops the fields from the
       # request body (omitempty), which the backend rejects with 400 "Field 'spec.autoscaling_limit_max_cu'
-      # is in update_mask but not provided in request" (#6343 class).
+      # is in update_mask but not provided in request".
       autoscaling_limit_min_cu: 1
       autoscaling_limit_max_cu: 4
       disabled: true
