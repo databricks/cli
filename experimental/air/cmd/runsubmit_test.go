@@ -375,7 +375,8 @@ func TestSubmitWorkload(t *testing.T) {
 	d := at.Deployments[0]
 	assert.True(t, strings.HasSuffix(d.CommandPath, "/"+commandScriptName), d.CommandPath)
 	assert.Contains(t, d.CommandPath, "/.air/cli_launch/")
-	assert.Equal(t, jobs.ComputeSpec{AcceleratorType: jobs.ComputeSpecAcceleratorTypeGpu1xH100, AcceleratorCount: 1}, d.Compute)
+	assert.Equal(t, jobs.ComputeSpecAcceleratorTypeGpu1xH100, d.Compute.AcceleratorType)
+	assert.Equal(t, 1, d.Compute.AcceleratorCount)
 }
 
 func TestSubmitWorkloadStagingErrorPreventsSubmit(t *testing.T) {
