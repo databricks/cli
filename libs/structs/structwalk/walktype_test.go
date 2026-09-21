@@ -55,6 +55,7 @@ func TestTypeScalar(t *testing.T) {
 
 func TestTypes(t *testing.T) {
 	assert.Equal(t, map[string]any{
+		"-":                  "",
 		"ArrayString[*]":     "",
 		"Array[*].X":         0,
 		"BoolField":          false,
