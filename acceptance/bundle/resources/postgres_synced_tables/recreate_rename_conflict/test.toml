@@ -1,4 +1,8 @@
-Cloud = true
+# Local only. On cloud a synced-table create with an already-taken id replaces the
+# existing table (replace_existing) rather than returning ALREADY_EXISTS, so the
+# rename never conflicts there — the same-id guard this exercises is only observable
+# against the testserver, which reports the conflict.
+Cloud = false
 
 # The same-id guard that makes a rename-to-existing fail fast (instead of retrying
 # the create for minutes) is a direct-engine feature.
