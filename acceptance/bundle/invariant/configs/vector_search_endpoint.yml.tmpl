@@ -6,7 +6,10 @@ resources:
     foo:
       name: test-endpoint-$UNIQUE_NAME
       endpoint_type: STANDARD
-      target_qps: 2 # CAN_REMOVE
+      # CANNOT_REMOVE: target_qps is not re-sent on update, so clearing it leaves the old value
+      # and the plan re-proposes the change on every deploy (only reproducible on cloud; the
+      # local testserver converges).
+      target_qps: 2
     bar:
       # Endpoint names must be < 50 chars, so keep this prefix short.
       name: test-vse-perm-$UNIQUE_NAME
