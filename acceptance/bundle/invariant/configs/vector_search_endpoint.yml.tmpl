@@ -6,6 +6,7 @@ resources:
     foo:
       name: test-endpoint-$UNIQUE_NAME
       endpoint_type: STANDARD
+      target_qps: 2 # CAN_REMOVE
     bar:
       # Endpoint names must be < 50 chars, so keep this prefix short.
       name: test-vse-perm-$UNIQUE_NAME
