@@ -1,5 +1,8 @@
 Cloud = false
-RecordRequests = false
+
+# Record requests so the golden proves the rename's create is attempted once (the
+# guard fails fast) rather than retried in a burst.
+RecordRequests = true
 
 # The same-id guard that makes a rename-to-existing fail fast is a direct-engine feature.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
