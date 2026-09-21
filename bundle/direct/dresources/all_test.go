@@ -1112,7 +1112,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, os.WriteFile(zipPath, content, 0o600))
 		ss.ZipPath = filepath.ToSlash(zipPath)
 		ss.RelativePath = ss.BundleID + "/" + hash
-		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath
+		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath + "/" + snapshot.ContentSubdir
 	}
 
 	ctx := t.Context()

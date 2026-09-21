@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"path"
 	"strings"
@@ -47,6 +48,9 @@ type Snapshot struct {
 	// ACL is the access control list applied to the uploaded snapshot, granting
 	// CAN_READ to the deploying user and to every principal in bundle.permissions.
 	ACL []snapshot.ACLEntry `json:"acl"`
+	// CanManage lists the principals allowed to break the glass on the snapshot, derived
+	// from top-level bundle.permissions entries with level CAN_MANAGE.
+	CanManage []snapshot.ManagePrincipal `json:"can_manage,omitempty"`
 	// ZipPath is the local path of the bundle zip staged by the deploy pipeline.
 	// The file is named "<sha256>.zip", so its base name is the content hash used
 	// as the last component of RelativePath. Storing the path (not the bytes) keeps
@@ -59,22 +63,35 @@ type Snapshot struct {
 	// Example: "/Workspace/Users/<user>/.snapshots".
 	RemoteRoot string `json:"remote_root"`
 
+	// Generation is the break-glass generation. It is 0 for the initial snapshot and
+	// incremented each time "deploy --force" recovers from a broken (break-glassed)
+	// snapshot, appending a "-<generation>" suffix to the content hash so the recovered
+	// snapshot gets a distinct path. It is carried forward in state across deploys, so a
+	// recovered path keeps being reused until it too is broken.
+	Generation int `json:"generation,omitempty"`
+
 	Lifecycle Lifecycle `json:"-"`
 }
 
 // RelativePath is the snapshot's location under RemoteRoot: "<bundle_id>/<zip_hash>".
 // It is the resource ID; the last component is the zip content hash (the ZipPath base
-// name), which makes the pre-computed path match the uploaded content.
-// Example: "1a2b3c4d-.../e3b0c4...".
+// name), which makes the pre-computed path match the uploaded content. A non-zero
+// Generation appends a "-<generation>" suffix to the hash so a break-glass recovery
+// uploads to a distinct path (e.g. "1a2b3c4d-.../e3b0c4...-1").
 func (s *Snapshot) RelativePath() string {
 	hash := strings.TrimSuffix(path.Base(s.ZipPath), ".zip")
+	if s.Generation > 0 {
+		hash = fmt.Sprintf("%s-%d", hash, s.Generation)
+	}
 	return path.Join(s.BundleID, hash)
 }
 
-// FullPath is the absolute workspace path of the snapshot: RemoteRoot + "/" + RelativePath.
-// Example: "/Workspace/Users/<user>/.snapshots/1a2b3c4d-.../e3b0c4...".
+// FullPath is the absolute workspace content path of the snapshot:
+// RemoteRoot + "/" + RelativePath + "/" + ContentSubdir. The API stores the content under a
+// fixed "snapshot" subfolder, and downstream resources / the inspect check reference it.
+// Example: "/Workspace/Users/<user>/.snapshots/1a2b3c4d-.../e3b0c4.../snapshot".
 func (s *Snapshot) FullPath() string {
-	return path.Join(s.RemoteRoot, s.RelativePath())
+	return path.Join(s.RemoteRoot, s.RelativePath(), snapshot.ContentSubdir)
 }
 
 func (s *Snapshot) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

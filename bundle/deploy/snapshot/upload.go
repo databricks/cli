@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -69,6 +70,13 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return nil
 	}
 
+	// Detect a break-glassed previous snapshot before doing any work, so a normal deploy
+	// over a broken snapshot fails fast and --force recovery gets the right generation.
+	generation, err := breakGlassGeneration(ctx, b, uploader)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
@@ -91,8 +99,10 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
 		BundleID:   BundleID(b),
 		ACL:        BuildACL(b),
+		CanManage:  BuildCanManage(b),
 		RemoteRoot: remoteRoot,
 		ZipPath:    filepath.ToSlash(zipPath),
+		Generation: generation,
 	}
 
 	var diags diag.Diagnostics
@@ -133,4 +143,66 @@ func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
 		})
 	}
 	return acl
+}
+
+// BuildCanManage constructs can_manage_principals for the snapshot upload: every principal
+// granted CAN_MANAGE in the top-level permissions section may break the glass on the snapshot.
+func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
+	var canManage []snapshot.ManagePrincipal
+	for _, p := range b.Config.Permissions {
+		if p.Level != "CAN_MANAGE" {
+			continue
+		}
+		canManage = append(canManage, snapshot.ManagePrincipal{
+			UserName:             p.UserName,
+			GroupName:            p.GroupName,
+			ServicePrincipalName: p.ServicePrincipalName,
+		})
+	}
+	return canManage
+}
+
+// breakGlassGeneration reads the previously deployed snapshot from state and asks the backend
+// whether it was modified out of band ("break-glassed"). It returns the generation to deploy:
+//   - the previous generation when the snapshot is intact, so a recovered path keeps being reused;
+//   - the previous generation + 1 when the snapshot is broken and --force was given (recovery);
+//   - an error when the snapshot is broken and --force was not given.
+//
+// On the first deploy (no prior snapshot) it returns 0.
+func breakGlassGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient) (int, error) {
+	// The deploy/plan pipeline opens the state DB for read before this runs, but callers that
+	// exercise PlanUpload in isolation (unit tests) may not. No open state means no prior
+	// snapshot to check, which is the first-deploy case: generation 0.
+	if !b.DeploymentBundle.StateDB.IsOpen() {
+		return 0, nil
+	}
+
+	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(resources.SnapshotKey)
+	if !ok || len(entry.State) == 0 {
+		return 0, nil
+	}
+
+	// Only the content path and generation are needed; unmarshal a subset of the state.
+	var prev struct {
+		FullPath   string `json:"full_path"`
+		Generation int    `json:"generation"`
+	}
+	if err := json.Unmarshal(entry.State, &prev); err != nil {
+		return 0, fmt.Errorf("reading previous snapshot state: %w", err)
+	}
+	if prev.FullPath == "" {
+		return 0, nil
+	}
+
+	status, err := uploader.InspectSnapshot(ctx, prev.FullPath)
+	if err != nil {
+		return 0, err
+	}
+	if !status.Dirty {
+		return prev.Generation, nil
+	}
+	if !b.Config.Bundle.Force {
+		return 0, fmt.Errorf("the previously deployed immutable snapshot at %s was modified out of band (break-glass); re-run 'bundle deploy --force' to deploy a new snapshot", prev.FullPath)
+	}
+	return prev.Generation + 1, nil
 }

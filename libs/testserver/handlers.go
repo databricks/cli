@@ -724,7 +724,7 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
-	server.Handle("POST", "/api/2.0/repos/snapshots", func(req Request) any {
+	server.Handle("POST", "/api/2.0/snapshots", func(req Request) any {
 		contentType := req.Headers.Get("Content-Type")
 		mediaType, params, err := mime.ParseMediaType(contentType)
 		if err != nil || !strings.HasPrefix(mediaType, "multipart/") {
@@ -732,7 +732,7 @@ func AddDefaultHandlers(server *Server) {
 		}
 
 		mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
-		var bundleID, snapshotID string
+		var relativePath string
 		for {
 			p, err := mr.NextPart()
 			if err == io.EOF {
@@ -745,21 +745,47 @@ func AddDefaultHandlers(server *Server) {
 			if err != nil {
 				return Response{StatusCode: http.StatusInternalServerError}
 			}
-			switch p.FormName() {
-			case "bundle_id":
-				bundleID = string(data)
-			case "snapshot_id":
-				snapshotID = string(data)
+			if p.FormName() == "relative_path" {
+				relativePath = string(data)
 			}
 		}
 
-		// The real API uses the workspace user UUID (not email) in the snapshot path,
+		// The server stores content under a fixed "snapshot" subfolder of the caller's
+		// relative_path. The real API uses the workspace user UUID (not email) in the path,
 		// matching service-principal identities used in cloud acceptance tests.
-		snapshotPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/%s", TestUserSP.UserName, bundleID, snapshotID)
-		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: snapshotPath})
+		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", TestUserSP.UserName, relativePath)
+		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: contentPath})
+		// Record after mkdirs so the snapshot's own creation write is not counted as tampering.
+		req.Workspace.RecordSnapshot(contentPath)
 		return map[string]any{
-			"snapshot": map[string]any{
-				"path": snapshotPath,
+			"name":     "workspaces/snapshotOperations/" + relativePath,
+			"done":     true,
+			"snapshot": map[string]any{"path": contentPath},
+		}
+	})
+
+	// GraphQL gateway. The only query modeled is projectsInspectSnapshot, which reports the
+	// break-glass status (dirty) of a snapshot content path.
+	server.Handle("POST", "/api/2.0/graphql", func(req Request) any {
+		var body struct {
+			Variables struct {
+				Path string `json:"path"`
+			} `json:"variables"`
+		}
+		if err := json.Unmarshal(req.Body, &body); err != nil {
+			return Response{StatusCode: http.StatusBadRequest}
+		}
+		contentPath := body.Variables.Path
+		return map[string]any{
+			"data": map[string]any{
+				"projectsInspectSnapshot": map[string]any{
+					"status": map[string]any{
+						"snapshotContentPath": contentPath,
+						"dirty":               req.Workspace.SnapshotDirty(contentPath),
+						"permissions":         []string{},
+					},
+					"apiError": nil,
+				},
 			},
 		}
 	})
