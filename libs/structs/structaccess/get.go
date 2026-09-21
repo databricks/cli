@@ -245,9 +245,10 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 }
 
 // ElementKeyValue returns the identity of a keyed-slice element: the value of its
-// first non-empty key field (keyFields in priority order). Fields resolve the same way
-// as elsewhere in structaccess, so the result matches encoding/json. ok is false if
-// elem is a nil pointer, not a struct, or has no key field set.
+// first non-empty key field (keyFields in priority order), or "" when no key field is
+// set. Fields resolve the same way as elsewhere in structaccess, so the result matches
+// encoding/json. ok is false only if elem is a nil pointer or not a struct; an element
+// with no key set is still addressable, by the empty key ("").
 func ElementKeyValue(elem reflect.Value, keyFields []string) (string, bool) {
 	elem, ok := deref(elem)
 	if !ok || elem.Kind() != reflect.Struct {
@@ -258,7 +259,7 @@ func ElementKeyValue(elem reflect.Value, keyFields []string) (string, bool) {
 			return fv.String(), true
 		}
 	}
-	return "", false
+	return "", true
 }
 
 // findFieldInStruct searches for a field by JSON key in a single struct (no embedding).

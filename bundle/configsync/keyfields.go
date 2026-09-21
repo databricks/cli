@@ -35,9 +35,13 @@ func keyFieldsAtPath(b *bundle.Bundle, seqPath *structpath.PathNode) []string {
 }
 
 // dynElementKey returns the identity of a dynamic keyed-slice element: the value of its
-// first non-empty key field, using keyFields resolved from the type. ok is false when
-// the element is not a mapping or no key field is set.
+// first non-empty key field (keyFields resolved from the type), or "" when none is set.
+// ok is false only when the element is not a mapping; a mapping with no key field set
+// is addressable by the empty key, mirroring structaccess.ElementKeyValue.
 func dynElementKey(elem dyn.Value, keyFields []string) (value string, ok bool) {
+	if _, isMap := elem.AsMap(); !isMap {
+		return "", false
+	}
 	for _, field := range keyFields {
 		v, err := dyn.GetByPath(elem, dyn.Path{dyn.Key(field)})
 		if err != nil || v.Kind() != dyn.KindString {
@@ -47,7 +51,9 @@ func dynElementKey(elem dyn.Value, keyFields []string) (value string, ok bool) {
 			return s, true
 		}
 	}
-	return "", false
+	// A mapping with no key field set is addressable by the empty key, mirroring
+	// structaccess.ElementKeyValue.
+	return "", true
 }
 
 // singleKeyFieldAt returns the sole key field of the element addressed by keyedNode

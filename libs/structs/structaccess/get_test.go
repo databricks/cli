@@ -881,9 +881,10 @@ func TestElementKeyValue(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "u", v)
 
-	// No key field set: not ok (a non-key field does not count).
-	_, ok = ElementKeyValue(reflect.ValueOf(keElem{Level: "CAN_MANAGE"}), keys)
-	require.False(t, ok)
+	// No key field set: addressable by the empty key (ok true, value "").
+	v, ok = ElementKeyValue(reflect.ValueOf(keElem{Level: "CAN_MANAGE"}), keys)
+	require.True(t, ok)
+	require.Empty(t, v)
 
 	// Pointer element is dereferenced; nil pointer is not ok.
 	v, ok = ElementKeyValue(reflect.ValueOf(&keElem{UserName: "u"}), keys)
