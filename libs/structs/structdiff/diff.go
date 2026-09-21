@@ -291,7 +291,7 @@ func diffSliceByKey(path *structpath.PathNode, v1, v2 reflect.Value, keyFields [
 	group := func(v reflect.Value, into map[string][]reflect.Value) {
 		for i := range v.Len() {
 			elem := v.Index(i)
-			key, _ := registry.ElementKey(elem)
+			key, _ := structaccess.ElementKeyValue(elem, keyFields)
 			into[key] = append(into[key], elem)
 			if !seen[key] {
 				seen[key] = true

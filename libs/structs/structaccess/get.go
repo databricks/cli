@@ -207,14 +207,14 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 
 		if key == "" {
 			// Field-agnostic key ([='value']): the key field is not encoded in the path,
-			// so identify the element from its type via the registry — its ElementKey is
-			// the same identity the diff used, so the same principal under a different
-			// field (e.g. user_name vs service_principal_name) resolves consistently.
-			elemKey, ok := registry.ElementKey(elemDeref)
-			if !ok {
+			// so identify the element from its type via the registry. Its key value is the
+			// same identity the diff used, so the same principal under a different field
+			// (e.g. user_name vs service_principal_name) resolves consistently.
+			keyFields := registry.KeyFields(elemDeref.Type())
+			if keyFields == nil {
 				return reflect.Value{}, fmt.Errorf("%s: field-agnostic key on unregistered element type %s", path.String(), elemDeref.Type())
 			}
-			if elemKey == value {
+			if elemKey, ok := ElementKeyValue(elemDeref, keyFields); ok && elemKey == value {
 				return elem, nil
 			}
 			continue
@@ -242,6 +242,23 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 	}
 
 	return reflect.Value{}, &NotFoundError{fmt.Sprintf("%s: no element found with %s=%q", path.String(), key, value)}
+}
+
+// ElementKeyValue returns the identity of a keyed-slice element: the value of its
+// first non-empty key field (keyFields in priority order). Fields resolve the same way
+// as elsewhere in structaccess, so the result matches encoding/json. ok is false if
+// elem is a nil pointer, not a struct, or has no key field set.
+func ElementKeyValue(elem reflect.Value, keyFields []string) (string, bool) {
+	elem, ok := deref(elem)
+	if !ok || elem.Kind() != reflect.Struct {
+		return "", false
+	}
+	for _, field := range keyFields {
+		if fv, _, _, found := findStructFieldByKey(elem, field); found && fv.Kind() == reflect.String && fv.String() != "" {
+			return fv.String(), true
+		}
+	}
+	return "", false
 }
 
 // findFieldInStruct searches for a field by JSON key in a single struct (no embedding).

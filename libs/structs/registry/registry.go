@@ -13,205 +13,38 @@
 // (emails, application IDs, and group names occupy disjoint value spaces), so a
 // value alone unambiguously identifies the element.
 //
+// This package only records the key field names; reading a field's value from an
+// element is left to structaccess, so field resolution matches encoding/json exactly
+// and stays consistent with the rest of the codebase.
+//
 // Types register their key fields from init(), keeping the declaration next to the
 // type it describes:
 //
 //	func init() { registry.Register[jobs.Task]("task_key") }
 package registry
 
-import (
-	"reflect"
-	"strconv"
-
-	"github.com/databricks/cli/libs/structs/structtag"
-)
-
-// keyedType is the resolved key definition for one element type.
-type keyedType struct {
-	// jsonNames are the key field JSON names, in declaration (priority) order.
-	jsonNames []string
-	// index[i] is the Go field-index path of jsonNames[i], for fieldByIndex.
-	index [][]int
-}
+import "reflect"
 
 // registrations is populated only from init() (before any goroutine runs), then read
 // concurrently, so it needs no lock.
-var registrations = map[reflect.Type]*keyedType{}
+var registrations = map[reflect.Type][]string{}
 
 // Register declares the key fields (JSON names) that identify elements of slice
-// element type T. Intended to be called from init(). It panics if a name does not
-// resolve to a string field of T, surfacing typos at startup rather than as silent
-// mismatches at diff time.
+// element type T, in priority order. Intended to be called from init(). Pointer types
+// are normalized to their element type, so Register[*T] and Register[T] agree.
 func Register[T any](keyFields ...string) {
-	// Normalize to the element struct type, matching lookup, so Register[*T] and
-	// Register[T] register the same key.
-	t := reflect.TypeFor[T]()
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	kt := &keyedType{jsonNames: keyFields}
-	for _, name := range keyFields {
-		index, ok := stringFieldIndex(t, name)
-		if !ok {
-			panic("registry: " + t.String() + " has no string field with json name " + strconv.Quote(name))
-		}
-		kt.index = append(kt.index, index)
-	}
-	registrations[t] = kt
+	registrations[deref(reflect.TypeFor[T]())] = keyFields
 }
 
 // KeyFields returns the key field JSON names for element type t (pointers
 // dereferenced), or nil if t is not a registered keyed-slice element.
 func KeyFields(t reflect.Type) []string {
-	if kt := lookup(t); kt != nil {
-		return kt.jsonNames
-	}
-	return nil
+	return registrations[deref(t)]
 }
 
-// ElementKey returns the identity of a keyed-slice element: the value of its first
-// non-empty key field. ok is false if the element's type is not registered (or the
-// element is a nil pointer).
-func ElementKey(elem reflect.Value) (value string, ok bool) {
-	elem, valid := deref(elem)
-	if !valid {
-		return "", false
-	}
-	kt := lookup(elem.Type())
-	if kt == nil {
-		return "", false
-	}
-	for _, index := range kt.index {
-		f, ok := fieldByIndex(elem, index)
-		if ok && f.String() != "" {
-			return f.String(), true
-		}
-	}
-	return "", true
-}
-
-func lookup(t reflect.Type) *keyedType {
+func deref(t reflect.Type) reflect.Type {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
-	return registrations[t]
-}
-
-// deref follows pointers and interfaces to the underlying value. valid is false if a
-// nil is encountered along the way.
-func deref(v reflect.Value) (reflect.Value, bool) {
-	for v.Kind() == reflect.Pointer || v.Kind() == reflect.Interface {
-		if v.IsNil() {
-			return reflect.Value{}, false
-		}
-		v = v.Elem()
-	}
-	return v, v.IsValid()
-}
-
-// fieldByIndex reads the field at the given index path, following pointer embeds.
-// ok is false if a nil pointer is encountered along the path (rather than panicking
-// like reflect.Value.FieldByIndex).
-func fieldByIndex(v reflect.Value, index []int) (reflect.Value, bool) {
-	for i, x := range index {
-		if i > 0 {
-			var valid bool
-			if v, valid = deref(v); !valid {
-				return reflect.Value{}, false
-			}
-		}
-		v = v.Field(x)
-	}
-	return v, v.Kind() == reflect.String
-}
-
-// stringFieldIndex returns the field-index path of the string key field with the
-// given JSON name. It resolves the field encoding/json serializes under jsonName —
-// the dominant field: a direct field before a promoted one, breadth-first among
-// embeds — and requires it to be a string. ok is false if there is no such field or
-// the dominant one is not a string (a non-string field cannot be a key, and it still
-// shadows any deeper same-named string field).
-func stringFieldIndex(t reflect.Type, jsonName string) ([]int, bool) {
-	index, ft, ok := dominantFieldIndex(t, jsonName)
-	if !ok || ft.Kind() != reflect.String {
-		return nil, false
-	}
-	return index, true
-}
-
-// dominantFieldIndex returns the field-index path and type of the field encoding/json
-// serializes under jsonName (direct before promoted, breadth-first among flattened
-// embeds), regardless of the field's type. ok is false if no field carries that name.
-func dominantFieldIndex(t reflect.Type, jsonName string) ([]int, reflect.Type, bool) {
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	if t.Kind() != reflect.Struct {
-		return nil, nil, false
-	}
-
-	// Direct fields first (a shallower field shadows a promoted one).
-	for i := range t.NumField() {
-		sf := t.Field(i)
-		if !isFlattenedEmbed(sf) && sf.IsExported() && structtag.JSONTag(sf.Tag.Get("json")).Name() == jsonName {
-			return []int{i}, sf.Type, true
-		}
-	}
-
-	// Then promoted fields of flattened embeds, breadth-first.
-	level := embedsOf(t, nil)
-	for len(level) > 0 {
-		var next []embed
-		for _, e := range level {
-			for i := range e.typ.NumField() {
-				sf := e.typ.Field(i)
-				if !isFlattenedEmbed(sf) && sf.IsExported() && structtag.JSONTag(sf.Tag.Get("json")).Name() == jsonName {
-					return append(append([]int{}, e.prefix...), i), sf.Type, true
-				}
-			}
-			next = append(next, embedsOf(e.typ, e.prefix)...)
-		}
-		level = next
-	}
-	return nil, nil, false
-}
-
-type embed struct {
-	prefix []int
-	typ    reflect.Type
-}
-
-// embedsOf returns the flattened embeds of struct type t, each with its field-index
-// prefix relative to the original type.
-func embedsOf(t reflect.Type, prefix []int) []embed {
-	for t.Kind() == reflect.Pointer {
-		t = t.Elem()
-	}
-	if t.Kind() != reflect.Struct {
-		return nil
-	}
-	var result []embed
-	for i := range t.NumField() {
-		sf := t.Field(i)
-		if !isFlattenedEmbed(sf) {
-			continue
-		}
-		et := sf.Type
-		for et.Kind() == reflect.Pointer {
-			et = et.Elem()
-		}
-		if et.Kind() == reflect.Struct {
-			result = append(result, embed{prefix: append(append([]int{}, prefix...), i), typ: et})
-		}
-	}
-	return result
-}
-
-// isFlattenedEmbed reports whether sf is an anonymous struct field with no explicit
-// JSON name, whose exported fields encoding/json promotes to the outer type.
-func isFlattenedEmbed(sf reflect.StructField) bool {
-	if !sf.Anonymous {
-		return false
-	}
-	return structtag.JSONTag(sf.Tag.Get("json")).Name() == ""
+	return t
 }
