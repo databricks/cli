@@ -31,11 +31,15 @@ direct_migrate_commit_error true
 
 === Retry recovers: subsequent deploy re-does the backup and completes
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: Direct engine selected via DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
+Migrated 1 resource to direct deployment engine.
 
 >>> print_migration_telemetry
+direct_migrated_via_env true
 
 === Local state is now direct
 
@@ -43,4 +47,4 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 .databricks/bundle/default/resources.json
 
 >>> find .databricks/bundle -name terraform.tfstate* -type f
-.databricks/bundle/default/terraform/terraform.tfstate
+.databricks/bundle/default/terraform/terraform.tfstate.backup

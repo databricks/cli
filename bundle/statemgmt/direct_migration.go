@@ -147,6 +147,9 @@ func MigrateToDirect(ctx context.Context, b *bundle.Bundle, requestedEngine engi
 	if err := commitMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
 		log.Warnf(ctx, "automatic migration to direct engine failed: %v", err)
+		if rbErr := rollbackRemoteMigration(ctx, b); rbErr != nil {
+			log.Warnf(ctx, "%srollback failed: %v", warnPrefix, rbErr)
+		}
 		return
 	}
 
@@ -394,6 +397,43 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 		suffix = ""
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("Migrated %d resource%s to direct deployment engine.", resourceCount, suffix))
+	return nil
+}
+
+// rollbackRemoteMigration restores the workspace to terraform-authoritative after
+// commitMigration failed partway. It removes any resources.json that was pushed
+// and, if the remote terraform state is gone (its delete is the last remote step
+// in pushDirectState, so a lost response reports failure after the delete took
+// effect), restores it from the backup pushDirectState wrote first.
+func rollbackRemoteMigration(ctx context.Context, b *bundle.Bundle) error {
+	f, err := deploy.StateFiler(ctx, b)
+	if err != nil {
+		return err
+	}
+
+	remoteDirectPath, _ := b.StateFilenameDirect(ctx)
+	if err := f.Delete(ctx, remoteDirectPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("removing pushed direct state %s: %w", remoteDirectPath, err)
+	}
+
+	remoteTerraformPath, _ := b.StateFilenameTerraform(ctx)
+	_, err = f.Stat(ctx, remoteTerraformPath)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking remote terraform state %s: %w", remoteTerraformPath, err)
+	}
+
+	// Terraform state was deleted; restore from the backup pushDirectState wrote.
+	reader, err := f.Read(ctx, remoteTerraformPath+".backup")
+	if err != nil {
+		return fmt.Errorf("restoring remote terraform state from backup: %w", err)
+	}
+	defer reader.Close()
+	if err := f.Write(ctx, remoteTerraformPath, reader, filer.OverwriteIfExists); err != nil {
+		return fmt.Errorf("restoring remote terraform state: %w", err)
+	}
 	return nil
 }
 
