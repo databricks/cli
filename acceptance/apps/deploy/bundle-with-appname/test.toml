@@ -1,5 +1,6 @@
 Cloud = false
 RecordRequests = true
+Env.MSYS_NO_PATHCONV = "1"
 
 [[Server]]
 Pattern = "POST /api/2.0/apps/test-app/deployments"
