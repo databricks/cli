@@ -31,6 +31,13 @@ direct_migrated_via_env true
 >>> find .databricks/bundle -name terraform.tfstate* -type f
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
+>>> [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state --output json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
+/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup
+
 === Retry: deploys on already-migrated direct state
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
