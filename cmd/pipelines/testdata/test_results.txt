@@ -1,0 +1,31 @@
+Running 7 pipeline tests for orders-dev (update 01f0a3c2b19d)
+
+PASS   tests/test_daily_revenue.py::test_sums_by_day (0.40s)
+FAIL   tests/test_daily_revenue.py::test_revenue_matches_source (0.51s)
+SKIP   tests/test_daily_revenue.py::test_backfill_partitions
+ERROR  tests/test_isolation.py::test_schema_isolation
+PASS   tests/test_daily_revenue.py::test_partition_present[mon] (0.20s)
+PASS   tests/test_daily_revenue.py::test_partition_present[tue] (0.20s)
+PASS   tests/test_daily_revenue.py::test_partition_present[wed] (0.20s)
+
+Failures:
+
+FAIL  tests/test_daily_revenue.py::test_revenue_matches_source (tests/test_daily_revenue.py:21)
+  revenue mismatch: expected 1230, got 1234
+  Traceback (most recent call last):
+    File "dp_runner.py", line 54, in run
+      c["call"]()
+    File "pipeline_tests.py", line 29, in _call_revenue_matches_source
+      assert actual == expected, f"revenue mismatch: expected {expected}, got {actual}"
+  AssertionError: revenue mismatch: expected 1230, got 1234
+
+ERROR tests/test_isolation.py::test_schema_isolation (tests/test_isolation.py:8)
+  RuntimeError: could not attach to isolated schema sdp_ut_01f0a3c2b19d
+  Traceback (most recent call last):
+    File "dp_runner.py", line 52, in run
+      c["setup"]()
+    File "pipeline_tests.py", line 37, in _setup_schema_isolation
+      raise RuntimeError("could not attach to isolated schema sdp_ut_01f0a3c2b19d")
+  RuntimeError: could not attach to isolated schema sdp_ut_01f0a3c2b19d
+
+7 tests: 4 passed, 1 failed, 1 skipped, 1 errors

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="sdp-pipeline-tests" tests="7" failures="1" errors="1" skipped="1" time="1.509">
+  <properties>
+    <property name="pipeline_id" value="orders-dev"></property>
+    <property name="update_id" value="01f0a3c2b19d"></property>
+  </properties>
+  <testcase classname="tests.test_daily_revenue.py" name="tests/test_daily_revenue.py::test_sums_by_day" time="0.400"></testcase>
+  <testcase classname="tests.test_daily_revenue.py" name="tests/test_daily_revenue.py::test_revenue_matches_source" time="0.509">
+    <failure message="revenue mismatch: expected 1230, got 1234">Traceback (most recent call last):&#xA;  File &#34;dp_runner.py&#34;, line 54, in run&#xA;    c[&#34;call&#34;]()&#xA;  File &#34;pipeline_tests.py&#34;, line 29, in _call_revenue_matches_source&#xA;    assert actual == expected, f&#34;revenue mismatch: expected {expected}, got {actual}&#34;&#xA;AssertionError: revenue mismatch: expected 1230, got 1234&#xA;</failure>
+  </testcase>
+  <testcase classname="tests.test_daily_revenue.py" name="tests/test_daily_revenue.py::test_backfill_partitions" time="0.000">
+    <skipped message="backfill fixture not available on dogfood shard"></skipped>
+  </testcase>
+  <testcase classname="tests.test_isolation.py" name="tests/test_isolation.py::test_schema_isolation" time="0.000">
+    <error message="RuntimeError: could not attach to isolated schema sdp_ut_01f0a3c2b19d">Traceback (most recent call last):&#xA;  File &#34;dp_runner.py&#34;, line 52, in run&#xA;    c[&#34;setup&#34;]()&#xA;  File &#34;pipeline_tests.py&#34;, line 37, in _setup_schema_isolation&#xA;    raise RuntimeError(&#34;could not attach to isolated schema sdp_ut_01f0a3c2b19d&#34;)&#xA;RuntimeError: could not attach to isolated schema sdp_ut_01f0a3c2b19d&#xA;</error>
+  </testcase>
+  <testcase classname="tests.test_daily_revenue.py" name="tests/test_daily_revenue.py::test_partition_present[mon]" time="0.200"></testcase>
+  <testcase classname="tests.test_daily_revenue.py" name="tests/test_daily_revenue.py::test_partition_present[tue]" time="0.200"></testcase>
+  <testcase classname="tests.test_daily_revenue.py" name="tests/test_daily_revenue.py::test_partition_present[wed]" time="0.200"></testcase>
+</testsuite>

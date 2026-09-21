@@ -1,0 +1,12 @@
+{
+  "update_id": "01f0a3c2b19d",
+  "pipeline_id": "orders-dev",
+  "summary": {
+    "total": 7,
+    "passed": 4,
+    "failed": 1,
+    "skipped": 1,
+    "errors": 1
+  },
+  "duration_seconds": 1.509
+}
