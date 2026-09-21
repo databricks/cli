@@ -20,20 +20,25 @@ import (
 const poolsBasePath = "/api/2.0/ai-training/provisioned-capacities"
 
 func TestPoolsCommandShape(t *testing.T) {
+	pools := newPoolsCommand()
+	assert.Equal(t, "pools", pools.Use)
+	assert.True(t, hasSubcommand(pools, "get"))
+	assert.True(t, hasSubcommand(pools, "list"))
+
 	list := newListPoolsCommand()
-	assert.Equal(t, "pools", list.Use)
+	assert.Equal(t, "list", list.Use)
 	assert.NoError(t, list.Args(list, []string{}))
 	assert.Error(t, list.Args(list, []string{"x"}))
 
 	get := newGetPoolCommand()
-	assert.Equal(t, "pool [POOL_ID]", get.Use)
+	assert.Equal(t, "get [POOL_ID]", get.Use)
 	assert.NoError(t, get.Args(get, []string{"pool-1"}))
 	assert.NoError(t, get.Args(get, []string{})) // id optional: resolved when there's one pool
 	assert.Error(t, get.Args(get, []string{"a", "b"}))
 
-	// The subcommands are wired under `air list` and `air get`.
-	assert.True(t, hasSubcommand(newListCommand(), "pools"))
-	assert.True(t, hasSubcommand(newGetCommand(), "pool"))
+	assert.True(t, hasSubcommand(New(), "pools"))
+	assert.False(t, hasSubcommand(newListCommand(), "pools"))
+	assert.False(t, hasSubcommand(newGetCommand(), "pool"))
 }
 
 func hasSubcommand(parent *cobra.Command, name string) bool {
@@ -232,7 +237,7 @@ func TestGetPoolText(t *testing.T) {
 }
 
 func TestGetPoolOmitIDResolvesSolePool(t *testing.T) {
-	// With exactly one pool, `air get pool` (no id) resolves it and shows usage.
+	// With exactly one pool, `air pools get` (no id) resolves it and shows usage.
 	list := `{"provisioned_capacities":[{"name":"provisioned-capacities/pool-only","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64}}]}`
 	detail := `{"name":"provisioned-capacities/pool-only","spec":{"accelerator_type":"GPU_8xH100","accelerator_count":64},"status":{"usage":{"used_accelerator_count":40,"idle_accelerator_count":24}}}`
 	srv := poolsServer(t, []string{list}, map[string]string{"pool-only": detail})

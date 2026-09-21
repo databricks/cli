@@ -208,8 +208,6 @@ JOB_RUN_ID is the job run ID returned by "air run".`,
 		return nil
 	}
 
-	cmd.AddCommand(newGetPoolCommand())
-
 	return cmd
 }
 

@@ -10,6 +10,9 @@ trace $CLI experimental air list --help
 title "get help"
 trace $CLI experimental air get --help
 
+title "pools help"
+trace $CLI experimental air pools --help
+
 title "logs help"
 trace $CLI experimental air logs --help
 

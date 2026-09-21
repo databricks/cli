@@ -84,8 +84,8 @@ type listProvisionedCapacitiesResponse struct {
 	NextPageToken         string                `json:"next_page_token"`
 }
 
-// poolListData is the `air list pools` payload. Usage counts are intentionally
-// absent: the list endpoint does not populate them (they come from `air get`).
+// poolListData is the `air pools list` payload. Usage counts are intentionally
+// absent: the list endpoint does not populate them (they come from `air pools get`).
 type poolListData struct {
 	Rows []poolRow `json:"pools"`
 }
@@ -96,7 +96,7 @@ type poolRow struct {
 	ReservedAccelerators int64  `json:"reserved_accelerators"`
 }
 
-// poolDetailData is the `air get pool` payload. Usage is a pointer because it is
+// poolDetailData is the `air pools get` payload. Usage is a pointer because it is
 // populated only when the pool reports it.
 type poolDetailData struct {
 	ID                   string `json:"pool_id"`
@@ -181,9 +181,22 @@ func getPool(ctx context.Context, w *databricks.WorkspaceClient, id string) (*pr
 	return &pc, nil
 }
 
-func newListPoolsCommand() *cobra.Command {
+func newPoolsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pools",
+		Short: "View provisioned GPU pools",
+		RunE:  root.ReportUnknownSubcommand,
+	}
+
+	cmd.AddCommand(newGetPoolCommand())
+	cmd.AddCommand(newListPoolsCommand())
+
+	return cmd
+}
+
+func newListPoolsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
 		Args:  root.NoArgs,
 		Short: "List the GPU pools available to the current workspace",
 	}
@@ -222,7 +235,7 @@ func newListPoolsCommand() *cobra.Command {
 
 func newGetPoolCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "pool [POOL_ID]",
+		Use:   "get [POOL_ID]",
 		Args:  root.MaximumNArgs(1),
 		Short: "Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)",
 	}
@@ -261,7 +274,7 @@ func newGetPoolCommand() *cobra.Command {
 			// ErrNotFound covers a plain 404 as well as RESOURCE_DOES_NOT_EXIST.
 			if errors.Is(err, apierr.ErrNotFound) {
 				return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,
-					fmt.Errorf("GPU pool %q not found: check the id with `air list pools`", id))
+					fmt.Errorf("GPU pool %q not found: check the id with `air pools list`", id))
 			}
 			return poolAPIError(ctx, cmd, fmt.Sprintf("get GPU pool %q", id), err)
 		}
@@ -277,8 +290,8 @@ func newGetPoolCommand() *cobra.Command {
 	return cmd
 }
 
-// resolveSolePoolID returns the id of the workspace's only pool, for `air get
-// pool` with no argument. It errors (with the ids to choose from) when there is
+// resolveSolePoolID returns the id of the workspace's only pool, for `air pools
+// get` with no argument. It errors (with the ids to choose from) when there is
 // not exactly one, so the convenience never silently picks among several.
 func resolveSolePoolID(ctx context.Context, cmd *cobra.Command, w *databricks.WorkspaceClient) (string, error) {
 	pools, err := listPools(ctx, w)

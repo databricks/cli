@@ -175,8 +175,6 @@ Filters:
 		return renderListText(cmd, fetcher, limit)
 	}
 
-	cmd.AddCommand(newListPoolsCommand())
-
 	return cmd
 }
 
