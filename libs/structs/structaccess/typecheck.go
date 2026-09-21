@@ -298,15 +298,14 @@ func directCandidates(t reflect.Type, key string, prefix []int) []candidate {
 		if sf.Name == EmbeddedSliceFieldName || IsFlattenedEmbed(sf) {
 			continue
 		}
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" {
+		if IsSkippedField(sf) {
 			continue
 		}
+		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
 		tagged := name != ""
 		if !tagged {
 			name = sf.Name
 		}
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
 		if name != key {
 			continue
 		}
