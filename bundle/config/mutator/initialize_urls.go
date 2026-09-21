@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -25,15 +26,38 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// Use CurrentWorkspaceID (API call) rather than the config fast-path so
-	// that stale or mis-scoped workspace_id values in .databrickscfg or
-	// databricks.yml never pollute the ?w= query parameter in resource URLs.
-	workspaceID, err := b.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
+	// ResolveWorkspaceID returns Config.WorkspaceID when set (fast-path),
+	// falling back to CurrentWorkspaceID when not. UUID/connection-style IDs
+	// flow through unchanged so they are preserved in the ?w= parameter.
+	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	// Validate numeric workspace IDs against the connected workspace. If
+	// Config.WorkspaceID is a numeric value that disagrees with the actual org
+	// ID, the config is stale or mis-scoped and would silently embed the wrong
+	// ?w= in every resource URL. Non-numeric IDs (UUID connection-style IDs,
+	// the "none" sentinel) are skipped — they can't be compared with the
+	// integer org ID returned by the API.
+	if cfgID := b.WorkspaceClient(ctx).Config.WorkspaceID; cfgID != "" {
+		if cfgNumeric, parseErr := strconv.ParseInt(cfgID, 10, 64); parseErr == nil {
+			apiID, apiErr := b.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
+			if apiErr != nil {
+				return diag.FromErr(apiErr)
+			}
+			if cfgNumeric != apiID {
+				return diag.Errorf(
+					"workspace_id %s in your configuration does not match the connected workspace (ID: %s); "+
+						"remove or correct workspace_id in your profile or bundle config to disambiguate",
+					cfgID, strconv.FormatInt(apiID, 10),
+				)
+			}
+		}
+	}
+
 	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
-	err = initializeForWorkspace(b, strconv.FormatInt(workspaceID, 10), host)
+	err = initializeForWorkspace(b, workspaceID, host)
 	if err != nil {
 		return diag.FromErr(err)
 	}
