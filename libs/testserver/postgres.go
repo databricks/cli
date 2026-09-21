@@ -1681,9 +1681,11 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 
 	name := "synced_tables/" + syncedTableID
 
-	if _, exists := s.PostgresSyncedTables[name]; exists {
-		return postgresErrorResponse(409, "ALREADY_EXISTS", "synced table with such id already exists")
-	}
+	// Creating a synced table whose id already exists does not conflict on the real
+	// backend — CreateSyncedTable replaces the existing table — so we overwrite below
+	// rather than returning ALREADY_EXISTS. The only create conflict the backend
+	// reports is the transient one below.
+
 	// Simulate the destination Postgres table being dropped asynchronously: for a few
 	// creates after a delete, the record is gone from GET but the create still conflicts.
 	if s.postgresSyncedTablesDeleting[name] > 0 {

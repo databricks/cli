@@ -152,8 +152,11 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// The delete-wait above only observes the resource's own read (e.g. the synced-table
 	// record). A delete can leave *backing* objects behind that it can't see — a synced
 	// table's destination Postgres table is dropped on a slower schedule — so the create
-	// of the same id can still fail with ALREADY_EXISTS. Retry the create until that
-	// teardown finishes, then surface the result.
+	// of the same id can still conflict. Retry the create until that teardown finishes,
+	// then surface the result. We match the whole conflict class (ErrResourceConflict)
+	// rather than a single error code: the same lingering-teardown race can surface as
+	// ALREADY_EXISTS or RESOURCE_ALREADY_EXISTS depending on the resource, and both mean
+	// the same thing here.
 	//
 	// Only when the recreate re-creates the *same* id, though. If it changed a
 	// provided-id field (e.g. renamed an app, or pointed a synced table at a new
@@ -168,8 +171,8 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		switch {
 		case createErr == nil:
 			return &struct{}{}, nil
-		case !idChanged && errors.Is(createErr, apierr.ErrAlreadyExists):
-			log.Warnf(ctx, "Create hit ALREADY_EXISTS; the previous delete is likely still finishing, retrying: %s", createErr)
+		case !idChanged && errors.Is(createErr, apierr.ErrResourceConflict):
+			log.Warnf(ctx, "Create still conflicts; the previous delete is likely still finishing, retrying: %s", createErr)
 			return nil, retries.Continues("create still conflicts with the deleting resource")
 		default:
 			return nil, retries.Halt(createErr)
