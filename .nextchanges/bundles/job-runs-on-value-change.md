@@ -1,0 +1,1 @@
+* direct: `resources.job_runs` can set `lifecycle.triggers.on_value_change` to an interpolated expression (for example `${resources.jobs.foo.id}`) to re-fire the run when that resolved value changes or a watch is added. Resolved values are recorded as SHA-256 hashes; removing a watch leaves the run in place. ([#6341](https://github.com/databricks/cli/pull/6341))
