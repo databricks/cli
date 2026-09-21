@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"math"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -11,12 +13,14 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -92,6 +96,30 @@ var testConfig map[string]any = map[string]any{
 	"synced_database_tables": &resources.SyncedDatabaseTable{
 		SyncedDatabaseTable: database.SyncedDatabaseTable{
 			Name: "main.myschema.my_synced_table",
+		},
+	},
+
+	"model_services": &resources.ModelService{
+		ModelServiceConfig: resources.ModelServiceConfig{
+			Parent:         "schemas/main.default",
+			ModelServiceId: "my_model_service",
+			Comment:        "Test model service",
+		},
+	},
+
+	"mcp_services": &resources.McpService{
+		McpServiceConfig: resources.McpServiceConfig{
+			Parent:       "schemas/main.default",
+			McpServiceId: "my_mcp_service",
+			Comment:      "Test mcp service",
+		},
+	},
+
+	"model_provider_services": &resources.ModelProviderService{
+		ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+			Parent:                 "schemas/main.default",
+			ModelProviderServiceId: "my_model_provider_service",
+			Comment:                "Test model provider service",
 		},
 	},
 
@@ -297,6 +325,12 @@ var testConfig map[string]any = map[string]any{
 			Principal:  "user@example.com",
 			Privileges: []catalog.Privilege{catalog.PrivilegeSelect},
 		}},
+	},
+
+	"internal_immutable_snapshots": &resources.Snapshot{
+		RemoteRoot: "/Workspace/Users/" + testserver.TestUserSP.UserName + "/.snapshots",
+		BundleID:   "test-bundle-id",
+		ACL:        []snapshot.ACLEntry{{UserName: "user@example.com", PermissionLevel: "CAN_READ"}},
 	},
 }
 
@@ -733,6 +767,39 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"model_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_service",
+			FullName:      "main.myschema.mymodelservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"mcp_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "mcp_service",
+			FullName:      "main.myschema.mymcpservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"model_provider_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_provider_service",
+			FullName:      "main.myschema.myproviderservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
@@ -777,6 +844,29 @@ var testDeps = map[string]prepareWorkspace{
 				Parent:     "projects/test-project-for-branch",
 				BranchId:   "test-branch",
 				BranchSpec: postgres.BranchSpec{},
+			},
+		}, nil
+	},
+
+	"postgres_snapshot_schedules": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		// Creating the project implicitly provisions the root "production"
+		// branch, the only branch a snapshot schedule may target.
+		_, err := client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-snapshot-schedule",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Snapshot Schedule",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresSnapshotSchedule{
+			PostgresSnapshotScheduleConfig: resources.PostgresSnapshotScheduleConfig{
+				Branch: "projects/test-project-for-snapshot-schedule/branches/production",
 			},
 		}, nil
 	},
@@ -912,6 +1002,7 @@ func TestAll(t *testing.T) {
 // testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
 type testIgnoreFilter struct {
 	ignoreFields map[string]bool
+	adapter      *Adapter
 }
 
 // newTestIgnoreFilter creates a filter from the adapter's resource configs.
@@ -939,7 +1030,7 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 		}
 		return true
 	})
-	return &testIgnoreFilter{ignoreFields: ignoreFields}
+	return &testIgnoreFilter{ignoreFields: ignoreFields, adapter: adapter}
 }
 
 // shouldIgnore returns true if the field at the given path should be ignored.
@@ -952,6 +1043,12 @@ func (f *testIgnoreFilter) shouldIgnore(path string) bool {
 	if prefix, _, ok := strings.Cut(path, "."); ok {
 		topLevelField = prefix
 	}
+
+	parts := strings.Split(topLevelField, "[")
+	if len(parts) > 1 {
+		topLevelField = parts[0]
+	}
+
 	return f.ignoreFields[topLevelField]
 }
 
@@ -1001,6 +1098,22 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	newState, err := adapter.PrepareState(inputConfig)
 	require.NoError(t, err, "PrepareState failed")
+
+	// The snapshot is content-addressed: DoCreate reads a zip from disk and the server
+	// returns a path derived from that zip's hash. The generic fixture has no ZipPath, so
+	// stage a real zip and align RelativePath/FullPath with its hash; otherwise the
+	// create→read round-trip compares a fixture path against a hash-derived remote path
+	// and fails. This is inherent to content-addressed resources, not a missing hook.
+	if ss, ok := newState.(*SnapshotState); ok {
+		snap := inputConfig.(*resources.Snapshot)
+		content := []byte("test snapshot content")
+		hash := snapshot.HashFromContent(content)
+		zipPath := filepath.Join(t.TempDir(), hash+".zip")
+		require.NoError(t, os.WriteFile(zipPath, content, 0o600))
+		ss.ZipPath = filepath.ToSlash(zipPath)
+		ss.RelativePath = ss.BundleID + "/" + hash
+		ss.FullPath = snap.RemoteRoot + "/" + ss.RelativePath
+	}
 
 	ctx := t.Context()
 
@@ -1080,6 +1193,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
+		// Skip fields configured in ignore_remote_changes.
+		if ignoreFilter.shouldIgnore(path.String()) {
+			return
+		}
 		remoteValue, err := structaccess.Get(remappedState, path)
 		if err != nil {
 			t.Errorf("Failed to read %s from remapped remote state %#v", path.String(), remappedState)
@@ -1094,10 +1211,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 			// testserver can set field to backend-generated value
 			return
 		}
-		// Skip fields configured in ignore_remote_changes.
-		if ignoreFilter.shouldIgnore(path.String()) {
-			return
-		}
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
@@ -1107,8 +1220,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID, newState)
 	require.NoError(t, err)
 
+	// WaitAfterDelete polls until the resource reads back gone; a NotFound is that
+	// success and the caller (DeploymentUnit.waitDeleted) maps it to nil, so accept it here too.
 	err = adapter.WaitAfterDelete(ctx, createdID)
-	require.NoError(t, err)
+	if !apierr.IsMissing(err) {
+		require.NoError(t, err)
+	}
 
 	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
@@ -1118,7 +1235,13 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	// A resource that implements no DoDelete (permissions, grants, job_runs)
+	// leaves the resource in place, so DoRead still succeeds afterwards.
+	// postgres_snapshot_schedules does implement DoDelete but has no delete
+	// endpoint: it disables the schedule by setting an empty cadence set, and the
+	// schedule remains readable (it is intrinsic to the branch).
+	deleteIsNoop := !adapter.HasDoDelete() || group == "postgres_snapshot_schedules"
+	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
 	// A GET on the DELETING app returns the app, not 404 -- the testserver
@@ -1129,6 +1252,9 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	switch {
+	case isImmutable:
+		require.NoError(t, err)
+		assert.True(t, adapter.IsGone(remoteAfterDelete))
 	case deleteIsNoop:
 		require.NoError(t, err)
 		// The resource genuinely still exists, so it must not report as gone.

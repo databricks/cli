@@ -343,6 +343,36 @@ func TestCheckIDESSHExtension_AutoApproveMissing_Installs(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// The authority must be the host alias alone. The remote OS user is a fresh
+// spark-<uuid> on every serverless instance, so a "<user>@" prefix would give each
+// connect a different authority and VS Code would remember a separate
+// previously-opened folder for each one.
+func TestRemoteLaunchArgs(t *testing.T) {
+	tests := []struct {
+		name string
+		ide  string
+		want []string
+	}{
+		{
+			name: "vscode",
+			ide:  VSCodeOption,
+			want: []string{"--remote", "ssh-remote+databricks-cpu-7f189c39", "/Workspace/Users/me@example.com/"},
+		},
+		{
+			name: "cursor keeps its launch args first",
+			ide:  CursorOption,
+			want: []string{"--classic", "--remote", "ssh-remote+databricks-cpu-7f189c39", "/Workspace/Users/me@example.com/"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := remoteLaunchArgs(getIDE(tt.ide), "databricks-cpu-7f189c39", "me@example.com")
+			assert.Equal(t, tt.want, args)
+		})
+	}
+}
+
 func TestCheckIDESSHExtension_NoPrompt_WithoutAutoApprove_Errors(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("PATH", tmpDir)

@@ -149,6 +149,8 @@ class ClusterSpec:
 
     dependency_mode: VariableOrOptional[DependencyMode] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Controls dependency configuration for the cluster.
     """
 
@@ -425,6 +427,8 @@ class ClusterSpecDict(TypedDict, total=False):
 
     dependency_mode: VariableOrOptional[DependencyModeParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Controls dependency configuration for the cluster.
     """
 

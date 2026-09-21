@@ -9,8 +9,8 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
@@ -251,9 +251,9 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor = len(m.rows) - 1
 		case "enter":
 			// Open the selected run's MLflow page in the browser.
-			if len(m.rows) > 0 {
+			if m.fetcher != nil && len(m.rows) > 0 {
 				if url := m.rows[m.cursor].MLflowURL; url != "" && url != "-" {
-					return m, openURL(url)
+					return m, m.openURL(url)
 				}
 			}
 		case "i":
@@ -359,9 +359,10 @@ func (m listModel) fetchRunLogs(runID int64) tea.Cmd {
 }
 
 // openURL opens a URL in the user's default browser, best-effort.
-func openURL(url string) tea.Cmd {
+func (m listModel) openURL(url string) tea.Cmd {
+	ctx := m.fetcher.ctx
 	return func() tea.Msg {
-		_ = browser.OpenURL(url)
+		_ = browser.Open(ctx, url)
 		return nil
 	}
 }

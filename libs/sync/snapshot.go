@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
 )
@@ -121,19 +122,12 @@ func newSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 }
 
 func (s *Snapshot) Save(ctx context.Context) error {
-	f, err := os.OpenFile(s.snapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
-	if err != nil {
-		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
-	}
-	defer f.Close()
-
 	// persist snapshot to disk
 	bytes, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
 	}
-	_, err = f.Write(bytes)
-	if err != nil {
+	if err := atomicfile.Write(s.snapshotPath, bytes, 0o644); err != nil {
 		return fmt.Errorf("failed to write sync snapshot to disk: %s", err)
 	}
 	return nil

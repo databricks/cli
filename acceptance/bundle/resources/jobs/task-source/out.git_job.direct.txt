@@ -21,7 +21,8 @@
         "commands": [
           "dbt run"
         ],
-        "project_directory": "./dbt_project"
+        "project_directory": "./dbt_project",
+        "source": "GIT"
       },
       "new_cluster": {
         "custom_tags": {
@@ -41,7 +42,8 @@
         "inputs": "[1]",
         "task": {
           "notebook_task": {
-            "notebook_path": "./notebook.py"
+            "notebook_path": "./notebook.py",
+            "source": "GIT"
           },
           "task_key": "test_task_foreach_no_source"
         }
@@ -63,7 +65,8 @@
     },
     {
       "notebook_task": {
-        "notebook_path": "./notebook.py"
+        "notebook_path": "./notebook.py",
+        "source": "GIT"
       },
       "task_key": "test_task_no_source"
     },
@@ -77,7 +80,8 @@
     {
       "sql_task": {
         "file": {
-          "path": "./sql.sql"
+          "path": "./sql.sql",
+          "source": "GIT"
         },
         "warehouse_id": "cafef00d"
       },

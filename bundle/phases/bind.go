@@ -20,8 +20,9 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, stateDesc *statemgmt.StateDesc) {
 	log.Info(ctx, "Phase: bind")
+	engine := stateDesc.Engine
 
 	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalBind))
 	if logdiag.HasError(ctx) {
@@ -33,6 +34,11 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 	}()
 
 	if engine.IsDirect() {
+		if stateDesc.IsDMS() {
+			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
+			return
+		}
+
 		// Direct engine: import into temp state, run plan, check for changes
 		// This follows the same pattern as terraform import
 		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
@@ -94,7 +100,8 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 		}
 	} else {
 		// Terraform engine: use terraform import
-		bundle.ApplySeqContext(ctx, b,
+		bundle.ApplySeqContext(
+			ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Import(opts),
@@ -141,7 +148,8 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 			return
 		}
 	} else {
-		bundle.ApplySeqContext(ctx, b,
+		bundle.ApplySeqContext(
+			ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Unbind(bundleType, tfResourceType, resourceKey),

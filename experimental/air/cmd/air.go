@@ -14,8 +14,7 @@ func New() *cobra.Command {
 		Short: "Run and manage AI runtime training workloads",
 		Long: `Run and manage AI runtime training workloads on Databricks serverless GPU compute.
 
-This command set is the Go port of the standalone Python "air" CLI. It is
-experimental and may change in future versions.`,
+These commands are experimental and may change in future versions.`,
 	}
 
 	runCommand := newRunCommand()
@@ -25,9 +24,6 @@ experimental and may change in future versions.`,
 	cmd.AddCommand(newListCommand())
 	cmd.AddCommand(newLogsCommand())
 	cmd.AddCommand(newCancelCommand())
-	registerImageCommand := newRegisterImageCommand()
-	wrapRunErrorWithDebugTip(registerImageCommand)
-	cmd.AddCommand(registerImageCommand)
 	cmd.AddCommand(newConvertToDabsCommand())
 
 	return cmd

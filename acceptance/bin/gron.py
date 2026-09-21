@@ -60,6 +60,26 @@ def sort_arrays(obj, keys):
 
     Sort uses a canonical JSON repr so the order is content-determined and stable
     across runs. Arrays not under a matching key keep their original order.
+
+    >>> sort_arrays({"acls": [{"n": "b"}, {"n": "a"}]}, {"acls"})
+    {'acls': [{'n': 'a'}, {'n': 'b'}]}
+
+    Arrays under a non-matching key are left in place:
+
+    >>> sort_arrays({"items": [3, 1, 2]}, {"acls"})
+    {'items': [3, 1, 2]}
+
+    Matching keys are sorted at any nesting depth:
+
+    >>> sort_arrays({"outer": {"acls": [2, 1]}}, {"acls"})
+    {'outer': {'acls': [1, 2]}}
+    >>> sort_arrays([{"acls": [2, 1]}], {"acls"})
+    [{'acls': [1, 2]}]
+
+    Scalars pass through unchanged:
+
+    >>> sort_arrays("plain", {"acls"})
+    'plain'
     """
     if isinstance(obj, dict):
         for k, v in obj.items():

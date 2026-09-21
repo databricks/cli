@@ -10,10 +10,11 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
-	cache "github.com/databricks/cli/libs/auth/u2m/cache"
+	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/browser"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/logger"
@@ -43,16 +44,16 @@ const (
 	tokenRefreshBuffer = 5 * time.Minute
 
 	// Cache update recovery checks immediately and then waits for 25, 50, 100,
-	// and 200 milliseconds. This gives a concurrent cache writer time to finish
+	// and 200 milliseconds. This gives a concurrent store writer time to finish
 	// while bounding the delay for persistent storage failures to 375 milliseconds.
-	cacheUpdateRecoveryAttempts = 5
+	storeUpdateRecoveryAttempts = 5
 
-	cacheUpdateRecoveryInitialDelay = 25 * time.Millisecond
-	cacheUpdateRecoveryDelayFactor  = 2
+	storeUpdateRecoveryInitialDelay = 25 * time.Millisecond
+	storeUpdateRecoveryDelayFactor  = 2
 
 	// Concurrent refreshes can finish at slightly different times, so their
 	// expiration times need not be identical.
-	cacheUpdateRecoveryExpiryDelta = time.Minute
+	storeUpdateRecoveryExpiryDelta = time.Minute
 )
 
 var (
@@ -62,15 +63,17 @@ var (
 )
 
 // PersistentAuth is an OAuth manager that handles the U2M OAuth flow. Tokens
-// are stored in and looked up from the provided cache. Tokens include the
+// are stored in and looked up from the provided store. Tokens include the
 // refresh token. On load, if the access token is expired or close to expiry,
 // it is refreshed using the refresh token.
 //
-// The PersistentAuth is safe for concurrent use. The token cache is locked
+// The PersistentAuth is safe for concurrent use. The token store is locked
 // during token retrieval, refresh and storage.
 type PersistentAuth struct {
-	// cache is the token cache to store and lookup tokens.
-	cache cache.TokenCache
+	clientID string
+
+	// store stores and looks up tokens.
+	store storage.Store
 
 	// client is the HTTP client to use for OAuth2 requests.
 	client *http.Client
@@ -110,6 +113,13 @@ type PersistentAuth struct {
 	// scopes is the list of OAuth scopes to request.
 	scopes []string
 
+	// resources is the list of RFC 8707 resource indicators to send on the
+	// authorization request. The Databricks /oidc authorize endpoint reads
+	// these to scope the login to a specific protected resource (e.g. an AI
+	// Gateway MCP connection), so it can drive that resource's own login
+	// before issuing the authorization code. Empty means an unrestricted login.
+	resources []string
+
 	// disableOfflineAccess controls whether offline_access scope is requested.
 	// When true, offline_access will NOT be automatically added to scopes,
 	// meaning the token will not include a refresh token.
@@ -133,10 +143,10 @@ type PersistentAuth struct {
 
 type PersistentAuthOption func(*PersistentAuth)
 
-// WithTokenCache sets the token cache for the PersistentAuth.
-func WithTokenCache(c cache.TokenCache) PersistentAuthOption {
+// WithTokenStore sets the token store for the PersistentAuth.
+func WithTokenStore(s storage.Store) PersistentAuthOption {
 	return func(a *PersistentAuth) {
-		a.cache = c
+		a.store = s
 	}
 }
 
@@ -162,6 +172,13 @@ func WithOAuthArgument(arg OAuthArgument) PersistentAuthOption {
 	}
 }
 
+// WithClientID sets the OAuth client ID for the PersistentAuth.
+func WithClientID(clientID string) PersistentAuthOption {
+	return func(a *PersistentAuth) {
+		a.clientID = clientID
+	}
+}
+
 // WithBrowser sets the browser function for the PersistentAuth.
 func WithBrowser(b func(url string) error) PersistentAuthOption {
 	return func(a *PersistentAuth) {
@@ -182,6 +199,15 @@ func WithPort(port int) PersistentAuthOption {
 func WithScopes(scopes []string) PersistentAuthOption {
 	return func(a *PersistentAuth) {
 		a.scopes = scopes
+	}
+}
+
+// WithResources sets the RFC 8707 resource indicators for the PersistentAuth.
+// Each value is added as a `resource` query parameter on the authorization
+// request.
+func WithResources(resources []string) PersistentAuthOption {
+	return func(a *PersistentAuth) {
+		a.resources = resources
 	}
 }
 
@@ -234,7 +260,9 @@ func WithDiscoveryAccountTarget() PersistentAuthOption {
 
 // NewPersistentAuth creates a new PersistentAuth with the provided options.
 func NewPersistentAuth(ctx context.Context, opts ...PersistentAuthOption) (*PersistentAuth, error) {
-	p := &PersistentAuth{}
+	p := &PersistentAuth{
+		clientID: appClientID, // defaults to databricks-cli
+	}
 	for _, opt := range opts {
 		opt(p)
 	}
@@ -256,8 +284,8 @@ func NewPersistentAuth(ctx context.Context, opts ...PersistentAuthOption) (*Pers
 			Client: apiClient,
 		}
 	}
-	if p.cache == nil {
-		p.cache = cache.NewInMemoryTokenCache()
+	if p.store == nil {
+		p.store = storage.NewMemoryStore()
 	}
 	if err := p.validateArg(); err != nil {
 		return nil, err
@@ -273,11 +301,11 @@ func NewPersistentAuth(ctx context.Context, opts ...PersistentAuthOption) (*Pers
 // using GetCacheKey(). The returned token may be expired; callers are
 // responsible for deciding whether and how to refresh it.
 func (a *PersistentAuth) loadToken() (*oauth2.Token, error) {
-	t, err := a.cache.Lookup(a.oAuthArgument.GetCacheKey())
+	e, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
 	if err != nil {
 		return nil, fmt.Errorf("cache: %w", err)
 	}
-	return t, nil
+	return e.Token, nil
 }
 
 // Token loads the OAuth2 token for the given OAuthArgument from the cache. If
@@ -342,14 +370,14 @@ func isFreshReplacement(old, candidate, cached *oauth2.Token) bool {
 	if candidate.Expiry.IsZero() {
 		return false
 	}
-	return !cached.Expiry.Before(candidate.Expiry.Add(-cacheUpdateRecoveryExpiryDelta))
+	return !cached.Expiry.Before(candidate.Expiry.Add(-storeUpdateRecoveryExpiryDelta))
 }
 
-// recoverCacheUpdate checks whether a concurrent cache update completed.
+// recoverStoreUpdate checks whether a concurrent store update completed.
 // Retrying reads instead of writes avoids recreating the write race.
-func (a *PersistentAuth) recoverCacheUpdate(old, candidate *oauth2.Token) *oauth2.Token {
-	delay := cacheUpdateRecoveryInitialDelay
-	for attempt := range cacheUpdateRecoveryAttempts {
+func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth2.Token {
+	delay := storeUpdateRecoveryInitialDelay
+	for attempt := range storeUpdateRecoveryAttempts {
 		if attempt > 0 {
 			timer := time.NewTimer(delay)
 			select {
@@ -358,12 +386,12 @@ func (a *PersistentAuth) recoverCacheUpdate(old, candidate *oauth2.Token) *oauth
 				return nil
 			case <-timer.C:
 			}
-			delay *= cacheUpdateRecoveryDelayFactor
+			delay *= storeUpdateRecoveryDelayFactor
 		}
 
-		cached, err := a.cache.Lookup(a.oAuthArgument.GetCacheKey())
-		if err == nil && isFreshReplacement(old, candidate, cached) {
-			return cached
+		cached, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
+		if err == nil && isFreshReplacement(old, candidate, cached.Token) {
+			return cached.Token
 		}
 	}
 	return nil
@@ -431,9 +459,9 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 		}
 		return nil, err
 	}
-	err = a.cache.Store(a.oAuthArgument.GetCacheKey(), t)
+	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
 	if err != nil {
-		if cached := a.recoverCacheUpdate(oldToken, t); cached != nil {
+		if cached := a.recoverStoreUpdate(oldToken, t); cached != nil {
 			return cached, nil
 		}
 		return nil, fmt.Errorf("cache update: %w", err)
@@ -445,14 +473,15 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 // OAuth2 flow is started by opening the browser to the OAuth2 authorization
 // URL. The user is redirected to the callback server on appRedirectAddr. The
 // callback server listens for the redirect from the identity provider and
-// exchanges the authorization code for an access token.
-func (a *PersistentAuth) Challenge() error {
+// exchanges the authorization code for an access token. The caller is
+// responsible for storing the returned token.
+func (a *PersistentAuth) Challenge() (*oauth2.Token, error) {
 	if a.discoveryMode {
 		return a.discoveryChallenge()
 	}
 	err := a.startListener(a.ctx)
 	if err != nil {
-		return fmt.Errorf("starting listener: %w", err)
+		return nil, fmt.Errorf("starting listener: %w", err)
 	}
 	// The listener will be closed by the callback server automatically, but if
 	// the callback server is not created, we need to close the listener manually.
@@ -460,39 +489,35 @@ func (a *PersistentAuth) Challenge() error {
 
 	cfg, err := a.oauth2Config()
 	if err != nil {
-		return fmt.Errorf("fetching oauth config: %w", err)
+		return nil, fmt.Errorf("fetching oauth config: %w", err)
 	}
 	cb, err := a.newCallbackServer()
 	if err != nil {
-		return fmt.Errorf("callback server: %w", err)
+		return nil, fmt.Errorf("callback server: %w", err)
 	}
 	defer cb.Close()
 
 	state, pkce, err := a.stateAndPKCE()
 	if err != nil {
-		return fmt.Errorf("state and pkce: %w", err)
+		return nil, fmt.Errorf("state and pkce: %w", err)
 	}
 	// make OAuth2 library use our client
 	ctx := a.setOAuthContext(a.ctx)
 	ts := authhandler.TokenSourceWithPKCE(ctx, cfg, state, cb.Handler, pkce)
 	t, err := ts.Token()
 	if err != nil {
-		return fmt.Errorf("authorize: %w", err)
+		return nil, fmt.Errorf("authorize: %w", err)
 	}
-	err = a.cache.Store(a.oAuthArgument.GetCacheKey(), t)
-	if err != nil {
-		return fmt.Errorf("store: %w", err)
-	}
-	return nil
+	return t, nil
 }
 
 // discoveryChallenge handles the login.databricks.com discovery flow.
 // The listener must be started before the discovery token source is invoked
 // because the challenge needs the redirect address to build the authorize URL.
-func (a *PersistentAuth) discoveryChallenge() error {
+func (a *PersistentAuth) discoveryChallenge() (*oauth2.Token, error) {
 	err := a.startListener(a.ctx)
 	if err != nil {
-		return fmt.Errorf("starting listener: %w", err)
+		return nil, fmt.Errorf("starting listener: %w", err)
 	}
 	defer a.Close()
 	ds := &discoveryTokenSource{pa: a, host: a.discoveryHost}
@@ -603,7 +628,8 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 		endpoints, err = a.endpointSupplier.GetWorkspaceOAuthEndpoints(a.ctx, argg.GetWorkspaceHost())
 	case AccountOAuthArgument:
 		endpoints, err = a.endpointSupplier.GetAccountOAuthEndpoints(
-			a.ctx, argg.GetAccountHost(), argg.GetAccountId())
+			a.ctx, argg.GetAccountHost(), argg.GetAccountId(),
+		)
 	case UnifiedOAuthArgument:
 		endpoints, err = a.endpointSupplier.GetUnifiedOAuthEndpoints(a.ctx, argg.GetHost(), argg.GetAccountId())
 	case DiscoveryOAuthArgument:
@@ -614,16 +640,40 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetching OAuth endpoints: %w", err)
 	}
+	authURL, err := appendResources(endpoints.AuthorizationEndpoint, a.resources)
+	if err != nil {
+		return nil, err
+	}
 	return &oauth2.Config{
-		ClientID: appClientID,
+		ClientID: a.clientID,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:   endpoints.AuthorizationEndpoint,
+			AuthURL:   authURL,
 			TokenURL:  endpoints.TokenEndpoint,
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
 		RedirectURL: "http://" + a.redirectAddr,
 		Scopes:      scopes,
 	}, nil
+}
+
+// appendResources adds RFC 8707 `resource` indicators to an authorization
+// endpoint URL, preserving any query parameters the endpoint already carries.
+// The oauth2 library appends its own parameters (client_id, PKCE, etc.) after
+// these when it builds the final authorization URL.
+func appendResources(authURL string, resources []string) (string, error) {
+	if len(resources) == 0 {
+		return authURL, nil
+	}
+	u, err := url.Parse(authURL)
+	if err != nil {
+		return "", fmt.Errorf("parsing authorization endpoint: %w", err)
+	}
+	q := u.Query()
+	for _, r := range resources {
+		q.Add("resource", r)
+	}
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }
 
 func (a *PersistentAuth) stateAndPKCE() (string, *authhandler.PKCEParams, error) {

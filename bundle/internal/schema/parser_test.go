@@ -88,6 +88,7 @@ func TestPostgresResourcesHaveLaunchStageOverride(t *testing.T) {
 		reflect.TypeFor[resources.PostgresEndpoint](),
 		reflect.TypeFor[resources.PostgresProject](),
 		reflect.TypeFor[resources.PostgresRole](),
+		reflect.TypeFor[resources.PostgresSnapshotSchedule](),
 		reflect.TypeFor[resources.PostgresSyncedTable](),
 	}
 

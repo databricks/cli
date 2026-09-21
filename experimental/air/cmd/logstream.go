@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -23,7 +24,7 @@ const (
 	// before falling back to MLflow.
 	maxTransientFailures = 5
 	// defaultCompletedRunTailLines caps a completed run's output when neither
-	// --lines nor --minutes is set.
+	// --tail nor --minutes is set.
 	defaultCompletedRunTailLines = 10000
 	// seenRecordsCap bounds the dedup set, evicting oldest-inserted entries first.
 	seenRecordsCap = 100000
@@ -33,6 +34,10 @@ const (
 	// bricklensEmptyMLflowProbeEveryNPolls throttles the active-run MLflow
 	// existence probe while Bricklens has returned no records.
 	bricklensEmptyMLflowProbeEveryNPolls = 10
+	// Event time and ingestion order can differ, so live polls overlap.
+	bricklensLogLookback = 30 * time.Second
+	// A terminal job can have records that are not searchable yet.
+	bricklensTerminalEmptyPolls = 3
 )
 
 // statusMessageType tags a client-facing message packed into
@@ -68,6 +73,9 @@ func normalizeStatusMessage(raw string) string {
 // shrink it.
 var retryCheckInterval = 3 * time.Second
 
+// bricklensPollInterval is independent of slower retry and discovery backoffs.
+var bricklensPollInterval = time.Second
+
 // errBricklensFeatureDisabled signals the caller to fall back to MLflow: Bricklens
 // is gated off (FEATURE_DISABLED), not deployed (ENDPOINT_NOT_FOUND / 404),
 // persistently failing, or served every request successfully but never returned a
@@ -89,7 +97,7 @@ type logRequest struct {
 	// windowMinutes, when > 0, restricts the fetch to the last N minutes.
 	windowMinutes int
 	// tailLines caps a completed run's output to the last N lines. Negative means
-	// --lines was unset (use the default cap); 0 prints nothing.
+	// --tail was unset (use the default cap); 0 prints no log lines.
 	tailLines int
 	// downloadTo, when set, writes logs to that directory instead of stdout.
 	downloadTo string
@@ -97,7 +105,9 @@ type logRequest struct {
 	// past retry of an active run: that attempt's logs are immutable, so streaming
 	// would poll forever waiting for the run (not the attempt) to finish.
 	staticView bool
-	jsonOutput bool
+	// boundInitialLogs limits existing output before following an active run.
+	boundInitialLogs bool
+	jsonOutput       bool
 	// onStatusChange, when set, is called on each lifecycle transition while
 	// following the run (current, previous display states). Used by
 	// `air run --watch -o json` to emit STATUS events.
@@ -247,6 +257,7 @@ func streamBricklensLogs(ctx context.Context, w *databricks.WorkspaceClient, out
 		ctx:       ctx,
 		w:         w,
 		apiClient: apiClient,
+		headers:   auth.WorkspaceIDHeaders(w.Config),
 		out:       out,
 		req:       req,
 		status:    status,
@@ -261,14 +272,16 @@ type bricklensStreamer struct {
 	ctx       context.Context
 	w         *databricks.WorkspaceClient
 	apiClient *client.DatabricksClient
+	headers   map[string]string
 	out       io.Writer
 	req       logRequest
 	status    logRunStatus
 
-	fromSec      int64
-	lastNano     int64
-	firstLogSeen bool
-	seen         *seenSet
+	fromSec        int64
+	streamStartSec int64
+	lastNano       int64
+	firstLogSeen   bool
+	seen           *seenSet
 	// previousState is the last display state reported to onStatusChange.
 	previousState string
 	// onFirstLog, when set, is called once just before the first log line is
@@ -330,6 +343,7 @@ func (st *bricklensStreamer) reportStatusChange() {
 func (st *bricklensStreamer) run() (bool, error) {
 	now := time.Now()
 	st.fromSec = st.req.fromSeconds(st.status, now)
+	st.streamStartSec = st.fromSec
 
 	// A past retry's logs are immutable: render a one-shot tail rather than
 	// following the still-active run, which would poll forever.
@@ -354,8 +368,10 @@ func (st *bricklensStreamer) run() (bool, error) {
 	// redundant spinner updates.
 	statusRefreshCounter := 0
 	emptyStreamPolls := 0
+	terminalEmptyPolls := 0
 	lastSpinnerText := ""
 	for {
+		pollStarted := time.Now()
 		if !firstIteration {
 			status, err := resolveRunStatus(st.ctx, st.w, st.req.runID)
 			if err != nil {
@@ -395,20 +411,38 @@ func (st *bricklensStreamer) run() (bool, error) {
 			statusRefreshCounter++
 		}
 
-		// A run already terminal on the first iteration renders as a tail (most
-		// recent N lines). An active run streams everything with dedup, so a run
-		// that terminates while we watch doesn't re-print the boundary second.
+		// `air logs` starts an active attachment with a bounded tail; subsequent
+		// polls follow live with dedup so the overlap does not re-print it.
+		var emitted int
 		var err error
-		if firstIteration && terminal {
-			err = st.drainTail(toSec)
+		if firstIteration && (terminal || st.req.boundInitialLogs) {
+			err = st.drainTail(toSec, !terminal)
+			if err == nil && !terminal {
+				// Baseline omitted history without suppressing newer records.
+				_, err = st.drainPages(toSec, true)
+			}
 		} else {
-			err = st.drainPages(toSec)
+			emitted, err = st.drainPages(toSec, false)
 		}
 		if err != nil {
 			return false, err
 		}
 
 		if terminal {
+			if !firstIteration {
+				if emitted == 0 {
+					terminalEmptyPolls++
+				} else {
+					terminalEmptyPolls = 0
+				}
+				if terminalEmptyPolls < bricklensTerminalEmptyPolls {
+					if err := waitForNextBricklensPoll(st.ctx, pollStarted); err != nil {
+						return false, err
+					}
+					firstIteration = false
+					continue
+				}
+			}
 			if !st.firstLogSeen {
 				// A successful but empty Bricklens stream isn't proof the run has no
 				// logs; they may be in MLflow (as --download-to reads). Fall back
@@ -427,10 +461,14 @@ func (st *bricklensStreamer) run() (bool, error) {
 		}
 
 		firstIteration = false
-		if err := sleepOrCancel(st.ctx, retryCheckInterval); err != nil {
+		if err := waitForNextBricklensPoll(st.ctx, pollStarted); err != nil {
 			return false, err
 		}
 	}
+}
+
+func waitForNextBricklensPoll(ctx context.Context, pollStarted time.Time) error {
+	return sleepOrCancel(ctx, max(time.Duration(0), bricklensPollInterval-time.Since(pollStarted)))
 }
 
 // sleepOrCancel waits for d, or returns early with the context error if the
@@ -449,7 +487,7 @@ func sleepOrCancel(ctx context.Context, d time.Duration) error {
 // drainStatic renders a single tail pass without following the run. Success
 // reflects the run's current result state (empty while active).
 func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
-	if err := st.drainTail(toSec); err != nil {
+	if err := st.drainTail(toSec, false); err != nil {
 		return false, err
 	}
 	if !st.firstLogSeen {
@@ -462,8 +500,8 @@ func (st *bricklensStreamer) drainStatic(toSec int64) (bool, error) {
 }
 
 // tailTarget is the number of lines a tail keeps. A negative tailLines means
-// --lines was unset, so use the default cap; 0 or more is taken literally (an
-// explicit --lines 0 prints nothing).
+// --tail was unset, so use the default cap; 0 or more is taken literally (an
+// explicit --tail 0 prints no log lines).
 func (req logRequest) tailTarget() int {
 	if req.tailLines < 0 {
 		return defaultCompletedRunTailLines
@@ -474,7 +512,7 @@ func (req logRequest) tailTarget() int {
 // drainTail emits the most-recent `target` records oldest-first. Bricklens
 // returns records newest-first, so it pages until it has `target`, keeps the
 // newest `target`, and reverses to chronological order.
-func (st *bricklensStreamer) drainTail(toSec int64) error {
+func (st *bricklensStreamer) drainTail(toSec int64, remember bool) error {
 	target := st.req.tailTarget()
 	if target <= 0 {
 		return nil
@@ -500,36 +538,42 @@ func (st *bricklensStreamer) drainTail(toSec int64) error {
 	}
 	for _, c := range slices.Backward(collected) {
 		st.emit(c.Body)
+		if remember {
+			st.seen.add(c)
+			st.lastNano = max(st.lastNano, c.nano())
+		}
+	}
+	if remember && st.lastNano != 0 {
+		st.fromSec = max(st.streamStartSec, st.lastNano/1_000_000_000-int64(bricklensLogLookback/time.Second))
 	}
 	return nil
 }
 
-// drainPages exhausts all pages from the current from-second in ascending order,
-// deduping against the seen-set so a re-queried boundary second is not
-// re-printed, then advances fromSec to the newest record's floor-second.
-func (st *bricklensStreamer) drainPages(toSec int64) error {
+// drainPages exhausts all pages from the current from-second in ascending order.
+// Live polls retain a bounded overlap so late records remain visible. The
+// initial baseline suppresses omitted history through the tail's watermark.
+func (st *bricklensStreamer) drainPages(toSec int64, suppressInitialHistory bool) (int, error) {
+	emitted := 0
+	initialTailNano := st.lastNano
+	var maximumEvictedNano int64
 	var pageToken string
 	for {
 		resp, err := st.requestPage(pageToken, toSec, 0, true)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		for _, rec := range resp.LogRecords {
 			nano := rec.nano()
-			if nano != 0 {
-				// Skip a record older than the last emitted one to keep output
-				// monotonic (out of order, or a re-queried boundary record).
-				if st.lastNano != 0 && nano < st.lastNano {
-					continue
-				}
-				if st.seen.has(nano, rec.Body) {
-					continue
-				}
+			if st.seen.has(rec) {
+				continue
 			}
-			st.emit(rec.Body)
+			if !suppressInitialHistory || (nano != 0 && nano > initialTailNano) {
+				st.emit(rec.Body)
+				emitted++
+			}
+			maximumEvictedNano = max(maximumEvictedNano, st.seen.add(rec))
 			if nano != 0 {
-				st.seen.add(nano, rec.Body)
 				st.lastNano = max(st.lastNano, nano)
 			}
 		}
@@ -541,9 +585,13 @@ func (st *bricklensStreamer) drainPages(toSec int64) error {
 	}
 
 	if st.lastNano != 0 {
-		st.fromSec = st.lastNano / 1_000_000_000
+		st.fromSec = max(st.streamStartSec, st.lastNano/1_000_000_000-int64(bricklensLogLookback/time.Second))
+		st.seen.removeBefore(st.fromSec * 1_000_000_000)
+		if maximumEvictedNano != 0 {
+			st.fromSec = max(st.fromSec, maximumEvictedNano/1_000_000_000+1)
+		}
 	}
-	return nil
+	return emitted, nil
 }
 
 // requestPage fetches one page, retrying transient failures up to
@@ -562,7 +610,7 @@ func (st *bricklensStreamer) requestPage(pageToken string, toSec int64, pageSize
 
 	transientFailures := 0
 	for {
-		resp, err := getBricklensLogs(st.ctx, st.apiClient, st.req.runID, q)
+		resp, err := getBricklensLogs(st.ctx, st.apiClient, st.headers, st.req.runID, q)
 		if err == nil {
 			return resp, nil
 		}

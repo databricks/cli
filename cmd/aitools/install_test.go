@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -255,6 +256,7 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, outcomes, 1)
 	assert.Equal(t, outcomeFailed, outcomes[0].status)
+	assert.Equal(t, protos.AitoolsErrorCategoryCLINotOnPath, outcomes[0].errorCategory)
 
 	// Explicit (--agents) blocked install is an error.
 	planExplicit := buildPlan([]*agents.Agent{claude}, installer.ScopeGlobal, false, true)
@@ -394,7 +396,7 @@ func TestInstallExplicitAgentWorksUndetected(t *testing.T) {
 	assert.Equal(t, agents.NameCodex, (*plugins)[0].agent)
 }
 
-func TestInstallOutputJSON(t *testing.T) {
+func TestInstallOutputJSONReportsErrorCategories(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 	t.Setenv("USERPROFILE", tmp)
@@ -430,9 +432,11 @@ func TestInstallOutputJSON(t *testing.T) {
 	assert.Equal(t, agents.NameCodex, got.Agents[0].Name)
 	assert.Equal(t, deliveryPlugin.String(), got.Agents[0].Delivery)
 	assert.Equal(t, string(outcomeFailed), got.Agents[0].Status)
+	assert.Equal(t, string(protos.AitoolsErrorCategoryPluginInstallFailed), got.Agents[0].ErrorCategory)
 	// A per-agent failure stays in the agent entry; it is not repeated in the
-	// top-level error field.
+	// top-level error fields.
 	assert.Empty(t, got.Error)
+	assert.Empty(t, got.ErrorCategory)
 }
 
 // TestInstallOutputJSONThroughRoot runs a failing `install --output json` through
@@ -480,7 +484,7 @@ func TestInstallOutputJSONTopLevelFailure(t *testing.T) {
 	orig := installSkillsForAgentsFn
 	t.Cleanup(func() { installSkillsForAgentsFn = orig })
 	installSkillsForAgentsFn = func(context.Context, installer.ManifestSource, []*agents.Agent, installer.InstallOptions) error {
-		return errors.New(`skill "databricks" not found`)
+		return &installer.SkillError{Skill: "databricks", Reason: installer.ReasonSkillNotFound, Detail: "not found"}
 	}
 
 	var out bytes.Buffer
@@ -501,6 +505,7 @@ func TestInstallOutputJSONTopLevelFailure(t *testing.T) {
 	require.NoError(t, json.Unmarshal(out.Bytes(), &got))
 	assert.Empty(t, got.Agents)
 	assert.Contains(t, got.Error, "databricks")
+	assert.Equal(t, string(protos.AitoolsErrorCategorySkillNotFound), got.ErrorCategory)
 }
 
 func TestInstallOutputJSONRequiresNonInteractiveFlags(t *testing.T) {

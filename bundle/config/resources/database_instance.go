@@ -14,6 +14,7 @@ import (
 
 type DatabaseInstance struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	database.DatabaseInstance
 
 	Permissions []Permission `json:"permissions,omitempty"`
@@ -47,10 +48,6 @@ func (d *DatabaseInstance) ResourceDescription() ResourceDescription {
 
 func (d *DatabaseInstance) GetName() string {
 	return d.Name
-}
-
-func (d *DatabaseInstance) GetURL() string {
-	return d.URL
 }
 
 func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {

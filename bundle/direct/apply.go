@@ -58,6 +58,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 }
 
+// Create creates the resource and records its state.
 func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState, newState any) error {
 	var newID string
 	var remoteState any
@@ -83,7 +84,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = d.saveState(db, newID, newState, d.DependsOn)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -126,7 +127,10 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// Drop the state entry so a subsequent failure of Create or WaitAfterDelete
 	// leaves no malformed (empty-ID) entry behind. The next plan will see "no
 	// state" and retry as Create.
-	err = db.DeleteState(d.ResourceKey)
+	//
+	// Recorded as a recreate rather than a delete: if the create below fails, this is the
+	// operation DMS is left with, and it says the resource is mid-recreate.
+	err = db.DeleteState(ctx, d.ResourceKey, true)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -134,8 +138,11 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// Wait for asynchronous teardown to finish before re-creating the same
 	// name. Done after DeleteState so the bundle stays consistent if the wait
 	// times out — the resource is no longer tracked in state, retry on next plan.
-	err = d.Adapter.WaitAfterDelete(ctx, oldID)
-	if err != nil {
+	// The general delete-wait stays uncapped; we only pass the already-resolved
+	// RESOURCE_MAX_WAIT so a resource that opts in can bound its own poll by it.
+	// A NotFound means the resource is gone, which is the success the wait polls for.
+	err = d.Adapter.WaitAfterDelete(dresources.WithResourceMaxWait(ctx, d.MaxWait), oldID)
+	if err != nil && !apierr.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
@@ -168,12 +175,12 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		// The update emptied the resource out (e.g. all grants revoked). Keeping an entry
 		// would report the node as tracked-and-unchanged forever, while a fresh deploy of
 		// the same config plans no node at all; drop it so the two agree.
-		err = db.DeleteState(d.ResourceKey)
+		err = db.DeleteState(ctx, d.ResourceKey, false)
 		if err != nil {
 			return fmt.Errorf("deleting state id=%s: %w", id, err)
 		}
 	} else {
-		err = d.saveState(db, id, newState, d.DependsOn)
+		err = d.saveState(ctx, db, id, newState, d.DependsOn)
 		if err != nil {
 			return fmt.Errorf("saving state id=%s: %w", id, err)
 		}
@@ -218,7 +225,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = d.saveState(db, newID, newState, d.DependsOn)
+	err = d.saveState(ctx, db, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -255,12 +262,15 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
 		} else if d.deleteConfirmedGone(ctx, oldID) {
 			log.Warnf(ctx, "Treating %s id=%s as already deleted despite delete error: %s", d.ResourceKey, oldID, err)
-		} else {
-			return fmt.Errorf("deleting id=%s: %w", oldID, err)
+		} else if db.IsDeploymentMetadataService() {
+			// When using the deployment metadata service, record the error.
+			err = fmt.Errorf("deleting id=%s: %w", oldID, err)
+			db.RecordFailure(d.ResourceKey, oldID, err)
+			return err
 		}
 	}
 
-	err = db.DeleteState(d.ResourceKey)
+	err = db.DeleteState(ctx, d.ResourceKey, false)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
 	}
@@ -273,7 +283,8 @@ func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState,
 	_, err = waitCapped(ctx, d.MaxWait, "deletion of "+d.ResourceKey, func(ctx context.Context) (struct{}, error) {
 		return struct{}{}, d.Adapter.WaitAfterDelete(ctx, oldID)
 	})
-	if err != nil {
+	// A NotFound means the resource is gone, which is the success the wait polls for.
+	if err != nil && !apierr.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
@@ -305,7 +316,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = d.saveState(db, id, newState, d.DependsOn)
+	err = d.saveState(ctx, db, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -313,13 +324,19 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-// saveState saves a state with sensitive fields replaced by a placeholder value so secrets are never written
-// to disk in plaintext.
-func (d *DeploymentUnit) saveState(db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
-	if err := zeroSensitiveFields(d.Adapter, state); err != nil {
+// saveState compacts the state (replacing fields declared in hashed_fields
+// with content hashes, see dresources.CompactState) before persisting it. Fields already
+// smaller than a hash placeholder are persisted as is. Sensitive fields are replaced by a
+// placeholder value so secrets are never written to disk in plaintext.
+func (d *DeploymentUnit) saveState(ctx context.Context, db *dstate.DeploymentState, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
+	compacted, err := dresources.CompactState(d.Adapter.ResourceConfig(), state)
+	if err != nil {
+		return fmt.Errorf("compacting state: %w", err)
+	}
+	if err := zeroSensitiveFields(d.Adapter, compacted); err != nil {
 		return fmt.Errorf("redacting state: %w", err)
 	}
-	return db.SaveState(d.ResourceKey, newID, state, dependsOn)
+	return db.SaveState(ctx, d.ResourceKey, newID, compacted, dependsOn)
 }
 
 func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {

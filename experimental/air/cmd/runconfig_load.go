@@ -14,22 +14,6 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// decodeRunConfig reads and decodes the run YAML into the schema. Unknown keys
-// are rejected (KnownFields).
-//
-// The `_bases_` composition feature is not yet ported; a config using `_bases_`
-// is currently rejected as an unknown field. CLI `--override` handling lives in
-// runconfig_override.go and is applied to the parsed map before this decode.
-func decodeRunConfig(path string) (*runConfig, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	return decodeRunConfigReader(f, path)
-}
-
 // decodeRunConfigReader decodes and unknown-key-checks a run YAML from r. path is
 // used only for error messages.
 func decodeRunConfigReader(r io.Reader, path string) (*runConfig, error) {
@@ -52,23 +36,24 @@ func validateRunConfig(cfg *runConfig) error {
 }
 
 // loadRunConfig decodes and structurally validates a run YAML config file.
+// The `_bases_` composition feature is not yet supported and is rejected as an
+// unknown field.
 func loadRunConfig(path string) (*runConfig, error) {
-	cfg, err := decodeRunConfig(path)
+	document, raw, err := readRunConfigDocument(path)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateRunConfig(cfg); err != nil {
-		return nil, err
+	if len(document.Content) == 0 {
+		return nil, fmt.Errorf("config %s is empty", path)
 	}
-	return cfg, nil
+	return finishRunConfigLoad(path, document, raw)
 }
 
-// loadRunConfigWithOverrides decodes a run YAML config, applies any
-// --override KEY=VALUE entries to the parsed map, then re-decodes (with unknown
-// keys rejected) and structurally validates the result. Applying overrides to
-// the map — rather than the typed config — lets the single decode+validate
-// pipeline enforce path existence, type coercion, and the semantic rules at
-// once. ctx is used only to log applied overrides.
+// loadRunConfigWithOverrides decodes a run YAML config, applies any --override
+// KEY=VALUE entries to its ordered YAML tree, then re-decodes (with unknown keys
+// rejected) and structurally validates the result. The serialized tree is kept
+// for training_config.yaml, while validation may normalize the typed config used
+// to submit the workload. ctx is used only to log applied overrides.
 func loadRunConfigWithOverrides(ctx context.Context, path string, overrides []string) (*runConfig, error) {
 	if len(overrides) == 0 {
 		return loadRunConfig(path)
@@ -81,36 +66,62 @@ func loadRunConfigWithOverrides(ctx context.Context, path string, overrides []st
 	if err := validateOverridePaths(entries); err != nil {
 		return nil, err
 	}
+	document, _, err := readRunConfigDocument(path)
+	if err != nil {
+		return nil, err
+	}
+	if len(document.Content) == 0 {
+		document.Kind = yaml.DocumentNode
+		document.Content = []*yaml.Node{newMappingNode()}
+	}
+	if err := applyOverrides(ctx, document, entries); err != nil {
+		return nil, err
+	}
+	validationYAML, err := yaml.Marshal(document)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize config %s: %w", path, err)
+	}
+	return finishRunConfigLoad(path, document, validationYAML)
+}
 
+func readRunConfigDocument(path string) (*yaml.Node, []byte, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	var m map[string]any
-	if err := yaml.Unmarshal(raw, &m); err != nil {
-		return nil, fmt.Errorf("invalid config %s: %w", path, err)
+	var document yaml.Node
+	if err := yaml.Unmarshal(raw, &document); err != nil {
+		return nil, nil, fmt.Errorf("invalid config %s: %w", path, err)
 	}
-	if m == nil {
-		// An empty file decodes to a nil map; start from an empty one so overrides
-		// can populate it (the re-decode still enforces required fields).
-		m = map[string]any{}
-	}
-	if err := applyOverrides(ctx, m, entries); err != nil {
-		return nil, err
-	}
+	return &document, raw, nil
+}
 
-	merged, err := yaml.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-	cfg, err := decodeRunConfigReader(bytes.NewReader(merged), path)
+func finishRunConfigLoad(path string, document *yaml.Node, validationYAML []byte) (*runConfig, error) {
+	// Validate before stripping comments so YAML errors retain source line numbers.
+	cfg, err := decodeRunConfigReader(bytes.NewReader(validationYAML), path)
 	if err != nil {
 		return nil, err
 	}
 	if err := validateRunConfig(cfg); err != nil {
 		return nil, err
 	}
+
+	stripYAMLComments(document)
+	artifactYAML, err := yaml.Marshal(document)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize config %s: %w", path, err)
+	}
+	cfg.artifactYAML = artifactYAML
 	return cfg, nil
+}
+
+func stripYAMLComments(node *yaml.Node) {
+	node.HeadComment = ""
+	node.LineComment = ""
+	node.FootComment = ""
+	for _, child := range node.Content {
+		stripYAMLComments(child)
+	}
 }
 
 var runtimeVersionRe = regexp.MustCompile(`^[0-9]+$`)

@@ -205,18 +205,30 @@ func CheckIDESSHExtension(ctx context.Context, option string, autoApprove bool) 
 	return nil
 }
 
-// LaunchIDE launches the IDE with a remote SSH connection using special "ssh-remote" URI format.
-func LaunchIDE(ctx context.Context, ideOption, connectionName, userName, databricksUserName string) error {
-	ide := getIDE(ideOption)
-
-	// Construct the remote SSH URI
-	// Format: ssh-remote+<server_user_name>@<connection_name> /Workspace/Users/<databricks_user_name>/
-	remoteURI := fmt.Sprintf("ssh-remote+%s@%s", userName, connectionName)
+// remoteLaunchArgs builds the arguments that open a remote window on the tunnel
+// host at the user's workspace home folder.
+//
+// The remote authority is the SSH host alias alone, without a "<user>@" prefix.
+// The host config the CLI writes for the connection already carries a User
+// directive (see sshconfig.GenerateHostConfig), and on serverless the remote OS
+// user is a fresh per-instance name (spark-<uuid>), so including it would give
+// every connect a different authority. VS Code keys the "previously opened
+// folders" it lists under a host by URI, so a per-connect authority added a
+// duplicate row to the Remote Explorer on every `ssh connect --ide`.
+func remoteLaunchArgs(ide ideDescriptor, connectionName, databricksUserName string) []string {
+	// Format: ssh-remote+<connection_name> /Workspace/Users/<databricks_user_name>/
+	remoteURI := "ssh-remote+" + connectionName
 	remotePath := fmt.Sprintf("/Workspace/Users/%s/", databricksUserName)
+	return append(append([]string{}, ide.LaunchArgs...), "--remote", remoteURI, remotePath)
+}
 
-	log.Infof(ctx, "Launching %s with remote URI: %s and path: %s", ideOption, remoteURI, remotePath)
+// LaunchIDE launches the IDE with a remote SSH connection using special "ssh-remote" URI format.
+func LaunchIDE(ctx context.Context, ideOption, connectionName, databricksUserName string) error {
+	ide := getIDE(ideOption)
+	args := remoteLaunchArgs(ide, connectionName, databricksUserName)
 
-	args := append(append([]string{}, ide.LaunchArgs...), "--remote", remoteURI, remotePath)
+	log.Infof(ctx, "Launching %s with args: %v", ideOption, args)
+
 	ideCmd := exec.CommandContext(ctx, ide.Command, args...)
 	ideCmd.Stdout = os.Stdout
 	ideCmd.Stderr = os.Stderr

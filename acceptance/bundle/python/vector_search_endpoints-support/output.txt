@@ -1,0 +1,26 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:update_vector_search_endpoint"
+      ],
+      "resources": [
+        "resources:load_resources"
+      ]
+    }
+  },
+  "resources": {
+    "vector_search_endpoints": {
+      "my_endpoint_1": {
+        "endpoint_type": "STANDARD",
+        "name": "my_endpoint_1 (updated)"
+      },
+      "my_endpoint_2": {
+        "endpoint_type": "STANDARD",
+        "name": "my_endpoint_2 (updated)"
+      }
+    }
+  }
+}

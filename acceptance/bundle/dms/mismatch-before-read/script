@@ -1,0 +1,10 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+update_file.py databricks.yml 'deployment_history: true' 'deployment_history: false'
+
+# The configuration mismatch must be rejected before trying to read the deployment from DMS.
+trace fault.py "GET /api/2.0/bundle/deployments/*" 500 0 1
+musterr trace env DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=false $CLI bundle plan
+
+rm -f "$OUT_REQUESTS"

@@ -516,6 +516,72 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 	}
 }
 
+var snapshotScheduleUpdateMaskPaths = []string{"schedule"}
+
+// PostgresSnapshotScheduleGet retrieves a branch's snapshot schedule. The
+// schedule is intrinsic to the branch: for a branch that never had one set, the
+// API returns an empty schedule rather than 404, so the fake mirrors that.
+func (s *FakeWorkspace) PostgresSnapshotScheduleGet(name string) Response {
+	defer s.LockUnlock()()
+
+	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
+	if _, exists := s.PostgresBranches[branchName]; !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	schedule, exists := s.PostgresSnapshotSchedules[name]
+	if !exists {
+		schedule = postgres.SnapshotSchedule{Name: name}
+	}
+
+	return Response{
+		Body: schedule,
+	}
+}
+
+// PostgresSnapshotScheduleUpdate sets a branch's snapshot schedule. There is no
+// create/delete endpoint; the schedule is managed entirely through this update.
+// An empty schedule set disables automatic snapshots.
+func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, snapshotScheduleUpdateMaskPaths, nil); resp != nil {
+		return *resp
+	}
+
+	defer s.LockUnlock()()
+
+	branchName := strings.TrimSuffix(name, "/snapshot-schedule")
+	branch, exists := s.PostgresBranches[branchName]
+	if !exists {
+		return postgresNotFoundResponse("branch")
+	}
+
+	// Snapshots are only allowed on the root (default) branch; the backend
+	// rejects a schedule on any branch created off another.
+	if branch.Status == nil || !branch.Status.Default {
+		return postgresErrorResponse(400, "BAD_REQUEST", "not allowed to snapshot non-root branch")
+	}
+
+	var updateSchedule postgres.SnapshotSchedule
+	if len(req.Body) > 0 {
+		if err := json.Unmarshal(req.Body, &updateSchedule); err != nil {
+			return Response{
+				StatusCode: 400,
+				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	schedule := postgres.SnapshotSchedule{
+		Name:     name,
+		Schedule: updateSchedule.Schedule,
+	}
+	s.PostgresSnapshotSchedules[name] = schedule
+
+	return Response{
+		Body: s.createOperationLocked(name, schedule),
+	}
+}
+
 // PostgresEndpointCreate creates a new postgres endpoint.
 //
 // When replaceExisting is true, an existing endpoint with the same ID is updated
@@ -1566,6 +1632,8 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 		resourceType = "Catalog"
 	case strings.HasPrefix(resourceName, "synced_tables/"):
 		resourceType = "SyncedTable"
+	case strings.HasSuffix(resourceName, "/snapshot-schedule"):
+		resourceType = "SnapshotSchedule"
 	case strings.Contains(resourceName, "/endpoints/"):
 		resourceType = "Endpoint"
 	case strings.Contains(resourceName, "/databases/"):
@@ -1643,14 +1711,32 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 	return Response{Body: table}
 }
 
-// PostgresSyncedTableDelete deletes a postgres synced table.
+// PostgresSyncedTableDelete deletes a postgres synced table. When the workspace
+// simulates eventual consistency, deletion is asynchronous and slow: the record is
+// not removed but left in DELETING, so GET keeps returning it and a create for the
+// same name keeps hitting 409 — the stuck-teardown race WaitAfterDelete waits out.
+// Otherwise (the default, and terraform, which recreates without polling) it is
+// removed immediately.
 func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	if _, exists := s.PostgresSyncedTables[name]; !exists {
+	table, exists := s.PostgresSyncedTables[name]
+	if !exists {
 		return postgresNotFoundResponse("synced table")
 	}
-	delete(s.PostgresSyncedTables, name)
+
+	if !s.eventualConsistency {
+		delete(s.PostgresSyncedTables, name)
+		return Response{Body: s.createOperationLocked(name, nil)}
+	}
+
+	if table.Status == nil {
+		table.Status = &postgres.SyncedTableSyncedTableStatus{}
+	}
+	table.Status.DetailedState = postgres.SyncedTableStateSyncedTableOffline
+	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfoStateDeleting
+	s.PostgresSyncedTables[name] = table
+
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
 

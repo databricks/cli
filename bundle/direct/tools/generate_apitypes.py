@@ -37,7 +37,25 @@ def parse_out_fields(path):
 
 
 def get_schema_fields(schemas):
-    """Get top-level field names for each schema type."""
+    """Get top-level field names for each schema type.
+
+    >>> get_schema_fields({})
+    {}
+
+    >>> get_schema_fields({"TypeA": {"fields": {"x": {}}}})
+    {'TypeA': {'x'}}
+
+    >>> result = get_schema_fields({"A": {"fields": {"x": {}}}, "B": {"fields": {"y": {}, "z": {}}}})
+    >>> result["A"]
+    {'x'}
+    >>> sorted(result["B"])
+    ['y', 'z']
+
+    Types with no fields are dropped:
+
+    >>> sorted(get_schema_fields({"TypeA": {"fields": {}}, "TypeB": {"fields": {"x": {}}}}))
+    ['TypeB']
+    """
     schema_fields = {}
     for name, schema in schemas.items():
         props = schema.get("fields", {})

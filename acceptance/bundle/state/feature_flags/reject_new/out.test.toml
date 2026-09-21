@@ -1,0 +1,4 @@
+Cloud = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.DMS = [""]
+EnvMatrix.STATE_FILE = ["resources.v2.future_feature.json", "resources.v3.future_feature.json"]

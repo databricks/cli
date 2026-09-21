@@ -27,6 +27,8 @@ class Transformer:
 
     format: VariableOrOptional[TransformerFormat] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Required: the wire format of the data.
     """
 
@@ -40,6 +42,8 @@ class Transformer:
 
     json_options: VariableOrOptional[JsonTransformerOptions] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta]
     """
 
@@ -64,6 +68,8 @@ class TransformerDict(TypedDict, total=False):
 
     format: VariableOrOptional[TransformerFormatParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Required: the wire format of the data.
     """
 
@@ -77,6 +83,8 @@ class TransformerDict(TypedDict, total=False):
 
     json_options: VariableOrOptional[JsonTransformerOptionsParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta]
     """
 

@@ -115,7 +115,7 @@ func TestValidateConfigRequestCarriesPriorityClass(t *testing.T) {
 	srv := validateServer(t, http.StatusOK, `{}`, &gotReq)
 
 	cfg := baseRunConfig()
-	cfg.Compute.ProvisionedCapacityID = new("cap-8xh100-res")
+	cfg.Compute.PoolID = new("cap-8xh100-res")
 	cfg.Compute.PriorityClass = new("CRITICAL")
 	err := preflightValidate(t.Context(), newTestWorkspaceClient(t, srv.URL), cfg, "/Workspace/Users/me/cmd.sh")
 	require.NoError(t, err)

@@ -4,14 +4,14 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
 Created volumes.volume1
-Files: 0 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Set the comment out of band, then rename the volume in the same deploy
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Updated volumes.volume1
-Files: 0 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 === The rename and the clear both landed, so it converges in one pass

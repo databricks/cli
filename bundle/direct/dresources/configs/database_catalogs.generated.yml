@@ -1,0 +1,8 @@
+# Generated, do not edit.
+
+ignore_remote_changes:
+  - field: create_database_if_not_exists
+    reason: spec:input_only
+
+  - field: uid
+    reason: spec:output_only

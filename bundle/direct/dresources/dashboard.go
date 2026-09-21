@@ -106,7 +106,7 @@ func (r *ResourceDashboard) RemapState(state *DashboardState) *DashboardState {
 			ForceSendFields: forceSendFields,
 
 			// Output only fields. Remote changes to these are ignored via
-			// ignore_remote_changes in resources.yml rather than zeroed here.
+			// ignore_remote_changes in dashboards.yml rather than zeroed here.
 			CreateTime:     state.CreateTime,
 			DashboardId:    state.DashboardId,
 			LifecycleState: state.LifecycleState,

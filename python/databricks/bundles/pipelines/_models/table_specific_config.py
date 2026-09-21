@@ -52,6 +52,8 @@ class TableSpecificConfig:
 
     clustering_columns: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] List of column names to use for clustering the destination table.
     When specified, the destination Delta table will be clustered by these columns.
     This can improve query performance when filtering on these columns.
@@ -62,6 +64,8 @@ class TableSpecificConfig:
 
     enable_auto_clustering: VariableOrOptional[bool] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Whether to enable auto clustering on the destination table.
     When enabled, Delta will automatically optimize the data layout
     based on the clustering columns for improved query performance.
@@ -125,12 +129,16 @@ class TableSpecificConfig:
 
     source_metadata_column: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Optional) Name of the struct column added to each ingested record to hold per row source
     metadata.
     """
 
     table_properties: VariableOrDict[str] = field(default_factory=dict)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Table properties to set on the destination table.
     These are key-value pairs that configure various Delta table behaviors or any user defined properties.
     Example: {"delta.feature.variantType": "supported", "delta.enableTypeWidening": "true"}
@@ -174,6 +182,8 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     clustering_columns: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] List of column names to use for clustering the destination table.
     When specified, the destination Delta table will be clustered by these columns.
     This can improve query performance when filtering on these columns.
@@ -184,6 +194,8 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     enable_auto_clustering: VariableOrOptional[bool]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Whether to enable auto clustering on the destination table.
     When enabled, Delta will automatically optimize the data layout
     based on the clustering columns for improved query performance.
@@ -247,12 +259,16 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     source_metadata_column: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Optional) Name of the struct column added to each ingested record to hold per row source
     metadata.
     """
 
     table_properties: VariableOrDict[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] Table properties to set on the destination table.
     These are key-value pairs that configure various Delta table behaviors or any user defined properties.
     Example: {"delta.feature.variantType": "supported", "delta.enableTypeWidening": "true"}

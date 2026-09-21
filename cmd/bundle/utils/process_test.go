@@ -3,8 +3,30 @@ package utils
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestResolveDeploymentHistory(t *testing.T) {
+	b := &bundle.Bundle{Config: config.Root{
+		Experimental: &config.Experimental{DeploymentHistory: true},
+	}}
+
+	newState := &statemgmt.StateDesc{}
+	assert.True(t, resolveDeploymentHistory(t.Context(), b, newState))
+	assert.True(t, newState.IsDMS())
+	assert.False(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{SourcePath: "resources.json"}))
+	b.Config.Experimental.DeploymentHistory = false
+	assert.True(t, resolveDeploymentHistory(t.Context(), b, &statemgmt.StateDesc{
+		SourcePath: "resources.json",
+		Features:   map[string]struct{}{dstate.FeatureDeploymentHistory: {}},
+	}))
+}
 
 func TestIsNewerVersion(t *testing.T) {
 	tests := []struct {
@@ -39,6 +61,33 @@ func TestIsNewerVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.want, isNewerVersion(tt.state, tt.current))
+		})
+	}
+}
+
+func TestParseLastVersionID(t *testing.T) {
+	tests := []struct {
+		name       string
+		deployment *bundledeployments.Deployment
+		want       int
+		wantErr    bool
+	}{
+		{"nil deployment", nil, 0, false},
+		{"empty version", &bundledeployments.Deployment{}, 0, false},
+		{"version zero", &bundledeployments.Deployment{LastVersionId: "0"}, 0, false},
+		{"valid version", &bundledeployments.Deployment{LastVersionId: "7"}, 7, false},
+		{"invalid version", &bundledeployments.Deployment{LastVersionId: "abc"}, 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseLastVersionID(tt.deployment)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

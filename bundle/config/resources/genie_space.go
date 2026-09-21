@@ -51,6 +51,7 @@ func (c GenieSpaceConfig) MarshalJSON() ([]byte, error) {
 
 type GenieSpace struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	GenieSpaceConfig
 
 	Permissions []Permission `json:"permissions,omitempty"`
@@ -103,8 +104,4 @@ func (r *GenieSpace) InitializeURL(baseURL url.URL) {
 
 func (r *GenieSpace) GetName() string {
 	return r.Title
-}
-
-func (r *GenieSpace) GetURL() string {
-	return r.URL
 }

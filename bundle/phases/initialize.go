@@ -26,6 +26,10 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
 
 	bundle.ApplySeqContext(ctx, b,
+		// Reads (dynamic): resources.internal_immutable_snapshots (and other internal keys)
+		// Warns and removes any internal resource fields set by the user.
+		mutator.RejectInternalResources(),
+
 		// Reads (dynamic): resource.*.*
 		// Checks that none of resources.<type>.<key> is nil. Raises error otherwise.
 		validate.AllResourcesHaveValues(),
@@ -154,6 +158,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// model, so exposing it to Python would fail resource loading (like "deployment" below).
 		mutator.InitializeVolumePaths(),
 		mutator.ResolveVolumePathReferencesOnlyResources(),
+
+		// Default the `source` field on job tasks (GIT for git_source jobs, else
+		// WORKSPACE). Runs after PythonMutator so it sees the final git_source/tasks
+		// and does not expose the injected default to Python code, while remaining
+		// visible in `bundle validate`/`summary`.
+		resourcemutator.ApplyDefaultTaskSource(),
 
 		// Drop empty-string values on omitempty resource fields so they are not
 		// force-sent to the backend. Runs after variable resolution (a variable may

@@ -6,7 +6,7 @@ cleanup() {
    # Also try to delete the old project directly in case it wasn't cleaned up
    $CLI postgres delete-project "projects/test-pg-old-${UNIQUE_NAME}" 2>/dev/null || true
 
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -16,7 +16,7 @@ envsubst < databricks.yml.tmpl | sed "s/PROJECT_ID_PLACEHOLDER/test-pg-old-${UNI
 trace cat databricks.yml
 
 trace $CLI bundle plan
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 project_id_1=`read_id.py my_project`

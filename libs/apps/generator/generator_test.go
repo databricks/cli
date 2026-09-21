@@ -1,11 +1,13 @@
 package generator_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateBundleVariables(t *testing.T) {
@@ -1081,4 +1083,67 @@ func TestVolumeManifestPathFieldMapsToSpecId(t *testing.T) {
 	assert.Contains(t, res, "securable_full_name: ${var.files_id}")
 	assert.Contains(t, res, "securable_type: VOLUME")
 	assert.Contains(t, res, "permission: WRITE_VOLUME")
+}
+
+// postgresResource is the shared resource that "database" and "lakebase" both declare.
+func postgresResource() manifest.Resource {
+	return manifest.Resource{
+		Type: "postgres", Alias: "Postgres", ResourceKey: "postgres", Permission: "CAN_CONNECT_AND_CREATE",
+		Fields: map[string]manifest.ResourceField{
+			"branch":       {Env: "PGBRANCH", Description: "Branch"},
+			"database":     {Env: "PGDATABASE", Description: "Database"},
+			"endpointPath": {Env: "LAKEBASE_ENDPOINT", BundleIgnore: true, Description: "Endpoint"},
+		},
+	}
+}
+
+func TestDedupeResourcesSharedAcrossPlugins(t *testing.T) {
+	deduped := generator.DedupeResources([]manifest.Plugin{
+		{Name: "database", Resources: manifest.Resources{Required: []manifest.Resource{postgresResource()}}},
+		{Name: "lakebase", Resources: manifest.Resources{Required: []manifest.Resource{postgresResource()}}},
+	})
+
+	// The shared resource survives on the first plugin and is dropped from the second.
+	require.Len(t, deduped, 2)
+	assert.Len(t, deduped[0].Resources.Required, 1)
+	assert.Empty(t, deduped[1].Resources.Required)
+
+	cfg := generator.Config{ResourceValues: map[string]string{
+		"postgres.branch":   "br-1",
+		"postgres.database": "db-1",
+	}}
+
+	appEnv := generator.GenerateAppEnv(deduped, cfg)
+	assert.Equal(t, 1, strings.Count(appEnv, "name: PGBRANCH"))
+	assert.Equal(t, 1, strings.Count(appEnv, "name: LAKEBASE_ENDPOINT"))
+
+	res := generator.GenerateBundleResources(deduped, cfg)
+	assert.Equal(t, 1, strings.Count(res, "- name: postgres"))
+
+	vars := generator.GenerateBundleVariables(deduped, cfg)
+	assert.Equal(t, 1, strings.Count(vars, "postgres_branch:"))
+
+	env := generator.GenerateDotEnv(deduped, cfg)
+	assert.Equal(t, 1, strings.Count(env, "PGBRANCH="))
+
+	target := generator.GenerateTargetVariables(deduped, cfg)
+	assert.Equal(t, 1, strings.Count(target, "postgres_branch:"))
+
+	example := generator.GenerateDotEnvExample(deduped)
+	assert.Equal(t, 1, strings.Count(example, "PGBRANCH="))
+}
+
+func TestDedupeResourcesRequiredWinsOverOptional(t *testing.T) {
+	deduped := generator.DedupeResources([]manifest.Plugin{
+		{Name: "a", Resources: manifest.Resources{Optional: []manifest.Resource{postgresResource()}}},
+		{Name: "b", Resources: manifest.Resources{Required: []manifest.Resource{postgresResource()}}},
+	})
+
+	// Kept as required on "b"; the optional copy on "a" is dropped.
+	assert.Empty(t, deduped[0].Resources.Optional)
+	assert.Len(t, deduped[1].Resources.Required, 1)
+
+	// No --set values: as a required resource it is still emitted.
+	res := generator.GenerateBundleResources(deduped, generator.Config{})
+	assert.Equal(t, 1, strings.Count(res, "- name: postgres"))
 }

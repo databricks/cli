@@ -114,10 +114,9 @@ func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state
 	return nil, err
 }
 
-// Removing ACLs is a no-op, to match the behavior for permissions and grants.
-func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string, _ *SecretScopeAclsState) error {
-	return nil
-}
+// ResourceSecretScopeAcls intentionally implements no DoDelete: removing ACLs is a
+// no-op, to match the behavior for permissions and grants. Deleting the resource is a
+// state-only cleanup (see PlanEntry.StateOnly).
 
 // setACLs reconciles the desired ACLs with the current state
 func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string, desiredAcls []workspace.AclItem) error {

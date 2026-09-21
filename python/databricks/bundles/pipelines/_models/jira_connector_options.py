@@ -19,6 +19,8 @@ class JiraConnectorOptions:
 
     include_jira_spaces: VariableOrList[str] = field(default_factory=list)
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Optional) Projects to filter Jira data on
     """
 
@@ -35,6 +37,8 @@ class JiraConnectorOptionsDict(TypedDict, total=False):
 
     include_jira_spaces: VariableOrList[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     [Beta] (Optional) Projects to filter Jira data on
     """
 
