@@ -106,9 +106,9 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 	// The cache key excludes the filter, so a cached row is still run through the
 	// active filter; a non-matching hit is dropped, not re-fetched.
 	for _, id := range ids {
-		if row, fields, ok := cachedRow(s.ctx, s.cache, host, id); ok {
+		if row, fields, taskRunID, ok := cachedRow(s.ctx, s.cache, host, id); ok {
 			if s.filters.matchesFields(fields) {
-				rows = append(rows, listedRun{row: row, taskRunID: id})
+				rows = append(rows, listedRun{row: row, runID: id, taskRunID: taskRunID})
 			}
 			continue
 		}
@@ -125,10 +125,11 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 			continue
 		}
 		row := buildListRow(run, s.host, s.workspaceID)
-		rows = append(rows, listedRun{row: row, taskRunID: taskRunID(run)})
+		taskRunID := taskRunID(run)
+		rows = append(rows, listedRun{row: row, runID: run.RunId, taskRunID: taskRunID})
 		if isTerminal(run) {
 			start, _ := jobTiming(run)
-			putRow(s.ctx, s.cache, host, run.RunId, start, row, fields)
+			putRow(s.ctx, s.cache, host, run.RunId, taskRunID, start, row, fields)
 		}
 	}
 
@@ -138,6 +139,16 @@ func (s *indexStrategy) hydrate(ids []int64) ([]listedRun, error) {
 		return cmp.Compare(rowStartKey(b.row), rowStartKey(a.row))
 	})
 	return rows, nil
+}
+
+// cacheMLflowLinks writes successful MLflow enrichment back to terminal rows
+// already in the cache. Active rows are absent from the cache and are ignored.
+func (s *indexStrategy) cacheMLflowLinks(entries []listedRun) {
+	for _, entry := range entries {
+		if entry.row.MLflowURL != "" && entry.row.MLflowURL != "-" {
+			updateCachedRow(s.ctx, s.cache, s.host, entry.runID, entry.row)
+		}
+	}
 }
 
 // rowStartKey returns a row's ISO start timestamp for ordering, or "" when the
