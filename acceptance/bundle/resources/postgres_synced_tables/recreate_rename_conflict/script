@@ -1,0 +1,28 @@
+# Per-test source table to avoid the 20-synced-tables-per-source-table limit.
+echo "Creating temporary source table: main.source_$UNIQUE_NAME.trips_source"
+$CLI schemas create source_$UNIQUE_NAME main -o json | jq '{full_name}'
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/sql/statements/" --json "{
+    \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\",
+    \"statement\": \"CREATE TABLE main.source_$UNIQUE_NAME.trips_source AS SELECT * FROM samples.nyctaxi.trips LIMIT 10\",
+    \"wait_timeout\": \"45s\"
+  }" > /dev/null
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    echo "Cleaning up temporary source table"
+    $CLI tables delete main.source_$UNIQUE_NAME.trips_source || true
+    $CLI schemas delete main.source_$UNIQUE_NAME || true
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle deploy
+
+title "Renaming my_table onto other_table's id fails fast (no ALREADY_EXISTS retry)"
+# Point my_table at other_table's synced_table_id. synced_table_id is a provided-id
+# field, so the plan recreates my_table: delete the old id, then create other_table's
+# id — which a separate resource already owns. The create must surface ALREADY_EXISTS
+# immediately rather than retrying for minutes, since no wait can free that name.
+trace update_file.py databricks.yml "public.trips_synced" "public.trips_other"
+trace musterr $CLI bundle deploy

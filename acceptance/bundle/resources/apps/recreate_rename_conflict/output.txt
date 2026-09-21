@@ -1,0 +1,29 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created apps.app_a
+Created apps.app_b
+Files: 5 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Renaming app_a onto app_b's name fails fast (no ALREADY_EXISTS retry)
+>>> update_file.py databricks.yml name: app-alpha name: app-beta
+
+>>> musterr [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot recreate resources.apps.app_a: An app with the same name already exists: app-beta (409 RESOURCE_ALREADY_EXISTS)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/apps?no_compute=true
+HTTP Status: 409 Conflict
+API error_code: RESOURCE_ALREADY_EXISTS
+API message: An app with the same name already exists: app-beta
+
+Files: 1 uploaded, 0 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.app_b
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

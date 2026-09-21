@@ -1,0 +1,10 @@
+trace $CLI bundle deploy
+
+title "Renaming endpoint_a onto endpoint_b's name fails fast (no ALREADY_EXISTS retry)"
+# name is a provided-id field, so the plan recreates endpoint_a: delete vs-endpoint-alpha,
+# then create vs-endpoint-beta — which endpoint_b already owns. The create must surface
+# ALREADY_EXISTS immediately rather than retrying, since no wait can free that name.
+trace update_file.py databricks.yml "name: vs-endpoint-alpha" "name: vs-endpoint-beta"
+trace musterr $CLI bundle deploy
+
+trace $CLI bundle destroy --auto-approve

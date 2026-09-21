@@ -1,0 +1,6 @@
+Cloud = false
+RecordRequests = false
+
+# Local-only fast guard. The cloud path for the same-id guard is covered by
+# postgres_synced_tables/recreate_rename_conflict. Direct engine only (no VS terraform provider).
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

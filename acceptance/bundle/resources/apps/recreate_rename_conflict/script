@@ -1,0 +1,10 @@
+trace $CLI bundle deploy
+
+title "Renaming app_a onto app_b's name fails fast (no ALREADY_EXISTS retry)"
+# name is a provided-id field, so the plan recreates app_a: delete app-alpha, then
+# create app-beta — which app_b already owns. The create must surface ALREADY_EXISTS
+# immediately rather than retrying, since no wait can free a name another app owns.
+trace update_file.py databricks.yml "name: app-alpha" "name: app-beta"
+trace musterr $CLI bundle deploy
+
+trace $CLI bundle destroy --auto-approve

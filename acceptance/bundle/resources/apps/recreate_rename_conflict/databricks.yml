@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+resources:
+  apps:
+    app_a:
+      name: app-alpha
+      source_code_path: ./app_a
+    app_b:
+      name: app-beta
+      source_code_path: ./app_b

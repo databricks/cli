@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
@@ -48,7 +49,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 
 	switch actionType {
 	case deployplan.Recreate:
-		return d.Recreate(ctx, db, oldID, newState)
+		return d.Recreate(ctx, db, oldID, newState, planEntry)
 	case deployplan.Update:
 		return d.Update(ctx, db, oldID, newState, planEntry)
 	case deployplan.UpdateWithID:
@@ -108,7 +109,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
+func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) error {
 	oldState, err := d.loadPersistedState(db)
 	if err != nil {
 		return err
@@ -152,16 +153,22 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// record). A delete can leave *backing* objects behind that it can't see — a synced
 	// table's destination Postgres table is dropped on a slower schedule — so the create
 	// of the same id can still fail with ALREADY_EXISTS. Retry the create until that
-	// teardown finishes, then surface the result. A create that fails for any other
-	// reason is returned immediately; server-assigned-id resources never re-create the
-	// same id, so they never hit this.
+	// teardown finishes, then surface the result.
+	//
+	// Only when the recreate re-creates the *same* id, though. If it changed a
+	// provided-id field (e.g. renamed an app, or pointed a synced table at a new
+	// synced_table_id), the create targets a *different* id that a separate,
+	// pre-existing resource already owns — waiting cannot free that name, so surface
+	// the conflict immediately instead of retrying for minutes. Any non-conflict error
+	// is returned immediately too.
+	idChanged := d.recreateChangedID(planEntry)
 	var createErr error
 	_, _ = retries.Poll[struct{}](ctx, recreateConflictRetryTimeout, func() (*struct{}, *retries.Err) {
 		createErr = d.Create(ctx, db, newState)
 		switch {
 		case createErr == nil:
 			return &struct{}{}, nil
-		case errors.Is(createErr, apierr.ErrAlreadyExists):
+		case !idChanged && errors.Is(createErr, apierr.ErrAlreadyExists):
 			log.Warnf(ctx, "Create hit ALREADY_EXISTS; the previous delete is likely still finishing, retrying: %s", createErr)
 			return nil, retries.Continues("create still conflicts with the deleting resource")
 		default:
@@ -169,6 +176,40 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		}
 	})
 	return createErr
+}
+
+// recreateChangedID reports whether this recreate edits a field that composes the
+// resource's id (a provided_id_field, e.g. an app's name or a synced table's
+// synced_table_id). When it does, the create targets a different id than the one
+// just deleted, so an ALREADY_EXISTS can only mean a separate, pre-existing resource
+// owns that id — waiting never frees it. When it does not, the recreate re-creates
+// the same id, so ALREADY_EXISTS can only be the just-deleted resource still tearing
+// down.
+func (d *DeploymentUnit) recreateChangedID(planEntry *deployplan.PlanEntry) bool {
+	if planEntry == nil {
+		return false
+	}
+	for field, ch := range planEntry.Changes {
+		if ch.Action == deployplan.Skip {
+			continue
+		}
+		path, err := structpath.ParsePath(field)
+		if err != nil {
+			continue
+		}
+		if changesProvidedID(d.Adapter.ResourceConfig(), path) || changesProvidedID(d.Adapter.GeneratedResourceConfig(), path) {
+			return true
+		}
+	}
+	return false
+}
+
+func changesProvidedID(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) bool {
+	if cfg == nil {
+		return false
+	}
+	_, ok := findMatchingRule(path, cfg.ProvidedIDFields)
+	return ok
 }
 
 // recreateConflictRetryTimeout caps how long recreate retries a create that keeps
