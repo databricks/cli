@@ -517,6 +517,9 @@ func (a *Adapter) PrepareState(input any) (any, error) {
 }
 
 func (a *Adapter) RemapState(remoteState any) (any, error) {
+	// RemapState is optional: validate() only allows it to be absent when
+	// remoteType == stateType, so the remote is already the state type and
+	// needs no adaptation.
 	if a.remapState == nil {
 		return remoteState, nil
 	}
