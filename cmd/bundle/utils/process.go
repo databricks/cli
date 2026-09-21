@@ -240,6 +240,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if stateDesc.Engine.IsDirect() {
 			resolveDeploymentHistory(ctx, b, stateDesc)
 		}
+		if opts.Deploy {
+			b.Metrics.DeploymentHistoryEnabled = stateDesc.IsDMS()
+		}
 
 		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.

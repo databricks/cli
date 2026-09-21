@@ -68,7 +68,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	var checkStateDB dstate.DeploymentState
 	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err == nil {
 		existingID := checkStateDB.GetResourceID(resourceKey)
-		if _, err := checkStateDB.Finalize(ctx); err != nil {
+		if _, err := checkStateDB.FlushAndClose(ctx); err != nil {
 			log.Warnf(ctx, "failed to finalize state: %v", err)
 		}
 		if existingID != "" {
@@ -104,7 +104,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Finalize to persist temp state to disk
-	_, err = b.StateDB.Finalize(ctx)
+	_, err = b.StateDB.FlushAndClose(ctx)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -123,7 +123,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		os.Remove(tmpStatePath)
 		return nil, err
 	}
-	if _, err := b.StateDB.Finalize(ctx); err != nil {
+	if _, err := b.StateDB.FlushAndClose(ctx); err != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", err)
 	}
 
@@ -174,7 +174,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			return nil, err
 		}
 
-		_, err = b.StateDB.Finalize(ctx)
+		_, err = b.StateDB.FlushAndClose(ctx)
 		if err != nil {
 			os.Remove(tmpStatePath)
 			return nil, err
@@ -188,7 +188,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		return nil, err
 	}
 	plan, err = b.CalculatePlan(ctx, client, configRoot)
-	if _, ferr := b.StateDB.Finalize(ctx); ferr != nil {
+	if _, ferr := b.StateDB.FlushAndClose(ctx); ferr != nil {
 		log.Warnf(ctx, "failed to finalize state: %v", ferr)
 	}
 	if err != nil {
@@ -263,6 +263,6 @@ func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey st
 		}
 	}
 
-	_, err = b.StateDB.Finalize(ctx)
+	_, err = b.StateDB.FlushAndClose(ctx)
 	return err
 }

@@ -87,9 +87,9 @@ type DeploymentState struct {
 	mu      sync.Mutex
 	walFile *os.File
 
-	// openedForWrite records write mode explicitly. It used to be implied by walFile, but a recorded
-	// deployment writes no WAL, so the two are no longer the same question.
-	openedForWrite bool
+	// mode is explicit because a recorded deployment writes no WAL, and because Flush leaves the
+	// state readable for CompleteVersion while permanently ending writes for this open cycle.
+	mode stateMode
 
 	// Maps resource key to ID. Unlike Data.State, this is up to date during writes (deploys).
 	stateIDs map[string]string
@@ -106,11 +106,6 @@ type DeploymentState struct {
 	// completion after an explicit one does nothing.
 	versionCompleted bool
 
-	// recordsHistory is whether this deployment records history, decided by Open from the state's
-	// features. Cached because it outlives the features themselves: Finalize resets Data, and
-	// CompleteVersion runs after that.
-	recordsHistory bool
-
 	// DeploymentID is the recorded deployment's id. Set at Open, or by the first deploy that creates
 	// the deployment, which Open cannot know about.
 	DeploymentID string
@@ -119,6 +114,15 @@ type DeploymentState struct {
 	// rather than the file, so it lives outside Data and is never written to resources.json.
 	VersionID int
 }
+
+type stateMode uint8
+
+const (
+	stateModeClosed stateMode = iota
+	stateModeRead
+	stateModeWrite
+	stateModeFlushed
+)
 
 // OpenDmsArgs identifies the recorded deployment Open reads from. The zero value means the
 // bundle does not record deployment history, or no deployment exists for it yet.
@@ -210,8 +214,8 @@ func (db *DeploymentState) RecordingError() error {
 // CompleteVersion marks the recorded version done, reporting whether it completed here. A no-op
 // returning false when no version was created (the bundle does not record history, or a deploy was
 // declined) or the version was already completed, so a deferred safety-net call after an explicit
-// one does nothing. Finalize has already drained the buffered operations. It reads only fields that
-// survive Finalize's reset and asserts nothing, so it is safe to call after the state is closed.
+// one does nothing. Flush must run first so every buffered operation has reached DMS.
+// CompleteVersion must run before Close because the state's features decide whether it records history.
 func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (bool, error) {
 	if !db.IsDeploymentMetadataService() {
 		return false, nil
@@ -228,7 +232,7 @@ func (db *DeploymentState) CompleteVersion(ctx context.Context, success bool) (b
 	db.mu.Unlock()
 
 	// A recording failure fails the version even when the caller counted the deploy a success: the
-	// service does not then hold everything the WAL does. Finalize already drained and surfaced it;
+	// service does not then hold everything the WAL does. Flush already surfaced it;
 	// this reads the drained buffer's error so a destroy whose uploads failed keeps its record.
 	if buf.Err() != nil {
 		success = false
@@ -307,7 +311,7 @@ func (db *DeploymentState) SaveState(ctx context.Context, key, newID string, sta
 	}
 
 	// A recorded deployment persists through the service, everything else through the WAL. The
-	// entry is still kept in memory: Finalize exports it for metadata.json and the deploy summary,
+	// entry is still kept in memory: Flush exports it for metadata.json and the deploy summary,
 	// and dataForFile empties State again before the tombstone is written.
 	if db.isDeploymentMetadataService() {
 		db.Data.State[key] = entry
@@ -414,7 +418,8 @@ func (db *DeploymentState) GetSerial() int {
 
 // isDeploymentMetadataService is IsDeploymentMetadataService for callers already holding db.mu.
 func (db *DeploymentState) isDeploymentMetadataService() bool {
-	return db.recordsHistory
+	_, ok := db.Data.Features[FeatureDeploymentHistory]
+	return ok
 }
 
 // IsDeploymentMetadataService reports whether this deployment's resource state lives in the
@@ -501,14 +506,17 @@ func (db *DeploymentState) reset() {
 	db.Path = ""
 	db.Data = Database{}
 	db.stateIDs = nil
-	db.openedForWrite = false
+	db.mode = stateModeClosed
+	db.operationBuffer = nil
+	db.dmsClient = nil
+	db.versionCompleted = false
+	db.DeploymentID = ""
+	db.VersionID = 0
 }
 
 func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRecovery WithRecovery, withWrite WithWrite, withDeploymentHistory WithDeploymentHistory, dmsDeployment OpenDmsArgs) error {
 	db.Path = path
-	// Cleared here rather than in reset, which CompleteVersion needs it to survive: the same state
-	// is reopened (see bind.go), and a stale value would misroute a non-recording open.
-	db.recordsHistory = false
+	db.mode = stateModeRead
 
 	// The state file is the source of truth for whether this deployment records history: read it
 	// first.
@@ -579,8 +587,6 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 		return ErrUnsettingRecording
 	}
 
-	db.recordsHistory = recorded
-
 	if recorded {
 		// The service is the source of truth for a recorded deployment; the file is a tombstone
 		// carrying only the marker, and applyDMSState loads the resources the service holds.
@@ -607,7 +613,7 @@ Run "databricks bundle destroy" first, then deploy again with deployment history
 	}
 
 	if withWrite {
-		db.openedForWrite = true
+		db.mode = stateModeWrite
 
 		// A recorded deployment needs no WAL: every state write goes to the service as it happens,
 		// and Open recovers from there rather than replaying a log. Stamp the header fields the
@@ -661,6 +667,7 @@ func (db *DeploymentState) OpenWithData(path string, data Database) {
 
 	db.Path = path
 	db.Data = data
+	db.mode = stateModeRead
 	db.stateIDs = make(map[string]string)
 	for key, entry := range data.State {
 		db.stateIDs[key] = entry.ID
@@ -789,10 +796,10 @@ func (db *DeploymentState) mergeWalIntoState(ctx context.Context) (bool, error) 
 	return hasEntries, nil
 }
 
-// Finalize replays the WAL (if open for write), captures the resulting state, and resets.
-// Safe to call multiple times or on an already-finalized state.
-// Returns the exported state as of the end of this operation.
-func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.ExportedResourcesMap, error) {
+// Flush replays the WAL (if open for write), persists the resulting state, and waits for
+// all DMS operations to finish. It leaves the state open so CompleteVersion can inspect its features.
+// Safe to call multiple times. Returns the exported state as of the end of this operation.
+func (db *DeploymentState) Flush(ctx context.Context) (resourcestate.ExportedResourcesMap, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -809,7 +816,7 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		}
 		db.walFile = nil
 		err = db.replayWAL(ctx)
-	} else if db.openedForWrite && db.isDeploymentMetadataService() {
+	} else if db.mode == stateModeWrite && db.isDeploymentMetadataService() {
 		// replayWAL is what normally persists the file. Without one, write the tombstone here so
 		// the header (lineage, state version, CLI version) still lands on disk - even when no
 		// operations were recorded, since the deployment and any version this run created exist
@@ -824,10 +831,27 @@ func (db *DeploymentState) Finalize(ctx context.Context) (resourcestate.Exported
 		}
 	}
 
+	// Flush consumes the WAL or DMS operation queue. The state remains readable for
+	// CompleteVersion, but this open cycle can no longer accept writes or open another WAL.
+	db.mode = stateModeFlushed
 	state := ExportStateFromData(db.Data)
+	return state, err
+}
 
+// Close resets an open deployment state after its buffered operations and DMS version are complete.
+// Safe to call multiple times.
+func (db *DeploymentState) Close() {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	db.reset()
+}
 
+// FlushAndClose flushes and closes deployment state. Lifecycle-aware callers should call
+// Flush, CompleteVersion, and Close in that order.
+// Safe to call multiple times or on an already-closed state.
+func (db *DeploymentState) FlushAndClose(ctx context.Context) (resourcestate.ExportedResourcesMap, error) {
+	state, err := db.Flush(ctx)
+	db.Close()
 	return state, err
 }
 
@@ -837,13 +861,16 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	if db.Path == "" {
+	if db.mode == stateModeClosed {
 		return errors.New("internal error: DeploymentState must be opened first")
 	}
-	if db.openedForWrite {
+	if db.mode == stateModeWrite {
 		return errors.New("internal error: DeploymentState is already open for write")
 	}
-	db.openedForWrite = true
+	if db.mode == stateModeFlushed {
+		return errors.New("internal error: DeploymentState has already been flushed")
+	}
+	db.mode = stateModeWrite
 
 	// As in Open: a recorded deployment writes no WAL, so stamp the header and skip the file.
 	if db.isDeploymentMetadataService() {
@@ -874,7 +901,7 @@ func (db *DeploymentState) UpgradeToWrite() error {
 
 // Persist writes the current in-memory state to its file immediately, without a WAL cycle.
 // Used to materialize a freshly opened state that produces no WAL entries - e.g. an empty
-// migrated state - as a base file on disk, so a later write has a base and Finalize's
+// migrated state - as a base file on disk, so a later write has a base and Flush's
 // header-only WAL leaves it intact.
 func (db *DeploymentState) Persist() error {
 	db.mu.Lock()
@@ -886,25 +913,25 @@ func (db *DeploymentState) Persist() error {
 // callers probe the state without risking the panic in AssertOpenedForReadOrWrite,
 // e.g. code paths shared with the terraform engine where the state DB is never opened.
 func (db *DeploymentState) IsOpen() bool {
-	return db.Path != ""
+	return db.mode != stateModeClosed
 }
 
 func (db *DeploymentState) AssertOpenedForReadOrWrite() {
-	if db.Path == "" {
+	if db.mode == stateModeClosed {
 		panic("internal error: DeploymentState must be opened first")
 	}
 }
 
 func (db *DeploymentState) AssertOpenedForRead() {
 	db.AssertOpenedForReadOrWrite()
-	if db.openedForWrite {
-		panic("internal error: DeploymentState must be opened in read mode")
+	if db.mode != stateModeRead && db.mode != stateModeFlushed {
+		panic("internal error: DeploymentState must be readable")
 	}
 }
 
 func (db *DeploymentState) AssertOpenedForWrite() {
 	db.AssertOpenedForReadOrWrite()
-	if !db.openedForWrite {
+	if db.mode != stateModeWrite {
 		panic("internal error: DeploymentState must be opened in write mode")
 	}
 }
