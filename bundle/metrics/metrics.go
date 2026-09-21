@@ -8,5 +8,4 @@ const (
 	PresetsNamePrefixIsSet              = "presets_name_prefix_is_set"
 	AppLifecycleStarted                 = "app_lifecycle_started"
 	ClusterLifecycleStarted             = "cluster_lifecycle_started"
-	DeploymentHistoryEnabled            = "deployment_history_enabled"
 )

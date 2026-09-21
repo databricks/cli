@@ -40,7 +40,6 @@ const maxErrorMessageLength = 500
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = scrubForTelemetry(errMsg)
-	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, bundle.IsDirectWithHistory(ctx, b))
 
 	if len(errMsg) > maxErrorMessageLength {
 		errMsg = errMsg[:maxErrorMessageLength]

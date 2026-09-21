@@ -50,10 +50,6 @@ Deployment complete!
       "value": false
     },
     {
-      "key": "deployment_history_enabled",
-      "value": false
-    },
-    {
       "key": "app_lifecycle_started",
       "value": true
     }
