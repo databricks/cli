@@ -59,10 +59,11 @@ type listRow struct {
 	Accelerators  string `json:"-"`
 }
 
-// listedRun pairs a row with its task run id, so the MLflow link can be fetched
-// after the run has been filtered in.
+// listedRun pairs a row with its parent and task run ids, so the MLflow link can
+// be fetched after the run has been filtered in and cached afterward.
 type listedRun struct {
 	row       listRow
+	runID     int64
 	taskRunID int64
 }
 
@@ -245,6 +246,9 @@ func (f *runFetcher) next(want int) ([]listRow, error) {
 	// lookups are skipped for JSON output (which omits the column anyway).
 	if f.fetchMLflow {
 		setMLflowLinks(f.ctx, f.w, f.w.Config.Host, entries)
+		if s, ok := f.strategy.(*indexStrategy); ok {
+			s.cacheMLflowLinks(entries)
+		}
 	}
 
 	rows := make([]listRow, len(entries))
@@ -306,7 +310,7 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		if !s.filters.matches(run) {
 			continue
 		}
-		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), taskRunID: taskRunID(run)})
+		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), runID: run.RunId, taskRunID: taskRunID(run)})
 	}
 	return entries, nil
 }
@@ -336,6 +340,9 @@ func setMLflowLinks(ctx context.Context, w *databricks.WorkspaceClient, host str
 	g.SetLimit(enrichConcurrency)
 	for i := range entries {
 		g.Go(func() error {
+			if entries[i].row.MLflowURL != "" && entries[i].row.MLflowURL != "-" {
+				return nil
+			}
 			ids := mlflowIDsForTask(ctx, w, entries[i].taskRunID)
 			if ids == nil {
 				return nil
