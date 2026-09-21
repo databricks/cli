@@ -105,13 +105,18 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 			seq, _ := currentValue.AsSequence()
 			foundIndex := -1
 
+			// key is empty for the field-agnostic form [='value']: resolve the element by
+			// its registered key fields, looked up from the sequence's Go type. A named key
+			// (legacy form) matches that field directly.
+			var keyFields []string
+			if key == "" {
+				keyFields = keyFieldsAtPath(b, n.Parent())
+			}
+
 			for i, elem := range seq {
-				// key is empty for the field-agnostic form [='value']: resolve the element
-				// by its registered key field. A named key (legacy form) matches that field
-				// directly.
 				var elemKey string
 				if key == "" {
-					ek, ok := dynElementKeyValue(elem)
+					ek, ok := dynElementKey(elem, keyFields)
 					if !ok {
 						continue
 					}

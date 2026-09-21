@@ -24,21 +24,19 @@ Resource: resources.jobs.ambiguous_single_block_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -15,16 +15,16 @@
+@@ -15,9 +15,9 @@
      ambiguous_single_block_job:
        tasks:
 -        - task_key: alpha
--          max_retries: 1
-+        - max_retries: 1
++        - task_key: zzz
+           max_retries: 1
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/alpha
 -        - task_key: beta
--          max_retries: 1
-+          task_key: zzz
-+        - max_retries: 1
++        - task_key: aaa
+           max_retries: 1
            notebook_task:
-             notebook_path: /Users/{{workspace_user_name}}/beta
-+          task_key: aaa
+@@ -25,6 +25,6 @@
          - task_key: gamma
            depends_on:
 -            - task_key: alpha

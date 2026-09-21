@@ -17,23 +17,13 @@ Resource: resources.jobs.sample_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -6,11 +6,11 @@
+@@ -6,5 +6,5 @@
      sample_job:
        tasks:
 -        - task_key: new_task
--          notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/new_task
--          new_cluster:
--            spark_version: 13.3.x-snapshot-scala2.12
-+        - new_cluster:
-             node_type_id: [NODE_TYPE_ID]
-             num_workers: 1
-+            spark_version: 13.3.x-snapshot-scala2.12
-+          notebook_task:
-+            notebook_path: '/Users/{{workspace_user_name}}/new_task'
-+          task_key: new_task_2
-
- targets:
++        - task_key: new_task_2
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/new_task
 
 === Rename task back to new_task remotely
 
@@ -49,13 +39,13 @@ Resource: resources.jobs.sample_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -12,5 +12,5 @@
+@@ -6,5 +6,5 @@
+     sample_job:
+       tasks:
+-        - task_key: new_task_2
++        - task_key: new_task
            notebook_task:
-             notebook_path: '/Users/{{workspace_user_name}}/new_task'
--          task_key: new_task_2
-+          task_key: new_task
-
- targets:
+             notebook_path: /Users/{{workspace_user_name}}/new_task
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

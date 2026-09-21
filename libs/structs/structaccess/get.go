@@ -207,16 +207,17 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 
 		if key == "" {
 			// Field-agnostic key ([='value']): the key field is not encoded in the path,
-			// so identify the element from its type via the registry — match when value
-			// equals any of the element type's key fields. This is how the same identity
-			// under a different field (e.g. user_name vs service_principal_name) resolves.
-			if matches, ok := registry.ElementHasValue(elemDeref, value); ok {
-				if matches {
-					return elem, nil
-				}
-				continue
+			// so identify the element from its type via the registry — its ElementKey is
+			// the same identity the diff used, so the same principal under a different
+			// field (e.g. user_name vs service_principal_name) resolves consistently.
+			elemKey, ok := registry.ElementKey(elemDeref)
+			if !ok {
+				return reflect.Value{}, fmt.Errorf("%s: field-agnostic key on unregistered element type %s", path.String(), elemDeref.Type())
 			}
-			return reflect.Value{}, fmt.Errorf("%s: field-agnostic key on unregistered element type %s", path.String(), elemDeref.Type())
+			if elemKey == value {
+				return elem, nil
+			}
+			continue
 		}
 
 		// Try to get the field value

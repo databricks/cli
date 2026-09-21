@@ -27,10 +27,18 @@ type embedOuter struct {
 	Value string `json:"value,omitempty"`
 }
 
+// shadowOuter declares its own "id" and also embeds embedInner (which has "id"); the
+// outer field is the one encoding/json serializes, so registration must select it.
+type shadowOuter struct {
+	embedInner
+	ID string `json:"id,omitempty"`
+}
+
 func init() {
 	Register[single]("key")
 	Register[multi]("user_name", "service_principal_name")
 	Register[embedOuter]("id")
+	Register[shadowOuter]("id")
 }
 
 func TestKeyFields(t *testing.T) {
@@ -40,13 +48,6 @@ func TestKeyFields(t *testing.T) {
 	assert.Equal(t, []string{"key"}, KeyFields(reflect.TypeFor[*single]()))
 	// Unregistered types return nil.
 	assert.Nil(t, KeyFields(reflect.TypeFor[embedInner]()))
-}
-
-func TestIsKeyField(t *testing.T) {
-	assert.True(t, IsKeyField("key"))
-	assert.True(t, IsKeyField("service_principal_name"))
-	assert.False(t, IsKeyField("level"))
-	assert.False(t, IsKeyField("other"))
 }
 
 func TestElementKey(t *testing.T) {
@@ -74,23 +75,18 @@ func TestElementKey(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestElementHasValue(t *testing.T) {
-	matches, ok := ElementHasValue(reflect.ValueOf(multi{SpName: "sp"}), "sp")
+func TestElementKeyShadowedEmbed(t *testing.T) {
+	// The outer "id" shadows the embedded one; ElementKey reads the outer field.
+	v, ok := ElementKey(reflect.ValueOf(shadowOuter{ID: "outer", embedInner: embedInner{ID: "inner"}}))
 	assert.True(t, ok)
-	assert.True(t, matches)
+	assert.Equal(t, "outer", v)
+}
 
-	// Matches under any key field, not just the first.
-	matches, ok = ElementHasValue(reflect.ValueOf(multi{UserName: "u", SpName: "sp"}), "sp")
-	assert.True(t, ok)
-	assert.True(t, matches)
-
-	// Non-key field value does not match.
-	matches, ok = ElementHasValue(reflect.ValueOf(multi{Level: "CAN_MANAGE"}), "CAN_MANAGE")
-	assert.True(t, ok)
-	assert.False(t, matches)
-
-	_, ok = ElementHasValue(reflect.ValueOf(embedInner{ID: "x"}), "x")
+func TestElementKeyNilPointer(t *testing.T) {
+	// A nil pointer element must not panic.
+	v, ok := ElementKey(reflect.ValueOf((*multi)(nil)))
 	assert.False(t, ok)
+	assert.Empty(t, v)
 }
 
 func TestRegisterPanicsOnUnknownField(t *testing.T) {

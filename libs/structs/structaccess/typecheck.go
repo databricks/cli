@@ -41,11 +41,22 @@ func ValidatePattern(t reflect.Type, path *structpath.PatternNode) error {
 	if path.IsRoot() {
 		return nil
 	}
-	return validateNodeSlice(t, path.AsSlice())
+	_, err := resolveNodeSlice(t, path.AsSlice())
+	return err
 }
 
-// validateNodeSlice is the implementation for ValidatePattern.
-func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
+// TypeAtPath returns the type reached by following path from t, dereferencing pointers.
+// The root (nil path) resolves to t. It returns an error indicating where resolution
+// failed, mirroring ValidatePath.
+func TypeAtPath(t reflect.Type, path *structpath.PathNode) (reflect.Type, error) {
+	if path.IsRoot() {
+		return t, nil
+	}
+	return resolveNodeSlice(t, (*structpath.PatternNode)(path).AsSlice())
+}
+
+// resolveNodeSlice walks nodes from t and returns the type reached, or an error.
+func resolveNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) (reflect.Type, error) {
 	cur := t
 	for _, node := range nodes {
 		// Always dereference pointers at the type level.
@@ -67,7 +78,7 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 				if idx == 0 && kind == reflect.Struct {
 					continue
 				}
-				return fmt.Errorf("%s: cannot index %s", node.String(), kind)
+				return nil, fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			cur = cur.Elem()
 			continue
@@ -82,14 +93,14 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
-				return fmt.Errorf("%s: cannot use [*] on %s", node.String(), kind)
+				return nil, fmt.Errorf("%s: cannot use [*] on %s", node.String(), kind)
 			}
 			cur = cur.Elem()
 			continue
 		}
 		if node.DotStar() {
 			if cur.Kind() != reflect.Map {
-				return fmt.Errorf("%s: cannot use .* on %s", node.String(), cur.Kind())
+				return nil, fmt.Errorf("%s: cannot use .* on %s", node.String(), cur.Kind())
 			}
 			cur = cur.Elem()
 			continue
@@ -104,7 +115,7 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 			}
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
-				return fmt.Errorf("%s: cannot use key-value syntax on %s", node.String(), kind)
+				return nil, fmt.Errorf("%s: cannot use key-value syntax on %s", node.String(), kind)
 			}
 			cur = cur.Elem()
 			continue
@@ -113,28 +124,28 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 		key, ok := node.StringKey()
 
 		if !ok {
-			return errors.New("unsupported path node type")
+			return nil, errors.New("unsupported path node type")
 		}
 
 		switch cur.Kind() {
 		case reflect.Struct:
 			sf, _, ok := FindStructFieldByKeyType(cur, key)
 			if !ok {
-				return fmt.Errorf("%s: field %q not found in %s", node.String(), key, cur.String())
+				return nil, fmt.Errorf("%s: field %q not found in %s", node.String(), key, cur.String())
 			}
 			cur = sf.Type
 		case reflect.Map:
 			kt := cur.Key()
 			if kt.Kind() != reflect.String {
-				return fmt.Errorf("%s: map key must be string, got %s", node.String(), kt)
+				return nil, fmt.Errorf("%s: map key must be string, got %s", node.String(), kt)
 			}
 			cur = cur.Elem()
 		default:
-			return fmt.Errorf("%s: cannot access key %q on %s", node.String(), key, cur.Kind())
+			return nil, fmt.Errorf("%s: cannot access key %q on %s", node.String(), key, cur.Kind())
 		}
 	}
 
-	return nil
+	return cur, nil
 }
 
 // FindStructFieldByKeyType searches exported fields of struct type t for a field matching key.

@@ -50,7 +50,7 @@ func matchRenamingPairs(b *bundle.Bundle, blocks *blockResolver, resourceKey str
 		return set
 	}
 
-	removes, adds := keyedElementChanges(changes)
+	removes, adds := keyedElementChanges(b, resourceKey, changes)
 
 	// The remove half carries no value, so each removed element is read from the
 	// merged configuration once: its fields decide which additions it could have
@@ -239,7 +239,7 @@ type keyedElement struct {
 
 // keyedElementChanges splits the changes that address a whole keyed element into
 // removes and adds, in a deterministic order.
-func keyedElementChanges(changes ResourceChanges) (removes, adds []keyedElement) {
+func keyedElementChanges(b *bundle.Bundle, resourceKey string, changes ResourceChanges) (removes, adds []keyedElement) {
 	for _, path := range slices.Sorted(maps.Keys(changes)) {
 		change := changes[path]
 		if change.Operation != OperationRemove && change.Operation != OperationAdd {
@@ -249,17 +249,17 @@ func keyedElementChanges(changes ResourceChanges) (removes, adds []keyedElement)
 		if err != nil {
 			continue
 		}
-		keyField, key, ok := node.KeyValue()
+		_, key, ok := node.KeyValue()
 		if !ok {
 			continue
 		}
 		// The path addresses the element by value only ([='value']), so the key field
-		// name is not in the path; recover it from the element (the member the registry
-		// recognises as a key field). Renaming needs the name to strip the key when
-		// comparing bodies and to address the key field in the rewrite.
-		if keyField == "" {
-			keyField = mapKeyField(change.Value)
-		}
+		// name is not in the path; recover it from the sequence's type. Renaming needs
+		// the name to strip the key when comparing bodies and to address the key field in
+		// the rewrite. Rename detection only applies to single-key-field elements (tasks,
+		// parameters, …); multi-key-field elements (permissions) never rename — a changed
+		// principal is an add plus a remove, not a rename — so they are skipped here.
+		keyField := singleKeyFieldAt(b, resourceKey, node)
 		if keyField == "" {
 			continue
 		}

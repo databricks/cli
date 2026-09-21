@@ -18,40 +18,12 @@ Resource: resources.jobs.ambiguous_rename_job
 === Neither rename is applied, and both blocks keep their own task
 
 >>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -11,8 +11,9 @@
-     ambiguous_rename_job:
-       tasks:
--        - task_key: alpha
--          max_retries: 3
-+        - max_retries: 3
-           notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/nb
-+            notebook_path: '/Users/{{workspace_user_name}}/nb'
-+          task_key: aaa
-+        - {max_retries: 3, notebook_task: {notebook_path: '/Users/{{workspace_user_name}}/nb'}, task_key: zzz}
-
- targets:
-@@ -22,7 +23,3 @@
-       jobs:
-         ambiguous_rename_job:
--          tasks:
--            - task_key: beta
--              max_retries: 3
--              notebook_task:
--                notebook_path: /Users/{{workspace_user_name}}/nb
-+          tasks: []
 
 >>> grep -c task_key: alpha databricks.yml
-0
-
-Exit code: 1
+1
 
 >>> grep -c task_key: beta databricks.yml
-0
-
-Exit code: 1
+1
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:

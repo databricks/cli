@@ -17,44 +17,19 @@ Resource: resources.jobs.two_removes_job
 === Neither block is rewritten: the pairing is not forced
 
 >>> diff.py databricks.yml.backup databricks.yml
---- databricks.yml.backup
-+++ databricks.yml
-@@ -12,8 +12,8 @@
-     two_removes_job:
-       tasks:
--        - task_key: task_toplevel
--          max_retries: 2
-+        - max_retries: 2
-           notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/nb
-+            notebook_path: '/Users/{{workspace_user_name}}/nb'
-+          task_key: task_renamed
-
- targets:
-@@ -23,7 +23,3 @@
-       jobs:
-         two_removes_job:
--          tasks:
--            - task_key: task_target
--              max_retries: 2
--              notebook_task:
--                notebook_path: /Users/{{workspace_user_name}}/nb
-+          tasks: []
 
 
 === Both tasks keep their original keys, and no new key was written
 >>> grep -c task_key: task_toplevel databricks.yml
-0
-
-Exit code: 1
+1
 
 >>> grep -c task_key: task_target databricks.yml
+1
+
+>>> grep -c task_key: task_renamed databricks.yml
 0
 
 Exit code: 1
-
->>> grep -c task_key: task_renamed databricks.yml
-1
 
 >>> [CLI] bundle destroy --auto-approve -t dev
 The following resources will be deleted:
