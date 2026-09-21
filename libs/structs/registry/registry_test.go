@@ -34,11 +34,40 @@ type shadowOuter struct {
 	ID string `json:"id,omitempty"`
 }
 
+type ptrKeyed struct {
+	Name string `json:"pk_name,omitempty"`
+}
+
+// intShadow declares its own int "id" that shadows the embedded string "id"; the
+// dominant field JSON serializes is the int, so "id" is not a usable key.
+type intShadow struct {
+	embedInner
+	ID int `json:"id,omitempty"`
+}
+
 func init() {
 	Register[single]("key")
 	Register[multi]("user_name", "service_principal_name")
 	Register[embedOuter]("id")
 	Register[shadowOuter]("id")
+	Register[*ptrKeyed]("pk_name")
+}
+
+func TestRegisterPointerType(t *testing.T) {
+	// Register[*T] and lookups by T or *T all agree.
+	assert.Equal(t, []string{"pk_name"}, KeyFields(reflect.TypeFor[ptrKeyed]()))
+	assert.Equal(t, []string{"pk_name"}, KeyFields(reflect.TypeFor[*ptrKeyed]()))
+	v, ok := ElementKey(reflect.ValueOf(&ptrKeyed{Name: "n"}))
+	assert.True(t, ok)
+	assert.Equal(t, "n", v)
+}
+
+func TestRegisterPanicsOnNonStringDominantField(t *testing.T) {
+	// The dominant "id" is an int, so it shadows the embedded string and cannot be a key.
+	assert.PanicsWithValue(t,
+		`registry: registry.intShadow has no string field with json name "id"`,
+		func() { Register[intShadow]("id") },
+	)
 }
 
 func TestKeyFields(t *testing.T) {

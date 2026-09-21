@@ -43,7 +43,12 @@ var registrations = map[reflect.Type]*keyedType{}
 // resolve to a string field of T, surfacing typos at startup rather than as silent
 // mismatches at diff time.
 func Register[T any](keyFields ...string) {
+	// Normalize to the element struct type, matching lookup, so Register[*T] and
+	// Register[T] register the same key.
 	t := reflect.TypeFor[T]()
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
 	kt := &keyedType{jsonNames: keyFields}
 	for _, name := range keyFields {
 		index, ok := stringFieldIndex(t, name)
@@ -120,28 +125,36 @@ func fieldByIndex(v reflect.Value, index []int) (reflect.Value, bool) {
 	return v, v.Kind() == reflect.String
 }
 
-// stringFieldIndex returns the field-index path of the string field with the given
-// JSON name. Direct fields are resolved first, then flattened embeds breadth-first
-// (anonymous struct fields with no explicit JSON name, whose exported fields
-// encoding/json promotes), so a field shadowed by an outer one of the same JSON name
-// resolves to the outer field that JSON serializes. ok is false if no such field
-// exists.
+// stringFieldIndex returns the field-index path of the string key field with the
+// given JSON name. It resolves the field encoding/json serializes under jsonName —
+// the dominant field: a direct field before a promoted one, breadth-first among
+// embeds — and requires it to be a string. ok is false if there is no such field or
+// the dominant one is not a string (a non-string field cannot be a key, and it still
+// shadows any deeper same-named string field).
 func stringFieldIndex(t reflect.Type, jsonName string) ([]int, bool) {
+	index, ft, ok := dominantFieldIndex(t, jsonName)
+	if !ok || ft.Kind() != reflect.String {
+		return nil, false
+	}
+	return index, true
+}
+
+// dominantFieldIndex returns the field-index path and type of the field encoding/json
+// serializes under jsonName (direct before promoted, breadth-first among flattened
+// embeds), regardless of the field's type. ok is false if no field carries that name.
+func dominantFieldIndex(t reflect.Type, jsonName string) ([]int, reflect.Type, bool) {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct {
-		return nil, false
+		return nil, nil, false
 	}
 
-	// Direct fields first (shallower wins over promoted fields).
+	// Direct fields first (a shallower field shadows a promoted one).
 	for i := range t.NumField() {
 		sf := t.Field(i)
-		if isFlattenedEmbed(sf) {
-			continue
-		}
-		if sf.IsExported() && sf.Type.Kind() == reflect.String && structtag.JSONTag(sf.Tag.Get("json")).Name() == jsonName {
-			return []int{i}, true
+		if !isFlattenedEmbed(sf) && sf.IsExported() && structtag.JSONTag(sf.Tag.Get("json")).Name() == jsonName {
+			return []int{i}, sf.Type, true
 		}
 	}
 
@@ -152,18 +165,15 @@ func stringFieldIndex(t reflect.Type, jsonName string) ([]int, bool) {
 		for _, e := range level {
 			for i := range e.typ.NumField() {
 				sf := e.typ.Field(i)
-				if isFlattenedEmbed(sf) {
-					continue
-				}
-				if sf.IsExported() && sf.Type.Kind() == reflect.String && structtag.JSONTag(sf.Tag.Get("json")).Name() == jsonName {
-					return append(append([]int{}, e.prefix...), i), true
+				if !isFlattenedEmbed(sf) && sf.IsExported() && structtag.JSONTag(sf.Tag.Get("json")).Name() == jsonName {
+					return append(append([]int{}, e.prefix...), i), sf.Type, true
 				}
 			}
 			next = append(next, embedsOf(e.typ, e.prefix)...)
 		}
 		level = next
 	}
-	return nil, false
+	return nil, nil, false
 }
 
 type embed struct {
