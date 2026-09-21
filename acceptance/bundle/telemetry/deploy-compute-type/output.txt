@@ -52,6 +52,10 @@ Deployment complete!
   {
     "key": "has_classic_interactive_compute",
     "value": true
+  },
+  {
+    "key": "deployment_history_enabled",
+    "value": false
   }
 ]
 [
@@ -93,6 +97,10 @@ Deployment complete!
   },
   {
     "key": "has_classic_interactive_compute",
+    "value": false
+  },
+  {
+    "key": "deployment_history_enabled",
     "value": false
   }
 ]
