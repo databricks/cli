@@ -20,8 +20,9 @@ trace print_requests.py //libraries/install
 title "Badness: wheel code changes but version does not, so redeploy neither reinstalls nor restarts"
 update_file.py my_test_code/__main__.py "Hello from my func" "Hello from my func v2"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
-# Interesting bit: the wheel path is unchanged, so the cluster plans as "skip" - the library
-# change goes undetected and the stale wheel keeps running (see the TODO in cluster.go DoUpdate).
+
+# The wheel path is unchanged, so the cluster plans as "skip" - the library change goes undetected and
+# the stale wheel keeps running.
 trace jq '.plan["resources.clusters.mycluster"].action' tmp.plan.json
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
 cat LOG.redeploy | contains.py "!Restarting cluster" > /dev/null

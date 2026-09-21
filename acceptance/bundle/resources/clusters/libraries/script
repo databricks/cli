@@ -10,8 +10,9 @@ trap cleanup EXIT
 # Deploy output goes to LOG (differs fake vs cloud); echo a pass line instead.
 title "Deploy a cluster with a pypi and a local wheel library"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
-# The interesting bit: the plan carries the local wheel rewritten to its uploaded
-# .internal/ path, so `bundle deploy --plan` installs it without rebuilding (#6682).
+
+# The plan carries the local wheel rewritten to its uploaded .internal/ path, so
+# `bundle deploy --plan` installs it without rebuilding.
 trace jq '.plan["resources.clusters.mycluster"].new_state.value.libraries' tmp.plan.json
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
