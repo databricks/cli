@@ -14,6 +14,7 @@ Available Commands:
   get             Show status, configuration, and timing details for a specified run
   list            List active runs for the current user
   logs            Stream or fetch logs for a run
+  pools           View provisioned GPU pools
   run             Submit a training workload from a YAML config
 
 Flags:
@@ -41,7 +42,6 @@ Filters:
 
 Usage:
   databricks experimental air list [flags]
-  databricks experimental air list [command]
 
 Examples:
   databricks experimental air list --filter accelerator_type=H100
@@ -50,9 +50,6 @@ Examples:
     --filter 'experiment=qwen*' \
     --filter num_accelerators=8 \
     --filter user=person@example.com
-
-Available Commands:
-  pools       List the GPU pools available to the current workspace
 
 Flags:
       --all-status           Show runs in all states (default: active only)
@@ -67,8 +64,6 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
 
-Use "databricks experimental air list [command] --help" for more information about a command.
-
 === get help
 >>> [CLI] experimental air get --help
 Show status, configuration, and timing details for a specified run.
@@ -77,10 +72,6 @@ JOB_RUN_ID is the job run ID returned by "air run".
 
 Usage:
   databricks experimental air get JOB_RUN_ID [flags]
-  databricks experimental air get [command]
-
-Available Commands:
-  pool        Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)
 
 Flags:
   -h, --help   help for get
@@ -91,7 +82,28 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
 
-Use "databricks experimental air get [command] --help" for more information about a command.
+=== pools help
+>>> [CLI] experimental air pools --help
+View provisioned GPU pools
+
+Usage:
+  databricks experimental air pools [flags]
+  databricks experimental air pools [command]
+
+Available Commands:
+  get         Show a GPU pool, including its accelerator usage (POOL_ID may be omitted when the workspace has exactly one pool)
+  list        List the GPU pools available to the current workspace
+
+Flags:
+  -h, --help   help for pools
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks experimental air pools [command] --help" for more information about a command.
 
 === logs help
 >>> [CLI] experimental air logs --help

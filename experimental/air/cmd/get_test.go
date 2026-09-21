@@ -35,14 +35,11 @@ func renderGet(t *testing.T, data getData) string {
 
 // TestGetCommandShape locks in that `get` takes the run id directly as
 // `air get JOB_RUN_ID` (there is no `run` subcommand — it was collapsed back
-// into `get`). Its only subcommand is the `pool` noun. The
-// acceptance test exercises the happy path end to end.
+// into `get`). The acceptance test exercises the happy path end to end.
 func TestGetCommandShape(t *testing.T) {
 	cmd := newGetCommand()
 	assert.Equal(t, "get JOB_RUN_ID", cmd.Use)
-	subs := cmd.Commands()
-	require.Len(t, subs, 1)
-	assert.Equal(t, "pool", subs[0].Name())
+	assert.Empty(t, cmd.Commands())
 	// ExactArgs(1): exactly one run id is required.
 	assert.NoError(t, cmd.Args(cmd, []string{"123"}))
 	assert.Error(t, cmd.Args(cmd, []string{}))

@@ -80,7 +80,7 @@ config.mlflow_artifact_location
 
 >>> [CLI] experimental air run -h config.compute.pool_id
 config.compute.pool_id
-  GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air list pools'.
+  GPU pool to run on, by id. A GPU pool is a pre-provisioned accelerator reservation; contact your Databricks account team to provision one. Must be 1-255 characters. List available pools with 'air pools list'.
 
   Type:     string
   Required: no

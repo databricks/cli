@@ -22,6 +22,7 @@ These commands are experimental and may change in future versions.`,
 	cmd.AddCommand(runCommand)
 	cmd.AddCommand(newGetCommand())
 	cmd.AddCommand(newListCommand())
+	cmd.AddCommand(newPoolsCommand())
 	cmd.AddCommand(newLogsCommand())
 	cmd.AddCommand(newCancelCommand())
 	cmd.AddCommand(newConvertToDabsCommand())
