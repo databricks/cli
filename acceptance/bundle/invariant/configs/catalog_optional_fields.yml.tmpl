@@ -6,6 +6,8 @@ resources:
     foo:
       name: test-catalog-$UNIQUE_NAME
       comment: This is a test catalog
+      # CANNOT_REMOVE: not force-sent on update (terraform omits it too, see #6343), so
+      # clearing it drops the field from the PATCH and the old value drifts back every plan.
       custom_max_retention_hours: 48
       managed_encryption_settings:
         customer_managed_key_id: 00000000-0000-0000-0000-000000000000

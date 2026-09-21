@@ -6,6 +6,7 @@ resources:
     foo:
       instance_pool_name: test-instance-pool-$UNIQUE_NAME
       node_type_id: $NODE_TYPE_ID
+      idle_instance_autotermination_minutes: 60 # CAN_REMOVE
       permissions:
         - level: CAN_ATTACH_TO
           group_name: users

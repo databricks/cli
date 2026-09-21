@@ -1,0 +1,32 @@
+# Invariant to test: removing a non-required field is applied as an update and converges.
+# Fields tagged `# CAN_REMOVE` in the config are dropped, and the resulting plan must show an
+# update; after deploying it a fresh plan must show no drift. This guards the omitempty-drop
+# class of bug (#6343): a field the config stops declaring must be sent as its zero value, not
+# silently dropped from the PATCH (which either fails with "Nothing to update" or never converges).
+# Additional checks: no internal errors / panics in validate/plan/deploy.
+
+invariant_setup
+
+invariant_deploy LOG.deploy $CLI bundle deploy
+
+invariant_verify_no_drift
+
+# Only configs that tag fields with `# CAN_REMOVE` exercise the removal cycle; the rest just
+# assert the baseline no-drift above. `CANNOT_REMOVE` documents a field whose removal is broken
+# and is intentionally not stripped (it does not contain the substring `CAN_REMOVE`).
+if grep -q CAN_REMOVE databricks.yml; then
+    grep -v CAN_REMOVE databricks.yml > databricks.yml.new
+    mv databricks.yml.new databricks.yml
+    cp databricks.yml LOG.config.removed
+
+    $CLI bundle plan -o json > LOG.plan_removed.json 2>LOG.plan_removed.err
+    cat LOG.plan_removed.err | contains.py '!panic:' '!internal error' > /dev/null
+    verify_update.py LOG.plan_removed.json
+
+    # Not invariant_deploy: a second INPUT_CONFIG_OK would make output.txt differ between the
+    # configs that have removable fields and those that don't.
+    trace $CLI bundle deploy &> LOG.deploy_removed
+    cat LOG.deploy_removed | contains.py '!panic:' '!internal error' > /dev/null
+
+    invariant_verify_no_drift
+fi
