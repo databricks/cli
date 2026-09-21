@@ -56,6 +56,9 @@ var RequiredFields = map[string][]string{
 	"resources.clusters.*.init_scripts[*].s3":        {"destination"},
 	"resources.clusters.*.init_scripts[*].volumes":   {"destination"},
 	"resources.clusters.*.init_scripts[*].workspace": {"destination"},
+	"resources.clusters.*.libraries[*].cran":         {"package"},
+	"resources.clusters.*.libraries[*].maven":        {"coordinates"},
+	"resources.clusters.*.libraries[*].pypi":         {"package"},
 	"resources.clusters.*.permissions[*]":            {"level"},
 	"resources.clusters.*.workload_type":             {"clients"},
 
