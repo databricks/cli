@@ -1,0 +1,1 @@
+trace $CLI bundle-deployments list-deployments | jq -c .

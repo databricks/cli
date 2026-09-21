@@ -154,6 +154,16 @@ func TestAccept(t *testing.T) {
 	testAccept(t, InprocessMode, nil, false)
 }
 
+// TestDMSLitebox runs one acceptance script against a fresh local DMS. Running
+// the CLI in-process avoids building unrelated tools and downloading old CLIs.
+func TestDMSLitebox(t *testing.T) {
+	if os.Getenv("DMS_LITEBOX_URL") == "" {
+		t.Skip("DMS_LITEBOX_URL is not set")
+	}
+	require.Empty(t, os.Getenv("CLOUD_ENV"), "Litebox must not use a cloud workspace")
+	require.Equal(t, 1, testAccept(t, true, []string{"cmd/bundle/dms-litebox-smoke"}, true))
+}
+
 func TestInprocessMode(t *testing.T) {
 	if InprocessMode && !Forcerun {
 		t.Skip("Already tested by TestAccept")
