@@ -9,7 +9,11 @@ trap cleanup EXIT
 
 # Deploy output goes to LOG (differs fake vs cloud); echo a pass line instead.
 title "Deploy a cluster with a pypi and a local wheel library"
-$CLI bundle deploy &> LOG.deploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+# The interesting bit: the plan carries the local wheel rewritten to its uploaded
+# .internal/ path, so `bundle deploy --plan` installs it without rebuilding (#6682).
+trace jq '.plan["resources.clusters.mycluster"].new_state.value.libraries' tmp.plan.json
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
 printf '\n%s\n' "OK: cluster created with libraries"
 
@@ -18,6 +22,7 @@ trace print_requests.py //libraries/install
 
 title "Removing the wheel and redeploying uninstalls it and restarts the running cluster"
 update_file.py databricks.yml "        - whl: ./dist/*.whl" ""
-$CLI bundle deploy &> LOG.redeploy
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
 cat LOG.redeploy | contains.py "Updated clusters.mycluster" > /dev/null
 trace print_requests.py //libraries/uninstall //clusters/restart

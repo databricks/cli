@@ -1,5 +1,17 @@
 
 === Deploy a cluster with a pypi and a local wheel library
+>>> jq .plan["resources.clusters.mycluster"].new_state.value.libraries tmp.plan.json
+[
+  {
+    "pypi": {
+      "package": "requests"
+    }
+  },
+  {
+    "whl": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+  }
+]
+
 OK: cluster created with libraries
 
 === Libraries installed via the Libraries API (wheel rewritten to its uploaded path)
