@@ -31,7 +31,6 @@ jobs:
           # Build runs against `main`. fetch-tags lets the workflow_dispatch path
           # below resolve the most recent release tag for the commit message.
           ref: main
-          fetch-depth: 0
           fetch-tags: true
 
       - name: Setup JFrog
