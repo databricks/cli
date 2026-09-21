@@ -136,6 +136,7 @@ func TestDMSLiteboxFailsClosed(t *testing.T) {
 			t.Setenv("DMS_LITEBOX_KEY", keyFile)
 			server := testserver.New(t)
 			testserver.AddDefaultHandlers(server)
+			server.Handle(http.MethodGet, dmsPath, func(testserver.Request) any { return "mock" })
 			internal.ConfigureDMSLitebox(t, server)
 			resp, err := server.Client().Get(server.URL + dmsPath)
 			require.NoError(t, err)
