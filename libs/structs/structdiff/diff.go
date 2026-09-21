@@ -222,10 +222,10 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 		jsonTag := structtag.JSONTag(sf.Tag.Get("json"))
 
 		// Resolve field name from JSON tag or fall back to Go field name
-		fieldName := jsonTag.Name()
-		if fieldName == "-" {
+		if structaccess.IsSkippedField(sf) {
 			continue
 		}
+		fieldName := jsonTag.Name()
 
 		isEmbed := sf.Name == structaccess.EmbeddedSliceFieldName
 
