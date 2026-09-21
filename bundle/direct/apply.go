@@ -173,8 +173,10 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 
 // recreateConflictRetryTimeout caps how long recreate retries a create that keeps
 // failing with ALREADY_EXISTS because the just-deleted resource (or its backing
-// objects) is still being torn down.
-const recreateConflictRetryTimeout = 5 * time.Minute
+// objects) is still being torn down. No measured teardown latency to derive this
+// from, so it matches deleteIndexTimeout (15m); if it's exceeded the recreate fails
+// and the next deploy re-creates (state was already dropped).
+const recreateConflictRetryTimeout = 15 * time.Minute
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
 	if !d.Adapter.HasDoUpdate() {

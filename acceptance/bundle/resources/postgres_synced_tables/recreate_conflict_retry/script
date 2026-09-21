@@ -3,14 +3,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-export TIMESERIES_KEY=tpep_pickup_datetime
-envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
 
 title "The create races the still-finishing delete (409 ALREADY_EXISTS); recreate retries and succeeds"
-# The synced-table record is gone from GET, so the delete-wait completes, but the first
-# create conflicts because the destination table is still being dropped. The recreate
-# retries the create, which then succeeds.
-export TIMESERIES_KEY=tpep_dropoff_datetime
-envsubst < databricks.yml.tmpl > databricks.yml
+# Toggle a recreate-on-change field (timeseries_key) to force a recreate. The synced-table
+# record is gone from GET so the delete-wait completes, but the first create conflicts
+# because the destination table is still being dropped; the recreate retries and succeeds.
+trace update_file.py databricks.yml "timeseries_key: tpep_pickup_datetime" "timeseries_key: tpep_dropoff_datetime"
 trace $CLI bundle deploy
