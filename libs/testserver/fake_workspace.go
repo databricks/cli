@@ -45,8 +45,9 @@ const (
 	GuestServicePrincipalTokenPrefix = "dbapi2"
 	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
 	// consistency / propagation delays: the first GET after a create returns 404
-	// (not yet visible), and a deleted synced table stays in DELETING instead of
-	// disappearing (so the direct engine's post-delete poll has a teardown to wait out).
+	// (not yet visible), and after a synced table is deleted its record disappears
+	// from GET immediately but the next create for that id still conflicts once (the
+	// destination table is dropped on a slower schedule).
 	EventualConsistencyTokenPrefix = "dbapi3"
 	UserID                         = "1000012345"
 	TestDefaultClusterId           = "0123-456789-cluster0"
@@ -178,11 +179,16 @@ type FakeWorkspace struct {
 	isServicePrincipal bool
 
 	// eventualConsistency simulates propagation delays (see EventualConsistencyTokenPrefix).
-	// For synced tables it makes deletion slow: a deleted table stays in DELETING and keeps
-	// being returned by GET, so the direct engine's post-delete poll (WaitAfterDelete) has a
-	// real teardown to wait out. Off by default, so the default path and terraform (which
-	// recreates without polling) keep immediate deletion.
+	// For synced tables a delete removes the record from GET immediately but makes the next
+	// create for that id conflict once, modelling the destination Postgres table being
+	// dropped asynchronously. Off by default so the default path and terraform recreate
+	// without any post-delete conflict.
 	eventualConsistency bool
+
+	// postgresSyncedTablesDeleting counts how many further creates a just-deleted synced
+	// table id must reject with ALREADY_EXISTS, simulating the destination Postgres table
+	// being dropped asynchronously after the synced-table record is already gone from GET.
+	postgresSyncedTablesDeleting map[string]int
 
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
@@ -507,36 +513,37 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				State: sql.StateRunning,
 			},
 		},
-		ServingEndpoints:          map[string]serving.ServingEndpointDetailed{},
-		VectorSearchEndpoints:     map[string]vectorsearch.EndpointInfo{},
-		VectorSearchIndexes:       map[string]fakeVectorSearchIndex{},
-		Repos:                     map[string]workspace.RepoInfo{},
-		SecretScopes:              map[string]workspace.SecretScope{},
-		Secrets:                   map[string]map[string]string{},
-		Acls:                      map[string][]workspace.AclItem{},
-		Permissions:               map[string]iam.ObjectPermissions{},
-		Groups:                    map[string]iam.Group{},
-		DatabaseInstances:         map[string]database.DatabaseInstance{},
-		DatabaseCatalogs:          map[string]database.DatabaseCatalog{},
-		SyncedDatabaseTables:      map[string]database.SyncedDatabaseTable{},
-		PostgresProjects:          map[string]postgres.Project{},
-		PostgresBranches:          map[string]postgres.Branch{},
-		PostgresCatalogs:          map[string]postgres.Catalog{},
-		PostgresDatabases:         map[string]postgres.Database{},
-		PostgresEndpoints:         map[string]postgres.Endpoint{},
-		PostgresRoles:             map[string]postgres.Role{},
-		PostgresSyncedTables:      map[string]postgres.SyncedTable{},
-		PostgresSnapshotSchedules: map[string]postgres.SnapshotSchedule{},
-		PostgresOperations:        map[string]postgres.Operation{},
-		postgresImplicitBranches:  map[string]bool{},
-		postgresImplicitEndpoints: map[string]bool{},
-		clusterVenvs:              map[string]*clusterEnv{},
-		DmsDeployments:            map[string]*DmsDeployment{},
-		DmsDeploymentNodes:        map[string]string{},
-		Alerts:                    map[string]sql.AlertV2{},
-		Experiments:               map[string]ml.GetExperimentResponse{},
-		ModelRegistryModels:       map[string]ml.Model{},
-		ModelRegistryModelIDs:     map[string]string{},
+		ServingEndpoints:             map[string]serving.ServingEndpointDetailed{},
+		VectorSearchEndpoints:        map[string]vectorsearch.EndpointInfo{},
+		VectorSearchIndexes:          map[string]fakeVectorSearchIndex{},
+		Repos:                        map[string]workspace.RepoInfo{},
+		SecretScopes:                 map[string]workspace.SecretScope{},
+		Secrets:                      map[string]map[string]string{},
+		Acls:                         map[string][]workspace.AclItem{},
+		Permissions:                  map[string]iam.ObjectPermissions{},
+		Groups:                       map[string]iam.Group{},
+		DatabaseInstances:            map[string]database.DatabaseInstance{},
+		DatabaseCatalogs:             map[string]database.DatabaseCatalog{},
+		SyncedDatabaseTables:         map[string]database.SyncedDatabaseTable{},
+		PostgresProjects:             map[string]postgres.Project{},
+		PostgresBranches:             map[string]postgres.Branch{},
+		PostgresCatalogs:             map[string]postgres.Catalog{},
+		PostgresDatabases:            map[string]postgres.Database{},
+		PostgresEndpoints:            map[string]postgres.Endpoint{},
+		PostgresRoles:                map[string]postgres.Role{},
+		PostgresSyncedTables:         map[string]postgres.SyncedTable{},
+		postgresSyncedTablesDeleting: map[string]int{},
+		PostgresSnapshotSchedules:    map[string]postgres.SnapshotSchedule{},
+		PostgresOperations:           map[string]postgres.Operation{},
+		postgresImplicitBranches:     map[string]bool{},
+		postgresImplicitEndpoints:    map[string]bool{},
+		clusterVenvs:                 map[string]*clusterEnv{},
+		DmsDeployments:               map[string]*DmsDeployment{},
+		DmsDeploymentNodes:           map[string]string{},
+		Alerts:                       map[string]sql.AlertV2{},
+		Experiments:                  map[string]ml.GetExperimentResponse{},
+		ModelRegistryModels:          map[string]ml.Model{},
+		ModelRegistryModelIDs:        map[string]string{},
 		Clusters: map[string]compute.ClusterDetails{
 			// A running dedicated single-user cluster: the shape `ssh connect --cluster`
 			// requires (ValidateClusterAccess rejects anything else), matching the cloud

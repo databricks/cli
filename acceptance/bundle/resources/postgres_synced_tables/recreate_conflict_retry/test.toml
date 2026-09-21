@@ -1,0 +1,9 @@
+# Local-only, direct-only: exercises the recreate create-retry when a synced table's
+# delete is asynchronous. INJECT_STALE_ON_DIRECT makes the testserver drop the synced-table
+# record immediately (so the delete-wait completes) but reject the next create for the same
+# id once with 409 ALREADY_EXISTS, modelling the destination Postgres table still being
+# dropped. The recreate retries the create and succeeds. Not run on cloud (needs a real
+# source table) or on terraform (direct-only flag).
+Cloud = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Env.INJECT_STALE_ON_DIRECT = "1"

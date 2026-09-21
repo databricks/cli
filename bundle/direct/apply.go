@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/retries"
 )
 
 func (d *DeploymentUnit) withResourceKey(ctx context.Context) context.Context {
@@ -146,8 +148,33 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
-	return d.Create(ctx, db, newState)
+	// The delete-wait above only observes the resource's own read (e.g. the synced-table
+	// record). A delete can leave *backing* objects behind that it can't see — a synced
+	// table's destination Postgres table is dropped on a slower schedule — so the create
+	// of the same id can still fail with ALREADY_EXISTS. Retry the create until that
+	// teardown finishes, then surface the result. A create that fails for any other
+	// reason is returned immediately; server-assigned-id resources never re-create the
+	// same id, so they never hit this.
+	var createErr error
+	_, _ = retries.Poll[struct{}](ctx, recreateConflictRetryTimeout, func() (*struct{}, *retries.Err) {
+		createErr = d.Create(ctx, db, newState)
+		switch {
+		case createErr == nil:
+			return &struct{}{}, nil
+		case errors.Is(createErr, apierr.ErrAlreadyExists):
+			log.Warnf(ctx, "Create hit ALREADY_EXISTS; the previous delete is likely still finishing, retrying: %s", createErr)
+			return nil, retries.Continues("create still conflicts with the deleting resource")
+		default:
+			return nil, retries.Halt(createErr)
+		}
+	})
+	return createErr
 }
+
+// recreateConflictRetryTimeout caps how long recreate retries a create that keeps
+// failing with ALREADY_EXISTS because the just-deleted resource (or its backing
+// objects) is still being torn down.
+const recreateConflictRetryTimeout = 5 * time.Minute
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
 	if !d.Adapter.HasDoUpdate() {

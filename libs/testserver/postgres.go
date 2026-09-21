@@ -1684,6 +1684,12 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 	if _, exists := s.PostgresSyncedTables[name]; exists {
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "synced table with such id already exists")
 	}
+	// Simulate the destination Postgres table being dropped asynchronously: for a few
+	// creates after a delete, the record is gone from GET but the create still conflicts.
+	if s.postgresSyncedTablesDeleting[name] > 0 {
+		s.postgresSyncedTablesDeleting[name]--
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "Failing setup of Delta sync table: Destination table "+syncedTableID+" already exists")
+	}
 	table.Name = name
 	table.Uid = nextUUID()
 	table.CreateTime = nowTime()
@@ -1720,22 +1726,19 @@ func (s *FakeWorkspace) PostgresSyncedTableGet(name string) Response {
 func (s *FakeWorkspace) PostgresSyncedTableDelete(name string) Response {
 	defer s.LockUnlock()()
 
-	table, exists := s.PostgresSyncedTables[name]
-	if !exists {
+	if _, exists := s.PostgresSyncedTables[name]; !exists {
 		return postgresNotFoundResponse("synced table")
 	}
 
-	if !s.eventualConsistency {
-		delete(s.PostgresSyncedTables, name)
-		return Response{Body: s.createOperationLocked(name, nil)}
-	}
+	delete(s.PostgresSyncedTables, name)
 
-	if table.Status == nil {
-		table.Status = &postgres.SyncedTableSyncedTableStatus{}
+	// Under simulated eventual consistency the synced-table record disappears from GET
+	// immediately (so the delete-wait completes), but the destination Postgres table is
+	// still being dropped — so the next create for the same id conflicts once. This is
+	// the race observed on AWS that the recreate create-retry handles.
+	if s.eventualConsistency {
+		s.postgresSyncedTablesDeleting[name] = 1
 	}
-	table.Status.DetailedState = postgres.SyncedTableStateSyncedTableOffline
-	table.Status.UnityCatalogProvisioningState = postgres.ProvisioningInfoStateDeleting
-	s.PostgresSyncedTables[name] = table
 
 	return Response{Body: s.createOperationLocked(name, nil)}
 }
