@@ -121,12 +121,11 @@ nostamp() {
     env -u MSYS_NO_PATHCONV nostamp.py "$@"
 }
 
-# The engine_terraform_* keys reflect the deployment engine opt-in; engine_terraform_env
-# in particular mirrors $DATABRICKS_BUNDLE_ENGINE, which the acceptance matrix sets per
-# variant, so it diverges across the matrix. Drop both here so this shared helper stays
-# engine-agnostic; they are asserted per-engine in bundle/telemetry/deploy.
+# The engine_terraform_* and deployment_history_enabled keys reflect matrix settings, so they
+# legitimately diverge across variants. Drop them here so this shared helper stays
+# matrix-agnostic; engine selection is asserted in bundle/telemetry/deploy.
 print_telemetry_bool_values() {
-    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' "$OUT_REQUESTS" | grep -v '^engine_terraform_' | sort
+    jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' "$OUT_REQUESTS" | grep -Ev '^(engine_terraform_|deployment_history_enabled )' | sort
 }
 
 sethome() {
