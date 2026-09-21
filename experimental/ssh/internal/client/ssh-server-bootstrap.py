@@ -8,9 +8,6 @@ import subprocess
 import sys
 import time
 
-from databricks.sdk import WorkspaceClient
-from dbruntime.databricks_repl_context import get_context
-
 SSH_TUNNEL_BASENAME = "databricks_cli"
 
 # How often the linger loop re-checks for detached processes still holding the run open.
@@ -25,16 +22,6 @@ LINGER_REPORT_SECONDS = 300
 # can reap the server subprocess before Popen.wait() does, in which case Popen would
 # report exit code 0; this map preserves the real status.
 reaped_statuses = {}
-
-dbutils.widgets.text("version", "")
-dbutils.widgets.text("secretScopeName", "")
-dbutils.widgets.text("authorizedKeySecretName", "")
-dbutils.widgets.text("maxClients", "10")
-dbutils.widgets.text("shutdownDelay", "10m")
-dbutils.widgets.text("sessionId", "")
-dbutils.widgets.text("serverless", "false")
-dbutils.widgets.text("usagePolicyId", "")
-dbutils.widgets.text("keepDetachedProcesses", "false")
 
 
 def cleanup():
@@ -328,6 +315,19 @@ def run_ssh_server():
 
 
 if __name__ == "__main__":
+    from databricks.sdk import WorkspaceClient
+    from dbruntime.databricks_repl_context import get_context
+
+    dbutils.widgets.text("version", "")
+    dbutils.widgets.text("secretScopeName", "")
+    dbutils.widgets.text("authorizedKeySecretName", "")
+    dbutils.widgets.text("maxClients", "10")
+    dbutils.widgets.text("shutdownDelay", "10m")
+    dbutils.widgets.text("sessionId", "")
+    dbutils.widgets.text("serverless", "false")
+    dbutils.widgets.text("usagePolicyId", "")
+    dbutils.widgets.text("keepDetachedProcesses", "false")
+
     cleanup()
     setup_subreaper()
     run_ssh_server()

@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
 """Test notebook linger helpers without importing Databricks runtime dependencies."""
 
-import ast
+import importlib.util
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, call
+from unittest.mock import Mock, call, patch
 
 
 class LingerTest(unittest.TestCase):
     def test_wait_for_detached_descendants(self):
         source = Path(__file__).resolve().parents[1] / "ssh-server-bootstrap.py"
-        module = ast.parse(source.read_text())
-        module.body = [
-            node
-            for node in module.body
-            if isinstance(node, ast.FunctionDef) and node.name in {"has_children", "wait_for_detached_descendants"}
-        ]
-        code = compile(module, str(source), "exec")
+        spec = importlib.util.spec_from_file_location("ssh_server_bootstrap", source)
+        bootstrap = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bootstrap)
 
         cases = {
             "no children": ([[]], [ChildProcessError()], [], 0),
@@ -36,27 +32,26 @@ class LingerTest(unittest.TestCase):
             with self.subTest(name=name):
                 mock_os = SimpleNamespace(P_ALL=0, WEXITED=1, WNOHANG=2, WNOWAIT=4, waitid=Mock(side_effect=children))
                 mock_time = SimpleNamespace(monotonic=Mock(side_effect=timestamps), sleep=Mock())
-                namespace = {
-                    "os": mock_os,
-                    "time": mock_time,
-                    "detached_descendants": Mock(side_effect=survivors),
-                    "LINGER_POLL_SECONDS": 1,
-                    "LINGER_REPORT_SECONDS": 300,
-                    "print": Mock(),
-                }
-                exec(code, namespace)
+                mock_descendants = Mock(side_effect=survivors)
+                with (
+                    patch.object(bootstrap, "os", mock_os),
+                    patch.object(bootstrap, "time", mock_time),
+                    patch.object(bootstrap, "detached_descendants", mock_descendants),
+                    patch("builtins.print") as mock_print,
+                ):
+                    bootstrap.wait_for_detached_descendants(123)
 
-                namespace["wait_for_detached_descendants"](123)
-
-                self.assertEqual(namespace["detached_descendants"].call_args_list, [call(123)] * len(survivors))
+                self.assertEqual(mock_descendants.call_args_list, [call(123)] * len(survivors))
                 self.assertEqual(
                     mock_os.waitid.call_args_list,
                     [call(mock_os.P_ALL, 0, mock_os.WEXITED | mock_os.WNOHANG | mock_os.WNOWAIT)] * len(children),
                 )
-                self.assertEqual(mock_time.sleep.call_args_list, [call(1)] * (len(survivors) - 1))
+                self.assertEqual(
+                    mock_time.sleep.call_args_list, [call(bootstrap.LINGER_POLL_SECONDS)] * (len(survivors) - 1)
+                )
                 self.assertEqual(mock_time.monotonic.call_count, len(timestamps))
-                self.assertEqual(namespace["print"].call_count, report_count + 1)
-                self.assertIn("No detached processes left", namespace["print"].call_args[0][0])
+                self.assertEqual(mock_print.call_count, report_count + 1)
+                self.assertIn("No detached processes left", mock_print.call_args[0][0])
 
 
 if __name__ == "__main__":
