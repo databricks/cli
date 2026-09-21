@@ -136,11 +136,14 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		// --watch: stream the submitted run's logs until it reaches a terminal
 		// state, then exit with the run's outcome. This is the same pipeline as
 		// `air logs <run>` (Bricklens with MLflow fallback).
+		maxRetries := cfg.maxRetries()
 		req := logRequest{
-			runID:      runID,
-			attempt:    -1,
-			tailLines:  -1,
-			jsonOutput: jsonOut,
+			runID:        runID,
+			attempt:      -1,
+			tailLines:    -1,
+			jsonOutput:   jsonOut,
+			maxRetries:   &maxRetries,
+			retryTracker: newRetryTracker(logRunStatus{}),
 		}
 
 		watchCtx, stop := notifyInterrupt(ctx)
@@ -161,6 +164,13 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			// Separate the submit summary from the streamed logs.
 			fmt.Fprintln(out)
 			fmt.Fprintln(out, monitoringMessage)
+			if maxRetries > 0 {
+				unit := "times"
+				if maxRetries == 1 {
+					unit = "time"
+				}
+				fmt.Fprintf(out, "Failed attempts will be retried up to %d %s.\n", maxRetries, unit)
+			}
 			printLogsDivider(ctx, out)
 			return handleWatchResult(out, w.Config.Profile, runIDStr, runLogs(watchCtx, cmd, req))
 		}

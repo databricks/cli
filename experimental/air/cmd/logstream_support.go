@@ -100,6 +100,26 @@ func printLogEvent(out io.Writer, eventType string, node int, line string) {
 	fmt.Fprintln(out, string(b))
 }
 
+type retryEvent struct {
+	Type       string `json:"type"`
+	TS         string `json:"ts"`
+	Retry      int    `json:"retry"`
+	MaxRetries *int   `json:"max_retries,omitempty"`
+}
+
+func printRetryEvent(out io.Writer, retry int, maxRetries *int) {
+	b, err := json.Marshal(retryEvent{
+		Type:       "RETRY",
+		TS:         time.Now().UTC().Format(time.RFC3339),
+		Retry:      retry,
+		MaxRetries: maxRetries,
+	})
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(out, string(b))
+}
+
 // submittedEvent is the JSONL event `air run --watch -o json` emits before the
 // streamed log events, so a consumer sees the run id immediately.
 type submittedEvent struct {
