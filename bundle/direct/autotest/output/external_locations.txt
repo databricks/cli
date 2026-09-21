@@ -1,0 +1,9 @@
+# field | from | to | verdict | detail
+
+
+=== summary
+OK                         34
+OK_RECREATE                78
+SUPPRESSED                 5
+NOT_OBSERVABLE             3
+SKIPPED                    24

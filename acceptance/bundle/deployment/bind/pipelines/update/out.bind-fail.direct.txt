@@ -3,7 +3,6 @@
 Plan: update resources.pipelines.foo
 
 Changes detected:
-  ~ catalog: null -> "main"
   ~ channel: null -> "CURRENT"
   ~ deployment: null -> {"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json"}
   ~ edition: null -> "ADVANCED"

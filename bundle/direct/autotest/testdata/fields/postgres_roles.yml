@@ -1,0 +1,24 @@
+# Value library for postgres roles. See ../../README.md.
+
+# Enabling on cloud surfaced several testserver-fidelity gaps to close first (2026-09):
+#   - parent: a resource reference fuzzed with garbage -> aws 404, fake 501 "No stub"
+#   - attributes.bypassrls/createrole are a required-together pair (aws rejects one without the other)
+#   - auth_method: aws rejects NO_LOGIN on create and requires identity_type with OAuth
+#   - identity_type: aws validates the role against a real workspace identity ("Identity not found")
+#   - postgres_role is required and cannot be cleared
+# Several need real workspace identities, so this stays local until modeled.
+local_only: role attributes/auth_method/identity_type are validated against aws (see above)
+
+deps:
+  postgres_projects:
+    project_id: test-pg-project-$UNIQUE_NAME
+    display_name: Test Postgres Project
+  postgres_branches:
+    parent: ${resources.postgres_projects.postgres_projects.name}
+    branch_id: test-branch-$UNIQUE_NAME
+    no_expiry: true
+
+base:
+  parent: ${resources.postgres_branches.postgres_branches.name}
+  role_id: test-role-$UNIQUE_NAME
+  postgres_role: app_role

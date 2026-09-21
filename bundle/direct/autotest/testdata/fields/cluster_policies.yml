@@ -1,0 +1,41 @@
+# Value library for cluster policies. See ../../README.md.
+
+# libraries is a union: an entry carries exactly one of jar, egg, whl, pypi, maven or cran.
+# One entry, so the container and that member are testable. The other members stay uncovered
+# for this config, which the report says: they can only be reached by putting a second member
+# on this entry, which is not something a user can write -- the backend keeps whichever it
+# prefers and the whole block then reads as drifting.
+base:
+  name: test-cluster-policy-$UNIQUE_NAME
+  definition: '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
+  libraries:
+    - jar: dbfs:/FileStore/test.jar
+
+skip:
+  # The other members of the union. Reaching one means putting a second artifact on the entry
+  # that already holds the jar, which is not a valid write: the backend keeps one of them and
+  # the whole block then reads as drifting. Covering them needs a config whose libraries entry
+  # holds that member instead.
+  libraries[*].egg: another member of the same union as the seeded jar
+  libraries[*].whl: another member of the same union as the seeded jar
+  libraries[*].requirements: another member of the same union as the seeded jar
+  libraries[*].pypi: another member of the same union as the seeded jar
+  libraries[*].maven: another member of the same union as the seeded jar
+  libraries[*].cran: another member of the same union as the seeded jar
+
+  # A policy takes its rules from either its own definition or a policy family, never both,
+  # and this config sets a definition. A family also has to be one the workspace offers.
+  policy_family_id: mutually exclusive with the definition this config sets
+  policy_family_definition_overrides: only meaningful with a policy family
+  policy_family_version: only meaningful with a policy family
+
+fields:
+  # A library path, not free text. Clearing it is still tried, and leaves the entry with no
+  # artifact at all, which the API rejects.
+  libraries[*].jar: ['dbfs:/FileStore/a.jar', 'dbfs:/FileStore/b.jar']
+
+  # A policy definition is a JSON document the backend parses, and it is required: the API
+  # rejects an update that does not carry one.
+  definition:
+    - '{"spark_version":{"type":"fixed","value":"13.3.x-scala2.12"}}'
+    - '{"spark_version":{"type":"fixed","value":"14.3.x-scala2.12"}}'

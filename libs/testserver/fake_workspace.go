@@ -184,6 +184,11 @@ type FakeWorkspace struct {
 	// recreates without polling) keep immediate deletion.
 	eventualConsistency bool
 
+	// SettleAsyncImmediately turns off the "not ready yet on the first read" simulation
+	// for asynchronous resources. Off by default, so the CLI's waiters stay exercised.
+	// See SetSettleAsyncImmediately for when turning it on is worth it.
+	SettleAsyncImmediately bool
+
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
@@ -257,6 +262,11 @@ type FakeWorkspace struct {
 	// deletion of these — they go away only when the parent is deleted.
 	postgresImplicitBranches  map[string]bool
 	postgresImplicitEndpoints map[string]bool
+
+	// Project names held by a soft delete: deleting a Lakebase project does not
+	// free its resource name until the tombstone is purged, so a create that
+	// reuses the name is refused. A set keyed by "projects/<id>".
+	postgresSoftDeleted map[string]bool
 
 	// clusterVenvs caches Python venvs per existing cluster ID,
 	// matching cloud behavior where libraries are cached on running clusters.
@@ -431,6 +441,20 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 	return Response{}
 }
 
+// SetSettleAsyncImmediately makes asynchronous resources report themselves ready on the
+// first read after a write, instead of reporting in-progress once so the CLI's waiter is
+// exercised.
+//
+// Only turn it on for a suite that performs thousands of updates. The cost is not the
+// extra request, it is the sleep before it: the SDK's poller uses a hardcoded backoff of
+// attempt*1s plus 50-750ms of jitter (retries.backoff in databricks-sdk-go/retries/
+// retries.go), and retries.Poll does not pass a backoff option -- there is no exported way
+// to shorten it. So every update costs at least a second of wall time.
+func (s *FakeWorkspace) SetSettleAsyncImmediately(v bool) {
+	defer s.LockUnlock()()
+	s.SettleAsyncImmediately = v
+}
+
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
 	eventualConsistency := strings.HasPrefix(token, EventualConsistencyTokenPrefix)
 	return &FakeWorkspace{
@@ -530,6 +554,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresOperations:        map[string]postgres.Operation{},
 		postgresImplicitBranches:  map[string]bool{},
 		postgresImplicitEndpoints: map[string]bool{},
+		postgresSoftDeleted:       map[string]bool{},
 		clusterVenvs:              map[string]*clusterEnv{},
 		DmsDeployments:            map[string]*DmsDeployment{},
 		DmsDeploymentNodes:        map[string]string{},

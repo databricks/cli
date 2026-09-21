@@ -1,0 +1,23 @@
+# field | from | to | verdict | detail
+
+definition                                   absent     v1         CANNOT_DELETE  'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
+definition                                   absent     v2         CANNOT_DELETE  'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
+definition                                   v1         absent     CANNOT_DELETE  'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
+definition                                   v2         absent     CANNOT_DELETE  'definition' must be supplied. (400 INVALID_PARAMETER_VALUE)
+libraries[0].jar                             absent     dbfs:/FileStore/a.jar BASE_ERROR  Unknown library (400 INVALID_PARAMETER_VALUE)
+libraries[0].jar                             absent     dbfs:/FileStore/b.jar BASE_ERROR  Unknown library (400 INVALID_PARAMETER_VALUE)
+libraries[0].jar                             dbfs:/FileStore/a.jar absent     BACKEND_ERROR  Unknown library (400 INVALID_PARAMETER_VALUE)
+libraries[0].jar                             dbfs:/FileStore/b.jar absent     BACKEND_ERROR  Unknown library (400 INVALID_PARAMETER_VALUE)
+name                                         absent     x-UNIQUE   CANNOT_DELETE  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
+name                                         absent     y-UNIQUE   CANNOT_DELETE  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
+name                                         x-UNIQUE   absent     CANNOT_DELETE  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
+name                                         y-UNIQUE   absent     CANNOT_DELETE  'name' must be supplied. (400 INVALID_PARAMETER_VALUE)
+
+=== summary
+OK                         22
+CANNOT_DELETE              8
+SUPPRESSED                 1
+NOT_OBSERVABLE             1
+BACKEND_ERROR              2
+SKIPPED                    10
+BASE_ERROR                 2

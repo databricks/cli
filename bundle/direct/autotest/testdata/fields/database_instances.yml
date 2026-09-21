@@ -1,0 +1,13 @@
+# Value library for database instances. See ../../README.md.
+
+# Lakebase v1 exists on aws, but the catalog cannot run there: each rebuild creates a real database
+# instance and the run hits the workspace instance quota ("hit the workspace limit ... quota
+# increase"). aws also ignores capacity updates and drifts custom_tags against capacity. Confirmed
+# 2026-09.
+local_only: Lakebase instances hit the workspace quota under the catalog's per-field rebuilds
+base:
+  name: test-db-instance-$UNIQUE_NAME
+  capacity: CU_1
+  custom_tags:
+    - key: team
+      value: eng
