@@ -8,6 +8,35 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Add the whole default_endpoint_settings block and re-deploy
 >>> update_file.py databricks.yml #TO_ADD:  
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Updated postgres_projects.my_project
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py --del-body project_id //postgres/projects
+
+>>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "project_id": "test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "86400s"
+    },
+    "display_name": "Test Project for Adding Default Endpoint Settings",
+    "enable_pg_native_login": false,
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "project_id": "test-pg-proj-[UNIQUE_NAME]",
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
