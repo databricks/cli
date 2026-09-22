@@ -623,6 +623,7 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	var environmentVersion strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&environmentVersion, "config.environment.version"))
 	assert.Contains(t, environmentVersion.String(), "Client image version to pin (default: 6).")
+	assert.Contains(t, environmentVersion.String(), "https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/")
 
 	// Required top-level fields are flagged in a listing.
 	var root strings.Builder
