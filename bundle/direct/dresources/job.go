@@ -52,10 +52,6 @@ func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings {
 	return &input.JobSettings
 }
 
-func (*ResourceJob) RemapState(remote *JobRemote) *jobs.JobSettings {
-	return &remote.JobSettings
-}
-
 func getTaskKey(x jobs.Task) (string, string) {
 	return "task_key", x.TaskKey
 }

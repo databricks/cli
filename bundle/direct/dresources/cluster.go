@@ -88,54 +88,6 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 	return s
 }
 
-// RemapState maps the remote ClusterRemote to ClusterState for diff comparison.
-// Started is derived from cluster state so the planner can detect start/stop changes.
-func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
-	started := input.State == compute.StateRunning
-	spec := &ClusterState{
-		ClusterSpec: compute.ClusterSpec{
-			ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
-			Autoscale:                  input.Autoscale,
-			AutoterminationMinutes:     input.AutoterminationMinutes,
-			AwsAttributes:              input.AwsAttributes,
-			AzureAttributes:            input.AzureAttributes,
-			ClusterLogConf:             input.ClusterLogConf,
-			ClusterName:                input.ClusterName,
-			CustomTags:                 input.CustomTags,
-			DataSecurityMode:           input.DataSecurityMode,
-			DependencyMode:             input.DependencyMode,
-			DockerImage:                input.DockerImage,
-			DriverInstancePoolId:       input.DriverInstancePoolId,
-			DriverNodeTypeId:           input.DriverNodeTypeId,
-			DriverNodeTypeFlexibility:  input.DriverNodeTypeFlexibility,
-			EnableElasticDisk:          input.EnableElasticDisk,
-			EnableLocalDiskEncryption:  input.EnableLocalDiskEncryption,
-			GcpAttributes:              input.GcpAttributes,
-			InitScripts:                input.InitScripts,
-			InstancePoolId:             input.InstancePoolId,
-			IsSingleNode:               input.IsSingleNode,
-			Kind:                       input.Kind,
-			NodeTypeId:                 input.NodeTypeId,
-			NumWorkers:                 input.NumWorkers,
-			PolicyId:                   input.PolicyId,
-			RemoteDiskThroughput:       input.RemoteDiskThroughput,
-			RuntimeEngine:              input.RuntimeEngine,
-			SingleUserName:             input.SingleUserName,
-			SparkConf:                  input.SparkConf,
-			SparkEnvVars:               input.SparkEnvVars,
-			SparkVersion:               input.SparkVersion,
-			SshPublicKeys:              input.SshPublicKeys,
-			TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
-			UseMlRuntime:               input.UseMlRuntime,
-			WorkloadType:               input.WorkloadType,
-			WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
-			ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
-		},
-		Lifecycle: &StateLifecycle{Started: &started},
-	}
-	return spec
-}
-
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
 	details, err := r.client.Clusters.GetByClusterId(ctx, id)
 	if err != nil {

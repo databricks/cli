@@ -290,9 +290,14 @@ func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 	assert.Empty(t, triggers.OnBundleDeploy)
 }
 
-// The planner diffs RemapState(remote) against PrepareState(config), so a run
+// The planner diffs the remapped remote against PrepareState(config), so a run
 // that did not end in SUCCESS has to surface as a difference on result_state.
+// job_runs has no RemapState method, so this exercises the auto-generated copier.
 func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
+	adapters, err := InitAll(nil)
+	require.NoError(t, err)
+	adapter := adapters["job_runs"]
+
 	for _, outcome := range []jobs.RunResultState{
 		jobs.RunResultStateSuccess,
 		jobs.RunResultStateFailed,
@@ -302,7 +307,9 @@ func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
 		t.Run(string(outcome), func(t *testing.T) {
 			remote := &JobRunRemote{RunId: 123, ResultState: outcome}
 
-			state := (&ResourceJobRun{}).RemapState(remote)
+			remapped, err := adapter.RemapState(remote)
+			require.NoError(t, err)
+			state := remapped.(*JobRunState)
 
 			assert.Equal(t, outcome, state.ResultState)
 			assert.Nil(t, state.Lifecycle)
