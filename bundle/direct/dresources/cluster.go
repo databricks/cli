@@ -577,11 +577,11 @@ func removedLibraries(entry *PlanEntry) ([]compute.Library, error) {
 		if top, _ := node.Prefix(1).StringKey(); top != "libraries" {
 			continue
 		}
-		lib, err := decodeLibrary(ch.Old)
+		libs, err := decodeLibraries(ch.Old)
 		if err != nil {
 			return nil, err
 		}
-		removed = append(removed, lib)
+		removed = append(removed, libs...)
 	}
 	// entry.Changes is a map, so sort for a deterministic uninstall payload.
 	slices.SortFunc(removed, func(a, b compute.Library) int {
@@ -590,16 +590,25 @@ func removedLibraries(entry *PlanEntry) ([]compute.Library, error) {
 	return removed, nil
 }
 
-// decodeLibrary converts a plan change value into a compute.Library. The value is a
-// compute.Library in-process, or a JSON object when the plan was loaded from disk
-// (bundle deploy --plan), so it is round-tripped through JSON to handle both.
-func decodeLibrary(v any) (compute.Library, error) {
-	var lib compute.Library
+// decodeLibraries converts a plan change's old value into libraries. It is a single
+// compute.Library for a per-element change (libraries[<key>]) or the whole slice when the
+// entire libraries field is removed (structdiff emits a single change for a slice->nil
+// transition); and it is a typed value in-process or a JSON value when the plan was loaded
+// from disk (bundle deploy --plan). Round-trip through JSON to handle every combination.
+func decodeLibraries(v any) ([]compute.Library, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
-		return lib, err
+		return nil, err
 	}
-	return lib, json.Unmarshal(b, &lib)
+	if strings.HasPrefix(strings.TrimLeft(string(b), " \t\r\n"), "[") {
+		var libs []compute.Library
+		return libs, json.Unmarshal(b, &libs)
+	}
+	var lib compute.Library
+	if err := json.Unmarshal(b, &lib); err != nil {
+		return nil, err
+	}
+	return []compute.Library{lib}, nil
 }
 
 // restartIfRunning restarts the cluster so a library change takes effect, but only when it is
