@@ -8,6 +8,10 @@ rm -f "$OUT_REQUESTS"
 title "Opt in via env var only (no bundle.engine in config): auto-migration triggers"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_migration_telemetry
+# The migrated deploy runs on the direct engine, so its requests carry engine/direct only.
+# A stale engine/terraform here would mean the user-agent engine tag was appended rather
+# than resolved once (the SDK user agent cannot replace an existing dimension).
+trace print_requests.py | grep -o 'engine/[a-z]*' | sort -u
 rm -f "$OUT_REQUESTS"
 
 title "Direct-engine state is now in place; terraform state is backed up\n"

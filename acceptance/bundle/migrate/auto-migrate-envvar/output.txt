@@ -20,6 +20,9 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 >>> print_migration_telemetry
 direct_migrated_via_env true
 
+>>> print_requests.py
+engine/direct
+
 === Direct-engine state is now in place; terraform state is backed up
 
 >>> find .databricks/bundle -name resources.json -type f
