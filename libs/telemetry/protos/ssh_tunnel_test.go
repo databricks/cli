@@ -25,6 +25,24 @@ func TestSshTunnelEventEncodesFailureExplicitly(t *testing.T) {
 		"auto_start_cluster",
 		"has_base_environment",
 		"has_usage_policy",
+		"keep_detached_requested",
+	} {
+		assert.Equal(t, false, got[field], "%s must be sent as false, not omitted", field)
+	}
+}
+
+// The teardown event's whole purpose is counting how often detached work is destroyed, so a
+// "nothing was left behind" teardown has to arrive as false rather than as an absent field.
+func TestSshTunnelTeardownEventEncodesFalseExplicitly(t *testing.T) {
+	b, err := json.Marshal(SshTunnelTeardownEvent{})
+	require.NoError(t, err)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(b, &got))
+
+	for _, field := range []string{
+		"keep_detached_requested",
+		"had_detached_descendants_at_teardown",
 	} {
 		assert.Equal(t, false, got[field], "%s must be sent as false, not omitted", field)
 	}
@@ -33,13 +51,17 @@ func TestSshTunnelEventEncodesFailureExplicitly(t *testing.T) {
 // Guards fields added later: a bool that can legitimately be false must not
 // carry omitempty, or its false case arrives as NULL and cannot be counted.
 func TestSshTunnelEventBoolFieldsOmitOmitempty(t *testing.T) {
-	typ := reflect.TypeFor[SshTunnelEvent]()
-	for field := range typ.Fields() {
-		if field.Type.Kind() != reflect.Bool {
-			continue
+	for _, typ := range []reflect.Type{
+		reflect.TypeFor[SshTunnelEvent](),
+		reflect.TypeFor[SshTunnelTeardownEvent](),
+	} {
+		for field := range typ.Fields() {
+			if field.Type.Kind() != reflect.Bool {
+				continue
+			}
+			tag := field.Tag.Get("json")
+			assert.NotContains(t, tag, "omitempty",
+				"%s.%s has omitempty; a false value would be indistinguishable from not reported", typ.Name(), field.Name)
 		}
-		tag := field.Tag.Get("json")
-		assert.NotContains(t, tag, "omitempty",
-			"%s has omitempty; a false value would be indistinguishable from not reported", field.Name)
 	}
 }
