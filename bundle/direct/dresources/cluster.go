@@ -558,11 +558,10 @@ func (r *ResourceCluster) reconcileLibraries(ctx context.Context, id string, des
 	return nil
 }
 
-// removedLibraries returns the libraries to uninstall: those the plan marks as a genuine removal
-// (previously in state, now absent from config). It reads the classified plan rather than the raw
-// remote so libraries the bundle never installed - a job run installs its task libraries on a
-// shared cluster (and they are cluster-wide), plus UI installs - are left alone: those are
-// classified as backend defaults and skipped (see configs/clusters.yml).
+// removedLibraries returns the libraries to uninstall (previously in state, now absent from config).
+// It reads the classified plan rather than the raw remote so only the cluster libraries are considered.
+// a job run installs its task libraries on a shared cluster (and they are cluster-wide), plus UI installs
+// are left alone: they are classified as backend defaults and skipped (see configs/clusters.yml).
 func removedLibraries(entry *PlanEntry) ([]compute.Library, error) {
 	var removed []compute.Library
 	for pathStr, ch := range entry.Changes {
@@ -590,11 +589,8 @@ func removedLibraries(entry *PlanEntry) ([]compute.Library, error) {
 	return removed, nil
 }
 
-// decodeLibraries converts a plan change's old value into libraries. It is a single
-// compute.Library for a per-element change (libraries[<key>]) or the whole slice when the
-// entire libraries field is removed (structdiff emits a single change for a slice->nil
-// transition); and it is a typed value in-process or a JSON value when the plan was loaded
-// from disk (bundle deploy --plan). Round-trip through JSON to handle every combination.
+// ch.Old is typed any and can come in 4 different forms
+// all of them need to be handled, which can be done by JSON marshalling and unmarshalling.
 func decodeLibraries(v any) ([]compute.Library, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
