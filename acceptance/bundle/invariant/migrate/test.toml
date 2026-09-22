@@ -3,6 +3,11 @@
 # handed over to the service (see the TODO in dstate.Open).
 EnvMatrix.DMS = [""]
 
+# schema.yml sets custom_max_retention_hours, which the terraform databricks_schema resource cannot
+# set (only direct does), so a terraform-first migrate would drift. schema_tf_compat.yml keeps migrate
+# coverage for schemas.
+EnvMatrixExclude.no_schema_custom_retention = ["INPUT_CONFIG=schema.yml.tmpl"]
+
 # vector_search_endpoints and vector_search_indexes have no terraform converter
 EnvMatrixExclude.no_vector_search_endpoint = ["INPUT_CONFIG=vector_search_endpoint.yml.tmpl"]
 EnvMatrixExclude.no_vector_search_index = ["INPUT_CONFIG=vector_search_index.yml.tmpl"]
