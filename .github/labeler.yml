@@ -1,8 +1,8 @@
 # Configuration for the "PR Labeler" workflow (.github/workflows/labeler.yml).
 #
 # Maps a label to the file globs that, when matched by a PR's diff, cause the
-# label to be applied. Uses the actions/labeler v5 config format, documented at
-# https://github.com/actions/labeler/blob/v5.0.0/README.md
+# label to be applied. Uses the actions/labeler v7 config format, documented at
+# https://github.com/actions/labeler/blob/v7.0.0/README.md
 #
 # To add a new mapping, copy the block below. The label MUST already exist in
 # the repository (labeler does not create labels), and globs use minimatch
