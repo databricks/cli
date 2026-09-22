@@ -1,16 +1,33 @@
-export DATABRICKS_BUNDLE_ENGINE=
+envsubst < databricks.yml.tmpl > databricks.yml
 
-# catalog_name is an immutable provided id field. The user legitimately moves the schema to a
-# different catalog in config. reconcileIDFields records the deployed value, so the plan sees
-# a real change; schemas recreate on it, so the recreate guard keeps the run on terraform
-# instead of silently accepting drift (the state recording the new catalog it never moved to).
+# catalog_name is an immutable provided id field. Moving the schema to another catalog
+# recreates it. Create the destination catalog out of band (a catalog cannot be a bundle
+# resource here: catalogs are direct-only and this bundle deploys on terraform first).
+TARGET_CATALOG="othercat_$UNIQUE_NAME"
+trace $CLI catalogs create "$TARGET_CATALOG" -o json | jq '{name: (.name // .full_name)}'
 
-title "Deploy on terraform in catalog 'main'"
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+  trace errcode $CLI catalogs delete "$TARGET_CATALOG" --force
+}
+trap cleanup EXIT
+
+title "Deploy the schema on terraform in catalog 'main'"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
-title "Change catalog_name (immutable id) in config, then migrate to direct"
-update_file.py databricks.yml "catalog_name: main" "catalog_name: other"
+title "Move the schema to another catalog. Without --auto-approve the recreate is refused"
+# reconcileIDFields records the deployed catalog, so the plan sees a real change; schemas
+# recreate on it, and terraform refuses the destructive recreate without --auto-approve.
+update_file.py databricks.yml "catalog_name: main" "catalog_name: $TARGET_CATALOG"
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+
+title "With --auto-approve the recreate moves the schema to the new catalog"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
+
+title "Retry on direct: state now matches the backend, so the migration succeeds"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
-title "Follow-up plan on direct: is the moved-catalog drift stable or perpetual?"
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
+title "The schema exists in the new catalog and the local state is direct"
+trace $CLI schemas get "$TARGET_CATALOG.myschema-$UNIQUE_NAME" | jq "{full_name}"
+trace find .databricks/bundle -name "resources.json" -type f | sort
