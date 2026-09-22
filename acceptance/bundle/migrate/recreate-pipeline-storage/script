@@ -1,9 +1,8 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# CHARACTERIZATION ONLY (no fix): storage is a pure recreate_on_changes field (not an id
-# field) on a pipeline. The user legitimately changes it. Record how the migration treats a
-# genuinely-changed recreate_on_changes field - the plan check should classify it as a
-# recreate and the guard should keep the migration on terraform.
+# storage is a pure recreate_on_changes field (not an id field) on a pipeline. The user
+# legitimately changes it. The migration's plan check classifies it as a recreate, so the
+# recreate guard keeps the run on terraform.
 
 title "Deploy on terraform with storage /Volumes/main/default/init"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy

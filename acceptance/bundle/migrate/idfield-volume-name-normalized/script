@@ -1,8 +1,9 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# CHARACTERIZATION ONLY (no fix): name is an immutable provided id field. UC lowercases it,
-# so the deployed id ("myvolume") differs from config ("MyVolume") without the user changing
-# anything. Record how the migration treats this backend-normalized id field.
+# name is an immutable provided id field. UC lowercases it, so the deployed id ("myvolume")
+# differs from config ("MyVolume") without the user changing anything. reconcileIDFields
+# treats the case-only difference as backend normalization and keeps the config value, so the
+# migration proceeds with no warning and the plan converges.
 
 title "Deploy on terraform; UC lowercases the volume name (MyVolume -> myvolume)"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
