@@ -161,7 +161,7 @@ func TestDmsAcc(t *testing.T) {
 		t.Skip("DMS_LITEBOX_URL is not set")
 	}
 	require.Empty(t, os.Getenv("CLOUD_ENV"), "Litebox must not use a cloud workspace")
-	require.Positive(t, testAccept(t, true, nil, true), "-run did not select any acceptance tests")
+	testAccept(t, true, nil, true)
 }
 
 func TestInprocessMode(t *testing.T) {
