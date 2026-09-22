@@ -16,23 +16,27 @@
   }
 }
 
-=== BUG (SUP-37168): re-plan with unchanged config recreates the experiment
-=== trace_location is immutable and was set out-of-band, so the config-absent
-=== remote value forces delete + create - dropping the UC trace location.
+=== Re-plan with unchanged config: no recreate (SUP-37168 fix)
+=== trace_location is a backend_default, so a config-absent, remote-populated
+=== value is left in place instead of forcing an immutable-field recreate.
 >>> [CLI] bundle plan
-recreate experiments.my_experiment
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
-
-=== Deploy applies the recreate: the experiment is deleted and re-created
+=== Deploy is a no-op and preserves the out-of-band UC trace location
 >>> [CLI] bundle deploy -qq
 
-=== BUG: the config still matches nothing changed, yet plan recreates again
-=== (the recreate never converges - every deploy destroys and re-creates)
->>> [CLI] bundle plan
-recreate experiments.my_experiment
-
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+>>> [CLI] experiments get-experiment [NUMID]
+{
+  "name": "/Users/[USERNAME]/uc-tracing-experiment",
+  "lifecycle_stage": "active",
+  "trace_location": {
+    "uc_trace_location": {
+      "catalog": "main",
+      "effective_table_prefix": "exp_[NUMID]_traces",
+      "schema": "traces"
+    }
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -11,14 +11,11 @@ experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiment
 title "An out-of-band job bound a UC trace location; GetExperiment now echoes it"
 trace $CLI experiments get-experiment "$experiment_id" | jq '.experiment | {name, lifecycle_stage, trace_location}'
 
-title "BUG (SUP-37168): re-plan with unchanged config recreates the experiment"
-title "trace_location is immutable and was set out-of-band, so the config-absent"
-title "remote value forces delete + create - dropping the UC trace location."
+title "Re-plan with unchanged config: no recreate (SUP-37168 fix)"
+title "trace_location is a backend_default, so a config-absent, remote-populated"
+title "value is left in place instead of forcing an immutable-field recreate."
 trace $CLI bundle plan
 
-title "Deploy applies the recreate: the experiment is deleted and re-created"
+title "Deploy is a no-op and preserves the out-of-band UC trace location"
 trace $CLI bundle deploy -qq
-
-title "BUG: the config still matches nothing changed, yet plan recreates again"
-title "(the recreate never converges - every deploy destroys and re-creates)"
-trace $CLI bundle plan
+trace $CLI experiments get-experiment "$experiment_id" | jq '.experiment | {name, lifecycle_stage, trace_location}'
