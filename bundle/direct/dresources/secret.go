@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -86,11 +87,18 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 	return response.FullName, response, nil
 }
 
+// comment is force-sent on update so that clearing it in config clears it on the secret. The
+// update_mask is "*" and the backend merges, so an omitempty comment would be dropped from the
+// body and the old value would drift back. Verified against a real workspace: {"comment": ""} clears it.
+var secretForceSend = []string{"Comment"}
+
 // DoUpdate updates the secret in place and returns remote state.
 func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog.Secret, _ *PlanEntry) (*catalog.Secret, error) {
+	secret := *state
+	secret.ForceSendFields = utils.FilterFields[catalog.Secret](append(slices.Clone(secretForceSend), state.ForceSendFields...))
 	response, err := r.client.SecretsUc.UpdateSecret(ctx, catalog.UpdateSecretRequest{
 		FullName: id,
-		Secret:   *state,
+		Secret:   secret,
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"*"},
 		},
