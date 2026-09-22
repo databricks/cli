@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
@@ -59,17 +58,6 @@ func (*ResourceVectorSearchEndpoint) New(client *databricks.WorkspaceClient) *Re
 
 func (*ResourceVectorSearchEndpoint) PrepareState(input *resources.VectorSearchEndpoint) *vectorsearch.CreateEndpoint {
 	return &input.CreateEndpoint
-}
-
-func (*ResourceVectorSearchEndpoint) RemapState(remote *VectorSearchEndpointRemote) *vectorsearch.CreateEndpoint {
-	return &vectorsearch.CreateEndpoint{
-		Name:            remote.Name,
-		EndpointType:    remote.EndpointType,
-		BudgetPolicyId:  remote.BudgetPolicyId,
-		UsagePolicyId:   "", // Missing in remote
-		TargetQps:       remote.TargetQps,
-		ForceSendFields: utils.FilterFields[vectorsearch.CreateEndpoint](remote.ForceSendFields, "UsagePolicyId"),
-	}
 }
 
 func (r *ResourceVectorSearchEndpoint) DoRead(ctx context.Context, id string) (*VectorSearchEndpointRemote, error) {

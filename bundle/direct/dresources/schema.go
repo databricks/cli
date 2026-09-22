@@ -23,18 +23,6 @@ func (*ResourceSchema) PrepareState(input *resources.Schema) *catalog.CreateSche
 	return &input.CreateSchema
 }
 
-func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchema {
-	return &catalog.CreateSchema{
-		CatalogName:             info.CatalogName,
-		Comment:                 info.Comment,
-		CustomMaxRetentionHours: info.CustomMaxRetentionHours,
-		Name:                    info.Name,
-		Properties:              info.Properties,
-		StorageRoot:             info.StorageRoot,
-		ForceSendFields:         utils.FilterFields[catalog.CreateSchema](info.ForceSendFields),
-	}
-}
-
 func (r *ResourceSchema) DoRead(ctx context.Context, id string) (*catalog.SchemaInfo, error) {
 	return r.client.Schemas.GetByFullName(ctx, id)
 }

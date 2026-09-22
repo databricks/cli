@@ -22,25 +22,6 @@ func (*ResourceExternalLocation) PrepareState(input *resources.ExternalLocation)
 	return &input.CreateExternalLocation
 }
 
-func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) *catalog.CreateExternalLocation {
-	return &catalog.CreateExternalLocation{
-		Comment:        info.Comment,
-		CredentialName: info.CredentialName,
-		// Output-only fields mirrored into state to avoid churn in remapped config.
-		EffectiveEnableFileEvents: info.EffectiveEnableFileEvents,
-		EffectiveFileEventQueue:   info.EffectiveFileEventQueue,
-		EnableFileEvents:          info.EnableFileEvents,
-		EncryptionDetails:         info.EncryptionDetails,
-		Fallback:                  info.Fallback,
-		FileEventQueue:            info.FileEventQueue,
-		Name:                      info.Name,
-		ReadOnly:                  info.ReadOnly,
-		SkipValidation:            false, // This is an input-only parameter, never returned by API
-		Url:                       info.Url,
-		ForceSendFields:           utils.FilterFields[catalog.CreateExternalLocation](info.ForceSendFields),
-	}
-}
-
 func (r *ResourceExternalLocation) DoRead(ctx context.Context, id string) (*catalog.ExternalLocationInfo, error) {
 	return r.client.ExternalLocations.GetByName(ctx, id)
 }
