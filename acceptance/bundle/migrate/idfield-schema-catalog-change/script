@@ -1,8 +1,9 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# CHARACTERIZATION ONLY (no fix): catalog_name is an immutable provided id field. The user
-# legitimately moves the schema to a different catalog in config. Record how the pre-deploy
-# migration treats a genuinely-changed id field (warn? recreate + block? converge?).
+# catalog_name is an immutable provided id field. The user legitimately moves the schema to a
+# different catalog in config. reconcileIDFields records the deployed value, so the plan sees
+# a real change; schemas recreate on it, so the recreate guard keeps the run on terraform
+# instead of silently accepting drift (the state recording the new catalog it never moved to).
 
 title "Deploy on terraform in catalog 'main'"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy

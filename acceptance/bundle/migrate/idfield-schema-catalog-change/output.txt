@@ -8,12 +8,15 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change catalog_name (immutable id) in config, then migrate to direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warn: migration to direct: schemas.my_schema: config value other for field "catalog_name" differs from the deployed value main; this rename is not applied by the migration and must be deployed separately
-Migrated 1 resource to direct deployment engine.
+Warn: migration to the direct engine would recreate [resources.schemas.my_schema]; deploying on terraform this time
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
-=== Follow-up plan on direct: is the moved-catalog drift stable or perpetual?
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.my_schema
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
+
+Files: 1 uploaded, 0 deleted
+
+Exit code: 1

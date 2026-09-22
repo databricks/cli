@@ -1,10 +1,9 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# CHARACTERIZATION ONLY (no fix): storage_root is immutable (recreate_on_changes) and UC
-# strips a trailing slash. The config keeps the trailing slash ("s3://bucket/path/") but the
-# deployed value is normalized ("s3://bucket/path"), so the id-adjacent field differs without
-# the user changing anything. Record whether the migration's normalize_slash rule absorbs
-# this or whether it plans a recreate.
+# storage_root is immutable (recreate_on_changes) and UC strips a trailing slash. The config
+# keeps the trailing slash ("s3://bucket/path/") but the deployed value is normalized
+# ("s3://bucket/path"), a difference the user did not make. normalize_slash absorbs it, so the
+# migration proceeds with no warning or recreate and the plan converges.
 
 title "Deploy on terraform; UC strips the trailing slash from storage_root"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy

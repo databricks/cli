@@ -206,12 +206,12 @@ func BuildStateFromTF(
 			}
 		}
 
-		// Warn when an id-composing field was renamed in config but not yet applied on
-		// terraform. Only for the main resource node (len 3); permissions/grants sub-nodes
-		// carry no id fields of their own.
+		// Reconcile id-composing fields with the deployed terraform state so a pending id
+		// change surfaces in the plan instead of being snapshotted as already applied. Only
+		// for the main resource node (len 3); permissions/grants sub-nodes carry no id fields.
 		if len(parts) == 3 {
-			if warnOnIDFieldRename(ctx, adapter, srcGroup, srcName, sv.Value, tfAttrs, warnPrefix) {
-				warningsSeen = true
+			if err := reconcileIDFields(adapter, srcGroup, srcName, sv.Value, tfAttrs); err != nil {
+				return warningsSeen, fmt.Errorf("%s: reconciling id fields: %w", node, err)
 			}
 		}
 
@@ -230,22 +230,24 @@ func BuildStateFromTF(
 	return warningsSeen, nil
 }
 
-// warnOnIDFieldRename compares each id-composing field (provided_id_fields,
-// updatable_id_fields) between the deployed terraform state and the config that will be
-// written to the migrated state. They differ when the user renamed a resource in config
-// but has not applied it on terraform yet. The migrated state records the config value —
-// the direct engine's normal baseline, matching what a direct deploy would store — so
-// the rename is not carried into the migration and the next plan will not act on it
-// (classifyIDField compares state vs config and ignores the remote value for these
-// fields). We only warn: baking the deployed value into state instead would risk a
-// spurious recreate for backend-normalized id fields, which is far worse than a rename
-// the user can re-apply. A false warning is possible for a backend-normalized value.
-func warnOnIDFieldRename(ctx context.Context, adapter *dresources.Adapter, group, name string, stateValue any, tfAttrs TFStateAttrs, warnPrefix string) bool {
+// reconcileIDFields aligns each id-composing field (provided_id_fields, updatable_id_fields)
+// in the migrated state with the deployed terraform state. The state is otherwise seeded from
+// config; for id fields, recording the current config would snapshot a pending change as
+// already applied and silently drift from the backend, so:
+//
+//   - When config and the deployed value differ only by backend normalization (identifier
+//     case, trailing slash), keep the config value: the difference is not a real change and
+//     recording either side converges.
+//   - Otherwise the user genuinely changed the id in config without deploying it. Record the
+//     deployed value so the migrated state matches what a direct deploy of the last-applied
+//     config would hold, and the next plan surfaces the change - a recreate for provided_id
+//     fields (caught by the migration's recreate guard) or a rename update for
+//     updatable_id fields.
+func reconcileIDFields(adapter *dresources.Adapter, group, name string, stateValue any, tfAttrs TFStateAttrs) error {
 	cfg := adapter.ResourceConfig()
 	if cfg == nil {
-		return false
+		return nil
 	}
-	warned := false
 	for _, rule := range slices.Concat(cfg.ProvidedIDFields, cfg.UpdatableIDFields) {
 		path, err := structpath.ParsePath(rule.Field.String())
 		if err != nil {
@@ -259,11 +261,26 @@ func warnOnIDFieldRename(ctx context.Context, adapter *dresources.Adapter, group
 		if err != nil {
 			continue
 		}
-		if !structdiff.IsEqual(configVal, deployedVal) {
-			log.Warnf(ctx, "%s%s.%s: config value %v for field %q differs from the deployed value %v; this rename is not applied by the migration and must be deployed separately",
-				warnPrefix, group, name, configVal, rule.Field.String(), deployedVal)
-			warned = true
+		if idFieldNormalizedEqual(configVal, deployedVal) {
+			continue
+		}
+		if err := structaccess.Set(stateValue, path, deployedVal); err != nil {
+			return fmt.Errorf("setting id field %q: %w", rule.Field.String(), err)
 		}
 	}
-	return warned
+	return nil
+}
+
+// idFieldNormalizedEqual reports whether two id-field values differ only by backend
+// normalization. UC identifier names are case-insensitive and UC strips trailing slashes
+// from storage paths, so for string id fields a case- and trailing-slash-insensitive
+// comparison treats a normalized value as unchanged. Non-string values fall back to exact
+// comparison.
+func idFieldNormalizedEqual(a, b any) bool {
+	as, aok := a.(string)
+	bs, bok := b.(string)
+	if aok && bok {
+		return strings.EqualFold(strings.TrimRight(as, "/"), strings.TrimRight(bs, "/"))
+	}
+	return structdiff.IsEqual(a, b)
 }

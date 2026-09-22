@@ -1,8 +1,9 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# CHARACTERIZATION ONLY (no fix): catalog_name is an immutable provided id field on a
-# registered model. The user legitimately moves the model to a different catalog. Record how
-# the migration treats the genuinely-changed id field (warn + silent drift, or recreate?).
+# catalog_name is an immutable provided id field on a registered model. The user legitimately
+# moves the model to a different catalog. reconcileIDFields records the deployed value, the
+# plan sees a real change, and it recreates - so the recreate guard keeps the run on terraform
+# instead of silently accepting drift.
 
 title "Deploy on terraform in catalog 'main'"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy

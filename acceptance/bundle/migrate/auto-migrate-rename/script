@@ -4,10 +4,10 @@ title "Initial deploy on terraform with schema name 'myschema'"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Rename the schema in config, then redeploy on direct (auto-migration)"
-# The migration snapshots the current config into the direct state, so a schema name
-# that was changed in config but not yet applied on terraform is recorded as already
-# applied. classifyIDField would then skip the rename, so the migration warns that the
-# rename is not carried over and must be deployed separately (it does not bake the
-# deployed value into state, which could cause a spurious recreate).
+# name is an immutable provided id field. The migration seeds id fields from the deployed
+# terraform state (reconcileIDFields), so a name changed in config but not applied on
+# terraform is recorded as the deployed value and the plan sees a real change: schemas
+# recreate on a name change, so the migration's recreate guard keeps the run on terraform
+# instead of silently snapshotting the rename as already applied.
 update_file.py databricks.yml "name: myschema" "name: renamed_schema"
 trace $CLI bundle deploy
