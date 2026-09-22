@@ -75,6 +75,15 @@ Declaring a field under `hashed_fields` in `resources.yml` makes the engine pers
 
 ## RemapState is a dumb copy; DoRead owns all remapping
 
+Most resources do not need a `RemapState` method at all. When `StateType` is a plain subset
+of `RemoteType`, the framework auto-generates the copy from the two types: `buildCopiers`
+(in `all.go`) compiles a copier per resource at package init, matching fields by JSON name,
+filtering `ForceSendFields`, and applying only lossless conversions. Anything it cannot copy
+safely (a kind-changing conversion, a mismatched struct shape) fails at load, so a resource
+that needs real logic surfaces as a build error rather than silent drift. Write a `RemapState`
+method only for that logic (derived fields, renames, per-field `ForceSendFields` rules); the
+rest of this section governs those hand-written overrides.
+
 `RemapState` converts `RemoteType` to `StateType` only because `StateType` is typically a
 subset of `RemoteType`. It must be a field-by-field copy (or no-op), never a place for
 logic. In particular, do not remap a differently-named field there (e.g. `state.x = remote.status.x`).
