@@ -283,12 +283,16 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	// command_path is "./"-prefixed so bundle deploy treats it as LOCAL and uploads
 	// it: libraries.IsLibraryLocal classifies a bare, extensionless path as a PyPI
 	// package name, which would deploy a path the backend can't resolve.
+	compute := map[string]dyn.Value{
+		"accelerator_type":  nv(cfg.Compute.AcceleratorType, 1),
+		"accelerator_count": nv(cfg.Compute.NumAccelerators, 2),
+	}
+	if cfg.Compute.PoolID != nil {
+		compute["provisioned_capacity_id"] = nv(*cfg.Compute.PoolID, 3)
+	}
 	deployment := map[string]dyn.Value{
 		"command_path": nv(localBundlePath(path.Join(generatedArtifactsDir, commandScriptName)), 1),
-		"compute": nv(map[string]dyn.Value{
-			"accelerator_type":  nv(cfg.Compute.AcceleratorType, 1),
-			"accelerator_count": nv(cfg.Compute.NumAccelerators, 2),
-		}, 2),
+		"compute":      nv(compute, 2),
 	}
 
 	aiRuntimeTask := map[string]dyn.Value{
@@ -308,6 +312,10 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 	}
 	if cfg.MLflowExperimentDirectory != nil {
 		aiRuntimeTask["mlflow_experiment_directory"] = nv(*cfg.MLflowExperimentDirectory, line)
+		line++
+	}
+	if cfg.MLflowArtifactLocation != nil {
+		aiRuntimeTask["mlflow_artifact_location"] = nv(*cfg.MLflowArtifactLocation, line)
 	}
 
 	// Task wrapper: task_key + framework fields (retries/timeout) + env key +
@@ -318,7 +326,10 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 		"environment_key": nv(aiRuntimeEnvironmentKey, 2),
 	}
 	taskLine := 3
-	task["max_retries"] = nv(cfg.maxRetries(), taskLine)
+	maxRetries := cfg.maxRetries()
+	task["max_retries"] = nv(maxRetries, taskLine)
+	taskLine++
+	task["retry_on_timeout"] = nv(maxRetries > 0, taskLine)
 	taskLine++
 	if cfg.TimeoutMinutes != nil {
 		task["timeout_seconds"] = nv(cfg.timeoutSeconds(), taskLine)
