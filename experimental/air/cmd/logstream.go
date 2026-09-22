@@ -108,23 +108,83 @@ type logRequest struct {
 	// boundInitialLogs limits existing output before following an active run.
 	boundInitialLogs bool
 	jsonOutput       bool
+	maxRetries       *int
 	// onStatusChange, when set, is called on each lifecycle transition while
 	// following the run (current, previous display states). Used by
 	// `air run --watch -o json` to emit STATUS events.
 	onStatusChange func(current, previous string)
+	retryTracker   *retryTracker
 }
 
 // logRunStatus is the subset of a run's state the log path needs, resolved once
 // and reused.
 type logRunStatus struct {
-	lifeCycleState          string
-	firstTaskLifeCycleState string
-	resultState             string
-	stateMessage            string
-	startTimeMs             int64
-	endTimeMs               int64
+	lifeCycleState           string
+	latestTaskLifeCycleState string
+	resultState              string
+	stateMessage             string
+	startTimeMs              int64
+	endTimeMs                int64
 	// latestAttempt is the highest attempt_number across the run's tasks.
 	latestAttempt int
+}
+
+// retryTracker reports each retry once across either Jobs transition:
+//
+//  1. Attempt N enters WAITING_FOR_RETRY: report retry N+1.
+//  2. Attempt N+1 appears: report retry N+1 only if transition 1 was missed.
+type retryTracker struct {
+	lastReportedRetry           int
+	lastObservedAttempt         int
+	lastObservedWaitingForRetry bool
+}
+
+func newRetryTracker(status logRunStatus) *retryTracker {
+	return &retryTracker{
+		lastReportedRetry:           status.latestAttempt,
+		lastObservedAttempt:         status.latestAttempt,
+		lastObservedWaitingForRetry: status.latestTaskLifeCycleState == string(jobs.RunLifeCycleStateWaitingForRetry),
+	}
+}
+
+func (t *retryTracker) observe(status logRunStatus) (int, bool) {
+	waitingForRetry := status.latestTaskLifeCycleState == string(jobs.RunLifeCycleStateWaitingForRetry)
+	retry := 0
+	if status.latestAttempt > t.lastObservedAttempt {
+		t.lastObservedAttempt = status.latestAttempt
+		t.lastObservedWaitingForRetry = waitingForRetry
+		retry = status.latestAttempt
+	} else if status.latestAttempt == t.lastObservedAttempt {
+		if waitingForRetry && !t.lastObservedWaitingForRetry {
+			retry = status.latestAttempt + 1
+		}
+		t.lastObservedWaitingForRetry = waitingForRetry
+	}
+	if retry <= t.lastReportedRetry || retry <= 0 {
+		return 0, false
+	}
+	t.lastReportedRetry = retry
+	return retry, true
+}
+
+func (req logRequest) reportRetry(ctx context.Context, out io.Writer, status logRunStatus, before func()) {
+	if req.retryTracker == nil {
+		return
+	}
+	retry, ok := req.retryTracker.observe(status)
+	if !ok {
+		return
+	}
+	if before != nil {
+		before()
+	}
+	if req.jsonOutput {
+		printRetryEvent(out, retry, req.maxRetries)
+	} else if req.maxRetries != nil {
+		cmdio.LogString(ctx, fmt.Sprintf("\nRetrying (%d of %d)...\n", retry, *req.maxRetries))
+	} else {
+		cmdio.LogString(ctx, fmt.Sprintf("\nRetrying (%d)...\n", retry))
+	}
 }
 
 // A run is terminal when its lifecycle state is terminal, or a result state is
@@ -152,7 +212,7 @@ func (s logRunStatus) waitingForCompute() bool {
 	if s.lifeCycleState != string(jobs.RunLifeCycleStateRunning) {
 		return false
 	}
-	switch jobs.RunLifeCycleState(s.firstTaskLifeCycleState) {
+	switch jobs.RunLifeCycleState(s.latestTaskLifeCycleState) {
 	case jobs.RunLifeCycleStatePending, jobs.RunLifeCycleStateQueued,
 		jobs.RunLifeCycleStateWaitingForRetry, jobs.RunLifeCycleStateBlocked:
 		return true
@@ -190,11 +250,16 @@ func projectRunStatus(run *jobs.Run) logRunStatus {
 		s.resultState = string(run.State.ResultState)
 		s.stateMessage = run.State.StateMessage
 	}
-	if len(run.Tasks) > 0 && run.Tasks[0].State != nil {
-		s.firstTaskLifeCycleState = string(run.Tasks[0].State.LifeCycleState)
-	}
 	for i := range run.Tasks {
-		s.latestAttempt = max(s.latestAttempt, run.Tasks[i].AttemptNumber)
+		task := &run.Tasks[i]
+		if i > 0 && task.AttemptNumber <= s.latestAttempt {
+			continue
+		}
+		s.latestAttempt = task.AttemptNumber
+		s.latestTaskLifeCycleState = ""
+		if task.State != nil {
+			s.latestTaskLifeCycleState = string(task.State.LifeCycleState)
+		}
 	}
 	return s
 }
@@ -394,6 +459,7 @@ func (st *bricklensStreamer) run() (bool, error) {
 		}
 
 		st.reportStatusChange()
+		st.req.reportRetry(st.ctx, st.out, st.status, st.onFirstLog)
 
 		terminal := st.status.terminal()
 		toSec := st.req.toSeconds(st.status)

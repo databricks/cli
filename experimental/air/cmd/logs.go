@@ -233,6 +233,9 @@ func resolveLogAttempt(run *jobs.Run, requested int) (int, int64, error) {
 // fetchLogs serves logs from Bricklens, falling back to MLflow when Bricklens
 // returns errBricklensFeatureDisabled.
 func fetchLogs(ctx context.Context, w *databricks.WorkspaceClient, out io.Writer, req logRequest, status logRunStatus) (bool, error) {
+	if req.attempt < 0 && !status.terminal() && req.retryTracker == nil {
+		req.retryTracker = newRetryTracker(status)
+	}
 	success, err := streamBricklensLogs(ctx, w, out, req, status)
 	if errors.Is(err, errBricklensFeatureDisabled) {
 		return mlflowLogFallback(ctx, w, out, req, status)

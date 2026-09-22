@@ -165,6 +165,7 @@ func streamMLflowLogs(ctx context.Context, w *databricks.WorkspaceClient, out io
 				previousState = current
 			}
 		}
+		req.reportRetry(ctx, out, status, nil)
 
 		mlflowRunID, logDir, err := resolveMLflowLogPath(ctx, w, req)
 		if err != nil {

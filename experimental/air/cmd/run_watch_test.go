@@ -129,6 +129,7 @@ func TestRunWatchStreamsLogs(t *testing.T) {
 	assert.Contains(t, out, "Submitted workload with Job Run ID: 777")
 	assert.Contains(t, out, "View job run at: ")
 	assert.Contains(t, out, "Monitoring run and streaming logs...")
+	assert.Contains(t, out, "Failed attempts will be retried up to 3 times.")
 	assert.NotContains(t, out, "from node 0")
 	// A "Logs" divider separates the submit summary from the streamed logs.
 	assert.Contains(t, out, "Logs")

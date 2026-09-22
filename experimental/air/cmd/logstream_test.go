@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -83,7 +85,7 @@ func TestProjectRunStatus(t *testing.T) {
 		},
 		Tasks: []jobs.RunTask{
 			{AttemptNumber: 0, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateQueued}},
-			{AttemptNumber: 2},
+			{AttemptNumber: 2, State: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateWaitingForRetry}},
 			{AttemptNumber: 1},
 		},
 	}
@@ -92,13 +94,70 @@ func TestProjectRunStatus(t *testing.T) {
 	assert.Equal(t, "TERMINATED", s.lifeCycleState)
 	assert.Equal(t, "SUCCESS", s.resultState)
 	assert.Equal(t, "done", s.stateMessage)
-	assert.Equal(t, "QUEUED", s.firstTaskLifeCycleState)
+	assert.Equal(t, "WAITING_FOR_RETRY", s.latestTaskLifeCycleState)
 	assert.Equal(t, int64(1000), s.startTimeMs)
 	assert.Equal(t, int64(2000), s.endTimeMs)
 	assert.Equal(t, 2, s.latestAttempt)
 	assert.True(t, s.terminal())
 	assert.True(t, s.succeeded())
 	assert.Equal(t, "SUCCESS", s.displayState())
+}
+
+func TestRetryTrackerDeduplicatesWaitingAndAttemptIncrease(t *testing.T) {
+	tracker := newRetryTracker(logRunStatus{latestAttempt: 0})
+
+	retry, ok := tracker.observe(logRunStatus{
+		latestAttempt:            0,
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+	})
+	assert.True(t, ok)
+	assert.Equal(t, 1, retry)
+
+	_, ok = tracker.observe(logRunStatus{
+		latestAttempt:            1,
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+	})
+	assert.False(t, ok)
+}
+
+func TestRetryTrackerDetectsAttemptCreatedInWaitingState(t *testing.T) {
+	tracker := newRetryTracker(logRunStatus{latestAttempt: 0})
+	waiting := logRunStatus{
+		latestAttempt:            1,
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+	}
+
+	retry, ok := tracker.observe(waiting)
+	assert.True(t, ok)
+	assert.Equal(t, 1, retry)
+
+	_, ok = tracker.observe(waiting)
+	assert.False(t, ok)
+}
+
+func TestRetryTrackerDetectsMissedWaitingState(t *testing.T) {
+	tracker := newRetryTracker(logRunStatus{latestAttempt: 0})
+
+	retry, ok := tracker.observe(logRunStatus{latestAttempt: 1})
+	assert.True(t, ok)
+	assert.Equal(t, 1, retry)
+}
+
+func TestReportRetryText(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &stdout, &stderr, "", ""))
+	maxRetries := 3
+	req := logRequest{retryTracker: newRetryTracker(logRunStatus{latestAttempt: 0}), maxRetries: &maxRetries}
+	stopped := false
+
+	req.reportRetry(ctx, &stdout, logRunStatus{
+		latestAttempt:            0,
+		latestTaskLifeCycleState: string(jobs.RunLifeCycleStateWaitingForRetry),
+	}, func() { stopped = true })
+
+	assert.True(t, stopped)
+	assert.Empty(t, stdout.String())
+	assert.Equal(t, "\nRetrying (1 of 3)...\n\n", stderr.String())
 }
 
 func TestLogRunStatusTerminal(t *testing.T) {
@@ -334,7 +393,7 @@ func TestNormalizeStatusMessage(t *testing.T) {
 
 func TestWaitingSpinnerText(t *testing.T) {
 	// A server that returns the run (with a task) and a STATUS-typed status_message.
-	newStreamer := func(t *testing.T, statusMessage, lifeCycle, firstTaskLifeCycle string) *bricklensStreamer {
+	newStreamer := func(t *testing.T, statusMessage, lifeCycle, latestTaskLifeCycle string) *bricklensStreamer {
 		t.Helper()
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.URL.Path {
@@ -351,7 +410,7 @@ func TestWaitingSpinnerText(t *testing.T) {
 			ctx:    t.Context(),
 			w:      newTestWorkspaceClient(t, srv.URL),
 			req:    logRequest{runID: 1, node: 0},
-			status: logRunStatus{lifeCycleState: lifeCycle, firstTaskLifeCycleState: firstTaskLifeCycle},
+			status: logRunStatus{lifeCycleState: lifeCycle, latestTaskLifeCycleState: latestTaskLifeCycle},
 		}
 	}
 
@@ -386,6 +445,20 @@ func TestEmitLogLineJSON(t *testing.T) {
 	assert.Equal(t, "LOG", ev.Type)
 	assert.Equal(t, 2, ev.Node)
 	assert.Equal(t, "hello", ev.Line)
+	assert.NotEmpty(t, ev.TS)
+}
+
+func TestPrintRetryEvent(t *testing.T) {
+	var buf bytes.Buffer
+	maxRetries := 3
+	printRetryEvent(&buf, 1, &maxRetries)
+
+	var ev retryEvent
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &ev))
+	assert.Equal(t, "RETRY", ev.Type)
+	assert.Equal(t, 1, ev.Retry)
+	require.NotNil(t, ev.MaxRetries)
+	assert.Equal(t, 3, *ev.MaxRetries)
 	assert.NotEmpty(t, ev.TS)
 }
 

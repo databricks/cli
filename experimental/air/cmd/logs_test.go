@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -202,6 +203,61 @@ func TestLogsFallsBackToMLflow(t *testing.T) {
 	err := runLogs(ctx, cmd, logRequest{runID: 5, node: 0, attempt: -1, tailLines: -1})
 	require.NoError(t, err)
 	assert.Equal(t, "line one\nline two\n", buf.String())
+}
+
+func TestFetchLogsRetryNotificationDeduplicatedAcrossFallback(t *testing.T) {
+	oldRetryInterval := retryCheckInterval
+	retryCheckInterval = time.Millisecond
+	t.Cleanup(func() { retryCheckInterval = oldRetryInterval })
+
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/get":
+			_, _ = w.Write([]byte(`{"run_id":5,"state":{"life_cycle_state":"TERMINATED","result_state":"SUCCESS"},"tasks":[{"run_id":101,"attempt_number":1}]}`))
+		case strings.HasPrefix(r.URL.Path, "/api/2.0/ai-training/workflows/by-run-id/"):
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"error_code":"FEATURE_DISABLED","message":"gated off"}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/get-output":
+			_, _ = w.Write([]byte(`{"ai_runtime_task_output":{"mlflow_experiment_id":"exp","mlflow_run_id":"run"}}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/list":
+			if r.URL.Query().Get("path") == "logs" {
+				_, _ = w.Write([]byte(`{"files":[{"path":"logs/attempt_1","is_dir":true}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"files":[{"path":"logs/attempt_1/node_0/logs-0.chunk.txt"}]}`))
+		case r.URL.Path == "/api/2.0/mlflow/artifacts/credentials-for-read":
+			_, _ = w.Write([]byte(`{"credential_infos":[{"signed_uri":"` + base + `/artifact"}]}`))
+		case r.URL.Path == "/artifact":
+			_, _ = w.Write([]byte("retry log\n"))
+		default:
+			_, _ = w.Write([]byte(`{}`))
+		}
+	}))
+	base = srv.URL
+	t.Cleanup(srv.Close)
+
+	initial := logRunStatus{
+		lifeCycleState:           "RUNNING",
+		latestAttempt:            1,
+		latestTaskLifeCycleState: "WAITING_FOR_RETRY",
+	}
+	maxRetries := 3
+	var out bytes.Buffer
+	success, err := fetchLogs(t.Context(), newTestWorkspaceClient(t, srv.URL), &out, logRequest{
+		runID:        5,
+		attempt:      -1,
+		tailLines:    -1,
+		jsonOutput:   true,
+		maxRetries:   &maxRetries,
+		retryTracker: newRetryTracker(logRunStatus{}),
+	}, initial)
+	require.NoError(t, err)
+	assert.True(t, success)
+	assert.Equal(t, 1, strings.Count(out.String(), `"type":"RETRY"`))
+	assert.Contains(t, out.String(), `"retry":1`)
+	assert.Contains(t, out.String(), `"max_retries":3`)
+	assert.Contains(t, out.String(), `"line":"retry log"`)
 }
 
 func TestLogsCommandPrintsGuidanceWhenStreamingIsInterrupted(t *testing.T) {
