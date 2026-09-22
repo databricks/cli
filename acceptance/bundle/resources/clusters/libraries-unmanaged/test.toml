@@ -11,8 +11,3 @@ RecordRequests = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [".databricks", "databricks.yml"]
-
-# Cluster ids are server-generated; normalize them so the golden is stable.
-[[Repls]]
-Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
-New = "[UUID]"
