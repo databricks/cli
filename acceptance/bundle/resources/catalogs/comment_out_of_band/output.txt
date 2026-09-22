@@ -46,7 +46,8 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
   "method": "PATCH",
   "path": "/api/2.1/unity-catalog/catalogs/test-catalog-[UNIQUE_NAME]",
   "body": {
-    "comment": ""
+    "comment": "",
+    "custom_max_retention_hours": 0
   }
 }
 
