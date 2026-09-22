@@ -232,7 +232,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
-		ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
+
+		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
+
+		// Tag the user agent with the engine this run actually uses. On the auto-migration
+		// path the engine is only final after the migration runs (below), so leave it unset
+		// here and tag there; setting it once rather than appending avoids a stale
+		// engine/terraform tag alongside engine/direct.
+		if !b.MigratingToDirect {
+			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
+		}
 		cmd.SetContext(ctx)
 		if stateDesc.Engine.IsDirect() {
 			resolveDeploymentHistory(ctx, b, stateDesc)
@@ -241,8 +250,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
-
-		b.MigratingToDirect = requiredEngine.Type == engine.EngineDirect && !stateDesc.Engine.IsDirect()
 	}
 
 	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks; a plain
@@ -325,11 +332,19 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// the terraform engine. Read-only commands set none of these options and keep
 		// reading the Terraform state as-is.
 		if b.MigratingToDirect && needsState {
-			ctx, err = migrateTerraformToDirect(ctx, cmd, b, stateDesc, requiredEngine, opts.CommitStateMigration || opts.Deploy)
-			if err != nil {
+			if err := migrateTerraformToDirect(ctx, b, stateDesc, requiredEngine, opts.CommitStateMigration || opts.Deploy); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
+		}
+
+		// Tag the user agent with the engine this run actually uses. The tag is left unset
+		// after the pull on the auto-migration path (see above) because the engine is only
+		// final here, after the migration ran, was skipped, or fell back. Setting it once
+		// (rather than appending) avoids a stale engine/terraform tag alongside engine/direct.
+		if b.MigratingToDirect {
+			ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
+			cmd.SetContext(ctx)
 		}
 
 		// --select is only supported by the direct engine, which tracks resource
@@ -551,32 +566,28 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 }
 
 // migrateTerraformToDirect converts the bundle's Terraform state to the direct engine.
-// On success it advances stateDesc/metrics/user-agent to the direct engine and returns
-// the updated context. Any failure before the migration commits (parse, conversion, plan
-// check, or push) leaves the Terraform state intact (migrated=false) so the caller
-// proceeds on the terraform engine and the deploy still runs; only a failure after the
-// commit returns an error.
+// On success it advances stateDesc and metrics to the direct engine. Any failure before
+// the migration commits (parse, conversion, plan check, or push) leaves the Terraform
+// state intact (migrated=false) so the caller proceeds on the terraform engine and the
+// deploy still runs; only a failure after the commit returns an error. The caller tags the
+// user agent with the resolved stateDesc.Engine afterwards.
 //
 // commit is true for the commands that apply changes (deploy, destroy): the converted
 // state is written and pushed and terraform.tfstate is backed up. Plan and read-only
 // commands pass false and keep the converted state in memory only.
-func migrateTerraformToDirect(ctx context.Context, cmd *cobra.Command, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requiredEngine engine.EngineSetting, commit bool) (context.Context, error) {
+func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requiredEngine engine.EngineSetting, commit bool) error {
 	if requiredEngine.IsDefault {
 		cmdio.LogString(ctx, "Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).")
 	}
 	migrated, err := statemgmt.MigrateTerraformState(ctx, b, requiredEngine, commit)
 	if err != nil {
-		return ctx, fmt.Errorf("migrating Terraform state to the direct engine: %w", err)
+		return fmt.Errorf("migrating Terraform state to the direct engine: %w", err)
 	}
 	if migrated {
 		stateDesc.Engine = engine.EngineDirect
 		b.Metrics.StateEngine = engine.EngineDirect
-		// PullResourcesState set the user-agent engine tag from the (terraform) state
-		// file; the run now uses the direct engine, so update it to match.
-		ctx = useragent.InContext(ctx, "engine", string(engine.EngineDirect))
-		cmd.SetContext(ctx)
 	}
-	return ctx, nil
+	return nil
 }
 
 // ResolveEngineSetting determines the effective engine setting by combining bundle config and env var.
