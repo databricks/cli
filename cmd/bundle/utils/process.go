@@ -552,8 +552,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 // migrateTerraformToDirect converts the bundle's Terraform state to the direct engine.
 // On success it advances stateDesc/metrics/user-agent to the direct engine and returns
-// the updated context. When the migration's plan check fails it leaves the Terraform
-// state intact (migrated=false) and the caller proceeds on the terraform engine.
+// the updated context. Any failure before the migration commits (parse, conversion, plan
+// check, or push) leaves the Terraform state intact (migrated=false) so the caller
+// proceeds on the terraform engine and the deploy still runs; only a failure after the
+// commit returns an error.
 //
 // commit is true for the commands that apply changes (deploy, destroy): the converted
 // state is written and pushed and terraform.tfstate is backed up. Plan and read-only
