@@ -8,12 +8,14 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -100,9 +102,19 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 	if commit {
 		// Plan-check the converted state; if it fails, do not commit and fall back to the
 		// terraform engine (the temp file is cleaned up by the deferred Remove).
-		if err := checkPlanOnTempState(ctx, b, tempStatePath, cfg); err != nil {
+		plan, err := checkPlanOnTempState(ctx, b, tempStatePath, cfg)
+		if err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
 			log.Warnf(ctx, "migration to the direct engine failed its plan check; deploying on terraform this time: %v", err)
+			return false, nil
+		}
+
+		// Do not migrate into a plan that would recreate an existing resource: a recreate
+		// is a destroy + create and risks data loss. Fall back to terraform this run (the
+		// migration retries next run, once any pending recreate has been applied).
+		if recreated := recreatedResources(plan); len(recreated) > 0 {
+			b.Metrics.SetBoolValue(metrics.DirectMigrateRecreatePlanned, true)
+			log.Warnf(ctx, "migration to the direct engine would recreate %v; deploying on terraform this time", recreated)
 			return false, nil
 		}
 
@@ -201,11 +213,13 @@ func DryRunMigrationTelemetry(ctx context.Context, b *bundle.Bundle) {
 }
 
 // checkPlanOnTempState opens the migrated state at tempStatePath in read mode,
-// runs a full plan against it, and returns a non-nil error if the plan fails.
-// Individual planning errors are emitted as warnings with warnPrefix so they
-// are visible without failing the deploy. The plan is run in an isolated
-// context so its diagnostics do not affect the deploy's own error state.
-func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath string, cfg *config.Root) error {
+// runs a full plan against it, and returns the plan (and a non-nil error if the
+// plan fails). Individual planning errors are emitted as warnings with warnPrefix
+// so they are visible without failing the deploy. The plan is run in an isolated
+// context so its diagnostics do not affect the deploy's own error state. The
+// returned plan lets the caller inspect the planned actions (e.g. reject a
+// migration that would recreate a resource).
+func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath string, cfg *config.Root) (*deployplan.Plan, error) {
 	planCtx := logdiag.IsolatedContext(ctx)
 	logdiag.SetCollect(planCtx, true)
 	defer func() {
@@ -223,11 +237,27 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 	// This plan is not created with the deployment history feature enabled,
 	// so we can safely pass false for withDeploymentHistory.
 	if err := planBundle.StateDB.Open(planCtx, tempStatePath, false, false, dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-		return fmt.Errorf("opening migrated state for plan check: %w", err)
+		return nil, fmt.Errorf("opening migrated state for plan check: %w", err)
 	}
 
-	_, err := planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg)
-	return err
+	return planBundle.CalculatePlan(planCtx, b.WorkspaceClient(ctx), cfg)
+}
+
+// recreatedResources returns the sorted keys of resources the plan would recreate
+// (destroy + create). A migration should not commit into such a plan: a recreate
+// on a resource that already exists risks destroying it, whether it comes from a
+// conversion that did not faithfully reproduce an immutable field or from a real
+// pending config change (which terraform would recreate too). In both cases the
+// safe choice is to stay on terraform this run and retry the migration later.
+func recreatedResources(plan *deployplan.Plan) []string {
+	var keys []string
+	for key, entry := range plan.Plan {
+		if entry.Action == deployplan.Recreate {
+			keys = append(keys, key)
+		}
+	}
+	slices.Sort(keys)
+	return keys
 }
 
 // BackupTerraformState moves the terraform state to .backup both remotely
