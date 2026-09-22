@@ -79,6 +79,22 @@ func (c switchToPatchedWheels) Apply(ctx context.Context, b *bundle.Bundle) diag
 		}
 	}
 
+	// Update resources.clusters.*.libraries[*].whl
+	for clusterName, clusterRef := range b.Config.Resources.Clusters {
+		if clusterRef == nil {
+			continue
+		}
+		for libInd, lib := range clusterRef.Libraries {
+			repl := replacements[lib.Whl]
+			if repl != "" {
+				log.Debugf(ctx, "Updating resources.clusters.%s.libraries[%d].whl from %s to %s", clusterName, libInd, lib.Whl, repl)
+				clusterRef.Libraries[libInd].Whl = repl
+			} else {
+				log.Debugf(ctx, "Not updating resources.clusters.%s.libraries[%d].whl from %s. Available replacements: %v", clusterName, libInd, lib.Whl, slices.Sorted(maps.Keys(replacements)))
+			}
+		}
+	}
+
 	return nil
 }
 

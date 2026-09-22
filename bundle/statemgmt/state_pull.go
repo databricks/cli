@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
@@ -26,8 +27,9 @@ import (
 type AlwaysPull bool
 
 type StateDesc struct {
-	Serial  int    `json:"serial"`
-	Lineage string `json:"lineage"`
+	Serial   int                 `json:"serial"`
+	Lineage  string              `json:"lineage"`
+	Features map[string]struct{} `json:"features,omitempty"`
 
 	// additional fields describing state:
 	SourcePath string
@@ -54,6 +56,12 @@ func (s *StateDesc) HasRemoteTerraformState() bool {
 		}
 	}
 	return false
+}
+
+// IsDMS reports whether the state records deployment history in the deployment metadata service.
+func (s *StateDesc) IsDMS() bool {
+	_, ok := s.Features["deployment_history"]
+	return ok
 }
 
 func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
@@ -194,16 +202,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 			localStatePath = localPathDirect
 		}
 
-		localStateDir := filepath.Dir(localStatePath)
-
-		err := os.MkdirAll(localStateDir, 0o700)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return ctx, winner
-		}
-
-		// TODO: write + rename
-		err = os.WriteFile(localStatePath, winner.Content, 0o600)
+		err := atomicfile.Write(localStatePath, winner.Content, 0o600, atomicfile.MkDir(0o700))
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return ctx, winner

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -177,6 +178,11 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 	return createResp.SpaceId, responseToGenieSpaceConfig(createResp, serializedSpace), nil
 }
 
+// description is force-sent on update so that clearing it in config clears it on the space.
+// Without this the omitempty field is dropped from the request and the old value drifts back on
+// every plan. Verified against a real workspace: UpdateSpace accepts {"description": ""} as a clear.
+var genieSpaceForceSend = []string{"Description"}
+
 func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *resources.GenieSpaceConfig, _ *PlanEntry) (*resources.GenieSpaceConfig, error) {
 	serializedSpace, err := prepareGenieSpaceRequest(config)
 	if err != nil {
@@ -198,7 +204,7 @@ func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *re
 		SerializedSpace: serializedSpace,
 		Etag:            "",
 
-		ForceSendFields: utils.FilterFields[dashboards.GenieUpdateSpaceRequest](config.ForceSendFields),
+		ForceSendFields: utils.FilterFields[dashboards.GenieUpdateSpaceRequest](append(slices.Clone(genieSpaceForceSend), config.ForceSendFields...)),
 	})
 	if err != nil {
 		return nil, err

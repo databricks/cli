@@ -22,6 +22,8 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -45,6 +47,8 @@ type ServerOptions struct {
 	// UsagePolicyID the job was submitted with. Persisted to metadata.json so reconnects
 	// can tell which usage policy the running server was started under.
 	UsagePolicyID string
+	// KeepDetachedProcesses prevents idle shutdown while detached processes are running.
+	KeepDetachedProcesses bool
 	// The directory to store sshd configuration
 	ConfigDir string
 	// The name of the secrets scope to use for client and server keys
@@ -63,6 +67,13 @@ type ServerOptions struct {
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOptions) error {
 	ctx, logBuf := captureWarnLogs(ctx)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Filesystem registration is best-effort on compute without reachable daemons.
+	if err := registerFuseCredentials(ctx, client); err != nil {
+		log.Warnf(ctx, "Failed to register SSH filesystem credentials; file access may depend on the bootstrap notebook: %v", err)
+	}
 
 	port, err := findAvailablePort(opts.DefaultPort, opts.PortRange)
 	if err != nil {
@@ -74,9 +85,10 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 
 	// Save metadata including ClusterID (required for Driver Proxy connections in serverless mode)
 	metadata := &workspace.WorkspaceMetadata{
-		Port:          port,
-		ClusterID:     opts.ClusterID,
-		UsagePolicyID: opts.UsagePolicyID,
+		Port:                  port,
+		ClusterID:             opts.ClusterID,
+		UsagePolicyID:         opts.UsagePolicyID,
+		KeepDetachedProcesses: opts.KeepDetachedProcesses,
 	}
 	err = workspace.SaveWorkspaceMetadata(ctx, client, opts.Version, opts.SessionID, metadata)
 	if err != nil {
@@ -115,13 +127,66 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	http.HandleFunc("/driver-proxy-http/logs", logBuf.serveHTTP)
 	http.HandleFunc("/driver-proxy-http/capabilities", serveCapabilities)
 
-	go handleTimeout(ctx, connections.TimedOut, opts.ShutdownDelay)
+	listenErr := make(chan error, 1)
+	go func() {
+		listenErr <- http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
+			r.URL.Path = path.Clean(r.URL.Path)
+			http.DefaultServeMux.ServeHTTP(w, r)
+		}))
+	}()
 
-	return http.ListenAndServe(listenAddr, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Normalize double slashes from the driver proxy (e.g. //metadata -> /metadata)
-		r.URL.Path = path.Clean(r.URL.Path)
-		http.DefaultServeMux.ServeHTTP(w, r)
-	}))
+	idleErr := make(chan error, 1)
+	go func() {
+		idleErr <- waitForIdleShutdown(ctx, connections, opts.KeepDetachedProcesses, procRoot, os.Getpid())
+	}()
+
+	select {
+	case err := <-listenErr:
+		return err
+	case err := <-idleErr:
+		if err != nil {
+			return err
+		}
+		// Return rather than exiting in place, so the notebook that started us gets to run
+		// its teardown and this process reports the shutdown through the CLI's normal path.
+		log.Info(ctx, fmt.Sprintf("No SSH clients for %v, shutting down...", opts.ShutdownDelay))
+		reportDetachedDescendants(ctx, opts, procRoot, os.Getpid())
+		return nil
+	}
+}
+
+// reportDetachedDescendants records what the session leaves behind when the server shuts
+// down. Only the server can see this: the client that started the session is long gone by
+// the time the idle timer fires, and the notebook's teardown runs after this process exits.
+func reportDetachedDescendants(ctx context.Context, opts ServerOptions, root string, selfPid int) {
+	pids, err := detachedDescendants(root, selfPid)
+	if err != nil {
+		log.Debugf(ctx, "Failed to look for detached processes: %v", err)
+		return
+	}
+
+	// Warning, not info: without --keep-detached-processes these processes do not outlive the
+	// run, and until now they vanished with no explanation anywhere. The client reads this
+	// back through /logs.
+	if len(pids) > 0 && !opts.KeepDetachedProcesses {
+		log.Warnf(ctx, "Shutting down with %d detached process(es) still running (pids %s). "+
+			"They do not survive the end of this run. To keep them, reconnect with "+
+			"\"databricks ssh connect --keep-detached-processes\", which keeps the SSH server running while they run.",
+			len(pids), formatPids(pids))
+	}
+
+	computeType := protos.SshTunnelComputeTypeDedicated
+	if opts.Serverless {
+		computeType = protos.SshTunnelComputeTypeServerless
+	}
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshTunnelTeardownEvent: &protos.SshTunnelTeardownEvent{
+			ComputeType:                      computeType,
+			KeepDetachedRequested:            opts.KeepDetachedProcesses,
+			HadDetachedDescendantsAtTeardown: len(pids) > 0,
+		},
+	})
 }
 
 // serveCapabilities tells the client which optional parts of the tunnel protocol this server
@@ -144,12 +209,6 @@ func serveMetadata(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to write current user", http.StatusInternalServerError)
 	}
-}
-
-func handleTimeout(ctx context.Context, timedOutChannel chan bool, shutdownDelay time.Duration) {
-	<-timedOutChannel
-	log.Info(ctx, fmt.Sprintf("No SSH clients for %v, shutting down...", shutdownDelay))
-	os.Exit(0)
 }
 
 func findAvailablePort(startPort, maxAttempts int) (int, error) {

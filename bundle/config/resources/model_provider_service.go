@@ -52,6 +52,7 @@ func (c ModelProviderServiceConfig) MarshalJSON() ([]byte, error) {
 
 type ModelProviderService struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	ModelProviderServiceConfig
 
 	// List of grants to apply on this model provider service. Grants are applied

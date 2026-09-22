@@ -174,7 +174,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
       - "**/testdata/**"
     cmds:
-      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
+      - "uv run --script tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
 
   # --- Formatting ---
 
@@ -225,7 +225,7 @@ tasks:
       - tools/lintdiff.py
       - "{{.EMBED_SOURCES}}"
     cmds:
-      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
+      - "uv run --script tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
 
   fmt-yaml:
     desc: Format YAML files
@@ -279,12 +279,12 @@ tasks:
   ws:
     desc: Fix whitespace issues
     cmds:
-      - "./tools/validate_whitespace.py --fix"
+      - "uv run --script tools/validate_whitespace.py --fix"
 
   check-changelog:
     desc: Validate .nextchanges fragment placement and links
     cmds:
-      - "./tools/validate_nextchanges.py"
+      - "uv run --script tools/validate_nextchanges.py"
 
   check-codeowners:
     desc: Check that CLI maintainers are the first owner on every CODEOWNERS rule
@@ -299,7 +299,12 @@ tasks:
       # Validate placement first so a misplaced fragment fails loudly instead of
       # being silently skipped by the renderer (see validate_nextchanges.py).
       - task: check-changelog
-      - "uv run --locked internal/genkit/tagging.py --preview"
+      # --frozen renders from the committed tagging.py.lock as-is. Re-resolving (what
+      # --locked does) hits the package index, which breaks under a newer local uv or the
+      # internal PyPI proxy index and rewrites the lock; CI keeps --locked (pinned uv +
+      # pypi.org) in changelog-preview.yml. --python 3.12 satisfies the lock's
+      # requires-python >=3.12, which the script omits (so uv would otherwise pick 3.9).
+      - "uv run --python 3.12 --frozen --script internal/genkit/tagging.py --preview"
 
   deadcode:
     desc: Check for dead code
@@ -308,7 +313,7 @@ tasks:
       - go.mod
       - go.sum
     cmds:
-      - ./tools/check_deadcode.py
+      - "uv run --script tools/check_deadcode.py"
 
   check-lockfiles:
     desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock or .py.lock
@@ -321,7 +326,7 @@ tasks:
   check-agents-setup:
     desc: Check every agent's config setup is in sync with AGENTS.md/.agents; fails if anything was out of sync
     cmds:
-      - "./tools/validate_agents_setup.py"
+      - "uv run --script tools/validate_agents_setup.py"
 
   checks:
     desc: Run quick checks (tidy, whitespace, deadcode, changelog, codeowners, lockfiles, agent setup)
@@ -623,7 +628,7 @@ tasks:
   bump-mlops-stacks:
     desc: Bump the vendored mlops-stacks acceptance template to github.com/databricks/mlops-stacks HEAD
     cmds:
-      - "./tools/bump_mlops_stacks.py"
+      - 'uv run -p ">=3.11" --no-project python tools/bump_mlops_stacks.py'
       # The bump rewrites a test input, so refresh that test's golden output.
       - "go test ./acceptance -run '^TestAccept/bundle/deploy/mlops-stacks' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
@@ -1089,16 +1094,16 @@ tasks:
     desc: Run 1k benchmark and print summary
     cmds:
       - task: bench-1k
-      - ./tools/bench_parse.py bench1k.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench1k.log'
 
   bench-100-summary:
     desc: Run 100 benchmark and print summary
     cmds:
       - task: bench-100
-      - ./tools/bench_parse.py bench100.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench100.log'
 
   bench-10-summary:
     desc: Run 10 benchmark and print summary
     cmds:
       - task: bench-10
-      - ./tools/bench_parse.py bench10.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench10.log'

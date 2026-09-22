@@ -18,6 +18,7 @@ import (
 // own configuration changes; lifecycle.triggers can add further conditions.
 type JobRun struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	jobs.RunNow
 
 	// Lifecycle shadows BaseResource.Lifecycle so job_runs can set triggers.

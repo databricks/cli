@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/log"
@@ -27,35 +28,12 @@ import (
 )
 
 const (
-	// currentStateVersion is the schema version written for deployments that record
-	// no feature flags, and the version legacy states are migrated up to on load.
-	currentStateVersion = 2
+	// currentStateVersion is the schema version written by this CLI and the version
+	// legacy states are migrated up to on load.
+	currentStateVersion = 3
 	initialBufferSize   = 64 * 1024
 	maxWalEntrySize     = 10 * 1024 * 1024
 	walSuffix           = ".wal"
-
-	// featureStateVersion is the schema version a future CLI will write once it
-	// records deployment state "feature flags" (see Header.Features). This CLI does
-	// not write it and records no features; it exists now only so this CLI reads
-	// such states correctly (see migrateState):
-	//   - featureStateVersion with no features  -> accept and leave the version as-is
-	//   - featureStateVersion with any feature   -> refuse, tell the user to upgrade
-	//
-	// A featureStateVersion state with no features is equivalent to
-	// currentStateVersion, but we deliberately do not flip the on-disk version down
-	// to currentStateVersion: a state written at featureStateVersion stays at
-	// featureStateVersion. This is forward-compat scaffolding so that a later release
-	// can start writing featureStateVersion + features without older CLIs (with this
-	// change) either mishandling a feature they lack or rejecting a featureless state
-	// outright. featureStateVersion is always 3.
-	featureStateVersion = 3
-
-	// supportedStateVersion is the highest schema version this CLI can read. It is
-	// normally equal to currentStateVersion — the version this CLI reads is the
-	// version it writes — and exceeds it only during a two-phase version bump like
-	// the current feature-flag scaffolding, where this CLI reads (but does not
-	// write) featureStateVersion. A state newer than this is rejected as too new.
-	supportedStateVersion = featureStateVersion
 )
 
 // FeatureDeploymentHistory marks a state whose resources are also recorded with the
@@ -98,12 +76,10 @@ func assertNoUnsupportedFeatures(features map[string]struct{}) error {
 // The caller should delete the stale WAL and proceed normally.
 var errStaleWAL = errors.New("stale WAL")
 
-// ErrUnsettingRecording is returned by Open when a recorded state is opened without recording - the
-// config turned the feature off, or an operation that never records (unbind) reached it. Callers
-// present an operation-appropriate message via errors.Is.
-var ErrUnsettingRecording = errors.New(`unsetting experimental.deployment_history is not supported
-
-This deployment's resources are recorded with the deployment history feature enabled. Set experimental.deployment_history: true to deploy or destroy this bundle`)
+// ErrUnsettingRecording is returned by Open when an operation that does not support deployment
+// history (such as unbind) reaches a recorded state. Callers present an operation-appropriate
+// message via errors.Is.
+var ErrUnsettingRecording = errors.New("this operation is not supported for a deployment that records deployment history")
 
 type DeploymentState struct {
 	Path    string
@@ -553,12 +529,6 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		return fmt.Errorf("migrating state %s: %w", path, err)
 	}
 
-	// TODO: We can remove and move this assertion to migrateState once we do the state
-	// version bump to 3 for this CLI.
-	if err := assertNoUnsupportedFeatures(db.Data.Features); err != nil {
-		return err
-	}
-
 	db.stateIDs = make(map[string]string)
 	for key, entry := range db.Data.State {
 		db.stateIDs[key] = entry.ID
@@ -602,12 +572,9 @@ func (db *DeploymentState) unlockedOpen(ctx context.Context, path string, withRe
 		db.Data.Features[FeatureDeploymentHistory] = struct{}{}
 		recorded = true
 	case recording && !recorded:
-		return errors.New(`this deployment already exists and is not recorded with the deployment history feature enabled, so it cannot be recorded without redeploying its resources
+		return errors.New(`enabling experimental.deployment_history for an existing deployment is not supported
 
-To record this bundle's history, start it over as a new deployment:
-  1. remove experimental.deployment_history from your bundle configuration
-  2. run "databricks bundle destroy" to delete the existing resources
-  3. add experimental.deployment_history back and deploy again`)
+Run "databricks bundle destroy" first, then deploy again with deployment history enabled`)
 	case !recording && recorded:
 		return ErrUnsettingRecording
 	}
@@ -998,31 +965,7 @@ func (db *DeploymentState) unlockedSave() error {
 		return err
 	}
 
-	dir := filepath.Dir(db.Path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
-	}
-
-	// CreateTemp creates the file with mode 0o600, matching the state file.
-	tmp, err := os.CreateTemp(dir, "."+filepath.Base(db.Path)+".tmp-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file for %#v: %w", db.Path, err)
-	}
-	tmpPath := tmp.Name()
-	// Cleans up the temp file on failure; a no-op once the rename succeeded.
-	defer os.Remove(tmpPath)
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return fmt.Errorf("failed to write %#v: %w", tmpPath, err)
-	}
-
-	// Close before the rename: on Windows the file must not be open for writing.
-	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("failed to close %#v: %w", tmpPath, err)
-	}
-
-	if err := os.Rename(tmpPath, db.Path); err != nil {
+	if err := atomicfile.Write(db.Path, data, 0o600, atomicfile.MkDir(0o755)); err != nil {
 		return fmt.Errorf("failed to save resources state to %#v: %w", db.Path, err)
 	}
 

@@ -74,7 +74,6 @@ tasks:
       - |
         find databricks/bundles -type d -mindepth 1 -maxdepth 1 \
           ! -path databricks/bundles/core \
-          ! -path databricks/bundles/resources \
           -exec rm -rf {} \;
       # core/ is hand-written except for the generated wiring under _generated/.
       - rm -rf databricks/bundles/core/_generated

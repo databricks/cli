@@ -17,19 +17,29 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
-Warn: automatic migration to direct engine failed: pushing direct state to workspace: deleting remote terraform state: Fault injected by test.
+Warn: backing up terraform state: could not delete terraform.tfstate: Fault injected by test.
+Migrated 1 resource to direct deployment engine.
 
 >>> print_migration_telemetry
-direct_migrate_commit_error true
+direct_migrated_via_env true
 
-=== Local state was NOT rewritten (still terraform)
+=== Local state is now direct (migration succeeded with warning)
 
 >>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
 
 >>> find .databricks/bundle -name terraform.tfstate* -type f
-.databricks/bundle/default/terraform/terraform.tfstate
+.databricks/bundle/default/terraform/terraform.tfstate.backup
 
-=== Retry recovers: subsequent deploy re-does the backup and completes
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+ID                   Type  Language  Path
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup
+
+=== Retry: deploys on already-migrated direct state
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted
@@ -37,10 +47,10 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_migration_telemetry
 
-=== Local state is now direct
+=== Local state remains direct
 
 >>> find .databricks/bundle -name resources.json -type f
 .databricks/bundle/default/resources.json
 
 >>> find .databricks/bundle -name terraform.tfstate* -type f
-.databricks/bundle/default/terraform/terraform.tfstate
+.databricks/bundle/default/terraform/terraform.tfstate.backup

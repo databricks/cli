@@ -74,11 +74,13 @@
 /cmd/aitools/                           @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-ax @lennartkats-db
 /libs/aitools/                          @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-ax @lennartkats-db
 
+# AI Runtime
+/cmd/air/                               @databricks/eng-deco-cli @databricks/eng-ai-custom-training
+/acceptance/air/                        @databricks/eng-deco-cli @databricks/eng-ai-custom-training
+
 # CLI compatibility manifest
 /internal/build/cli-compat.json         @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-platform
 /libs/clicompat/                        @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-platform
 
 # Experimental
-/experimental/air/                      @databricks/eng-deco-cli @databricks/eng-ai-custom-training
-/acceptance/experimental/air/           @databricks/eng-deco-cli @databricks/eng-ai-custom-training
 /experimental/aitools/                  @databricks/eng-deco-cli @databricks/eng-apps-devex @lennartkats-db

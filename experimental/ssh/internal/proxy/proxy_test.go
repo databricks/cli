@@ -12,6 +12,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/databricks/cli/libs/log"
@@ -398,6 +399,55 @@ func TestResumeAfterHandoverDrop(t *testing.T) {
 			assert.Equal(t, string(append(beforeServer, afterServer...)), serverOutput.String())
 		})
 	}
+}
+
+// blockedReadConn lets cleanup finish before either I/O loop returns an error.
+// The test releases the reads and closes the real socket separately.
+type blockedReadConn struct {
+	net.Conn
+	release <-chan struct{}
+}
+
+func (c blockedReadConn) Read([]byte) (int, error) {
+	<-c.release
+	return 0, net.ErrClosed
+}
+
+func (c blockedReadConn) Close() error {
+	return nil
+}
+
+func TestCancellationCloseWriteFailure(t *testing.T) {
+	server, _ := startKeepaliveTestServer(t)
+	defer server.Close()
+	var socket *pausableConn
+	pc := newProxyConnection(keepaliveTestDialer(server.URL, func(conn *pausableConn) {
+		socket = conn
+	}))
+	require.NoError(t, pc.connect(t.Context()))
+	realSocket := socket.Conn
+	defer realSocket.Close()
+
+	synctest.Test(t, func(t *testing.T) {
+		release := make(chan struct{})
+		blocked := blockedReadConn{Conn: realSocket, release: release}
+		socket.Conn = blocked
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+		done := make(chan error, 1)
+		go func() { done <- pc.start(ctx, blocked, io.Discard) }()
+		synctest.Wait()
+
+		socket.mode.Store(connWriteFail)
+		cancel()
+		// Both reads remain blocked while cleanup records the failed close write
+		// as the errgroup's first error. No timing or scheduler assumptions needed.
+		synctest.Wait()
+		close(release)
+		err := <-done
+		require.ErrorIs(t, err, context.Canceled)
+		require.ErrorIs(t, err, errTestWriteFailed)
+	})
 }
 
 // A failed acknowledgement write on a resumable connection must be treated exactly like a failed

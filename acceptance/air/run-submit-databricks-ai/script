@@ -1,0 +1,5 @@
+title "submit with a Databricks AI environment and no dependencies"
+trace $CLI air run -f run.yaml
+
+title "submit includes the Databricks AI environment version and omits dependencies"
+trace print_requests.py //api/2.2/jobs/runs/submit

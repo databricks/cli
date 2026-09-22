@@ -237,11 +237,12 @@ func TestToken_loadToken(t *testing.T) {
 	}
 
 	cases := []struct {
-		name          string
-		setupCtx      func(context.Context) context.Context
-		args          loadTokenArgs
-		validateToken func(*oauth2.Token)
-		wantErr       string
+		name                    string
+		setupCtx                func(context.Context) context.Context
+		args                    loadTokenArgs
+		validateToken           func(*oauth2.Token)
+		wantErr                 string
+		wantInvalidRefreshToken bool
 	}{
 		{
 			name: "prints helpful login message on refresh failure when profile is specified",
@@ -260,6 +261,7 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
   $ databricks auth login --profile expired`,
+			wantInvalidRefreshToken: true,
 		},
 		{
 			name: "prints helpful login message on refresh failure when host is specified",
@@ -281,6 +283,7 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
   $ databricks auth login --profile expired`,
+			wantInvalidRefreshToken: true,
 		},
 		{
 			name: "prints helpful login message on invalid response",
@@ -893,6 +896,7 @@ func TestToken_loadToken(t *testing.T) {
 			},
 			wantErr: `A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
   $ databricks auth login --profile valid-token`,
+			wantInvalidRefreshToken: true,
 		},
 	}
 	for _, c := range cases {
@@ -904,6 +908,8 @@ func TestToken_loadToken(t *testing.T) {
 			got, err := loadToken(ctx, c.args)
 			if c.wantErr != "" {
 				assert.Equal(t, c.wantErr, err.Error())
+				_, isInvalidRefreshToken := errors.AsType[*u2m.InvalidRefreshTokenError](err)
+				assert.Equal(t, c.wantInvalidRefreshToken, isInvalidRefreshToken)
 			} else {
 				assert.NoError(t, err)
 				c.validateToken(got)
@@ -947,4 +953,15 @@ func TestWriteTokenOutput(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "my-access-token\n", buf.String())
 	})
+}
+
+func TestWriteTokenErrorOutput(t *testing.T) {
+	var buf bytes.Buffer
+	err := writeTokenErrorOutput(&buf, errors.New("refresh token is invalid"))
+	assert.NoError(t, err)
+
+	var got tokenErrorOutput
+	assert.NoError(t, json.Unmarshal(buf.Bytes(), &got))
+	assert.Equal(t, unauthenticatedErrorCode, got.ErrorCode)
+	assert.Equal(t, "refresh token is invalid", got.Message)
 }

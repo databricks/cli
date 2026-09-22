@@ -159,6 +159,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		mutator.InitializeVolumePaths(),
 		mutator.ResolveVolumePathReferencesOnlyResources(),
 
+		// Default the `source` field on job tasks (GIT for git_source jobs, else
+		// WORKSPACE). Runs after PythonMutator so it sees the final git_source/tasks
+		// and does not expose the injected default to Python code, while remaining
+		// visible in `bundle validate`/`summary`.
+		resourcemutator.ApplyDefaultTaskSource(),
+
 		// Drop empty-string values on omitempty resource fields so they are not
 		// force-sent to the backend. Runs after variable resolution (a variable may
 		// resolve to "") and after all resource mutations, before validation so that
