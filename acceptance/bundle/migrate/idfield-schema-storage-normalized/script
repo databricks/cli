@@ -1,0 +1,16 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# CHARACTERIZATION ONLY (no fix): storage_root is immutable (recreate_on_changes) and UC
+# strips a trailing slash. The config keeps the trailing slash ("s3://bucket/path/") but the
+# deployed value is normalized ("s3://bucket/path"), so the id-adjacent field differs without
+# the user changing anything. Record whether the migration's normalize_slash rule absorbs
+# this or whether it plans a recreate.
+
+title "Deploy on terraform; UC strips the trailing slash from storage_root"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Migrate to direct with the same config (storage_root still has the trailing slash)"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Follow-up plan on direct: does it converge or keep seeing a diff?"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan

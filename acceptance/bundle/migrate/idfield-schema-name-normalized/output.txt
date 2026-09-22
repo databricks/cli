@@ -1,0 +1,20 @@
+
+=== Deploy on terraform; UC lowercases the schema name (MySchema -> myschema)
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created schemas.my_schema
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Warn: migration to direct: schemas.my_schema: config value MySchema for field "name" differs from the deployed value myschema; this rename is not applied by the migration and must be deployed separately
+
+=== Migrate to direct with the same config (name still MySchema)
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Warn: migration to direct: schemas.my_schema: config value MySchema for field "name" differs from the deployed value myschema; this rename is not applied by the migration and must be deployed separately
+Migrated 1 resource to direct deployment engine.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+=== Follow-up plan on direct: does it converge or keep seeing a diff?
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
