@@ -52,10 +52,11 @@ func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretSc
 func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
 	return &SecretScopeConfig{
 		CreateScope: workspace.CreateScope{
-			Scope:                remote.Scope,
-			ScopeBackendType:     remote.ScopeBackendType,
-			BackendAzureKeyvault: remote.BackendAzureKeyvault,
-			ForceSendFields:      utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
+			Scope:                  remote.Scope,
+			ScopeBackendType:       remote.ScopeBackendType,
+			BackendAzureKeyvault:   remote.BackendAzureKeyvault,
+			InitialManagePrincipal: "",
+			ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
 		},
 	}
 }
