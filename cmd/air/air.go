@@ -26,6 +26,7 @@ These commands are under active development.`,
 	cmd.AddCommand(newLogsCommand())
 	cmd.AddCommand(newCancelCommand())
 	cmd.AddCommand(newConvertToDabsCommand())
+	cmd.AddCommand(newImageCommand())
 
 	return cmd
 }

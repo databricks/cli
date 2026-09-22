@@ -1,0 +1,13 @@
+#!/bin/sh
+
+printf '%s\n' "$*" >> "$DOCKER_LOG"
+
+case "$1 $2" in
+  "image inspect"|tag\ *|push\ *)
+    exit 0
+    ;;
+  *)
+    printf 'unexpected docker command: %s\n' "$*" >&2
+    exit 1
+    ;;
+esac

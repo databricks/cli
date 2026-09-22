@@ -1,0 +1,25 @@
+source "$TESTDIR/../../cmd/auth/docker/script.prepare"
+setup_docker_auth
+
+export DOCKER_CONFIG="$HOME/docker"
+export DOCKER_LOG="$HOME/docker.log"
+mkdir -p "$DOCKER_CONFIG" "$HOME/bin"
+cp "$TESTDIR/profile.databrickscfg" "$HOME/.databrickscfg"
+
+cli_path="$HOME/bin/databricks"
+cp "$CLI" "$cli_path"
+cp "$TESTDIR/docker" "$HOME/bin/docker"
+chmod +x "$cli_path" "$HOME/bin/docker"
+export PATH="$HOME/bin:$PATH"
+
+title "setup image"
+trace databricks air image setup \
+  -p docker-test \
+  -s nvidia/cuda:13.4.1 \
+  --catalog prod \
+  --schema nvidia \
+  --image cuda:13.4.1-cudnn-devel-ubuntu26.04 \
+  --region us-west-2
+
+title "docker commands\n"
+cat "$DOCKER_LOG"

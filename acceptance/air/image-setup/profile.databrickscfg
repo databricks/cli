@@ -1,0 +1,4 @@
+[docker-test]
+host = https://workspace.cloud.databricks.com
+auth_type = databricks-cli
+workspace_id = 123456789

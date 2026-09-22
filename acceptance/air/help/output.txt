@@ -12,6 +12,7 @@ Available Commands:
   cancel          Cancel one or more runs
   convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
   get             Show status, configuration, and timing details for a specified run
+  image           Manage container images for AI Runtime
   list            List active runs for the current user
   logs            Stream or fetch logs for a run
   pools           View provisioned GPU pools
@@ -104,6 +105,54 @@ Global Flags:
   -t, --target string    bundle target to use (if applicable)
 
 Use "databricks air pools [command] --help" for more information about a command.
+
+=== image help
+>>> [CLI] air image --help
+Manage container images for AI Runtime
+
+Usage:
+  databricks air image [flags]
+  databricks air image [command]
+
+Available Commands:
+  setup       Configure Docker authentication and push an image to Databricks Artifact Registry
+
+Flags:
+  -h, --help   help for image
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks air image [command] --help" for more information about a command.
+
+=== image setup help
+>>> [CLI] air image setup --help
+Configure Docker authentication and push a container image to Databricks Artifact Registry.
+
+The command detects the workspace region, configures Docker's Databricks credential
+helper, and pushes the source image to catalog.schema.artifact:tag. Omitted image
+details are prompted for when the terminal is interactive.
+
+Usage:
+  databricks air image setup [flags]
+
+Flags:
+      --catalog string   Unity Catalog catalog for the image; use lowercase letters, digits, and underscores
+  -h, --help             help for setup
+      --image string     Artifact name and optional tag in Databricks Artifact Registry; artifact names must be 255 characters or less and tags must be 128 characters or less
+      --pull             Pull the source image even when it is already available locally
+      --region string    Workspace region; detected automatically when omitted
+      --schema string    Unity Catalog schema for the image; use lowercase letters, digits, and underscores
+  -s, --source string    Source container image to push
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
 
 === logs help
 >>> [CLI] air logs --help
