@@ -1,0 +1,15 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+# Removing every resource leaves the migration with no config-declared resources, so
+# BuildStateFromTF records no WAL entries. The migration must still persist the seeded
+# terraform-state resources so the direct plan can delete them (otherwise Finalize would
+# write no state file and the migration would fail with a missing resources.json).
+title "Remove all resources, then deploy on direct: migrate and delete"
+echo '{"bundle": {"name": "test-bundle"}}' > databricks.yml
+trace $CLI bundle deploy
+
+title "Follow-up plan is a clean no-op"
+trace $CLI bundle plan | contains.py "0 to delete, 0 unchanged"

@@ -1,0 +1,16 @@
+
+=== Initial deploy on terraform with schema name 'myschema'
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created schemas.my_schema
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Rename the schema in config, then redeploy on direct (auto-migration)
+>>> [CLI] bundle deploy
+Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Warn: migration to direct: schemas.my_schema: config value renamed_schema for field "name" differs from the deployed value myschema; this rename is not applied by the migration and must be deployed separately
+Migrated 1 resource to direct deployment engine.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged

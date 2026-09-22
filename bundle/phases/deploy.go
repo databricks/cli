@@ -381,24 +381,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	logDeploySummary(ctx, b, plan, stateEngine)
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
-
-	// Migrate the state to the direct engine, if the user opted in (via
-	// bundle.engine or DATABRICKS_BUNDLE_ENGINE) and a dry-run of the migration
-	// comes back clean. Without the opt-in, or when the dry-run reports problems,
-	// nothing is written: only the outcome is recorded in telemetry, and the
-	// deploy is unaffected.
-	//
-	// Last, after the deploy has reported what it did: this is post-deploy work,
-	// and its warnings read as belonging to the deploy if they precede the
-	// summary.
-	//
-	// Gated on the deploy alone, which the early return above already guarantees
-	// — not on the postdeploy script. The resources were applied before that
-	// script ran, so the state is worth migrating even if it failed, the same
-	// reasoning that prints the summary ahead of it.
-	if !stateEngine.IsDirect() {
-		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
-	}
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
