@@ -1,0 +1,14 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# CHARACTERIZATION ONLY (no fix): name is an immutable provided id field. UC lowercases it,
+# so the deployed id ("myvolume") differs from config ("MyVolume") without the user changing
+# anything. Record how the migration treats this backend-normalized id field.
+
+title "Deploy on terraform; UC lowercases the volume name (MyVolume -> myvolume)"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Migrate to direct with the same config (name still MyVolume)"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Follow-up plan on direct: does it converge or keep seeing a diff?"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
