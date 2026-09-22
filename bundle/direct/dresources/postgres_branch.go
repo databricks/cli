@@ -59,24 +59,6 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 	}
 }
 
-func (*ResourcePostgresBranch) RemapState(remote *PostgresBranchRemote) *PostgresBranchState {
-	return &PostgresBranchState{
-		BranchId: remote.BranchId,
-		Parent:   remote.Parent,
-
-		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
-
-		// purge_on_delete is a delete-time query parameter; the GET API never
-		// returns it, so RemapState leaves it false.
-		PurgeOnDelete:   false,
-		ForceSendFields: nil,
-
-		BranchSpec: remote.BranchSpec,
-	}
-}
-
 // makePostgresBranchRemote converts the SDK Branch into the embedded remote shape.
 // GET does not echo spec today (only status is returned); the embedded spec fields
 // stay at their zero values, and postgres_branches.yml suppresses phantom drift via

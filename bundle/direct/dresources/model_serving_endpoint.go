@@ -92,25 +92,6 @@ func configOutputToInput(output *serving.EndpointCoreConfigOutput) *serving.Endp
 	}
 }
 
-func (*ResourceModelServingEndpoint) RemapState(state *ModelServingEndpointRemote) *serving.CreateServingEndpoint {
-	return &serving.CreateServingEndpoint{
-		AiGateway:          state.AiGateway,
-		BudgetPolicyId:     state.BudgetPolicyId,
-		Config:             state.Config,
-		Description:        state.Description,
-		EmailNotifications: state.EmailNotifications,
-		Name:               state.Name,
-		RouteOptimized:     state.RouteOptimized,
-		Tags:               state.Tags,
-		TelemetryConfig:    state.TelemetryConfig,
-		ForceSendFields:    utils.FilterFields[serving.CreateServingEndpoint](state.EndpointDetails.ForceSendFields),
-
-		// Rate limits are a deprecated field that are not returned by the API on GET calls. Thus we map them to nil.
-		// TODO(shreyas): Add a warning when users try setting top level rate limits.
-		RateLimits: nil,
-	}
-}
-
 type ModelServingEndpointRemote struct {
 	EndpointDetails *serving.ServingEndpointDetailed `json:"endpoint_details"`
 	EndpointId      string                           `json:"endpoint_id"`

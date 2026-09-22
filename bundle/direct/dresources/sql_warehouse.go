@@ -68,31 +68,6 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWar
 	return s
 }
 
-// RemapState maps the remote SqlWarehouseRemote to SqlWarehouseState for diff comparison.
-// Started is derived from warehouse state so the planner can detect start/stop changes.
-func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWarehouseState {
-	started := warehouse.State == sql.StateRunning
-	return &SqlWarehouseState{
-		CreateWarehouseRequest: sql.CreateWarehouseRequest{
-			AutoStopMins:            warehouse.AutoStopMins,
-			Channel:                 warehouse.Channel,
-			ClusterSize:             warehouse.ClusterSize,
-			CreatorName:             warehouse.CreatorName,
-			EnablePhoton:            warehouse.EnablePhoton,
-			EnableServerlessCompute: warehouse.EnableServerlessCompute,
-			InstanceProfileArn:      warehouse.InstanceProfileArn,
-			MaxNumClusters:          warehouse.MaxNumClusters,
-			MinNumClusters:          warehouse.MinNumClusters,
-			Name:                    warehouse.Name,
-			SpotInstancePolicy:      warehouse.SpotInstancePolicy,
-			Tags:                    warehouse.Tags,
-			WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
-			ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
-		},
-		Lifecycle: &StateLifecycle{Started: &started},
-	}
-}
-
 // DoRead reads the warehouse by id.
 func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*SqlWarehouseRemote, error) {
 	warehouse, err := r.client.Warehouses.GetById(ctx, id)
