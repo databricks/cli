@@ -1,9 +1,0 @@
-bundle:
-  name: test-bundle
-
-resources:
-  registered_models:
-    my_model:
-      name: mymodel
-      catalog_name: main
-      schema_name: default
