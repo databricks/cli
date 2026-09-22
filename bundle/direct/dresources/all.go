@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/calladapt"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -93,9 +94,9 @@ var SupportedResources = map[string]any{
 // RemapState method and are skipped here.
 var copiers = buildCopiers()
 
-func buildCopiers() map[reflect.Type]*copier {
+func buildCopiers() map[reflect.Type]*structcopy.Copier {
 	iface := reflect.TypeFor[IResource]()
-	out := make(map[reflect.Type]*copier)
+	out := make(map[reflect.Type]*structcopy.Copier)
 	var errs []string
 
 	for resourceType, resource := range SupportedResources {
@@ -130,9 +131,9 @@ func buildCopiers() map[reflect.Type]*copier {
 			continue // identity: the adapter returns the remote unchanged, no copier needed
 		}
 
-		copier, err := compileCopier(remoteType, stateType)
+		copier, err := structcopy.Compile(remoteType, stateType)
 		if err != nil {
-			errs = append(errs, fmt.Sprintf("%s: %v", resourceType, err))
+			errs = append(errs, fmt.Sprintf("%s: %v (implement RemapState for this resource)", resourceType, err))
 			continue
 		}
 		out[implType] = copier

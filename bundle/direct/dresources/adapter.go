@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
@@ -130,7 +131,7 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
-	copier             *copier
+	copier             *structcopy.Copier
 	doDelete           *calladapt.BoundCaller
 	prepareInputConfig *calladapt.BoundCaller
 	isEmptyState       *calladapt.BoundCaller
@@ -532,7 +533,7 @@ func (a *Adapter) RemapState(remoteState any) (any, error) {
 		return outs[0], nil
 	}
 	if a.copier != nil {
-		return a.copier.copy(remoteState), nil
+		return a.copier.Copy(remoteState), nil
 	}
 	// No custom method and no copier: validate() only allows this when
 	// remoteType == stateType, so the remote is already the state type.
