@@ -21,8 +21,8 @@ import (
 // with these intentional divergences:
 //   - No Published wrapper: Genie spaces have no publish lifecycle, so
 //     PrepareState returns the config directly.
-//   - RemapState filters fewer fields: Genie has no LifecycleState / CreateTime /
-//     Path / UpdateTime output-only fields to scrub.
+//   - responseToGenieSpaceConfig maps fewer fields: Genie has no LifecycleState /
+//     CreateTime / Path / UpdateTime output-only fields to scrub.
 //   - DoUpdate omits the etag (dashboard sends it as an If-Match guard): the
 //     backend bumps the etag when it migrates serialized_space to a newer
 //     schema version, so sending a stale etag would 409 the update after a
@@ -42,21 +42,6 @@ func (*ResourceGenieSpace) New(client *databricks.WorkspaceClient) *ResourceGeni
 
 func (*ResourceGenieSpace) PrepareState(input *resources.GenieSpace) *resources.GenieSpaceConfig {
 	return &input.GenieSpaceConfig
-}
-
-func (r *ResourceGenieSpace) RemapState(remote *resources.GenieSpaceConfig) *resources.GenieSpaceConfig {
-	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](remote.ForceSendFields, "SerializedSpace")
-
-	return &resources.GenieSpaceConfig{
-		Description:     remote.Description,
-		Etag:            remote.Etag,
-		Title:           remote.Title,
-		WarehouseId:     remote.WarehouseId,
-		ParentPath:      remote.ParentPath,
-		SerializedSpace: remote.SerializedSpace,
-
-		ForceSendFields: forceSendFields,
-	}
 }
 
 func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.GenieSpaceConfig, error) {
@@ -87,7 +72,10 @@ func prepareGenieSpaceRequest(config *resources.GenieSpaceConfig) (string, error
 }
 
 func responseToGenieSpaceConfig(space *dashboards.GenieSpace, serializedSpace string) *resources.GenieSpaceConfig {
-	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields)
+	// SerializedSpace is excluded so it is never force-sent as an empty value; it is always
+	// populated from the bundle config on write. Done here (rather than in a RemapState) so
+	// every remote-producing path (DoRead/DoCreate/DoUpdate) yields the same force-send set.
+	forceSendFields := utils.FilterFields[resources.GenieSpaceConfig](space.ForceSendFields, "SerializedSpace")
 
 	return &resources.GenieSpaceConfig{
 		Description:     space.Description,
