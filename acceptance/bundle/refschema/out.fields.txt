@@ -908,7 +908,13 @@ resources.internal_immutable_snapshots.*.acl[*].permission_level	string	INPUT	ST
 resources.internal_immutable_snapshots.*.acl[*].service_principal_name	string	INPUT	STATE
 resources.internal_immutable_snapshots.*.acl[*].user_name	string	INPUT	STATE
 resources.internal_immutable_snapshots.*.bundle_id	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.can_manage	[]snapshot.ManagePrincipal	INPUT	STATE
+resources.internal_immutable_snapshots.*.can_manage[*]	snapshot.ManagePrincipal	INPUT	STATE
+resources.internal_immutable_snapshots.*.can_manage[*].group_name	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.can_manage[*].service_principal_name	string	INPUT	STATE
+resources.internal_immutable_snapshots.*.can_manage[*].user_name	string	INPUT	STATE
 resources.internal_immutable_snapshots.*.full_path	string	REMOTE	STATE
+resources.internal_immutable_snapshots.*.generation	int	INPUT	STATE
 resources.internal_immutable_snapshots.*.relative_path	string	REMOTE	STATE
 resources.internal_immutable_snapshots.*.remote_root	string	INPUT
 resources.internal_immutable_snapshots.*.zip_path	string	INPUT	STATE
