@@ -254,6 +254,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
+		// --select is only supported by the direct engine, which tracks resource
+		// dependencies in the plan graph (used to expand the selection transitively).
+		// The engine is only known for certain after the state is pulled, so reject it
+		// here rather than silently planning/deploying every resource on terraform.
+		if len(b.Select) > 0 && !stateDesc.Engine.IsDirect() {
+			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+
 	}
 
 	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks; a plain
@@ -319,13 +328,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// ${artifacts.*} paths rather than unexpanded globs.
 	var plan *deployplan.Plan
 	if shouldReadState {
-		// --select is only supported by the direct engine, which tracks resource
-		// dependencies in the plan graph (used to expand the selection transitively).
-		if len(b.Select) > 0 && !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-
 		// Open direct engine state once for all subsequent operations (ExportState, CalculatePlan, Apply, etc.)
 		needDirectState := stateDesc.Engine.IsDirect() && (opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil)
 		var localPath string
