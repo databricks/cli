@@ -27,7 +27,8 @@ const (
 
 // snapshotPlan is the outcome of resolving how to package a snapshot: the mode,
 // the commit SHA to archive (git_archive only; empty for plain_tar), and whether
-// the working tree under the snapshot root has uncommitted changes.
+// the working tree under the snapshot root has uncommitted changes when the dirty
+// state is needed for branch safety or provenance.
 type snapshotPlan struct {
 	mode          snapshotMode
 	commitSHA     string
@@ -42,17 +43,22 @@ type snapshotPlan struct {
 //   - git.branch  → the branch's local HEAD SHA → git_archive.
 //   - no ref / non-git dir → the working tree → plain_tar (no caching).
 //
-// The dirty check runs at most once (git status is O(working tree)) and is threaded
-// into the plan. Dirty + git.branch is an error: the committed HEAD wouldn't include
-// the uncommitted changes.
+// The dirty check runs only when git.branch needs to guard against omitted local
+// changes, or when provenance sidecars need to record the state. It runs at most
+// once (git status is O(working tree)) and is threaded into the plan. Dirty +
+// git.branch is an error: the committed HEAD wouldn't include the uncommitted changes.
 func resolveSnapshotPlan(ctx context.Context, git gitRepo, ref *gitRef, includePaths []string) (snapshotPlan, error) {
 	plan := snapshotPlan{includePaths: includePaths}
 	plan.isGitRepo = git.isRepository(ctx)
 
-	// Detect uncommitted changes once. When include_paths is set, only changes
+	// Plain-tar snapshots include working-tree changes, and commit-pinned snapshots
+	// intentionally exclude them, so neither needs a git status unless provenance
+	// sidecars are enabled. Branch snapshots always need it to avoid silently omitting
+	// local changes. When include_paths is set, only changes
 	// under those paths can land in the snapshot, so scope the check to them —
 	// both more correct and cheaper than scanning the whole repo.
-	if plan.isGitRepo {
+	needsDirtyState := uploadProvenanceSidecars || (ref != nil && ref.Branch != nil)
+	if plan.isGitRepo && needsDirtyState {
 		var err error
 		if len(includePaths) > 0 {
 			plan.hasUncommit, err = git.hasUncommittedChangesInPaths(ctx, includePaths)
