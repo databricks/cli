@@ -1,0 +1,10 @@
+bundle:
+  name: test-bundle
+
+resources:
+  volumes:
+    my_volume:
+      catalog_name: main
+      schema_name: default
+      name: MyVolume
+      volume_type: MANAGED

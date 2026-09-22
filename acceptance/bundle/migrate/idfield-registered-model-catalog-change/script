@@ -1,0 +1,15 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# CHARACTERIZATION ONLY (no fix): catalog_name is an immutable provided id field on a
+# registered model. The user legitimately moves the model to a different catalog. Record how
+# the migration treats the genuinely-changed id field (warn + silent drift, or recreate?).
+
+title "Deploy on terraform in catalog 'main'"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Change catalog_name (immutable id) in config, then migrate to direct"
+update_file.py databricks.yml "catalog_name: main" "catalog_name: other"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Follow-up plan on direct: is the drift stable or perpetual?"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan

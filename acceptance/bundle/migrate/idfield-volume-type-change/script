@@ -1,0 +1,13 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# CHARACTERIZATION ONLY (no fix): volume_type is both a provided id field and a
+# recreate_on_changes field. The user legitimately changes it in config. Record whether the
+# migration treats it as an id-field warn (like catalog_name) or as a recreate (like a pure
+# recreate_on_changes field) - i.e. which classification wins when a field is both.
+
+title "Deploy on terraform with volume_type MANAGED"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Change volume_type (immutable) in config, then migrate to direct"
+update_file.py databricks.yml "volume_type: MANAGED" "volume_type: EXTERNAL"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
