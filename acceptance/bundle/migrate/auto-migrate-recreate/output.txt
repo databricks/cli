@@ -28,8 +28,8 @@ direct_migrate_recreate_planned true
 >>> find .databricks/bundle -name resources.json -type f
 
 >>> find .databricks/bundle -name terraform.tfstate* -type f
-.databricks/bundle/default/terraform/terraform.tfstate.backup
 .databricks/bundle/default/terraform/terraform.tfstate
+.databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Retry on direct: remote now matches config, so the plan is clean and the migration succeeds
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
