@@ -1,0 +1,18 @@
+# The cluster manages only the libraries it declares. A library installed out of band (a task
+# library a job run installs on a shared cluster, or a UI install) must not be uninstalled when
+# the bundle's own declared libraries change. See removedLibraries in
+# bundle/direct/dresources/cluster.go and the `libraries` backend_defaults entry in configs/clusters.yml.
+
+# Local only: the scenario needs a library on the cluster that the bundle did not install.
+# We inject it with an out-of-band Libraries API call against the fake server, which is
+# deterministic locally but racy against a real (async) install on cloud.
+RecordRequests = true
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [".databricks", "databricks.yml"]
+
+# Cluster ids are server-generated; normalize them so the golden is stable.
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
+New = "[UUID]"

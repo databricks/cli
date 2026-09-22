@@ -1,0 +1,81 @@
+
+=== Deploy a cluster that declares one library (requests)
+OK: cluster created
+
+>>> print_requests.py //libraries/install
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+=== A job run (or the UI) installs another library on the shared cluster, out of band
+>>> print_requests.py //libraries/install
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+
+=== Add a second declared library (urllib3) and redeploy - the bundle only adds urllib3
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Restarting cluster [MYCLUSTER_ID] because its libraries changed
+Updated clusters.mycluster
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== The redeploy installs urllib3 and restarts to apply it, but leaves the out-of-band 'six' alone (no uninstall)
+>>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      },
+      {
+        "pypi": {
+          "package": "urllib3"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted
