@@ -1,0 +1,24 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+
+trap cleanup EXIT
+
+title "Deploy an experiment whose config declares no trace_location"
+trace $CLI bundle deploy -qq
+experiment_id=$($CLI bundle summary --output json | jq -r '.resources.experiments.my_experiment.id')
+
+title "An out-of-band job bound a UC trace location; GetExperiment now echoes it"
+trace $CLI experiments get-experiment "$experiment_id" | jq '.experiment | {name, lifecycle_stage, trace_location}'
+
+title "BUG (SUP-37168): re-plan with unchanged config recreates the experiment"
+title "trace_location is immutable and was set out-of-band, so the config-absent"
+title "remote value forces delete + create - dropping the UC trace location."
+trace $CLI bundle plan
+
+title "Deploy applies the recreate: the experiment is deleted and re-created"
+trace $CLI bundle deploy -qq
+
+title "BUG: the config still matches nothing changed, yet plan recreates again"
+title "(the recreate never converges - every deploy destroys and re-creates)"
+trace $CLI bundle plan

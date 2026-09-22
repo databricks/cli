@@ -10,6 +10,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
+// experimentNameUCTracing scopes the out-of-band UC trace-location injection to the
+// recreate repro test, keeping unrelated experiment tests free of it. Mirrors
+// catalogNameManagedDefaults. It mimics an enable-UC-tracing job that binds a trace
+// location to the experiment after creation, one the bundle config never declares.
+const experimentNameUCTracing = "uc-tracing"
+
 func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 	defer s.LockUnlock()()
 
@@ -73,6 +79,19 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		LifecycleStage:   "active",
 		// Echo back like the real GetExperiment; omitting this immutable field triggers a spurious recreate.
 		TraceLocation: experiment.TraceLocation,
+	}
+
+	// Mimic an out-of-band enable-UC-tracing job: the bundle config never declares
+	// trace_location, but GetExperiment then echoes one. See SUP-37168 and
+	// acceptance/bundle/resources/experiments/uc-tracing-recreate.
+	if exp.TraceLocation == nil && strings.Contains(experimentName, experimentNameUCTracing) {
+		exp.TraceLocation = &ml.ExperimentTraceLocation{
+			UcTraceLocation: &ml.UcTraceLocation{
+				Catalog:              "main",
+				Schema:               "traces",
+				EffectiveTablePrefix: "exp_" + experimentId + "_traces",
+			},
+		}
 	}
 
 	s.Experiments[experimentId] = ml.GetExperimentResponse{

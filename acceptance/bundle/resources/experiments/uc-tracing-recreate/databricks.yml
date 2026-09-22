@@ -1,0 +1,10 @@
+bundle:
+  name: experiment-uc-tracing-recreate
+
+resources:
+  experiments:
+    my_experiment:
+      # The name contains "uc-tracing", which makes the fake workspace bind a UC trace
+      # location to the experiment on create - mimicking an out-of-band enable-UC-tracing
+      # job. The bundle config itself never declares trace_location.
+      name: /Users/tester@databricks.com/uc-tracing-experiment
