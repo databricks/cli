@@ -254,10 +254,73 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
+	}
+
+	// --plan applies a precomputed plan, so it skips Build and PreDeployChecks; a plain
+	// deploy builds and runs the predeploy checks. These only flip opts (no state access),
+	// so they run before phases.Build; the plan file itself is loaded during state
+	// resolution after the build, once the engine is known and the state is open.
+	if opts.ReadPlanPath != "" {
+		opts.Build = false
+		opts.PreDeployChecks = false
+	} else if opts.Deploy {
+		opts.Build = true
+		opts.PreDeployChecks = true
+	}
+
+	if opts.FastValidate {
+		t1 := time.Now()
+		bundle.ApplyContext(ctx, b, validate.FastValidate())
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   "validate.FastValidate",
+			Value: time.Since(t1).Milliseconds(),
+		})
+
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+
+		// Pipeline CLI only validation.
+		if opts.IsPipelinesCLI {
+			rejectDefinitions(ctx, b)
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
+	}
+
+	if opts.Validate {
+		validate.Validate(ctx, b)
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
+	var libs phases.LibLocationMap
+
+	if opts.Build {
+		t2 := time.Now()
+		libs = phases.Build(ctx, b)
+		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
+			Key:   "phases.Build",
+			Value: time.Since(t2).Milliseconds(),
+		})
+
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
+	// Resolve the deployment state after phases.Build, in one place, so the order reads
+	// build → resolve-state → deploy. This is behavior-preserving today (nothing between
+	// FastValidate and Build consumes the opened state, and the auto-migration still runs
+	// post-deploy). It prepares for moving the terraform→direct migration before deploy,
+	// which must run after Build so the converted state records resolved library and
+	// ${artifacts.*} paths rather than unexpanded globs.
+	var plan *deployplan.Plan
+	if shouldReadState {
 		// --select is only supported by the direct engine, which tracks resource
 		// dependencies in the plan graph (used to expand the selection transitively).
-		// The engine is only known for certain after the state is pulled, so reject it
-		// here rather than silently planning/deploying every resource on terraform.
 		if len(b.Select) > 0 && !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--select is only supported with the direct engine. See https://docs.databricks.com/aws/en/dev-tools/bundles/direct"))
 			return b, stateDesc, root.ErrAlreadyPrinted
@@ -365,79 +428,29 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-	}
-
-	var plan *deployplan.Plan
-	if opts.ReadPlanPath != "" {
-		if !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-		// Artifact uploads are handled inside Deploy by extracting remote paths
-		// from the plan's new_state and finding the matching local files.
-		opts.Build = false
-		opts.PreDeployChecks = false
-
-		var err error
-		plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-		currentVersion := build.GetInfo().Version
-		if plan.CLIVersion != currentVersion {
-			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
-		}
-
-		if err := direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan); err != nil {
-			logdiag.LogError(ctx, err)
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-	} else if opts.Deploy {
-		opts.Build = true
-		opts.PreDeployChecks = true
-	}
-
-	if opts.FastValidate {
-		t1 := time.Now()
-		bundle.ApplyContext(ctx, b, validate.FastValidate())
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "validate.FastValidate",
-			Value: time.Since(t1).Milliseconds(),
-		})
-
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-
-		// Pipeline CLI only validation.
-		if opts.IsPipelinesCLI {
-			rejectDefinitions(ctx, b)
-			if logdiag.HasError(ctx) {
+		// --plan: the engine is now known and the state is open, so validate and load the
+		// precomputed plan. Artifact uploads are handled inside Deploy by extracting remote
+		// paths from the plan's new_state and finding the matching local files.
+		if opts.ReadPlanPath != "" {
+			if !stateDesc.Engine.IsDirect() {
+				logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
-		}
-	}
+			var err error
+			plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			currentVersion := build.GetInfo().Version
+			if plan.CLIVersion != currentVersion {
+				log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
+			}
 
-	if opts.Validate {
-		validate.Validate(ctx, b)
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-	}
-
-	var libs phases.LibLocationMap
-
-	if opts.Build {
-		t2 := time.Now()
-		libs = phases.Build(ctx, b)
-		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
-			Key:   "phases.Build",
-			Value: time.Since(t2).Milliseconds(),
-		})
-
-		if logdiag.HasError(ctx) {
-			return b, stateDesc, root.ErrAlreadyPrinted
+			if err := direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan); err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
 		}
 	}
 
