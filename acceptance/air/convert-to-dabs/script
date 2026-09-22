@@ -1,0 +1,33 @@
+title "convert an AIR run YAML into a DABs bundle (in place, next to the source)"
+trace $CLI air convert-to-dabs train.yaml
+
+title "emitted databricks.yml (code_source packaged as a tgz artifact; no code is copied)"
+trace cat databricks.yml
+
+title "the generated command.sh carries the run command"
+trace cat generated_artifacts/command.sh
+
+title "the emitted bundle validates"
+trace $CLI bundle validate
+
+title "re-converting refuses to clobber the generated bundle"
+errcode trace $CLI air convert-to-dabs train.yaml
+
+title "--force overwrites it"
+trace $CLI air convert-to-dabs train.yaml --force
+
+title "convert a B300 run using the current SDK"
+trace $CLI air convert-to-dabs b300.yaml --output-dir generated-b300
+
+title "the B300 bundle preserves its accelerator and AI Runtime version"
+trace cat generated-b300/databricks.yml
+
+title "the current SDK warns about B300 but does not block bundle validation"
+(cd generated-b300 && trace $CLI bundle validate)
+
+title "databricks_ai versions use a base environment"
+trace $CLI air convert-to-dabs databricks-ai.yaml --force
+trace grep -E 'environment_version|base_environment' databricks.yml
+
+title "the Databricks AI bundle validates"
+trace $CLI bundle validate

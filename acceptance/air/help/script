@@ -1,0 +1,20 @@
+# Pin the command tree so any change to a subcommand or its short description
+# shows up as a diff here.
+
+title "help"
+trace $CLI air --help
+
+title "list help"
+trace $CLI air list --help
+
+title "get help"
+trace $CLI air get --help
+
+title "pools help"
+trace $CLI air pools --help
+
+title "logs help"
+trace $CLI air logs --help
+
+title "cancel help"
+trace $CLI air cancel --help
