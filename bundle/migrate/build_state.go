@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
@@ -205,6 +206,15 @@ func BuildStateFromTF(
 			}
 		}
 
+		// Warn when an id-composing field was renamed in config but not yet applied on
+		// terraform. Only for the main resource node (len 3); permissions/grants sub-nodes
+		// carry no id fields of their own.
+		if len(parts) == 3 {
+			if warnOnIDFieldRename(ctx, adapter, srcGroup, srcName, sv.Value, tfAttrs, warnPrefix) {
+				warningsSeen = true
+			}
+		}
+
 		// Compact hashed_fields fields so the migrated state stays small. Not needed for
 		// correctness — the first plan (CalculatePlan) compacts the saved state on read.
 		compacted, err := dresources.CompactState(adapter.ResourceConfig(), sv.Value)
@@ -218,4 +228,42 @@ func BuildStateFromTF(
 	}
 
 	return warningsSeen, nil
+}
+
+// warnOnIDFieldRename compares each id-composing field (provided_id_fields,
+// updatable_id_fields) between the deployed terraform state and the config that will be
+// written to the migrated state. They differ when the user renamed a resource in config
+// but has not applied it on terraform yet. The migrated state records the config value —
+// the direct engine's normal baseline, matching what a direct deploy would store — so
+// the rename is not carried into the migration and the next plan will not act on it
+// (classifyIDField compares state vs config and ignores the remote value for these
+// fields). We only warn: baking the deployed value into state instead would risk a
+// spurious recreate for backend-normalized id fields, which is far worse than a rename
+// the user can re-apply. A false warning is possible for a backend-normalized value.
+func warnOnIDFieldRename(ctx context.Context, adapter *dresources.Adapter, group, name string, stateValue any, tfAttrs TFStateAttrs, warnPrefix string) bool {
+	cfg := adapter.ResourceConfig()
+	if cfg == nil {
+		return false
+	}
+	warned := false
+	for _, rule := range slices.Concat(cfg.ProvidedIDFields, cfg.UpdatableIDFields) {
+		path, err := structpath.ParsePath(rule.Field.String())
+		if err != nil {
+			continue
+		}
+		configVal, err := structaccess.Get(stateValue, path)
+		if err != nil {
+			continue
+		}
+		deployedVal, err := LookupTFField(tfAttrs, group, name, path)
+		if err != nil {
+			continue
+		}
+		if !structdiff.IsEqual(configVal, deployedVal) {
+			log.Warnf(ctx, "%s%s.%s: config value %v for field %q differs from the deployed value %v; this rename is not applied by the migration and must be deployed separately",
+				warnPrefix, group, name, configVal, rule.Field.String(), deployedVal)
+			warned = true
+		}
+	}
+	return warned
 }

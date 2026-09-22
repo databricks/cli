@@ -1,0 +1,8 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    my_schema:
+      name: myschema
+      catalog_name: main

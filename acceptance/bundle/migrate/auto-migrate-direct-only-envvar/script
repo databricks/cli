@@ -7,12 +7,12 @@ rm -f "$OUT_REQUESTS"
 title "Add a direct-only resource to the config"
 trace update_file.py databricks.yml "#instance_pools" "instance_pools"
 
-title "Opt in via env var only: deploy migrates the state, ignoring the direct-only resource"
+title "Opt in via env var only: deploy migrates the state and creates the direct-only resource"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 
-title "The direct-only resource is created on the next deploy"
+title "Redeploy is a no-op: state is already on the direct engine"
 trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests.py //instance-pools/create
