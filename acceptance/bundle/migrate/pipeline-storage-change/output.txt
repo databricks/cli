@@ -1,15 +1,15 @@
 
-=== Deploy on terraform with storage /Volumes/main/default/init
+=== Deploy the pipeline on terraform
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created pipelines.my_pipeline
-Files: 2 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Change immutable storage in config, then migrate to direct
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+=== Change immutable storage. Without --auto-approve the recreate is refused
+>>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
 Warn: migration to the direct engine would recreate [resources.pipelines.my_pipeline]; deploying on terraform this time
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
 This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
@@ -23,3 +23,41 @@ To proceed, use --auto-approve after reviewing the plan above.
 Files: 1 uploaded, 0 deleted
 
 Exit code: 1
+
+=== With --auto-approve the terraform fallback applies the recreate
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
+Warn: migration to the direct engine would recreate [resources.pipelines.my_pipeline]; deploying on terraform this time
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+
+This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate resources.pipelines.my_pipeline
+Recreated pipelines.my_pipeline
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+=== Retry on direct: state now matches the backend, so the migration succeeds
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Migrated 1 resource to direct deployment engine.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+=== Local state is now direct
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+=== Cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted
