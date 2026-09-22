@@ -1,15 +1,21 @@
-export DATABRICKS_BUNDLE_ENGINE=
+envsubst < databricks.yml.tmpl > databricks.yml
 
-# name is an immutable provided id field. UC lowercases it, so the deployed id ("myvolume")
-# differs from config ("MyVolume") without the user changing anything. reconcileIDFields
-# treats the case-only difference as backend normalization and keeps the config value, so the
-# migration proceeds with no warning and the plan converges.
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
 
-title "Deploy on terraform; UC lowercases the volume name (MyVolume -> myvolume)"
+# name is an immutable provided id field. UC lowercases it, so the deployed id differs from
+# config by case only, without the user changing anything. reconcileIDFields treats the
+# case-only difference as backend normalization and keeps the config value, so the migration
+# proceeds with no warning and the plan converges.
+
+title "Deploy on terraform; UC lowercases the volume name"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
-title "Migrate to direct with the same config (name still MyVolume)"
+title "Migrate to direct with the same config (mixed-case name unchanged)"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
-title "Follow-up plan on direct: does it converge or keep seeing a diff?"
+title "Follow-up plan on direct converges (the case-only difference is not a change)"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan

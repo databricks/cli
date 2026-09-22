@@ -1,10 +1,13 @@
 bundle:
-  name: test-bundle
+  name: uc-volname-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
 
 resources:
   volumes:
     my_volume:
       catalog_name: main
       schema_name: default
-      name: MyVolume
+      name: MyVolume-$UNIQUE_NAME
       volume_type: MANAGED
