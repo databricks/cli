@@ -225,7 +225,7 @@ func TestConvertToDabsOmitsUnsetFields(t *testing.T) {
 	// Even with no environment block, the default runtime version is pinned (what
 	// `air run` would have used) rather than emitting an empty environment spec.
 	env := "resources.jobs." + name + ".environments[0]"
-	assert.Equal(t, "4", get(t, root, env+".spec.environment_version").MustString())
+	assert.Equal(t, "6", get(t, root, env+".spec.environment_version").MustString())
 	assert.False(t, has(root, env+".spec.dependencies"))
 }
 

@@ -616,6 +616,14 @@ func TestWriteConfigFieldHelp(t *testing.T) {
 	assert.NotContains(t, container.String(), "Required:")
 	assert.Contains(t, container.String(), `Use "-h config.compute.<field>" for details`)
 
+	var environment strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&environment, "config.environment"))
+	assert.Contains(t, environment.String(), "version              Client image version to pin (default: 6).")
+
+	var environmentVersion strings.Builder
+	require.NoError(t, writeConfigFieldHelp(&environmentVersion, "config.environment.version"))
+	assert.Contains(t, environmentVersion.String(), "Client image version to pin (default: 6).")
+
 	// Required top-level fields are flagged in a listing.
 	var root strings.Builder
 	require.NoError(t, writeConfigFieldHelp(&root, "config"))

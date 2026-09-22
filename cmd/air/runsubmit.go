@@ -26,7 +26,7 @@ import (
 // dlRuntimeImageEnv overrides the default deep-learning runtime image.
 const dlRuntimeImageEnv = "DATABRICKS_DL_RUNTIME_IMAGE"
 
-const defaultDlRuntimeImage = "CLIENT-GPU-4"
+const defaultDlRuntimeImage = "CLIENT-GPU-6"
 
 // aiRuntimeEnvironmentKey ties the task to the serverless environment that
 // carries the runtime channel.

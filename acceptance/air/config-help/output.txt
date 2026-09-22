@@ -101,7 +101,7 @@ config.environment.dependencies
 
 >>> [CLI] air run -h config.environment.version
 config.environment.version
-  Client image version to pin.
+  Client image version to pin (default: 6).
 
   Type:     string or int
   Required: no
