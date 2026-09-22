@@ -1,0 +1,24 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy the schema on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Rename the schema (an immutable id field) and deploy on direct with --auto-approve"
+# name is a provided id field, so a rename recreates. The migration seeds the deployed name
+# into the converted state, so its plan check detects the recreate against the real backend
+# and falls back to terraform, which recreates the schema under the new name.
+update_file.py databricks.yml "myschema-$UNIQUE_NAME" "myschema-$UNIQUE_NAME-renamed"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
+
+title "Retry on direct: state now matches the backend, so the migration succeeds"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "The schema exists under the new name and the local state is direct"
+trace $CLI schemas get "main.myschema-$UNIQUE_NAME-renamed" | jq "{full_name}"
+trace find .databricks/bundle -name "resources.json" -type f | sort
