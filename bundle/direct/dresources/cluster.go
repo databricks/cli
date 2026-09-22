@@ -106,7 +106,6 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 // RemapState maps the remote ClusterRemote to ClusterState for diff comparison.
 // Started is derived from cluster state so the planner can detect start/stop changes.
 func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
-	started := input.State == compute.StateRunning
 	spec := &ClusterState{
 		ClusterSpec: compute.ClusterSpec{
 			ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
@@ -146,7 +145,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 			WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
 			ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
 		},
-		Lifecycle: &StateLifecycle{Started: &started},
+		Lifecycle: input.Lifecycle,
 		Libraries: input.Libraries,
 	}
 	return spec
