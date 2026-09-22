@@ -28,9 +28,6 @@ recreate_on_changes:
   - field: storage_location
     reason: immutable
 backend_defaults:
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/catalog/resource_registered_model.go#L28
-  # m["storage_location"].Computed = true
-  - field: storage_location
   # owner, full_name, metastore_id are Computed in TF (backend-set output fields).
   - field: owner
   - field: full_name

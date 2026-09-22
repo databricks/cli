@@ -180,6 +180,10 @@ const (
 	// backend may extend such an object beyond what the bundle declares, so the addition is not
 	// treated as drift. We do not attribute the value to any particular source.
 	ReasonRemoteAddition = "remote_addition"
+	// ReasonImmutableBackendValue: an immutable (recreate_on_changes) field the config never
+	// set but the backend populated (old and new nil, remote set). It is left in place rather
+	// than recreated - the user does not manage it and the value cannot be changed anyway.
+	ReasonImmutableBackendValue = "immutable_backend_value"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"
