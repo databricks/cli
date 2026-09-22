@@ -5,8 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestNoRedundantRemapState enforces the "only override when needed" rule: a resource that
@@ -35,7 +35,7 @@ func TestNoRedundantRemapState(t *testing.T) {
 			continue // identity, the copier is not involved
 		}
 
-		copier, err := compileCopier(remoteType, stateType)
+		copier, err := structcopy.Compile(remoteType, stateType)
 		if err != nil {
 			continue // copier cannot handle it, so the override is required
 		}
@@ -45,7 +45,7 @@ func TestNoRedundantRemapState(t *testing.T) {
 		setForceSendFields(remote.Elem())
 
 		want := m.Call([]reflect.Value{remote})[0].Interface()
-		got := copier.copy(remote.Interface())
+		got := copier.Copy(remote.Interface())
 		if reflect.DeepEqual(want, got) {
 			redundant = append(redundant, resourceType)
 		}
@@ -53,101 +53,6 @@ func TestNoRedundantRemapState(t *testing.T) {
 
 	slices.Sort(redundant)
 	assert.Empty(t, redundant, "these resources have a RemapState the auto-copier reproduces exactly; delete the method and let buildCopiers handle it")
-}
-
-type copierKindA string
-
-type copierKindB string
-
-type copierRemote struct {
-	Name            string      `json:"name"`
-	Extra           string      `json:"extra"` // absent from state -> dropped
-	Kind            copierKindA `json:"kind"`  // same underlying type as state, distinct name -> converted
-	ForceSendFields []string
-}
-
-type copierState struct {
-	Name            string      `json:"name"`
-	Missing         string      `json:"missing"` // absent from remote -> left zero
-	Kind            copierKindB `json:"kind"`
-	ForceSendFields []string
-}
-
-func TestRemapCopierCopy(t *testing.T) {
-	copier, err := compileCopier(reflect.TypeFor[*copierRemote](), reflect.TypeFor[*copierState]())
-	require.NoError(t, err)
-
-	remote := &copierRemote{
-		Name:            "n",
-		Extra:           "e",
-		Kind:            "classic",
-		ForceSendFields: []string{"Name", "Extra", "Kind"},
-	}
-	got := copier.copy(remote).(*copierState)
-
-	assert.Equal(t, "n", got.Name)
-	assert.Empty(t, got.Missing)                                   // absent from remote
-	assert.Equal(t, copierKindB("classic"), got.Kind)              // converted across enum types
-	assert.Equal(t, []string{"Name", "Kind"}, got.ForceSendFields) // "Extra" filtered out (not a state field)
-}
-
-type copierUnsafeRemote struct {
-	N int `json:"n"`
-}
-
-type copierUnsafeState struct {
-	N string `json:"n"`
-}
-
-func TestRemapCopierCompileRejectsUnsafe(t *testing.T) {
-	_, err := compileCopier(reflect.TypeFor[*copierUnsafeRemote](), reflect.TypeFor[*copierUnsafeState]())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "implement RemapState")
-}
-
-func TestSafeConvert(t *testing.T) {
-	tests := []struct {
-		name string
-		dst  reflect.Type
-		src  reflect.Type
-		want bool
-	}{
-		{
-			name: "identical",
-			dst:  reflect.TypeFor[string](),
-			src:  reflect.TypeFor[string](),
-			want: true,
-		},
-		{
-			name: "same underlying string enums",
-			dst:  reflect.TypeFor[copierKindA](),
-			src:  reflect.TypeFor[copierKindB](),
-			want: true,
-		},
-		{
-			name: "int to string",
-			dst:  reflect.TypeFor[string](),
-			src:  reflect.TypeFor[int](),
-			want: false,
-		},
-		{
-			name: "int64 to int32",
-			dst:  reflect.TypeFor[int32](),
-			src:  reflect.TypeFor[int64](),
-			want: false,
-		},
-		{
-			name: "bytes to string",
-			dst:  reflect.TypeFor[string](),
-			src:  reflect.TypeFor[[]byte](),
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, safeConvert(tt.dst, tt.src))
-		})
-	}
 }
 
 // setForceSendFields recursively sets every struct's ForceSendFields to its own field names,
