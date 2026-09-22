@@ -75,17 +75,15 @@ Declaring a field under `hashed_fields` in `resources.yml` makes the engine pers
 
 ## RemapState is a dumb copy; DoRead owns all remapping
 
-Most resources do not need a `RemapState` method at all. When `StateType` is a plain subset
-of `RemoteType`, the framework auto-generates the copy from the two types: `buildCopiers`
-(in `all.go`) compiles a copier per resource at package init, matching fields by JSON name,
-filtering `ForceSendFields`, and applying only lossless conversions. Anything it cannot copy
-safely (a kind-changing conversion, a mismatched struct shape) fails at load, so a resource
-that needs real logic surfaces as a build error rather than silent drift. Write a `RemapState`
-method only for that logic (derived fields, renames, per-field `ForceSendFields` rules); the
-rest of this section governs those hand-written overrides.
+New resources should not define `RemapState`. When `StateType` is a subset of `RemoteType`,
+the framework copies it automatically: `buildCopiers` (in `all.go`) compiles a copier per
+resource at package init, matching fields by JSON name, filtering `ForceSendFields`, and
+applying only lossless conversions. Anything it cannot copy safely (a kind-changing conversion,
+a mismatched struct shape) fails at load rather than as silent drift. Add a `RemapState` method
+only for logic the copier cannot express — derived fields, renames, per-field `ForceSendFields`
+rules — and the rest of this section governs those overrides.
 
-`RemapState` converts `RemoteType` to `StateType` only because `StateType` is typically a
-subset of `RemoteType`. It must be a field-by-field copy (or no-op), never a place for
+Such a `RemapState` must still be a field-by-field copy (or no-op), never a place for arbitrary
 logic. In particular, do not remap a differently-named field there (e.g. `state.x = remote.status.x`).
 Any remapping the API requires belongs in `DoRead`: add `x` directly to `RemoteType` and
 populate it from `status.x` inside `DoRead`.

@@ -41,7 +41,8 @@ func TestNoRedundantRemapState(t *testing.T) {
 		}
 
 		remote := reflect.New(remoteType.Elem())
-		fillValue(remote.Elem(), 0, map[reflect.Type]bool{})
+		fillNonZero(remote.Elem(), 0)
+		setForceSendFields(remote.Elem())
 
 		want := m.Call([]reflect.Value{remote})[0].Interface()
 		got := copier.copy(remote.Interface())
@@ -111,11 +112,36 @@ func TestSafeConvert(t *testing.T) {
 		src  reflect.Type
 		want bool
 	}{
-		{"identical", reflect.TypeFor[string](), reflect.TypeFor[string](), true},
-		{"same underlying string enums", reflect.TypeFor[copierKindA](), reflect.TypeFor[copierKindB](), true},
-		{"int to string", reflect.TypeFor[string](), reflect.TypeFor[int](), false},
-		{"int64 to int32", reflect.TypeFor[int32](), reflect.TypeFor[int64](), false},
-		{"bytes to string", reflect.TypeFor[string](), reflect.TypeFor[[]byte](), false},
+		{
+			name: "identical",
+			dst:  reflect.TypeFor[string](),
+			src:  reflect.TypeFor[string](),
+			want: true,
+		},
+		{
+			name: "same underlying string enums",
+			dst:  reflect.TypeFor[copierKindA](),
+			src:  reflect.TypeFor[copierKindB](),
+			want: true,
+		},
+		{
+			name: "int to string",
+			dst:  reflect.TypeFor[string](),
+			src:  reflect.TypeFor[int](),
+			want: false,
+		},
+		{
+			name: "int64 to int32",
+			dst:  reflect.TypeFor[int32](),
+			src:  reflect.TypeFor[int64](),
+			want: false,
+		},
+		{
+			name: "bytes to string",
+			dst:  reflect.TypeFor[string](),
+			src:  reflect.TypeFor[[]byte](),
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -124,58 +150,34 @@ func TestSafeConvert(t *testing.T) {
 	}
 }
 
-// fillValue sets every exported field to a non-zero value, bounded by depth to avoid cycles.
-// Each struct's ForceSendFields is populated with its own field names so the FSF-filtering
-// path is exercised at every level.
-func fillValue(v reflect.Value, depth int, visited map[reflect.Type]bool) {
-	if depth > 5 {
-		return
-	}
+// setForceSendFields recursively sets every struct's ForceSendFields to its own field names,
+// so the copier's ForceSendFields-filtering path is exercised at every level. fillNonZero
+// deliberately leaves ForceSendFields empty (round-trip tests need that), so we populate it
+// here. Map values are not addressable and cannot hold a relevant FSF source, so they are skipped.
+func setForceSendFields(v reflect.Value) {
 	switch v.Kind() {
-	case reflect.String:
-		v.SetString("x")
-	case reflect.Bool:
-		v.SetBool(true)
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		v.SetInt(1)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		v.SetUint(1)
-	case reflect.Float32, reflect.Float64:
-		v.SetFloat(1)
 	case reflect.Pointer:
-		v.Set(reflect.New(v.Type().Elem()))
-		fillValue(v.Elem(), depth+1, visited)
-	case reflect.Slice:
-		s := reflect.MakeSlice(v.Type(), 1, 1)
-		fillValue(s.Index(0), depth+1, visited)
-		v.Set(s)
-	case reflect.Map:
-		m := reflect.MakeMap(v.Type())
-		key := reflect.New(v.Type().Key()).Elem()
-		fillValue(key, depth+1, visited)
-		val := reflect.New(v.Type().Elem()).Elem()
-		fillValue(val, depth+1, visited)
-		m.SetMapIndex(key, val)
-		v.Set(m)
-	case reflect.Struct:
-		if visited[v.Type()] {
-			return
+		if !v.IsNil() {
+			setForceSendFields(v.Elem())
 		}
-		visited[v.Type()] = true
-		defer delete(visited, v.Type())
+	case reflect.Slice:
+		for i := range v.Len() {
+			setForceSendFields(v.Index(i))
+		}
+	case reflect.Struct:
 		var names []string
 		for i := range v.NumField() {
 			sf := v.Type().Field(i)
-			if sf.PkgPath != "" || sf.Name == "ForceSendFields" {
+			if !sf.IsExported() || sf.Name == "ForceSendFields" {
 				continue
 			}
 			names = append(names, sf.Name)
-			fillValue(v.Field(i), depth+1, visited)
+			setForceSendFields(v.Field(i))
 		}
 		if f := v.FieldByName("ForceSendFields"); f.IsValid() && f.Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.String {
 			f.Set(reflect.ValueOf(names))
 		}
 	default:
-		// other kinds (interface, chan, func, array, complex, uintptr, ...) are left zero
+		// scalars and other kinds have no nested ForceSendFields to set
 	}
 }
