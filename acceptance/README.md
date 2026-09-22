@@ -15,28 +15,6 @@ The cloud run is keyed off `CLOUD_ENV`; see `getSkipReason` in `acceptance/accep
 
 To run tests against a real workspace: `deco env run -i -n aws-prod-ucws -- <go test command>` (requires the `deco` tool and access to a test env).
 
-## Local DMS in Litebox (POC)
-
-Set `DMS_LITEBOX_URL` to the HTTPS loopback origin of a fresh Deployment Metadata
-Service Litebox, and `DMS_LITEBOX_CERT` / `DMS_LITEBOX_KEY` to LITE's test client
-certificate and key, plus `DMS_LITEBOX_CA` to LITE's `ca.crt`. Then run:
-
-```sh
-go test ./acceptance -run '^TestDMSLitebox$' -count=1 -v
-```
-
-This runs `cmd/bundle/dms-litebox-smoke` through the existing in-process CLI
-runner, without building Terraform, Python bundles, yamlfmt, or old CLI versions.
-The runner's normal Go, Python, uv, jq, and ruff prerequisites still apply.
-Only `/api/2.0/bundle/deployments` and its descendants go to DMS; other workspace
-APIs stay mocked. HTTP failures never fall back to the DMS mock. TLS verifies
-the LITE service certificate, and the adapter supplies a fixed local test identity.
-Do not set `CLOUD_ENV`; no workspace token is needed.
-
-The smoke test lists an empty deployment collection. Bundle deployment tests
-also need the runner's fake workspace and DMS's workspace fake to share TreeNodes;
-this adapter does not yet provide that synchronization or per-test DMS isolation.
-
 ## Authoring
 
 To author a test,

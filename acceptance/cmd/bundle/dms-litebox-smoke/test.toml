@@ -1,9 +1,0 @@
-# Runs against the local mock by default, or a fresh DMS Litebox when configured.
-Cloud = false
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
-# The fake does not model ListDeployments yet. Litebox routing overrides this
-# empty-workspace fixture, so it is only used by the normal local suite.
-[[Server]]
-Pattern = "GET /api/2.0/bundle/deployments"
-Response.Body = '{"deployments": []}'
