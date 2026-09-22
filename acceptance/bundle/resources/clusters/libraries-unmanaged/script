@@ -20,7 +20,7 @@ title "A job run (or the UI) installs another library on the shared cluster, out
 MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/libraries/install --json "{\"cluster_id\": \"$CLUSTER_ID\", \"libraries\": [{\"pypi\": {\"package\": \"six\"}}]}" > /dev/null
 trace print_requests.py //libraries/install
 
-title "Add a second declared library (urllib3) and redeploy - the bundle only adds urllib3"
+title "Add a second declared library (urllib3) and redeploy - the bundle doesn't delete the out-of-band 'six'"
 update_file.py databricks.yml "        - pypi:
             package: requests" "        - pypi:
             package: requests
