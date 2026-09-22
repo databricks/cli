@@ -31,7 +31,7 @@ direct_migrated_via_env true
 >>> find .databricks/bundle -name terraform.tfstate* -type f
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
->>> [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
