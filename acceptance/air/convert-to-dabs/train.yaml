@@ -5,6 +5,8 @@ command: |
 compute:
   accelerator_type: GPU_1xA10
   num_accelerators: 1
+  pool_id: capacity-1
+mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
 environment:
   version: 5
   dependencies:
