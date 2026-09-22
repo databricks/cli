@@ -76,6 +76,7 @@ func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*SecretSco
 				Scope:                scope.Name,
 				ScopeBackendType:     scope.BackendType,
 				BackendAzureKeyvault: scope.KeyvaultMetadata,
+				ForceSendFields:      nil,
 			}, nil
 		}
 	}
