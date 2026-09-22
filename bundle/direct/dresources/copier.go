@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 
 	"github.com/databricks/cli/libs/structs/structaccess"
@@ -72,16 +73,16 @@ func compileCopier(remoteType, stateType reflect.Type) (*copier, error) {
 		}
 		switch {
 		case dst.typ == src.typ:
-			ops = append(ops, copyOp{dstIndex: dst.index, srcIndex: src.index, dstType: dst.typ})
+			ops = append(ops, copyOp{forceSendFields: false, dstIndex: dst.index, srcIndex: src.index, convert: false, dstType: dst.typ, ownerType: nil})
 		case safeConvert(dst.typ, src.typ):
-			ops = append(ops, copyOp{dstIndex: dst.index, srcIndex: src.index, convert: true, dstType: dst.typ})
+			ops = append(ops, copyOp{forceSendFields: false, dstIndex: dst.index, srcIndex: src.index, convert: true, dstType: dst.typ, ownerType: nil})
 		default:
 			return nil, fmt.Errorf("field %q: state type %s cannot be copied from remote type %s; implement RemapState", name, dst.typ, src.typ)
 		}
 	}
 
 	for _, target := range dstForceSend {
-		ops = append(ops, copyOp{forceSendFields: true, dstIndex: target.index, ownerType: target.ownerType})
+		ops = append(ops, copyOp{forceSendFields: true, dstIndex: target.index, srcIndex: nil, convert: false, dstType: nil, ownerType: target.ownerType})
 	}
 
 	return &copier{stateElem: stateElem, ops: ops}, nil
@@ -101,7 +102,7 @@ func rootForceSendFields(remote reflect.Value) []string {
 	if !f.IsValid() || f.Kind() != reflect.Slice {
 		return nil
 	}
-	fields, _ := f.Interface().([]string)
+	fields, _ := reflect.TypeAssert[[]string](f)
 	return fields
 }
 
@@ -152,9 +153,7 @@ func flattenStruct(t reflect.Type, prefix []int) (map[string]jsonFieldInfo, []fo
 		}
 		if structaccess.IsFlattenedEmbed(sf) {
 			nested, nestedForceSend := flattenStruct(sf.Type, index)
-			for name, info := range nested {
-				fields[name] = info
-			}
+			maps.Copy(fields, nested)
 			forceSend = append(forceSend, nestedForceSend...)
 			continue
 		}
