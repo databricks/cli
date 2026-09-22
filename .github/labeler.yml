@@ -1,0 +1,34 @@
+# Configuration for the "PR Labeler" workflow (.github/workflows/labeler.yml).
+#
+# Maps a label to the file globs that, when matched by a PR's diff, cause the
+# label to be applied. Uses the actions/labeler v7 config format, documented at
+# https://github.com/actions/labeler/blob/v7.0.0/README.md
+#
+# To add a new mapping, copy the block below. The label MUST already exist in
+# the repository (labeler does not create labels), and globs use minimatch
+# syntax where `**` matches nested paths:
+#
+#   <LABEL>:
+#     - changed-files:
+#         - any-glob-to-any-file:
+#             - 'some/path/**'
+#             - 'another/path/**'
+
+AIR:
+  - changed-files:
+      - any-glob-to-any-file:
+          # Current (experimental) location.
+          - 'experimental/air/**'
+          - 'acceptance/experimental/air/**'
+          # Post-graduation location (see #6722): commands move to cmd/air,
+          # acceptance tests to acceptance/air. Kept alongside the experimental
+          # globs so labeling survives the move.
+          - 'cmd/air/**'
+          - 'acceptance/air/**'
+
+DABs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'bundle/**'
+          - 'cmd/bundle/**'
+          - 'acceptance/bundle/**'
