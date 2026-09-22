@@ -22,28 +22,6 @@ func (*ResourceInstancePool) PrepareState(input *resources.InstancePool) *comput
 }
 
 // RemapState copies the config fields shared by GetInstancePool and CreateInstancePool;
-// output-only fields (state, stats, default_tags, instance_pool_id) are not in the state.
-func (*ResourceInstancePool) RemapState(remote *compute.GetInstancePool) *compute.CreateInstancePool {
-	return &compute.CreateInstancePool{
-		AwsAttributes:                      remote.AwsAttributes,
-		AzureAttributes:                    remote.AzureAttributes,
-		CustomTags:                         remote.CustomTags,
-		DiskSpec:                           remote.DiskSpec,
-		EnableElasticDisk:                  remote.EnableElasticDisk,
-		GcpAttributes:                      remote.GcpAttributes,
-		IdleInstanceAutoterminationMinutes: remote.IdleInstanceAutoterminationMinutes,
-		InstancePoolName:                   remote.InstancePoolName,
-		MaxCapacity:                        remote.MaxCapacity,
-		MinIdleInstances:                   remote.MinIdleInstances,
-		NodeTypeFlexibility:                remote.NodeTypeFlexibility,
-		NodeTypeId:                         remote.NodeTypeId,
-		PreloadedDockerImages:              remote.PreloadedDockerImages,
-		PreloadedSparkVersions:             remote.PreloadedSparkVersions,
-		RemoteDiskThroughput:               remote.RemoteDiskThroughput,
-		TotalInitialRemoteDiskSize:         remote.TotalInitialRemoteDiskSize,
-		ForceSendFields:                    utils.FilterFields[compute.CreateInstancePool](remote.ForceSendFields),
-	}
-}
 
 func (r *ResourceInstancePool) DoRead(ctx context.Context, id string) (*compute.GetInstancePool, error) {
 	return r.client.InstancePools.GetByInstancePoolId(ctx, id)
