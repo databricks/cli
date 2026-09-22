@@ -34,6 +34,10 @@ const (
 	DirectMigrateWarnings    = "direct_migrate_warnings"
 	// True when the post-convert plan check failed; the migration was not committed.
 	DirectMigratePlanError = "direct_migrate_plan_error"
+	// True when the post-convert plan check succeeded but the plan would recreate
+	// (destroy + create) an existing resource; the migration was not committed and
+	// the run stays on terraform to avoid a destructive plan.
+	DirectMigrateRecreatePlanned = "direct_migrate_recreate_planned"
 
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the three keys is true;
