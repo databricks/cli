@@ -1,5 +1,9 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
+# Testserver-only: an explicit storage_root needs a registered external location on a real
+# workspace, so this is not Cloud-enabled. The normalization-converge class it covers is
+# verified on cloud by schema-name-normalized / volume-name-normalized.
+
 # storage_root is immutable (recreate_on_changes) and UC strips a trailing slash. The config
 # keeps the trailing slash ("s3://bucket/path/") but the deployed value is normalized
 # ("s3://bucket/path"), a difference the user did not make. normalize_slash absorbs it, so the

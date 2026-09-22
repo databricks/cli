@@ -1,5 +1,9 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
+# Testserver-only: changing volume_type to EXTERNAL needs a storage_location backed by a
+# registered external location on a real workspace, so this is not Cloud-enabled. The
+# recreate class it covers is verified on cloud by schema-rename / registered-model-rename.
+
 # volume_type is both a provided id field and a recreate_on_changes field. The user
 # legitimately changes it in config. reconcileIDFields records the deployed value, the plan
 # sees a real change, and it recreates - so the recreate guard keeps the run on terraform.

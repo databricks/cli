@@ -1,5 +1,9 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
+# Testserver-only: an explicit storage_root needs a registered external location on a real
+# workspace, so this is not Cloud-enabled. The recreate/refusal class it covers is verified
+# on cloud by schema-rename and pipeline-storage-change.
+
 title "Initial deploy on terraform with storage_root s3://mybucket/init"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace print_migration_telemetry
