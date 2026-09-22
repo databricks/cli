@@ -57,14 +57,6 @@ func (*ResourcePostgresSnapshotSchedule) PrepareState(input *resources.PostgresS
 	}
 }
 
-func (*ResourcePostgresSnapshotSchedule) RemapState(remote *PostgresSnapshotScheduleRemote) *PostgresSnapshotScheduleState {
-	return &PostgresSnapshotScheduleState{
-		Branch:          remote.Branch,
-		Schedule:        remote.Schedule,
-		ForceSendFields: nil,
-	}
-}
-
 // makePostgresSnapshotScheduleRemote converts the SDK SnapshotSchedule into the
 // remote shape. The API addresses the schedule by "{branch}/snapshot-schedule";
 // branch is derived by stripping that suffix so it participates in drift detection.

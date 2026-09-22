@@ -42,15 +42,6 @@ func (*ResourceMlflowModel) PrepareState(input *resources.MlflowModel) *ml.Creat
 	return &input.CreateModelRequest
 }
 
-func (*ResourceMlflowModel) RemapState(output *MlflowModelRemote) *ml.CreateModelRequest {
-	return &ml.CreateModelRequest{
-		Name:            output.Name,
-		Tags:            output.Tags,
-		Description:     output.Description,
-		ForceSendFields: utils.FilterFields[ml.CreateModelRequest](output.ForceSendFields),
-	}
-}
-
 func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*MlflowModelRemote, error) {
 	response, err := r.client.ModelRegistry.GetModel(ctx, ml.GetModelRequest{
 		Name: id,
