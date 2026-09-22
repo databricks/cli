@@ -1,4 +1,3 @@
-//nolint:forbidigo // Acceptance infrastructure reads the test process environment.
 package internal
 
 import (
@@ -14,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/stretchr/testify/require"
 )
@@ -27,15 +27,15 @@ var liteboxPermissionTypes = []string{"directories", "files", "notebooks", "work
 // to its shared fakes, retaining request recording and mocks for other APIs.
 func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 	t.Helper()
-	endpoint := os.Getenv("DMS_LITEBOX_URL")
+	endpoint := env.Get(t.Context(), "DMS_LITEBOX_URL")
 	if endpoint == "" {
 		return
 	}
 	dmsURL := liteboxURL(t, "DMS_LITEBOX_URL")
 	workspaceURL := liteboxURL(t, "DMS_LITEBOX_WORKSPACE_URL")
 
-	certFile, keyFile := os.Getenv("DMS_LITEBOX_CERT"), os.Getenv("DMS_LITEBOX_KEY")
-	caFile := os.Getenv("DMS_LITEBOX_CA")
+	certFile, keyFile := env.Get(t.Context(), "DMS_LITEBOX_CERT"), env.Get(t.Context(), "DMS_LITEBOX_KEY")
+	caFile := env.Get(t.Context(), "DMS_LITEBOX_CA")
 	require.NotEmpty(t, certFile, "DMS_LITEBOX_CERT is required with DMS_LITEBOX_URL")
 	require.NotEmpty(t, keyFile, "DMS_LITEBOX_KEY is required with DMS_LITEBOX_URL")
 	require.NotEmpty(t, caFile, "DMS_LITEBOX_CA is required with DMS_LITEBOX_URL")
@@ -97,7 +97,7 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 
 func liteboxURL(t *testing.T, name string) *url.URL {
 	t.Helper()
-	endpoint := os.Getenv(name)
+	endpoint := env.Get(t.Context(), name)
 	require.NotEmpty(t, endpoint, "%s is required with DMS_LITEBOX_URL", name)
 	u, err := url.Parse(endpoint)
 	require.NoError(t, err, "invalid %s", name)
