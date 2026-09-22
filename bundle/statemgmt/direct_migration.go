@@ -37,15 +37,22 @@ const warnPrefix = "migration to direct: "
 // When commit is false (plan) the converted state is opened in memory and nothing is
 // written to disk or the workspace. When commit is true (deploy) the migration is
 // plan-checked first; on success resources.json is written and pushed and
-// terraform.tfstate is backed up, so it completes even if the deploy is a no-op. If the
-// plan check fails the migration is not committed and a warning is emitted; the caller
-// then proceeds on the terraform engine, which is still available.
+// terraform.tfstate is backed up, so it completes even if the deploy is a no-op.
+//
+// Any failure before resources.json is pushed (parsing, conversion, the empty-state
+// sweep, the plan check, or the push itself) is non-fatal: a warning is emitted, false is
+// returned, and the caller proceeds on the terraform engine, which is still in place. This
+// keeps a failed migration from blocking a deploy that would otherwise succeed. Only a
+// failure after the push (placing or opening the local state) returns an error, because
+// the workspace is already committed to the direct engine by then; re-running recovers by
+// pulling the committed resources.json.
 func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine engine.EngineSetting, commit bool) (bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
-		return false, fmt.Errorf("parsing terraform state: %w", err)
+		log.Warnf(ctx, "could not parse terraform state for migration to the direct engine; deploying on terraform this time: %v", err)
+		return false, nil
 	}
 	if tfState == nil {
 		return false, nil
@@ -61,7 +68,8 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 			cmdio.LogString(ctx, "Removing empty terraform state; the direct engine will be used from now on...")
 			if err := BackupTerraformState(ctx, b); err != nil {
 				b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
-				return false, err
+				log.Warnf(ctx, "could not remove empty terraform state for migration to the direct engine; deploying on terraform this time: %v", err)
+				return false, nil
 			}
 			recordAutoMigrateSource(b, requiredEngine)
 		}
@@ -85,7 +93,8 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 	}
 	if err != nil {
 		b.Metrics.SetBoolValue(metrics.DirectMigrateError, true)
-		return false, err
+		log.Warnf(ctx, "could not convert terraform state to the direct engine; deploying on terraform this time: %v", err)
+		return false, nil
 	}
 
 	if commit {
@@ -121,7 +130,7 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 		recordAutoMigrateSource(b, requiredEngine)
 
 		if err := b.DeploymentBundle.StateDB.Open(ctx, localDirectPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-			return false, fmt.Errorf("opening migrated state: %w", err)
+			return false, fmt.Errorf("migrated to the direct engine in the workspace, but opening the local direct state failed; re-run the command to deploy: %w", err)
 		}
 		return true, nil
 	}
@@ -399,10 +408,10 @@ func finalizeLocalMigration(ctx context.Context, b *bundle.Bundle, tempStatePath
 	_, localDirectPath := b.StateFilenameDirect(ctx)
 
 	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
-		return fmt.Errorf("workspace migrated but creating local state directory failed: %w", err)
+		return fmt.Errorf("migrated to the direct engine in the workspace, but creating the local state directory failed; re-run the command to deploy: %w", err)
 	}
 	if err := os.Rename(tempStatePath, localDirectPath); err != nil {
-		return fmt.Errorf("workspace migrated but writing local direct state failed: %w", err)
+		return fmt.Errorf("migrated to the direct engine in the workspace, but writing the local direct state failed; re-run the command to deploy: %w", err)
 	}
 
 	// Best-effort terraform cleanup, remote and local.
