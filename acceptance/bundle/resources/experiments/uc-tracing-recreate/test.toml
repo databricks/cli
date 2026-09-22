@@ -1,9 +1,0 @@
-# Local-only: the out-of-band UC trace-location binding is simulated by the fake
-# workspace (libs/testserver/experiments.go) and cannot be reproduced against a real
-# workspace without running an enable-UC-tracing job.
-
-# Direct-engine only. The spurious recreate is specific to the direct engine's plan
-# classifier: trace_location is recreate_on_changes (spec:immutable) with no
-# backend_defaults entry, so a config-absent, remote-populated value plans a recreate.
-# The terraform engine did not recreate on this drift (SUP-37168).
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
