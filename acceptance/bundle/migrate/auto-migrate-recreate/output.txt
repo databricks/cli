@@ -10,7 +10,25 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 direct_drymigrate_success true
 direct_drymigrate_warnings false
 
-=== Change immutable storage_root in config, then redeploy on direct (auto-migration)
+=== Change immutable storage_root; without --auto-approve the recreate is refused
+>>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
+Warn: migration to the direct engine would recreate [resources.schemas.my_schema]; deploying on terraform this time
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.my_schema
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
+
+Files: 1 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_migration_telemetry
+direct_migrate_recreate_planned true
+
+=== With --auto-approve the terraform fallback applies the recreate the user asked for
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
 Warn: migration to the direct engine would recreate [resources.schemas.my_schema]; deploying on terraform this time
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -18,7 +36,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   recreate resources.schemas.my_schema
 Recreated schemas.my_schema
-Files: 1 uploaded, 0 deleted
+Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> print_migration_telemetry
