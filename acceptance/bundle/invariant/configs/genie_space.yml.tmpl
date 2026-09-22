@@ -6,9 +6,7 @@ resources:
     foo:
       warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
       title: test-genie-space-$UNIQUE_NAME
-      # CANNOT_REMOVE: description is not force-sent on update, so clearing it drops the
-      # field from the request and the old value drifts back on every subsequent plan.
-      description: This is a test genie space
+      description: This is a test genie space # CAN_REMOVE
       # Structured (inline) serialized_space is marshalled to a JSON string by
       # ConfigureGenieSpaceSerializedSpace; this config doubles as a regression
       # guard that the normalization produces a drift-free deploy. Kept minimal
