@@ -102,10 +102,17 @@ func has(root map[string]dyn.Value, path string) bool {
 // ai_runtime_task (experiment + single deployment + code_source_path), framework
 // fields on the task wrapper, and the environment spec.
 func TestConvertToDabsFullMapping(t *testing.T) {
-	cfg := minimalConfig + `
+	cfg := `
+experiment_name: my-run
+command: python train.py
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+  pool_id: capacity-1
 max_retries: 2
 timeout_minutes: 30
 mlflow_run_name: run-42
+mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
 code_source:
   type: snapshot
   snapshot:
@@ -135,12 +142,14 @@ environment:
 	assert.Equal(t, name, get(t, root, task+".task_key").MustString())
 	// Framework fields live on the task wrapper, not in ai_runtime_task.
 	assert.Equal(t, int64(2), get(t, root, task+".max_retries").MustInt())
+	assert.True(t, get(t, root, task+".retry_on_timeout").MustBool())
 	assert.Equal(t, int64(1800), get(t, root, task+".timeout_seconds").MustInt())
 	assert.False(t, has(root, task+".ai_runtime_task.max_retries"), "retries must not be inside ai_runtime_task")
 
 	art := task + ".ai_runtime_task"
 	assert.Equal(t, name, get(t, root, art+".experiment").MustString())
 	assert.Equal(t, "run-42", get(t, root, art+".mlflow_run").MustString())
+	assert.Equal(t, "dbfs:/Volumes/main/default/artifacts", get(t, root, art+".mlflow_artifact_location").MustString())
 	// code_source is packaged as a `tgz` artifact; code_source_path points at the
 	// built tarball, and the artifact packs the code dir (path = its parent, include =
 	// its basename, so entries nest under "src/").
@@ -157,6 +166,7 @@ environment:
 	assert.Equal(t, "./"+generatedArtifactsDir+"/"+commandScriptName, get(t, root, dep+".command_path").MustString())
 	assert.Equal(t, "GPU_1xH100", get(t, root, dep+".compute.accelerator_type").MustString())
 	assert.Equal(t, int64(1), get(t, root, dep+".compute.accelerator_count").MustInt())
+	assert.Equal(t, "capacity-1", get(t, root, dep+".compute.provisioned_capacity_id").MustString())
 
 	env := jobPath + ".environments[0]"
 	assert.Equal(t, "default", get(t, root, env+".environment_key").MustString())
@@ -174,7 +184,7 @@ environment:
 }
 
 // Optional fields are omitted rather than emitted empty: no code_source means no
-// code_source_path; unset retries/timeout means no wrapper fields.
+// code_source_path, and an unset timeout means no timeout_seconds.
 // sync.paths lists only the generated-artifacts dir. The code directory must be
 // absent: the `tgz` artifact packages it, so syncing it as loose files too would
 // upload the whole tree a second time.
@@ -216,6 +226,7 @@ func TestConvertToDabsOmitsUnsetFields(t *testing.T) {
 	// max_retries is always emitted: `air run` fills its own default when unset, so
 	// omitting it would silently give the bundle the Jobs default instead.
 	assert.Equal(t, int64(defaultMaxRetries), get(t, root, task+".max_retries").MustInt())
+	assert.True(t, get(t, root, task+".retry_on_timeout").MustBool())
 	assert.False(t, has(root, task+".timeout_seconds"))
 	assert.False(t, has(root, task+".ai_runtime_task.code_source_path"))
 	assert.False(t, has(root, task+".ai_runtime_task.mlflow_run"))
@@ -227,6 +238,19 @@ func TestConvertToDabsOmitsUnsetFields(t *testing.T) {
 	env := "resources.jobs." + name + ".environments[0]"
 	assert.Equal(t, "4", get(t, root, env+".spec.environment_version").MustString())
 	assert.False(t, has(root, env+".spec.dependencies"))
+}
+
+func TestConvertToDabsDisablesTimeoutRetriesWhenRetriesAreDisabled(t *testing.T) {
+	path := writeConfigFile(t, "run.yaml", minimalConfig+"max_retries: 0\n")
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.NoError(t, err)
+
+	task := "resources.jobs." + loaded.ExperimentName + ".tasks[0]"
+	assert.Equal(t, int64(0), get(t, root, task+".max_retries").MustInt())
+	assert.False(t, get(t, root, task+".retry_on_timeout").MustBool())
 }
 
 // A DATABRICKS_DL_RUNTIME_IMAGE env override flows through the same resolution
