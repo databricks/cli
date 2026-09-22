@@ -1,0 +1,16 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# CHARACTERIZATION ONLY (no fix): the config uses a mixed-case schema name "MySchema".
+# Terraform tolerates case via EqualFoldDiffSuppress on name/catalog_name, and UC lowercases
+# the stored name, so the deployed id field ("myschema") differs from config ("MySchema")
+# without the user changing anything. Record how the pre-deploy migration treats this
+# backend-normalized id field (warn? recreate? converge?).
+
+title "Deploy on terraform; UC lowercases the schema name (MySchema -> myschema)"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Migrate to direct with the same config (name still MySchema)"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Follow-up plan on direct: does it converge or keep seeing a diff?"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
