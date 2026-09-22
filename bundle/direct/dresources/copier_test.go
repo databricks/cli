@@ -2,7 +2,7 @@ package dresources
 
 import (
 	"reflect"
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -50,7 +50,7 @@ func TestNoRedundantRemapState(t *testing.T) {
 		}
 	}
 
-	sort.Strings(redundant)
+	slices.Sort(redundant)
 	assert.Empty(t, redundant, "these resources have a RemapState the auto-copier reproduces exactly; delete the method and let buildCopiers handle it")
 }
 
@@ -175,5 +175,7 @@ func fillValue(v reflect.Value, depth int, visited map[reflect.Type]bool) {
 		if f := v.FieldByName("ForceSendFields"); f.IsValid() && f.Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.String {
 			f.Set(reflect.ValueOf(names))
 		}
+	default:
+		// other kinds (interface, chan, func, array, complex, uintptr, ...) are left zero
 	}
 }
