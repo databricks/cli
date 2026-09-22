@@ -1,0 +1,30 @@
+# Value library for model services. See ../../README.md.
+#
+# parent references the pre-existing main.default schema and model_service_id is the other half of the
+# server-derived id; both are immutable, so a change recreates. A config block is required on create --
+# the backend refuses one without it ("config is required") -- so base seeds a routing config to a
+# pay-per-token system foundation model, which needs no workspace infrastructure to provision. Shape
+# follows acceptance/bundle/resources/model_services/lifecycle.
+#
+# Kept local: the base deploys on aws, but essentially every settable field is validated against a
+# real cloud resource or rule the fake server does not model, so the field catalog cannot converge
+# there -- pay_per_token_config.model and inference_table.parent are model/schema references
+# ("must be of the form models/{...}" / "schemas/{catalog}.{schema}"), traffic_percentage must be 100
+# for a single destination, model_service_id and the destination name are format-validated, and the
+# destination is a oneof whose non-seeded arms (external_model_config, provisioned_throughput_config)
+# conflict with the seeded pay_per_token_config. Cataloguing it on cloud would mean modelling that
+# whole surface; until then it stays local, like its mcp_services / model_provider_services siblings.
+local_only: nearly every field is validated against a real cloud resource or rule the fake does not model
+
+base:
+  parent: schemas/main.default
+  model_service_id: test-model-service-$UNIQUE_NAME
+  comment: test model service
+  config:
+    routing:
+      destinations:
+        - name: primary
+          destination_type: DESTINATION_TYPE_PAY_PER_TOKEN_FOUNDATION_MODEL
+          pay_per_token_config:
+            model: models/system.ai.databricks-gpt-5
+          traffic_percentage: 100

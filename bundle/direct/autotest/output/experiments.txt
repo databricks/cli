@@ -1,0 +1,9 @@
+# field | from | to | verdict | detail
+
+
+=== summary
+OK                         2
+OK_RECREATE                12
+CANNOT_DELETE_REQUIRED     8
+OK_INERT                   18
+SKIPPED                    2

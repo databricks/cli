@@ -21,6 +21,21 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		}
 	}
 
+	if experiment.Name == "" {
+		return experimentNameRequired()
+	}
+	// A UC trace location, once present, has to name both its catalog and schema; the backend refuses
+	// either cleared. trace_location is set only at create, so the engine recreates to change it, and
+	// the failing request is that recreate's create.
+	if tl := experiment.TraceLocation; tl != nil && tl.UcTraceLocation != nil {
+		if tl.UcTraceLocation.Catalog == "" {
+			return experimentFieldRequired("trace_location.uc_trace_location.catalog")
+		}
+		if tl.UcTraceLocation.Schema == "" {
+			return experimentFieldRequired("trace_location.uc_trace_location.schema")
+		}
+	}
+
 	testUser := s.CurrentUser()
 
 	// Server appends these tags automatically to experiments.
@@ -105,22 +120,47 @@ func (s *FakeWorkspace) ExperimentUpdate(req Request) Response {
 		}
 	}
 
-	// Update the experiment
-	if updateReq.NewName != "" {
-		experiment.Experiment.Name = updateReq.NewName
+	// An experiment cannot be left nameless, so clearing the name is refused rather than ignored --
+	// the backend rejects the update outright.
+	if updateReq.NewName == "" {
+		return experimentNameRequired()
+	}
+	experiment.Experiment.Name = updateReq.NewName
 
-		// The server modifies the value of the tag as well. Mimic that behaviour
-		// in the test server as well.
-		for i := range experiment.Experiment.Tags {
-			if experiment.Experiment.Tags[i].Key == "mlflow.experiment.sourceName" {
-				experiment.Experiment.Tags[i].Value = updateReq.NewName
-			}
+	// The server modifies the value of the tag as well. Mimic that behaviour
+	// in the test server as well.
+	for i := range experiment.Experiment.Tags {
+		if experiment.Experiment.Tags[i].Key == "mlflow.experiment.sourceName" {
+			experiment.Experiment.Tags[i].Value = updateReq.NewName
 		}
 	}
 
 	s.Experiments[updateReq.ExperimentId] = experiment
 
 	return Response{}
+}
+
+// experimentNameRequired mirrors the backend's refusal of a create or update with no name.
+func experimentNameRequired() Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    "An experiment name must be provided",
+		},
+	}
+}
+
+// experimentFieldRequired mirrors the backend's rejection of a create missing a required field, naming
+// the field the way the API does (e.g. "trace_location.uc_trace_location.catalog is required.").
+func experimentFieldRequired(field string) Response {
+	return Response{
+		StatusCode: http.StatusBadRequest,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    field + " is required.",
+		},
+	}
 }
 
 func (s *FakeWorkspace) ExperimentDelete(req Request) Response {

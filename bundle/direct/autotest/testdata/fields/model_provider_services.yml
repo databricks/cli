@@ -1,0 +1,12 @@
+# Value library for model provider services. See ../../README.md.
+#
+# Kept local: aws requires the create to carry a config, and ModelProviderServiceConfig requires
+# provider_type (required and immutable on create) plus the matching provider block -- amazon_bedrock,
+# anthropic, azure_openai, openai, etc. -- each of which needs real upstream provider credentials the
+# fixture cannot supply. So there is no self-contained config to send, and the type stays local.
+local_only: aws requires a config with provider_type and real upstream provider credentials
+
+base:
+  parent: schemas/main.default
+  model_provider_service_id: test-model-provider-service-$UNIQUE_NAME
+  comment: test model provider service

@@ -106,6 +106,14 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 		return postgresErrorResponse(409, "ALREADY_EXISTS", "project with such id already exists in the workspace")
 	}
 
+	// A deleted project holds its resource name until the soft delete is purged, so a create
+	// that reuses the name is refused. This is what makes a recreate that keeps the same name
+	// (e.g. changing an immutable field like pg_version) fail on the create half. Message matches
+	// aws verbatim (2026-09), including the trailing per-request TraceId.
+	if s.postgresSoftDeleted[name] {
+		return postgresErrorResponse(400, "BAD_REQUEST", fmt.Sprintf("A soft-deleted project currently has this resource name. To use this resource name with a new project, delete the existing soft-deleted project with `purge = true`. [TraceId: %s]", nextUUID()))
+	}
+
 	now := nowTime()
 	project.Name = name
 	project.ProjectId = projectID
@@ -131,7 +139,11 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 			Owner:                       TestUser.UserName,
 			BranchLogicalSizeLimitBytes: 8796093022208, // 8 TB (real API default)
 			SyntheticStorageSizeBytes:   0,
-			ForceSendFields:             []string{"EnablePgNativeLogin", "SyntheticStorageSizeBytes"},
+			// The status echoes the requested budget policy and tags back, so a config
+			// that sets either converges instead of drifting on the next read.
+			BudgetPolicyId:  project.Spec.BudgetPolicyId,
+			CustomTags:      project.Spec.CustomTags,
+			ForceSendFields: []string{"EnablePgNativeLogin", "SyntheticStorageSizeBytes"},
 		}
 
 		// The backend materializes default endpoint settings when the spec omits them.
@@ -197,7 +209,7 @@ func (s *FakeWorkspace) PostgresProjectList() Response {
 
 // PostgresProjectUpdate updates a postgres project.
 func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response {
-	if resp := validateUpdateMask(req, projectUpdateMaskPaths, projectOneofGroups); resp != nil {
+	if resp := validateUpdateMask(req, projectUpdateMaskPaths, projectOneofGroups, projectRequiredTogether); resp != nil {
 		return *resp
 	}
 
@@ -225,6 +237,17 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		}
 		if updateProject.Spec.DisplayName != "" {
 			project.Status.DisplayName = updateProject.Spec.DisplayName
+		}
+		// budget_policy_id and custom_tags are clearable via the mask (see
+		// clearableWhenMasked): whatever the body carries -- a value, or nothing --
+		// becomes the effective status, so the read reflects the last update. maskAssigns, not
+		// maskCovers: a whole-"spec" mask (as the Terraform provider sends) assigns these too.
+		mask := req.URL.Query().Get("update_mask")
+		if maskAssigns(mask, "spec.budget_policy_id") {
+			project.Status.BudgetPolicyId = updateProject.Spec.BudgetPolicyId
+		}
+		if maskAssigns(mask, "spec.custom_tags") {
+			project.Status.CustomTags = updateProject.Spec.CustomTags
 		}
 		// Verified against a real workspace: dropping the field from config sends a
 		// mask naming it with no value in the body, and the API keeps the previous
@@ -256,15 +279,29 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 	}
 }
 
-// PostgresProjectDelete deletes a postgres project. The `purge` query parameter
-// is ignored: acceptance tests assert on the recorded HTTP request rather than
-// on retention semantics, so a single "remove from map" action serves both
-// hard- and soft-delete paths.
-func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
+// PostgresProjectDelete deletes a postgres project. A plain delete soft-deletes: the name is held
+// by a tombstone so a later same-name create is refused. purge=true frees the name instead --
+// including purging an already-soft-deleted project, which is why the tombstone is honored before
+// the not-found check.
+func (s *FakeWorkspace) PostgresProjectDelete(name string, purge bool) Response {
 	defer s.LockUnlock()()
 
 	if _, exists := s.PostgresProjects[name]; !exists {
+		// Purging a project that is only a tombstone frees the name and succeeds; any other
+		// delete of a missing project is a 404.
+		if purge && s.postgresSoftDeleted[name] {
+			delete(s.postgresSoftDeleted, name)
+			return Response{Body: s.createOperationLocked(name, nil)}
+		}
 		return postgresNotFoundResponse("project")
+	}
+
+	// A plain delete holds the name with a tombstone (a later same-name create is refused); purge
+	// frees it, so no tombstone is left behind.
+	if purge {
+		delete(s.postgresSoftDeleted, name)
+	} else {
+		s.postgresSoftDeleted[name] = true
 	}
 
 	// Deleting a project cascade-deletes all its branches and endpoints.
@@ -316,6 +353,12 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
 			}
 		}
+	}
+
+	// no_expiry=false is invalid: it explicitly disables expiration, so only true is meaningful --
+	// to keep expiration, send ttl or expire_time instead. Measured on aws (2026-09).
+	if bodyHasNoExpiryFalse(req.Body) {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Invalid 'no_expiry' value: must be true to disable expiration. Provide 'ttl' or 'expire_time' instead.")
 	}
 
 	name := fmt.Sprintf("%s/branches/%s", parent, branchID)
@@ -434,8 +477,11 @@ func (s *FakeWorkspace) PostgresBranchList(parent string) Response {
 
 // PostgresBranchUpdate updates a postgres branch.
 func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response {
-	if resp := validateUpdateMask(req, branchUpdateMaskPaths, branchOneofGroups); resp != nil {
+	if resp := validateUpdateMask(req, branchUpdateMaskPaths, branchOneofGroups, nil); resp != nil {
 		return *resp
+	}
+	if bodyHasNoExpiryFalse(req.Body) {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Invalid 'no_expiry' value: must be true to disable expiration. Provide 'ttl' or 'expire_time' instead.")
 	}
 
 	defer s.LockUnlock()()
@@ -543,7 +589,7 @@ func (s *FakeWorkspace) PostgresSnapshotScheduleGet(name string) Response {
 // create/delete endpoint; the schedule is managed entirely through this update.
 // An empty schedule set disables automatic snapshots.
 func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string) Response {
-	if resp := validateUpdateMask(req, snapshotScheduleUpdateMaskPaths, nil); resp != nil {
+	if resp := validateUpdateMask(req, snapshotScheduleUpdateMaskPaths, nil, nil); resp != nil {
 		return *resp
 	}
 
@@ -567,6 +613,36 @@ func (s *FakeWorkspace) PostgresSnapshotScheduleUpdate(req Request, name string)
 			return Response{
 				StatusCode: 400,
 				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	// Each cadence requires its fields, and the backend reports the first missing one. A monthly
+	// cadence needs day then hour; a weekly cadence needs day_of_week then hour; every cadence
+	// needs hour. hour is `omitempty` (and day/day_of_week default to the zero value), so an
+	// omitted field and its zero value are indistinguishable on the wire -- the backend treats
+	// both as missing. Measured on aws (2026-09); the order is what decides which field a
+	// change to the other one is blamed on.
+	hourRequired := postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "'hour' is required and must be in [0, 23]")
+	for _, cad := range updateSchedule.Schedule {
+		switch {
+		case cad.MonthlySchedule != nil:
+			if cad.MonthlySchedule.Day == 0 {
+				return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'schedule.monthly_schedule.day' is required, expected non-default value (not 0)!")
+			}
+			if cad.MonthlySchedule.Hour == 0 {
+				return hourRequired
+			}
+		case cad.WeeklySchedule != nil:
+			if cad.WeeklySchedule.DayOfWeek == "" || cad.WeeklySchedule.DayOfWeek == "DAY_OF_WEEK_UNSPECIFIED" {
+				return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", "Field 'schedule.weekly_schedule.day_of_week' is required, expected non-default value (not DAY_OF_WEEK_UNSPECIFIED)!")
+			}
+			if cad.WeeklySchedule.Hour == 0 {
+				return hourRequired
+			}
+		case cad.DailySchedule != nil:
+			if cad.DailySchedule.Hour == 0 {
+				return hourRequired
 			}
 		}
 	}
@@ -816,12 +892,51 @@ var branchOneofGroups = map[string][]string{
 	"spec.expiration": {"spec.expire_time", "spec.no_expiry", "spec.ttl"},
 }
 
+// databaseUpdateMaskPaths are the update_mask paths a database update accepts. postgres_database
+// is renamable and role is reassignable, so a mask may name either; missingMaskedField then
+// rejects a masked postgres_database the engine sent without a value, matching aws.
+var databaseUpdateMaskPaths = []string{
+	"spec",
+	"spec.postgres_database",
+	"spec.role",
+}
+
 var projectOneofGroups = map[string][]string{
 	"spec.default_endpoint_settings.suspension": {
 		"spec.default_endpoint_settings.no_suspension",
 		"spec.default_endpoint_settings.suspend_timeout_duration",
 	},
 }
+
+// clearableWhenMasked are update_mask paths the backend accepts with no matching value in the
+// body, reading the omission as "clear" rather than rejecting it as unprovided. Most fields are
+// the other way round (see missingMaskedField); these two were measured accepting the empty
+// mask on aws (2026-09).
+var clearableWhenMasked = map[string]bool{
+	"spec.budget_policy_id": true,
+	"spec.custom_tags":      true,
+}
+
+// requiredGroup is a set of leaf paths the backend requires in the body together: whenever an
+// update's mask touches their enclosing submessage, every member must be present, and the first
+// one missing is the one reported.
+type requiredGroup struct {
+	submessage string
+	members    []string
+}
+
+// projectRequiredTogether: the two autoscaling limits are a unit. Any update that touches
+// default_endpoint_settings must carry both, and the backend reports the first one the body
+// lacks -- min before max. Measured on aws (2026-09): every default_endpoint_settings transition
+// the engine sent with only one limit (or neither) was rejected naming the absent limit, not the
+// suspension oneof.
+var projectRequiredTogether = []requiredGroup{{
+	submessage: "spec.default_endpoint_settings",
+	members: []string{
+		"spec.default_endpoint_settings.autoscaling_limit_min_cu",
+		"spec.default_endpoint_settings.autoscaling_limit_max_cu",
+	},
+}}
 
 // unpopulatedOneofGroup returns the first oneof group the mask covers but the body does
 // not populate.
@@ -897,6 +1012,13 @@ func missingMaskedField(req Request, oneofGroups map[string][]string) string {
 			// unpopulatedOneofGroup checks.
 			continue
 		}
+		if clearableWhenMasked[path] {
+			// The backend lets these be masked with no body value and reads that as "clear"
+			// rather than rejecting it. Verified on aws (2026-09): masking spec.budget_policy_id
+			// or spec.custom_tags without the field in the body succeeds. The SDK spells the
+			// same rule out for custom_tags: an empty list plus the mask clears the tags.
+			continue
+		}
 		parts := strings.Split(path, ".")
 		if path == "" || path == "*" || len(parts) < 2 {
 			// A whole message the request omits is tolerated: the Terraform provider
@@ -926,13 +1048,78 @@ func bodyHasPath(node any, parts []string) bool {
 	return true
 }
 
+// bodyHasNoExpiryFalse reports whether the request body sets spec.no_expiry to an explicit false.
+// no_expiry is `omitempty`, so a struct field cannot tell false from absent -- but the wire body
+// still carries the explicit false, which aws rejects ("must be true to disable expiration").
+func bodyHasNoExpiryFalse(body []byte) bool {
+	var m map[string]any
+	if err := json.Unmarshal(body, &m); err != nil {
+		return false
+	}
+	spec, ok := m["spec"].(map[string]any)
+	if !ok {
+		return false
+	}
+	v, present := spec["no_expiry"]
+	b, isBool := v.(bool)
+	return present && isBool && !b
+}
+
+// missingRequiredTogether returns the first member of a required-together group that the mask
+// touches but the body does not carry, or "" when every touched group is fully populated.
+func missingRequiredTogether(req Request, groups []requiredGroup) string {
+	mask := req.URL.Query().Get("update_mask")
+	if mask == "" || len(req.Body) == 0 {
+		return ""
+	}
+	var body map[string]any
+	if err := json.Unmarshal(req.Body, &body); err != nil {
+		return ""
+	}
+	for _, g := range groups {
+		if !maskTouches(mask, g.submessage) {
+			continue
+		}
+		for _, member := range g.members {
+			if !bodyHasPath(body, strings.Split(member, ".")) {
+				return member
+			}
+		}
+	}
+	return ""
+}
+
+// maskAssigns reports whether an update_mask assigns a value to the given field: the mask names
+// the field exactly, or names an ancestor of it (a whole "spec" mask assigns every spec field).
+// Distinct from maskCovers, which is about pulling in a oneof group, not applying a value.
+func maskAssigns(mask, path string) bool {
+	for entry := range strings.SplitSeq(mask, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == path || strings.HasPrefix(path, entry+".") {
+			return true
+		}
+	}
+	return false
+}
+
+// maskTouches reports whether the mask names the submessage itself or any path beneath it.
+func maskTouches(mask, submessage string) bool {
+	for entry := range strings.SplitSeq(mask, ",") {
+		entry = strings.TrimSpace(entry)
+		if entry == submessage || strings.HasPrefix(entry, submessage+".") {
+			return true
+		}
+	}
+	return false
+}
+
 func missingMaskedFieldResponse(path string) Response {
 	return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", fmt.Sprintf("Field '%s' is in update_mask but not provided in request", path))
 }
 
 // validateUpdateMask mirrors the API's rejection of unknown update_mask paths.
 // Returns nil when every path is accepted.
-func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]string) *Response {
+func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]string, requiredTogether []requiredGroup) *Response {
 	mask := req.URL.Query().Get("update_mask")
 	if mask == "" {
 		return nil
@@ -950,6 +1137,13 @@ func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]
 		resp := missingMaskedFieldResponse(path)
 		return &resp
 	}
+	// A required-together group takes precedence over the oneof check below: a
+	// default_endpoint_settings update that omits an autoscaling limit is rejected naming that
+	// limit, not the suspension oneof.
+	if path := missingRequiredTogether(req, requiredTogether); path != "" {
+		resp := missingMaskedFieldResponse(path)
+		return &resp
+	}
 	var body map[string]any
 	if err := json.Unmarshal(req.Body, &body); err == nil {
 		if group := unpopulatedOneofGroup(mask, body, oneofGroups); group != "" {
@@ -961,7 +1155,7 @@ func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]
 }
 
 func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Response {
-	if resp := validateUpdateMask(req, endpointUpdateMaskPaths, endpointOneofGroups); resp != nil {
+	if resp := validateUpdateMask(req, endpointUpdateMaskPaths, endpointOneofGroups, nil); resp != nil {
 		return *resp
 	}
 
@@ -1040,7 +1234,10 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	defer s.LockUnlock()()
 
 	if databaseID == "" {
-		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database_id' is required, expected non-default value (not "")!`)
+		// The API generates a database_id when the request omits one, rather than requiring it
+		// (observed on aws: databases/db-<random>). So clearing database_id recreates instead of
+		// failing.
+		databaseID = "db-" + strings.ReplaceAll(nextUUID(), "-", "")
 	}
 
 	// Check if parent branch exists
@@ -1171,6 +1368,10 @@ func (s *FakeWorkspace) PostgresDatabaseList(parent string) Response {
 
 // PostgresDatabaseUpdate updates a postgres database.
 func (s *FakeWorkspace) PostgresDatabaseUpdate(req Request, name string) Response {
+	if resp := validateUpdateMask(req, databaseUpdateMaskPaths, nil, nil); resp != nil {
+		return *resp
+	}
+
 	defer s.LockUnlock()()
 
 	database, exists := s.PostgresDatabases[name]
@@ -1278,6 +1479,12 @@ func (s *FakeWorkspace) PostgresCatalogCreate(req Request, catalogID string) Res
 				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
 			}
 		}
+	}
+
+	// postgres_database is required (a catalog has no update API, so clearing it recreates, and
+	// the create half is refused). Measured on aws (2026-09).
+	if catalog.Spec == nil || catalog.Spec.PostgresDatabase == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'postgres_database' is required, expected non-default value (not "")!`)
 	}
 
 	name := "catalogs/" + catalogID
@@ -1675,6 +1882,18 @@ func (s *FakeWorkspace) PostgresSyncedTableCreate(req Request, syncedTableID str
 			return Response{
 				StatusCode: 400,
 				Body:       fmt.Sprintf("cannot unmarshal request body: %v", err),
+			}
+		}
+	}
+
+	// pg_type is an enum, and the API rejects anything outside it as a missing required field
+	// rather than a bad value (aws, 2026-08): a Postgres type name like "bigint" is not one of
+	// PG_SPECIFIC_TYPE_HALFVEC / _VARCHAR / _VECTOR. Checked against the enum, not against the
+	// zero value: the SDK stores an unrecognised string verbatim rather than dropping it.
+	if table.Spec != nil {
+		for _, override := range table.Spec.TypeOverrides {
+			if !slices.Contains(override.PgType.Values(), override.PgType) {
+				return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'synced_table.spec.type_overrides.pg_type' is required, expected non-default value (not "")!`)
 			}
 		}
 	}

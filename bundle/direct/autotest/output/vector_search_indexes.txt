@@ -1,0 +1,6 @@
+# field | from | to | verdict | detail
+
+
+=== summary
+OK_RECREATE                6
+SKIPPED                    7

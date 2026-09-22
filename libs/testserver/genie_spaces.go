@@ -10,6 +10,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 )
 
+// defaultGenieSpaceTitle is what the backend names a space created without a title.
+const defaultGenieSpaceTitle = "New Agent"
+
 // generateGenieSpaceId returns a random 32-character hex string.
 func generateGenieSpaceId() (string, error) {
 	randomBytes := make([]byte, 16)
@@ -62,6 +65,14 @@ func (s *FakeWorkspace) GenieSpaceCreate(req Request) Response {
 				"message": "Invalid request body: " + err.Error(),
 			},
 		}
+	}
+
+	// A create that names no title gets one from the backend, not an empty string (observed on
+	// aws, 2026-08). It matters because the config then has no title while the remote does, so
+	// the space drifts for as long as it lives -- a fake that stored "" would show a clean plan
+	// and hide that.
+	if createReq.Title == "" {
+		createReq.Title = defaultGenieSpaceTitle
 	}
 
 	// Default to user's home directory if parent_path is not provided (matches cloud behavior)
