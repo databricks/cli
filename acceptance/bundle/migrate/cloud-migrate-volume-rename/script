@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy the schema and volume on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Rename the volume (an updatable id field) and deploy on direct"
+# Unlike a schema (whose name recreates), a volume name is an updatable id field: it is
+# renamed in place (UpdateWithID). The migration seeds the deployed name into the converted
+# state, so its plan sees a rename and the migration succeeds; the deploy then renames the
+# volume rather than the migration snapshotting the new name as already applied. Verifies the
+# updatable-id path against the real backend.
+update_file.py databricks.yml "thevolume-$UNIQUE_NAME" "thevolume-$UNIQUE_NAME-renamed"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Retry on direct: state now matches the backend, so the migration succeeds"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "The volume exists under the new name and the local state is direct"
+trace $CLI volumes read "main.pschema-$UNIQUE_NAME.thevolume-$UNIQUE_NAME-renamed" | jq "{full_name}"
+trace find .databricks/bundle -name "resources.json" -type f | sort
