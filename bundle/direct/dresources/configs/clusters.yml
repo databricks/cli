@@ -51,6 +51,13 @@ backend_defaults:
   # See https://github.com/databricks/cli/issues/4418
   - field: single_user_name
 
+  # The Libraries API reports every library installed on the cluster, including ones the
+  # bundle did not install: a job run installs its task libraries on a shared cluster (and
+  # they are cluster-wide, so other jobs see them too), plus UI/all-purpose installs. The
+  # bundle manages only libraries it declares, so a remote-only library (absent from both
+  # config and state) is not drift and must not trigger an uninstall or a restart.
+  - field: libraries
+
 # We have custom handler for this in cluster.go
 # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
 # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""

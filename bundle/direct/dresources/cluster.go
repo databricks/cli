@@ -2,8 +2,10 @@ package dresources
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -536,10 +538,14 @@ func (*ResourceCluster) KeyedSlices() map[string]any {
 	return map[string]any{"libraries": libraryKey}
 }
 
-// reconcileLibraries uninstalls libraries dropped from config and installs the desired set.
-// The Libraries API exposes install and uninstall as separate endpoints, so this is two calls.
+// reconcileLibraries uninstalls libraries the bundle previously managed and has now dropped, and
+// installs the desired set. The Libraries API exposes install and uninstall as separate
+// endpoints, so this is two calls.
 func (r *ResourceCluster) reconcileLibraries(ctx context.Context, id string, desired []compute.Library, entry *PlanEntry) error {
-	removed := removedLibraries(desired, entry)
+	removed, err := removedLibraries(entry)
+	if err != nil {
+		return err
+	}
 	if len(removed) > 0 {
 		err := r.client.Libraries.Uninstall(ctx, compute.UninstallLibraries{ClusterId: id, Libraries: removed})
 		if err != nil {
@@ -552,23 +558,48 @@ func (r *ResourceCluster) reconcileLibraries(ctx context.Context, id string, des
 	return nil
 }
 
-// removedLibraries returns libraries present in the remote state but absent from the desired set.
-func removedLibraries(desired []compute.Library, entry *PlanEntry) []compute.Library {
-	remote, ok := entry.RemoteState.(*ClusterRemote)
-	if !ok || remote == nil {
-		return nil
-	}
-	desiredKeys := make(map[string]struct{}, len(desired))
-	for _, l := range desired {
-		desiredKeys[libraryMapKey(l)] = struct{}{}
-	}
-	var result []compute.Library
-	for _, l := range remote.Libraries {
-		if _, ok := desiredKeys[libraryMapKey(l)]; !ok {
-			result = append(result, l)
+// removedLibraries returns the libraries to uninstall: those the plan marks as a genuine removal
+// (previously in state, now absent from config). It reads the classified plan rather than the raw
+// remote so libraries the bundle never installed - a job run installs its task libraries on a
+// shared cluster (and they are cluster-wide), plus UI installs - are left alone: those are
+// classified as backend defaults and skipped (see configs/clusters.yml).
+func removedLibraries(entry *PlanEntry) ([]compute.Library, error) {
+	var removed []compute.Library
+	for pathStr, ch := range entry.Changes {
+		// A genuine removal is dropped from config (New nil) but was previously managed (Old set).
+		if ch.Action == deployplan.Skip || ch.Old == nil || ch.New != nil {
+			continue
 		}
+		node, err := structpath.ParsePath(pathStr)
+		if err != nil {
+			return nil, err
+		}
+		if top, _ := node.Prefix(1).StringKey(); top != "libraries" {
+			continue
+		}
+		lib, err := decodeLibrary(ch.Old)
+		if err != nil {
+			return nil, err
+		}
+		removed = append(removed, lib)
 	}
-	return result
+	// entry.Changes is a map, so sort for a deterministic uninstall payload.
+	slices.SortFunc(removed, func(a, b compute.Library) int {
+		return strings.Compare(libraryMapKey(a), libraryMapKey(b))
+	})
+	return removed, nil
+}
+
+// decodeLibrary converts a plan change value into a compute.Library. The value is a
+// compute.Library in-process, or a JSON object when the plan was loaded from disk
+// (bundle deploy --plan), so it is round-tripped through JSON to handle both.
+func decodeLibrary(v any) (compute.Library, error) {
+	var lib compute.Library
+	b, err := json.Marshal(v)
+	if err != nil {
+		return lib, err
+	}
+	return lib, json.Unmarshal(b, &lib)
 }
 
 // restartIfRunning restarts the cluster so a library change takes effect, but only when it is
