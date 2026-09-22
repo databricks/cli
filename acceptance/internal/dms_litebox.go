@@ -20,20 +20,19 @@ import (
 
 const dmsAPIPath = "/api/2.0/bundle/deployments"
 
-// configureDMSLitebox routes DMS requests to an opt-in local service, retaining
-// the test server's request recording and mocks for other workspace APIs.
+// Deployment TreeNodes use the generic workspace-objects permissions API.
+var liteboxPermissionTypes = []string{"directories", "files", "notebooks", "workspace-objects"}
+
+// configureDMSLitebox routes DMS to the local service and workspace files/ACLs
+// to its shared fakes, retaining request recording and mocks for other APIs.
 func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 	t.Helper()
 	endpoint := env.Get(t.Context(), "DMS_LITEBOX_URL")
 	if endpoint == "" {
 		return
 	}
-	u, err := url.Parse(endpoint)
-	require.NoError(t, err, "invalid DMS_LITEBOX_URL")
-	ip := net.ParseIP(u.Hostname())
-	require.True(t, u.Scheme == "https" && (u.Hostname() == "localhost" || (ip != nil && ip.IsLoopback())) &&
-		u.User == nil && u.RawQuery == "" && u.Fragment == "" && (u.Path == "" || u.Path == "/"),
-		"DMS_LITEBOX_URL must be an HTTPS loopback origin")
+	dmsURL := liteboxURL(t, "DMS_LITEBOX_URL")
+	workspaceURL := liteboxURL(t, "DMS_LITEBOX_WORKSPACE_URL")
 
 	certFile, keyFile := env.Get(t.Context(), "DMS_LITEBOX_CERT"), env.Get(t.Context(), "DMS_LITEBOX_KEY")
 	caFile := env.Get(t.Context(), "DMS_LITEBOX_CA")
@@ -46,7 +45,7 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 	require.NoError(t, err, "read DMS_LITEBOX_CA")
 	roots := x509.NewCertPool()
 	require.True(t, roots.AppendCertsFromPEM(pem), "invalid Litebox certificate")
-	// LITE's checked-in test certificate covers *.svc.cluster.local.
+	// Both upstreams must use LITE's test certificate for *.svc.cluster.local.
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			MinVersion:   tls.VersionTLS12,
@@ -65,7 +64,10 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		},
 	}
 	handler := func(r testserver.Request) any {
-		target := *u
+		target := *workspaceURL
+		if isDMSPath(r.URL.Path) {
+			target = *dmsURL
+		}
 		target.Path, target.RawPath, target.RawQuery = r.URL.Path, r.URL.RawPath, r.URL.RawQuery
 		req, err := http.NewRequestWithContext(r.Context, r.Method, target.String(), bytes.NewReader(r.Body))
 		if err != nil {
@@ -76,6 +78,7 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		req.Header.Del("Accept-Encoding")
 		// Fixed test identity; this adapter only connects to a local LITE fixture.
 		req.Header.Set("X-Databricks-Org-Id", "456")
+		req.Header.Set("X-Databricks-Workspace-Id", "456")
 		req.Header.Set("X-Databricks-User-Id", "123")
 		req.Header.Set("X-Databricks-User-Name", "alice@databricks.com")
 		resp, err := client.Do(req)
@@ -89,24 +92,55 @@ func configureDMSLitebox(t *testing.T, server *testserver.Server) {
 		}
 		return testserver.Response{StatusCode: resp.StatusCode, Headers: resp.Header, Body: body}
 	}
-	routeDMS(server, handler)
+	routeLitebox(server, handler)
+}
+
+func liteboxURL(t *testing.T, name string) *url.URL {
+	t.Helper()
+	endpoint := env.Get(t.Context(), name)
+	require.NotEmpty(t, endpoint, "%s is required with DMS_LITEBOX_URL", name)
+	u, err := url.Parse(endpoint)
+	require.NoError(t, err, "invalid %s", name)
+	ip := net.ParseIP(u.Hostname())
+	require.True(t, u.Scheme == "https" && (u.Hostname() == "localhost" || (ip != nil && ip.IsLoopback())) &&
+		u.User == nil && u.RawQuery == "" && u.Fragment == "" && (u.Path == "" || u.Path == "/"),
+		"%s must be an HTTPS loopback origin", name)
+	return u
 }
 
 func isDMSPath(path string) bool {
 	return path == dmsAPIPath || strings.HasPrefix(path, dmsAPIPath+"/")
 }
 
-func routeDMS(server *testserver.Server, handler testserver.HandlerFunc) {
+func isLiteboxPath(path string) bool {
+	if isDMSPath(path) ||
+		strings.HasPrefix(path, "/api/2.0/workspace/") ||
+		strings.HasPrefix(path, "/api/2.0/workspace-files/") {
+		return true
+	}
+	for _, objectType := range liteboxPermissionTypes {
+		if strings.HasPrefix(path, "/api/2.0/permissions/"+objectType+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+func routeLitebox(server *testserver.Server, handler testserver.HandlerFunc) {
+	// Without a PATCH route, ServeMux returns 405 before Dispatch or NotFound.
+	for _, objectType := range liteboxPermissionTypes {
+		server.Handle(http.MethodPatch, "/api/2.0/permissions/"+objectType+"/{object_id}", handler)
+	}
 	dispatch := server.Dispatch
 	server.Dispatch = func(w http.ResponseWriter, r *http.Request, h testserver.HandlerFunc, vars map[string]string) {
-		if isDMSPath(r.URL.Path) {
+		if isLiteboxPath(r.URL.Path) {
 			h = handler
 		}
 		dispatch(w, r, h, vars)
 	}
 	notFound := server.NotFound
 	server.NotFound = func(w http.ResponseWriter, r *http.Request) {
-		if isDMSPath(r.URL.Path) {
+		if isLiteboxPath(r.URL.Path) {
 			dispatch(w, r, handler, nil)
 			return
 		}
