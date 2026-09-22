@@ -5,13 +5,18 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 
-title "Change immutable storage_root in config, then redeploy on direct (auto-migration)"
+title "Change immutable storage_root; without --auto-approve the recreate is refused"
 # storage_root is immutable (recreate_on_changes). The migration's plan check compares the
 # new config value against the deployed remote and plans a recreate. Recreating an existing
 # resource risks data loss, so the migration is abandoned (direct_migrate_recreate_planned)
-# and the bundle stays on terraform. --auto-approve lets the terraform fallback apply the
-# recreate the user actually asked for.
+# and the bundle stays on terraform, which then refuses the destructive recreate without
+# --auto-approve (exit 1) and changes nothing.
 update_file.py databricks.yml "storage_root: s3://mybucket/init" "storage_root: s3://mybucket/changed"
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace print_migration_telemetry
+rm -f "$OUT_REQUESTS"
+
+title "With --auto-approve the terraform fallback applies the recreate the user asked for"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
