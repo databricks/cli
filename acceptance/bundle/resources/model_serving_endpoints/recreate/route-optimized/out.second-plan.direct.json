@@ -24,6 +24,27 @@
         }
       },
       "remote_state": {
+        "config": {
+          "served_entities": [
+            {
+              "entity_name": "system.ai.llama_v3_2_1b_instruct",
+              "entity_version": "1",
+              "name": "llama",
+              "scale_to_zero_enabled": true,
+              "workload_size": "Small"
+            }
+          ],
+          "traffic_config": {
+            "routes": [
+              {
+                "served_entity_name": "llama",
+                "served_model_name": "llama",
+                "traffic_percentage": 100
+              }
+            ]
+          }
+        },
+        "description": "",
         "endpoint_details": {
           "config": {
             "served_entities": [
@@ -59,27 +80,8 @@
           }
         },
         "endpoint_id": "[UUID]",
-        "config": {
-          "served_entities": [
-            {
-              "entity_name": "system.ai.llama_v3_2_1b_instruct",
-              "entity_version": "1",
-              "name": "llama",
-              "scale_to_zero_enabled": true,
-              "workload_size": "Small"
-            }
-          ],
-          "traffic_config": {
-            "routes": [
-              {
-                "served_entity_name": "llama",
-                "served_model_name": "llama",
-                "traffic_percentage": 100
-              }
-            ]
-          }
-        },
-        "name": "[ORIGINAL_ENDPOINT_ID]"
+        "name": "[ORIGINAL_ENDPOINT_ID]",
+        "route_optimized": false
       },
       "changes": {
         "config.traffic_config": {

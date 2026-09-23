@@ -4,6 +4,7 @@ json.lineage = "[UUID]";
 json.serial = 1;
 json.plan.resources.model_serving_endpoints.my_endpoint.action = "recreate";
 json.plan.resources.model_serving_endpoints.my_endpoint.new_state.value.name = "[ENDPOINT_NAME_2]";
+json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.description = "";
 json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.endpoint_details.creation_timestamp = [UNIX_TIME_MILLIS][0];
 json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.endpoint_details.creator = "[USERNAME]";
 json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.endpoint_details.description = "";
@@ -16,6 +17,7 @@ json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.endpoint_de
 json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.endpoint_details.state.ready = "NOT_READY";
 json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.endpoint_id = "[ENDPOINT_ID_1]";
 json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.name = "[ENDPOINT_NAME_1]";
+json.plan.resources.model_serving_endpoints.my_endpoint.remote_state.route_optimized = false;
 json.plan.resources.model_serving_endpoints.my_endpoint.changes.description.action = "skip";
 json.plan.resources.model_serving_endpoints.my_endpoint.changes.description.reason = "empty";
 json.plan.resources.model_serving_endpoints.my_endpoint.changes.description.remote = "";
