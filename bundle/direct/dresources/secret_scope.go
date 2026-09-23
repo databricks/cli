@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -45,18 +44,6 @@ func (*ResourceSecretScope) PrepareState(input *resources.SecretScope) *SecretSc
 			BackendAzureKeyvault:   input.KeyvaultMetadata,
 			InitialManagePrincipal: "",
 			ForceSendFields:        nil,
-		},
-	}
-}
-
-func (*ResourceSecretScope) RemapState(remote *SecretScopeRemote) *SecretScopeConfig {
-	return &SecretScopeConfig{
-		CreateScope: workspace.CreateScope{
-			Scope:                  remote.Scope,
-			ScopeBackendType:       remote.ScopeBackendType,
-			BackendAzureKeyvault:   remote.BackendAzureKeyvault,
-			InitialManagePrincipal: "",
-			ForceSendFields:        utils.FilterFields[workspace.CreateScope](remote.ForceSendFields),
 		},
 	}
 }
