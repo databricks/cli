@@ -101,7 +101,7 @@ config.environment.dependencies
 
 >>> [CLI] air run -h config.environment.version
 config.environment.version
-  Client image version to pin.
+  Client image version to pin (default: 6). See environment version release notes: https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/
 
   Type:     string or int
   Required: no
