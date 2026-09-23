@@ -8,9 +8,10 @@ invariant_setup
 invariant_deploy LOG.deploy DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 # Deploy on the direct default (engine unset): this migrates the terraform state to the
-# direct engine before deploying, so it exercises the auto path (MigrateTerraformState:
-# reverse-interpolate, plan-check/recreate-guard, commit) rather than the explicit
-# "bundle deployment migrate" command that migrate/ covers.
-invariant_deploy LOG.migrate $CLI bundle deploy
+# direct engine before deploying, exercising the auto path. Not invariant_deploy -- the
+# config was already validated by the terraform deploy above, so a failure here is a bug,
+# not an invalid config (and it must not re-emit the INPUT_CONFIG_OK marker).
+trace $CLI bundle deploy &> LOG.migrate
+cat LOG.migrate | contains.py '!panic:' '!internal error' > /dev/null
 
 invariant_verify_no_drift
