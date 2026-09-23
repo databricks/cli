@@ -12,4 +12,6 @@ python:
 resources:
   pipelines:
     my_pipeline_1:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: "My Pipeline 1"

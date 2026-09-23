@@ -9,9 +9,9 @@
      mode: production
 --- [TESTROOT]/bundle/templates/default-python/classic/../serverless/output/my_default_python/resources/my_default_python_etl.pipeline.yml
 +++ output/my_default_python/resources/my_default_python_etl.pipeline.yml
-@@ -5,8 +5,7 @@
-     my_default_python_etl:
-       name: my_default_python_etl
+@@ -7,8 +7,7 @@
+       configuration:
+         spark.sql.ansi.enabled: "true"
 -      # Catalog is required for serverless compute
 -      catalog: main
 +      ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:

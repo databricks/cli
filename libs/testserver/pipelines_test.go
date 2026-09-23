@@ -85,3 +85,21 @@ func TestPipelineStop_AfterUpdate(t *testing.T) {
 	assert.Equal(t, pipelineId, stopBody.PipelineId)
 	assert.Equal(t, pipelines.PipelineStateIdle, stopBody.State)
 }
+
+func TestPipelineANSIConfigurationDefaults(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		configuration map[string]string
+		expected      map[string]string
+	}{
+		{"omitted", nil, map[string]string{pipelineANSIEnabledKey: "true"}},
+		{"custom", map[string]string{"custom": "value"}, map[string]string{"custom": "value", pipelineANSIEnabledKey: "true"}},
+		{"disabled", map[string]string{pipelineANSIEnabledKey: "false"}, map[string]string{pipelineANSIEnabledKey: "false"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			spec := pipelines.PipelineSpec{Configuration: tc.configuration}
+			setSpecDefaults(&spec, "pipeline-id")
+			assert.Equal(t, tc.expected, spec.Configuration)
+		})
+	}
+}

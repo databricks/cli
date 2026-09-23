@@ -10,5 +10,7 @@ variables:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       catalog: ${var.catalog}
       target: ${var.schema}

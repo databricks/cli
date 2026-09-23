@@ -316,7 +316,9 @@
             "channel": "CURRENT",
             "cluster": [],
             "cluster_id": null,
-            "configuration": null,
+            "configuration": {
+              "spark.sql.ansi.enabled": "true"
+            },
             "continuous": false,
             "creator_user_name": "[USERNAME]",
             "deployment": [

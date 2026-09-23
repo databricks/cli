@@ -8,6 +8,8 @@ resources:
 
   pipelines:
     bar:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: bar
       libraries:
         - file:

@@ -2,7 +2,7 @@
 >>> [CLI] pipelines deploy
 Warning: unknown field: unknown_property
   at resources.pipelines.test-pipeline
-  in databricks.yml:8:7
+  in databricks.yml:10:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/render-diagnostics-warning-pipeline/default/files...
 Created pipelines.test-pipeline

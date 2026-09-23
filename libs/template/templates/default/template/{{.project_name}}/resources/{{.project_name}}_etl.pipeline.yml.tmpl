@@ -9,6 +9,8 @@ resources:
            * so we use the project name as part as the name.
            */}}
       name: {{.project_name}}_etl
+      configuration:
+        spark.sql.ansi.enabled: "true"
 {{- if or (eq .default_catalog "") (eq .default_catalog "hive_metastore")}}
   {{- if $serverless}}
       {{- /* This is an unsupported configuration: Unity Catalog disabled, serverless enabled.

@@ -4,7 +4,11 @@ bundle:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pfoo
     bar:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pbar
       catalog: ${resources.pipelines.foo.catalog}

@@ -4,6 +4,8 @@ bundle:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: job
       clusters:
         - label: default
@@ -15,6 +17,8 @@ targets:
     resources:
       pipelines:
         foo:
+          configuration:
+            spark.sql.ansi.enabled: "true"
           clusters:
             - label: default
               node_type_id: i3.xlarge
@@ -24,6 +28,8 @@ targets:
     resources:
       pipelines:
         foo:
+          configuration:
+            spark.sql.ansi.enabled: "true"
           clusters:
             - label: default
               node_type_id: i3.2xlarge

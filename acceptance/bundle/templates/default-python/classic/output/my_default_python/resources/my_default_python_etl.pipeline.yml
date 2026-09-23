@@ -4,6 +4,8 @@ resources:
   pipelines:
     my_default_python_etl:
       name: my_default_python_etl
+      configuration:
+        spark.sql.ansi.enabled: "true"
       ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
       # catalog: ${var.catalog}
       schema: ${var.schema}

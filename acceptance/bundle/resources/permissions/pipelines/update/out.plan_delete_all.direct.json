@@ -8,6 +8,9 @@
       "action": "skip",
       "remote_state": {
         "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "true"
+        },
         "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",

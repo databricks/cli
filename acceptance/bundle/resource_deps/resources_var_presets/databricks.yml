@@ -13,6 +13,8 @@ resources:
   pipelines:
     mypipeline:
       # When creating the pipeline we should see dev prefix in schema_name here
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pipeline for ${resources.schemas.foo.catalog_name}.${resources.schemas.foo.name}
 
 targets:

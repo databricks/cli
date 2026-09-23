@@ -11,6 +11,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
@@ -47,6 +50,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "run_as_user_name": "[USERNAME]",
   "spec": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"

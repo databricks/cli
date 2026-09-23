@@ -18,14 +18,20 @@ resources:
 
   pipelines:
     pipeline_one:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: Pipeline 1
 
     pipeline_two:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: Pipeline 2
       run_as:
         service_principal_name: "sp_override"
 
     pipeline_three:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: Pipeline 3
       run_as:
         user_name: "user_override"

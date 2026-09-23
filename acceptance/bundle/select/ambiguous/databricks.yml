@@ -10,4 +10,6 @@ resources:
       name: job-thing
   pipelines:
     thing:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pipeline-thing

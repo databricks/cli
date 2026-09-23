@@ -46,7 +46,7 @@ Resource: resources.pipelines.pipeline1
 +      name: Custom Job Name
      job2:
        tasks:
-@@ -38,2 +43,4 @@
+@@ -40,2 +45,4 @@
          - notebook:
              path: /Users/{{workspace_user_name}}/notebook
 +      channel: PREVIEW

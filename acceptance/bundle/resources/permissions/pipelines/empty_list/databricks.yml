@@ -4,6 +4,8 @@ bundle:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: foo
       # this is interpreted the same as nil, but it's IMO a bug; it should do default IS_OWNER setting
       permissions: []

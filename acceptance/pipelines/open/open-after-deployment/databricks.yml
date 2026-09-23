@@ -4,4 +4,6 @@ bundle:
 resources:
   pipelines:
     test-pipelines-open:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipelines-open

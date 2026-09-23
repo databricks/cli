@@ -4,4 +4,6 @@ bundle:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipeline-force-lock

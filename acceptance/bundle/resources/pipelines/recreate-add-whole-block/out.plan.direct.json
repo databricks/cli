@@ -9,6 +9,9 @@
       "new_state": {
         "value": {
           "channel": "CURRENT",
+          "configuration": {
+            "spark.sql.ansi.enabled": "true"
+          },
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
@@ -33,6 +36,9 @@
       },
       "remote_state": {
         "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "true"
+        },
         "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",

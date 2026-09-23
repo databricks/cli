@@ -13,6 +13,8 @@ resources:
       name: myname
   pipelines:
     mypipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pipeline for ${resources.volumes.foo.catalog_name}.${resources.volumes.foo.schema_name}.${resources.volumes.foo.name}
 
 targets:

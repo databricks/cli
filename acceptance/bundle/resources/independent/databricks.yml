@@ -20,6 +20,8 @@ resources:
 
   pipelines:
     my:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipeline
       libraries:
         - file:

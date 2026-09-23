@@ -3,4 +3,6 @@ bundle:
 resources:
   pipelines:
     my_pipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipeline

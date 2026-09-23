@@ -3,6 +3,9 @@
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "continuous": false,
     "deployment": {
       "kind": "BUNDLE",

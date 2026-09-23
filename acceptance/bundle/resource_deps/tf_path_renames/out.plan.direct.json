@@ -139,6 +139,9 @@
               "num_workers": 1
             }
           ],
+          "configuration": {
+            "spark.sql.ansi.enabled": "true"
+          },
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"

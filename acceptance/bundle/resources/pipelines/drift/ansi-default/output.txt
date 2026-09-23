@@ -1,0 +1,90 @@
+
+=== Omitted configuration accepts the backend ANSI default
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-default/default/files...
+Created pipelines.my
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== A non-default remote ANSI value remains drift
+>>> [CLI] bundle plan
+update pipelines.my
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.pipelines.my": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "configuration": {
+            "spark.sql.ansi.enabled": "true"
+          },
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-default/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "libraries": [
+            {
+              "file": {
+                "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-default/default/files/foo.py"
+              }
+            }
+          ],
+          "name": "pipeline-ansi-default"
+        }
+      },
+      "remote_state": {
+        "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "false"
+        },
+        "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-default/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
+        "id": "[MY_ID]",
+        "last_modified": [UNIX_TIME_MILLIS],
+        "libraries": [
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-default/default/files/foo.py"
+            }
+          }
+        ],
+        "name": "pipeline-ansi-default",
+        "pipeline_id": "[MY_ID]",
+        "run_as_user_name": "[USERNAME]",
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[MY_ID]"
+      },
+      "changes": {
+        "configuration['spark.sql.ansi.enabled']": {
+          "action": "update",
+          "old": "true",
+          "new": "true",
+          "remote": "false"
+        },
+        "storage": {
+          "action": "skip",
+          "reason": "immutable_backend_value",
+          "remote": "dbfs:/pipelines/[MY_ID]"
+        }
+      }
+    }
+  }
+}

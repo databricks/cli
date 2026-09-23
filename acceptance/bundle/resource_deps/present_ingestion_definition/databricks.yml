@@ -4,9 +4,13 @@ bundle:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pfoo
       ingestion_definition:
         connection_name: myconn
         objects: [{}]
     bar:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pbar ${resources.pipelines.foo.ingestion_definition.connection_name}

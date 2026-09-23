@@ -1,0 +1,12 @@
+bundle:
+  name: pipeline-ansi-default
+
+resources:
+  pipelines:
+    my:
+      configuration:
+        spark.sql.ansi.enabled: "true"
+      name: pipeline-ansi-default
+      libraries:
+        - file:
+            path: ./foo.py

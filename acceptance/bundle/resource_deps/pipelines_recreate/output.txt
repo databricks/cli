@@ -55,6 +55,9 @@ Error: The specified pipeline [FOO_ID] was not found.
   "run_as_user_name": "[USERNAME]",
   "spec": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"

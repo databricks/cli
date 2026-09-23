@@ -59,6 +59,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/state/metadata.json"

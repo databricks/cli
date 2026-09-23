@@ -10,6 +10,9 @@
           "num_workers": 42
         }
       ],
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "continuous": true,
       "deployment": {
         "kind": "BUNDLE",
@@ -32,6 +35,9 @@
           "num_workers": 42
         }
       ],
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "continuous": true,
       "deployment": {
         "kind": "BUNDLE",
@@ -54,6 +60,9 @@
           "num_workers": 43
         }
       ],
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "continuous": true,
       "deployment": {
         "kind": "BUNDLE",
@@ -76,6 +85,9 @@
           "num_workers": 42
         }
       ],
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "continuous": false,
       "deployment": {
         "kind": "BUNDLE",

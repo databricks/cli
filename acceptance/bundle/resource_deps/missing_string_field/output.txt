@@ -5,6 +5,9 @@
     "bar": {
       "catalog": "${resources.pipelines.foo.catalog}",
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -14,6 +17,9 @@
     },
     "foo": {
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -43,6 +49,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -56,6 +65,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"

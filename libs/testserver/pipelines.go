@@ -8,6 +8,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+const pipelineANSIEnabledKey = "spark.sql.ansi.enabled"
+
 func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
 	defer s.LockUnlock()()
 
@@ -90,6 +92,15 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 
 func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
 	spec.Id = pipelineId
+	// TODO: Revert this behavior and remove the explicit acceptance fixture values once Pipelines
+	// returns this backend default through effective values instead of the user configuration map.
+	// See https://github.com/databricks/cli/pull/6813.
+	if spec.Configuration == nil {
+		spec.Configuration = make(map[string]string)
+	}
+	if _, ok := spec.Configuration[pipelineANSIEnabledKey]; !ok {
+		spec.Configuration[pipelineANSIEnabledKey] = "true"
+	}
 	// If the pipeline definition does not specify a catalog, it switches to Hive metastore mode
 	// and if the storage location is not specified, API automatically generates a storage location
 	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)

@@ -33,6 +33,8 @@ resources:
 
   pipelines:
     pipeline1:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipeline-$UNIQUE_NAME
       libraries:
         - notebook:

@@ -30,6 +30,7 @@ Terraform will perform the following actions:
       ~ state                  = "IDLE" -> (known after apply)
       ~ storage                = "/Shared/old_storage" -> "/Shared/new_storage" # forces replacement
       ~ url                    = "[DATABRICKS_URL]/#joblist/pipelines/[NEW_PIPELINE_ID]" -> (known after apply)
+        # (1 unchanged attribute hidden)
 
       + deployment {
           + kind               = "BUNDLE"

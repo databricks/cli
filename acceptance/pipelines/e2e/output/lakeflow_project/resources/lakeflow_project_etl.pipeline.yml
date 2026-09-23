@@ -4,6 +4,8 @@ resources:
   pipelines:
     lakeflow_project_etl:
       name: lakeflow_project_etl
+      configuration:
+        spark.sql.ansi.enabled: "true"
       # Catalog is required for serverless compute
       catalog: main
       schema: ${var.schema}

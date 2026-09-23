@@ -4,10 +4,18 @@ bundle:
 resources:
   pipelines:
     foo1:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: foo1 name
     foo2:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: foo2 foo1.creator_user_name=${resources.pipelines.foo1.creator_user_name}
     foo3:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: foo3 foo2.state=${resources.pipelines.foo2.state}
     foo4:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: foo4 foo3.last_modified=${resources.pipelines.foo3.last_modified}

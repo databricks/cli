@@ -24,7 +24,7 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -5,20 +5,27 @@
+@@ -5,21 +5,28 @@
    pipelines:
      my_pipeline:
 -      name: test-pipeline-[UNIQUE_NAME]
@@ -33,6 +33,7 @@ Resource: resources.pipelines.my_pipeline
 -      schema: default
 +      schema: prod
        configuration:
+         spark.sql.ansi.enabled: "true"
          key1: value1
 +        key2: value2
        notifications:

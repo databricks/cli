@@ -7,6 +7,8 @@ workspace:
 resources:
   pipelines:
     test_pipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: "Snapshot Test Pipeline ${BUNDLE_NAME}"
       libraries:
         - notebook:

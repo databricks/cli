@@ -30,6 +30,8 @@ variables:
 resources:
   pipelines:
     my_pipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipeline-$UNIQUE_NAME
       development: false
       libraries:

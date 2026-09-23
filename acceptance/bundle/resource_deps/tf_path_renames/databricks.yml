@@ -4,6 +4,8 @@ bundle:
 resources:
   pipelines:
     src_pipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: source-pipeline
       clusters:
         - label: mycluster
