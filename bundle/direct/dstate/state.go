@@ -872,6 +872,27 @@ func (db *DeploymentState) UpgradeToWrite() error {
 	return appendJSONLine(db.walFile, walHead)
 }
 
+// DiscardWrite abandons a state opened for write without persisting it: it closes and
+// removes the WAL and resets the in-memory state, so nothing lands on disk. Used when a
+// deploy that opened the state for write is then declined - e.g. a deferred terraform→direct
+// migration whose deploy the user did not approve - so no resources.json is written and the
+// run stays on the previous engine, and no orphan WAL is left to block the next attempt.
+func (db *DeploymentState) DiscardWrite(ctx context.Context) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.walFile != nil {
+		if err := db.walFile.Close(); err != nil {
+			log.Warnf(ctx, "Error closing WAL file while discarding state: %s", err)
+		}
+		db.walFile = nil
+	}
+	if db.Path != "" {
+		_ = os.Remove(db.Path + walSuffix)
+	}
+	db.reset()
+}
+
 // IsOpen reports whether the state has been opened (for read or write). It lets
 // callers probe the state without risking the panic in AssertOpenedForReadOrWrite,
 // e.g. code paths shared with the terraform engine where the state DB is never opened.

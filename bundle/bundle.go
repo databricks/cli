@@ -209,6 +209,14 @@ type Bundle struct {
 	// which runs on the migrated state, creates them.
 	MigratingToDirect bool
 
+	// MigrationDeferred is set when a deploy prepared the terraform→direct migration in
+	// memory but has not committed it yet: the deploy commits the converted state itself
+	// (deployCore) only once it is approved, and finalizes the migration (terraform-state
+	// cleanup) afterwards. A declined deploy discards it, leaving the terraform state in
+	// place. Distinguishes the deferred deploy path from destroy's early commit and from a
+	// trivial empty-state migration, both of which commit up front.
+	MigrationDeferred bool
+
 	// Quiet is the output verbosity reduction requested via -q/--quiet, which is
 	// repeatable: QuietSummary drops the per-resource lines, QuietAll additionally
 	// drops the summary and progress lines, leaving warnings and errors.
