@@ -36,6 +36,28 @@ OK: cluster created
 }
 
 === Add a second declared library (urllib3) and redeploy - the bundle doesn't delete the out-of-band 'six'
+=== The plan: urllib3 is an install, but the out-of-band 'six' is classified as a skip (not a removal)
+>>> [CLI] bundle plan -o json
+{
+  "libraries[pypi='six;']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  },
+  "libraries[pypi='urllib3;']": {
+    "action": "update",
+    "new": {
+      "pypi": {
+        "package": "urllib3"
+      }
+    }
+  }
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Restarting cluster [MYCLUSTER_ID] because its libraries changed

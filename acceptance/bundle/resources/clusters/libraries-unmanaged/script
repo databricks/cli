@@ -26,6 +26,10 @@ update_file.py databricks.yml "        - pypi:
             package: requests
         - pypi:
             package: urllib3"
+
+title "The plan: urllib3 is an install, but the out-of-band 'six' is classified as a skip (not a removal)"
+trace $CLI bundle plan -o json | jq '.plan["resources.clusters.mycluster"].changes | with_entries(select(.key | startswith("libraries")))'
+
 trace $CLI bundle deploy
 
 title "The redeploy installs urllib3 and restarts to apply it, but leaves the out-of-band 'six' alone (no uninstall)"
