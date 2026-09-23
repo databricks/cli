@@ -76,6 +76,12 @@ class AmazonBedrockConfig:
     `aws_access_key_id_plaintext`, `aws_secret_access_key` and `aws_secret_access_key_plaintext`.
     """
 
+    uc_service_credential_name: VariableOrOptional[str] = None
+    """
+    [Public Preview] The name of the Unity Catalog service credential that the external model uses to access AWS
+    resources.
+    """
+
     @classmethod
     def from_dict(cls, value: "AmazonBedrockConfigDict") -> "Self":
         return _transform(cls, value)
@@ -142,6 +148,12 @@ class AmazonBedrockConfigDict(TypedDict, total=False):
     You must authenticate using an instance profile or access keys.
     If you prefer to authenticate using access keys, see `aws_access_key_id`,
     `aws_access_key_id_plaintext`, `aws_secret_access_key` and `aws_secret_access_key_plaintext`.
+    """
+
+    uc_service_credential_name: VariableOrOptional[str]
+    """
+    [Public Preview] The name of the Unity Catalog service credential that the external model uses to access AWS
+    resources.
     """
 
 

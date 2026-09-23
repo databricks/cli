@@ -7,6 +7,8 @@ __all__ = [
     "AiRuntimeTask",
     "AiRuntimeTaskDict",
     "AiRuntimeTaskParam",
+    "AiRuntimeTaskPriorityClass",
+    "AiRuntimeTaskPriorityClassParam",
     "AlertTask",
     "AlertTaskDict",
     "AlertTaskParam",
@@ -345,6 +347,10 @@ from databricks.bundles.jobs._models.ai_runtime_task import (
     AiRuntimeTask,
     AiRuntimeTaskDict,
     AiRuntimeTaskParam,
+)
+from databricks.bundles.jobs._models.ai_runtime_task_priority_class import (
+    AiRuntimeTaskPriorityClass,
+    AiRuntimeTaskPriorityClassParam,
 )
 from databricks.bundles.jobs._models.alert_task import (
     AlertTask,

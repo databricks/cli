@@ -12,12 +12,13 @@ package terraform_dabs_map
 // database_instances / databricks_database_instance: 1 tf-only
 // experiments / databricks_mlflow_experiment: 1 tf-only
 // jobs / databricks_job: 11 renames
-// jobs / databricks_job: 7 dabs-only
+// jobs / databricks_job: 11 dabs-only
 // jobs / databricks_job: 261 tf-only
+// model_serving_endpoints / databricks_model_serving: 1 dabs-only
 // model_serving_endpoints / databricks_model_serving: 2 tf-only
 // models / databricks_mlflow_model: 1 renames
 // pipelines / databricks_pipeline: 3 renames
-// pipelines / databricks_pipeline: 6 dabs-only
+// pipelines / databricks_pipeline: 102 dabs-only
 // pipelines / databricks_pipeline: 2 tf-only
 // postgres_branches / databricks_postgres_branch: 1 unwraps
 // postgres_catalogs / databricks_postgres_catalog: 1 unwraps
@@ -111,8 +112,16 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"tasks": {
+			"ai_runtime_task": {
+				"priority_class":           {}, // jobs.*.tasks.ai_runtime_task.priority_class
+				"unity_catalog_image_path": {}, // jobs.*.tasks.ai_runtime_task.unity_catalog_image_path
+			},
 			"for_each_task": {
 				"task": {
+					"ai_runtime_task": {
+						"priority_class":           {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.priority_class
+						"unity_catalog_image_path": {}, // jobs.*.tasks.for_each_task.task.ai_runtime_task.unity_catalog_image_path
+					},
 					"for_each_task": {
 						"concurrency": {}, // jobs.*.tasks.for_each_task.task.for_each_task.concurrency
 						"inputs":      {}, // jobs.*.tasks.for_each_task.task.for_each_task.inputs
@@ -128,6 +137,17 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 	},
+	"model_serving_endpoints": {
+		"config": {
+			"served_entities": {
+				"external_model": {
+					"amazon_bedrock_config": {
+						"uc_service_credential_name": {}, // model_serving_endpoints.*.config.served_entities.external_model.amazon_bedrock_config.uc_service_credential_name
+					},
+				},
+			},
+		},
+	},
 	"pipelines": {
 		"cascade_on_destroy": {},
 		"clusters": {
@@ -137,8 +157,164 @@ var DABsOnlyFields = map[string]FieldSet{
 			},
 		},
 		"dry_run": {},
+		"ingestion_definition": {
+			"objects": {
+				"schema": {
+					"connector_options": {
+						"kafka_options": {
+							"key_transformer": {
+								"avro_options": {
+									"parse_mode":       {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.avro_options.parse_mode
+									"schema":           {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.avro_options.schema
+									"schema_file_path": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.avro_options.schema_file_path
+									"schema_registry": {
+										"confluent_options": {
+											"subject": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.avro_options.schema_registry.confluent_options.subject
+										},
+										"connection_name":       {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.avro_options.schema_registry.connection_name
+										"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.avro_options.schema_registry.protobuf_message_name
+									},
+								},
+								"protobuf_options": {
+									"desc_file_path":             {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.protobuf_options.desc_file_path
+									"message_name":               {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.protobuf_options.message_name
+									"parse_mode":                 {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.protobuf_options.parse_mode
+									"recursive_fields_max_depth": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.protobuf_options.recursive_fields_max_depth
+									"schema_registry": {
+										"confluent_options": {
+											"subject": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.protobuf_options.schema_registry.confluent_options.subject
+										},
+										"connection_name":       {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.protobuf_options.schema_registry.connection_name
+										"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.key_transformer.protobuf_options.schema_registry.protobuf_message_name
+									},
+								},
+							},
+							"value_transformer": {
+								"avro_options": {
+									"parse_mode":       {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.avro_options.parse_mode
+									"schema":           {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.avro_options.schema
+									"schema_file_path": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.avro_options.schema_file_path
+									"schema_registry": {
+										"confluent_options": {
+											"subject": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.avro_options.schema_registry.confluent_options.subject
+										},
+										"connection_name":       {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.avro_options.schema_registry.connection_name
+										"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.avro_options.schema_registry.protobuf_message_name
+									},
+								},
+								"protobuf_options": {
+									"desc_file_path":             {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.protobuf_options.desc_file_path
+									"message_name":               {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.protobuf_options.message_name
+									"parse_mode":                 {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.protobuf_options.parse_mode
+									"recursive_fields_max_depth": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.protobuf_options.recursive_fields_max_depth
+									"schema_registry": {
+										"confluent_options": {
+											"subject": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.protobuf_options.schema_registry.confluent_options.subject
+										},
+										"connection_name":       {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.protobuf_options.schema_registry.connection_name
+										"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.schema.connector_options.kafka_options.value_transformer.protobuf_options.schema_registry.protobuf_message_name
+									},
+								},
+							},
+						},
+					},
+					"fanout_options": {
+						"transforms": {
+							"avro_options": {
+								"parse_mode":       {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.avro_options.parse_mode
+								"schema":           {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.avro_options.schema
+								"schema_file_path": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.avro_options.schema_file_path
+								"schema_registry": {
+									"confluent_options": {
+										"subject": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.avro_options.schema_registry.confluent_options.subject
+									},
+									"connection_name":       {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.avro_options.schema_registry.connection_name
+									"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.avro_options.schema_registry.protobuf_message_name
+								},
+							},
+							"protobuf_options": {
+								"desc_file_path":             {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.protobuf_options.desc_file_path
+								"message_name":               {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.protobuf_options.message_name
+								"parse_mode":                 {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.protobuf_options.parse_mode
+								"recursive_fields_max_depth": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.protobuf_options.recursive_fields_max_depth
+								"schema_registry": {
+									"confluent_options": {
+										"subject": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.protobuf_options.schema_registry.confluent_options.subject
+									},
+									"connection_name":       {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.protobuf_options.schema_registry.connection_name
+									"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.schema.fanout_options.transforms.protobuf_options.schema_registry.protobuf_message_name
+								},
+							},
+						},
+					},
+				},
+				"table": {
+					"connector_options": {
+						"kafka_options": {
+							"key_transformer": {
+								"avro_options": {
+									"parse_mode":       {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.avro_options.parse_mode
+									"schema":           {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.avro_options.schema
+									"schema_file_path": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.avro_options.schema_file_path
+									"schema_registry": {
+										"confluent_options": {
+											"subject": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.avro_options.schema_registry.confluent_options.subject
+										},
+										"connection_name":       {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.avro_options.schema_registry.connection_name
+										"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.avro_options.schema_registry.protobuf_message_name
+									},
+								},
+								"protobuf_options": {
+									"desc_file_path":             {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.protobuf_options.desc_file_path
+									"message_name":               {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.protobuf_options.message_name
+									"parse_mode":                 {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.protobuf_options.parse_mode
+									"recursive_fields_max_depth": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.protobuf_options.recursive_fields_max_depth
+									"schema_registry": {
+										"confluent_options": {
+											"subject": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.protobuf_options.schema_registry.confluent_options.subject
+										},
+										"connection_name":       {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.protobuf_options.schema_registry.connection_name
+										"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.key_transformer.protobuf_options.schema_registry.protobuf_message_name
+									},
+								},
+							},
+							"value_transformer": {
+								"avro_options": {
+									"parse_mode":       {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.avro_options.parse_mode
+									"schema":           {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.avro_options.schema
+									"schema_file_path": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.avro_options.schema_file_path
+									"schema_registry": {
+										"confluent_options": {
+											"subject": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.avro_options.schema_registry.confluent_options.subject
+										},
+										"connection_name":       {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.avro_options.schema_registry.connection_name
+										"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.avro_options.schema_registry.protobuf_message_name
+									},
+								},
+								"protobuf_options": {
+									"desc_file_path":             {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.protobuf_options.desc_file_path
+									"message_name":               {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.protobuf_options.message_name
+									"parse_mode":                 {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.protobuf_options.parse_mode
+									"recursive_fields_max_depth": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.protobuf_options.recursive_fields_max_depth
+									"schema_registry": {
+										"confluent_options": {
+											"subject": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.protobuf_options.schema_registry.confluent_options.subject
+										},
+										"connection_name":       {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.protobuf_options.schema_registry.connection_name
+										"protobuf_message_name": {}, // pipelines.*.ingestion_definition.objects.table.connector_options.kafka_options.value_transformer.protobuf_options.schema_registry.protobuf_message_name
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		"parameters": {
 			"*": {}, // pipelines.*.parameters.*
+		},
+		"run_as": {
+			"group_name": {}, // pipelines.*.run_as.group_name
 		},
 	},
 	"schemas": {

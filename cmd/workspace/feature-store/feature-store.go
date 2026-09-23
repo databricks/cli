@@ -486,6 +486,12 @@ func newUpdateOnlineStore() *cobra.Command {
 	cmd.Short = `Update an Online Feature Store.`
 	cmd.Long = `Update an Online Feature Store.
 
+  Update an Online Feature Store.
+
+  This update is not guaranteed to be atomic: when a request changes multiple
+  fields, some may be applied while others fail. On a failed response, treat the
+  update as partially applied and retry until it succeeds.
+
   Arguments:
     NAME: The name of the online store. This is the unique identifier for the online
       store.

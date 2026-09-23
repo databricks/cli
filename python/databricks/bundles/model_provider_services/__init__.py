@@ -33,6 +33,9 @@ __all__ = [
     "ModelProviderServiceConfigAzureOpenAiProviderDirectConfig",
     "ModelProviderServiceConfigAzureOpenAiProviderDirectConfigDict",
     "ModelProviderServiceConfigAzureOpenAiProviderDirectConfigParam",
+    "ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth",
+    "ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthDict",
+    "ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthParam",
     "ModelProviderServiceConfigCustomProviderConfig",
     "ModelProviderServiceConfigCustomProviderConfigDict",
     "ModelProviderServiceConfigCustomProviderConfigParam",
@@ -149,6 +152,11 @@ from databricks.bundles.model_provider_services._models.model_provider_service_c
     ModelProviderServiceConfigAzureOpenAiProviderDirectConfig,
     ModelProviderServiceConfigAzureOpenAiProviderDirectConfigDict,
     ModelProviderServiceConfigAzureOpenAiProviderDirectConfigParam,
+)
+from databricks.bundles.model_provider_services._models.model_provider_service_config_custom_provider_api_key_header_auth import (
+    ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth,
+    ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthDict,
+    ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthParam,
 )
 from databricks.bundles.model_provider_services._models.model_provider_service_config_custom_provider_config import (
     ModelProviderServiceConfigCustomProviderConfig,

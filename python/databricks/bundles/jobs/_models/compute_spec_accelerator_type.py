@@ -14,8 +14,10 @@ class ComputeSpecAcceleratorType(Enum):
     GPU_1X_A10 = "GPU_1xA10"
     GPU_1X_H100 = "GPU_1xH100"
     GPU_8X_H100 = "GPU_8xH100"
+    GPU_8X_B300 = "GPU_8xB300"
 
 
 ComputeSpecAcceleratorTypeParam = (
-    Literal["GPU_1xA10", "GPU_1xH100", "GPU_8xH100"] | ComputeSpecAcceleratorType
+    Literal["GPU_1xA10", "GPU_1xH100", "GPU_8xH100", "GPU_8xB300"]
+    | ComputeSpecAcceleratorType
 )

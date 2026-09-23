@@ -38,12 +38,15 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateMcpService())
+	cmd.AddCommand(newCreateMcpServiceUserMappedCredential())
 	cmd.AddCommand(newCreateModelProviderService())
 	cmd.AddCommand(newCreateModelService())
 	cmd.AddCommand(newDeleteMcpService())
+	cmd.AddCommand(newDeleteMcpServiceUserMappedCredential())
 	cmd.AddCommand(newDeleteModelProviderService())
 	cmd.AddCommand(newDeleteModelService())
 	cmd.AddCommand(newGetMcpService())
+	cmd.AddCommand(newGetMcpServiceUserMappedCredential())
 	cmd.AddCommand(newGetModelProviderService())
 	cmd.AddCommand(newGetModelService())
 	cmd.AddCommand(newListMcpServices())
@@ -146,6 +149,91 @@ func newCreateMcpService() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createMcpServiceOverrides {
 		fn(cmd, &createMcpServiceReq)
+	}
+
+	return cmd
+}
+
+// start create-mcp-service-user-mapped-credential command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createMcpServiceUserMappedCredentialOverrides []func(
+	*cobra.Command,
+	*catalog.CreateMcpServiceUserMappedCredentialRequest,
+)
+
+func newCreateMcpServiceUserMappedCredential() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createMcpServiceUserMappedCredentialReq catalog.CreateMcpServiceUserMappedCredentialRequest
+	createMcpServiceUserMappedCredentialReq.Login = catalog.McpServiceUserMappedCredentialLogin{}
+	var createMcpServiceUserMappedCredentialJson flags.JsonFlag
+
+	cmd.Flags().Var(&createMcpServiceUserMappedCredentialJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: map via StringToStringVar: options
+
+	cmd.Use = "create-mcp-service-user-mapped-credential NAME"
+	cmd.Short = `*Beta* Create an MCP service user credential.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create an MCP service user credential.
+
+  Logs the caller in to an MCP service: creates their per-user OAuth credential,
+  or re-authenticates it if one already exists. The request body carries the
+  OAuth exchange fields.
+
+  You must be the owner of the MCP service or have EXECUTE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createMcpServiceUserMappedCredentialJson.Unmarshal(&createMcpServiceUserMappedCredentialReq.Login)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createMcpServiceUserMappedCredentialReq.Name = args[0]
+
+		response, err := w.AiGateway.CreateMcpServiceUserMappedCredential(ctx, createMcpServiceUserMappedCredentialReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createMcpServiceUserMappedCredentialOverrides {
+		fn(cmd, &createMcpServiceUserMappedCredentialReq)
 	}
 
 	return cmd
@@ -403,6 +491,72 @@ func newDeleteMcpService() *cobra.Command {
 	return cmd
 }
 
+// start delete-mcp-service-user-mapped-credential command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteMcpServiceUserMappedCredentialOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteMcpServiceUserMappedCredentialRequest,
+)
+
+func newDeleteMcpServiceUserMappedCredential() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteMcpServiceUserMappedCredentialReq catalog.DeleteMcpServiceUserMappedCredentialRequest
+
+	cmd.Use = "delete-mcp-service-user-mapped-credential NAME"
+	cmd.Short = `*Beta* Delete an MCP service user credential.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete an MCP service user credential.
+
+  Revokes (deletes) the caller's per-user OAuth credential for an MCP service
+  (logout).
+
+  You must be the owner of the MCP service or have EXECUTE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteMcpServiceUserMappedCredentialReq.Name = args[0]
+
+		response, err := w.AiGateway.DeleteMcpServiceUserMappedCredential(ctx, deleteMcpServiceUserMappedCredentialReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteMcpServiceUserMappedCredentialOverrides {
+		fn(cmd, &deleteMcpServiceUserMappedCredentialReq)
+	}
+
+	return cmd
+}
+
 // start delete-model-provider-service command
 
 // Slice with functions to override default command behavior.
@@ -598,6 +752,76 @@ func newGetMcpService() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getMcpServiceOverrides {
 		fn(cmd, &getMcpServiceReq)
+	}
+
+	return cmd
+}
+
+// start get-mcp-service-user-mapped-credential command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getMcpServiceUserMappedCredentialOverrides []func(
+	*cobra.Command,
+	*catalog.GetMcpServiceUserMappedCredentialRequest,
+)
+
+func newGetMcpServiceUserMappedCredential() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getMcpServiceUserMappedCredentialReq catalog.GetMcpServiceUserMappedCredentialRequest
+
+	cmd.Use = "get-mcp-service-user-mapped-credential NAME"
+	cmd.Short = `*Beta* Get MCP service user credential status.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get MCP service user credential status.
+
+  Returns the caller's per-user OAuth login state for an MCP service. Read
+  provisioning_info.state: ACTIVE means the caller is logged in and the
+  credential is usable; any other state (for example a failed or
+  still-provisioning login) means the login has not completed and the caller
+  should log in again. If the caller has no credential yet, the RPC returns
+  NOT_FOUND.
+
+  You must be the owner of the MCP service or have EXECUTE on it, plus
+  USE_CATALOG on the parent catalog and USE_SCHEMA on the parent schema.
+
+  Arguments:
+    NAME: Resource name of the MCP service. Format:
+      mcp-services/{catalog}.{schema}.{mcp_service}.`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getMcpServiceUserMappedCredentialReq.Name = args[0]
+
+		response, err := w.AiGateway.GetMcpServiceUserMappedCredential(ctx, getMcpServiceUserMappedCredentialReq)
+		if err != nil {
+			return err
+		}
+
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getMcpServiceUserMappedCredentialOverrides {
+		fn(cmd, &getMcpServiceUserMappedCredentialReq)
 	}
 
 	return cmd
@@ -1012,8 +1236,7 @@ func newUpdateMcpService() *cobra.Command {
       replacement must include every required field; any optional field you omit
       is cleared. To preserve sibling fields, use one or more granular paths:
       comment, config.source_connection.name,
-      config.include_tool_selectors, or config.rate_limits. Wildcard paths
-      such as * are not supported.`
+      config.include_tool_selectors, or config.rate_limits.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1120,7 +1343,7 @@ func newUpdateModelProviderService() *cobra.Command {
       config.allow_all_targets, config.targets, config.forward_headers,
       config.forward_query_parameters, config.forward_unmanaged_paths,
       config.rate_limits, or config.inference_table. The provider type is
-      immutable, and wildcard paths such as * are not supported.`
+      immutable.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -1227,8 +1450,7 @@ func newUpdateModelService() *cobra.Command {
       comment, config.routing.destinations,
       config.routing.fallback.destinations, config.rate_limits, or
       config.inference_table. Intermediate paths such as config.routing and
-      config.routing.fallback, and wildcard paths such as *, are not
-      supported.`
+      config.routing.fallback are not supported.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

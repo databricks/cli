@@ -1466,7 +1466,13 @@ resources:
                           "$fields":
                             "key_transformer":
                               "$fields":
+                                "avro_options":
+                                  "description": |-
+                                    PLACEHOLDER
                                 "json_options":
+                                  "description": |-
+                                    PLACEHOLDER
+                                "protobuf_options":
                                   "description": |-
                                     PLACEHOLDER
                         "sharepoint_options":
