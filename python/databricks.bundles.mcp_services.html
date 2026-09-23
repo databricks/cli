@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>MCP Services &#8212; databricks-bundles  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=c058f7c8" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=5fa5b382" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Model Provider Services" href="databricks.bundles.model_provider_services.html" />
+    <link rel="prev" title="Jobs" href="databricks.bundles.jobs.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="index.html">
+    <img class="logo" src="_static/databricks-logo.svg" alt="Logo" />
+    
+  </a>
+</p>
+
+
+
+<p class="blurb">databricks-bundles: Python support for Declarative Automation Bundles</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=databricks&repo=databricks-bundles&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.core.html">Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.alerts.html">Alerts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.apps.html">Apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.catalogs.html">Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">MCP Services</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.mcp_services">Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_serving_endpoints.html">Model Serving Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.models.html">Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.pipelines.html">Pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.postgres_snapshot_schedules.html">Postgres Snapshot Schedules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.quality_monitors.html">Quality Monitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.registered_models.html">Registered Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.schemas.html">Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secret_scopes.html">Secret Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secrets.html">Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.sql_warehouses.html">SQL Warehouses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.synced_database_tables.html">Synced Database Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_endpoints.html">Vector Search Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_indexes.html">Vector Search Indexes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.volumes.html">Volumes</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="databricks.bundles.jobs.html" title="previous chapter">Jobs</a></li>
+      <li>Next: <a href="databricks.bundles.model_provider_services.html" title="next chapter">Model Provider Services</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="mcp-services">
+<h1>MCP Services<a class="headerlink" href="#mcp-services" title="Link to this heading">¶</a></h1>
+<p><strong>Package:</strong> <code class="docutils literal notranslate"><span class="pre">databricks.bundles.mcp_services</span></code></p>
+<section id="module-databricks.bundles.mcp_services">
+<span id="classes"></span><h2>Classes<a class="headerlink" href="#module-databricks.bundles.mcp_services" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Lifecycle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Lifecycle</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.Lifecycle" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Lifecycle.prevent_destroy">
+<span class="sig-name descname"><span class="pre">prevent_destroy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Lifecycle.prevent_destroy" title="Link to this definition">¶</a></dt>
+<dd><p>Lifecycle setting to prevent the resource from being destroyed.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Lifecycle.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.Lifecycle.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Lifecycle.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.Lifecycle.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">McpService</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpService" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService.mcp_service_id">
+<span class="sig-name descname"><span class="pre">mcp_service_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpService.mcp_service_id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService.parent">
+<span class="sig-name descname"><span class="pre">parent</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpService.parent" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService.comment">
+<span class="sig-name descname"><span class="pre">comment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpService.comment" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.mcp_services.McpServiceConfig" title="databricks.bundles.mcp_services._models.mcp_service_config.McpServiceConfig"><span class="pre">McpServiceConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpService.config" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService.grants">
+<span class="sig-name descname"><span class="pre">grants</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.mcp_services.PrivilegeAssignment" title="databricks.bundles.mcp_services._models.privilege_assignment.PrivilegeAssignment"><span class="pre">PrivilegeAssignment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpService.grants" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService.lifecycle">
+<span class="sig-name descname"><span class="pre">lifecycle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.mcp_services.Lifecycle" title="databricks.bundles.mcp_services._models.lifecycle.Lifecycle"><span class="pre">Lifecycle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpService.lifecycle" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpService.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpService.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpService.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">McpServiceConfig</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Operational configuration for an MCP service. Groups the source reference,
+tool selectors, and rate limits – the fields that configure how the MCP
+service behaves at invocation time.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfig.include_tool_selectors">
+<span class="sig-name descname"><span class="pre">include_tool_selectors</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfig.include_tool_selectors" title="Link to this definition">¶</a></dt>
+<dd><p>Tool names or prefix patterns to expose from the MCP server. Use exact
+tool names or prefix patterns such as <cite>read_*</cite>. An empty list exposes all
+tools. At most 1,024 selectors are allowed, and each selector can contain
+at most 256 characters.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfig.rate_limits">
+<span class="sig-name descname"><span class="pre">rate_limits</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.mcp_services.RateLimit" title="databricks.bundles.mcp_services._models.rate_limit.RateLimit"><span class="pre">RateLimit</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfig.rate_limits" title="Link to this definition">¶</a></dt>
+<dd><p>Rate limits for tool invocations. Supported scopes are user, group, service
+principal, the service as a whole, and each user by default. Request and
+token limits are supported. Empty when no rate limit is configured.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfig.source_connection">
+<span class="sig-name descname"><span class="pre">source_connection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.mcp_services.McpServiceConfigSourceConnection" title="databricks.bundles.mcp_services._models.mcp_service_config_source_connection.McpServiceConfigSourceConnection"><span class="pre">McpServiceConfigSourceConnection</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfig.source_connection" title="Link to this definition">¶</a></dt>
+<dd><p>Unity Catalog connection referencing the MCP server. Required on Create.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfigSourceConnection">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">McpServiceConfigSourceConnection</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfigSourceConnection" title="Link to this definition">¶</a></dt>
+<dd><p>Unity Catalog connection that points to the MCP server. On Create, provide
+<cite>name</cite> in the schema-scoped form
+<cite>connections/{catalog}.{schema}.{connection}</cite>. On read, the service
+populates the resolved connection metadata. If the connection is deleted,
+its reference remains visible so you can identify the broken dependency.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfigSourceConnection.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfigSourceConnection.name" title="Link to this definition">¶</a></dt>
+<dd><p>Resource name of the Unity Catalog connection used to access the MCP
+server, in the form <cite>connections/{catalog}.{schema}.{connection}</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfigSourceConnection.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfigSourceConnection.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.McpServiceConfigSourceConnection.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.McpServiceConfigSourceConnection.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Privilege</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.SELECT">
+<span class="sig-name descname"><span class="pre">SELECT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SELECT'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.SELECT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.READ_PRIVATE_FILES">
+<span class="sig-name descname"><span class="pre">READ_PRIVATE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_PRIVATE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.READ_PRIVATE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.WRITE_PRIVATE_FILES">
+<span class="sig-name descname"><span class="pre">WRITE_PRIVATE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_PRIVATE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.WRITE_PRIVATE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE">
+<span class="sig-name descname"><span class="pre">CREATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.USAGE">
+<span class="sig-name descname"><span class="pre">USAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USAGE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.USAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.USE_CATALOG">
+<span class="sig-name descname"><span class="pre">USE_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.USE_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.USE_SCHEMA">
+<span class="sig-name descname"><span class="pre">USE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.USE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_SCHEMA">
+<span class="sig-name descname"><span class="pre">CREATE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_VIEW">
+<span class="sig-name descname"><span class="pre">CREATE_VIEW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_VIEW'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_VIEW" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_EXTERNAL_TABLE">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_TABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_TABLE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_EXTERNAL_TABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_MATERIALIZED_VIEW">
+<span class="sig-name descname"><span class="pre">CREATE_MATERIALIZED_VIEW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MATERIALIZED_VIEW'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_MATERIALIZED_VIEW" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_FUNCTION">
+<span class="sig-name descname"><span class="pre">CREATE_FUNCTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FUNCTION'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_FUNCTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_MODEL">
+<span class="sig-name descname"><span class="pre">CREATE_MODEL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MODEL'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_MODEL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_CATALOG">
+<span class="sig-name descname"><span class="pre">CREATE_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_MANAGED_STORAGE">
+<span class="sig-name descname"><span class="pre">CREATE_MANAGED_STORAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MANAGED_STORAGE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_MANAGED_STORAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_EXTERNAL_LOCATION">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_LOCATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_LOCATION'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_EXTERNAL_LOCATION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_STORAGE_CREDENTIAL">
+<span class="sig-name descname"><span class="pre">CREATE_STORAGE_CREDENTIAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_STORAGE_CREDENTIAL'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_STORAGE_CREDENTIAL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_SERVICE_CREDENTIAL">
+<span class="sig-name descname"><span class="pre">CREATE_SERVICE_CREDENTIAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SERVICE_CREDENTIAL'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_SERVICE_CREDENTIAL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.ACCESS">
+<span class="sig-name descname"><span class="pre">ACCESS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ACCESS'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.ACCESS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_SHARE">
+<span class="sig-name descname"><span class="pre">CREATE_SHARE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SHARE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_SHARE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_RECIPIENT">
+<span class="sig-name descname"><span class="pre">CREATE_RECIPIENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_RECIPIENT'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_RECIPIENT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_PROVIDER">
+<span class="sig-name descname"><span class="pre">CREATE_PROVIDER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_PROVIDER'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_PROVIDER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.USE_SHARE">
+<span class="sig-name descname"><span class="pre">USE_SHARE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_SHARE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.USE_SHARE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.USE_RECIPIENT">
+<span class="sig-name descname"><span class="pre">USE_RECIPIENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_RECIPIENT'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.USE_RECIPIENT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.USE_PROVIDER">
+<span class="sig-name descname"><span class="pre">USE_PROVIDER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_PROVIDER'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.USE_PROVIDER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.USE_MARKETPLACE_ASSETS">
+<span class="sig-name descname"><span class="pre">USE_MARKETPLACE_ASSETS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_MARKETPLACE_ASSETS'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.USE_MARKETPLACE_ASSETS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.SET_SHARE_PERMISSION">
+<span class="sig-name descname"><span class="pre">SET_SHARE_PERMISSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SET_SHARE_PERMISSION'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.SET_SHARE_PERMISSION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.MODIFY">
+<span class="sig-name descname"><span class="pre">MODIFY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MODIFY'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.MODIFY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.REFRESH">
+<span class="sig-name descname"><span class="pre">REFRESH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'REFRESH'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.REFRESH" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.EXECUTE">
+<span class="sig-name descname"><span class="pre">EXECUTE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXECUTE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.EXECUTE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.READ_FILES">
+<span class="sig-name descname"><span class="pre">READ_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_FILES'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.READ_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.WRITE_FILES">
+<span class="sig-name descname"><span class="pre">WRITE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.WRITE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_TABLE">
+<span class="sig-name descname"><span class="pre">CREATE_TABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_TABLE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_TABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.ALL_PRIVILEGES">
+<span class="sig-name descname"><span class="pre">ALL_PRIVILEGES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ALL_PRIVILEGES'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.ALL_PRIVILEGES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_CONNECTION">
+<span class="sig-name descname"><span class="pre">CREATE_CONNECTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CONNECTION'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_CONNECTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.USE_CONNECTION">
+<span class="sig-name descname"><span class="pre">USE_CONNECTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_CONNECTION'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.USE_CONNECTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.APPLY_TAG">
+<span class="sig-name descname"><span class="pre">APPLY_TAG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'APPLY_TAG'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.APPLY_TAG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_FOREIGN_CATALOG">
+<span class="sig-name descname"><span class="pre">CREATE_FOREIGN_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FOREIGN_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_FOREIGN_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_FOREIGN_SECURABLE">
+<span class="sig-name descname"><span class="pre">CREATE_FOREIGN_SECURABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FOREIGN_SECURABLE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_FOREIGN_SECURABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.MANAGE_ALLOWLIST">
+<span class="sig-name descname"><span class="pre">MANAGE_ALLOWLIST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGE_ALLOWLIST'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.MANAGE_ALLOWLIST" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_VOLUME">
+<span class="sig-name descname"><span class="pre">CREATE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_EXTERNAL_VOLUME">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_EXTERNAL_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.READ_VOLUME">
+<span class="sig-name descname"><span class="pre">READ_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.READ_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.WRITE_VOLUME">
+<span class="sig-name descname"><span class="pre">WRITE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.WRITE_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.MANAGE">
+<span class="sig-name descname"><span class="pre">MANAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.MANAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.BROWSE">
+<span class="sig-name descname"><span class="pre">BROWSE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'BROWSE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.BROWSE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.CREATE_CLEAN_ROOM">
+<span class="sig-name descname"><span class="pre">CREATE_CLEAN_ROOM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CLEAN_ROOM'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.CREATE_CLEAN_ROOM" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.MODIFY_CLEAN_ROOM">
+<span class="sig-name descname"><span class="pre">MODIFY_CLEAN_ROOM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MODIFY_CLEAN_ROOM'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.MODIFY_CLEAN_ROOM" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.EXECUTE_CLEAN_ROOM_TASK">
+<span class="sig-name descname"><span class="pre">EXECUTE_CLEAN_ROOM_TASK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXECUTE_CLEAN_ROOM_TASK'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.EXECUTE_CLEAN_ROOM_TASK" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.EXTERNAL_USE_SCHEMA">
+<span class="sig-name descname"><span class="pre">EXTERNAL_USE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXTERNAL_USE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.EXTERNAL_USE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.READ_METADATA">
+<span class="sig-name descname"><span class="pre">READ_METADATA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_METADATA'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.READ_METADATA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.Privilege.EXTERNAL_USE_LOCATION">
+<span class="sig-name descname"><span class="pre">EXTERNAL_USE_LOCATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXTERNAL_USE_LOCATION'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.Privilege.EXTERNAL_USE_LOCATION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.PrivilegeAssignment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PrivilegeAssignment</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.PrivilegeAssignment" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.PrivilegeAssignment.principal">
+<span class="sig-name descname"><span class="pre">principal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.PrivilegeAssignment.principal" title="Link to this definition">¶</a></dt>
+<dd><p>The principal (user email address or group name).
+For deleted principals, <cite>principal</cite> is empty while <cite>principal_id</cite> is populated.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.PrivilegeAssignment.privileges">
+<span class="sig-name descname"><span class="pre">privileges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.mcp_services.Privilege" title="databricks.bundles.mcp_services._models.privilege.Privilege"><span class="pre">Privilege</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.mcp_services.PrivilegeAssignment.privileges" title="Link to this definition">¶</a></dt>
+<dd><p>The privileges assigned to the principal.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.PrivilegeAssignment.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.PrivilegeAssignment.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.PrivilegeAssignment.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.PrivilegeAssignment.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RateLimit</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimit" title="Link to this definition">¶</a></dt>
+<dd><p>A rate limit applied to service requests. Leave <cite>requests</cite> or <cite>tokens</cite>
+unset to impose no limit on that dimension; set a value to cap that dimension
+within the renewal period.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimit.key">
+<span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.mcp_services.RateLimitRateLimitKey" title="databricks.bundles.mcp_services._models.rate_limit_rate_limit_key.RateLimitRateLimitKey"><span class="pre">RateLimitRateLimitKey</span></a></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimit.key" title="Link to this definition">¶</a></dt>
+<dd><p>Scope of the rate limit. Depending on this value, the limit applies to a
+principal, the service as a whole, or each user by default.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimit.renewal_period">
+<span class="sig-name descname"><span class="pre">renewal_period</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.mcp_services.RateLimitRateLimitRenewalPeriod" title="databricks.bundles.mcp_services._models.rate_limit_rate_limit_renewal_period.RateLimitRateLimitRenewalPeriod"><span class="pre">RateLimitRateLimitRenewalPeriod</span></a></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimit.renewal_period" title="Link to this definition">¶</a></dt>
+<dd><p>Renewal period.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimit.principal">
+<span class="sig-name descname"><span class="pre">principal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimit.principal" title="Link to this definition">¶</a></dt>
+<dd><p>Principal this limit applies to: user email, group name, or service
+principal application ID. Required when <cite>key</cite> applies to a user, group, or
+service principal; otherwise it must be unset.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimit.requests">
+<span class="sig-name descname"><span class="pre">requests</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimit.requests" title="Link to this definition">¶</a></dt>
+<dd><p>Maximum requests allowed in one renewal period. Leave unset for no request
+limit. Set to <cite>0</cite> to deny all requests.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimit.tokens">
+<span class="sig-name descname"><span class="pre">tokens</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimit.tokens" title="Link to this definition">¶</a></dt>
+<dd><p>Maximum tokens allowed in one renewal period. Leave unset for no token
+limit. Set to <cite>0</cite> to deny all requests.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimit.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimit.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimit.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimit.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitKey">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RateLimitRateLimitKey</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitKey" title="Link to this definition">¶</a></dt>
+<dd><p>Scope key for a rate limit.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_USER">
+<span class="sig-name descname"><span class="pre">RATE_LIMIT_KEY_USER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RATE_LIMIT_KEY_USER'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_USER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_USER_GROUP">
+<span class="sig-name descname"><span class="pre">RATE_LIMIT_KEY_USER_GROUP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RATE_LIMIT_KEY_USER_GROUP'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_USER_GROUP" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_SERVICE_PRINCIPAL">
+<span class="sig-name descname"><span class="pre">RATE_LIMIT_KEY_SERVICE_PRINCIPAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RATE_LIMIT_KEY_SERVICE_PRINCIPAL'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_SERVICE_PRINCIPAL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_SERVICE">
+<span class="sig-name descname"><span class="pre">RATE_LIMIT_KEY_SERVICE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RATE_LIMIT_KEY_SERVICE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_SERVICE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_USER_DEFAULT">
+<span class="sig-name descname"><span class="pre">RATE_LIMIT_KEY_USER_DEFAULT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RATE_LIMIT_KEY_USER_DEFAULT'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitKey.RATE_LIMIT_KEY_USER_DEFAULT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitRenewalPeriod">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RateLimitRateLimitRenewalPeriod</span></span><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitRenewalPeriod" title="Link to this definition">¶</a></dt>
+<dd><p>Renewal period for a rate limit.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitRenewalPeriod.RATE_LIMIT_RENEWAL_PERIOD_MINUTE">
+<span class="sig-name descname"><span class="pre">RATE_LIMIT_RENEWAL_PERIOD_MINUTE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RATE_LIMIT_RENEWAL_PERIOD_MINUTE'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitRenewalPeriod.RATE_LIMIT_RENEWAL_PERIOD_MINUTE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.mcp_services.RateLimitRateLimitRenewalPeriod.RATE_LIMIT_RENEWAL_PERIOD_HOUR">
+<span class="sig-name descname"><span class="pre">RATE_LIMIT_RENEWAL_PERIOD_HOUR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RATE_LIMIT_RENEWAL_PERIOD_HOUR'</span></em><a class="headerlink" href="#databricks.bundles.mcp_services.RateLimitRateLimitRenewalPeriod.RATE_LIMIT_RENEWAL_PERIOD_HOUR" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &#169;2024, Databricks.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.0.2</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/databricks.bundles.mcp_services.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

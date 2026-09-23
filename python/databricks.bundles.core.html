@@ -14,7 +14,7 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Jobs" href="databricks.bundles.jobs.html" />
+    <link rel="next" title="Alerts" href="databricks.bundles.alerts.html" />
     <link rel="prev" title="databricks-bundles" href="index.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -37,7 +37,7 @@
 
 
 
-<p class="blurb">databricks-bundles: Python support for Databricks Asset Bundles</p>
+<p class="blurb">databricks-bundles: Python support for Declarative Automation Bundles</p>
 
 
 
@@ -68,9 +68,36 @@
 <li class="toctree-l2"><a class="reference internal" href="#decorators">Decorators</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.alerts.html">Alerts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.apps.html">Apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.catalogs.html">Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_serving_endpoints.html">Model Serving Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.pipelines.html">Pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.postgres_snapshot_schedules.html">Postgres Snapshot Schedules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.quality_monitors.html">Quality Monitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.registered_models.html">Registered Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.schemas.html">Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secret_scopes.html">Secret Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secrets.html">Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.sql_warehouses.html">SQL Warehouses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.synced_database_tables.html">Synced Database Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_endpoints.html">Vector Search Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_indexes.html">Vector Search Indexes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.volumes.html">Volumes</a></li>
 </ul>
 
@@ -79,7 +106,7 @@
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
       <li>Previous: <a href="index.html" title="previous chapter">databricks-bundles</a></li>
-      <li>Next: <a href="databricks.bundles.jobs.html" title="next chapter">Jobs</a></li>
+      <li>Next: <a href="databricks.bundles.alerts.html" title="next chapter">Alerts</a></li>
   </ul></li>
 </ul>
 </div>
@@ -113,10 +140,9 @@
 If there are multiple functions specified in ‘python/resources’ list, the resources from all functions
 are combined into a single Resources object.</p>
 <p>Example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">experimental</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">python</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">resources</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;resources:load_resources&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">python</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;resources:load_resources&quot;</span>
 </pre></div>
 </div>
 <p><cite>load_resources</cite> function can be implemented using built-in functions:</p>
@@ -126,7 +152,7 @@ are combined into a single Resources object.</p>
 <li><p><a class="reference internal" href="#databricks.bundles.core.load_resources_from_modules" title="databricks.bundles.core.load_resources_from_modules"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_resources_from_modules()</span></code></a></p></li>
 <li><p><a class="reference internal" href="#databricks.bundles.core.load_resources_from_module" title="databricks.bundles.core.load_resources_from_module"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load_resources_from_module()</span></code></a></p></li>
 </ul>
-<p>Programmatic construction of resources is supported using <a class="reference internal" href="#databricks.bundles.core.Resources.add_resource" title="databricks.bundles.core.Resources.add_resource"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_resource()</span></code></a> and <a class="reference internal" href="#databricks.bundles.core.Resources.add_job" title="databricks.bundles.core.Resources.add_job"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_job()</span></code></a> methods.</p>
+<p>Programmatic construction of resources is supported using <a class="reference internal" href="#databricks.bundles.core.Resources.add_resource" title="databricks.bundles.core.Resources.add_resource"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_resource()</span></code></a> and <code class="docutils literal notranslate"><span class="pre">add_&lt;resource&gt;</span></code> methods.</p>
 <p>Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">load_resources</span><span class="p">(</span><span class="n">bundle</span><span class="p">:</span> <span class="n">Bundle</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Resources</span><span class="p">:</span>
     <span class="n">resources</span> <span class="o">=</span> <span class="n">Resources</span><span class="p">()</span>
@@ -139,26 +165,6 @@ are combined into a single Resources object.</p>
     <span class="k">return</span> <span class="n">resources</span>
 </pre></div>
 </div>
-<dl class="py property">
-<dt class="sig sig-object py" id="databricks.bundles.core.Resources.jobs">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">jobs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job" title="databricks.bundles.jobs.Job"><span class="pre">Job</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Resources.jobs" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="databricks.bundles.core.Resources.pipelines">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pipelines</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Pipeline" title="databricks.bundles.pipelines.Pipeline"><span class="pre">Pipeline</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Resources.pipelines" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="databricks.bundles.core.Resources.schemas">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">schemas</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.schemas.html#databricks.bundles.schemas.Schema" title="databricks.bundles.schemas.Schema"><span class="pre">Schema</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Resources.schemas" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="databricks.bundles.core.Resources.volumes">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">volumes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume" title="databricks.bundles.volumes.Volume"><span class="pre">Volume</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.core.Resources.volumes" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="py property">
 <dt class="sig sig-object py" id="databricks.bundles.core.Resources.diagnostics">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">diagnostics</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.core.Diagnostics" title="databricks.bundles.core._diagnostics.Diagnostics"><span class="pre">Diagnostics</span></a></em><a class="headerlink" href="#databricks.bundles.core.Resources.diagnostics" title="Link to this definition">¶</a></dt>
@@ -185,102 +191,6 @@ resources of the same type.</p>
 <li><p><strong>resource_name</strong> – unique identifier for the resource</p></li>
 <li><p><strong>resource</strong> – the resource to add</p></li>
 <li><p><strong>location</strong> – optional location of the resource in the source code</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_job">
-<span class="sig-name descname"><span class="pre">add_job</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">resource_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="databricks.bundles.jobs.html#databricks.bundles.jobs.Job" title="databricks.bundles.jobs._models.job.Job"><span class="pre">JobParam</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_job" title="Link to this definition">¶</a></dt>
-<dd><p>Adds a job to the collection of resources. Resource name must be unique across all jobs.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>resource_name</strong> – unique identifier for the job</p></li>
-<li><p><strong>job</strong> – the job to add, can be Job or dict</p></li>
-<li><p><strong>location</strong> – optional location of the job in the source code</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_pipeline">
-<span class="sig-name descname"><span class="pre">add_pipeline</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">resource_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="databricks.bundles.pipelines.html#databricks.bundles.pipelines.Pipeline" title="databricks.bundles.pipelines._models.pipeline.Pipeline"><span class="pre">PipelineParam</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_pipeline" title="Link to this definition">¶</a></dt>
-<dd><p>Adds a pipeline to the collection of resources. Resource name must be unique across all pipelines.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>resource_name</strong> – unique identifier for the pipeline</p></li>
-<li><p><strong>pipeline</strong> – the pipeline to add, can be Pipeline or dict</p></li>
-<li><p><strong>location</strong> – optional location of the pipeline in the source code</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_schema">
-<span class="sig-name descname"><span class="pre">add_schema</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">resource_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">schema</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="databricks.bundles.schemas.html#databricks.bundles.schemas.Schema" title="databricks.bundles.schemas._models.schema.Schema"><span class="pre">SchemaParam</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_schema" title="Link to this definition">¶</a></dt>
-<dd><p>Adds a schema to the collection of resources. Resource name must be unique across all schemas.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>resource_name</strong> – unique identifier for the schema</p></li>
-<li><p><strong>schema</strong> – the schema to add, can be Schema or dict</p></li>
-<li><p><strong>location</strong> – optional location of the schema in the source code</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.core.Resources.add_volume">
-<span class="sig-name descname"><span class="pre">add_volume</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">resource_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">volume</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="databricks.bundles.volumes.html#databricks.bundles.volumes.Volume" title="databricks.bundles.volumes._models.volume.Volume"><span class="pre">VolumeParam</span></a></span></em>,</dd>
-<dd><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>,</dd>
-<dd><em class="sig-param"><span class="n"><span class="pre">location</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#databricks.bundles.core.Location" title="databricks.bundles.core._location.Location"><span class="pre">Location</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#databricks.bundles.core.Resources.add_volume" title="Link to this definition">¶</a></dt>
-<dd><p>Adds a volume to the collection of resources. Resource name must be unique across all volumes.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>resource_name</strong> – unique identifier for the volume</p></li>
-<li><p><strong>volume</strong> – the volume to add, can be Volume or dict</p></li>
-<li><p><strong>location</strong> – optional location of the volume in the source code</p></li>
 </ul>
 </dd>
 </dl>
@@ -484,7 +394,7 @@ Otherwise, the value will be returned as is.</p>
 <dt class="sig sig-object py" id="databricks.bundles.core.Variable">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Variable</span></span><a class="headerlink" href="#databricks.bundles.core.Variable" title="Link to this definition">¶</a></dt>
 <dd><p>Reference to a bundle variable.</p>
-<p>See: <a class="reference external" href="https://docs.databricks.com/en/dev-tools/bundles/settings.html">Databricks Asset Bundles configuration</a></p>
+<p>See: <a class="reference external" href="https://docs.databricks.com/en/dev-tools/bundles/settings.html">Declarative Automation Bundles configuration</a></p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.core.Variable.path">
 <span class="sig-name descname"><span class="pre">path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.core.Variable.path" title="Link to this definition">¶</a></dt>

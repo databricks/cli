@@ -14,8 +14,8 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Schemas" href="databricks.bundles.schemas.html" />
-    <link rel="prev" title="Jobs" href="databricks.bundles.jobs.html" />
+    <link rel="next" title="Postgres Snapshot Schedules" href="databricks.bundles.postgres_snapshot_schedules.html" />
+    <link rel="prev" title="Models" href="databricks.bundles.models.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -37,7 +37,7 @@
 
 
 
-<p class="blurb">databricks-bundles: Python support for Databricks Asset Bundles</p>
+<p class="blurb">databricks-bundles: Python support for Declarative Automation Bundles</p>
 
 
 
@@ -63,12 +63,39 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.core.html">Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.alerts.html">Alerts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.apps.html">Apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.catalogs.html">Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_serving_endpoints.html">Model Serving Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.models.html">Models</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Pipelines</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.pipelines">Classes</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.postgres_snapshot_schedules.html">Postgres Snapshot Schedules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.quality_monitors.html">Quality Monitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.registered_models.html">Registered Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.schemas.html">Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secret_scopes.html">Secret Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secrets.html">Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.sql_warehouses.html">SQL Warehouses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.synced_database_tables.html">Synced Database Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_endpoints.html">Vector Search Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_indexes.html">Vector Search Indexes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.volumes.html">Volumes</a></li>
 </ul>
 
@@ -76,8 +103,8 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="databricks.bundles.jobs.html" title="previous chapter">Jobs</a></li>
-      <li>Next: <a href="databricks.bundles.schemas.html" title="next chapter">Schemas</a></li>
+      <li>Previous: <a href="databricks.bundles.models.html" title="previous chapter">Models</a></li>
+      <li>Next: <a href="databricks.bundles.postgres_snapshot_schedules.html" title="next chapter">Postgres Snapshot Schedules</a></li>
   </ul></li>
 </ul>
 </div>
@@ -137,13 +164,57 @@
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AutoFullRefreshPolicy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AutoFullRefreshPolicy</span></span><a class="headerlink" href="#databricks.bundles.pipelines.AutoFullRefreshPolicy" title="Link to this definition">¶</a></dt>
+<dd><p>Policy for auto full refresh.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AutoFullRefreshPolicy.enabled">
+<span class="sig-name descname"><span class="pre">enabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.AutoFullRefreshPolicy.enabled" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Required, Mutable) Whether to enable auto full refresh or not.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AutoFullRefreshPolicy.min_interval_hours">
+<span class="sig-name descname"><span class="pre">min_interval_hours</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.AutoFullRefreshPolicy.min_interval_hours" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional, Mutable) Specify the minimum interval in hours between the timestamp
+at which a table was last full refreshed and the current timestamp for triggering auto full
+If unspecified and autoFullRefresh is enabled then by default min_interval_hours is 24 hours.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AutoFullRefreshPolicy.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.AutoFullRefreshPolicy.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AutoFullRefreshPolicy.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.AutoFullRefreshPolicy.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AwsAttributes">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AwsAttributes</span></span><a class="headerlink" href="#databricks.bundles.pipelines.AwsAttributes" title="Link to this definition">¶</a></dt>
 <dd><p>Attributes set during cluster creation which are related to Amazon Web Services.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AwsAttributes.availability">
 <span class="sig-name descname"><span class="pre">availability</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.AwsAvailability" title="databricks.bundles.pipelines._models.aws_availability.AwsAvailability"><span class="pre">AwsAvailability</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.AwsAttributes.availability" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Availability type used for all subsequent nodes past the <cite>first_on_demand</cite> ones.</p>
+<p>Note: If <cite>first_on_demand</cite> is zero, this availability type will be used for the entire cluster.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AwsAttributes.ebs_volume_count">
@@ -186,7 +257,8 @@ this value must be within the range 500 - 4096.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AwsAttributes.ebs_volume_type">
 <span class="sig-name descname"><span class="pre">ebs_volume_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.EbsVolumeType" title="databricks.bundles.pipelines._models.ebs_volume_type.EbsVolumeType"><span class="pre">EbsVolumeType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.AwsAttributes.ebs_volume_type" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The type of EBS volumes that will be launched with this cluster.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AwsAttributes.first_on_demand">
@@ -231,7 +303,7 @@ Note that, for safety, we enforce this field to be no more than 10000.</p>
 This string will be of a form like “us-west-2a”. The provided availability
 zone must be in the same region as the Databricks deployment. For example, “us-west-2a”
 is not a valid zone id if the Databricks deployment resides in the “us-east-1” region.
-This is an optional field at cluster creation, and if not specified, a default zone will be used.
+This is an optional field at cluster creation, and if not specified, the zone “auto” will be used.
 If the zone specified is “auto”, will try to place cluster in a zone with high availability,
 and will retry placement in a different AZ if there is not enough capacity.</p>
 <p>The list of available zones as well as the default value can be found by using the
@@ -291,7 +363,24 @@ and will retry placement in a different AZ if there is not enough capacity.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AzureAttributes.availability">
 <span class="sig-name descname"><span class="pre">availability</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.AzureAvailability" title="databricks.bundles.pipelines._models.azure_availability.AzureAvailability"><span class="pre">AzureAvailability</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.AzureAttributes.availability" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Availability type used for all subsequent nodes past the <cite>first_on_demand</cite> ones.
+Note: If <cite>first_on_demand</cite> is zero, this availability
+type will be used for the entire cluster.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.AzureAttributes.capacity_reservation_group">
+<span class="sig-name descname"><span class="pre">capacity_reservation_group</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.AzureAttributes.capacity_reservation_group" title="Link to this definition">¶</a></dt>
+<dd><p>The Azure capacity reservation group resource ID to use for launching VMs.
+When specified, VMs will be launched using the provided capacity reservation.</p>
+<p>Capacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not
+managed by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:
+1. Microsoft.Compute/capacityReservationGroups/read
+2. Microsoft.Compute/capacityReservationGroups/deploy/action
+3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read
+4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action</p>
+<p>Format: <cite>/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}</cite></p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.AzureAttributes.first_on_demand">
@@ -418,6 +507,190 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfluenceConnectorOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ConfluenceConnectorOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfluenceConnectorOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Confluence specific options for ingestion</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfluenceConnectorOptions.include_confluence_spaces">
+<span class="sig-name descname"><span class="pre">include_confluence_spaces</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConfluenceConnectorOptions.include_confluence_spaces" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) Spaces to filter Confluence data on</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfluenceConnectorOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfluenceConnectorOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConfluenceConnectorOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConfluenceConnectorOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ConnectorOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Wrapper message for source-specific options to support multiple connector types</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions.confluence_options">
+<span class="sig-name descname"><span class="pre">confluence_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.ConfluenceConnectorOptions" title="databricks.bundles.pipelines._models.confluence_connector_options.ConfluenceConnectorOptions"><span class="pre">ConfluenceConnectorOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions.confluence_options" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Confluence specific options for ingestion</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions.zendesk_support_options">
+<span class="sig-name descname"><span class="pre">zendesk_support_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.ZendeskSupportOptions" title="databricks.bundles.pipelines._models.zendesk_support_options.ZendeskSupportOptions"><span class="pre">ZendeskSupportOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions.zendesk_support_options" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Zendesk Support specific options for ingestion</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ConnectorType</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorType" title="Link to this definition">¶</a></dt>
+<dd><p>For certain database sources LakeFlow Connect offers both query based and cdc
+ingestion, ConnectorType can bse used to convey the type of ingestion.
+If connection_name is provided for database sources, we default to Query Based ingestion</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorType.CDC">
+<span class="sig-name descname"><span class="pre">CDC</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CDC'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorType.CDC" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ConnectorType.QUERY_BASED">
+<span class="sig-name descname"><span class="pre">QUERY_BASED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'QUERY_BASED'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ConnectorType.QUERY_BASED" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DataStagingOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DataStagingOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.DataStagingOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Location of staged data storage</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DataStagingOptions.catalog_name">
+<span class="sig-name descname"><span class="pre">catalog_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.DataStagingOptions.catalog_name" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Required, Immutable) The name of the catalog for the connector’s staging storage location.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DataStagingOptions.schema_name">
+<span class="sig-name descname"><span class="pre">schema_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.DataStagingOptions.schema_name" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Required, Immutable) The name of the schema for the connector’s staging storage location.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DataStagingOptions.volume_name">
+<span class="sig-name descname"><span class="pre">volume_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.DataStagingOptions.volume_name" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) The Unity Catalog-compatible name for the storage location.
+This is the volume to use for the data that is extracted by the connector.
+Spark Declarative Pipelines system will automatically create the volume under the catalog and schema.
+For Combined Cdc Managed Ingestion pipelines default name for the volume would be :
+__databricks_ingestion_gateway_staging_data-$pipelineId</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DataStagingOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.DataStagingOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DataStagingOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.DataStagingOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DayOfWeek">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DayOfWeek</span></span><a class="headerlink" href="#databricks.bundles.pipelines.DayOfWeek" title="Link to this definition">¶</a></dt>
+<dd><p>Days of week in which the window is allowed to happen.
+If not specified all days of the week will be used.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DayOfWeek.MONDAY">
+<span class="sig-name descname"><span class="pre">MONDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MONDAY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.DayOfWeek.MONDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DayOfWeek.TUESDAY">
+<span class="sig-name descname"><span class="pre">TUESDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'TUESDAY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.DayOfWeek.TUESDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DayOfWeek.WEDNESDAY">
+<span class="sig-name descname"><span class="pre">WEDNESDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WEDNESDAY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.DayOfWeek.WEDNESDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DayOfWeek.THURSDAY">
+<span class="sig-name descname"><span class="pre">THURSDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'THURSDAY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.DayOfWeek.THURSDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DayOfWeek.FRIDAY">
+<span class="sig-name descname"><span class="pre">FRIDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FRIDAY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.DayOfWeek.FRIDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DayOfWeek.SATURDAY">
+<span class="sig-name descname"><span class="pre">SATURDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SATURDAY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.DayOfWeek.SATURDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.DayOfWeek.SUNDAY">
+<span class="sig-name descname"><span class="pre">SUNDAY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SUNDAY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.DayOfWeek.SUNDAY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.DbfsStorageInfo">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DbfsStorageInfo</span></span><a class="headerlink" href="#databricks.bundles.pipelines.DbfsStorageInfo" title="Link to this definition">¶</a></dt>
 <dd><p>A storage location in DBFS</p>
@@ -515,6 +788,37 @@ See <a class="reference external" href="https://aws.amazon.com/ebs/details/">htt
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FileIngestionOptionsSchemaEvolutionMode</span></span><a class="headerlink" href="#databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode" title="Link to this definition">¶</a></dt>
+<dd><p>Based on <a class="reference external" href="https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work">https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/schema#how-does-auto-loader-schema-evolution-work</a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.ADD_NEW_COLUMNS_WITH_TYPE_WIDENING">
+<span class="sig-name descname"><span class="pre">ADD_NEW_COLUMNS_WITH_TYPE_WIDENING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ADD_NEW_COLUMNS_WITH_TYPE_WIDENING'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.ADD_NEW_COLUMNS_WITH_TYPE_WIDENING" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.ADD_NEW_COLUMNS">
+<span class="sig-name descname"><span class="pre">ADD_NEW_COLUMNS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ADD_NEW_COLUMNS'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.ADD_NEW_COLUMNS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.RESCUE">
+<span class="sig-name descname"><span class="pre">RESCUE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'RESCUE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.RESCUE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.FAIL_ON_NEW_COLUMNS">
+<span class="sig-name descname"><span class="pre">FAIL_ON_NEW_COLUMNS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FAIL_ON_NEW_COLUMNS'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.FAIL_ON_NEW_COLUMNS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.NONE">
+<span class="sig-name descname"><span class="pre">NONE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'NONE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.FileIngestionOptionsSchemaEvolutionMode.NONE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.FileLibrary">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">FileLibrary</span></span><a class="headerlink" href="#databricks.bundles.pipelines.FileLibrary" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -593,7 +897,9 @@ See <a class="reference external" href="https://aws.amazon.com/ebs/details/">htt
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.GcpAttributes.availability">
 <span class="sig-name descname"><span class="pre">availability</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.GcpAvailability" title="databricks.bundles.pipelines._models.gcp_availability.GcpAvailability"><span class="pre">GcpAvailability</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.GcpAttributes.availability" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This field determines whether the spark executors will be scheduled to run on preemptible
+VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.GcpAttributes.boot_disk_size">
@@ -736,19 +1042,19 @@ VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the f
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionConfig.report">
 <span class="sig-name descname"><span class="pre">report</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.ReportSpec" title="databricks.bundles.pipelines._models.report_spec.ReportSpec"><span class="pre">ReportSpec</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionConfig.report" title="Link to this definition">¶</a></dt>
-<dd><p>Select a specific source report.</p>
+<dd><p>[Public Preview] Select a specific source report.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionConfig.schema">
 <span class="sig-name descname"><span class="pre">schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.SchemaSpec" title="databricks.bundles.pipelines._models.schema_spec.SchemaSpec"><span class="pre">SchemaSpec</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionConfig.schema" title="Link to this definition">¶</a></dt>
-<dd><p>Select all tables from a specific source schema.</p>
+<dd><p>[Public Preview] Select all tables from a specific source schema.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionConfig.table">
 <span class="sig-name descname"><span class="pre">table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TableSpec" title="databricks.bundles.pipelines._models.table_spec.TableSpec"><span class="pre">TableSpec</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionConfig.table" title="Link to this definition">¶</a></dt>
-<dd><p>Select a specific source table.</p>
+<dd><p>[Public Preview] Select a specific source table.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -781,33 +1087,71 @@ VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the f
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.connection_name">
 <span class="sig-name descname"><span class="pre">connection_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.connection_name" title="Link to this definition">¶</a></dt>
-<dd><p>Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.</p>
+<dd><p>[Public Preview] The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with
+both connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,
+(connector_type = QUERY_BASED OR connector_type = CDC).
+If connection name corresponds to database connectors like Oracle, and connector_type is not provided then
+connector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion
+pipeline.
+Under certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed
+Ingestion Pipeline with Gateway pipeline.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.connector_type">
+<span class="sig-name descname"><span class="pre">connector_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.ConnectorType" title="databricks.bundles.pipelines._models.connector_type.ConnectorType"><span class="pre">ConnectorType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.connector_type" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) Connector Type for sources. Ex: CDC, Query Based.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.data_staging_options">
+<span class="sig-name descname"><span class="pre">data_staging_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.DataStagingOptions" title="databricks.bundles.pipelines._models.data_staging_options.DataStagingOptions"><span class="pre">DataStagingOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.data_staging_options" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) Location of staged data storage. This is required for migration from Cdc Managed Ingestion Pipeline
+with Gateway pipeline to Combined Cdc Managed Ingestion Pipeline.
+If not specified, the volume for staged data will be created in catalog and schema/target specified in the
+top level pipeline definition.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.full_refresh_window">
+<span class="sig-name descname"><span class="pre">full_refresh_window</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.OperationTimeWindow" title="databricks.bundles.pipelines._models.operation_time_window.OperationTimeWindow"><span class="pre">OperationTimeWindow</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.full_refresh_window" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.ingest_from_uc_foreign_catalog">
+<span class="sig-name descname"><span class="pre">ingest_from_uc_foreign_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.ingest_from_uc_foreign_catalog" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Immutable. If set to true, the pipeline will ingest tables from the
+UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
+The <cite>source_catalog</cite> fields in objects of IngestionConfig are interpreted as
+the UC foreign catalogs to ingest from.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.ingestion_gateway_id">
 <span class="sig-name descname"><span class="pre">ingestion_gateway_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.ingestion_gateway_id" title="Link to this definition">¶</a></dt>
-<dd><p>Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.</p>
+<dd><p>[Public Preview] Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.
+This is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).
+Under certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc
+Managed Ingestion Pipeline.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.objects">
 <span class="sig-name descname"><span class="pre">objects</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.pipelines.IngestionConfig" title="databricks.bundles.pipelines._models.ingestion_config.IngestionConfig"><span class="pre">IngestionConfig</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.objects" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Settings specifying tables to replicate and the destination for the replicated tables.</p>
+<dd><p>[Public Preview] Required. Settings specifying tables to replicate and the destination for the replicated tables.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.source_type">
-<span class="sig-name descname"><span class="pre">source_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.IngestionSourceType" title="databricks.bundles.pipelines._models.ingestion_source_type.IngestionSourceType"><span class="pre">IngestionSourceType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.source_type" title="Link to this definition">¶</a></dt>
-<dd><p>The type of the foreign source.
-The source type will be inferred from the source connection or ingestion gateway.
-This field is output only and will be ignored if provided.</p>
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.source_configurations">
+<span class="sig-name descname"><span class="pre">source_configurations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.pipelines.SourceConfig" title="databricks.bundles.pipelines._models.source_config.SourceConfig"><span class="pre">SourceConfig</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.source_configurations" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Top-level source configurations</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinition.table_configuration">
 <span class="sig-name descname"><span class="pre">table_configuration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TableSpecificConfig" title="databricks.bundles.pipelines._models.table_specific_config.TableSpecificConfig"><span class="pre">TableSpecificConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinition.table_configuration" title="Link to this definition">¶</a></dt>
-<dd><p>Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.</p>
+<dd><p>[Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -835,101 +1179,83 @@ This field is output only and will be ignored if provided.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IngestionSourceType</span></span><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.MYSQL">
-<span class="sig-name descname"><span class="pre">MYSQL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MYSQL'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.MYSQL" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinitionFanoutOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IngestionPipelineDefinitionFanoutOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionFanoutOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Fanout configuration for multi-table routing from streaming sources.
+Routes each input record to a destination table based on a routing
+key derived from the record. The key value becomes the table name
+suffix: {destination_catalog}.{destination_schema}.{key_value}.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinitionFanoutOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionFanoutOptions.from_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.POSTGRESQL">
-<span class="sig-name descname"><span class="pre">POSTGRESQL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'POSTGRESQL'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.POSTGRESQL" title="Link to this definition">¶</a></dt>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinitionFanoutOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionFanoutOptions.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Configurations that are only applicable for query-based ingestion connectors.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.REDSHIFT">
-<span class="sig-name descname"><span class="pre">REDSHIFT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'REDSHIFT'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.REDSHIFT" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig.cursor_columns">
+<span class="sig-name descname"><span class="pre">cursor_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig.cursor_columns" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The names of the monotonically increasing columns in the source table that are used to enable
+the table to be read and ingested incrementally through structured streaming.
+The columns are allowed to have repeated values but have to be non-decreasing.
+If the source data is merged into the destination (e.g., using SCD Type 1 or Type 2), these
+columns will implicitly define the <cite>sequence_by</cite> behavior. You can still explicitly set
+<cite>sequence_by</cite> to override this default.</p>
+</dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.SQLDW">
-<span class="sig-name descname"><span class="pre">SQLDW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SQLDW'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.SQLDW" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig.deletion_condition">
+<span class="sig-name descname"><span class="pre">deletion_condition</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig.deletion_condition" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Specifies a SQL WHERE condition that specifies that the source row has been deleted.
+This is sometimes referred to as “soft-deletes”.
+For example: “Operation = ‘DELETE’” or “is_deleted = true”.
+This field is orthogonal to <cite>hard_deletion_sync_interval_in_seconds</cite>,
+one for soft-deletes and the other for hard-deletes.
+See also the hard_deletion_sync_min_interval_in_seconds field for
+handling of “hard deletes” where the source rows are physically removed from the table.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig.from_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.SQLSERVER">
-<span class="sig-name descname"><span class="pre">SQLSERVER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SQLSERVER'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.SQLSERVER" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.SALESFORCE">
-<span class="sig-name descname"><span class="pre">SALESFORCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SALESFORCE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.SALESFORCE" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
 
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.BIGQUERY">
-<span class="sig-name descname"><span class="pre">BIGQUERY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'BIGQUERY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.BIGQUERY" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.NETSUITE">
-<span class="sig-name descname"><span class="pre">NETSUITE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'NETSUITE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.NETSUITE" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.WORKDAY_RAAS">
-<span class="sig-name descname"><span class="pre">WORKDAY_RAAS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WORKDAY_RAAS'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.WORKDAY_RAAS" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.GA4_RAW_DATA">
-<span class="sig-name descname"><span class="pre">GA4_RAW_DATA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GA4_RAW_DATA'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.GA4_RAW_DATA" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.SERVICENOW">
-<span class="sig-name descname"><span class="pre">SERVICENOW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SERVICENOW'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.SERVICENOW" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.MANAGED_POSTGRESQL">
-<span class="sig-name descname"><span class="pre">MANAGED_POSTGRESQL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGED_POSTGRESQL'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.MANAGED_POSTGRESQL" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.ORACLE">
-<span class="sig-name descname"><span class="pre">ORACLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ORACLE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.ORACLE" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.TERADATA">
-<span class="sig-name descname"><span class="pre">TERADATA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'TERADATA'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.TERADATA" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.SHAREPOINT">
-<span class="sig-name descname"><span class="pre">SHAREPOINT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SHAREPOINT'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.SHAREPOINT" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.DYNAMICS365">
-<span class="sig-name descname"><span class="pre">DYNAMICS365</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DYNAMICS365'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.DYNAMICS365" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.CONFLUENCE">
-<span class="sig-name descname"><span class="pre">CONFLUENCE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CONFLUENCE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.CONFLUENCE" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.META_MARKETING">
-<span class="sig-name descname"><span class="pre">META_MARKETING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'META_MARKETING'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.META_MARKETING" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.IngestionSourceType.FOREIGN_CATALOG">
-<span class="sig-name descname"><span class="pre">FOREIGN_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FOREIGN_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.IngestionSourceType.FOREIGN_CATALOG" title="Link to this definition">¶</a></dt>
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -937,8 +1263,7 @@ This field is output only and will be ignored if provided.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.InitScriptInfo">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">InitScriptInfo</span></span><a class="headerlink" href="#databricks.bundles.pipelines.InitScriptInfo" title="Link to this definition">¶</a></dt>
-<dd><p>Config for an individual init script
-Next ID: 11</p>
+<dd><p>Config for an individual init script</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.InitScriptInfo.abfss">
 <span class="sig-name descname"><span class="pre">abfss</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.Adlsgen2Info" title="databricks.bundles.pipelines._models.adlsgen2_info.Adlsgen2Info"><span class="pre">Adlsgen2Info</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.InitScriptInfo.abfss" title="Link to this definition">¶</a></dt>
@@ -1009,6 +1334,88 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.InitScriptInfo.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.JiraConnectorOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JiraConnectorOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.JiraConnectorOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Jira specific options for ingestion</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.JiraConnectorOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.JiraConnectorOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.JiraConnectorOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.JiraConnectorOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.JsonTransformerOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JsonTransformerOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.JsonTransformerOptions" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.JsonTransformerOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.JsonTransformerOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.JsonTransformerOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.JsonTransformerOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.KafkaOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">KafkaOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.KafkaOptions" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.KafkaOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.KafkaOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.KafkaOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.KafkaOptions.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1167,6 +1574,34 @@ and Spark Packages are searched.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.MetaMarketingOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MetaMarketingOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.MetaMarketingOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Meta Marketing (Meta Ads) specific options for ingestion</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.MetaMarketingOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.MetaMarketingOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.MetaMarketingOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.MetaMarketingOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.NotebookLibrary">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NotebookLibrary</span></span><a class="headerlink" href="#databricks.bundles.pipelines.NotebookLibrary" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -1246,12 +1681,60 @@ destinations. The supported alerts are:</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.OperationTimeWindow">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">OperationTimeWindow</span></span><a class="headerlink" href="#databricks.bundles.pipelines.OperationTimeWindow" title="Link to this definition">¶</a></dt>
+<dd><p>Proto representing a window</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.OperationTimeWindow.start_hour">
+<span class="sig-name descname"><span class="pre">start_hour</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.OperationTimeWindow.start_hour" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.OperationTimeWindow.days_of_week">
+<span class="sig-name descname"><span class="pre">days_of_week</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.pipelines.DayOfWeek" title="databricks.bundles.pipelines._models.day_of_week.DayOfWeek"><span class="pre">DayOfWeek</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.OperationTimeWindow.days_of_week" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Days of week in which the window is allowed to happen
+If not specified all days of the week will be used.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.OperationTimeWindow.time_zone_id">
+<span class="sig-name descname"><span class="pre">time_zone_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.OperationTimeWindow.time_zone_id" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Time zone id of window. See <a class="reference external" href="https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html">https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html</a> for details.
+If not specified, UTC will be used.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.OperationTimeWindow.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.OperationTimeWindow.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.OperationTimeWindow.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.OperationTimeWindow.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PathPattern">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PathPattern</span></span><a class="headerlink" href="#databricks.bundles.pipelines.PathPattern" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PathPattern.include">
 <span class="sig-name descname"><span class="pre">include</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PathPattern.include" title="Link to this definition">¶</a></dt>
-<dd><p>The source code to include for pipelines</p>
+<dd><p>[Public Preview] The source code to include for pipelines</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1288,6 +1771,18 @@ destinations. The supported alerts are:</p>
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.budget_policy_id">
+<span class="sig-name descname"><span class="pre">budget_policy_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.budget_policy_id" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Budget policy of this pipeline.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.cascade_on_destroy">
+<span class="sig-name descname"><span class="pre">cascade_on_destroy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.cascade_on_destroy" title="Link to this definition">¶</a></dt>
+<dd><p>Whether destroying the pipeline also deletes its datasets (MVs, STs, Views). Defaults to true (the server default). Set to false to retain the datasets when the pipeline is deleted. Only affects the delete operation.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.catalog">
 <span class="sig-name descname"><span class="pre">catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.catalog" title="Link to this definition">¶</a></dt>
 <dd><p>A catalog in Unity Catalog to publish data from this pipeline to. If <cite>target</cite> is specified, tables in this pipeline are published to a <cite>target</cite> schema inside <cite>catalog</cite> (for example, <cite>catalog</cite>.`target`.`table`). If <cite>target</cite> is not specified, no data is published to Unity Catalog.</p>
@@ -1296,7 +1791,7 @@ destinations. The supported alerts are:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.channel">
 <span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.channel" title="Link to this definition">¶</a></dt>
-<dd><p>DLT Release Channel that specifies which version to use.</p>
+<dd><p>SDP Release Channel that specifies which version to use.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1314,7 +1809,10 @@ destinations. The supported alerts are:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.continuous">
 <span class="sig-name descname"><span class="pre">continuous</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.continuous" title="Link to this definition">¶</a></dt>
-<dd><p>Whether the pipeline is continuous or triggered. This replaces <cite>trigger</cite>.</p>
+<dd><p>[DEPRECATED] Whether the pipeline is continuous or triggered. This replaces <cite>trigger</cite>.</p>
+<p>Deprecated: wrap the pipeline in a continuous job instead, which also lets you take advantage
+of job-level settings such as performance mode. When the pipeline is started by a continuous
+job, the job’s setting takes precedence and this field is ignored.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1332,7 +1830,7 @@ destinations. The supported alerts are:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.environment">
 <span class="sig-name descname"><span class="pre">environment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.PipelinesEnvironment" title="databricks.bundles.pipelines._models.pipelines_environment.PipelinesEnvironment"><span class="pre">PipelinesEnvironment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.environment" title="Link to this definition">¶</a></dt>
-<dd><p>Environment specification for this pipeline used to install dependencies.</p>
+<dd><p>[Public Preview] Environment specification for this pipeline used to install dependencies.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1356,7 +1854,7 @@ destinations. The supported alerts are:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.ingestion_definition">
 <span class="sig-name descname"><span class="pre">ingestion_definition</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.IngestionPipelineDefinition" title="databricks.bundles.pipelines._models.ingestion_pipeline_definition.IngestionPipelineDefinition"><span class="pre">IngestionPipelineDefinition</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.ingestion_definition" title="Link to this definition">¶</a></dt>
-<dd><p>The configuration for a managed ingestion pipeline. These settings cannot be used with the ‘libraries’, ‘schema’, ‘target’, or ‘catalog’ settings.</p>
+<dd><p>[Public Preview] The configuration for a managed ingestion pipeline. These settings cannot be used with the ‘libraries’, ‘schema’, ‘target’, or ‘catalog’ settings.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1368,7 +1866,7 @@ destinations. The supported alerts are:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.lifecycle">
 <span class="sig-name descname"><span class="pre">lifecycle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.Lifecycle" title="databricks.bundles.pipelines._models.lifecycle.Lifecycle"><span class="pre">Lifecycle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.lifecycle" title="Link to this definition">¶</a></dt>
-<dd><p>Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.</p>
+<dd><p>Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1386,7 +1884,8 @@ destinations. The supported alerts are:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.permissions">
 <span class="sig-name descname"><span class="pre">permissions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.pipelines.PipelinePermission" title="databricks.bundles.pipelines._models.pipeline_permission.PipelinePermission"><span class="pre">PipelinePermission</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.permissions" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The permissions to apply to this resource.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.photon">
@@ -1397,7 +1896,7 @@ destinations. The supported alerts are:</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.root_path">
 <span class="sig-name descname"><span class="pre">root_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.root_path" title="Link to this definition">¶</a></dt>
-<dd><p>Root path for this pipeline.
+<dd><p>[Public Preview] Root path for this pipeline.
 This is used as the root directory when editing the pipeline in the Databricks user interface and it is
 added to sys.path when executing Python sources during pipeline execution.</p>
 </dd></dl>
@@ -1405,7 +1904,9 @@ added to sys.path when executing Python sources during pipeline execution.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.run_as">
 <span class="sig-name descname"><span class="pre">run_as</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.RunAs" title="databricks.bundles.pipelines._models.run_as.RunAs"><span class="pre">RunAs</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.Pipeline.run_as" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.</p>
+<p>Only <cite>user_name</cite> or <cite>service_principal_name</cite> can be specified. If both are specified, an error is thrown.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.Pipeline.schema">
@@ -1558,7 +2059,7 @@ If not specified at cluster creation, a set of default values will be used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelineCluster.label">
 <span class="sig-name descname"><span class="pre">label</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelineCluster.label" title="Link to this definition">¶</a></dt>
-<dd><p>A label for the cluster specification, either <cite>default</cite> to configure the default cluster, or <cite>maintenance</cite> to configure the maintenance cluster. This field is optional. The default value is <cite>default</cite>.</p>
+<dd><p>A label for the cluster specification, either <cite>default</cite> to configure the default cluster settings applied to both the update and maintenance clusters, <cite>updates</cite> to configure the update cluster, or <cite>maintenance</cite> to configure the maintenance cluster. This field is optional. The default value is <cite>default</cite>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1723,7 +2224,7 @@ clusters.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelineLibrary.glob">
 <span class="sig-name descname"><span class="pre">glob</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.PathPattern" title="databricks.bundles.pipelines._models.path_pattern.PathPattern"><span class="pre">PathPattern</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelineLibrary.glob" title="Link to this definition">¶</a></dt>
-<dd><p>The unified field to include source codes.
+<dd><p>[Public Preview] The unified field to include source codes.
 Each entry can be a notebook path, a file path, or a folder path that ends <cite>/**</cite>.
 This field cannot be used together with <cite>notebook</cite> or <cite>file</cite>.</p>
 </dd></dl>
@@ -1764,22 +2265,26 @@ This field cannot be used together with <cite>notebook</cite> or <cite>file</cit
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinePermission.level">
 <span class="sig-name descname"><span class="pre">level</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.PipelinePermissionLevel" title="databricks.bundles.pipelines._models.pipeline_permission_level.PipelinePermissionLevel"><span class="pre">PipelinePermissionLevel</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelinePermission.level" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The permission level to apply. The allowed levels depend on the resource type.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinePermission.group_name">
 <span class="sig-name descname"><span class="pre">group_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelinePermission.group_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The name of the group granted the permission level.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinePermission.service_principal_name">
 <span class="sig-name descname"><span class="pre">service_principal_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelinePermission.service_principal_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The name of the service principal granted the permission level.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinePermission.user_name">
 <span class="sig-name descname"><span class="pre">user_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelinePermission.user_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The name of the user granted the permission level.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinePermission.from_dict">
@@ -1808,7 +2313,8 @@ This field cannot be used together with <cite>notebook</cite> or <cite>file</cit
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinePermissionLevel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PipelinePermissionLevel</span></span><a class="headerlink" href="#databricks.bundles.pipelines.PipelinePermissionLevel" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>Permission level</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinePermissionLevel.CAN_MANAGE">
 <span class="sig-name descname"><span class="pre">CAN_MANAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CAN_MANAGE'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelinePermissionLevel.CAN_MANAGE" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -1833,14 +2339,27 @@ This field cannot be used together with <cite>notebook</cite> or <cite>file</cit
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinesEnvironment">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PipelinesEnvironment</span></span><a class="headerlink" href="#databricks.bundles.pipelines.PipelinesEnvironment" title="Link to this definition">¶</a></dt>
-<dd><p>The environment entity used to preserve serverless environment side panel, jobs’ environment for non-notebook task, and DLT’s environment for classic and serverless pipelines.
+<dd><p>The environment entity used to preserve serverless environment side panel, jobs’ environment for non-notebook task, and SDP’s environment for classic and serverless pipelines.
 In this minimal environment spec, only pip dependencies are supported.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinesEnvironment.dependencies">
 <span class="sig-name descname"><span class="pre">dependencies</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelinesEnvironment.dependencies" title="Link to this definition">¶</a></dt>
-<dd><p>List of pip dependencies, as supported by the version of pip in this environment.
+<dd><p>[Public Preview] List of pip dependencies, as supported by the version of pip in this environment.
 Each dependency is a pip requirement file line <a class="reference external" href="https://pip.pypa.io/en/stable/reference/requirements-file-format/">https://pip.pypa.io/en/stable/reference/requirements-file-format/</a>
 Allowed dependency could be &lt;requirement specifier&gt;, &lt;archive url/path&gt;, &lt;local project path&gt;(WSFS or Volumes in Databricks), &lt;vcs project url&gt;</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PipelinesEnvironment.environment_version">
+<span class="sig-name descname"><span class="pre">environment_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PipelinesEnvironment.environment_version" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The environment version of the serverless Python environment used to execute
+customer Python code. Each environment version includes a specific Python
+version and a curated set of pre-installed libraries with defined versions,
+providing a stable and reproducible execution environment.</p>
+<p>Databricks supports a three-year lifecycle for each environment version.
+For available versions and their included packages, see
+<a class="reference external" href="https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/">https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/</a></p>
+<p>The value should be a string representing the environment version number, for example: <cite>“4”</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1868,36 +2387,141 @@ Allowed dependency could be &lt;requirement specifier&gt;, &lt;archive url/path&
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresCatalogConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PostgresCatalogConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.PostgresCatalogConfig" title="Link to this definition">¶</a></dt>
+<dd><p>PG-specific catalog-level configuration parameters</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresCatalogConfig.slot_config">
+<span class="sig-name descname"><span class="pre">slot_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.PostgresSlotConfig" title="databricks.bundles.pipelines._models.postgres_slot_config.PostgresSlotConfig"><span class="pre">PostgresSlotConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PostgresCatalogConfig.slot_config" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Optional. The Postgres slot configuration to use for logical replication</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresCatalogConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.PostgresCatalogConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresCatalogConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.PostgresCatalogConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresSlotConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PostgresSlotConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.PostgresSlotConfig" title="Link to this definition">¶</a></dt>
+<dd><p>PostgresSlotConfig contains the configuration for a Postgres logical replication slot</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresSlotConfig.publication_name">
+<span class="sig-name descname"><span class="pre">publication_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PostgresSlotConfig.publication_name" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The name of the publication to use for the Postgres source</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresSlotConfig.slot_name">
+<span class="sig-name descname"><span class="pre">slot_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.PostgresSlotConfig.slot_name" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The name of the logical replication slot to use for the Postgres source</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresSlotConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.PostgresSlotConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.PostgresSlotConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.PostgresSlotConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.RabbitmqOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RabbitmqOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.RabbitmqOptions" title="Link to this definition">¶</a></dt>
+<dd><p>RabbitMQ specific options for ingestion.
+Performance tuning options (consumers_per_task, max_messages_per_fetch, etc.)
+are intentionally not exposed in the public API. The managed connector uses
+sensible defaults internally. These can be added later if user demand arises.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.RabbitmqOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.RabbitmqOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.RabbitmqOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.RabbitmqOptions.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ReportSpec">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ReportSpec</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ReportSpec" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ReportSpec.destination_catalog">
 <span class="sig-name descname"><span class="pre">destination_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.ReportSpec.destination_catalog" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Destination catalog to store table.</p>
+<dd><p>[Public Preview] Required. Destination catalog to store table.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ReportSpec.destination_schema">
 <span class="sig-name descname"><span class="pre">destination_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.ReportSpec.destination_schema" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Destination schema to store table.</p>
+<dd><p>[Public Preview] Required. Destination schema to store table.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ReportSpec.source_url">
 <span class="sig-name descname"><span class="pre">source_url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.ReportSpec.source_url" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Report URL in the source system.</p>
+<dd><p>[Public Preview] Required. Report URL in the source system.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ReportSpec.destination_table">
 <span class="sig-name descname"><span class="pre">destination_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ReportSpec.destination_table" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Destination table name. The pipeline fails if a table with that name already exists.</p>
+<dd><p>[Public Preview] Required. Destination table name. The pipeline fails if a table with that name already exists.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.ReportSpec.table_configuration">
 <span class="sig-name descname"><span class="pre">table_configuration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TableSpecificConfig" title="databricks.bundles.pipelines._models.table_specific_config.TableSpecificConfig"><span class="pre">TableSpecificConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ReportSpec.table_configuration" title="Link to this definition">¶</a></dt>
-<dd><p>Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.</p>
+<dd><p>[Public Preview] Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2052,31 +2676,39 @@ endpoint will be used.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec.destination_catalog">
 <span class="sig-name descname"><span class="pre">destination_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.destination_catalog" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Destination catalog to store tables.</p>
+<dd><p>[Public Preview] Required. Destination catalog to store tables.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec.destination_schema">
 <span class="sig-name descname"><span class="pre">destination_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.destination_schema" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.</p>
+<dd><p>[Public Preview] Required. Destination schema to store tables in. Tables with the same name as the source tables are created in this destination schema. The pipeline fails If a table with the same name already exists.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec.source_schema">
-<span class="sig-name descname"><span class="pre">source_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.source_schema" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Schema name in the source database.</p>
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec.connector_options">
+<span class="sig-name descname"><span class="pre">connector_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.ConnectorOptions" title="databricks.bundles.pipelines._models.connector_options.ConnectorOptions"><span class="pre">ConnectorOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.connector_options" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) Source Specific Connector Options</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec.source_catalog">
 <span class="sig-name descname"><span class="pre">source_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.source_catalog" title="Link to this definition">¶</a></dt>
-<dd><p>The source catalog name. Might be optional depending on the type of source.</p>
+<dd><p>[Public Preview] The source catalog name. Might be optional depending on the type of source.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec.source_schema">
+<span class="sig-name descname"><span class="pre">source_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.source_schema" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Schema name in the source database. Optional: some source types (for example streaming or
+message-bus connectors) do not use it, so it may be absent from a pipeline’s definition.
+Clients that assume it is always present should handle its absence.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.SchemaSpec.table_configuration">
 <span class="sig-name descname"><span class="pre">table_configuration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TableSpecificConfig" title="databricks.bundles.pipelines._models.table_specific_config.TableSpecificConfig"><span class="pre">TableSpecificConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.SchemaSpec.table_configuration" title="Link to this definition">¶</a></dt>
-<dd><p>Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.</p>
+<dd><p>[Public Preview] Configuration settings to control the ingestion of tables. These settings are applied to all tables in this schema and override the table_configuration defined in the IngestionPipelineDefinition object.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2104,48 +2736,129 @@ endpoint will be used.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceCatalogConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SourceCatalogConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.SourceCatalogConfig" title="Link to this definition">¶</a></dt>
+<dd><p>SourceCatalogConfig contains catalog-level custom configuration parameters for each source</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceCatalogConfig.postgres">
+<span class="sig-name descname"><span class="pre">postgres</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.PostgresCatalogConfig" title="databricks.bundles.pipelines._models.postgres_catalog_config.PostgresCatalogConfig"><span class="pre">PostgresCatalogConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.SourceCatalogConfig.postgres" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Postgres-specific catalog-level configuration parameters</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceCatalogConfig.source_catalog">
+<span class="sig-name descname"><span class="pre">source_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.SourceCatalogConfig.source_catalog" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Source catalog name</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceCatalogConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SourceCatalogConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceCatalogConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SourceCatalogConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SourceConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.SourceConfig" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceConfig.catalog">
+<span class="sig-name descname"><span class="pre">catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.SourceCatalogConfig" title="databricks.bundles.pipelines._models.source_catalog_config.SourceCatalogConfig"><span class="pre">SourceCatalogConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.SourceConfig.catalog" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Catalog-level source configuration parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceConfig.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SourceConfig.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.SourceConfig.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.SourceConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TableSpec</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.destination_catalog">
 <span class="sig-name descname"><span class="pre">destination_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.destination_catalog" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Destination catalog to store table.</p>
+<dd><p>[Public Preview] Required. Destination catalog to store table.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.destination_schema">
 <span class="sig-name descname"><span class="pre">destination_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.destination_schema" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Destination schema to store table.</p>
+<dd><p>[Public Preview] Required. Destination schema to store table.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.source_table">
-<span class="sig-name descname"><span class="pre">source_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.source_table" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Table name in the source database.</p>
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.connector_options">
+<span class="sig-name descname"><span class="pre">connector_options</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.ConnectorOptions" title="databricks.bundles.pipelines._models.connector_options.ConnectorOptions"><span class="pre">ConnectorOptions</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.connector_options" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) Source Specific Connector Options</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.destination_table">
 <span class="sig-name descname"><span class="pre">destination_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.destination_table" title="Link to this definition">¶</a></dt>
-<dd><p>Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.</p>
+<dd><p>[Public Preview] Optional. Destination table name. The pipeline fails if a table with that name already exists. If not set, the source table name is used.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.source_catalog">
 <span class="sig-name descname"><span class="pre">source_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.source_catalog" title="Link to this definition">¶</a></dt>
-<dd><p>Source catalog name. Might be optional depending on the type of source.</p>
+<dd><p>[Public Preview] Source catalog name. Might be optional depending on the type of source.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.source_schema">
 <span class="sig-name descname"><span class="pre">source_schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.source_schema" title="Link to this definition">¶</a></dt>
-<dd><p>Schema name in the source database. Might be optional depending on the type of source.</p>
+<dd><p>[Public Preview] Schema name in the source database. Might be optional depending on the type of source.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.source_table">
+<span class="sig-name descname"><span class="pre">source_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.source_table" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Table name in the source database. Optional: some source types (for example streaming or
+message-bus connectors) do not use it, so it may be absent from a pipeline’s definition.
+Clients that assume it is always present should handle its absence.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpec.table_configuration">
 <span class="sig-name descname"><span class="pre">table_configuration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TableSpecificConfig" title="databricks.bundles.pipelines._models.table_specific_config.TableSpecificConfig"><span class="pre">TableSpecificConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpec.table_configuration" title="Link to this definition">¶</a></dt>
-<dd><p>Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.</p>
+<dd><p>[Public Preview] Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2176,9 +2889,25 @@ endpoint will be used.</p>
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TableSpecificConfig</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig.auto_full_refresh_policy">
+<span class="sig-name descname"><span class="pre">auto_full_refresh_policy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.AutoFullRefreshPolicy" title="databricks.bundles.pipelines._models.auto_full_refresh_policy.AutoFullRefreshPolicy"><span class="pre">AutoFullRefreshPolicy</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.auto_full_refresh_policy" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
+to fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy
+in table configuration will override the above level auto_full_refresh_policy.
+For example,
+{
+“auto_full_refresh_policy”: {
+“enabled”: true,
+“min_interval_hours”: 23,
+}
+}
+If unspecified, auto full refresh is disabled.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig.exclude_columns">
 <span class="sig-name descname"><span class="pre">exclude_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.exclude_columns" title="Link to this definition">¶</a></dt>
-<dd><p>A list of column names to be excluded for the ingestion.
+<dd><p>[Public Preview] A list of column names to be excluded for the ingestion.
 When not specified, include_columns fully controls what columns to be ingested.
 When specified, all other columns including future ones will be automatically included for ingestion.
 This field in mutually exclusive with <cite>include_columns</cite>.</p>
@@ -2187,7 +2916,7 @@ This field in mutually exclusive with <cite>include_columns</cite>.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig.include_columns">
 <span class="sig-name descname"><span class="pre">include_columns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.include_columns" title="Link to this definition">¶</a></dt>
-<dd><p>A list of column names to be included for the ingestion.
+<dd><p>[Public Preview] A list of column names to be included for the ingestion.
 When not specified, all columns except ones in exclude_columns will be included. Future
 columns will be automatically included.
 When specified, all other future columns will be automatically excluded from ingestion.
@@ -2197,13 +2926,33 @@ This field in mutually exclusive with <cite>exclude_columns</cite>.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig.primary_keys">
 <span class="sig-name descname"><span class="pre">primary_keys</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.primary_keys" title="Link to this definition">¶</a></dt>
-<dd><p>The primary key of the table used to apply changes.</p>
+<dd><p>[Public Preview] The primary key of the table used to apply changes.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig.query_based_connector_config">
+<span class="sig-name descname"><span class="pre">query_based_connector_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig" title="databricks.bundles.pipelines._models.ingestion_pipeline_definition_table_specific_config_query_based_connector_config.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig"><span class="pre">IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.query_based_connector_config" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Configurations that are only applicable for query-based ingestion connectors.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig.row_filter">
+<span class="sig-name descname"><span class="pre">row_filter</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.row_filter" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional, Immutable) The row filter condition to be applied to the table.
+It must not contain the WHERE keyword, only the actual filter condition.
+It must be in DBSQL format.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig.scd_type">
+<span class="sig-name descname"><span class="pre">scd_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.pipelines.TableSpecificConfigScdType" title="databricks.bundles.pipelines._models.table_specific_config_scd_type.TableSpecificConfigScdType"><span class="pre">TableSpecificConfigScdType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.scd_type" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The SCD type to use to ingest the table.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfig.sequence_by">
 <span class="sig-name descname"><span class="pre">sequence_by</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.sequence_by" title="Link to this definition">¶</a></dt>
-<dd><p>The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.</p>
+<dd><p>[Public Preview] The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2226,6 +2975,70 @@ This field in mutually exclusive with <cite>exclude_columns</cite>.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfig.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfigScdType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TableSpecificConfigScdType</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfigScdType" title="Link to this definition">¶</a></dt>
+<dd><p>The SCD type to use to ingest the table.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfigScdType.SCD_TYPE_1">
+<span class="sig-name descname"><span class="pre">SCD_TYPE_1</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SCD_TYPE_1'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfigScdType.SCD_TYPE_1" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfigScdType.SCD_TYPE_2">
+<span class="sig-name descname"><span class="pre">SCD_TYPE_2</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SCD_TYPE_2'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfigScdType.SCD_TYPE_2" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TableSpecificConfigScdType.APPEND_ONLY">
+<span class="sig-name descname"><span class="pre">APPEND_ONLY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'APPEND_ONLY'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TableSpecificConfigScdType.APPEND_ONLY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.Transformer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Transformer</span></span><a class="headerlink" href="#databricks.bundles.pipelines.Transformer" title="Link to this definition">¶</a></dt>
+<dd><p>Specifies how to transform binary data into structured data.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.Transformer.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.Transformer.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.Transformer.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.Transformer.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TransformerFormat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TransformerFormat</span></span><a class="headerlink" href="#databricks.bundles.pipelines.TransformerFormat" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TransformerFormat.STRING">
+<span class="sig-name descname"><span class="pre">STRING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'STRING'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TransformerFormat.STRING" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TransformerFormat.JSON">
+<span class="sig-name descname"><span class="pre">JSON</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'JSON'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TransformerFormat.JSON" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -2295,6 +3108,41 @@ or <cite>dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh</cite><
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.WorkspaceStorageInfo.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ZendeskSupportOptions">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ZendeskSupportOptions</span></span><a class="headerlink" href="#databricks.bundles.pipelines.ZendeskSupportOptions" title="Link to this definition">¶</a></dt>
+<dd><p>Zendesk Support specific options for ingestion</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ZendeskSupportOptions.start_date">
+<span class="sig-name descname"><span class="pre">start_date</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.ZendeskSupportOptions.start_date" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] (Optional) Start date in YYYY-MM-DD format for the initial sync.
+This determines the earliest date from which to sync historical data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ZendeskSupportOptions.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ZendeskSupportOptions.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.ZendeskSupportOptions.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.pipelines.ZendeskSupportOptions.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>

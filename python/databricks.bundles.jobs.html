@@ -14,8 +14,8 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Pipelines" href="databricks.bundles.pipelines.html" />
-    <link rel="prev" title="Core" href="databricks.bundles.core.html" />
+    <link rel="next" title="MCP Services" href="databricks.bundles.mcp_services.html" />
+    <link rel="prev" title="Job Runs" href="databricks.bundles.job_runs.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -37,7 +37,7 @@
 
 
 
-<p class="blurb">databricks-bundles: Python support for Databricks Asset Bundles</p>
+<p class="blurb">databricks-bundles: Python support for Declarative Automation Bundles</p>
 
 
 
@@ -63,12 +63,39 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.core.html">Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.alerts.html">Alerts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.apps.html">Apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.catalogs.html">Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Jobs</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.jobs">Classes</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_serving_endpoints.html">Model Serving Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.pipelines.html">Pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.postgres_snapshot_schedules.html">Postgres Snapshot Schedules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.quality_monitors.html">Quality Monitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.registered_models.html">Registered Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.schemas.html">Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secret_scopes.html">Secret Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secrets.html">Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.sql_warehouses.html">SQL Warehouses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.synced_database_tables.html">Synced Database Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_endpoints.html">Vector Search Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_indexes.html">Vector Search Indexes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.volumes.html">Volumes</a></li>
 </ul>
 
@@ -76,8 +103,8 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="databricks.bundles.core.html" title="previous chapter">Core</a></li>
-      <li>Next: <a href="databricks.bundles.pipelines.html" title="next chapter">Pipelines</a></li>
+      <li>Previous: <a href="databricks.bundles.job_runs.html" title="previous chapter">Job Runs</a></li>
+      <li>Next: <a href="databricks.bundles.mcp_services.html" title="next chapter">MCP Services</a></li>
   </ul></li>
 </ul>
 </div>
@@ -132,6 +159,172 @@
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.Adlsgen2Info.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AiRuntimeTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AiRuntimeTask</span></span><a class="headerlink" href="#databricks.bundles.jobs.AiRuntimeTask" title="Link to this definition">¶</a></dt>
+<dd><p>AiRuntimeTask: multi-node GPU compute task definition for Databricks AI
+Runtime workloads.</p>
+<p>Jobs-framework-level concepts (retries, per-task timeout, idempotency
+token, usage/budget policy, permissions) live on the surrounding
+TaskSettings / run-submit request and are intentionally NOT duplicated
+here. Users compose <cite>ai_runtime_task</cite> with the standard Jobs/DABs task
+wrapper to get those.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AiRuntimeTask.experiment">
+<span class="sig-name descname"><span class="pre">experiment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.AiRuntimeTask.experiment" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] MLflow experiment name for this run. If an experiment with this name
+already exists under the calling user, the run is appended to it;
+otherwise a new experiment is created. To target a specific MLflow
+storage location (for example, when running as a service principal), set
+<cite>mlflow_experiment_directory</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AiRuntimeTask.deployments">
+<span class="sig-name descname"><span class="pre">deployments</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.DeploymentSpec" title="databricks.bundles.jobs._models.deployment_spec.DeploymentSpec"><span class="pre">DeploymentSpec</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.AiRuntimeTask.deployments" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Deployment specs for this task. Exactly one deployment is currently
+supported (a single entry where every node runs the same command); this
+is a current-Preview constraint. Role-split workloads (driver + worker,
+parameter server, separate eval node, etc.) with multiple entries are the
+eventual intent but not yet supported.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AiRuntimeTask.mlflow_experiment_directory">
+<span class="sig-name descname"><span class="pre">mlflow_experiment_directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AiRuntimeTask.mlflow_experiment_directory" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Optional workspace directory under which the MLflow experiment named in
+<cite>experiment</cite> is created. Must start with <cite>/Workspace</cite>. Set this when
+running as a service principal that has no default user directory; for
+regular users the experiment defaults to the user’s home directory.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AiRuntimeTask.mlflow_run">
+<span class="sig-name descname"><span class="pre">mlflow_run</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AiRuntimeTask.mlflow_run" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Optional display name for the MLflow run created under <cite>experiment</cite>. If
+omitted, MLflow generates a default name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AiRuntimeTask.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.AiRuntimeTask.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AiRuntimeTask.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.AiRuntimeTask.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AlertTask</span></span><a class="headerlink" href="#databricks.bundles.jobs.AlertTask" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTask.alert_id">
+<span class="sig-name descname"><span class="pre">alert_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AlertTask.alert_id" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The alert_id is the canonical identifier of the alert.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTask.subscribers">
+<span class="sig-name descname"><span class="pre">subscribers</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.AlertTaskSubscriber" title="databricks.bundles.jobs._models.alert_task_subscriber.AlertTaskSubscriber"><span class="pre">AlertTaskSubscriber</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.AlertTask.subscribers" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The subscribers receive alert evaluation result notifications after the alert task is completed.
+The number of subscriptions is limited to 100.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTask.warehouse_id">
+<span class="sig-name descname"><span class="pre">warehouse_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AlertTask.warehouse_id" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The warehouse_id identifies the warehouse settings used by the alert task.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTask.workspace_path">
+<span class="sig-name descname"><span class="pre">workspace_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AlertTask.workspace_path" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The workspace_path is the path to the alert file in the workspace. The path:
+* must start with “/Workspace”
+* must be a normalized path.
+User has to select only one of alert_id or workspace_path to identify the alert.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTask.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.AlertTask.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTask.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.AlertTask.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTaskSubscriber">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AlertTaskSubscriber</span></span><a class="headerlink" href="#databricks.bundles.jobs.AlertTaskSubscriber" title="Link to this definition">¶</a></dt>
+<dd><p>Represents a subscriber that will receive alert notifications.
+A subscriber can be either a user (via email) or a notification destination (via destination_id).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTaskSubscriber.destination_id">
+<span class="sig-name descname"><span class="pre">destination_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AlertTaskSubscriber.destination_id" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview]</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTaskSubscriber.user_name">
+<span class="sig-name descname"><span class="pre">user_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AlertTaskSubscriber.user_name" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] A valid workspace email address.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTaskSubscriber.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.AlertTaskSubscriber.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AlertTaskSubscriber.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.AlertTaskSubscriber.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -199,7 +392,9 @@ It is also the initial number of workers the cluster will have after creation.</
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.AwsAttributes.availability">
 <span class="sig-name descname"><span class="pre">availability</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.AwsAvailability" title="databricks.bundles.jobs._models.aws_availability.AwsAvailability"><span class="pre">AwsAvailability</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AwsAttributes.availability" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Availability type used for all subsequent nodes past the <cite>first_on_demand</cite> ones.</p>
+<p>Note: If <cite>first_on_demand</cite> is zero, this availability type will be used for the entire cluster.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.AwsAttributes.ebs_volume_count">
@@ -242,7 +437,8 @@ this value must be within the range 500 - 4096.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.AwsAttributes.ebs_volume_type">
 <span class="sig-name descname"><span class="pre">ebs_volume_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.EbsVolumeType" title="databricks.bundles.jobs._models.ebs_volume_type.EbsVolumeType"><span class="pre">EbsVolumeType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AwsAttributes.ebs_volume_type" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The type of EBS volumes that will be launched with this cluster.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.AwsAttributes.first_on_demand">
@@ -287,7 +483,7 @@ Note that, for safety, we enforce this field to be no more than 10000.</p>
 This string will be of a form like “us-west-2a”. The provided availability
 zone must be in the same region as the Databricks deployment. For example, “us-west-2a”
 is not a valid zone id if the Databricks deployment resides in the “us-east-1” region.
-This is an optional field at cluster creation, and if not specified, a default zone will be used.
+This is an optional field at cluster creation, and if not specified, the zone “auto” will be used.
 If the zone specified is “auto”, will try to place cluster in a zone with high availability,
 and will retry placement in a different AZ if there is not enough capacity.</p>
 <p>The list of available zones as well as the default value can be found by using the
@@ -347,7 +543,24 @@ and will retry placement in a different AZ if there is not enough capacity.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.AzureAttributes.availability">
 <span class="sig-name descname"><span class="pre">availability</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.AzureAvailability" title="databricks.bundles.jobs._models.azure_availability.AzureAvailability"><span class="pre">AzureAvailability</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AzureAttributes.availability" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Availability type used for all subsequent nodes past the <cite>first_on_demand</cite> ones.
+Note: If <cite>first_on_demand</cite> is zero, this availability
+type will be used for the entire cluster.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.AzureAttributes.capacity_reservation_group">
+<span class="sig-name descname"><span class="pre">capacity_reservation_group</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.AzureAttributes.capacity_reservation_group" title="Link to this definition">¶</a></dt>
+<dd><p>The Azure capacity reservation group resource ID to use for launching VMs.
+When specified, VMs will be launched using the provided capacity reservation.</p>
+<p>Capacity reservations can only be specified when the workspace uses injected vnet (i.e. customer defined vnet not
+managed by databricks). Ensure the databricks-login-prod Enterprise Application is granted the following four permissions:
+1. Microsoft.Compute/capacityReservationGroups/read
+2. Microsoft.Compute/capacityReservationGroups/deploy/action
+3. Microsoft.Compute/capacityReservationGroups/capacityReservations/read
+4. Microsoft.Compute/capacityReservationGroups/capacityReservations/deploy/action</p>
+<p>Format: <cite>/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/capacityReservationGroups/{capacityReservationGroupName}</cite></p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.AzureAttributes.first_on_demand">
@@ -425,7 +638,9 @@ Note: If <cite>first_on_demand</cite> is zero, this availability type will be us
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.CleanRoomsNotebookTask">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CleanRoomsNotebookTask</span></span><a class="headerlink" href="#databricks.bundles.jobs.CleanRoomsNotebookTask" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>Clean Rooms notebook task for V1 Clean Room service (GA).
+Replaces the deprecated CleanRoomNotebookTask (defined above) which was for V0 service.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.CleanRoomsNotebookTask.clean_room_name">
 <span class="sig-name descname"><span class="pre">clean_room_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.CleanRoomsNotebookTask.clean_room_name" title="Link to this definition">¶</a></dt>
 <dd><p>The clean room that the notebook belongs to.</p>
@@ -636,12 +851,33 @@ instances and EBS volumes) with these tags in addition to <cite>default_tags</ci
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.data_security_mode">
 <span class="sig-name descname"><span class="pre">data_security_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.DataSecurityMode" title="databricks.bundles.jobs._models.data_security_mode.DataSecurityMode"><span class="pre">DataSecurityMode</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.data_security_mode" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Data security mode decides what data governance model to use when accessing data
+from a cluster.</p>
+<ul class="simple">
+<li><p><cite>DATA_SECURITY_MODE_AUTO</cite>: Databricks will choose the most appropriate access mode depending on your compute configuration.</p></li>
+<li><p><cite>DATA_SECURITY_MODE_STANDARD</cite>: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.</p></li>
+<li><p><cite>DATA_SECURITY_MODE_DEDICATED</cite>: A secure cluster that can only be exclusively used by a single user specified in <cite>single_user_name</cite>. Most programming languages, cluster features and data governance features are available in this mode.</p></li>
+</ul>
+<p>The following modes are legacy aliases for the above modes:</p>
+<ul class="simple">
+<li><p><cite>USER_ISOLATION</cite>: Legacy alias for <cite>DATA_SECURITY_MODE_STANDARD</cite>.</p></li>
+<li><p><cite>SINGLE_USER</cite>: Legacy alias for <cite>DATA_SECURITY_MODE_DEDICATED</cite>.</p></li>
+</ul>
+<p>The following modes are deprecated starting with Databricks Runtime 15.0 and
+will be removed for future Databricks Runtime versions:</p>
+<ul class="simple">
+<li><p><cite>LEGACY_TABLE_ACL</cite>: This mode is for users migrating from legacy Table ACL clusters.</p></li>
+<li><p><cite>LEGACY_PASSTHROUGH</cite>: This mode is for users migrating from legacy Passthrough on high concurrency clusters.</p></li>
+<li><p><cite>LEGACY_SINGLE_USER</cite>: This mode is for users migrating from legacy Passthrough on standard clusters.</p></li>
+<li><p><cite>LEGACY_SINGLE_USER_STANDARD</cite>: This mode provides a way that doesn’t have UC nor passthrough enabled.</p></li>
+</ul>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.docker_image">
 <span class="sig-name descname"><span class="pre">docker_image</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.DockerImage" title="databricks.bundles.jobs._models.docker_image.DockerImage"><span class="pre">DockerImage</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.docker_image" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Custom docker image BYOC</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.driver_instance_pool_id">
@@ -649,6 +885,12 @@ instances and EBS volumes) with these tags in addition to <cite>default_tags</ci
 <dd><p>The optional ID of the instance pool for the driver of the cluster belongs.
 The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
 assigned.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.driver_node_type_flexibility">
+<span class="sig-name descname"><span class="pre">driver_node_type_flexibility</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.NodeTypeFlexibility" title="databricks.bundles.jobs._models.node_type_flexibility.NodeTypeFlexibility"><span class="pre">NodeTypeFlexibility</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.driver_node_type_flexibility" title="Link to this definition">¶</a></dt>
+<dd><p>Flexible node type configuration for the driver node.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -665,8 +907,7 @@ If both driver_node_type_id, node_type_id, and virtual_cluster_size are specifie
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.enable_elastic_disk">
 <span class="sig-name descname"><span class="pre">enable_elastic_disk</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.enable_elastic_disk" title="Link to this definition">¶</a></dt>
 <dd><p>Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-space when its Spark workers are running low on disk space. This feature requires specific AWS
-permissions to function correctly - refer to the User Guide for more details.</p>
+space when its Spark workers are running low on disk space.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -706,7 +947,13 @@ If <cite>cluster_log_conf</cite> is specified, init script logs are sent to <cit
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.kind">
 <span class="sig-name descname"><span class="pre">kind</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.Kind" title="databricks.bundles.jobs._models.kind.Kind"><span class="pre">Kind</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.kind" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The kind of compute described by this compute specification.</p>
+<p>Depending on <cite>kind</cite>, different validations and default values will be applied.</p>
+<p>Clusters with <cite>kind = CLASSIC_PREVIEW</cite> support the following fields, whereas clusters with no specified <cite>kind</cite> do not.
+* [is_single_node](/api/workspace/clusters/create#is_single_node)
+* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)</p>
+<p>By using the <a class="reference external" href="https://docs.databricks.com/compute/simple-form.html">simple form</a>, your clusters are automatically using <cite>kind = CLASSIC_PREVIEW</cite>.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.node_type_id">
@@ -714,7 +961,7 @@ If <cite>cluster_log_conf</cite> is specified, init script logs are sent to <cit
 <dd><p>This field encodes, through a single value, the resources available to each of
 the Spark nodes in this cluster. For example, the Spark nodes can be provisioned
 and optimized for memory or compute intensive workloads. A list of available node
-types can be retrieved by using the :method:clusters/listNodeTypes API call.</p>
+types can be retrieved by using the <a class="reference external" href="https://docs.databricks.com/api/workspace/clusters/listnodetypes">clusters/listNodeTypes</a> API call.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -744,7 +991,12 @@ increase from 5 to 10 as the new nodes are provisioned.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.runtime_engine">
 <span class="sig-name descname"><span class="pre">runtime_engine</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.RuntimeEngine" title="databricks.bundles.jobs._models.runtime_engine.RuntimeEngine"><span class="pre">RuntimeEngine</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.runtime_engine" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Determines the cluster’s runtime engine, either standard or Photon.</p>
+<p>This field is not compatible with legacy <cite>spark_version</cite> values that contain <cite>-photon-</cite>.
+Remove <cite>-photon-</cite> from the <cite>spark_version</cite> and set <cite>runtime_engine</cite> to <cite>PHOTON</cite>.</p>
+<p>If left unspecified, the runtime engine defaults to standard unless the spark_version
+contains -photon-, in which case Photon will be used.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.single_user_name">
@@ -779,7 +1031,7 @@ default databricks managed environmental variables are included as well.</p>
 <span class="sig-name descname"><span class="pre">spark_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.spark_version" title="Link to this definition">¶</a></dt>
 <dd><p>The Spark version of the cluster, e.g. <cite>3.3.x-scala2.11</cite>.
 A list of available Spark versions can be retrieved by using
-the :method:clusters/sparkVersions API call.</p>
+the <a class="reference external" href="https://docs.databricks.com/api/workspace/clusters/sparkversions">clusters/sparkVersions</a> API call.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -793,7 +1045,7 @@ Up to 10 keys can be specified.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.total_initial_remote_disk_size">
 <span class="sig-name descname"><span class="pre">total_initial_remote_disk_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.total_initial_remote_disk_size" title="Link to this definition">¶</a></dt>
-<dd><p>If set, what the total initial volume size (in GB) of the remote disks should be. Currently only supported for GCP HYPERDISK_BALANCED disks.</p>
+<dd><p>If set, what the total initial volume size (in GB) of the remote disks should be. Supported for GCP.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -804,9 +1056,16 @@ Up to 10 keys can be specified.</p>
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.worker_node_type_flexibility">
+<span class="sig-name descname"><span class="pre">worker_node_type_flexibility</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.NodeTypeFlexibility" title="databricks.bundles.jobs._models.node_type_flexibility.NodeTypeFlexibility"><span class="pre">NodeTypeFlexibility</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.worker_node_type_flexibility" title="Link to this definition">¶</a></dt>
+<dd><p>Flexible node type configuration for worker nodes.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.workload_type">
 <span class="sig-name descname"><span class="pre">workload_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.WorkloadType" title="databricks.bundles.jobs._models.workload_type.WorkloadType"><span class="pre">WorkloadType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.workload_type" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Cluster Attributes showing for clusters workload types.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.ClusterSpec.from_dict">
@@ -828,6 +1087,102 @@ Up to 10 keys can be specified.</p>
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.ClusterSpec.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Compute">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Compute</span></span><a class="headerlink" href="#databricks.bundles.jobs.Compute" title="Link to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Compute.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.Compute.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Compute.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.Compute.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ComputeSpec</span></span><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpec" title="Link to this definition">¶</a></dt>
+<dd><p>ComputeSpec: compute configuration — accelerator type and total
+accelerator count across all nodes.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpec.accelerator_count">
+<span class="sig-name descname"><span class="pre">accelerator_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpec.accelerator_count" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Total number of accelerators across all nodes. Must be a positive
+multiple of the per-node accelerator count encoded in <cite>accelerator_type</cite>.
+For example, <cite>GPU_8xH100</cite> with <cite>accelerator_count: 16</cite> allocates 2 nodes
+(8 GPUs per node).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpec.accelerator_type">
+<span class="sig-name descname"><span class="pre">accelerator_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.ComputeSpecAcceleratorType" title="databricks.bundles.jobs._models.compute_spec_accelerator_type.ComputeSpecAcceleratorType"><span class="pre">ComputeSpecAcceleratorType</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpec.accelerator_type" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Hardware accelerator type (for example, <cite>GPU_1xA10</cite> or <cite>GPU_8xH100</cite>).
+The number of accelerators per node is encoded in the enum value —
+<cite>GPU_8xH100</cite> means 8 H100 GPUs per node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpec.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpec.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpec.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpec.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpecAcceleratorType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ComputeSpecAcceleratorType</span></span><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpecAcceleratorType" title="Link to this definition">¶</a></dt>
+<dd><p>Hardware accelerator type for the AiRuntime workload. Per-node
+accelerator count is encoded in the value name (e.g. <cite>GPU_8xH100</cite> means
+8 H100s per node).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_1X_A10">
+<span class="sig-name descname"><span class="pre">GPU_1X_A10</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_1xA10'</span></em><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_1X_A10" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_1X_H100">
+<span class="sig-name descname"><span class="pre">GPU_1X_H100</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_1xH100'</span></em><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_1X_H100" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_8X_H100">
+<span class="sig-name descname"><span class="pre">GPU_8X_H100</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_8xH100'</span></em><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_8X_H100" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -976,6 +1331,35 @@ Up to 10 keys can be specified.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ContinuousTriggerConfiguration">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ContinuousTriggerConfiguration</span></span><a class="headerlink" href="#databricks.bundles.jobs.ContinuousTriggerConfiguration" title="Link to this definition">¶</a></dt>
+<dd><p>Continuous trigger. Stripped-down counterpart to <cite>ContinuousSettings</cite>: <cite>pause_status</cite> is owned by the enclosing
+<cite>TriggerConfiguration</cite> and intentionally omitted here.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ContinuousTriggerConfiguration.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.ContinuousTriggerConfiguration.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ContinuousTriggerConfiguration.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.ContinuousTriggerConfiguration.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.CronSchedule">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CronSchedule</span></span><a class="headerlink" href="#databricks.bundles.jobs.CronSchedule" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -1021,18 +1405,49 @@ Up to 10 keys can be specified.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.CronTriggerConfiguration">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CronTriggerConfiguration</span></span><a class="headerlink" href="#databricks.bundles.jobs.CronTriggerConfiguration" title="Link to this definition">¶</a></dt>
+<dd><p>Cron schedule trigger. Stripped-down counterpart to <cite>CronSchedule</cite>: <cite>pause_status</cite> and <cite>sql_condition</cite> are owned
+by the enclosing <cite>TriggerConfiguration</cite> and intentionally omitted here.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.CronTriggerConfiguration.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.CronTriggerConfiguration.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.CronTriggerConfiguration.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.CronTriggerConfiguration.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DashboardTask">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DashboardTask</span></span><a class="headerlink" href="#databricks.bundles.jobs.DashboardTask" title="Link to this definition">¶</a></dt>
 <dd><p>Configures the Lakeview Dashboard job task type.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DashboardTask.dashboard_id">
 <span class="sig-name descname"><span class="pre">dashboard_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.DashboardTask.dashboard_id" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The identifier of the dashboard to refresh.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DashboardTask.subscription">
 <span class="sig-name descname"><span class="pre">subscription</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.Subscription" title="databricks.bundles.jobs._models.subscription.Subscription"><span class="pre">Subscription</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.DashboardTask.subscription" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Optional: subscription configuration for sending the dashboard snapshot.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DashboardTask.warehouse_id">
@@ -1070,14 +1485,16 @@ If not specified, the default warehouse of the dashboard will be used.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DataSecurityMode</span></span><a class="headerlink" href="#databricks.bundles.jobs.DataSecurityMode" title="Link to this definition">¶</a></dt>
 <dd><p>Data security mode decides what data governance model to use when accessing data
 from a cluster.</p>
-<p>The following modes can only be used when <cite>kind = CLASSIC_PREVIEW</cite>.
-* <cite>DATA_SECURITY_MODE_AUTO</cite>: Databricks will choose the most appropriate access mode depending on your compute configuration.
-* <cite>DATA_SECURITY_MODE_STANDARD</cite>: Alias for <cite>USER_ISOLATION</cite>.
-* <cite>DATA_SECURITY_MODE_DEDICATED</cite>: Alias for <cite>SINGLE_USER</cite>.</p>
-<p>The following modes can be used regardless of <cite>kind</cite>.
-* <cite>NONE</cite>: No security isolation for multiple users sharing the cluster. Data governance features are not available in this mode.
-* <cite>SINGLE_USER</cite>: A secure cluster that can only be exclusively used by a single user specified in <cite>single_user_name</cite>. Most programming languages, cluster features and data governance features are available in this mode.
-* <cite>USER_ISOLATION</cite>: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.</p>
+<ul class="simple">
+<li><p><cite>DATA_SECURITY_MODE_AUTO</cite>: Databricks will choose the most appropriate access mode depending on your compute configuration.</p></li>
+<li><p><cite>DATA_SECURITY_MODE_STANDARD</cite>: A secure cluster that can be shared by multiple users. Cluster users are fully isolated so that they cannot see each other’s data and credentials. Most data governance features are supported in this mode. But programming languages and cluster features might be limited.</p></li>
+<li><p><cite>DATA_SECURITY_MODE_DEDICATED</cite>: A secure cluster that can only be exclusively used by a single user specified in <cite>single_user_name</cite>. Most programming languages, cluster features and data governance features are available in this mode.</p></li>
+</ul>
+<p>The following modes are legacy aliases for the above modes:</p>
+<ul class="simple">
+<li><p><cite>USER_ISOLATION</cite>: Legacy alias for <cite>DATA_SECURITY_MODE_STANDARD</cite>.</p></li>
+<li><p><cite>SINGLE_USER</cite>: Legacy alias for <cite>DATA_SECURITY_MODE_DEDICATED</cite>.</p></li>
+</ul>
 <p>The following modes are deprecated starting with Databricks Runtime 15.0 and
 will be removed for future Databricks Runtime versions:</p>
 <ul class="simple">
@@ -1249,6 +1666,96 @@ defined in <cite>git_source</cite>. If the value is empty, the task will use <ci
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DependencyMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DependencyMode</span></span><a class="headerlink" href="#databricks.bundles.jobs.DependencyMode" title="Link to this definition">¶</a></dt>
+<dd><p>Controls dependency configuration for the cluster.</p>
+<ul class="simple">
+<li><p><cite>DEPENDENCY_MODE_AUTO</cite>: Databricks will choose the most appropriate dependency mode based on your compute configuration.</p></li>
+<li><p><cite>DEPENDENCY_MODE_ENVIRONMENTS</cite>: Enables a unified dependency management experience across classic and serverless, resulting in increased stability and performance. Supported only on DBR 19+ in Standard access mode.</p></li>
+<li><p><cite>DEPENDENCY_MODE_CLUSTER_LIBRARIES</cite>: Legacy mode: dependencies come from cluster libraries and init scripts.</p></li>
+</ul>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DependencyMode.DEPENDENCY_MODE_ENVIRONMENTS">
+<span class="sig-name descname"><span class="pre">DEPENDENCY_MODE_ENVIRONMENTS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DEPENDENCY_MODE_ENVIRONMENTS'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DependencyMode.DEPENDENCY_MODE_ENVIRONMENTS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DependencyMode.DEPENDENCY_MODE_CLUSTER_LIBRARIES">
+<span class="sig-name descname"><span class="pre">DEPENDENCY_MODE_CLUSTER_LIBRARIES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DEPENDENCY_MODE_CLUSTER_LIBRARIES'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DependencyMode.DEPENDENCY_MODE_CLUSTER_LIBRARIES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DependencyMode.DEPENDENCY_MODE_AUTO">
+<span class="sig-name descname"><span class="pre">DEPENDENCY_MODE_AUTO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DEPENDENCY_MODE_AUTO'</span></em><a class="headerlink" href="#databricks.bundles.jobs.DependencyMode.DEPENDENCY_MODE_AUTO" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeploymentSpec</span></span><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec" title="Link to this definition">¶</a></dt>
+<dd><p>DeploymentSpec: configuration for one deployment within an AiRuntimeTask.
+Each entry in <cite>AiRuntimeTask.deployments</cite> describes a group of nodes that
+share the same command and compute. Many single-program training
+algorithms use a single entry where every node runs the same command;
+role-split workloads (driver + worker, parameter server, separate eval
+node, etc.) use multiple entries.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.command_path">
+<span class="sig-name descname"><span class="pre">command_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec.command_path" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Workspace path of the script to run on each node in this deployment.
+Upload the script to this path and supply the path here. When the task
+runs, the file at this path is run on each node; if it fails, the task
+fails with its exit code.</p>
+<p>Example script contents:</p>
+<p># Plain Python:
+python train.py –epochs 10</p>
+<p># Multi-GPU via accelerate:
+accelerate launch train.py –config config.yaml</p>
+<p># Distributed via torchrun:
+torchrun –nproc_per_node=8 train.py</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.compute">
+<span class="sig-name descname"><span class="pre">compute</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.ComputeSpec" title="databricks.bundles.jobs._models.compute_spec.ComputeSpec"><span class="pre">ComputeSpec</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec.compute" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Compute resources allocated to each node in this deployment.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec.name" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Optional human-readable name for this deployment (for example, <cite>driver</cite>,
+<cite>worker</cite>, <cite>param_server</cite>). Used for log and UI display. Distinct names
+are recommended so deployments can be told apart, but uniqueness is not
+enforced.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DeploymentSpec.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.DeploymentSpec.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DockerBasicAuth">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DockerBasicAuth</span></span><a class="headerlink" href="#databricks.bundles.jobs.DockerBasicAuth" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -1293,7 +1800,8 @@ defined in <cite>git_source</cite>. If the value is empty, the task will use <ci
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DockerImage.basic_auth">
 <span class="sig-name descname"><span class="pre">basic_auth</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.DockerBasicAuth" title="databricks.bundles.jobs._models.docker_basic_auth.DockerBasicAuth"><span class="pre">DockerBasicAuth</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.DockerImage.basic_auth" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Basic auth with username and password</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DockerImage.url">
@@ -1345,8 +1853,22 @@ See <a class="reference external" href="https://aws.amazon.com/ebs/details/">htt
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Environment">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Environment</span></span><a class="headerlink" href="#databricks.bundles.jobs.Environment" title="Link to this definition">¶</a></dt>
-<dd><p>The environment entity used to preserve serverless environment side panel, jobs’ environment for non-notebook task, and DLT’s environment for classic and serverless pipelines.
-In this minimal environment spec, only pip dependencies are supported.</p>
+<dd><p>The environment entity used to preserve serverless environment side panel, jobs’ environment for non-notebook task, and SDP’s environment for classic and serverless pipelines.
+In this minimal environment spec, only pip and java dependencies are supported.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Environment.base_environment">
+<span class="sig-name descname"><span class="pre">base_environment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Environment.base_environment" title="Link to this definition">¶</a></dt>
+<dd><p>The base environment this environment is built on top of. A base environment defines the environment version and a
+list of dependencies for serverless compute. The value can be a file path to a custom <cite>env.yaml</cite> file
+(e.g., <cite>/Workspace/path/to/env.yaml</cite>). Support for a Databricks-provided base environment ID
+(e.g., <cite>workspace-base-environments/databricks_ai_v4</cite>) and workspace base environment ID
+(e.g., <cite>workspace-base-environments/dbe_b849b66e-b31a-4cb5-b161-1f2b10877fb7</cite>) is in Beta.
+Either <cite>environment_version</cite> or <cite>base_environment</cite> can be provided.
+For more information about Databricks-provided base environments, see the
+[list workspace base environments](:method:Environments/ListWorkspaceBaseEnvironments) API.
+For more information, see</p>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Environment.client">
 <span class="sig-name descname"><span class="pre">client</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Environment.client" title="Link to this definition">¶</a></dt>
@@ -1362,9 +1884,15 @@ In this minimal environment spec, only pip dependencies are supported.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Environment.environment_version">
 <span class="sig-name descname"><span class="pre">environment_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Environment.environment_version" title="Link to this definition">¶</a></dt>
-<dd><p>Required. Environment version used by the environment.
+<dd><p>Either <cite>environment_version</cite> or <cite>base_environment</cite> needs to be provided. Environment version used by the environment.
 Each version comes with a specific Python version and a set of Python packages.
 The version is a string, consisting of an integer.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Environment.java_dependencies">
+<span class="sig-name descname"><span class="pre">java_dependencies</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.Environment.java_dependencies" title="Link to this definition">¶</a></dt>
+<dd><p>List of java dependencies. Each dependency is a string representing a java library path. For example: <cite>/Volumes/path/to/test.jar</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1493,7 +2021,9 @@ Set this value if you want to be able to execute multiple runs of the task concu
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.GcpAttributes.availability">
 <span class="sig-name descname"><span class="pre">availability</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.GcpAvailability" title="databricks.bundles.jobs._models.gcp_availability.GcpAvailability"><span class="pre">GcpAvailability</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.GcpAttributes.availability" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>This field determines whether the spark executors will be scheduled to run on preemptible
+VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.GcpAttributes.boot_disk_size">
@@ -1711,6 +2241,11 @@ VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the f
 <dd><p>Name of the tag to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_commit.</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.GitSource.sparse_checkout">
+<span class="sig-name descname"><span class="pre">sparse_checkout</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.SparseCheckout" title="databricks.bundles.jobs._models.sparse_checkout.SparseCheckout"><span class="pre">SparseCheckout</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.GitSource.sparse_checkout" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.GitSource.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
@@ -1736,10 +2271,37 @@ VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the f
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.HardwareAcceleratorType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">HardwareAcceleratorType</span></span><a class="headerlink" href="#databricks.bundles.jobs.HardwareAcceleratorType" title="Link to this definition">¶</a></dt>
+<dd><p>HardwareAcceleratorType: The type of hardware accelerator to use for compute workloads.
+NOTE: This enum is referenced and is intended to be used by other Databricks services
+that need to specify hardware accelerator requirements for AI compute workloads.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.HardwareAcceleratorType.GPU_1X_A10">
+<span class="sig-name descname"><span class="pre">GPU_1X_A10</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_1xA10'</span></em><a class="headerlink" href="#databricks.bundles.jobs.HardwareAcceleratorType.GPU_1X_A10" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.HardwareAcceleratorType.GPU_8X_H100">
+<span class="sig-name descname"><span class="pre">GPU_8X_H100</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_8xH100'</span></em><a class="headerlink" href="#databricks.bundles.jobs.HardwareAcceleratorType.GPU_8X_H100" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.HardwareAcceleratorType.GPU_1X_H100">
+<span class="sig-name descname"><span class="pre">GPU_1X_H100</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_1xH100'</span></em><a class="headerlink" href="#databricks.bundles.jobs.HardwareAcceleratorType.GPU_1X_H100" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.HardwareAcceleratorType.GPU_8X_B300">
+<span class="sig-name descname"><span class="pre">GPU_8X_B300</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_8xB300'</span></em><a class="headerlink" href="#databricks.bundles.jobs.HardwareAcceleratorType.GPU_8X_B300" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.InitScriptInfo">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">InitScriptInfo</span></span><a class="headerlink" href="#databricks.bundles.jobs.InitScriptInfo" title="Link to this definition">¶</a></dt>
-<dd><p>Config for an individual init script
-Next ID: 11</p>
+<dd><p>Config for an individual init script</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.InitScriptInfo.abfss">
 <span class="sig-name descname"><span class="pre">abfss</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.Adlsgen2Info" title="databricks.bundles.jobs._models.adlsgen2_info.Adlsgen2Info"><span class="pre">Adlsgen2Info</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.InitScriptInfo.abfss" title="Link to this definition">¶</a></dt>
@@ -1820,7 +2382,7 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.budget_policy_id">
 <span class="sig-name descname"><span class="pre">budget_policy_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.budget_policy_id" title="Link to this definition">¶</a></dt>
-<dd><p>The id of the user specified budget policy to use for this job.
+<dd><p>[Public Preview] The id of the user specified budget policy to use for this job.
 If not specified, a default budget policy may be applied when creating or modifying the job.
 See <cite>effective_budget_policy_id</cite> for the budget policy used by this workload.</p>
 </dd></dl>
@@ -1829,6 +2391,7 @@ See <cite>effective_budget_policy_id</cite> for the budget policy used by this w
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.continuous">
 <span class="sig-name descname"><span class="pre">continuous</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.Continuous" title="databricks.bundles.jobs._models.continuous.Continuous"><span class="pre">Continuous</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.continuous" title="Link to this definition">¶</a></dt>
 <dd><p>An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of <cite>schedule</cite> and <cite>continuous</cite> can be used.</p>
+<p>Pipelines started by a continuous job also run continuously, regardless of their own pipeline mode setting.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1847,8 +2410,7 @@ See <cite>effective_budget_policy_id</cite> for the budget policy used by this w
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.environments">
 <span class="sig-name descname"><span class="pre">environments</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.JobEnvironment" title="databricks.bundles.jobs._models.job_environment.JobEnvironment"><span class="pre">JobEnvironment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.environments" title="Link to this definition">¶</a></dt>
 <dd><p>A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-An environment is required to be present for serverless tasks.
-For serverless notebook tasks, the environment is accessible in the notebook environment panel.
+For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
 For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.</p>
 </dd></dl>
 
@@ -1863,7 +2425,8 @@ For other serverless tasks, the task environment is required to be specified usi
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.health">
 <span class="sig-name descname"><span class="pre">health</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.JobsHealthRules" title="databricks.bundles.jobs._models.jobs_health_rules.JobsHealthRules"><span class="pre">JobsHealthRules</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.health" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>An optional set of health rules that can be defined for this job.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.job_clusters">
@@ -1874,7 +2437,7 @@ For other serverless tasks, the task environment is required to be specified usi
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.lifecycle">
 <span class="sig-name descname"><span class="pre">lifecycle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.Lifecycle" title="databricks.bundles.jobs._models.lifecycle.Lifecycle"><span class="pre">Lifecycle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.lifecycle" title="Link to this definition">¶</a></dt>
-<dd><p>Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.</p>
+<dd><p>Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1909,7 +2472,8 @@ This value cannot exceed 1000. Setting this value to <cite>0</cite> causes all n
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.performance_target">
 <span class="sig-name descname"><span class="pre">performance_target</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.PerformanceTarget" title="databricks.bundles.jobs._models.performance_target.PerformanceTarget"><span class="pre">PerformanceTarget</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.performance_target" title="Link to this definition">¶</a></dt>
-<dd><p>The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.</p>
+<dd><p>The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
+The performance target does not apply to tasks that run on Serverless GPU compute.</p>
 <ul class="simple">
 <li><p><cite>STANDARD</cite>: Enables cost-efficient execution of serverless workloads.</p></li>
 <li><p><cite>PERFORMANCE_OPTIMIZED</cite>: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.</p></li>
@@ -1919,7 +2483,8 @@ This value cannot exceed 1000. Setting this value to <cite>0</cite> causes all n
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.permissions">
 <span class="sig-name descname"><span class="pre">permissions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.JobPermission" title="databricks.bundles.jobs._models.job_permission.JobPermission"><span class="pre">JobPermission</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.permissions" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The permissions to apply to this resource.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.queue">
@@ -1930,7 +2495,10 @@ This value cannot exceed 1000. Setting this value to <cite>0</cite> causes all n
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.run_as">
 <span class="sig-name descname"><span class="pre">run_as</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.JobRunAs" title="databricks.bundles.jobs._models.job_run_as.JobRunAs"><span class="pre">JobRunAs</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.run_as" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The user or service principal that the job runs as, if specified in the request.
+This field indicates the explicit configuration of <cite>run_as</cite> for the job.
+To find the value in all cases, explicit or implicit, use <cite>run_as_user_name</cite>.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.schedule">
@@ -2006,7 +2574,7 @@ Read endpoints return only 100 tasks. If more than 100 tasks are available, you 
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobCluster.new_cluster">
-<span class="sig-name descname"><span class="pre">new_cluster</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.ClusterSpec" title="databricks.bundles.jobs._models.cluster_spec.ClusterSpec"><span class="pre">ClusterSpec</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.JobCluster.new_cluster" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">new_cluster</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.ClusterSpec" title="databricks.bundles.jobs._models.cluster_spec.ClusterSpec"><span class="pre">ClusterSpec</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobCluster.new_cluster" title="Link to this definition">¶</a></dt>
 <dd><p>If new_cluster, a description of a cluster that is created for each task.</p>
 </dd></dl>
 
@@ -2065,7 +2633,7 @@ This field is <cite>deprecated</cite>. Please use the <cite>notification_setting
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobEmailNotifications.on_streaming_backlog_exceeded">
 <span class="sig-name descname"><span class="pre">on_streaming_backlog_exceeded</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.JobEmailNotifications.on_streaming_backlog_exceeded" title="Link to this definition">¶</a></dt>
-<dd><p>A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
+<dd><p>[Public Preview] A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
 Streaming backlog thresholds can be set in the <cite>health</cite> field using the following metrics: <cite>STREAMING_BACKLOG_BYTES</cite>, <cite>STREAMING_BACKLOG_RECORDS</cite>, <cite>STREAMING_BACKLOG_SECONDS</cite>, or <cite>STREAMING_BACKLOG_FILES</cite>.
 Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.</p>
 </dd></dl>
@@ -2112,7 +2680,9 @@ Alerting is based on the 10-minute average of these metrics. If the issue persis
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironment.spec">
 <span class="sig-name descname"><span class="pre">spec</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.Environment" title="databricks.bundles.jobs._models.environment.Environment"><span class="pre">Environment</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobEnvironment.spec" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The environment entity used to preserve serverless environment side panel, jobs’ environment for non-notebook task, and SDP’s environment for classic and serverless pipelines.
+In this minimal environment spec, only pip and java dependencies are supported.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobEnvironment.from_dict">
@@ -2222,22 +2792,26 @@ Alerting is based on the 10-minute average of these metrics. If the issue persis
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermission.level">
 <span class="sig-name descname"><span class="pre">level</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.JobPermissionLevel" title="databricks.bundles.jobs._models.job_permission_level.JobPermissionLevel"><span class="pre">JobPermissionLevel</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.JobPermission.level" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The permission level to apply. The allowed levels depend on the resource type.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermission.group_name">
 <span class="sig-name descname"><span class="pre">group_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobPermission.group_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The name of the group granted the permission level.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermission.service_principal_name">
 <span class="sig-name descname"><span class="pre">service_principal_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobPermission.service_principal_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The name of the service principal granted the permission level.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermission.user_name">
 <span class="sig-name descname"><span class="pre">user_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobPermission.user_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The name of the user granted the permission level.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermission.from_dict">
@@ -2266,9 +2840,15 @@ Alerting is based on the 10-minute average of these metrics. If the issue persis
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermissionLevel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JobPermissionLevel</span></span><a class="headerlink" href="#databricks.bundles.jobs.JobPermissionLevel" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>Permission level</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermissionLevel.CAN_MANAGE">
 <span class="sig-name descname"><span class="pre">CAN_MANAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CAN_MANAGE'</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobPermissionLevel.CAN_MANAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermissionLevel.IS_OWNER">
+<span class="sig-name descname"><span class="pre">IS_OWNER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'IS_OWNER'</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobPermissionLevel.IS_OWNER" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -2279,11 +2859,6 @@ Alerting is based on the 10-minute average of these metrics. If the issue persis
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermissionLevel.CAN_VIEW">
 <span class="sig-name descname"><span class="pre">CAN_VIEW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CAN_VIEW'</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobPermissionLevel.CAN_VIEW" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.jobs.JobPermissionLevel.IS_OWNER">
-<span class="sig-name descname"><span class="pre">IS_OWNER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'IS_OWNER'</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobPermissionLevel.IS_OWNER" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -2384,12 +2959,21 @@ Alerting is based on the 10-minute average of these metrics. If the issue persis
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobsHealthRule.metric">
 <span class="sig-name descname"><span class="pre">metric</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.JobsHealthMetric" title="databricks.bundles.jobs._models.jobs_health_metric.JobsHealthMetric"><span class="pre">JobsHealthMetric</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.JobsHealthRule.metric" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Specifies the health metric that is being evaluated for a particular health rule.</p>
+<ul class="simple">
+<li><p><cite>RUN_DURATION_SECONDS</cite>: Expected total time for a run in seconds.</p></li>
+<li><p><cite>STREAMING_BACKLOG_BYTES</cite>: An estimate of the maximum bytes of data waiting to be consumed across all streams. This metric is in Public Preview.</p></li>
+<li><p><cite>STREAMING_BACKLOG_RECORDS</cite>: An estimate of the maximum offset lag across all streams. This metric is in Public Preview.</p></li>
+<li><p><cite>STREAMING_BACKLOG_SECONDS</cite>: An estimate of the maximum consumer delay across all streams. This metric is in Public Preview.</p></li>
+<li><p><cite>STREAMING_BACKLOG_FILES</cite>: An estimate of the maximum number of outstanding files across all streams. This metric is in Public Preview.</p></li>
+</ul>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobsHealthRule.op">
 <span class="sig-name descname"><span class="pre">op</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.JobsHealthOperator" title="databricks.bundles.jobs._models.jobs_health_operator.JobsHealthOperator"><span class="pre">JobsHealthOperator</span></a></em><a class="headerlink" href="#databricks.bundles.jobs.JobsHealthRule.op" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Specifies the operator used to compare the health metric value with the specified threshold.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobsHealthRule.value">
@@ -2457,7 +3041,13 @@ Alerting is based on the 10-minute average of these metrics. If the issue persis
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Kind">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Kind</span></span><a class="headerlink" href="#databricks.bundles.jobs.Kind" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>The kind of compute described by this compute specification.</p>
+<p>Depending on <cite>kind</cite>, different validations and default values will be applied.</p>
+<p>Clusters with <cite>kind = CLASSIC_PREVIEW</cite> support the following fields, whereas clusters with no specified <cite>kind</cite> do not.
+* [is_single_node](/api/workspace/clusters/create#is_single_node)
+* [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)</p>
+<p>By using the <a class="reference external" href="https://docs.databricks.com/compute/simple-form.html">simple form</a>, your clusters are automatically using <cite>kind = CLASSIC_PREVIEW</cite>.</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Kind.CLASSIC_PREVIEW">
 <span class="sig-name descname"><span class="pre">CLASSIC_PREVIEW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CLASSIC_PREVIEW'</span></em><a class="headerlink" href="#databricks.bundles.jobs.Kind.CLASSIC_PREVIEW" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -2698,6 +3288,47 @@ and Spark Packages are searched.</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.NodeTypeFlexibility">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NodeTypeFlexibility</span></span><a class="headerlink" href="#databricks.bundles.jobs.NodeTypeFlexibility" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for flexible node types, allowing fallback to alternate node types during cluster launch and upscale.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.NodeTypeFlexibility.alternate_node_type_ids">
+<span class="sig-name descname"><span class="pre">alternate_node_type_ids</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.NodeTypeFlexibility.alternate_node_type_ids" title="Link to this definition">¶</a></dt>
+<dd><p>A list of node type IDs to use as fallbacks when the primary node type is unavailable.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.NodeTypeFlexibility.aws_context_id">
+<span class="sig-name descname"><span class="pre">aws_context_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.NodeTypeFlexibility.aws_context_id" title="Link to this definition">¶</a></dt>
+<dd><p>The AWS Context ID for EC2 Fleet.
+When set (non-empty), the value is passed to AWS CreateFleet API to create the EC2 Fleet.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.NodeTypeFlexibility.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.NodeTypeFlexibility.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.NodeTypeFlexibility.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.NodeTypeFlexibility.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.NotebookTask">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NotebookTask</span></span><a class="headerlink" href="#databricks.bundles.jobs.NotebookTask" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -2851,6 +3482,11 @@ The performance mode on the job or pipeline should map to a performance setting 
 <span class="sig-name descname"><span class="pre">WEEKS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WEEKS'</span></em><a class="headerlink" href="#databricks.bundles.jobs.PeriodicTriggerConfigurationTimeUnit.WEEKS" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.PeriodicTriggerConfigurationTimeUnit.MINUTES">
+<span class="sig-name descname"><span class="pre">MINUTES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MINUTES'</span></em><a class="headerlink" href="#databricks.bundles.jobs.PeriodicTriggerConfigurationTimeUnit.MINUTES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -2859,7 +3495,7 @@ The performance mode on the job or pipeline should map to a performance setting 
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PipelineParams.full_refresh">
 <span class="sig-name descname"><span class="pre">full_refresh</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PipelineParams.full_refresh" title="Link to this definition">¶</a></dt>
-<dd><p>If true, triggers a full refresh on the delta live table.</p>
+<dd><p>If true, triggers a full refresh on the spark declarative pipeline.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2898,7 +3534,7 @@ The performance mode on the job or pipeline should map to a performance setting 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PipelineTask.full_refresh">
 <span class="sig-name descname"><span class="pre">full_refresh</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PipelineTask.full_refresh" title="Link to this definition">¶</a></dt>
-<dd><p>If true, triggers a full refresh on the delta live table.</p>
+<dd><p>If true, triggers a full refresh on the spark declarative pipeline.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2931,31 +3567,31 @@ The performance mode on the job or pipeline should map to a performance setting 
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiModel.authentication_method">
 <span class="sig-name descname"><span class="pre">authentication_method</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.AuthenticationMethod" title="databricks.bundles.jobs._models.authentication_method.AuthenticationMethod"><span class="pre">AuthenticationMethod</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiModel.authentication_method" title="Link to this definition">¶</a></dt>
-<dd><p>How the published Power BI model authenticates to Databricks</p>
+<dd><p>[Public Preview] How the published Power BI model authenticates to Databricks</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiModel.model_name">
 <span class="sig-name descname"><span class="pre">model_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiModel.model_name" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the Power BI model</p>
+<dd><p>[Public Preview] The name of the Power BI model</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiModel.overwrite_existing">
 <span class="sig-name descname"><span class="pre">overwrite_existing</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiModel.overwrite_existing" title="Link to this definition">¶</a></dt>
-<dd><p>Whether to overwrite existing Power BI models</p>
+<dd><p>[Public Preview] Whether to overwrite existing Power BI models</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiModel.storage_mode">
 <span class="sig-name descname"><span class="pre">storage_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.StorageMode" title="databricks.bundles.jobs._models.storage_mode.StorageMode"><span class="pre">StorageMode</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiModel.storage_mode" title="Link to this definition">¶</a></dt>
-<dd><p>The default storage mode of the Power BI model</p>
+<dd><p>[Public Preview] The default storage mode of the Power BI model</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiModel.workspace_name">
 <span class="sig-name descname"><span class="pre">workspace_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiModel.workspace_name" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the Power BI workspace of the model</p>
+<dd><p>[Public Preview] The name of the Power BI workspace of the model</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2988,25 +3624,25 @@ The performance mode on the job or pipeline should map to a performance setting 
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTable.catalog">
 <span class="sig-name descname"><span class="pre">catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTable.catalog" title="Link to this definition">¶</a></dt>
-<dd><p>The catalog name in Databricks</p>
+<dd><p>[Public Preview] The catalog name in Databricks</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTable.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTable.name" title="Link to this definition">¶</a></dt>
-<dd><p>The table name in Databricks</p>
+<dd><p>[Public Preview] The table name in Databricks</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTable.schema">
 <span class="sig-name descname"><span class="pre">schema</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTable.schema" title="Link to this definition">¶</a></dt>
-<dd><p>The schema name in Databricks</p>
+<dd><p>[Public Preview] The schema name in Databricks</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTable.storage_mode">
 <span class="sig-name descname"><span class="pre">storage_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.StorageMode" title="databricks.bundles.jobs._models.storage_mode.StorageMode"><span class="pre">StorageMode</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTable.storage_mode" title="Link to this definition">¶</a></dt>
-<dd><p>The Power BI storage mode of the table</p>
+<dd><p>[Public Preview] The Power BI storage mode of the table</p>
 </dd></dl>
 
 <dl class="py method">
@@ -3039,31 +3675,31 @@ The performance mode on the job or pipeline should map to a performance setting 
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTask.connection_resource_name">
 <span class="sig-name descname"><span class="pre">connection_resource_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTask.connection_resource_name" title="Link to this definition">¶</a></dt>
-<dd><p>The resource name of the UC connection to authenticate from Databricks to Power BI</p>
+<dd><p>[Public Preview] The resource name of the UC connection to authenticate from Databricks to Power BI</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTask.power_bi_model">
 <span class="sig-name descname"><span class="pre">power_bi_model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.PowerBiModel" title="databricks.bundles.jobs._models.power_bi_model.PowerBiModel"><span class="pre">PowerBiModel</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTask.power_bi_model" title="Link to this definition">¶</a></dt>
-<dd><p>The semantic model to update</p>
+<dd><p>[Public Preview] The semantic model to update</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTask.refresh_after_update">
 <span class="sig-name descname"><span class="pre">refresh_after_update</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTask.refresh_after_update" title="Link to this definition">¶</a></dt>
-<dd><p>Whether the model should be refreshed after the update</p>
+<dd><p>[Public Preview] Whether the model should be refreshed after the update</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTask.tables">
 <span class="sig-name descname"><span class="pre">tables</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.PowerBiTable" title="databricks.bundles.jobs._models.power_bi_table.PowerBiTable"><span class="pre">PowerBiTable</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTask.tables" title="Link to this definition">¶</a></dt>
-<dd><p>The tables to be exported to Power BI</p>
+<dd><p>[Public Preview] The tables to be exported to Power BI</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.PowerBiTask.warehouse_id">
 <span class="sig-name descname"><span class="pre">warehouse_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.PowerBiTask.warehouse_id" title="Link to this definition">¶</a></dt>
-<dd><p>The SQL warehouse ID to use as the Power BI data source</p>
+<dd><p>[Public Preview] The SQL warehouse ID to use as the Power BI data source</p>
 </dd></dl>
 
 <dl class="py method">
@@ -3477,7 +4113,8 @@ defined in <cite>git_source</cite>. If the value is empty, the task will use <ci
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SparkJarTask.jar_uri">
 <span class="sig-name descname"><span class="pre">jar_uri</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.SparkJarTask.jar_uri" title="Link to this definition">¶</a></dt>
-<dd><p>[DEPRECATED] Deprecated since 04/2016. Provide a <cite>jar</cite> through the <cite>libraries</cite> field instead. For an example, see :method:jobs/create.</p>
+<dd><p>[DEPRECATED] Deprecated since 04/2016. For classic compute, provide a <cite>jar</cite> through the <cite>libraries</cite> field instead. For serverless compute, provide a <cite>jar</cite> though the <cite>java_dependencies</cite> field inside the <cite>environments</cite> list.</p>
+<p>See the examples of classic and serverless compute usage at the top of the page.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -3600,6 +4237,39 @@ the Python file will be retrieved from a Git repository defined in <cite>git_sou
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.SparkSubmitTask.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SparseCheckout">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SparseCheckout</span></span><a class="headerlink" href="#databricks.bundles.jobs.SparseCheckout" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SparseCheckout.patterns">
+<span class="sig-name descname"><span class="pre">patterns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.SparseCheckout.patterns" title="Link to this definition">¶</a></dt>
+<dd><p>List of patterns to include for sparse checkout.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SparseCheckout.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.SparseCheckout.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.SparseCheckout.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.SparseCheckout.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -3919,7 +4589,8 @@ to subscribers.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Subscription.subscribers">
 <span class="sig-name descname"><span class="pre">subscribers</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.SubscriptionSubscriber" title="databricks.bundles.jobs._models.subscription_subscriber.SubscriptionSubscriber"><span class="pre">SubscriptionSubscriber</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.Subscription.subscribers" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The list of subscribers to send the snapshot of the dashboard to.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Subscription.from_dict">
@@ -3951,12 +4622,14 @@ to subscribers.</p>
 <dd><dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionSubscriber.destination_id">
 <span class="sig-name descname"><span class="pre">destination_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionSubscriber.destination_id" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>A snapshot of the dashboard will be sent to the destination when the <cite>destination_id</cite> field is present.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionSubscriber.user_name">
 <span class="sig-name descname"><span class="pre">user_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.SubscriptionSubscriber.user_name" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>A snapshot of the dashboard will be sent to the user’s email when the <cite>user_name</cite> field is present.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.SubscriptionSubscriber.from_dict">
@@ -4048,6 +4721,21 @@ On Update or Reset, this field is used to reference the tasks to be updated or r
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Task.ai_runtime_task">
+<span class="sig-name descname"><span class="pre">ai_runtime_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.AiRuntimeTask" title="databricks.bundles.jobs._models.ai_runtime_task.AiRuntimeTask"><span class="pre">AiRuntimeTask</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.ai_runtime_task" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The task runs a multi-gpu compute workload on Databricks AI Runtime. Specify
+the accelerator type and count, the command to run, and where the workload’s
+code and MLflow output are stored.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Task.alert_task">
+<span class="sig-name descname"><span class="pre">alert_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.AlertTask" title="databricks.bundles.jobs._models.alert_task.AlertTask"><span class="pre">AlertTask</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.alert_task" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] The task evaluates a Databricks alert and sends notifications to subscribers
+when the <cite>alert_task</cite> field is present.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Task.clean_rooms_notebook_task">
 <span class="sig-name descname"><span class="pre">clean_rooms_notebook_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.CleanRoomsNotebookTask" title="databricks.bundles.jobs._models.clean_rooms_notebook_task.CleanRoomsNotebookTask"><span class="pre">CleanRoomsNotebookTask</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.clean_rooms_notebook_task" title="Link to this definition">¶</a></dt>
 <dd><p>The task runs a <a class="reference external" href="https://docs.databricks.com/clean-rooms/index.html">clean rooms</a> notebook
@@ -4093,6 +4781,12 @@ The key is <cite>task_key</cite>, and the value is the name assigned to the depe
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.Task.disabled">
+<span class="sig-name descname"><span class="pre">disabled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.disabled" title="Link to this definition">¶</a></dt>
+<dd><p>An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Task.email_notifications">
 <span class="sig-name descname"><span class="pre">email_notifications</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.TaskEmailNotifications" title="databricks.bundles.jobs._models.task_email_notifications.TaskEmailNotifications"><span class="pre">TaskEmailNotifications</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.email_notifications" title="Link to this definition">¶</a></dt>
 <dd><p>An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.</p>
@@ -4122,7 +4816,8 @@ greater reliability</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Task.health">
 <span class="sig-name descname"><span class="pre">health</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.JobsHealthRules" title="databricks.bundles.jobs._models.jobs_health_rules.JobsHealthRules"><span class="pre">JobsHealthRules</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.health" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>An optional set of health rules that can be defined for this job.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Task.job_cluster_key">
@@ -4176,7 +4871,7 @@ The default value is an empty list.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Task.power_bi_task">
 <span class="sig-name descname"><span class="pre">power_bi_task</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.jobs.PowerBiTask" title="databricks.bundles.jobs._models.power_bi_task.PowerBiTask"><span class="pre">PowerBiTask</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.power_bi_task" title="Link to this definition">¶</a></dt>
-<dd><p>The task triggers a Power BI semantic model update when the <cite>power_bi_task</cite> field is present.</p>
+<dd><p>[Public Preview] The task triggers a Power BI semantic model update when the <cite>power_bi_task</cite> field is present.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -4342,7 +5037,7 @@ This field is <cite>deprecated</cite>. Please use the <cite>notification_setting
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.TaskEmailNotifications.on_streaming_backlog_exceeded">
 <span class="sig-name descname"><span class="pre">on_streaming_backlog_exceeded</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.TaskEmailNotifications.on_streaming_backlog_exceeded" title="Link to this definition">¶</a></dt>
-<dd><p>A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
+<dd><p>[Public Preview] A list of email addresses to notify when any streaming backlog thresholds are exceeded for any stream.
 Streaming backlog thresholds can be set in the <cite>health</cite> field using the following metrics: <cite>STREAMING_BACKLOG_BYTES</cite>, <cite>STREAMING_BACKLOG_RECORDS</cite>, <cite>STREAMING_BACKLOG_SECONDS</cite>, or <cite>STREAMING_BACKLOG_FILES</cite>.
 Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.</p>
 </dd></dl>
@@ -4437,6 +5132,37 @@ When this condition is no longer met or the retry limit is reached, the job run 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.TaskRetryMode.ON_FAILURE">
 <span class="sig-name descname"><span class="pre">ON_FAILURE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ON_FAILURE'</span></em><a class="headerlink" href="#databricks.bundles.jobs.TaskRetryMode.ON_FAILURE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.TriggerConfiguration">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TriggerConfiguration</span></span><a class="headerlink" href="#databricks.bundles.jobs.TriggerConfiguration" title="Link to this definition">¶</a></dt>
+<dd><p>A single trigger attached to a job via <cite>JobSettings.triggers</cite>. Exactly one of the trigger-type fields
+(<cite>periodic</cite>, <cite>schedule</cite>, <cite>continuous</cite>, <cite>file_arrival</cite>, <cite>table_update</cite>, <cite>model</cite>, <cite>job_completion</cite>) must be set;
+mutual exclusivity is enforced in the API handler rather than via <cite>oneof</cite> so that codegen, validation, and JSON
+serialization across SDKs and Terraform behave consistently.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.TriggerConfiguration.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.jobs.TriggerConfiguration.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.TriggerConfiguration.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.jobs.TriggerConfiguration.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -4582,7 +5308,7 @@ or <cite>dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh</cite><
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.WebhookNotifications.on_streaming_backlog_exceeded">
 <span class="sig-name descname"><span class="pre">on_streaming_backlog_exceeded</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.Webhook" title="databricks.bundles.jobs._models.webhook.Webhook"><span class="pre">Webhook</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.WebhookNotifications.on_streaming_backlog_exceeded" title="Link to this definition">¶</a></dt>
-<dd><p>An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.
+<dd><p>[Public Preview] An optional list of system notification IDs to call when any streaming backlog thresholds are exceeded for any stream.
 Streaming backlog thresholds can be set in the <cite>health</cite> field using the following metrics: <cite>STREAMING_BACKLOG_BYTES</cite>, <cite>STREAMING_BACKLOG_RECORDS</cite>, <cite>STREAMING_BACKLOG_SECONDS</cite>, or <cite>STREAMING_BACKLOG_FILES</cite>.
 Alerting is based on the 10-minute average of these metrics. If the issue persists, notifications are resent every 30 minutes.
 A maximum of 3 destinations can be specified for the <cite>on_streaming_backlog_exceeded</cite> property.</p>

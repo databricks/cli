@@ -14,7 +14,7 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Schemas" href="databricks.bundles.schemas.html" />
+    <link rel="prev" title="Vector Search Indexes" href="databricks.bundles.vector_search_indexes.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -36,7 +36,7 @@
 
 
 
-<p class="blurb">databricks-bundles: Python support for Databricks Asset Bundles</p>
+<p class="blurb">databricks-bundles: Python support for Declarative Automation Bundles</p>
 
 
 
@@ -62,9 +62,36 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.core.html">Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.alerts.html">Alerts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.apps.html">Apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.catalogs.html">Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_serving_endpoints.html">Model Serving Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.pipelines.html">Pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.postgres_snapshot_schedules.html">Postgres Snapshot Schedules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.quality_monitors.html">Quality Monitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.registered_models.html">Registered Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.schemas.html">Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secret_scopes.html">Secret Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secrets.html">Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.sql_warehouses.html">SQL Warehouses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.synced_database_tables.html">Synced Database Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_endpoints.html">Vector Search Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_indexes.html">Vector Search Indexes</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Volumes</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.volumes">Classes</a></li>
 </ul>
@@ -75,7 +102,7 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="databricks.bundles.schemas.html" title="previous chapter">Schemas</a></li>
+      <li>Previous: <a href="databricks.bundles.vector_search_indexes.html" title="previous chapter">Vector Search Indexes</a></li>
   </ul></li>
 </ul>
 </div>
@@ -134,6 +161,311 @@
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Privilege</span></span><a class="headerlink" href="#databricks.bundles.volumes.Privilege" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.SELECT">
+<span class="sig-name descname"><span class="pre">SELECT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SELECT'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.SELECT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.READ_PRIVATE_FILES">
+<span class="sig-name descname"><span class="pre">READ_PRIVATE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_PRIVATE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.READ_PRIVATE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.WRITE_PRIVATE_FILES">
+<span class="sig-name descname"><span class="pre">WRITE_PRIVATE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_PRIVATE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.WRITE_PRIVATE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE">
+<span class="sig-name descname"><span class="pre">CREATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.USAGE">
+<span class="sig-name descname"><span class="pre">USAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USAGE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.USAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.USE_CATALOG">
+<span class="sig-name descname"><span class="pre">USE_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.USE_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.USE_SCHEMA">
+<span class="sig-name descname"><span class="pre">USE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.USE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_SCHEMA">
+<span class="sig-name descname"><span class="pre">CREATE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_VIEW">
+<span class="sig-name descname"><span class="pre">CREATE_VIEW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_VIEW'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_VIEW" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_EXTERNAL_TABLE">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_TABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_TABLE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_EXTERNAL_TABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_MATERIALIZED_VIEW">
+<span class="sig-name descname"><span class="pre">CREATE_MATERIALIZED_VIEW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MATERIALIZED_VIEW'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_MATERIALIZED_VIEW" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_FUNCTION">
+<span class="sig-name descname"><span class="pre">CREATE_FUNCTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FUNCTION'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_FUNCTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_MODEL">
+<span class="sig-name descname"><span class="pre">CREATE_MODEL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MODEL'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_MODEL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_CATALOG">
+<span class="sig-name descname"><span class="pre">CREATE_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_MANAGED_STORAGE">
+<span class="sig-name descname"><span class="pre">CREATE_MANAGED_STORAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MANAGED_STORAGE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_MANAGED_STORAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_EXTERNAL_LOCATION">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_LOCATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_LOCATION'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_EXTERNAL_LOCATION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_STORAGE_CREDENTIAL">
+<span class="sig-name descname"><span class="pre">CREATE_STORAGE_CREDENTIAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_STORAGE_CREDENTIAL'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_STORAGE_CREDENTIAL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_SERVICE_CREDENTIAL">
+<span class="sig-name descname"><span class="pre">CREATE_SERVICE_CREDENTIAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SERVICE_CREDENTIAL'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_SERVICE_CREDENTIAL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.ACCESS">
+<span class="sig-name descname"><span class="pre">ACCESS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ACCESS'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.ACCESS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_SHARE">
+<span class="sig-name descname"><span class="pre">CREATE_SHARE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SHARE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_SHARE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_RECIPIENT">
+<span class="sig-name descname"><span class="pre">CREATE_RECIPIENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_RECIPIENT'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_RECIPIENT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_PROVIDER">
+<span class="sig-name descname"><span class="pre">CREATE_PROVIDER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_PROVIDER'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_PROVIDER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.USE_SHARE">
+<span class="sig-name descname"><span class="pre">USE_SHARE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_SHARE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.USE_SHARE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.USE_RECIPIENT">
+<span class="sig-name descname"><span class="pre">USE_RECIPIENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_RECIPIENT'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.USE_RECIPIENT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.USE_PROVIDER">
+<span class="sig-name descname"><span class="pre">USE_PROVIDER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_PROVIDER'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.USE_PROVIDER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.USE_MARKETPLACE_ASSETS">
+<span class="sig-name descname"><span class="pre">USE_MARKETPLACE_ASSETS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_MARKETPLACE_ASSETS'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.USE_MARKETPLACE_ASSETS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.SET_SHARE_PERMISSION">
+<span class="sig-name descname"><span class="pre">SET_SHARE_PERMISSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SET_SHARE_PERMISSION'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.SET_SHARE_PERMISSION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.MODIFY">
+<span class="sig-name descname"><span class="pre">MODIFY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MODIFY'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.MODIFY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.REFRESH">
+<span class="sig-name descname"><span class="pre">REFRESH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'REFRESH'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.REFRESH" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.EXECUTE">
+<span class="sig-name descname"><span class="pre">EXECUTE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXECUTE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.EXECUTE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.READ_FILES">
+<span class="sig-name descname"><span class="pre">READ_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_FILES'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.READ_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.WRITE_FILES">
+<span class="sig-name descname"><span class="pre">WRITE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.WRITE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_TABLE">
+<span class="sig-name descname"><span class="pre">CREATE_TABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_TABLE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_TABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.ALL_PRIVILEGES">
+<span class="sig-name descname"><span class="pre">ALL_PRIVILEGES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ALL_PRIVILEGES'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.ALL_PRIVILEGES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_CONNECTION">
+<span class="sig-name descname"><span class="pre">CREATE_CONNECTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CONNECTION'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_CONNECTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.USE_CONNECTION">
+<span class="sig-name descname"><span class="pre">USE_CONNECTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_CONNECTION'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.USE_CONNECTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.APPLY_TAG">
+<span class="sig-name descname"><span class="pre">APPLY_TAG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'APPLY_TAG'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.APPLY_TAG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_FOREIGN_CATALOG">
+<span class="sig-name descname"><span class="pre">CREATE_FOREIGN_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FOREIGN_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_FOREIGN_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_FOREIGN_SECURABLE">
+<span class="sig-name descname"><span class="pre">CREATE_FOREIGN_SECURABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FOREIGN_SECURABLE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_FOREIGN_SECURABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.MANAGE_ALLOWLIST">
+<span class="sig-name descname"><span class="pre">MANAGE_ALLOWLIST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGE_ALLOWLIST'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.MANAGE_ALLOWLIST" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_VOLUME">
+<span class="sig-name descname"><span class="pre">CREATE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_EXTERNAL_VOLUME">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_EXTERNAL_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.READ_VOLUME">
+<span class="sig-name descname"><span class="pre">READ_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.READ_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.WRITE_VOLUME">
+<span class="sig-name descname"><span class="pre">WRITE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.WRITE_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.MANAGE">
+<span class="sig-name descname"><span class="pre">MANAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.MANAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.BROWSE">
+<span class="sig-name descname"><span class="pre">BROWSE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'BROWSE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.BROWSE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.CREATE_CLEAN_ROOM">
+<span class="sig-name descname"><span class="pre">CREATE_CLEAN_ROOM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CLEAN_ROOM'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.CREATE_CLEAN_ROOM" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.MODIFY_CLEAN_ROOM">
+<span class="sig-name descname"><span class="pre">MODIFY_CLEAN_ROOM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MODIFY_CLEAN_ROOM'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.MODIFY_CLEAN_ROOM" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.EXECUTE_CLEAN_ROOM_TASK">
+<span class="sig-name descname"><span class="pre">EXECUTE_CLEAN_ROOM_TASK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXECUTE_CLEAN_ROOM_TASK'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.EXECUTE_CLEAN_ROOM_TASK" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.EXTERNAL_USE_SCHEMA">
+<span class="sig-name descname"><span class="pre">EXTERNAL_USE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXTERNAL_USE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.EXTERNAL_USE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.READ_METADATA">
+<span class="sig-name descname"><span class="pre">READ_METADATA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_METADATA'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.READ_METADATA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.Privilege.EXTERNAL_USE_LOCATION">
+<span class="sig-name descname"><span class="pre">EXTERNAL_USE_LOCATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXTERNAL_USE_LOCATION'</span></em><a class="headerlink" href="#databricks.bundles.volumes.Privilege.EXTERNAL_USE_LOCATION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.PrivilegeAssignment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PrivilegeAssignment</span></span><a class="headerlink" href="#databricks.bundles.volumes.PrivilegeAssignment" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.PrivilegeAssignment.principal">
+<span class="sig-name descname"><span class="pre">principal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.volumes.PrivilegeAssignment.principal" title="Link to this definition">¶</a></dt>
+<dd><p>The principal (user email address or group name).
+For deleted principals, <cite>principal</cite> is empty while <cite>principal_id</cite> is populated.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.PrivilegeAssignment.privileges">
+<span class="sig-name descname"><span class="pre">privileges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.volumes.Privilege" title="databricks.bundles.volumes._models.privilege.Privilege"><span class="pre">Privilege</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.volumes.PrivilegeAssignment.privileges" title="Link to this definition">¶</a></dt>
+<dd><p>The privileges assigned to the principal.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.PrivilegeAssignment.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.volumes.PrivilegeAssignment.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.volumes.PrivilegeAssignment.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.volumes.PrivilegeAssignment.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.volumes.Volume">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Volume</span></span><a class="headerlink" href="#databricks.bundles.volumes.Volume" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -162,13 +494,14 @@
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.volumes.Volume.grants">
-<span class="sig-name descname"><span class="pre">grants</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.volumes.VolumeGrant" title="databricks.bundles.volumes._models.volume_grant.VolumeGrant"><span class="pre">VolumeGrant</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.volumes.Volume.grants" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">grants</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.volumes.PrivilegeAssignment" title="databricks.bundles.volumes._models.privilege_assignment.PrivilegeAssignment"><span class="pre">PrivilegeAssignment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.volumes.Volume.grants" title="Link to this definition">¶</a></dt>
+<dd><p>The Unity Catalog privileges to grant to principals on this securable.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.volumes.Volume.lifecycle">
 <span class="sig-name descname"><span class="pre">lifecycle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.volumes.Lifecycle" title="databricks.bundles.volumes._models.lifecycle.Lifecycle"><span class="pre">Lifecycle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.volumes.Volume.lifecycle" title="Link to this definition">¶</a></dt>
-<dd><p>Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.</p>
+<dd><p>Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -180,7 +513,10 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.volumes.Volume.volume_type">
 <span class="sig-name descname"><span class="pre">volume_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.volumes.VolumeType" title="databricks.bundles.volumes._models.volume_type.VolumeType"><span class="pre">VolumeType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.volumes.Volume.volume_type" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The type of the volume. An external volume is located in the specified external location.
+A managed volume is located in the default location which is specified by the parent schema, or the parent catalog, or the Metastore.
+<a class="reference external" href="https://docs.databricks.com/aws/en/volumes/managed-vs-external">Learn more</a></p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.volumes.Volume.from_dict">
@@ -206,71 +542,16 @@
 
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrant">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">VolumeGrant</span></span><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrant" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrant.principal">
-<span class="sig-name descname"><span class="pre">principal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrant.principal" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrant.privileges">
-<span class="sig-name descname"><span class="pre">privileges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.volumes.VolumeGrantPrivilege" title="databricks.bundles.volumes._models.volume_grant_privilege.VolumeGrantPrivilege"><span class="pre">VolumeGrantPrivilege</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrant.privileges" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrant.from_dict">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrant.from_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrant.as_dict">
-<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrant.as_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
+<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrant">
+<span class="sig-name descname"><span class="pre">VolumeGrant</span></span><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrant" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#databricks.bundles.volumes.PrivilegeAssignment" title="databricks.bundles.volumes._models.privilege_assignment.PrivilegeAssignment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PrivilegeAssignment</span></code></a></p>
 </dd></dl>
 
-<dl class="py class">
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrantPrivilege">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">VolumeGrantPrivilege</span></span><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrantPrivilege" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrantPrivilege.ALL_PRIVILEGES">
-<span class="sig-name descname"><span class="pre">ALL_PRIVILEGES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ALL_PRIVILEGES'</span></em><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrantPrivilege.ALL_PRIVILEGES" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrantPrivilege.APPLY_TAG">
-<span class="sig-name descname"><span class="pre">APPLY_TAG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'APPLY_TAG'</span></em><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrantPrivilege.APPLY_TAG" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrantPrivilege.MANAGE">
-<span class="sig-name descname"><span class="pre">MANAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGE'</span></em><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrantPrivilege.MANAGE" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrantPrivilege.READ_VOLUME">
-<span class="sig-name descname"><span class="pre">READ_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrantPrivilege.READ_VOLUME" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.volumes.VolumeGrantPrivilege.WRITE_VOLUME">
-<span class="sig-name descname"><span class="pre">WRITE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrantPrivilege.WRITE_VOLUME" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
+<span class="sig-name descname"><span class="pre">VolumeGrantPrivilege</span></span><a class="headerlink" href="#databricks.bundles.volumes.VolumeGrantPrivilege" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#databricks.bundles.volumes.Privilege" title="databricks.bundles.volumes._models.privilege.Privilege"><code class="xref py py-class docutils literal notranslate"><span class="pre">Privilege</span></code></a></p>
 </dd></dl>
 
 <dl class="py class">

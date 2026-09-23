@@ -14,8 +14,8 @@
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Volumes" href="databricks.bundles.volumes.html" />
-    <link rel="prev" title="Pipelines" href="databricks.bundles.pipelines.html" />
+    <link rel="next" title="Secret Scopes" href="databricks.bundles.secret_scopes.html" />
+    <link rel="prev" title="Registered Models" href="databricks.bundles.registered_models.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -37,7 +37,7 @@
 
 
 
-<p class="blurb">databricks-bundles: Python support for Databricks Asset Bundles</p>
+<p class="blurb">databricks-bundles: Python support for Declarative Automation Bundles</p>
 
 
 
@@ -63,12 +63,39 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.core.html">Core</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.alerts.html">Alerts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.apps.html">Apps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.catalogs.html">Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.cluster_policies.html">Cluster Policies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.clusters.html">Clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.dashboards.html">Dashboards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_catalogs.html">Database Catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.database_instances.html">Database Instances</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.experiments.html">Experiments</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.external_locations.html">External Locations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.genie_spaces.html">Genie Spaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.instance_pools.html">Instance Pools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.job_runs.html">Job Runs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.jobs.html">Jobs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.mcp_services.html">MCP Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_provider_services.html">Model Provider Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_services.html">Model Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.model_serving_endpoints.html">Model Serving Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.models.html">Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.pipelines.html">Pipelines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.postgres_snapshot_schedules.html">Postgres Snapshot Schedules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.quality_monitors.html">Quality Monitors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.registered_models.html">Registered Models</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Schemas</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-databricks.bundles.schemas">Classes</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secret_scopes.html">Secret Scopes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.secrets.html">Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.sql_warehouses.html">SQL Warehouses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.synced_database_tables.html">Synced Database Tables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_endpoints.html">Vector Search Endpoints</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databricks.bundles.vector_search_indexes.html">Vector Search Indexes</a></li>
 <li class="toctree-l1"><a class="reference internal" href="databricks.bundles.volumes.html">Volumes</a></li>
 </ul>
 
@@ -76,8 +103,8 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="databricks.bundles.pipelines.html" title="previous chapter">Pipelines</a></li>
-      <li>Next: <a href="databricks.bundles.volumes.html" title="next chapter">Volumes</a></li>
+      <li>Previous: <a href="databricks.bundles.registered_models.html" title="previous chapter">Registered Models</a></li>
+      <li>Next: <a href="databricks.bundles.secret_scopes.html" title="next chapter">Secret Scopes</a></li>
   </ul></li>
 </ul>
 </div>
@@ -136,6 +163,311 @@
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Privilege</span></span><a class="headerlink" href="#databricks.bundles.schemas.Privilege" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.SELECT">
+<span class="sig-name descname"><span class="pre">SELECT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SELECT'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.SELECT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.READ_PRIVATE_FILES">
+<span class="sig-name descname"><span class="pre">READ_PRIVATE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_PRIVATE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.READ_PRIVATE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.WRITE_PRIVATE_FILES">
+<span class="sig-name descname"><span class="pre">WRITE_PRIVATE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_PRIVATE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.WRITE_PRIVATE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE">
+<span class="sig-name descname"><span class="pre">CREATE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.USAGE">
+<span class="sig-name descname"><span class="pre">USAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USAGE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.USAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.USE_CATALOG">
+<span class="sig-name descname"><span class="pre">USE_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.USE_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.USE_SCHEMA">
+<span class="sig-name descname"><span class="pre">USE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.USE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_SCHEMA">
+<span class="sig-name descname"><span class="pre">CREATE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_VIEW">
+<span class="sig-name descname"><span class="pre">CREATE_VIEW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_VIEW'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_VIEW" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_EXTERNAL_TABLE">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_TABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_TABLE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_EXTERNAL_TABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_MATERIALIZED_VIEW">
+<span class="sig-name descname"><span class="pre">CREATE_MATERIALIZED_VIEW</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MATERIALIZED_VIEW'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_MATERIALIZED_VIEW" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_FUNCTION">
+<span class="sig-name descname"><span class="pre">CREATE_FUNCTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FUNCTION'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_FUNCTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_MODEL">
+<span class="sig-name descname"><span class="pre">CREATE_MODEL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MODEL'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_MODEL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_CATALOG">
+<span class="sig-name descname"><span class="pre">CREATE_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_MANAGED_STORAGE">
+<span class="sig-name descname"><span class="pre">CREATE_MANAGED_STORAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_MANAGED_STORAGE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_MANAGED_STORAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_EXTERNAL_LOCATION">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_LOCATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_LOCATION'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_EXTERNAL_LOCATION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_STORAGE_CREDENTIAL">
+<span class="sig-name descname"><span class="pre">CREATE_STORAGE_CREDENTIAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_STORAGE_CREDENTIAL'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_STORAGE_CREDENTIAL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_SERVICE_CREDENTIAL">
+<span class="sig-name descname"><span class="pre">CREATE_SERVICE_CREDENTIAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SERVICE_CREDENTIAL'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_SERVICE_CREDENTIAL" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.ACCESS">
+<span class="sig-name descname"><span class="pre">ACCESS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ACCESS'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.ACCESS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_SHARE">
+<span class="sig-name descname"><span class="pre">CREATE_SHARE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_SHARE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_SHARE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_RECIPIENT">
+<span class="sig-name descname"><span class="pre">CREATE_RECIPIENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_RECIPIENT'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_RECIPIENT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_PROVIDER">
+<span class="sig-name descname"><span class="pre">CREATE_PROVIDER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_PROVIDER'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_PROVIDER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.USE_SHARE">
+<span class="sig-name descname"><span class="pre">USE_SHARE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_SHARE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.USE_SHARE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.USE_RECIPIENT">
+<span class="sig-name descname"><span class="pre">USE_RECIPIENT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_RECIPIENT'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.USE_RECIPIENT" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.USE_PROVIDER">
+<span class="sig-name descname"><span class="pre">USE_PROVIDER</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_PROVIDER'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.USE_PROVIDER" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.USE_MARKETPLACE_ASSETS">
+<span class="sig-name descname"><span class="pre">USE_MARKETPLACE_ASSETS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_MARKETPLACE_ASSETS'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.USE_MARKETPLACE_ASSETS" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.SET_SHARE_PERMISSION">
+<span class="sig-name descname"><span class="pre">SET_SHARE_PERMISSION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SET_SHARE_PERMISSION'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.SET_SHARE_PERMISSION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.MODIFY">
+<span class="sig-name descname"><span class="pre">MODIFY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MODIFY'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.MODIFY" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.REFRESH">
+<span class="sig-name descname"><span class="pre">REFRESH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'REFRESH'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.REFRESH" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.EXECUTE">
+<span class="sig-name descname"><span class="pre">EXECUTE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXECUTE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.EXECUTE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.READ_FILES">
+<span class="sig-name descname"><span class="pre">READ_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_FILES'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.READ_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.WRITE_FILES">
+<span class="sig-name descname"><span class="pre">WRITE_FILES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_FILES'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.WRITE_FILES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_TABLE">
+<span class="sig-name descname"><span class="pre">CREATE_TABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_TABLE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_TABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.ALL_PRIVILEGES">
+<span class="sig-name descname"><span class="pre">ALL_PRIVILEGES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ALL_PRIVILEGES'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.ALL_PRIVILEGES" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_CONNECTION">
+<span class="sig-name descname"><span class="pre">CREATE_CONNECTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CONNECTION'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_CONNECTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.USE_CONNECTION">
+<span class="sig-name descname"><span class="pre">USE_CONNECTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_CONNECTION'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.USE_CONNECTION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.APPLY_TAG">
+<span class="sig-name descname"><span class="pre">APPLY_TAG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'APPLY_TAG'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.APPLY_TAG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_FOREIGN_CATALOG">
+<span class="sig-name descname"><span class="pre">CREATE_FOREIGN_CATALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FOREIGN_CATALOG'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_FOREIGN_CATALOG" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_FOREIGN_SECURABLE">
+<span class="sig-name descname"><span class="pre">CREATE_FOREIGN_SECURABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FOREIGN_SECURABLE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_FOREIGN_SECURABLE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.MANAGE_ALLOWLIST">
+<span class="sig-name descname"><span class="pre">MANAGE_ALLOWLIST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGE_ALLOWLIST'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.MANAGE_ALLOWLIST" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_VOLUME">
+<span class="sig-name descname"><span class="pre">CREATE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_EXTERNAL_VOLUME">
+<span class="sig-name descname"><span class="pre">CREATE_EXTERNAL_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_EXTERNAL_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_EXTERNAL_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.READ_VOLUME">
+<span class="sig-name descname"><span class="pre">READ_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.READ_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.WRITE_VOLUME">
+<span class="sig-name descname"><span class="pre">WRITE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.WRITE_VOLUME" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.MANAGE">
+<span class="sig-name descname"><span class="pre">MANAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.MANAGE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.BROWSE">
+<span class="sig-name descname"><span class="pre">BROWSE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'BROWSE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.BROWSE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.CREATE_CLEAN_ROOM">
+<span class="sig-name descname"><span class="pre">CREATE_CLEAN_ROOM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_CLEAN_ROOM'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.CREATE_CLEAN_ROOM" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.MODIFY_CLEAN_ROOM">
+<span class="sig-name descname"><span class="pre">MODIFY_CLEAN_ROOM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MODIFY_CLEAN_ROOM'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.MODIFY_CLEAN_ROOM" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.EXECUTE_CLEAN_ROOM_TASK">
+<span class="sig-name descname"><span class="pre">EXECUTE_CLEAN_ROOM_TASK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXECUTE_CLEAN_ROOM_TASK'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.EXECUTE_CLEAN_ROOM_TASK" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.EXTERNAL_USE_SCHEMA">
+<span class="sig-name descname"><span class="pre">EXTERNAL_USE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXTERNAL_USE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.EXTERNAL_USE_SCHEMA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.READ_METADATA">
+<span class="sig-name descname"><span class="pre">READ_METADATA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_METADATA'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.READ_METADATA" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Privilege.EXTERNAL_USE_LOCATION">
+<span class="sig-name descname"><span class="pre">EXTERNAL_USE_LOCATION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXTERNAL_USE_LOCATION'</span></em><a class="headerlink" href="#databricks.bundles.schemas.Privilege.EXTERNAL_USE_LOCATION" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.PrivilegeAssignment">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PrivilegeAssignment</span></span><a class="headerlink" href="#databricks.bundles.schemas.PrivilegeAssignment" title="Link to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.PrivilegeAssignment.principal">
+<span class="sig-name descname"><span class="pre">principal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.schemas.PrivilegeAssignment.principal" title="Link to this definition">¶</a></dt>
+<dd><p>The principal (user email address or group name).
+For deleted principals, <cite>principal</cite> is empty while <cite>principal_id</cite> is populated.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.PrivilegeAssignment.privileges">
+<span class="sig-name descname"><span class="pre">privileges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.schemas.Privilege" title="databricks.bundles.schemas._models.privilege.Privilege"><span class="pre">Privilege</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.schemas.PrivilegeAssignment.privileges" title="Link to this definition">¶</a></dt>
+<dd><p>The privileges assigned to the principal.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.PrivilegeAssignment.from_dict">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.schemas.PrivilegeAssignment.from_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.PrivilegeAssignment.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
+
+<dl>
+<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
+</dl>
+
+<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.schemas.PrivilegeAssignment.as_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.schemas.Schema">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Schema</span></span><a class="headerlink" href="#databricks.bundles.schemas.Schema" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -157,20 +489,28 @@
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.schemas.Schema.custom_max_retention_hours">
+<span class="sig-name descname"><span class="pre">custom_max_retention_hours</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.schemas.Schema.custom_max_retention_hours" title="Link to this definition">¶</a></dt>
+<dd><p>[Public Preview] Custom maximum retention period in hours for the schema.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.schemas.Schema.grants">
-<span class="sig-name descname"><span class="pre">grants</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.schemas.SchemaGrant" title="databricks.bundles.schemas._models.schema_grant.SchemaGrant"><span class="pre">SchemaGrant</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.schemas.Schema.grants" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">grants</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.schemas.PrivilegeAssignment" title="databricks.bundles.schemas._models.privilege_assignment.PrivilegeAssignment"><span class="pre">PrivilegeAssignment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.schemas.Schema.grants" title="Link to this definition">¶</a></dt>
+<dd><p>The Unity Catalog privileges to grant to principals on this securable.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.schemas.Schema.lifecycle">
 <span class="sig-name descname"><span class="pre">lifecycle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.schemas.Lifecycle" title="databricks.bundles.schemas._models.lifecycle.Lifecycle"><span class="pre">Lifecycle</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.schemas.Schema.lifecycle" title="Link to this definition">¶</a></dt>
-<dd><p>Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.</p>
+<dd><p>Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.schemas.Schema.properties">
 <span class="sig-name descname"><span class="pre">properties</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.schemas.Schema.properties" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>A map of key-value properties attached to the securable.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.schemas.Schema.storage_root">
@@ -202,111 +542,16 @@
 
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrant">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SchemaGrant</span></span><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrant" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrant.principal">
-<span class="sig-name descname"><span class="pre">principal</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrant.principal" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrant.privileges">
-<span class="sig-name descname"><span class="pre">privileges</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.schemas.SchemaGrantPrivilege" title="databricks.bundles.schemas._models.schema_grant_privilege.SchemaGrantPrivilege"><span class="pre">SchemaGrantPrivilege</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrant.privileges" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrant.from_dict">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrant.from_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrant.as_dict">
-<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrant.as_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
+<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrant">
+<span class="sig-name descname"><span class="pre">SchemaGrant</span></span><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrant" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#databricks.bundles.schemas.PrivilegeAssignment" title="databricks.bundles.schemas._models.privilege_assignment.PrivilegeAssignment"><code class="xref py py-class docutils literal notranslate"><span class="pre">PrivilegeAssignment</span></code></a></p>
 </dd></dl>
 
-<dl class="py class">
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SchemaGrantPrivilege</span></span><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.ALL_PRIVILEGES">
-<span class="sig-name descname"><span class="pre">ALL_PRIVILEGES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ALL_PRIVILEGES'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.ALL_PRIVILEGES" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.APPLY_TAG">
-<span class="sig-name descname"><span class="pre">APPLY_TAG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'APPLY_TAG'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.APPLY_TAG" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.CREATE_FUNCTION">
-<span class="sig-name descname"><span class="pre">CREATE_FUNCTION</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_FUNCTION'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.CREATE_FUNCTION" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.CREATE_TABLE">
-<span class="sig-name descname"><span class="pre">CREATE_TABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_TABLE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.CREATE_TABLE" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.CREATE_VOLUME">
-<span class="sig-name descname"><span class="pre">CREATE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'CREATE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.CREATE_VOLUME" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.MANAGE">
-<span class="sig-name descname"><span class="pre">MANAGE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANAGE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.MANAGE" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.USE_SCHEMA">
-<span class="sig-name descname"><span class="pre">USE_SCHEMA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'USE_SCHEMA'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.USE_SCHEMA" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.EXECUTE">
-<span class="sig-name descname"><span class="pre">EXECUTE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EXECUTE'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.EXECUTE" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.MODIFY">
-<span class="sig-name descname"><span class="pre">MODIFY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MODIFY'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.MODIFY" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.REFRESH">
-<span class="sig-name descname"><span class="pre">REFRESH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'REFRESH'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.REFRESH" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.SELECT">
-<span class="sig-name descname"><span class="pre">SELECT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SELECT'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.SELECT" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.READ_VOLUME">
-<span class="sig-name descname"><span class="pre">READ_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'READ_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.READ_VOLUME" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.schemas.SchemaGrantPrivilege.WRITE_VOLUME">
-<span class="sig-name descname"><span class="pre">WRITE_VOLUME</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WRITE_VOLUME'</span></em><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege.WRITE_VOLUME" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
+<span class="sig-name descname"><span class="pre">SchemaGrantPrivilege</span></span><a class="headerlink" href="#databricks.bundles.schemas.SchemaGrantPrivilege" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#databricks.bundles.schemas.Privilege" title="databricks.bundles.schemas._models.privilege.Privilege"><code class="xref py py-class docutils literal notranslate"><span class="pre">Privilege</span></code></a></p>
 </dd></dl>
 
 </section>
