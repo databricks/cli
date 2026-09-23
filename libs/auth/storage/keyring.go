@@ -2,9 +2,11 @@ package storage
 
 import (
 	"cmp"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -75,6 +77,13 @@ type keyringStore struct {
 	backend        keyringBackend
 	timeout        time.Duration
 	keyringSvcName string
+
+	// mu guards timedOut.
+	mu sync.Mutex
+
+	// timedOut holds the done channels of backend calls that exceeded timeout
+	// and may still be running. Lock waits for them before releasing.
+	timedOut []<-chan struct{}
 }
 
 // NewKeyringStore returns a Store backed by the OS-native secure store (via
@@ -142,6 +151,40 @@ func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
 		return nil
 	}
 	return err
+}
+
+// Lock implements the Store interface.
+//
+// A backend call that timed out keeps running (see withTimeout), and a write
+// finishing after the lock is released could overwrite the next holder's
+// token. The lock is therefore held until every timed-out call has returned.
+// If the process exits first, the operating system releases the lock anyway;
+// on macOS the write runs in a /usr/bin/security child process that can
+// outlive the CLI, so that case is not covered.
+func (k *keyringStore) Lock(ctx context.Context) (func(), error) {
+	release, err := lockTokenStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return func() {
+		k.mu.Lock()
+		running := k.timedOut
+		k.timedOut = nil
+		k.mu.Unlock()
+		if len(running) == 0 {
+			release()
+			return
+		}
+		go releaseAfter(running, release)
+	}, nil
+}
+
+// releaseAfter calls release once every channel in running is closed.
+func releaseAfter(running []<-chan struct{}, release func()) {
+	for _, done := range running {
+		<-done
+	}
+	release()
 }
 
 // Put implements the Store interface.
@@ -229,13 +272,18 @@ func (e *TimeoutError) Error() string {
 // https://github.com/cli/cli/blob/trunk/internal/keyring/keyring.go.
 func (k *keyringStore) withTimeout(op string, fn func() error) error {
 	ch := make(chan error, 1)
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		ch <- fn()
 	}()
 	select {
 	case err := <-ch:
 		return err
 	case <-time.After(k.timeout):
+		k.mu.Lock()
+		k.timedOut = append(k.timedOut, done)
+		k.mu.Unlock()
 		return &TimeoutError{Op: op}
 	}
 }

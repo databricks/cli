@@ -8,11 +8,13 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/auth/storage"
 	"github.com/databricks/cli/libs/auth/u2m"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/config/experimental/auth"
+	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -225,10 +227,10 @@ func TestCLICredentialsConfigure_ThreadsResolvedTokenStore(t *testing.T) {
 	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
 	require.NoError(t, err)
 
-	// Three opts expected: WithOAuthArgument, WithTokenStore and
-	// WithStoreLock. The length check is the most resilient way to assert they
-	// were passed without poking at u2m's unexported state.
-	assert.Len(t, receivedOpts, 3)
+	// Two opts expected: WithOAuthArgument and WithTokenStore. The length
+	// check is the most resilient way to assert both were passed without
+	// poking at u2m's unexported state.
+	assert.Len(t, receivedOpts, 2)
 }
 
 func TestCLICredentialsConfigure_ClientID(t *testing.T) {
@@ -242,25 +244,25 @@ func TestCLICredentialsConfigure_ClientID(t *testing.T) {
 			name:     "U2M config file client ID",
 			authType: "databricks-cli",
 			source:   config.SourceFile,
-			wantOpts: 4,
+			wantOpts: 3,
 		},
 		{
 			name:     "U2M environment client ID",
 			authType: "databricks-cli",
 			source:   config.SourceEnv,
-			wantOpts: 4,
+			wantOpts: 3,
 		},
 		{
 			name:     "U2M dynamic client ID",
 			authType: "databricks-cli",
 			source:   config.SourceDynamicConfig,
-			wantOpts: 4,
+			wantOpts: 3,
 		},
 		{
 			name:     "non-U2M config file client ID",
 			authType: "oauth-m2m",
 			source:   config.SourceFile,
-			wantOpts: 3,
+			wantOpts: 2,
 		},
 	}
 
@@ -341,7 +343,7 @@ func TestCLICredentialsConfigure_HonorsConfigFileSecureMode(t *testing.T) {
 			// The presence of the second opt is verified by the sibling
 			// test; here we just need Configure to succeed end-to-end when
 			// the config file selects secure storage.
-			assert.Len(t, opts, 3)
+			assert.Len(t, opts, 2)
 			return auth.TokenSourceFn(func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{AccessToken: "tok"}, nil
 			}), nil
@@ -350,4 +352,71 @@ func TestCLICredentialsConfigure_HonorsConfigFileSecureMode(t *testing.T) {
 
 	_, err := c.Configure(t.Context(), &config.Config{Host: "https://x.cloud.databricks.com"})
 	require.NoError(t, err)
+}
+
+// workspaceEndpoints supplies fixed workspace OAuth endpoints so a refresh
+// needs no network discovery.
+type workspaceEndpoints struct {
+	u2m.OAuthEndpointSupplier
+}
+
+func (workspaceEndpoints) GetWorkspaceOAuthEndpoints(_ context.Context, host string) (*u2m.OAuthAuthorizationServer, error) {
+	return &u2m.OAuthAuthorizationServer{
+		AuthorizationEndpoint: host + "/oidc/v1/authorize",
+		TokenEndpoint:         host + "/oidc/v1/token",
+	}, nil
+}
+
+// failTransport fails any HTTP request, so a token exchange fails the test.
+type failTransport struct{}
+
+func (failTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("unexpected HTTP call")
+}
+
+// TestCLICredentialsRefreshWaitsForStoreLock checks that the store Configure
+// resolves is the one refreshes lock: with another process holding the token
+// store lock, a refresh waits instead of exchanging the refresh token.
+func TestCLICredentialsRefreshWaitsForStoreLock(t *testing.T) {
+	hermeticAuthStorage(t)
+	t.Setenv(storage.EnvVar, string(storage.StorageModePlaintext))
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+	defer cancel()
+
+	const host = "https://x.cloud.databricks.test"
+	store, err := storage.NewFileStore(t.Context())
+	require.NoError(t, err)
+	err = store.Put(host, storage.Entry{Token: &oauth2.Token{
+		AccessToken:  "expired-access",
+		RefreshToken: "expired-refresh",
+		Expiry:       time.Now().Add(-time.Hour),
+	}})
+	require.NoError(t, err)
+	unlock, err := store.Lock(t.Context())
+	require.NoError(t, err)
+	defer unlock()
+
+	c := CLICredentials{
+		persistentAuthFn: func(ctx context.Context, opts ...u2m.PersistentAuthOption) (auth.TokenSource, error) {
+			opts = append(opts,
+				u2m.WithOAuthEndpointSupplier(workspaceEndpoints{}),
+				u2m.WithHttpClient(&http.Client{Transport: failTransport{}}),
+			)
+			ts, err := u2m.NewPersistentAuth(ctx, opts...)
+			if err != nil {
+				return nil, err
+			}
+			return authconv.AuthTokenSource(ts), nil
+		},
+	}
+	cp, err := c.Configure(ctx, &config.Config{Host: host})
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodGet, host, nil)
+	require.NoError(t, err)
+	err = cp.SetHeaders(req)
+	assert.ErrorContains(t, err, "token store lock")
 }

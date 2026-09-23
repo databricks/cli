@@ -1,16 +1,17 @@
 setup_test_profile
 setup_test_token_cache
 
-# Several processes ask for a forced refresh of the same profile at once. They
-# all read the same cached refresh token, so the refresh and the cache write
-# have to be serialized across processes for every invocation to succeed.
+# Several processes ask for a forced refresh of the same profile at once. Every
+# invocation must succeed and leave a valid cached token. The fake OIDC server
+# accepts repeated exchanges, so this cannot tell whether the refreshes were
+# serialized; the unit tests in libs/auth cover the lock itself.
 for i in 1 2 3 4 5; do
     $CLI auth token --profile test-profile --force-refresh > "token_$i.json" 2> "err_$i.txt" &
 done
 wait
 
 title "Access tokens returned\n"
-cat token_*.json | jq -r .access_token | sort | uniq -c
+cat token_*.json | jq -r .access_token | sort | uniq -c | awk '{print $1, $2}'
 
 title "\nErrors\n"
 cat err_*.txt

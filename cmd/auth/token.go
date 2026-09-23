@@ -287,10 +287,7 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-	allArgs := append([]u2m.PersistentAuthOption{
-		u2m.WithTokenStore(storage.OAuthTokenStore(ctx, args.tokenStore, args.mode)),
-		u2m.WithStoreLock(storage.LockTokenStore),
-	}, args.persistentAuthOpts...)
+	allArgs := append([]u2m.PersistentAuthOption{u2m.WithTokenStore(storage.OAuthTokenStore(ctx, args.tokenStore, args.mode))}, args.persistentAuthOpts...)
 	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
 		allArgs = append(allArgs, u2m.WithClientID(clientID))
 	}

@@ -108,7 +108,6 @@ func (c CLICredentials) Configure(ctx context.Context, cfg *config.Config) (cred
 	opts := []u2m.PersistentAuthOption{
 		u2m.WithOAuthArgument(oauthArg),
 		u2m.WithTokenStore(storage.OAuthTokenStore(ctx, tokenStore, mode)),
-		u2m.WithStoreLock(storage.LockTokenStore),
 	}
 	if cfg.AuthType == c.Name() && cfg.ClientID != "" {
 		opts = append(opts, u2m.WithClientID(cfg.ClientID))

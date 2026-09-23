@@ -75,10 +75,6 @@ type PersistentAuth struct {
 	// store stores and looks up tokens.
 	store storage.Store
 
-	// storeLock serializes the read-refresh-write sequence against other
-	// processes using the same store. Nil means no cross-process coordination.
-	storeLock StoreLock
-
 	// client is the HTTP client to use for OAuth2 requests.
 	client *http.Client
 
@@ -147,23 +143,10 @@ type PersistentAuth struct {
 
 type PersistentAuthOption func(*PersistentAuth)
 
-// StoreLock acquires the cross-process lock guarding the token store and
-// returns a function that releases it. See storage.LockTokenStore.
-type StoreLock func(ctx context.Context) (func(), error)
-
 // WithTokenStore sets the token store for the PersistentAuth.
 func WithTokenStore(s storage.Store) PersistentAuthOption {
 	return func(a *PersistentAuth) {
 		a.store = s
-	}
-}
-
-// WithStoreLock sets the lock serializing token refreshes against other
-// processes. Pass it whenever the store is shared with other CLI invocations,
-// which is every store except the in-memory one.
-func WithStoreLock(l StoreLock) PersistentAuthOption {
-	return func(a *PersistentAuth) {
-		a.storeLock = l
 	}
 }
 
@@ -414,28 +397,12 @@ func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth
 	return nil
 }
 
-// cachedRefreshedToken returns a token that another process stored while this
-// one waited for the store lock, or nil if the cache still holds oldToken or
-// the cached token itself needs a refresh.
-func (a *PersistentAuth) cachedRefreshedToken(oldToken *oauth2.Token) *oauth2.Token {
-	e, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
-	if err != nil {
-		return nil
-	}
-	if e.Token.AccessToken == oldToken.AccessToken || needsRefresh(e.Token) {
-		return nil
-	}
-	return e.Token
-}
-
 // refresh refreshes the token for the given OAuthArgument, storing the new
 // token in the cache.
 //
-// The read-refresh-write sequence is serialized across processes by the store
-// lock: the CLI is stateless, so two invocations for the same profile otherwise
-// load the same cached refresh token, both exchange it, and race to update the
-// cache. Callers that do not set a store lock (an in-memory store has no other
-// process to coordinate with) keep the uncoordinated behavior.
+// The read-refresh-write sequence runs under the store's lock: the CLI is
+// stateless, so two invocations for the same profile otherwise load the same
+// cached refresh token, both exchange it, and race to update the cache.
 func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) {
 	// Fail fast with ErrMissingRefreshToken instead of letting the oauth2
 	// library attempt to refresh and return a misleading error (e.g. "token
@@ -444,30 +411,38 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	if oldToken.RefreshToken == "" {
 		return nil, ErrMissingRefreshToken
 	}
-	if a.storeLock != nil {
-		unlock, err := a.storeLock(a.ctx)
-		if err != nil {
-			return nil, fmt.Errorf("token store lock: %w", err)
-		}
-		defer unlock()
-
-		// The token this process read may have been refreshed by the process
-		// that held the lock. Reusing its result keeps the refresh token from
-		// being exchanged once per waiter.
-		if t := a.cachedRefreshedToken(oldToken); t != nil {
-			return t, nil
-		}
-	}
+	// Endpoint discovery can retry for minutes against an unavailable host, so
+	// it runs before taking the lock, which every profile shares.
 	cfg, err := a.oauth2Config()
 	if err != nil {
 		return nil, err
+	}
+	unlock, err := a.store.Lock(a.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("token store lock: %w", err)
+	}
+	defer unlock()
+
+	// Another process may have refreshed the token while this one waited for
+	// the lock, so the cached token supersedes oldToken. Its access token is
+	// reused when it is new and fresh; otherwise its refresh token is the one
+	// to exchange, since the previous one may have been rotated.
+	current, err := a.loadToken()
+	if err != nil {
+		return nil, err
+	}
+	if current.AccessToken != oldToken.AccessToken && !needsRefresh(current) {
+		return current, nil
+	}
+	if current.RefreshToken == "" {
+		return nil, ErrMissingRefreshToken
 	}
 	ctx := a.setOAuthContext(a.ctx)
 	// Force the oauth2 library to refresh by ensuring the token appears
 	// expired. PersistentAuth owns the refresh decision (including the
 	// proactive buffer), so the oauth2 library should always perform the
 	// refresh when asked.
-	expired := *oldToken
+	expired := *current
 	expired.Expiry = time.Now().Add(-time.Minute)
 	t, err := cfg.TokenSource(ctx, &expired).Token()
 	if err != nil {
@@ -506,7 +481,7 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	}
 	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
 	if err != nil {
-		if cached := a.recoverStoreUpdate(oldToken, t); cached != nil {
+		if cached := a.recoverStoreUpdate(current, t); cached != nil {
 			return cached, nil
 		}
 		return nil, fmt.Errorf("cache update: %w", err)
