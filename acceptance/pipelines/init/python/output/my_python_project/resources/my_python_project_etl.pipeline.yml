@@ -4,6 +4,8 @@ resources:
   pipelines:
     my_python_project_etl:
       name: my_python_project_etl
+      configuration:
+        spark.sql.ansi.enabled: "true"
       catalog: ${var.catalog}
       schema: ${var.schema}
       serverless: true
