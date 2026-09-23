@@ -1,0 +1,10 @@
+bundle:
+  name: pipeline-ansi-default
+
+resources:
+  pipelines:
+    my:
+      name: pipeline-ansi-default
+      libraries:
+        - file:
+            path: ./foo.py

@@ -1,0 +1,17 @@
+trace $CLI bundle deploy
+pipeline_id=$(read_id.py my)
+
+title "The injected ANSI default does not cause drift"
+# TODO: Remove this test and edit when Pipelines reports the default through effective values.
+# This reproduces the current API behavior of adding it to the user configuration map.
+edit_resource.py pipelines "$pipeline_id" <<'PYTHON'
+r["configuration"] = {"spark.sql.ansi.enabled": "true"}
+PYTHON
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
+
+title "A non-default remote ANSI value remains drift"
+edit_resource.py pipelines "$pipeline_id" <<'PYTHON'
+r["configuration"]["spark.sql.ansi.enabled"] = "false"
+PYTHON
+trace $CLI bundle plan | contains.py "update pipelines.my"
+trace $CLI bundle plan -o json | nostamp
