@@ -17,6 +17,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 >>> jq -s .[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body [OUTPUT_DIR]/out.requests.txt
 {
   "channel": "CURRENT",
+  "configuration": {
+    "spark.sql.ansi.enabled": "true"
+  },
   "deployment": {
     "kind": "BUNDLE",
     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline-[UNIQUE_NAME]/default/state/metadata.json"

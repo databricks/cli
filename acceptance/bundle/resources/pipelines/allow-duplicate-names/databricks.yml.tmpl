@@ -4,6 +4,8 @@ bundle:
 resources:
   pipelines:
     pipeline_one:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipeline-same-name-$UNIQUE_NAME
       allow_duplicate_names: true
       libraries:

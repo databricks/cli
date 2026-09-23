@@ -29,6 +29,8 @@ resources:
 
   pipelines:
     can_run_wins:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       permissions:
         - level: CAN_RUN
           service_principal_name: can_run@example.com
@@ -36,6 +38,8 @@ resources:
           service_principal_name: can_run@example.com
 
     can_manage_wins:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       permissions:
         - level: CAN_RUN
           group_name: can_manage@example.com

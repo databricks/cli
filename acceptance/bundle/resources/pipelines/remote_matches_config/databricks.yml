@@ -4,6 +4,8 @@ bundle:
 resources:
   pipelines:
     my_pipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: "Test Pipeline run_as guard"
       serverless: true
       libraries:

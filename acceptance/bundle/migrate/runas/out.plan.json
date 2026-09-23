@@ -9,6 +9,9 @@
       "remote_state": {
         "catalog": "main",
         "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "true"
+        },
         "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",

@@ -12,6 +12,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
   "spec": {
     "catalog": "main",
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/metadata.json"

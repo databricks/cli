@@ -18,14 +18,14 @@ Resource: resources.pipelines.split_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -15,5 +15,5 @@
+@@ -17,5 +17,5 @@
        clusters:
          - label: default
 -          num_workers: 2
 +          num_workers: 5
        libraries:
          - notebook:
-@@ -28,3 +28,3 @@
+@@ -32,3 +32,3 @@
            clusters:
              - label: maintenance
 -              num_workers: 1
@@ -46,7 +46,7 @@ Resource: resources.pipelines.split_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -28,3 +28,2 @@
+@@ -32,3 +32,2 @@
            clusters:
              - label: maintenance
 -              num_workers: 3

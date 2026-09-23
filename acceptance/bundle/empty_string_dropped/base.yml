@@ -50,6 +50,8 @@ resources:
 
   pipelines:
     my_pipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       libraries:
         - file:
             path: pipeline.py

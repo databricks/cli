@@ -20,5 +20,6 @@ resources:
         - file:
             path: pipeline.py
       configuration:
+        spark.sql.ansi.enabled: "true"
         europris.swipe.egress_streaming_schema: "${resources.schemas.my_schema.catalog_name}.${resources.schemas.my_schema.name}"
         europris.azure.subscription: ${var.AZURE.subscription}

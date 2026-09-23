@@ -4,6 +4,9 @@
   "pipelines": {
     "bar": {
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -13,6 +16,9 @@
     },
     "baz": {
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -22,6 +28,9 @@
     },
     "foo": {
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"

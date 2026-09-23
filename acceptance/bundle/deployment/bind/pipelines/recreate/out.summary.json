@@ -2,6 +2,9 @@
   "pipelines": {
     "foo": {
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/state/metadata.json"

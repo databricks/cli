@@ -4,6 +4,8 @@ resources:
   pipelines:
     my_lakeflow_pipelines_etl:
       name: my_lakeflow_pipelines_etl
+      configuration:
+        spark.sql.ansi.enabled: "true"
       catalog: ${var.catalog}
       schema: ${var.schema}
       serverless: true

@@ -5,4 +5,6 @@ resources:
   pipelines:
     test-pipeline:
       # This is an unknown property that should trigger a warning
+      configuration:
+        spark.sql.ansi.enabled: "true"
       unknown_property: "this_should_trigger_a_warning"

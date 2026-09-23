@@ -4,4 +4,6 @@ bundle:
 resources:
   pipelines:
     abc:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       root_path: "foo/bar/doesnotexist"

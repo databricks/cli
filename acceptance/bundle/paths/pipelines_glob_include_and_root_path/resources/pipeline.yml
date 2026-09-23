@@ -2,6 +2,8 @@ resources:
   pipelines:
     # relative paths should get translated to remote paths
     one:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       root_path: "../src/pipeline_one"
       libraries:
         - glob:
@@ -9,6 +11,8 @@ resources:
 
     # absolute paths should remain as-is
     two:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       root_path: "/Workspace/Users/me@company.com/src"
       libraries:
         - glob:

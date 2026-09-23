@@ -11,9 +11,9 @@
     {
       "resource_type": "pipelines",
       "count": 2,
-      "state_size_max_bytes": 205,
-      "state_size_mean_bytes": 205,
-      "state_size_median_bytes": 205
+      "state_size_max_bytes": 255,
+      "state_size_mean_bytes": 255,
+      "state_size_median_bytes": 255
     }
   ]
 }

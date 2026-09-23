@@ -20,6 +20,7 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 json.method = "POST";
 json.path = "/api/2.0/pipelines";
 json.body.channel = "CURRENT";
+json.body.configuration.spark.sql.ansi.enabled = "true";
 json.body.deployment.kind = "BUNDLE";
 json.body.deployment.metadata_file_path = "/Workspace/Users/[USERNAME]/.bundle/pipeline-parameters/default/state/metadata.json";
 json.body.edition = "ADVANCED";

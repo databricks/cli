@@ -89,6 +89,8 @@ bundle:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: foo
 
 >>> [CLI] bundle plan -o json

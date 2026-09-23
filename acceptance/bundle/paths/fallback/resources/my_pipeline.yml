@@ -1,6 +1,8 @@
 resources:
   pipelines:
     my_pipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: "placeholder"
       libraries:
         - file:

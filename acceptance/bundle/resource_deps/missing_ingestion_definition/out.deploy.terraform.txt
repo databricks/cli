@@ -3,8 +3,8 @@ Error: exit status 1
 
 Error: Invalid index
 
-  on bundle.tf.json line 22, in resource.databricks_pipeline.bar:
-  22:         "name": "pbar ${databricks_pipeline.foo.ingestion_definition[0].connection_name}"
+  on bundle.tf.json line 25, in resource.databricks_pipeline.bar:
+  25:         "name": "pbar ${databricks_pipeline.foo.ingestion_definition[0].connection_name}"
     ├────────────────
     │ databricks_pipeline.foo.ingestion_definition is empty list of object
 

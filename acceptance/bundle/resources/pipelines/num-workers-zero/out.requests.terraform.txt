@@ -17,6 +17,9 @@
         }
       }
     ],
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/num-workers-zero/default/state/metadata.json"

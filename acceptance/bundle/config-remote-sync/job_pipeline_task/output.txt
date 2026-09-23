@@ -22,13 +22,13 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -11,4 +11,5 @@
+@@ -13,4 +13,5 @@
              path: /Users/{{workspace_user_name}}/notebook
 
 +      continuous: true
    jobs:
      my_job:
-@@ -17,5 +18,5 @@
+@@ -19,5 +20,5 @@
            pipeline_task:
              pipeline_id: ${resources.pipelines.my_pipeline.id}
 -            full_refresh: false

@@ -29,8 +29,8 @@ Resource: resources.pipelines.my_pipeline
 +      description: updated remotely
        job_clusters:
          - job_cluster_key: test_cluster
-@@ -25,4 +25,5 @@
-       configuration:
+@@ -26,4 +26,5 @@
+         spark.sql.ansi.enabled: "true"
          key1: value1
 +        key2: value2
        libraries:

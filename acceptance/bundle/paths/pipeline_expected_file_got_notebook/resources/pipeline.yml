@@ -1,6 +1,8 @@
 resources:
   pipelines:
     nyc_taxi_pipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       libraries:
         # path points to a notebook, not a file, it should error out
         - file: {path: "../${var.notebook_dir}/*.py"}

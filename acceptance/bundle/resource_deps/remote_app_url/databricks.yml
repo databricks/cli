@@ -13,4 +13,6 @@ resources:
       source_code_path: ./app
   pipelines:
     mypipeline:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: app url is ${resources.apps.myapp.url}

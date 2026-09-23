@@ -4,6 +4,8 @@ bundle:
 resources:
   pipelines:
     my:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipeline
       photon: false
       serverless: false

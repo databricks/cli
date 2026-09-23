@@ -9,6 +9,9 @@
    "state": {
     "catalog": "main",
     "channel": "CURRENT",
+    "configuration": {
+     "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
      "kind": "BUNDLE",
      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"

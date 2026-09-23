@@ -4,6 +4,8 @@ bundle:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: foo
       permissions:
         - level: CAN_VIEW

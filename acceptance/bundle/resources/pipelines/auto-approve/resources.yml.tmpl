@@ -12,6 +12,8 @@ resources:
             notebook_path: "./bar.py"
   pipelines:
     bar:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-bundle-pipeline-$UNIQUE_NAME
       libraries:
         - file:

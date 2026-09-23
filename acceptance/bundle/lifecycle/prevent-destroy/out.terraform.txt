@@ -14,8 +14,8 @@ the scope of the plan using the -target flag.
 
 Error: Instance cannot be destroyed
 
-  on bundle.tf.json line 38, in resource.databricks_schema:
-  38:       "my_schema": {
+  on bundle.tf.json line 41, in resource.databricks_schema:
+  41:       "my_schema": {
 
 Resource databricks_schema.my_schema has lifecycle.prevent_destroy set, but
 the plan calls for this resource to be destroyed. To avoid this error and
@@ -71,8 +71,8 @@ the scope of the plan using the -target flag.
 
 Error: Instance cannot be destroyed
 
-  on bundle.tf.json line 38, in resource.databricks_schema:
-  38:       "my_schema": {
+  on bundle.tf.json line 41, in resource.databricks_schema:
+  41:       "my_schema": {
 
 Resource databricks_schema.my_schema has lifecycle.prevent_destroy set, but
 the plan calls for this resource to be destroyed. To avoid this error and
@@ -98,8 +98,8 @@ the scope of the plan using the -target flag.
 
 Error: Instance cannot be destroyed
 
-  on bundle.tf.json line 38, in resource.databricks_schema:
-  38:       "my_schema": {
+  on bundle.tf.json line 41, in resource.databricks_schema:
+  41:       "my_schema": {
 
 Resource databricks_schema.my_schema has lifecycle.prevent_destroy set, but
 the plan calls for this resource to be destroyed. To avoid this error and

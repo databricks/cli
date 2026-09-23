@@ -4,6 +4,9 @@
   "pipelines": {
     "mypipeline": {
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"

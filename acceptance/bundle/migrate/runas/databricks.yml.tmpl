@@ -8,6 +8,8 @@ permissions:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: DABs Revenue Pipeline
 
       libraries:
@@ -25,5 +27,7 @@ targets:
       pipelines:
         # Make the pipeline write to the team's schema in logfood.
         foo:
+          configuration:
+            spark.sql.ansi.enabled: "true"
           catalog: main
           target: team_eng_deco

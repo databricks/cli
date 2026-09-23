@@ -7,8 +7,14 @@ bundle:
 resources:
   pipelines:
     foo:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pfoo
     bar:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pbar ${resources.pipelines.foo.name} ${resources.pipelines.foo.name}
     baz:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pbaz ${resources.pipelines.foo.id} ${resources.pipelines.foo.id}

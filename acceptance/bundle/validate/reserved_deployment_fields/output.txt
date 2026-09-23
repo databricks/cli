@@ -10,11 +10,11 @@ Error: version_id must not be set in bundle configuration; it is managed by Decl
 
 Error: deployment_id must not be set in bundle configuration; it is managed by Declarative Automation Bundles
   at resources.pipelines.my_pipeline.deployment.deployment_id
-  in databricks.yml:17:24
+  in databricks.yml:19:24
 
 Error: version_id must not be set in bundle configuration; it is managed by Declarative Automation Bundles
   at resources.pipelines.my_pipeline.deployment.version_id
-  in databricks.yml:18:21
+  in databricks.yml:20:21
 
 Name: test-bundle
 Target: default

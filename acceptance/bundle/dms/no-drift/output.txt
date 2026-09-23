@@ -75,6 +75,9 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "body": {
     "catalog": "main",
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "deployment_id": "[NUMID]",
       "kind": "BUNDLE",
@@ -119,6 +122,9 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
   "body": {
     "catalog": "main",
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "deployment_id": "[NUMID]",
       "kind": "BUNDLE",

@@ -29,6 +29,9 @@
   "pipelines": {
     "my_pipeline": {
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -107,6 +110,9 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
   "pipelines": {
     "my_pipeline": {
       "channel": "CURRENT",
+      "configuration": {
+        "spark.sql.ansi.enabled": "true"
+      },
       "deployment": {
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"

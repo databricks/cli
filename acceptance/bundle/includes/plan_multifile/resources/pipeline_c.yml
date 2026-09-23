@@ -1,6 +1,8 @@
 resources:
   pipelines:
     pipeline_c:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pipeline_c
       libraries:
         - notebook:

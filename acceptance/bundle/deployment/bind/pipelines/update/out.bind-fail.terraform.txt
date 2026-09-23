@@ -16,7 +16,7 @@ Terraform will perform the following actions:
         id                     = "[NEW_PIPELINE_ID]"
       ~ name                   = "lakeflow-pipeline" -> "test-pipeline"
       - root_path              = "/Workspace/Users/[USERNAME]/lakeflow_pipeline" -> null
-        # (12 unchanged attributes hidden)
+        # (13 unchanged attributes hidden)
 
       + deployment {
           + kind               = "BUNDLE"

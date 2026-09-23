@@ -22,6 +22,10 @@ resources:
 
   pipelines:
     pipeline_one:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pipeline one
     pipeline_two:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: pipeline two
