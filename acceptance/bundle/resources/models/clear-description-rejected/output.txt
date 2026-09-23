@@ -1,0 +1,27 @@
+
+=== Deploy a model with a description
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created models.foo
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Clearing the description fails on update
+>>> update_file.py databricks.yml description: This is a test model description: ""
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: cannot update resources.models.foo: updating id=test-model: Description cannot be empty. (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/mlflow/registered-models/update
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Description cannot be empty.
+
+Files: 1 uploaded, 0 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.models.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
