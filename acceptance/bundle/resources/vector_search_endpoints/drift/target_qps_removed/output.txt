@@ -1,0 +1,33 @@
+
+=== Deploy with target_qps set
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-removed-[UNIQUE_NAME]/default/files...
+Created vector_search_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Remove target_qps from config; plan proposes clearing it
+>>> [CLI] bundle plan
+update vector_search_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== Deploy does not clear it, so the next plan still proposes the change (drift)
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-removed-[UNIQUE_NAME]/default/files...
+Updated vector_search_endpoints.my_endpoint
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle plan
+update vector_search_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.vector_search_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-removed-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
