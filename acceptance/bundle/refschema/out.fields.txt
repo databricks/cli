@@ -4168,9 +4168,7 @@ resources.vector_search_endpoints.*.permissions[*].group_name	string	ALL
 resources.vector_search_endpoints.*.permissions[*].level	iam.PermissionLevel	ALL
 resources.vector_search_endpoints.*.permissions[*].service_principal_name	string	ALL
 resources.vector_search_endpoints.*.permissions[*].user_name	string	ALL
-resources.vector_search_indexes.*.creator	string	REMOTE
-resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecRequest	INPUT	STATE
-resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecResponse	REMOTE
+resources.vector_search_indexes.*.delta_sync_index_spec	*vectorsearch.DeltaSyncVectorIndexSpecRequest	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_index	[]string	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_index[*]	string	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.columns_to_sync	[]string	ALL
@@ -4185,7 +4183,6 @@ resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns
 resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns[*].embedding_dimension	int	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.embedding_vector_columns[*].name	string	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.embedding_writeback_table	string	ALL
-resources.vector_search_indexes.*.delta_sync_index_spec.pipeline_id	string	REMOTE
 resources.vector_search_indexes.*.delta_sync_index_spec.pipeline_type	vectorsearch.PipelineType	ALL
 resources.vector_search_indexes.*.delta_sync_index_spec.source_table	string	ALL
 resources.vector_search_indexes.*.direct_access_index_spec	*vectorsearch.DirectAccessVectorIndexSpec	ALL
@@ -4199,7 +4196,6 @@ resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_colu
 resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].embedding_dimension	int	ALL
 resources.vector_search_indexes.*.direct_access_index_spec.embedding_vector_columns[*].name	string	ALL
 resources.vector_search_indexes.*.direct_access_index_spec.schema_json	string	ALL
-resources.vector_search_indexes.*.endpoint_id	string	REMOTE
 resources.vector_search_indexes.*.endpoint_name	string	ALL
 resources.vector_search_indexes.*.endpoint_uuid	string	REMOTE	STATE
 resources.vector_search_indexes.*.id	string	INPUT
@@ -4210,11 +4206,6 @@ resources.vector_search_indexes.*.lifecycle.prevent_destroy	bool	INPUT
 resources.vector_search_indexes.*.modified_status	string	INPUT
 resources.vector_search_indexes.*.name	string	ALL
 resources.vector_search_indexes.*.primary_key	string	ALL
-resources.vector_search_indexes.*.status	*vectorsearch.VectorIndexStatus	REMOTE
-resources.vector_search_indexes.*.status.index_url	string	REMOTE
-resources.vector_search_indexes.*.status.indexed_row_count	int64	REMOTE
-resources.vector_search_indexes.*.status.message	string	REMOTE
-resources.vector_search_indexes.*.status.ready	bool	REMOTE
 resources.vector_search_indexes.*.url	string	INPUT
 resources.vector_search_indexes.*.grants.full_name	string	ALL
 resources.vector_search_indexes.*.grants.securable_type	string	ALL
