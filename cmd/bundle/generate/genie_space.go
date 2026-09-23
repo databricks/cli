@@ -28,6 +28,7 @@ import (
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
 )
@@ -317,6 +318,7 @@ func (g *genieSpace) runForResource(ctx context.Context, b *bundle.Bundle) {
 	if logdiag.HasError(ctx) {
 		return
 	}
+	ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
 
 	var state statemgmt.ExportedResourcesMap
 	if stateDesc.Engine.IsDirect() {

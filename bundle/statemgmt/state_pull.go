@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
 type AlwaysPull bool
@@ -180,10 +179,6 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 			}
 		}
 	}
-
-	// Set the engine in the user agent
-	// XXX move this outside this function to bundle/config/engine
-	ctx = useragent.InContext(ctx, "engine", string(winner.Engine))
 
 	if len(states) == 0 {
 		return ctx, winner
