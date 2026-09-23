@@ -1,0 +1,37 @@
+export DATA_SECURITY_MODE=USER_ISOLATION
+envsubst < databricks.yml.tmpl > databricks.yml
+trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
+
+# Dump only the cluster's pypi library plan entries (the wheel path is noisy and not the point).
+plan_pypi_libs() {
+    # Build/plan noise goes to LOG; keep only the cluster's pypi library changes (the wheel path is noisy).
+    $CLI bundle plan -o json 2>>LOG.plan | jq '.plan["resources.clusters.test_cluster"].changes | with_entries(select(.key | startswith("libraries[pypi")))'
+}
+
+# Deploy output is verbose and differs fake vs cloud; send it to LOG and assert the key line.
+title "Deploy the cluster (declares requests and urllib3) and the wheel job that targets it"
+$CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py "clusters.test_cluster" > /dev/null
+printf '\n%s\n' "OK: deployed"
+
+# Normalize server-generated resource IDs before we read requests/plans.
+replace_ids.py
+
+title "Run the job: its task installs the wheel and pypi 'six' on the shared cluster, out of band"
+$CLI bundle run some_other_job &> LOG.run
+printf '\n%s\n' "OK: job ran"
+# Flush the install requests the run recorded so they do not leak into the redeploy assertions.
+print_requests.py //libraries/install > /dev/null
+
+title "Plan: the out-of-band 'six' is skipped, the declared libraries are unchanged"
+trace plan_pypi_libs
+
+title "Remove the declared 'urllib3' and redeploy: uninstalls only urllib3, leaves requests and the job's 'six'"
+update_file.py databricks.yml "
+        - pypi:
+            package: urllib3" ""
+trace plan_pypi_libs
+$CLI bundle deploy &> LOG.deploy2
+cat LOG.deploy2 | contains.py "Updated clusters.test_cluster" > /dev/null
+printf '\n%s\n' "OK: redeployed"
+trace print_requests.py //libraries/uninstall //libraries/install //clusters/restart

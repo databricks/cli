@@ -1,0 +1,95 @@
+
+=== Deploy the cluster (declares requests and urllib3) and the wheel job that targets it
+OK: deployed
+
+=== Run the job: its task installs the wheel and pypi 'six' on the shared cluster, out of band
+OK: job ran
+
+=== Plan: the out-of-band 'six' is skipped, the declared libraries are unchanged
+>>> plan_pypi_libs
+{
+  "libraries[pypi='six;']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  }
+}
+
+=== Remove the declared 'urllib3' and redeploy: uninstalls only urllib3, leaves requests and the job's 'six'
+>>> plan_pypi_libs
+{
+  "libraries[pypi='six;']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  },
+  "libraries[pypi='urllib3;']": {
+    "action": "update",
+    "old": {
+      "pypi": {
+        "package": "urllib3"
+      }
+    },
+    "remote": {
+      "pypi": {
+        "package": "urllib3"
+      }
+    }
+  }
+}
+
+OK: redeployed
+
+>>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[TEST_CLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "urllib3"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[TEST_CLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[TEST_CLUSTER_ID]"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
+  delete resources.jobs.some_other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 2 deleted
