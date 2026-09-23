@@ -45,7 +45,11 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 	}
 }
 
-func (*ResourceSecret) RemapState(remote *catalog.Secret) *catalog.Secret {
+// remapSecretRemote maps a secret returned by the API to the config's shape: the resolved
+// value and owner come back under effective_*, so we surface them under value/owner, and
+// output-only fields are dropped. It runs wherever remote state is produced
+// (DoRead/DoCreate/DoUpdate), so no RemapState hook is needed.
+func remapSecretRemote(remote *catalog.Secret) *catalog.Secret {
 	return &catalog.Secret{
 		CatalogName:     remote.CatalogName,
 		SchemaName:      remote.SchemaName,
@@ -66,14 +70,18 @@ func (*ResourceSecret) RemapState(remote *catalog.Secret) *catalog.Secret {
 	}
 }
 
-// DoRead fetches the secret by full name. IncludeValue is set so RemapState can
+// DoRead fetches the secret by full name. IncludeValue is set so remapSecretRemote can
 // recover the stored value from EffectiveValue.
 func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
-	return r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
+	remote, err := r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
 		FullName:        id,
 		IncludeValue:    true,
 		ForceSendFields: nil,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return remapSecretRemote(remote), nil
 }
 
 // DoCreate creates a new UC secret.
@@ -84,7 +92,7 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 	if err != nil || response == nil {
 		return "", nil, err
 	}
-	return response.FullName, response, nil
+	return response.FullName, remapSecretRemote(response), nil
 }
 
 // comment is force-sent on update so that clearing it in config clears it on the secret. The
@@ -106,7 +114,7 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog
 	if err != nil {
 		return nil, err
 	}
-	return response, nil
+	return remapSecretRemote(response), nil
 }
 
 // DoDelete deletes the secret.
