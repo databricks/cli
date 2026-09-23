@@ -3,10 +3,11 @@ export DATABRICKS_BUNDLE_ENGINE=
 title "Initial deploy on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
-# Destroy behaves like deploy: it migrates the terraform state to direct in memory,
-# plan-checks it, commits the migration (resources.json pushed, terraform.tfstate backed
-# up), then destroys on the direct engine.
-title "Destroy on direct: migrate (commit) then destroy"
+# Destroy behaves like deploy: it migrates the terraform state to direct (writing the local
+# direct state), plan-checks it, and - once approved - destroys on the direct engine, then
+# backs up the superseded terraform state. A declined destroy would discard the migration and
+# stay on terraform.
+title "Destroy on direct: migrate then destroy"
 trace $CLI bundle destroy --auto-approve
 
 title "resources.json removed by destroy; terraform state backed up"

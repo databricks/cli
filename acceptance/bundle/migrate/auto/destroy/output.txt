@@ -6,7 +6,7 @@ Created jobs.job_a
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Destroy on direct: migrate (commit) then destroy
+=== Destroy on direct: migrate then destroy
 >>> [CLI] bundle destroy --auto-approve
 Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Migrated 1 resource to direct deployment engine.

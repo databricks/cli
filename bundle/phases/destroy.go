@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
@@ -384,7 +385,23 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			}
 		}
 		destroyCore(ctx, b, plan, engine)
+
+		// A deferred terraform→direct migration is committed by destroyCore (it ran the
+		// destroy on the direct state). Back up the now-superseded terraform state so a later
+		// deploy does not pick up the stale local terraform.tfstate - destroy removed the local
+		// resources.json, so it would otherwise win. Skipped on failure so a partial destroy
+		// keeps the terraform state as a fallback.
+		if b.MigrationDeferred && !logdiag.HasError(ctx) {
+			statemgmt.CleanupTerraformStateAfterMigration(ctx, b)
+		}
 	} else {
+		// A deferred terraform→direct migration wrote the local direct state but has not
+		// committed it (destroyCore never ran): discard it and stay on the terraform engine,
+		// so a declined destroy changes nothing.
+		if b.MigrationDeferred {
+			statemgmt.DiscardDeferredMigration(ctx, b)
+			log.Warnf(ctx, "Migration not committed, staying on terraform state")
+		}
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
 }

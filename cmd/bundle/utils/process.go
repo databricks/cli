@@ -332,14 +332,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// the terraform engine. Read-only commands set none of these options and keep
 		// reading the Terraform state as-is.
 		if b.MigratingToDirect && needsState {
-			// deploy defers the commit to the deploy phase (after approval); destroy has no
-			// deploy phase to defer to, so it commits up front; other state-reading commands
-			// (plan, run) migrate in memory only.
+			// deploy and destroy defer the commit to their phase (after approval); other
+			// state-reading commands (plan, run) migrate in memory only.
 			mode := statemgmt.MigratePlan
-			if opts.Deploy {
-				mode = statemgmt.MigrateDeploy
-			} else if opts.CommitStateMigration {
-				mode = statemgmt.MigrateCommit
+			if opts.Deploy || opts.CommitStateMigration {
+				mode = statemgmt.MigrateDeferred
 			}
 			if err := migrateTerraformToDirect(ctx, b, stateDesc, requiredEngine, mode); err != nil {
 				logdiag.LogError(ctx, err)
@@ -581,9 +578,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 // deploy still runs; only a failure after the commit returns an error. The caller tags the
 // user agent with the resolved stateDesc.Engine afterwards.
 //
-// mode selects how the converted state is committed: MigrateDeploy loads it in memory and
-// lets the approved deploy commit it, MigrateCommit (destroy) commits it up front, and
-// MigratePlan (plan, run) keeps it in memory only. See MigrateTerraformState.
+// mode selects how the converted state is committed: MigrateDeferred (deploy, destroy) writes
+// the local state and lets the approved command commit it, and MigratePlan (plan, run) keeps
+// it in memory only. See MigrateTerraformState.
 func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requiredEngine engine.EngineSetting, mode statemgmt.MigrateMode) error {
 	if requiredEngine.IsDefault {
 		cmdio.LogString(ctx, "Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).")
