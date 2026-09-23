@@ -589,8 +589,11 @@ func removedLibraries(entry *PlanEntry) ([]compute.Library, error) {
 	return removed, nil
 }
 
-// ch.Old is typed any and can come in 4 different forms
-// all of them need to be handled, which can be done by JSON marshalling and unmarshalling.
+// decodeLibraries converts a change's Old value into libraries. The value is typed any and arrives
+// in one of four forms: a single compute.Library or a []compute.Library (a per-element vs a
+// whole-field removal), each either as a typed Go value or as a generic JSON value (the plan-from-disk
+// path, where the plan was serialized and read back). Marshalling to JSON and back handles all four:
+// a leading '[' means the slice forms, otherwise the single-library forms.
 func decodeLibraries(v any) ([]compute.Library, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
