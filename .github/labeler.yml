@@ -33,7 +33,7 @@ DABs:
           - 'cmd/bundle/**'
           - 'acceptance/bundle/**'
 
-python:
+PyDABs:
   - changed-files:
       - any-glob-to-any-file:
           # The PyDABs (databricks-bundles) Python package.
