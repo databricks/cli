@@ -41,30 +41,6 @@ func (*ResourceQualityMonitor) PrepareState(input *resources.QualityMonitor) *Qu
 	}
 }
 
-func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMonitorState {
-	return &QualityMonitorState{
-		CreateMonitor: catalog.CreateMonitor{
-			AssetsDir:                info.AssetsDir,
-			BaselineTableName:        info.BaselineTableName,
-			CustomMetrics:            info.CustomMetrics,
-			DataClassificationConfig: info.DataClassificationConfig,
-			InferenceLog:             info.InferenceLog,
-			LatestMonitorFailureMsg:  info.LatestMonitorFailureMsg,
-			Notifications:            info.Notifications,
-			OutputSchemaName:         info.OutputSchemaName,
-			Schedule:                 info.Schedule,
-			SkipBuiltinDashboard:     false,
-			SlicingExprs:             info.SlicingExprs,
-			Snapshot:                 info.Snapshot,
-			TableName:                info.TableName,
-			TimeSeries:               info.TimeSeries,
-			WarehouseId:              "",
-			ForceSendFields:          utils.FilterFields[catalog.CreateMonitor](info.ForceSendFields),
-		},
-		TableName: info.TableName,
-	}
-}
-
 func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalog.MonitorInfo, error) {
 	//nolint:staticcheck // Direct quality_monitor resource still uses legacy monitor endpoints; v1 data-quality migration is separate work.
 	return r.client.QualityMonitors.Get(ctx, catalog.GetQualityMonitorRequest{
