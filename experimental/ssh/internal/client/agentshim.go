@@ -141,6 +141,7 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 	apiClient, err := newProbeAPIClient(wsclient.Config)
 	if err != nil {
 		// this probe is best effort, so don't block
+		log.Debugf(ctx, "Skipping Unity AI Gateway check: %s", err)
 		return nil
 	}
 
@@ -270,10 +271,6 @@ func looksLikeScopeFailure(err error) bool {
 	return errors.Is(err, apierr.ErrPermissionDenied) && strings.Contains(reason, "oauth token") && strings.Contains(reason, "required scopes")
 }
 
-func looksLikePermissionFailure(reason string) bool {
-	return strings.Contains(reason, "HTTP 403")
-}
-
 func looksLikeTransient(err error) bool {
 	return strings.HasPrefix(err.Error(), "network error") ||
 		errors.Is(err, apierr.ErrTooManyRequests) || // HTTP 429
@@ -292,24 +289,6 @@ func aiGatewayScopeError(host, reason string) error {
 	return versionNeutralGatewayError(
 		fmt.Sprintf("the access token for %s is missing an OAuth scope required by the AI Gateway APIs (%s). Re-authenticate to mint a token with the needed scopes:\n  databricks auth login --host %s", host, reason, host),
 	)
-}
-
-func hasNonEmptyCollection(payload any, key string) bool {
-	obj, ok := payload.(map[string]any)
-	if !ok {
-		return false
-	}
-	arr, ok := obj[key].([]any)
-	return ok && len(arr) > 0
-}
-
-func stringField(payload any, key string) string {
-	obj, ok := payload.(map[string]any)
-	if !ok {
-		return ""
-	}
-	s, _ := obj[key].(string)
-	return s
 }
 
 // --- end Unity AI Gateway preflight ---
