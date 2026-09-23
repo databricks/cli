@@ -1,1 +1,1 @@
-* Ignore the backend-provided `spark.sql.ansi.enabled: "true"` pipeline configuration default when detecting direct-engine drift, while preserving explicit configuration changes.
+* Ignore the backend-provided `spark.sql.ansi.enabled: "true"` pipeline configuration default when detecting direct-engine drift, while preserving explicit configuration changes. ([#6813](https://github.com/databricks/cli/pull/6813))
