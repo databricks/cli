@@ -32,3 +32,15 @@ DABs:
           - 'bundle/**'
           - 'cmd/bundle/**'
           - 'acceptance/bundle/**'
+
+PyDABs:
+  - changed-files:
+      - any-glob-to-any-file:
+          # The PyDABs (databricks-bundles) Python package.
+          - 'python/**'
+          # The Go side of PyDABs: the mutator that runs the Python subprocess.
+          # Also matches 'bundle/**', so these PRs get the DABs label too.
+          - 'bundle/config/mutator/python/**'
+          # Acceptance tests that exercise PyDABs specifically.
+          - 'acceptance/bundle/python/**'
+          - 'acceptance/bundle/templates/pydabs/**'
