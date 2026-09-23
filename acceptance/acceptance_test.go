@@ -499,7 +499,6 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 		// LITE's short TreeIDs need normalization without replacing version numbers.
 		repls.Repls = append(repls.Repls,
 			testdiff.Replacement{Old: regexp.MustCompile(`\bdeployments/[0-9]+\b`), New: "deployments/[NUMID]"},
-			testdiff.Replacement{Old: regexp.MustCompile(`(\\*"deployment_id\\*":\s*\\*")[0-9]+(\\*")`), New: "${1}[NUMID]${2}"},
 		)
 	}
 
