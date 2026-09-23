@@ -1,5 +1,0 @@
-Badness = "Remove this test once Pipelines returns spark.sql.ansi.enabled through effective values instead of the user configuration map: https://github.com/databricks/cli/pull/6816"
-Cloud = true
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-EnvMatrix.DMS = ["", "true"]
-Ignore = [".databricks"]
