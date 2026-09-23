@@ -9,15 +9,14 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the model (an immutable id field) and deploy on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warn: migration to the direct engine would recreate [resources.registered_models.my_model]; deploying on terraform this time
+Migrated 2 resources to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Recreated registered_models.my_model
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
 
-=== Retry on direct: state now matches the backend, so the migration succeeds
+=== Redeploy on direct: the model now matches config, so the plan is a clean no-op
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Migrated 2 resources to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 2 unchanged

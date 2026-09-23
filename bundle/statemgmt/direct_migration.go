@@ -109,13 +109,14 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 			return false, nil
 		}
 
-		// Do not migrate into a plan that would recreate an existing resource: a recreate
-		// is a destroy + create and risks data loss. Fall back to terraform this run (the
-		// migration retries next run, once any pending recreate has been applied).
+		// Record when the migrated state's first plan would recreate a resource, but still
+		// migrate: such a recreate is a genuine pending config change (the same one
+		// terraform would apply), and the deploy's approval flow gates it behind
+		// --auto-approve exactly like any other recreate. The metric lets us observe how
+		// often a migration carries a recreate.
 		if recreated := recreatedResources(plan); len(recreated) > 0 {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateRecreatePlanned, true)
-			log.Warnf(ctx, "migration to the direct engine would recreate %v; deploying on terraform this time", recreated)
-			return false, nil
+			log.Infof(ctx, "migration to the direct engine will recreate %v; the deploy's approval gates this", recreated)
 		}
 
 		// Commit to the workspace by pushing resources.json (serial tf+1). This upload is
@@ -244,11 +245,9 @@ func checkPlanOnTempState(ctx context.Context, b *bundle.Bundle, tempStatePath s
 }
 
 // recreatedResources returns the sorted keys of resources the plan would recreate
-// (destroy + create). A migration should not commit into such a plan: a recreate
-// on a resource that already exists risks destroying it, whether it comes from a
-// conversion that did not faithfully reproduce an immutable field or from a real
-// pending config change (which terraform would recreate too). In both cases the
-// safe choice is to stay on terraform this run and retry the migration later.
+// (destroy + create). Used only to record the direct_migrate_recreate_planned metric:
+// the migration proceeds regardless, and the deploy's approval flow gates the recreate
+// behind --auto-approve just like any other recreate.
 func recreatedResources(plan *deployplan.Plan) []string {
 	var keys []string
 	for key, entry := range plan.Plan {

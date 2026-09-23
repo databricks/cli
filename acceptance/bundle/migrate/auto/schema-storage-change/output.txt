@@ -12,7 +12,7 @@ direct_drymigrate_warnings false
 
 === Change immutable storage_root; without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
-Warn: migration to the direct engine would recreate [resources.schemas.my_schema]; deploying on terraform this time
+Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
@@ -27,10 +27,17 @@ Exit code: 1
 
 >>> print_migration_telemetry
 direct_migrate_recreate_planned true
+direct_migrated_via_env true
 
-=== With --auto-approve the terraform fallback applies the recreate the user asked for
+=== State is now direct: the migration committed even though the deploy was refused
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup
+
+=== With --auto-approve the recreate is applied on direct (state is already migrated)
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
-Warn: migration to the direct engine would recreate [resources.schemas.my_schema]; deploying on terraform this time
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
@@ -40,28 +47,9 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> print_migration_telemetry
-direct_migrate_recreate_planned true
 
-=== Local state was NOT rewritten (still terraform)
->>> find .databricks/bundle -name resources.json -type f
-
->>> find .databricks/bundle -name terraform.tfstate* -type f
-.databricks/bundle/default/terraform/terraform.tfstate
-.databricks/bundle/default/terraform/terraform.tfstate.backup
-
-=== Retry on direct: remote now matches config, so the plan is clean and the migration succeeds
+=== Redeploy on direct: the schema now matches config, so the plan is a clean no-op
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
-
->>> print_migration_telemetry
-direct_migrated_via_env true
-
-=== Local state is now direct
->>> find .databricks/bundle -name resources.json -type f
-.databricks/bundle/default/resources.json
-
->>> find .databricks/bundle -name terraform.tfstate* -type f
-.databricks/bundle/default/terraform/terraform.tfstate.backup

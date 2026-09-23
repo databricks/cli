@@ -10,17 +10,17 @@ title "Deploy the pipeline on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Change immutable storage. Without --auto-approve the recreate is refused"
-# storage is a recreate_on_changes field on pipelines (not an id field). The migration's plan
-# check compares the new config value against the deployed remote and plans a recreate.
-# Pipelines are in the destructive-approval group, so terraform refuses it without
-# --auto-approve (exit 1) and nothing is changed.
+# storage is a recreate_on_changes field on pipelines (not an id field). After the migration
+# commits (state becomes direct), the plan compares the new config value against the deployed
+# remote and plans a recreate. Pipelines are in the destructive-approval group, so the deploy
+# refuses it without --auto-approve (exit 1) and nothing is changed.
 update_file.py databricks.yml "$UNIQUE_NAME-init" "$UNIQUE_NAME-changed"
 trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
 
-title "With --auto-approve the terraform fallback applies the recreate"
+title "With --auto-approve the recreate is applied on direct"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
 
-title "Retry on direct: state now matches the backend, so the migration succeeds"
+title "Redeploy on direct: the pipeline now matches config, so the plan is a clean no-op"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "Local state is now direct"

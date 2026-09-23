@@ -10,17 +10,17 @@ title "Deploy the schema on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Rename the schema (an immutable id field). Without --auto-approve the recreate is refused"
-# name is a provided id field, so a rename recreates. The migration seeds the deployed name
-# into the converted state, so its plan check detects the recreate against the real backend
-# and falls back to terraform. Without --auto-approve terraform refuses the destructive
-# recreate (exit 1) and nothing is changed.
+# name is a provided id field, so a rename recreates. reconcileIDFields seeds the deployed
+# name into the converted state, so the migration commits (state becomes direct) and its plan
+# then sees a real recreate. Schemas are in the destructive-approval group, so the deploy
+# refuses the recreate without --auto-approve (exit 1); the schema itself is left unchanged.
 update_file.py databricks.yml "myschema-$UNIQUE_NAME" "myschema-$UNIQUE_NAME-renamed"
 trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
 
-title "With --auto-approve the recreate is applied: terraform recreates the schema under the new name"
+title "With --auto-approve the recreate is applied on direct under the new name"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
 
-title "Retry on direct: state now matches the backend, so the migration succeeds"
+title "Redeploy on direct: the schema now matches config, so the plan is a clean no-op"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "The schema exists under the new name and the local state is direct"
