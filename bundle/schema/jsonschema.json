@@ -5528,6 +5528,9 @@
                       "description": "Resource name of the Unity Catalog connection used to access the MCP\nserver, in the form `connections/{catalog}.{schema}.{connection}`.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "options": {
+                      "$ref": "#/$defs/map/string"
                     }
                   },
                   "additionalProperties": false,
@@ -5819,6 +5822,26 @@
                 }
               ]
             },
+            "catalog.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "api_key_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "api_key_value": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "catalog.ModelProviderServiceConfigCustomProviderConfig": {
               "oneOf": [
                 {
@@ -5854,6 +5877,9 @@
                       "description": "Endpoint URL of the OpenAI-compatible service (e.g.,\n`https://api.example.com/v1`). Required on Create.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "header_auth": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth"
                     }
                   },
                   "additionalProperties": false
@@ -8991,6 +9017,12 @@
                       "description": "[Public Preview] Optional display name for the MLflow run created under `experiment`. If\nomitted, MLflow generates a default name.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    },
+                    "priority_class": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiRuntimeTaskPriorityClass"
+                    },
+                    "unity_catalog_image_path": {
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false,
@@ -9004,6 +9036,9 @@
                   "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "jobs.AiRuntimeTaskPriorityClass": {
+              "type": "string"
             },
             "jobs.AlertTask": {
               "oneOf": [
@@ -12150,6 +12185,32 @@
                 }
               ]
             },
+            "pipelines.AvroTransformerOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "parse_mode": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ParseMode"
+                    },
+                    "schema": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "schema_file_path": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "schema_registry": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaRegistryConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.ConfluenceConnectorOptions": {
               "oneOf": [
                 {
@@ -12160,6 +12221,23 @@
                       "description": "[Public Preview] (Optional) Spaces to filter Confluence data on",
                       "$ref": "#/$defs/slice/string",
                       "x-databricks-launch-stage": "PUBLIC_PREVIEW"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.ConfluentSchemaRegistryOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "subject": {
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -13751,6 +13829,9 @@
                 }
               ]
             },
+            "pipelines.ParseMode": {
+              "type": "string"
+            },
             "pipelines.PathPattern": {
               "oneOf": [
                 {
@@ -14113,6 +14194,35 @@
                 }
               ]
             },
+            "pipelines.ProtobufTransformerOptions": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "desc_file_path": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "message_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "parse_mode": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ParseMode"
+                    },
+                    "recursive_fields_max_depth": {
+                      "$ref": "#/$defs/int"
+                    },
+                    "schema_registry": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaRegistryConfig"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.RabbitmqOptions": {
               "oneOf": [
                 {
@@ -14281,6 +14391,9 @@
                   "type": "object",
                   "description": "Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.\n\nOnly `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.",
                   "properties": {
+                    "group_name": {
+                      "$ref": "#/$defs/string"
+                    },
                     "service_principal_name": {
                       "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
                       "$ref": "#/$defs/string",
@@ -14290,6 +14403,29 @@
                       "description": "The email of an active workspace user. Users can only set this field to their own email.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\._*\\p{L}+([-_]*[\\p{L}\\p{N}]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.SchemaRegistryConfig": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "confluent_options": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConfluentSchemaRegistryOptions"
+                    },
+                    "connection_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "protobuf_message_name": {
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false
@@ -14827,6 +14963,9 @@
                   "type": "object",
                   "description": "Specifies how to transform binary data into structured data.",
                   "properties": {
+                    "avro_options": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.AvroTransformerOptions"
+                    },
                     "format": {
                       "description": "[Beta] Required: the wire format of the data.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat",
@@ -14848,6 +14987,9 @@
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                       "doNotSuggest": true
+                    },
+                    "protobuf_options": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ProtobufTransformerOptions"
                     }
                   },
                   "additionalProperties": false
@@ -15785,6 +15927,9 @@
                       "description": "ARN of the instance profile that the external model will use to access AWS resources.\nYou must authenticate using an instance profile or access keys.\nIf you prefer to authenticate using access keys, see `aws_access_key_id`,\n`aws_access_key_id_plaintext`, `aws_secret_access_key` and `aws_secret_access_key_plaintext`.",
                       "$ref": "#/$defs/string",
                       "x-databricks-launch-stage": "GA"
+                    },
+                    "uc_service_credential_name": {
+                      "$ref": "#/$defs/string"
                     }
                   },
                   "additionalProperties": false,

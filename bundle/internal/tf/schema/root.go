@@ -22,9 +22,9 @@ type Root struct {
 const (
 	ProviderHost               = "registry.terraform.io"
 	ProviderSource             = "databricks/databricks"
-	ProviderVersion            = "1.132.0"
-	ProviderChecksumLinuxAmd64 = "5b46a1dba01e74b01f443e65f5ccdff4fd5c63ee4c45f146882db30a1453c589"
-	ProviderChecksumLinuxArm64 = "ddb11a7ee6610368fb33c04b08f30d4fce6b61f315b25fe0467e2549ac7b96f8"
+	ProviderVersion            = "1.133.0"
+	ProviderChecksumLinuxAmd64 = "70fb8183957f656ffad94db04b90e780335d942e614cdb3af4d08d78a8e43853"
+	ProviderChecksumLinuxArm64 = "db4c858f851b42846b0e8cfedcd67a4f262611b6ed8bfadde55575620c6bcf62"
 )
 
 func NewRoot() *Root {

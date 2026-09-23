@@ -69,8 +69,8 @@ github.com/cyphar/filepath-securejoin v0.6.1 h1:5CeZ1jPXEiYt3+Z6zqprSAgSWiggmpVy
 github.com/cyphar/filepath-securejoin v0.6.1/go.mod h1:A8hd4EnAeyujCJRrICiOWqjS1AX0a9kM5XL+NwKoYSc=
 github.com/danieljoos/wincred v1.2.3 h1:v7dZC2x32Ut3nEfRH+vhoZGvN72+dQ/snVXo/vMFLdQ=
 github.com/danieljoos/wincred v1.2.3/go.mod h1:6qqX0WNrS4RzPZ1tnroDzq9kY3fu1KwE7MRLQK4X0bs=
-github.com/databricks/databricks-sdk-go v0.178.0 h1:OLHhYYTGCZ4iAEUYoARPeeCYFIvAmpLT+L4sxRayqIc=
-github.com/databricks/databricks-sdk-go v0.178.0/go.mod h1:udBw6nxkaqa0fgPQ7ZW1kGFkltQncYx+qFJeVFmxtz8=
+github.com/databricks/databricks-sdk-go v0.182.0 h1:KTxLgmZFfRZl9MaJ+YD3N0RvfFMWQHmoQT5I+NUin2M=
+github.com/databricks/databricks-sdk-go v0.182.0/go.mod h1:udBw6nxkaqa0fgPQ7ZW1kGFkltQncYx+qFJeVFmxtz8=
 github.com/databricks/sdk-go/auth v0.0.1-dev.8 h1:iMOsshXRZvOrOUVZdcAc4MWQ64mqcenf9Nl803OA8Lc=
 github.com/databricks/sdk-go/auth v0.0.1-dev.8/go.mod h1:YliptECFkvwuHLoHiKRqo9Drx5RVM9u5J40UDmEq0iQ=
 github.com/databricks/sdk-go/core v0.0.1-dev.8 h1:xUjpesiEAFvFtrMlV16+20Wx65VoE/ptr5KTFRFrFwQ=

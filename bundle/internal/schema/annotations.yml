@@ -1152,6 +1152,14 @@ resources:
                 The email of an active workspace user. Non-admin users can only set this field to their own email.
         "tasks":
           "$fields":
+            "ai_runtime_task":
+              "$fields":
+                "priority_class":
+                  "description": |-
+                    PLACEHOLDER
+                "unity_catalog_image_path":
+                  "description": |-
+                    PLACEHOLDER
             "alert_task":
               "$fields":
                 "subscribers":
@@ -1207,6 +1215,12 @@ resources:
         "config":
           "description": |-
             PLACEHOLDER
+          "$fields":
+            "source_connection":
+              "$fields":
+                "options":
+                  "description": |-
+                    PLACEHOLDER
         "grants":
           "description": |-
             PLACEHOLDER
@@ -1229,6 +1243,21 @@ resources:
         "config":
           "description": |-
             PLACEHOLDER
+          "$fields":
+            "custom":
+              "$fields":
+                "direct":
+                  "$fields":
+                    "header_auth":
+                      "description": |-
+                        PLACEHOLDER
+                      "$fields":
+                        "api_key_name":
+                          "description": |-
+                            PLACEHOLDER
+                        "api_key_value":
+                          "description": |-
+                            PLACEHOLDER
         "grants":
           "description": |-
             PLACEHOLDER
@@ -1301,6 +1330,13 @@ resources:
                 "entity_version":
                   "description": |-
                     PLACEHOLDER
+                "external_model":
+                  "$fields":
+                    "amazon_bedrock_config":
+                      "$fields":
+                        "uc_service_credential_name":
+                          "description": |-
+                            PLACEHOLDER
             "served_models":
               "$fields":
                 "model_name":
@@ -1466,9 +1502,58 @@ resources:
                           "$fields":
                             "key_transformer":
                               "$fields":
+                                "avro_options":
+                                  "description": |-
+                                    PLACEHOLDER
+                                  "$fields":
+                                    "parse_mode":
+                                      "description": |-
+                                        PLACEHOLDER
+                                    "schema":
+                                      "description": |-
+                                        PLACEHOLDER
+                                    "schema_file_path":
+                                      "description": |-
+                                        PLACEHOLDER
+                                    "schema_registry":
+                                      "description": |-
+                                        PLACEHOLDER
+                                      "$fields":
+                                        "confluent_options":
+                                          "description": |-
+                                            PLACEHOLDER
+                                          "$fields":
+                                            "subject":
+                                              "description": |-
+                                                PLACEHOLDER
+                                        "connection_name":
+                                          "description": |-
+                                            PLACEHOLDER
+                                        "protobuf_message_name":
+                                          "description": |-
+                                            PLACEHOLDER
                                 "json_options":
                                   "description": |-
                                     PLACEHOLDER
+                                "protobuf_options":
+                                  "description": |-
+                                    PLACEHOLDER
+                                  "$fields":
+                                    "desc_file_path":
+                                      "description": |-
+                                        PLACEHOLDER
+                                    "message_name":
+                                      "description": |-
+                                        PLACEHOLDER
+                                    "parse_mode":
+                                      "description": |-
+                                        PLACEHOLDER
+                                    "recursive_fields_max_depth":
+                                      "description": |-
+                                        PLACEHOLDER
+                                    "schema_registry":
+                                      "description": |-
+                                        PLACEHOLDER
                         "sharepoint_options":
                           "description": |-
                             PLACEHOLDER
@@ -1515,6 +1600,11 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
+        "run_as":
+          "$fields":
+            "group_name":
+              "description": |-
+                PLACEHOLDER
         "trigger":
           "deprecation_message": |-
             Use continuous instead

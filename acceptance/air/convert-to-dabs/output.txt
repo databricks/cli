@@ -158,19 +158,15 @@ resources:
           spec:
             environment_version: "6"
 
-=== the current SDK warns about B300 but does not block bundle validation
+=== the B300 bundle validates without warnings
 >>> [CLI] bundle validate
-Warning: invalid value "GPU_8xB300" for enum field. Valid values are [GPU_1xA10 GPU_1xH100 GPU_8xH100]
-  at resources.jobs.b300-smoke-test.tasks[0].ai_runtime_task.deployments[0].compute.accelerator_type
-  in databricks.yml:24:37
-
 Name: b300-smoke-test
 Target: dev
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/b300-smoke-test/dev
 
-Found 1 warning
+Validation OK!
 
 === databricks_ai versions use a base environment
 >>> [CLI] air convert-to-dabs databricks-ai.yaml --force
