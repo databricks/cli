@@ -2,6 +2,7 @@ package direct
 
 import (
 	"bytes"
+	"encoding/json"
 	"slices"
 	"testing"
 
@@ -349,6 +350,32 @@ func TestShouldSkipBackendDefault_MapDriftUsesBracketKeys(t *testing.T) {
 	})
 	assert.True(t, ok)
 	assert.Equal(t, deployplan.ReasonBackendDefault, reason)
+}
+
+func TestShouldSkipBackendDefault_AllowedValues(t *testing.T) {
+	field, err := structpath.ParsePattern("configuration['spark.sql.ansi.enabled']")
+	require.NoError(t, err)
+	path, err := structpath.ParsePath("configuration['spark.sql.ansi.enabled']")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		BackendDefaults: []dresources.BackendDefaultRule{{
+			Field:  field,
+			Values: []json.RawMessage{json.RawMessage(`"true"`)},
+		}},
+	}
+
+	for _, tc := range []struct {
+		remote string
+		skip   bool
+	}{
+		{"true", true},
+		{"false", false},
+	} {
+		t.Run(tc.remote, func(t *testing.T) {
+			_, skip := shouldSkipBackendDefault(cfg, path, &deployplan.ChangeDesc{Remote: tc.remote})
+			assert.Equal(t, tc.skip, skip)
+		})
+	}
 }
 
 const jobRunKey = "resources.job_runs.my_run"
