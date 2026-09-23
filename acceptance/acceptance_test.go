@@ -495,12 +495,6 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	repls.SetPath(cwd, "[TESTROOT]")
 
 	repls.Repls = append(repls.Repls, testdiff.Replacement{Old: regexp.MustCompile("dbapi[0-9a-f]+"), New: "[DATABRICKS_TOKEN]"})
-	if os.Getenv("DMS_LITEBOX_URL") != "" {
-		// LITE's short TreeIDs need normalization without replacing version numbers.
-		repls.Repls = append(repls.Repls,
-			testdiff.Replacement{Old: regexp.MustCompile(`\bdeployments/[0-9]+\b`), New: "deployments/[NUMID]"},
-		)
-	}
 
 	// Matches defaultSparkVersion in ../integration/bundle/helpers_test.go
 	t.Setenv("DEFAULT_SPARK_VERSION", "13.3.x-snapshot-scala2.12")
