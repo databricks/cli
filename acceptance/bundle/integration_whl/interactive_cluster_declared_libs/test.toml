@@ -2,9 +2,7 @@
 # existing_cluster_id and installs the wheel and pypi `six` on it. So the cluster reads back
 # libraries it never declared. Removing `requests` must uninstall only `requests` and leave the
 # job's libraries alone. Cloud + CloudSlow and the venv/wheel harness are inherited from the parent.
-# Direct engine only (cluster libraries are a direct-engine feature); single DMS variant so the
-# output is identical across the matrix.
+# Direct engine only (cluster libraries are a direct-engine feature).
 RecordRequests = true
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-EnvMatrix.DMS = [""]
