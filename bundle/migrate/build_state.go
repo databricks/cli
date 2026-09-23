@@ -208,7 +208,7 @@ func BuildStateFromTF(
 		// Reconcile id-composing fields with the deployed terraform state so a pending id
 		// change surfaces in the plan instead of being snapshotted as already applied. A no-op
 		// for permissions/grants sub-nodes: their adapters declare no id fields.
-		if err := reconcileIDFields(adapter, srcGroup, srcName, sv.Value, tfAttrs); err != nil {
+		if err := reconcileIDFields(ctx, adapter, srcGroup, srcName, sv.Value, tfAttrs, warnPrefix); err != nil {
 			return warningsSeen, fmt.Errorf("%s: reconciling id fields: %w", node, err)
 		}
 
@@ -237,45 +237,57 @@ func BuildStateFromTF(
 //     recording either side converges.
 //   - Otherwise the user genuinely changed the id in config without deploying it. Record the
 //     deployed value so the migrated state matches what a direct deploy of the last-applied
-//     config would hold, and the next plan surfaces the change - a recreate for provided_id
-//     fields (caught by the migration's recreate guard) or a rename update for
-//     updatable_id fields.
-func reconcileIDFields(adapter *dresources.Adapter, group, name string, stateValue any, tfAttrs TFStateAttrs) error {
+//     config would hold, and warn: the next plan surfaces the change as a recreate (provided-id
+//     fields) or a rename (updatable-id fields).
+func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, name string, stateValue any, tfAttrs TFStateAttrs, warnPrefix string) error {
 	cfg := adapter.ResourceConfig()
 	if cfg == nil {
 		return nil
 	}
-	for _, rule := range slices.Concat(cfg.ProvidedIDFields, cfg.UpdatableIDFields) {
-		path, err := structpath.ParsePath(rule.Field.String())
-		if err != nil {
-			continue
-		}
-		configVal, err := structaccess.Get(stateValue, path)
-		if err != nil {
-			continue
-		}
-		deployedVal, err := LookupTFField(tfAttrs, group, name, path)
-		if err != nil {
-			continue
-		}
+	// A provided-id change recreates the resource; an updatable-id change renames it in place.
+	for _, kind := range []struct {
+		rules  []dresources.FieldRule
+		action string
+	}{
+		{cfg.ProvidedIDFields, "recreated"},
+		{cfg.UpdatableIDFields, "renamed"},
+	} {
+		for _, rule := range kind.rules {
+			path, err := structpath.ParsePath(rule.Field.String())
+			if err != nil {
+				continue
+			}
+			configVal, err := structaccess.Get(stateValue, path)
+			if err != nil {
+				continue
+			}
+			deployedVal, err := LookupTFField(tfAttrs, group, name, path)
+			if err != nil {
+				continue
+			}
 
-		// Every id-composing field is a string (a name, catalog_name, storage path, ...).
-		configStr, ok1 := configVal.(string)
-		deployedStr, ok2 := deployedVal.(string)
-		if !ok1 || !ok2 {
-			return fmt.Errorf("id field %q: expected string values, got config %T and deployed %T", rule.Field.String(), configVal, deployedVal)
-		}
+			// Every id-composing field is a string (a name, catalog_name, storage path, ...).
+			configStr, ok1 := configVal.(string)
+			deployedStr, ok2 := deployedVal.(string)
+			if !ok1 || !ok2 {
+				return fmt.Errorf("id field %q: expected string values, got config %T and deployed %T", rule.Field.String(), configVal, deployedVal)
+			}
 
-		// UC identifier names are case-insensitive and UC strips trailing slashes from storage
-		// paths, so a config value that differs from the deployed one only by that normalization
-		// is not a real change: keep the config value (it converges). A genuine difference means
-		// the user changed the id without deploying it — record the deployed value so the next
-		// plan surfaces the recreate (provided-id) or rename (updatable-id).
-		if strings.EqualFold(strings.TrimRight(configStr, "/"), strings.TrimRight(deployedStr, "/")) {
-			continue
-		}
-		if err := structaccess.Set(stateValue, path, deployedVal); err != nil {
-			return fmt.Errorf("setting id field %q: %w", rule.Field.String(), err)
+			// UC identifier names are case-insensitive and UC strips trailing slashes from
+			// storage paths, so a config value that differs from the deployed one only by that
+			// normalization is not a real change: keep the config value (it converges).
+			if strings.EqualFold(strings.TrimRight(configStr, "/"), strings.TrimRight(deployedStr, "/")) {
+				continue
+			}
+
+			// A genuine change the user has not deployed yet. Record the deployed value so the
+			// migrated state matches the last-applied config, and warn so the recreate/rename in
+			// the plan that follows the migration is not a surprise.
+			log.Warnf(ctx, "%s%s.%s: %s differs between config (%q) and terraform state (%q); this resource will be %s",
+				warnPrefix, group, name, rule.Field.String(), configStr, deployedStr, kind.action)
+			if err := structaccess.Set(stateValue, path, deployedVal); err != nil {
+				return fmt.Errorf("setting id field %q: %w", rule.Field.String(), err)
+			}
 		}
 	}
 	return nil
