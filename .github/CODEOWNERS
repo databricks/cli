@@ -7,6 +7,7 @@
 /cmd/bundle/                            @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /acceptance/bundle/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /libs/template/                         @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/python/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
 
 # Pipelines
 /cmd/pipelines/                         @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
