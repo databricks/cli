@@ -92,6 +92,9 @@ func (s *FakeWorkspace) PipelineCreate(req Request) Response {
 
 func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
 	spec.Id = pipelineId
+	// TODO: Revert this behavior and remove the explicit acceptance fixture values once Pipelines
+	// returns this backend default through effective values instead of the user configuration map.
+	// See https://github.com/databricks/cli/pull/6813.
 	if spec.Configuration == nil {
 		spec.Configuration = make(map[string]string)
 	}
