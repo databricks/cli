@@ -5,10 +5,3 @@
 print_migration_telemetry() {
     print_telemetry_bool_values | grep '^direct_' || true
 }
-
-# Assert only the recreate-planned metric. Unlike the full direct_* set (which can include
-# backend-varying keys such as conversion warnings), this single key is stable across engines
-# and clouds, so the recreate tests that run on a real workspace record just this one.
-print_recreate_planned_metric() {
-    print_telemetry_bool_values | grep '^direct_migrate_recreate_planned' || true
-}

@@ -24,7 +24,7 @@ title "Move the model to another catalog and deploy on direct"
 # --auto-approve, moving the model to the new catalog.
 update_file.py databricks.yml "catalog_name: main" "catalog_name: $TARGET_CATALOG"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
-trace print_recreate_planned_metric
+trace print_migration_telemetry
 
 title "Redeploy on direct: the model now matches config, so the plan is a clean no-op"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
