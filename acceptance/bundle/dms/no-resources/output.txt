@@ -5,6 +5,9 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-resources-[
 Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
+>>> deployment_history_telemetry
+deployment_history_enabled true
+
 >>> print_requests.py --dms //api/2.0/bundle --get
 {
   "method": "POST",
