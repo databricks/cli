@@ -9,7 +9,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the volume (an updatable id field) and deploy on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warn: migration to direct: volumes.my_volume: name differs between config ("thevolume-[UNIQUE_NAME]-renamed") and terraform state ("thevolume-[UNIQUE_NAME]"); this resource will be renamed
+Warn: migration to direct: volumes.my_volume: name differs between config ("thevolume-[UNIQUE_NAME]-renamed") and terraform state ("thevolume-[UNIQUE_NAME]"); this resource will be renamed.
 Migrated 2 resources to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Updated volumes.my_volume

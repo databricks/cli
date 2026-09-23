@@ -283,7 +283,7 @@ func reconcileIDFields(ctx context.Context, adapter *dresources.Adapter, group, 
 			// A genuine change the user has not deployed yet. Record the deployed value so the
 			// migrated state matches the last-applied config, and warn so the recreate/rename in
 			// the plan that follows the migration is not a surprise.
-			log.Warnf(ctx, "%s%s.%s: %s differs between config (%q) and terraform state (%q); this resource will be %s",
+			log.Warnf(ctx, "%s%s.%s: %s differs between config (%q) and terraform state (%q); this resource will be %s.",
 				warnPrefix, group, name, rule.Field.String(), configStr, deployedStr, kind.action)
 			if err := structaccess.Set(stateValue, path, deployedVal); err != nil {
 				return fmt.Errorf("setting id field %q: %w", rule.Field.String(), err)

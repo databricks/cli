@@ -8,7 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rename the schema (an immutable id field). Without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
-Warn: migration to direct: schemas.my_schema: name differs between config ("myschema-[UNIQUE_NAME]-renamed") and terraform state ("myschema-[UNIQUE_NAME]"); this resource will be recreated
+Warn: migration to direct: schemas.my_schema: name differs between config ("myschema-[UNIQUE_NAME]-renamed") and terraform state ("myschema-[UNIQUE_NAME]"); this resource will be recreated.
 Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
