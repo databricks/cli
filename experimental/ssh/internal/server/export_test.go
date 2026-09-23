@@ -1,10 +1,11 @@
 package server
 
 var (
-	WorkspaceToken       = workspaceToken
-	FuseUserInfo         = fuseUserInfo
-	WaitForIdleShutdown  = waitForIdleShutdown
-	ProcWithDetachedWork = procWithDetachedWork
+	WorkspaceToken        = workspaceToken
+	FuseUserInfo          = fuseUserInfo
+	StartFuseRegistration = startFuseRegistration
+	WaitForIdleShutdown   = waitForIdleShutdown
+	ProcWithDetachedWork  = procWithDetachedWork
 )
 
 const (

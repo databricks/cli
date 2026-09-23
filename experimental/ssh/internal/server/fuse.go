@@ -14,6 +14,19 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
+func startFuseRegistration(ctx context.Context, client *databricks.WorkspaceClient, serverless bool) {
+	// Serverless rejects non-root UIDs on the daemon ports; the bootstrap REPL's own registration already covers the server's descendants.
+	if serverless {
+		log.Info(ctx, "Skipping SSH filesystem registration on serverless; /Workspace and /Volumes access depends on the bootstrap notebook")
+		return
+	}
+
+	// Filesystem registration is best-effort on compute without reachable daemons.
+	if err := registerFuseCredentials(ctx, client); err != nil {
+		log.Warnf(ctx, "Failed to register SSH filesystem credentials; file access may depend on the bootstrap notebook: %v", err)
+	}
+}
+
 func registerFuseCredentials(ctx context.Context, client *databricks.WorkspaceClient) error {
 	self, err := fuse.Self()
 	if err != nil {
