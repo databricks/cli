@@ -4,12 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +21,12 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
+	"github.com/databricks/databricks-sdk-go/listing"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 const (
@@ -114,142 +118,126 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 // Gateway CLI itself checks.
 
 const (
-	modelServicesPath         = "/api/2.1/unity-catalog/model-services"
 	legacyEndpointsPath       = "/api/ai-gateway/v2/endpoints"
 	modelServiceProbePageSize = 50
 	modelServiceProbeMaxPages = 20
+	modelServiceProbeMaxItems = modelServiceProbePageSize * modelServiceProbeMaxPages
 	aiGatewayDocsURL          = "https://docs.databricks.com/aws/en/ai-gateway/overview-beta"
-	modelServiceEmptyDetail   = "reachable, no accessible model services returned; " +
-		"check USE CATALOG on system, and USE SCHEMA and EXECUTE on system.ai"
 )
 
 type gatewayProbe struct {
 	reachable bool
-	detail    string
+	err       error
 	// true if the API returned at least one usable resource
 	resourceAvailable bool
-	// false when paging couldn't be completed, so "no resources" was never actually confirmed
-	conclusive bool
 }
 
-func probeAIGateway(ctx context.Context, client *databricks.WorkspaceClient) error {
-	host := strings.TrimRight(client.Config.Host, "/")
+func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) error {
+	host := strings.TrimRight(wsclient.Config.Host, "/")
 
-	modelSvc := probeModelServices(ctx, client, host)
+	// build a client with retries disabled so a transient 429/503 fails fast
+	// instead of looping on the SDK's default 5-minute retry budget before the
+	// slow first-run bootstrap even starts.
+	apiClient, err := newProbeAPIClient(wsclient.Config)
+	if err != nil {
+		// this probe is best effort, so don't block
+		return nil
+	}
+
+	modelSvc := probeModelServices(ctx, apiClient)
 	// A 401 (or a 400 "invalid token") can't be rescued by trying another API,
 	// so surface it before the fallback probe.
-	if !modelSvc.reachable && looksLikeDefinitiveAuthFailure(modelSvc.detail) {
-		return aiGatewayAuthError(host, modelSvc.detail)
+	if !modelSvc.reachable && looksLikeDefinitiveAuthFailure(modelSvc.err) {
+		return aiGatewayAuthError(host, modelSvc.err.Error())
 	}
 	if modelSvc.resourceAvailable {
 		return nil
 	}
 
-	legacy := probeLegacyEndpoints(ctx, client, host)
+	legacy := probeLegacyEndpoints(ctx, apiClient)
 	switch {
 	case legacy.reachable:
 		// The legacy endpoints API answered, so the gateway is enabled even if no
 		// model services are visible to this caller.
-		log.Warnf(ctx, "Unity AI Gateway model service check: %s", modelSvc.detail)
+		if modelSvc.err != nil {
+			log.Warnf(ctx, "Unity AI Gateway model service check: %s", modelSvc.err)
+		}
 		return nil
-	case modelSvc.reachable && !modelSvc.conclusive:
-		// v3 answered but couldn't be paged to completion; give it the benefit of
-		// the doubt rather than blocking on an unconfirmed "empty".
+	case modelSvc.reachable:
+		// v3 answered; give it the benefit of the doubt rather than blocking on an
+		// unconfirmed "empty".
 		return nil
-	case looksLikeDefinitiveAuthFailure(legacy.detail):
-		return aiGatewayAuthError(host, legacy.detail)
-	case looksLikeScopeFailure(modelSvc.detail):
-		return aiGatewayScopeError(host, modelSvc.detail)
-	case looksLikeScopeFailure(legacy.detail):
-		return aiGatewayScopeError(host, legacy.detail)
-	case looksLikeTransient(modelSvc.detail) || looksLikeTransient(legacy.detail):
+	case looksLikeDefinitiveAuthFailure(legacy.err):
+		return aiGatewayAuthError(host, legacy.err.Error())
+	case looksLikeScopeFailure(modelSvc.err):
+		return aiGatewayScopeError(host, modelSvc.err.Error())
+	case looksLikeScopeFailure(legacy.err):
+		return aiGatewayScopeError(host, legacy.err.Error())
+	case looksLikeTransient(modelSvc.err) || looksLikeTransient(legacy.err):
 		// A rate-limit/5xx/network blip is not "disabled" — tell the user to retry
 		// rather than sending them to the enablement docs.
-		return fmt.Errorf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, modelSvc.detail, legacy.detail)
-	case looksLikePermissionFailure(modelSvc.detail):
-		return fmt.Errorf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.detail, legacy.detail)
-	case looksLikePermissionFailure(legacy.detail):
-		return fmt.Errorf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.detail, modelSvc.detail)
+		return versionNeutralGatewayError(
+			fmt.Sprintf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, modelSvc.err.Error(), legacy.err.Error()),
+		)
+	case errors.Is(modelSvc.err, apierr.ErrPermissionDenied):
+		return versionNeutralGatewayError(
+			fmt.Sprintf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.err.Error(), legacy.err.Error()),
+		)
+	case errors.Is(legacy.err, apierr.ErrPermissionDenied):
+		return versionNeutralGatewayError(
+			fmt.Sprintf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.err.Error(), modelSvc.err.Error()),
+		)
 	default:
-		return fmt.Errorf("the Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, modelSvc.detail, legacy.detail, aiGatewayDocsURL)
+		return versionNeutralGatewayError(
+			fmt.Sprintf("the Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, modelSvc.err.Error(), legacy.err.Error(), aiGatewayDocsURL),
+		)
 	}
 }
 
-func probeModelServices(ctx context.Context, client *databricks.WorkspaceClient, host string) gatewayProbe {
-	pageToken := ""
-	for page := range modelServiceProbeMaxPages {
-		reqURL := fmt.Sprintf("%s%s?page_size=%d", host, modelServicesPath, modelServiceProbePageSize)
-		if pageToken != "" {
-			reqURL += "&page_token=" + url.QueryEscape(pageToken)
-		}
-		payload, reason := gatewayGetJSON(ctx, client, reqURL)
-		if payload == nil {
-			// A first-page failure is the real reachability signal; a later page
-			// failing still means the API answered at least once, so treat it as
-			// reachable-but-inconclusive rather than a confirmed "empty".
-			if page == 0 {
-				return gatewayProbe{detail: versionNeutralGatewayDetail(reason), conclusive: true}
-			}
-			return gatewayProbe{reachable: true, detail: "reachable"}
-		}
-		if hasNonEmptyCollection(payload, "model_services") {
-			return gatewayProbe{reachable: true, detail: "reachable, accessible model service returned", resourceAvailable: true, conclusive: true}
-		}
-		pageToken = stringField(payload, "next_page_token")
-		if pageToken == "" {
-			return gatewayProbe{reachable: true, detail: modelServiceEmptyDetail, conclusive: true}
-		}
-	}
-	return gatewayProbe{reachable: true, detail: "reachable"}
-}
-
-func probeLegacyEndpoints(ctx context.Context, client *databricks.WorkspaceClient, host string) gatewayProbe {
-	payload, reason := gatewayGetJSON(ctx, client, host+legacyEndpointsPath+"?page_size=1")
-	if payload == nil {
-		return gatewayProbe{detail: versionNeutralGatewayDetail(reason), conclusive: true}
-	}
-	if hasNonEmptyCollection(payload, "endpoints") {
-		return gatewayProbe{reachable: true, detail: "reachable, accessible endpoint returned", resourceAvailable: true, conclusive: true}
-	}
-	return gatewayProbe{reachable: true, detail: "reachable, no accessible endpoints returned", conclusive: true}
-}
-
-func gatewayGetJSON(ctx context.Context, client *databricks.WorkspaceClient, reqURL string) (any, string) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+// newProbeAPIClient builds a low-level client from cfg with the SDK's retries
+// turned off, so the gateway preflight is one-shot. Clearing ErrorRetriable and
+// TransientErrors makes a retriable status (429, 503, ...) surface on the first
+// attempt rather than looping until the retry budget expires; it mirrors
+// client.New, which builds the retrying client the rest of the CLI uses.
+func newProbeAPIClient(cfg *config.Config) (*client.DatabricksClient, error) {
+	clientCfg, err := config.HTTPClientConfigFromConfig(cfg)
 	if err != nil {
-		return nil, fmt.Sprintf("network error: %v", err)
+		return nil, err
 	}
-	req.Header.Set("Accept", "application/json")
-	// Set X-Databricks-Workspace-Id (and suppress the legacy workspace_id=none
-	// sentinel) so these hand-written workspace-routed GETs reach the workspace
-	// plane on unified/SPOG hosts instead of the account plane.
-	for k, v := range auth.WorkspaceIDHeaders(client.Config) {
-		req.Header.Set(k, v)
-	}
-	if err := client.Config.Authenticate(req); err != nil {
-		return nil, fmt.Sprintf("network error: %v", err)
-	}
-	resp, err := (&http.Client{Transport: client.Config.HTTPTransport, Timeout: 10 * time.Second}).Do(req)
+	clientCfg.ErrorRetriable = func(context.Context, error) bool { return false }
+	clientCfg.TransientErrors = nil
+	return client.NewWithClient(cfg, httpclient.NewApiClient(clientCfg))
+}
+
+func probeModelServices(ctx context.Context, apiClient *client.DatabricksClient) gatewayProbe {
+	it := catalog.NewAiGateway(apiClient).ListModelServices(ctx, catalog.ListModelServicesRequest{PageSize: modelServiceProbePageSize})
+	_, err := it.Next(ctx)
 	if err != nil {
-		return nil, fmt.Sprintf("network error: %v", err)
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if resp.StatusCode == http.StatusOK {
-		var payload any
-		if err := json.Unmarshal(body, &payload); err != nil {
-			return nil, fmt.Sprintf("response was not valid JSON (%v)", err)
+		if err == listing.ErrNoMoreItems {
+			// endpoint is reachable but there are no results
+			return gatewayProbe{reachable: true}
 		}
-		return payload, ""
+		return gatewayProbe{err: err}
 	}
-	reason := fmt.Sprintf("HTTP %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-	if excerpt := strings.TrimSpace(string(body)); excerpt != "" {
-		if len(excerpt) > 200 {
-			excerpt = excerpt[:200]
-		}
-		reason += ": " + excerpt
+	return gatewayProbe{reachable: true, resourceAvailable: true}
+}
+
+type legacyEndpointsResponse struct {
+	Endpoints []any `json:"endpoints"`
+}
+
+func probeLegacyEndpoints(ctx context.Context, apiClient *client.DatabricksClient) gatewayProbe {
+	var resp legacyEndpointsResponse
+	err := apiClient.Do(ctx, http.MethodGet, legacyEndpointsPath, auth.WorkspaceIDHeaders(apiClient.Config), map[string]any{
+		"page_size": "1",
+	}, nil, &resp)
+	if err != nil {
+		return gatewayProbe{err: err}
 	}
-	return nil, reason
+	if len(resp.Endpoints) > 0 {
+		return gatewayProbe{reachable: true, resourceAvailable: true}
+	}
+	return gatewayProbe{reachable: true}
 }
 
 var (
@@ -258,47 +246,52 @@ var (
 )
 
 // rewrite the internal v2/v3 API labels in a failure reason into user-facing terms
-func versionNeutralGatewayDetail(detail string) string {
-	detail = gatewayDetailV3.ReplaceAllString(detail, "model service")
-	return gatewayDetailV2.ReplaceAllString(detail, "legacy endpoint")
+func versionNeutralGatewayError(reason string) error {
+	reason = gatewayDetailV3.ReplaceAllString(reason, "model service")
+	reason = gatewayDetailV2.ReplaceAllString(reason, "legacy endpoint")
+	return errors.New(reason)
 }
 
 // returns true when retrying another workspace API can't rescue the token.
 // A bare 403 is left out: it can be endpoint-specific authorization, so the
 // preflight still tries the fallback before giving up.
-func looksLikeDefinitiveAuthFailure(reason string) bool {
-	if strings.Contains(reason, "HTTP 401") {
+func looksLikeDefinitiveAuthFailure(err error) bool {
+	// HTTP 401
+	if errors.Is(err, apierr.ErrUnauthenticated) {
 		return true
 	}
-	return strings.Contains(reason, "HTTP 400") && strings.Contains(strings.ToLower(reason), "invalid token")
+	return errors.Is(err, apierr.ErrBadRequest) && strings.Contains(strings.ToLower(err.Error()), "invalid token")
 }
 
 // matches a 403 that reports the OAuth token is missing a required scope (which
 // re-login can fix), as opposed to a plain permission 403.
-func looksLikeScopeFailure(reason string) bool {
-	l := strings.ToLower(reason)
-	return strings.Contains(l, "http 403") && strings.Contains(l, "oauth token") && strings.Contains(l, "required scopes")
+func looksLikeScopeFailure(err error) bool {
+	reason := strings.ToLower(err.Error())
+	return errors.Is(err, apierr.ErrPermissionDenied) && strings.Contains(reason, "oauth token") && strings.Contains(reason, "required scopes")
 }
 
 func looksLikePermissionFailure(reason string) bool {
 	return strings.Contains(reason, "HTTP 403")
 }
 
-var gatewayTransientStatus = regexp.MustCompile(`HTTP (429|5\d\d)`)
-
-// returns true for a probe failure that is likely temporary (rate limit,
-// server error, or a network/transport error) rather than a stable
-// "disabled"/"unauthorized" verdict.
-func looksLikeTransient(reason string) bool {
-	return strings.HasPrefix(reason, "network error") || gatewayTransientStatus.MatchString(reason)
+func looksLikeTransient(err error) bool {
+	return strings.HasPrefix(err.Error(), "network error") ||
+		errors.Is(err, apierr.ErrTooManyRequests) || // HTTP 429
+		errors.Is(err, apierr.ErrInternalError) || // HTTP 500
+		errors.Is(err, apierr.ErrTemporarilyUnavailable) || // HTTP 503
+		errors.Is(err, apierr.ErrDeadlineExceeded) // HTTP 504
 }
 
 func aiGatewayAuthError(host, reason string) error {
-	return fmt.Errorf("the Databricks workspace %s rejected the access token (%s). Try:\n  databricks auth logout --host %s\n  databricks auth login --host %s", host, reason, host, host)
+	return versionNeutralGatewayError(
+		fmt.Sprintf("the Databricks workspace %s rejected the access token (%s). Try:\n  databricks auth logout --host %s\n  databricks auth login --host %s", host, reason, host, host),
+	)
 }
 
 func aiGatewayScopeError(host, reason string) error {
-	return fmt.Errorf("the access token for %s is missing an OAuth scope required by the AI Gateway APIs (%s). Re-authenticate to mint a token with the needed scopes:\n  databricks auth login --host %s", host, reason, host)
+	return versionNeutralGatewayError(
+		fmt.Sprintf("the access token for %s is missing an OAuth scope required by the AI Gateway APIs (%s). Re-authenticate to mint a token with the needed scopes:\n  databricks auth login --host %s", host, reason, host),
+	)
 }
 
 func hasNonEmptyCollection(payload any, key string) bool {
@@ -449,6 +442,7 @@ func launchAgent(ctx context.Context, home string, agent agentSpec, workspace st
 	if workspace != "" {
 		argv = append(argv, "--workspace", workspace)
 	}
+	argv = append(argv, "--")
 	argv = append(argv, contextArgs...)
 	argv = append(argv, agentArgs...)
 	// Pass the session token as DATABRICKS_BEARER so Unity Gateway CLI authenticates headlessly.

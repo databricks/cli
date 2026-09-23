@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"io/fs"
@@ -183,7 +184,15 @@ func TestAgentSystemContext(t *testing.T) {
 
 func newProbeClient(t *testing.T, host string) *databricks.WorkspaceClient {
 	t.Helper()
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{Host: host, Token: "test-token"}))
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(&config.Config{
+		Host:  host,
+		Token: "test-token",
+		// The fake gateway server has no /.well-known/databricks-config, so skip
+		// the metadata fetch that would otherwise log a noisy resolve warning.
+		HostMetadataResolver: func(context.Context, string) (*config.HostMetadata, error) {
+			return nil, nil
+		},
+	}))
 	require.NoError(t, err)
 	return w
 }
@@ -283,7 +292,7 @@ func TestProbeAIGateway(t *testing.T) {
 	})
 
 	t.Run("missing OAuth scope on both paths routes to re-auth", func(t *testing.T) {
-		scope := jsonHandler(http.StatusForbidden, "Provided OAuth token does not have required scopes: unity-catalog")
+		scope := jsonHandler(http.StatusForbidden, `{"error_code":"PERMISSION_DENIED","message":"Provided OAuth token does not have required scopes: unity-catalog"}`)
 		srv := newGatewayServer(t, scope, scope)
 		defer srv.Close()
 		err := probeAIGateway(t.Context(), newProbeClient(t, srv.URL))
@@ -321,9 +330,10 @@ func TestProbeAIGateway(t *testing.T) {
 	})
 }
 
-func TestProbeModelServicesInconclusive(t *testing.T) {
-	// A later page failing (after the first page succeeded) is reachable-but-
-	// inconclusive, never a confirmed "empty".
+func TestProbeModelServicesPageError(t *testing.T) {
+	// A failure while paging surfaces as a probe error: the iterator can't tell a
+	// first-page failure from a later-page one, so any page error is not treated
+	// as a reachable "empty".
 	srv := newGatewayServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("page_token") == "" {
 			w.WriteHeader(http.StatusOK)
@@ -335,8 +345,10 @@ func TestProbeModelServicesInconclusive(t *testing.T) {
 	}, nil)
 	defer srv.Close()
 
-	probe := probeModelServices(t.Context(), newProbeClient(t, srv.URL), strings.TrimRight(srv.URL, "/"))
-	assert.True(t, probe.reachable)
-	assert.False(t, probe.conclusive)
+	apiClient, err := newProbeAPIClient(newProbeClient(t, srv.URL).Config)
+	require.NoError(t, err)
+	probe := probeModelServices(t.Context(), apiClient)
+	assert.False(t, probe.reachable)
 	assert.False(t, probe.resourceAvailable)
+	assert.Error(t, probe.err)
 }
