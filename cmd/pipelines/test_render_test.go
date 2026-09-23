@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,44 +40,54 @@ func assertGolden(t *testing.T, name, got string) {
 }
 
 func TestReduceTestEventsFolding(t *testing.T) {
+	// Fixture is the REAL captured /events payload from live update
+	// 3627a3a1-2374-4bc2-981f-49bb81ef662c (pipeline sdp-test-emission-m2, M2
+	// staging LiteSwap), production proto shape: PENDING -> RUNNING -> COMPLETED
+	// per case with enum-prefixed status/outcome and a nested result object.
 	r := loadFixtureResult(t)
 
-	// All 7 discovered cases are present in first-seen (collection) order.
-	require.Len(t, r.Cases, 7)
-	assert.Equal(t, "tests/test_daily_revenue.py::test_sums_by_day", r.Cases[0].NodeID)
-	assert.Equal(t, "tests/test_isolation.py::test_schema_isolation", r.Cases[3].NodeID)
-	assert.Equal(t, "tests/test_daily_revenue.py::test_partition_present[wed]", r.Cases[6].NodeID)
+	// All 4 discovered cases are present in first-seen (collection) order.
+	require.Len(t, r.Cases, 4)
+	assert.Equal(t, "test_demo.py::test_pass", r.Cases[0].NodeID)
+	assert.Equal(t, "test_demo.py::test_fail", r.Cases[1].NodeID)
+	assert.Equal(t, "test_demo.py::test_skip", r.Cases[2].NodeID)
+	assert.Equal(t, "test_demo.py::test_error", r.Cases[3].NodeID)
 
 	// Every case folded to its terminal COMPLETED state (PENDING/RUNNING collapsed).
 	completed := r.completed()
-	require.Len(t, completed, 7)
+	require.Len(t, completed, 4)
 
-	// Terminal outcomes fold correctly.
+	// Terminal outcomes fold correctly (enum prefix stripped).
 	assert.Equal(t, testResultPassed, r.Cases[0].Result)
 	assert.Equal(t, testResultFailed, r.Cases[1].Result)
 	assert.Equal(t, testResultSkipped, r.Cases[2].Result)
 	assert.Equal(t, testResultError, r.Cases[3].Result)
 
-	// The failing case retains its message and traceback.
-	assert.Equal(t, "revenue mismatch: expected 1230, got 1234", r.Cases[1].Message)
-	assert.Contains(t, r.Cases[1].Traceback, "AssertionError")
+	// Identity (path/line) set at PENDING is carried through the fold.
+	require.NotNil(t, r.Cases[1].Line)
+	assert.Equal(t, "test_demo.py", r.Cases[1].Path)
+	assert.Equal(t, 8, *r.Cases[1].Line)
+
+	// The failing case surfaces a concise error line plus the full traceback.
+	assert.Equal(t, "AssertionError: intentional demo failure", r.Cases[1].Message)
+	assert.Contains(t, r.Cases[1].Traceback, "AssertionError: intentional demo failure")
 
 	// The summary is the last test_summary event.
 	require.NotNil(t, r.Summary)
-	assert.Equal(t, testSummary{Total: 7, Passed: 4, Failed: 1, Skipped: 1, Errors: 1}, *r.Summary)
+	assert.Equal(t, testSummary{Total: 4, Passed: 1, Failed: 1, Skipped: 1, Errors: 1}, *r.Summary)
 }
 
 func TestRenderTestResultsTextGolden(t *testing.T) {
 	r := loadFixtureResult(t)
 	var buf bytes.Buffer
-	require.NoError(t, renderTestResultsText(&buf, "orders-dev", "01f0a3c2b19d", r))
+	require.NoError(t, renderTestResultsText(&buf, "2d0401ce-8229-4795-926f-c3991369655e", "3627a3a1-2374-4bc2-981f-49bb81ef662c", r))
 	assertGolden(t, "test_results.txt", buf.String())
 }
 
 func TestRenderJUnitXMLGolden(t *testing.T) {
 	r := loadFixtureResult(t)
 	var buf bytes.Buffer
-	require.NoError(t, renderJUnitXML(&buf, "orders-dev", "01f0a3c2b19d", r))
+	require.NoError(t, renderJUnitXML(&buf, "2d0401ce-8229-4795-926f-c3991369655e", "3627a3a1-2374-4bc2-981f-49bb81ef662c", r))
 	assertGolden(t, "test_results.xml", buf.String())
 }
 
@@ -85,7 +96,7 @@ func TestRenderTestResultsJSONGolden(t *testing.T) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetIndent("", "  ")
-	require.NoError(t, enc.Encode(r.toJSONOutput("orders-dev", "01f0a3c2b19d")))
+	require.NoError(t, enc.Encode(r.toJSONOutput("2d0401ce-8229-4795-926f-c3991369655e", "3627a3a1-2374-4bc2-981f-49bb81ef662c")))
 	assertGolden(t, "test_results.json", buf.String())
 }
 
@@ -107,4 +118,44 @@ func TestRenderTextAllPassing(t *testing.T) {
 	assert.Contains(t, out, "PASS   tests/test_ok.py::test_a (0.12s)")
 	assert.NotContains(t, out, "Failures:")
 	assert.Contains(t, out, "1 tests: 1 passed, 0 failed, 0 skipped, 0 errors")
+}
+
+func TestFormatTextDuration(t *testing.T) {
+	zero := int64(0)
+	one := int64(1)
+	hundredTwenty := int64(120)
+
+	assert.Equal(t, "<0.01s", formatTextDuration(&zero))
+	assert.Equal(t, "<0.01s", formatTextDuration(&one))
+	assert.Equal(t, "0.12s", formatTextDuration(&hundredTwenty))
+}
+
+func TestProgressPrinterStreamsTransitionsOnce(t *testing.T) {
+	raw, err := os.ReadFile("testdata/pipeline_test_events.json")
+	require.NoError(t, err)
+	var resp struct {
+		Events []testPipelineEvent `json:"events"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &resp))
+
+	var buf bytes.Buffer
+	printer := newTestProgressPrinter(&buf, "pipeline-id", "update-id")
+	require.NoError(t, printer.consume(resp.Events[:7]))
+	firstSnapshot := buf.String()
+	assert.Contains(t, firstSnapshot, "RUN    test_demo.py::test_pass")
+	assert.Contains(t, firstSnapshot, "PASS   test_demo.py::test_pass")
+	assert.Contains(t, firstSnapshot, "RUN    test_demo.py::test_fail")
+	assert.NotContains(t, firstSnapshot, "FAIL   test_demo.py::test_fail")
+
+	require.NoError(t, printer.consume(resp.Events))
+	require.NoError(t, printer.consume(resp.Events))
+
+	out := buf.String()
+	assert.Equal(t, 1, strings.Count(out, "Pipeline test progress"))
+	assert.Equal(t, 4, strings.Count(out, "RUN    "))
+	assert.Equal(t, 1, strings.Count(out, "PASS   test_demo.py::test_pass"))
+	assert.Equal(t, 1, strings.Count(out, "FAIL   test_demo.py::test_fail"))
+	assert.Equal(t, 1, strings.Count(out, "SKIP   test_demo.py::test_skip"))
+	assert.Equal(t, 1, strings.Count(out, "ERROR  test_demo.py::test_error"))
+	assert.NotContains(t, out, "PENDING")
 }

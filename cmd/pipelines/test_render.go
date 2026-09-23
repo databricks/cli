@@ -107,10 +107,21 @@ func reduceTestEvents(events []testPipelineEvent) *testRunResult {
 				continue
 			}
 			// Don't let a late non-terminal event clobber a completed case.
-			if result.Cases[idx].Status == testStatusCompleted && c.Status != testStatusCompleted {
+			prev := result.Cases[idx]
+			if prev.Status == testStatusCompleted && c.Status != testStatusCompleted {
 				continue
 			}
-			result.Cases[idx] = *c
+			// Progress events are sparse: identity fields (path/line) are set
+			// once at PENDING and omitted on later RUNNING/COMPLETED events, so
+			// carry them forward rather than dropping them on the fold.
+			next := *c
+			if next.Path == "" {
+				next.Path = prev.Path
+			}
+			if next.Line == nil {
+				next.Line = prev.Line
+			}
+			result.Cases[idx] = next
 		default:
 			// Ignore unrelated event types (the client-side filter should have
 			// excluded them, but tolerate them defensively).
@@ -174,12 +185,80 @@ func durationSeconds(ms *int64) float64 {
 	return float64(*ms) / 1000.0
 }
 
+// formatTextDuration avoids presenting a millisecond value rounded down to
+// zero as an exact zero-second execution time.
+func formatTextDuration(ms *int64) string {
+	if ms != nil && *ms >= 0 && *ms < 10 {
+		return "<0.01s"
+	}
+	return fmt.Sprintf("%.2fs", durationSeconds(ms))
+}
+
 // caseLocation renders "path:line" when a line is present, else "path".
 func caseLocation(c testCaseProgress) string {
 	if c.Line != nil {
 		return c.Path + ":" + strconv.Itoa(*c.Line)
 	}
 	return c.Path
+}
+
+// testProgressPrinter renders each RUNNING and COMPLETED transition once while
+// the update is active. PENDING remains on the wire for collection metadata but
+// is intentionally quiet in the pytest-style terminal UX.
+type testProgressPrinter struct {
+	w          io.Writer
+	pipelineID string
+	updateID   string
+	seen       map[string]struct{}
+	started    bool
+}
+
+func newTestProgressPrinter(w io.Writer, pipelineID, updateID string) *testProgressPrinter {
+	return &testProgressPrinter{
+		w:          w,
+		pipelineID: pipelineID,
+		updateID:   updateID,
+		seen:       map[string]struct{}{},
+	}
+}
+
+func (p *testProgressPrinter) consume(events []testPipelineEvent) error {
+	for _, event := range events {
+		c := event.Details.TestCaseProgress
+		if event.EventType != testCaseProgressEventType || c == nil || c.Status == testStatusPending {
+			continue
+		}
+
+		key := c.NodeID + "\x00" + c.Status
+		if _, ok := p.seen[key]; ok {
+			continue
+		}
+		p.seen[key] = struct{}{}
+
+		if !p.started {
+			if _, err := fmt.Fprintf(p.w, "Pipeline test progress for %s (update %s)\n\n", p.pipelineID, p.updateID); err != nil {
+				return err
+			}
+			p.started = true
+		}
+
+		switch c.Status {
+		case testStatusRunning:
+			if _, err := fmt.Fprintf(p.w, "RUN    %s\n", c.NodeID); err != nil {
+				return err
+			}
+		case testStatusCompleted:
+			label := resultLabel(c.Result)
+			if c.Result == testResultSkipped || c.Result == testResultError {
+				if _, err := fmt.Fprintf(p.w, "%-5s  %s\n", label, c.NodeID); err != nil {
+					return err
+				}
+			} else if _, err := fmt.Fprintf(p.w, "%-5s  %s (%s)\n", label, c.NodeID, formatTextDuration(c.DurationMs)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // renderTestResultsText writes a deterministic, pytest-style human summary:
@@ -199,37 +278,54 @@ func renderTestResultsText(w io.Writer, pipelineID, updateID string, r *testRunR
 		if c.Result == testResultSkipped || c.Result == testResultError {
 			fmt.Fprintf(&b, "%-5s  %s\n", label, c.NodeID)
 		} else {
-			fmt.Fprintf(&b, "%-5s  %s (%.2fs)\n", label, c.NodeID, durationSeconds(c.DurationMs))
+			fmt.Fprintf(&b, "%-5s  %s (%s)\n", label, c.NodeID, formatTextDuration(c.DurationMs))
 		}
 	}
 
+	writeTestResultsFooter(&b, r)
+
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+// renderStreamedTestResultsFooter writes diagnostics and the final tally after
+// per-case transitions have already been printed by testProgressPrinter.
+func renderStreamedTestResultsFooter(w io.Writer, r *testRunResult) error {
+	var b strings.Builder
+	writeTestResultsFooter(&b, r)
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
+func writeTestResultsFooter(b *strings.Builder, r *testRunResult) {
 	failures := failingCases(r)
 	if len(failures) > 0 {
-		fmt.Fprintf(&b, "\nFailures:\n")
+		fmt.Fprintf(b, "\nFailures:\n")
 		for _, c := range failures {
-			fmt.Fprintf(&b, "\n%-5s %s (%s)\n", resultLabel(c.Result), c.NodeID, caseLocation(c))
+			fmt.Fprintf(b, "\n%-5s %s (%s)\n", resultLabel(c.Result), c.NodeID, caseLocation(c))
 			if c.Message != "" {
-				fmt.Fprintf(&b, "  %s\n", c.Message)
+				fmt.Fprintf(b, "  %s\n", c.Message)
 			}
 			if c.Traceback != "" {
 				for ln := range strings.SplitSeq(strings.TrimRight(c.Traceback, "\n"), "\n") {
-					fmt.Fprintf(&b, "  %s\n", ln)
+					if ln == "" {
+						fmt.Fprintln(b)
+					} else {
+						fmt.Fprintf(b, "  %s\n", ln)
+					}
 				}
 			}
 			if c.Truncated {
-				fmt.Fprintf(&b, "  (output truncated; see the pipeline event log)\n")
+				fmt.Fprintf(b, "  (output truncated; see the pipeline event log)\n")
 			}
 		}
 	}
 
 	if r.Summary != nil {
 		s := r.Summary
-		fmt.Fprintf(&b, "\n%d tests: %d passed, %d failed, %d skipped, %d errors\n",
+		fmt.Fprintf(b, "\n%d tests: %d passed, %d failed, %d skipped, %d errors\n",
 			s.Total, s.Passed, s.Failed, s.Skipped, s.Errors)
 	}
-
-	_, err := io.WriteString(w, b.String())
-	return err
 }
 
 // failingCases returns the completed cases with a FAILED or ERROR result, in
