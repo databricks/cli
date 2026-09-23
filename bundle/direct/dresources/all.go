@@ -2,7 +2,12 @@ package dresources
 
 import (
 	"fmt"
+	"reflect"
+	"slices"
+	"strings"
 
+	"github.com/databricks/cli/libs/calladapt"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -79,6 +84,66 @@ var SupportedResources = map[string]any{
 
 	// Internal resources
 	"internal_immutable_snapshots": (*ResourceSnapshot)(nil),
+}
+
+// copiers holds an auto-generated RemapState copier for every resource whose
+// remote type differs from its state type and that does not supply a custom RemapState.
+// It is built once, at package initialization, from SupportedResources — so a resource
+// whose types cannot be safely copied fails at load, not at deploy time, and no separate
+// test can forget to cover it. Resources that need real remapping logic keep a custom
+// RemapState method and are skipped here.
+var copiers = buildCopiers()
+
+func buildCopiers() map[reflect.Type]*structcopy.Copier {
+	iface := reflect.TypeFor[IResource]()
+	out := make(map[reflect.Type]*structcopy.Copier)
+	var errs []string
+
+	for resourceType, resource := range SupportedResources {
+		implType := reflect.TypeOf(resource)
+		if _, done := out[implType]; done {
+			continue // same implementation registered under several keys (permissions, grants)
+		}
+
+		remap, err := calladapt.PrepareCall(resource, iface, "RemapState")
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("%s: RemapState: %v", resourceType, err))
+			continue
+		}
+		if remap != nil {
+			continue // custom override
+		}
+
+		prepareState, err := calladapt.PrepareCall(resource, iface, "PrepareState")
+		if err != nil || prepareState == nil {
+			errs = append(errs, fmt.Sprintf("%s: PrepareState: %v", resourceType, err))
+			continue
+		}
+		doRead, err := calladapt.PrepareCall(resource, iface, "DoRead")
+		if err != nil || doRead == nil {
+			errs = append(errs, fmt.Sprintf("%s: DoRead: %v", resourceType, err))
+			continue
+		}
+
+		stateType := prepareState.OutTypes[0]
+		remoteType := doRead.OutTypes[0]
+		if remoteType == stateType {
+			continue // identity: the adapter returns the remote unchanged, no copier needed
+		}
+
+		copier, err := structcopy.Compile(remoteType, stateType)
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("%s: %v (implement RemapState for this resource)", resourceType, err))
+			continue
+		}
+		out[implType] = copier
+	}
+
+	if len(errs) > 0 {
+		slices.Sort(errs)
+		panic("dresources: cannot build RemapState copiers:\n" + strings.Join(errs, "\n"))
+	}
+	return out
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

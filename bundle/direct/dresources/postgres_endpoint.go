@@ -65,19 +65,6 @@ func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint)
 	}
 }
 
-func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *PostgresEndpointState {
-	return &PostgresEndpointState{
-		EndpointId: remote.EndpointId,
-		Parent:     remote.Parent,
-
-		// replace_existing is a create-time-only flag; the GET API never returns
-		// it, so RemapState leaves it false.
-		ReplaceExisting: false,
-
-		EndpointSpec: remote.EndpointSpec,
-	}
-}
-
 // makePostgresEndpointRemote converts the SDK Endpoint into the embedded remote shape.
 // GET does not echo spec today (only status is returned); the embedded spec fields
 // stay at their zero values, and postgres_endpoints.yml suppresses phantom drift via

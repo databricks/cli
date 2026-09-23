@@ -73,18 +73,8 @@ func (*ResourceApp) PrepareState(input *resources.App) *AppState {
 	return s
 }
 
-// RemapState maps the remote AppRemote to AppState for diff comparison.
 // DoRead populates config, git_source, and source_code_path from the active
 // deployment when one exists, enabling drift detection for out-of-band redeploys.
-// Started is derived from compute status so the planner can detect start/stop changes.
-func (*ResourceApp) RemapState(remote *AppRemote) *AppState {
-	return &AppState{
-		App:       remote.App,
-		Config:    remote.Config,
-		Lifecycle: remote.Lifecycle,
-	}
-}
-
 func (r *ResourceApp) DoRead(ctx context.Context, id string) (*AppRemote, error) {
 	app, err := r.client.Apps.GetByName(ctx, id)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
+	"github.com/databricks/cli/libs/structs/structcopy"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
@@ -130,6 +131,7 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
+	copier             *structcopy.Copier
 	doDelete           *calladapt.BoundCaller
 	prepareInputConfig *calladapt.BoundCaller
 	isEmptyState       *calladapt.BoundCaller
@@ -169,6 +171,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 	adapter := &Adapter{
 		prepareState:            nil,
 		remapState:              nil,
+		copier:                  nil,
 		doRefresh:               nil,
 		doDelete:                nil,
 		doCreate:                nil,
@@ -233,10 +236,14 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	// RemapState is optional when remote type already matches state type.
+	// RemapState is optional when remote type already matches state type, or when an
+	// auto-generated copier exists for this resource (see buildCopiers).
 	a.remapState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "RemapState")
 	if err != nil {
 		return err
+	}
+	if a.remapState == nil {
+		a.copier = copiers[reflect.TypeOf(resource)]
 	}
 
 	a.doRefresh, err = prepareCallRequired(resource, "DoRead")
@@ -363,15 +370,16 @@ func (a *Adapter) validate() error {
 		validations = append(validations, "DoDelete state", a.doDelete.InTypes[2], stateType)
 	}
 
-	// If RemapState is implemented, validate its signature.
-	// Otherwise require remote type to equal state type so remapping isn't needed.
+	// If RemapState is implemented, validate its signature. Otherwise the remote type
+	// must equal the state type (no remapping needed) or an auto-generated copier must
+	// exist for this resource (built and validated in buildCopiers).
 	if a.remapState != nil {
 		validations = append(
 			validations,
 			"RemapState input", a.remapState.InTypes[0], remoteType,
 			"RemapState return", a.remapState.OutTypes[0], stateType,
 		)
-	} else if remoteType != stateType {
+	} else if remoteType != stateType && a.copier == nil {
 		return fmt.Errorf("RemapState method not found and remote type %v must match state type %v", remoteType, stateType)
 	}
 
@@ -517,15 +525,19 @@ func (a *Adapter) PrepareState(input any) (any, error) {
 }
 
 func (a *Adapter) RemapState(remoteState any) (any, error) {
-	if a.remapState == nil {
-		return remoteState, nil
+	if a.remapState != nil {
+		outs, err := a.remapState.Call(remoteState)
+		if err != nil {
+			return nil, err
+		}
+		return outs[0], nil
 	}
-
-	outs, err := a.remapState.Call(remoteState)
-	if err != nil {
-		return nil, err
+	if a.copier != nil {
+		return a.copier.Copy(remoteState), nil
 	}
-	return outs[0], nil
+	// No custom method and no copier: validate() only allows this when
+	// remoteType == stateType, so the remote is already the state type.
+	return remoteState, nil
 }
 
 func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
