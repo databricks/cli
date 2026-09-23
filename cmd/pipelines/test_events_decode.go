@@ -13,9 +13,9 @@ import (
 var ansiEscapeText = regexp.MustCompile(`\\u001[bB]\[[0-9;]*m`)
 
 // rawTestResult mirrors the nested PipelineTestCaseProgress.result object of the
-// production /events (event_record) wire shape.
+// flat-status /events wire shape. In this shape the verdict lives on the
+// case status; result groups only the terminal detail (no outcome enum).
 type rawTestResult struct {
-	Outcome    string `json:"outcome"`
 	DurationMs *int64 `json:"duration_ms"`
 	SkipReason string `json:"skip_reason"`
 	Failure    *struct {
@@ -26,13 +26,13 @@ type rawTestResult struct {
 	} `json:"failure"`
 }
 
-// UnmarshalJSON decodes the real production test_case_progress proto JSON (as
+// UnmarshalJSON decodes the flat-status test_case_progress proto JSON (as
 // served by /events and persisted in the CP event_record table) into the flat
-// internal testCaseProgress the renderers consume. The wire shape carries
-// enum-prefixed status/outcome values (PIPELINE_TEST_CASE_STATUS_*,
-// PIPELINE_TEST_CASE_OUTCOME_*), a nested source, and a nested result object; a
-// bare-string result and flat path/line are also tolerated so older simplified
-// fixtures still decode.
+// internal testCaseProgress the renderers consume. The wire shape carries an
+// enum-prefixed status value (PIPELINE_TEST_CASE_STATUS_*) that is itself the
+// terminal verdict, a nested source, and a nested result object holding only
+// terminal detail (duration_ms / failure / skip_reason, no outcome); flat
+// path/line/duration are also tolerated so simplified fixtures still decode.
 func (c *testCaseProgress) UnmarshalJSON(data []byte) error {
 	var raw struct {
 		NodeID string `json:"node_id"`
@@ -76,19 +76,12 @@ func (c *testCaseProgress) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// Simplified shape: result is a bare outcome string.
-	var flat string
-	if err := json.Unmarshal(raw.Result, &flat); err == nil {
-		c.Result = strings.TrimPrefix(flat, "PIPELINE_TEST_CASE_OUTCOME_")
-		return nil
-	}
-
-	// Production shape: result is a nested object.
+	// Terminal detail is grouped in a nested result object; the verdict itself
+	// lives on status, so result carries no outcome.
 	var ro rawTestResult
 	if err := json.Unmarshal(raw.Result, &ro); err != nil {
 		return err
 	}
-	c.Result = strings.TrimPrefix(ro.Outcome, "PIPELINE_TEST_CASE_OUTCOME_")
 	if ro.DurationMs != nil {
 		c.DurationMs = ro.DurationMs
 	}

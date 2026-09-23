@@ -17,30 +17,37 @@ const (
 	testSummaryEventType      = "test_summary"
 )
 
-// Lifecycle status of a single test case (PipelineTestCaseProgress.status).
+// Status of a single test case (PipelineTestCaseProgress.status). In the flat
+// shape the status IS the terminal verdict: PENDING/RUNNING are non-terminal,
+// PASSED/FAILED/SKIPPED/ERROR are terminal. There is no separate outcome enum.
 const (
-	testStatusPending   = "PENDING"
-	testStatusRunning   = "RUNNING"
-	testStatusCompleted = "COMPLETED"
+	testStatusPending = "PENDING"
+	testStatusRunning = "RUNNING"
+	testStatusPassed  = "PASSED"
+	testStatusFailed  = "FAILED"
+	testStatusSkipped = "SKIPPED"
+	testStatusError   = "ERROR"
 )
 
-// Terminal outcome of a completed test case (PipelineTestCaseProgress.result).
-const (
-	testResultPassed  = "PASSED"
-	testResultFailed  = "FAILED"
-	testResultSkipped = "SKIPPED"
-	testResultError   = "ERROR"
-)
+// isTerminalStatus reports whether a status is a terminal verdict.
+func isTerminalStatus(status string) bool {
+	switch status {
+	case testStatusPassed, testStatusFailed, testStatusSkipped, testStatusError:
+		return true
+	default:
+		return false
+	}
+}
 
 // testCaseProgress is the decoded details.test_case_progress payload of a
-// pipeline event. Field names mirror the dogfood-verified emitter contract;
-// the exact wire shape is still pending the event-shape 1DD (see worklog).
+// pipeline event. Field names mirror the flat-status emitter contract from the
+// event-shape 1DD: status carries the verdict, terminal detail (duration_ms /
+// failure / skip_reason) is grouped in a nested result object.
 type testCaseProgress struct {
 	NodeID     string `json:"node_id"`
 	Path       string `json:"path"`
 	Line       *int   `json:"line"`
 	Status     string `json:"status"`
-	Result     string `json:"result"`
 	DurationMs *int64 `json:"duration_ms"`
 	Message    string `json:"message"`
 	Traceback  string `json:"traceback"`
@@ -81,7 +88,7 @@ type testRunResult struct {
 
 // reduceTestEvents folds a stream of pipeline events into a testRunResult. Case
 // events are folded by node_id preserving first-seen (collection) order; a
-// COMPLETED case is never regressed to a non-terminal status by a late event.
+// terminal case is never regressed to a non-terminal status by a late event.
 // The last test_summary wins.
 func reduceTestEvents(events []testPipelineEvent) *testRunResult {
 	result := &testRunResult{Cases: nil, Summary: nil}
@@ -106,13 +113,13 @@ func reduceTestEvents(events []testPipelineEvent) *testRunResult {
 				result.Cases = append(result.Cases, *c)
 				continue
 			}
-			// Don't let a late non-terminal event clobber a completed case.
+			// Don't let a late non-terminal event clobber a terminal case.
 			prev := result.Cases[idx]
-			if prev.Status == testStatusCompleted && c.Status != testStatusCompleted {
+			if isTerminalStatus(prev.Status) && !isTerminalStatus(c.Status) {
 				continue
 			}
 			// Progress events are sparse: identity fields (path/line) are set
-			// once at PENDING and omitted on later RUNNING/COMPLETED events, so
+			// once at PENDING and omitted on later RUNNING/terminal events, so
 			// carry them forward rather than dropping them on the fold.
 			next := *c
 			if next.Path == "" {
@@ -131,11 +138,12 @@ func reduceTestEvents(events []testPipelineEvent) *testRunResult {
 	return result
 }
 
-// completed returns the terminal (COMPLETED) cases in first-seen order.
+// completed returns the terminal cases (PASSED/FAILED/SKIPPED/ERROR) in
+// first-seen order.
 func (r *testRunResult) completed() []testCaseProgress {
 	var out []testCaseProgress
 	for _, c := range r.Cases {
-		if c.Status == testStatusCompleted {
+		if isTerminalStatus(c.Status) {
 			out = append(out, c)
 		}
 	}
@@ -161,19 +169,19 @@ func (r *testRunResult) failed() bool {
 	return r.Summary != nil && (r.Summary.Failed > 0 || r.Summary.Errors > 0)
 }
 
-// resultLabel maps a case result to its short display label.
-func resultLabel(result string) string {
-	switch result {
-	case testResultPassed:
+// resultLabel maps a terminal case status to its short display label.
+func resultLabel(status string) string {
+	switch status {
+	case testStatusPassed:
 		return "PASS"
-	case testResultFailed:
+	case testStatusFailed:
 		return "FAIL"
-	case testResultSkipped:
+	case testStatusSkipped:
 		return "SKIP"
-	case testResultError:
+	case testStatusError:
 		return "ERROR"
 	default:
-		return result
+		return status
 	}
 }
 
@@ -242,14 +250,14 @@ func (p *testProgressPrinter) consume(events []testPipelineEvent) error {
 			p.started = true
 		}
 
-		switch c.Status {
-		case testStatusRunning:
+		switch {
+		case c.Status == testStatusRunning:
 			if _, err := fmt.Fprintf(p.w, "RUN    %s\n", c.NodeID); err != nil {
 				return err
 			}
-		case testStatusCompleted:
-			label := resultLabel(c.Result)
-			if c.Result == testResultSkipped || c.Result == testResultError {
+		case isTerminalStatus(c.Status):
+			label := resultLabel(c.Status)
+			if c.Status == testStatusSkipped || c.Status == testStatusError {
 				if _, err := fmt.Fprintf(p.w, "%-5s  %s\n", label, c.NodeID); err != nil {
 					return err
 				}
@@ -274,8 +282,8 @@ func renderTestResultsText(w io.Writer, pipelineID, updateID string, r *testRunR
 	fmt.Fprintf(&b, "Running %d pipeline tests for %s (update %s)\n\n", total, pipelineID, updateID)
 
 	for _, c := range r.completed() {
-		label := resultLabel(c.Result)
-		if c.Result == testResultSkipped || c.Result == testResultError {
+		label := resultLabel(c.Status)
+		if c.Status == testStatusSkipped || c.Status == testStatusError {
 			fmt.Fprintf(&b, "%-5s  %s\n", label, c.NodeID)
 		} else {
 			fmt.Fprintf(&b, "%-5s  %s (%s)\n", label, c.NodeID, formatTextDuration(c.DurationMs))
@@ -302,7 +310,7 @@ func writeTestResultsFooter(b *strings.Builder, r *testRunResult) {
 	if len(failures) > 0 {
 		fmt.Fprintf(b, "\nFailures:\n")
 		for _, c := range failures {
-			fmt.Fprintf(b, "\n%-5s %s (%s)\n", resultLabel(c.Result), c.NodeID, caseLocation(c))
+			fmt.Fprintf(b, "\n%-5s %s (%s)\n", resultLabel(c.Status), c.NodeID, caseLocation(c))
 			if c.Message != "" {
 				fmt.Fprintf(b, "  %s\n", c.Message)
 			}
@@ -328,12 +336,12 @@ func writeTestResultsFooter(b *strings.Builder, r *testRunResult) {
 	}
 }
 
-// failingCases returns the completed cases with a FAILED or ERROR result, in
+// failingCases returns the completed cases with a FAILED or ERROR status, in
 // first-seen order.
 func failingCases(r *testRunResult) []testCaseProgress {
 	var out []testCaseProgress
 	for _, c := range r.completed() {
-		if c.Result == testResultFailed || c.Result == testResultError {
+		if c.Status == testStatusFailed || c.Status == testStatusError {
 			out = append(out, c)
 		}
 	}
@@ -426,15 +434,15 @@ func buildJUnitSuite(pipelineID, updateID string, r *testRunResult) junitTestSui
 			Error:     nil,
 			Skipped:   nil,
 		}
-		switch c.Result {
-		case testResultFailed:
+		switch c.Status {
+		case testStatusFailed:
 			tc.Failure = &junitDetail{Message: c.Message, Text: c.Traceback}
-		case testResultError:
+		case testStatusError:
 			tc.Error = &junitDetail{Message: c.Message, Text: c.Traceback}
-		case testResultSkipped:
+		case testStatusSkipped:
 			tc.Skipped = &junitSkipped{Message: c.Message}
 		default:
-			// PASSED and any other outcome: no child element.
+			// PASSED and any other status: no child element.
 		}
 		testCases = append(testCases, tc)
 	}

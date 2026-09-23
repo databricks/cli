@@ -197,14 +197,13 @@
         "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
       },
       "timestamp": "2026-09-21T18:51:35.381Z",
-      "message": "Test case 'test_demo.py::test_pass' COMPLETED with outcome 'passed'.",
+      "message": "Test case 'test_demo.py::test_pass' PASSED.",
       "level": "INFO",
       "details": {
         "test_case_progress": {
           "node_id": "test_demo.py::test_pass",
-          "status": "PIPELINE_TEST_CASE_STATUS_COMPLETED",
+          "status": "PIPELINE_TEST_CASE_STATUS_PASSED",
           "result": {
-            "outcome": "PIPELINE_TEST_CASE_OUTCOME_PASSED",
             "duration_ms": 0
           }
         }
@@ -265,14 +264,13 @@
         "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
       },
       "timestamp": "2026-09-21T18:51:35.432Z",
-      "message": "Test case 'test_demo.py::test_fail' COMPLETED with outcome 'failed'.",
+      "message": "Test case 'test_demo.py::test_fail' FAILED.",
       "level": "INFO",
       "details": {
         "test_case_progress": {
           "node_id": "test_demo.py::test_fail",
-          "status": "PIPELINE_TEST_CASE_STATUS_COMPLETED",
+          "status": "PIPELINE_TEST_CASE_STATUS_FAILED",
           "result": {
-            "outcome": "PIPELINE_TEST_CASE_OUTCOME_FAILED",
             "duration_ms": 0,
             "failure": {
               "exceptions": [
@@ -340,14 +338,13 @@
         "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
       },
       "timestamp": "2026-09-21T18:51:35.449Z",
-      "message": "Test case 'test_demo.py::test_skip' COMPLETED with outcome 'skipped'.",
+      "message": "Test case 'test_demo.py::test_skip' SKIPPED.",
       "level": "INFO",
       "details": {
         "test_case_progress": {
           "node_id": "test_demo.py::test_skip",
-          "status": "PIPELINE_TEST_CASE_STATUS_COMPLETED",
+          "status": "PIPELINE_TEST_CASE_STATUS_SKIPPED",
           "result": {
-            "outcome": "PIPELINE_TEST_CASE_OUTCOME_SKIPPED",
             "duration_ms": 0,
             "skip_reason": "Skipped: demo skip reason"
           }
@@ -409,14 +406,13 @@
         "request_id": "3627a3a1-2374-4bc2-981f-49bb81ef662c"
       },
       "timestamp": "2026-09-21T18:51:35.459Z",
-      "message": "Test case 'test_demo.py::test_error' COMPLETED with outcome 'error'.",
+      "message": "Test case 'test_demo.py::test_error' ERROR.",
       "level": "INFO",
       "details": {
         "test_case_progress": {
           "node_id": "test_demo.py::test_error",
-          "status": "PIPELINE_TEST_CASE_STATUS_COMPLETED",
+          "status": "PIPELINE_TEST_CASE_STATUS_ERROR",
           "result": {
-            "outcome": "PIPELINE_TEST_CASE_OUTCOME_ERROR",
             "duration_ms": 0,
             "failure": {
               "exceptions": [

@@ -40,10 +40,10 @@ func assertGolden(t *testing.T, name, got string) {
 }
 
 func TestReduceTestEventsFolding(t *testing.T) {
-	// Fixture is the REAL captured /events payload from live update
-	// 3627a3a1-2374-4bc2-981f-49bb81ef662c (pipeline sdp-test-emission-m2, M2
-	// staging LiteSwap), production proto shape: PENDING -> RUNNING -> COMPLETED
-	// per case with enum-prefixed status/outcome and a nested result object.
+	// Fixture is the DP emission /events payload in the flat-status proto shape:
+	// PENDING -> RUNNING -> terminal per case, where the terminal status is
+	// itself the verdict (PASSED/FAILED/SKIPPED/ERROR, enum-prefixed on the
+	// wire) with a sibling result object carrying only terminal detail.
 	r := loadFixtureResult(t)
 
 	// All 4 discovered cases are present in first-seen (collection) order.
@@ -53,15 +53,15 @@ func TestReduceTestEventsFolding(t *testing.T) {
 	assert.Equal(t, "test_demo.py::test_skip", r.Cases[2].NodeID)
 	assert.Equal(t, "test_demo.py::test_error", r.Cases[3].NodeID)
 
-	// Every case folded to its terminal COMPLETED state (PENDING/RUNNING collapsed).
+	// Every case folded to a terminal state (PENDING/RUNNING collapsed).
 	completed := r.completed()
 	require.Len(t, completed, 4)
 
-	// Terminal outcomes fold correctly (enum prefix stripped).
-	assert.Equal(t, testResultPassed, r.Cases[0].Result)
-	assert.Equal(t, testResultFailed, r.Cases[1].Result)
-	assert.Equal(t, testResultSkipped, r.Cases[2].Result)
-	assert.Equal(t, testResultError, r.Cases[3].Result)
+	// Terminal verdicts fold correctly onto status (enum prefix stripped).
+	assert.Equal(t, testStatusPassed, r.Cases[0].Status)
+	assert.Equal(t, testStatusFailed, r.Cases[1].Status)
+	assert.Equal(t, testStatusSkipped, r.Cases[2].Status)
+	assert.Equal(t, testStatusError, r.Cases[3].Status)
 
 	// Identity (path/line) set at PENDING is carried through the fold.
 	require.NotNil(t, r.Cases[1].Line)
@@ -107,7 +107,7 @@ func TestRenderTextAllPassing(t *testing.T) {
 	r := &testRunResult{
 		Cases: []testCaseProgress{{
 			NodeID: "tests/test_ok.py::test_a", Path: "tests/test_ok.py", Line: &line,
-			Status: testStatusCompleted, Result: testResultPassed, DurationMs: &dur,
+			Status: testStatusPassed, DurationMs: &dur,
 			Message: "", Traceback: "", Truncated: false,
 		}},
 		Summary: &testSummary{Total: 1, Passed: 1, Failed: 0, Skipped: 0, Errors: 0},

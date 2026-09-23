@@ -110,7 +110,7 @@ func TestCheckCompleteNoSummary(t *testing.T) {
 func TestCheckCompleteIncomplete(t *testing.T) {
 	r := &testRunResult{
 		Cases: []testCaseProgress{{
-			NodeID: "n", Path: "p", Line: nil, Status: testStatusCompleted, Result: testResultPassed,
+			NodeID: "n", Path: "p", Line: nil, Status: testStatusPassed,
 			DurationMs: nil, Message: "", Traceback: "", Truncated: false,
 		}},
 		Summary: &testSummary{Total: 3, Passed: 1, Failed: 0, Skipped: 0, Errors: 0},
