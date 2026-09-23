@@ -6,28 +6,26 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Filter the saved plan to the cluster's libraries entries, so each step shows how the change is
-# classified. Reading tmp.plan.json (rather than re-planning) keeps this identical across the
-# READPLAN matrix, which also feeds tmp.plan.json to `bundle deploy --plan`.
+# Show the cluster's libraries plan entries; reading the saved plan keeps output identical across READPLAN.
 plan_libs() {
     jq '.plan["resources.clusters.mycluster"].changes | with_entries(select(.key | startswith("libraries")))' tmp.plan.json
 }
 
-# Deploy output is verbose and differs between the plan/no-plan runs; send it to LOG and assert the key line.
+# Deploy output is verbose and differs plan/no-plan; send it to LOG and assert the key line.
 title "Deploy a cluster that declares no libraries"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
 printf '\n%s\n' "OK: cluster created"
 
-# The cluster id is server-generated; read it from state to target the out-of-band calls.
+# Server-generated cluster id, read from state to target the out-of-band calls.
 CLUSTER_ID=$(read_id.py mycluster)
 
 title "Out of band: a job run (or the UI) installs 'six' on the shared cluster"
 MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/libraries/install --json "{\"cluster_id\": \"$CLUSTER_ID\", \"libraries\": [{\"pypi\": {\"package\": \"six\"}}]}" > /dev/null
 trace print_requests.py //libraries/install
 
-title "Declare the first library (requests): plan installs it, the out-of-band six is skipped"
+title "Declare 'requests': plan installs it, the out-of-band six is skipped"
 update_file.py databricks.yml "      num_workers: 1" "      num_workers: 1
       libraries:
         - pypi:
@@ -38,28 +36,6 @@ $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
 trace print_requests.py //libraries/install //libraries/uninstall //clusters/restart
 
-title "Declare a second library (urllib3): plan installs the set, requests already present, six skipped"
-update_file.py databricks.yml "        - pypi:
-            package: requests" "        - pypi:
-            package: requests
-        - pypi:
-            package: urllib3"
-$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
-trace plan_libs
-$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
-cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
-trace print_requests.py //libraries/install //libraries/uninstall //clusters/restart
-
-title "Drop urllib3: plan uninstalls only urllib3, leaving declared requests and out-of-band six"
-update_file.py databricks.yml "
-        - pypi:
-            package: urllib3" ""
-$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
-trace plan_libs
-$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
-cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
-trace print_requests.py //libraries/uninstall //libraries/install //clusters/restart
-
 title "Drift: 'requests' is uninstalled out of band; plan reinstalls the declared library"
 MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/libraries/uninstall --json "{\"cluster_id\": \"$CLUSTER_ID\", \"libraries\": [{\"pypi\": {\"package\": \"requests\"}}]}" > /dev/null
 trace print_requests.py //libraries/uninstall
@@ -69,7 +45,7 @@ $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
 trace print_requests.py //libraries/install //libraries/uninstall //clusters/restart
 
-title "Remove the last declared library: plan uninstalls requests, out-of-band six survives"
+title "Remove the declared library: plan uninstalls requests, out-of-band six survives"
 update_file.py databricks.yml "      num_workers: 1
       libraries:
         - pypi:

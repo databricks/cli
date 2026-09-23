@@ -1,19 +1,9 @@
-# Exercises how the cluster resource plans and applies library changes when a library it did not
-# declare is present on the cluster (a job run's task library or a UI install - both cluster-wide).
-# The cluster manages only its own declared libraries: the out-of-band one is always classified skip
-# and is never uninstalled, while declared libraries still install/uninstall and drift is corrected.
-# See removedLibraries in bundle/direct/dresources/cluster.go and the libraries backend_defaults
-# entry in configs/clusters.yml.
-
-# Local only: the scenario needs a library on the cluster the bundle did not install. We inject it
-# with an out-of-band Libraries API call against the fake server, which is deterministic locally but
-# racy against a real (async) install on cloud. The job-installed variant runs on cloud in
-# integration_whl and libraries-job.
+# The cluster manages only its declared libraries: an out-of-band library (job task lib or UI install) is skipped and never uninstalled, while declared libs still install/uninstall and drift is corrected. See removedLibraries and the libraries backend_defaults entry in configs/clusters.yml.
+# Local only: the out-of-band library is injected via the Libraries API, deterministic locally but racy on cloud (the job-installed variant runs on cloud in interactive_cluster_declared_libs).
 RecordRequests = true
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-# READPLAN=1 feeds the serialized plan to `bundle deploy --plan`, exercising the path where a
-# change's Old value is generic JSON rather than a typed compute.Library (see decodeLibraries).
+# READPLAN=1 feeds the serialized plan to `bundle deploy --plan`, where a change's Old value is generic JSON not a typed compute.Library (see decodeLibraries).
 EnvMatrix.READPLAN = ["", "1"]
 
 Ignore = [".databricks", "databricks.yml", "tmp.plan.json"]

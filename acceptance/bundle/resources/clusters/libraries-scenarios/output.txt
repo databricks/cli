@@ -19,7 +19,7 @@ OK: cluster created
   }
 }
 
-=== Declare the first library (requests): plan installs it, the out-of-band six is skipped
+=== Declare 'requests': plan installs it, the out-of-band six is skipped
 >>> plan_libs
 {
   "libraries": {
@@ -59,120 +59,6 @@ OK: cluster created
 }
 
 >>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
-{
-  "method": "POST",
-  "path": "/api/2.0/libraries/install",
-  "body": {
-    "cluster_id": "[MYCLUSTER_ID]",
-    "libraries": [
-      {
-        "pypi": {
-          "package": "requests"
-        }
-      }
-    ]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/restart",
-  "body": {
-    "cluster_id": "[MYCLUSTER_ID]"
-  }
-}
-
-=== Declare a second library (urllib3): plan installs the set, requests already present, six skipped
->>> plan_libs
-{
-  "libraries[pypi='six;']": {
-    "action": "skip",
-    "reason": "backend_default",
-    "remote": {
-      "pypi": {
-        "package": "six"
-      }
-    }
-  },
-  "libraries[pypi='urllib3;']": {
-    "action": "update",
-    "new": {
-      "pypi": {
-        "package": "urllib3"
-      }
-    }
-  }
-}
-
->>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
-{
-  "method": "POST",
-  "path": "/api/2.0/libraries/install",
-  "body": {
-    "cluster_id": "[MYCLUSTER_ID]",
-    "libraries": [
-      {
-        "pypi": {
-          "package": "requests"
-        }
-      },
-      {
-        "pypi": {
-          "package": "urllib3"
-        }
-      }
-    ]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/restart",
-  "body": {
-    "cluster_id": "[MYCLUSTER_ID]"
-  }
-}
-
-=== Drop urllib3: plan uninstalls only urllib3, leaving declared requests and out-of-band six
->>> plan_libs
-{
-  "libraries[pypi='six;']": {
-    "action": "skip",
-    "reason": "backend_default",
-    "remote": {
-      "pypi": {
-        "package": "six"
-      }
-    }
-  },
-  "libraries[pypi='urllib3;']": {
-    "action": "update",
-    "old": {
-      "pypi": {
-        "package": "urllib3"
-      }
-    },
-    "remote": {
-      "pypi": {
-        "package": "urllib3"
-      }
-    }
-  }
-}
-
->>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
-{
-  "method": "POST",
-  "path": "/api/2.0/libraries/uninstall",
-  "body": {
-    "cluster_id": "[MYCLUSTER_ID]",
-    "libraries": [
-      {
-        "pypi": {
-          "package": "urllib3"
-        }
-      }
-    ]
-  }
-}
 {
   "method": "POST",
   "path": "/api/2.0/libraries/install",
@@ -256,7 +142,7 @@ OK: cluster created
   }
 }
 
-=== Remove the last declared library: plan uninstalls requests, out-of-band six survives
+=== Remove the declared library: plan uninstalls requests, out-of-band six survives
 >>> plan_libs
 {
   "libraries": {

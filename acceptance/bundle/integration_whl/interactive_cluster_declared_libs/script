@@ -2,13 +2,11 @@ export DATA_SECURITY_MODE=USER_ISOLATION
 envsubst < databricks.yml.tmpl > databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 
-# Dump only the cluster's pypi library plan entries (the wheel path is noisy and not the point).
+# Show the cluster's pypi library plan entries; build/plan noise and the noisy wheel path go to LOG.
 plan_pypi_libs() {
-    # Build/plan noise goes to LOG; keep only the cluster's pypi library changes (the wheel path is noisy).
     $CLI bundle plan -o json 2>>LOG.plan | jq '.plan["resources.clusters.test_cluster"].changes | with_entries(select(.key | startswith("libraries[pypi")))'
 }
 
-# Deploy output is verbose and differs fake vs cloud; send it to LOG and assert the key line.
 title "Deploy the cluster (declares requests and urllib3) and the wheel job that targets it"
 $CLI bundle deploy &> LOG.deploy
 cat LOG.deploy | contains.py "clusters.test_cluster" > /dev/null
