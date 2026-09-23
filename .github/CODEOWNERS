@@ -21,6 +21,10 @@
 /cmd/environments/                      @databricks/eng-deco-cli @databricks/eng-deco-ax
 /acceptance/localenv/                   @databricks/eng-deco-cli @databricks/eng-deco-ax
 
+# SSH tunnel
+/experimental/ssh/                      @databricks/eng-deco-cli @databricks/eng-deco-ax
+/acceptance/ssh/                        @databricks/eng-deco-cli @databricks/eng-deco-ax
+
 # Apps
 /cmd/apps/                              @databricks/eng-deco-cli @databricks/eng-apps-devex
 /cmd/workspace/apps/                    @databricks/eng-deco-cli @databricks/eng-apps-devex
