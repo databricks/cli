@@ -121,6 +121,11 @@ type DataSourceAccountSettingV2EffectiveStringVal struct {
 	Value string `json:"value,omitempty"`
 }
 
+type DataSourceAccountSettingV2EffectiveWorkspaceLabel struct {
+	Color string `json:"color,omitempty"`
+	Label string `json:"label,omitempty"`
+}
+
 type DataSourceAccountSettingV2IntegerVal struct {
 	Value int `json:"value,omitempty"`
 }
@@ -142,6 +147,11 @@ type DataSourceAccountSettingV2StringVal struct {
 	Value string `json:"value,omitempty"`
 }
 
+type DataSourceAccountSettingV2WorkspaceLabel struct {
+	Color string `json:"color,omitempty"`
+	Label string `json:"label,omitempty"`
+}
+
 type DataSourceAccountSettingV2 struct {
 	AibiDashboardEmbeddingAccessPolicy             *DataSourceAccountSettingV2AibiDashboardEmbeddingAccessPolicy             `json:"aibi_dashboard_embedding_access_policy,omitempty"`
 	AibiDashboardEmbeddingApprovedDomains          *DataSourceAccountSettingV2AibiDashboardEmbeddingApprovedDomains          `json:"aibi_dashboard_embedding_approved_domains,omitempty"`
@@ -160,10 +170,12 @@ type DataSourceAccountSettingV2 struct {
 	EffectivePersonalCompute                       *DataSourceAccountSettingV2EffectivePersonalCompute                       `json:"effective_personal_compute,omitempty"`
 	EffectiveRestrictWorkspaceAdmins               *DataSourceAccountSettingV2EffectiveRestrictWorkspaceAdmins               `json:"effective_restrict_workspace_admins,omitempty"`
 	EffectiveStringVal                             *DataSourceAccountSettingV2EffectiveStringVal                             `json:"effective_string_val,omitempty"`
+	EffectiveWorkspaceLabel                        *DataSourceAccountSettingV2EffectiveWorkspaceLabel                        `json:"effective_workspace_label,omitempty"`
 	IntegerVal                                     *DataSourceAccountSettingV2IntegerVal                                     `json:"integer_val,omitempty"`
 	Name                                           string                                                                    `json:"name"`
 	OperationalEmailCustomRecipient                *DataSourceAccountSettingV2OperationalEmailCustomRecipient                `json:"operational_email_custom_recipient,omitempty"`
 	PersonalCompute                                *DataSourceAccountSettingV2PersonalCompute                                `json:"personal_compute,omitempty"`
 	RestrictWorkspaceAdmins                        *DataSourceAccountSettingV2RestrictWorkspaceAdmins                        `json:"restrict_workspace_admins,omitempty"`
 	StringVal                                      *DataSourceAccountSettingV2StringVal                                      `json:"string_val,omitempty"`
+	WorkspaceLabel                                 *DataSourceAccountSettingV2WorkspaceLabel                                 `json:"workspace_label,omitempty"`
 }

@@ -11,8 +11,9 @@ type DataSourceAiGatewayMcpServiceConfigRateLimits struct {
 }
 
 type DataSourceAiGatewayMcpServiceConfigSourceConnection struct {
-	IsDeleted bool   `json:"is_deleted,omitempty"`
-	Name      string `json:"name"`
+	IsDeleted bool              `json:"is_deleted,omitempty"`
+	Name      string            `json:"name"`
+	Options   map[string]string `json:"options,omitempty"`
 }
 
 type DataSourceAiGatewayMcpServiceConfig struct {

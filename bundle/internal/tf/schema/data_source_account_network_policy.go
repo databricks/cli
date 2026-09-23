@@ -74,6 +74,7 @@ type DataSourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinat
 }
 
 type DataSourceAccountNetworkPolicyIngressCrossWorkspaceAccessAllowRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -141,6 +142,7 @@ type DataSourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinati
 }
 
 type DataSourceAccountNetworkPolicyIngressCrossWorkspaceAccessDenyRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -214,6 +216,7 @@ type DataSourceAccountNetworkPolicyIngressPrivateAccessAllowRulesDestinationLake
 }
 
 type DataSourceAccountNetworkPolicyIngressPrivateAccessAllowRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -283,6 +286,7 @@ type DataSourceAccountNetworkPolicyIngressPrivateAccessDenyRulesDestinationLakeb
 }
 
 type DataSourceAccountNetworkPolicyIngressPrivateAccessDenyRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -358,6 +362,7 @@ type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationLakeb
 }
 
 type DataSourceAccountNetworkPolicyIngressPublicAccessAllowRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -430,6 +435,7 @@ type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationLakeba
 }
 
 type DataSourceAccountNetworkPolicyIngressPublicAccessDenyRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -514,6 +520,7 @@ type DataSourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDe
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessAllowRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -581,6 +588,7 @@ type DataSourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDes
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunCrossWorkspaceAccessDenyRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -654,6 +662,7 @@ type DataSourceAccountNetworkPolicyIngressDryRunPrivateAccessAllowRulesDestinati
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunPrivateAccessAllowRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -723,6 +732,7 @@ type DataSourceAccountNetworkPolicyIngressDryRunPrivateAccessDenyRulesDestinatio
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunPrivateAccessDenyRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -798,6 +808,7 @@ type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinatio
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessAllowRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
@@ -870,6 +881,7 @@ type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestination
 }
 
 type DataSourceAccountNetworkPolicyIngressDryRunPublicAccessDenyRulesDestinationWorkspaceApi struct {
+	ExcludedScopes []string `json:"excluded_scopes,omitempty"`
 	ScopeQualifier string   `json:"scope_qualifier,omitempty"`
 	Scopes         []string `json:"scopes,omitempty"`
 }
