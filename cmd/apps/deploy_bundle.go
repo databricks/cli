@@ -50,13 +50,13 @@ type bundleDeployOptions struct {
 }
 
 // changedFlagNames returns sorted command-line names for explicitly set flags.
-func changedFlagNames(cmd *cobra.Command, names map[string]struct{}) []string {
+func changedFlagNames(flags *pflag.FlagSet) []string {
 	var changed []string
-	for name := range names {
-		if cmd.Flags().Changed(name) {
-			changed = append(changed, "--"+name)
+	flags.VisitAll(func(flag *pflag.Flag) {
+		if flag.Changed {
+			changed = append(changed, "--"+flag.Name)
 		}
-	}
+	})
 	slices.Sort(changed)
 	return changed
 }
@@ -80,101 +80,58 @@ func applyDeployFlags(cmd *cobra.Command, b *bundle.Bundle, opts bundleDeployOpt
 }
 
 // BundleDeployOverrideWithWrapper creates a deploy override function that uses
-// the provided error wrapper for API fallback errors.
+// the provided error wrapper for API errors.
 func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, *apps.CreateAppDeploymentRequest) {
 	return func(deployCmd *cobra.Command, _ *apps.CreateAppDeploymentRequest) {
 		var opts bundleDeployOptions
-		flagNames := func(flags *pflag.FlagSet) map[string]struct{} {
-			names := make(map[string]struct{})
-			flags.VisitAll(func(flag *pflag.Flag) {
-				names[flag.Name] = struct{}{}
-			})
-			return names
-		}
 		// Generated API flags and API-specific overrides, including the Git source
 		// override, are registered before the bundle override.
-		apiFlagNames := flagNames(deployCmd.Flags())
-		// Control flags must not bypass the bundle pipeline just because they are
-		// implemented by the generated API command.
-		requestFlagNames := map[string]struct{}{
-			"deployment-id":        {},
-			"git-branch":           {},
-			"git-commit":           {},
-			"git-source-code-path": {},
-			"git-tag":              {},
-			"json":                 {},
-			"mode":                 {},
-			"source-code-path":     {},
-		}
+		apiFlags := pflag.NewFlagSet("api", pflag.ContinueOnError)
+		apiFlags.AddFlagSet(deployCmd.LocalNonPersistentFlags())
 
-		deployCmd.Flags().BoolVar(&opts.force, "force", false, "Force-override Git branch validation.")
-		deployCmd.Flags().BoolVar(&opts.forceLock, "force-lock", false, "Force acquisition of deployment lock.")
-		deployCmd.Flags().BoolVar(&opts.failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
-		deployCmd.Flags().StringVar(&opts.clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
-		deployCmd.Flags().StringVarP(&opts.clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
-		deployCmd.Flags().BoolVar(&opts.autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
-		deployCmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
-		deployCmd.Flags().BoolVar(&opts.verbose, "verbose", false, "Enable verbose output.")
-		deployCmd.Flags().StringVar(&opts.readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
+		bundleFlags := pflag.NewFlagSet("bundle", pflag.ContinueOnError)
+		bundleFlags.BoolVar(&opts.force, "force", false, "Force-override Git branch validation.")
+		bundleFlags.BoolVar(&opts.forceLock, "force-lock", false, "Force acquisition of deployment lock.")
+		bundleFlags.BoolVar(&opts.failOnActiveRuns, "fail-on-active-runs", false, "Fail if there are running jobs or pipelines in the deployment.")
+		bundleFlags.StringVar(&opts.clusterId, "compute-id", "", "Override cluster in the deployment with the given compute ID.")
+		bundleFlags.StringVarP(&opts.clusterId, "cluster-id", "c", "", "Override cluster in the deployment with the given cluster ID.")
+		bundleFlags.BoolVar(&opts.autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
+		bundleFlags.MarkDeprecated("compute-id", "use --cluster-id instead")
+		bundleFlags.BoolVar(&opts.verbose, "verbose", false, "Enable verbose output.")
+		bundleFlags.StringVar(&opts.readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
 		// Verbose flag currently only affects file sync output, it's used by the vscode extension
-		deployCmd.Flags().MarkHidden("verbose")
-		deployCmd.Flags().BoolVar(&opts.skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
-		deployCmd.Flags().BoolVar(&opts.skipTests, "skip-tests", true, "Skip running tests during validation")
-		bundleFlagNames := flagNames(deployCmd.Flags())
-		for name := range apiFlagNames {
-			delete(bundleFlagNames, name)
-		}
-		// --var is inherited from the apps command after this override runs.
-		bundleFlagNames["var"] = struct{}{}
-		validateFlags := func(cmd *cobra.Command, args []string) error {
-			apiFlags := changedFlagNames(cmd, apiFlagNames)
-			bundleFlags := changedFlagNames(cmd, bundleFlagNames)
-			requestFlags := changedFlagNames(cmd, requestFlagNames)
-			if len(apiFlags) > 0 && len(bundleFlags) > 0 {
-				return fmt.Errorf("API deploy flags %s cannot be combined with bundle deploy flags %s", strings.Join(apiFlags, ", "), strings.Join(bundleFlags, ", "))
-			}
-			if len(args) > 0 && len(bundleFlags) > 0 {
-				return fmt.Errorf("bundle deploy flags %s cannot be used when APP_NAME is provided; omit APP_NAME to use bundle deploy", strings.Join(bundleFlags, ", "))
-			}
-			if len(args) == 0 && len(apiFlags) > 0 && len(requestFlags) == 0 {
-				return fmt.Errorf("API deploy flags %s do not select API mode; provide APP_NAME or an API request flag such as --source-code-path, or omit them to use bundle deploy", strings.Join(apiFlags, ", "))
-			}
-			return nil
-		}
+		bundleFlags.MarkHidden("verbose")
+		bundleFlags.BoolVar(&opts.skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
+		bundleFlags.BoolVar(&opts.skipTests, "skip-tests", true, "Skip running tests during validation")
+		deployCmd.Flags().AddFlagSet(bundleFlags)
 
 		makeArgsOptionalWithBundle(deployCmd, "deploy [APP_NAME]")
-
-		originalPreRunE := deployCmd.PreRunE
-		deployCmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-			if err := validateFlags(cmd, args); err != nil {
-				return err
+		originalArgs := deployCmd.Args
+		deployCmd.Args = func(cmd *cobra.Command, args []string) error {
+			// Parent flags are available only after the command tree is assembled.
+			cmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {
+				if _, ok := flag.Annotations[root.BundleFlagAnnotation]; ok {
+					bundleFlags.AddFlag(flag)
+				}
+			})
+			apiFlagNames := changedFlagNames(apiFlags)
+			bundleFlagNames := changedFlagNames(bundleFlags)
+			if len(apiFlagNames) > 0 && len(bundleFlagNames) > 0 {
+				return fmt.Errorf("API deploy flags %s cannot be combined with bundle deploy flags %s", strings.Join(apiFlagNames, ", "), strings.Join(bundleFlagNames, ", "))
 			}
-			if originalPreRunE != nil {
-				return originalPreRunE(cmd, args)
+			if len(args) > 0 && len(bundleFlagNames) > 0 {
+				return fmt.Errorf("bundle deploy flags %s cannot be used when APP_NAME is provided; omit APP_NAME to use bundle deploy", strings.Join(bundleFlagNames, ", "))
 			}
-			return nil
+			if len(args) == 0 && len(apiFlagNames) > 0 {
+				return fmt.Errorf("API deploy flags %s require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy", strings.Join(apiFlagNames, ", "))
+			}
+			return originalArgs(cmd, args)
 		}
 
 		originalRunE := deployCmd.RunE
 		deployCmd.RunE = func(cmd *cobra.Command, args []string) error {
-			if err := validateFlags(cmd, args); err != nil {
-				return err
-			}
-			requestFlags := changedFlagNames(cmd, requestFlagNames)
-
-			if len(args) == 0 && len(requestFlags) == 0 {
-				b := root.TryConfigureBundle(cmd)
-				if b != nil {
-					return runBundleDeploy(cmd, opts)
-				}
-			}
-
 			if len(args) == 0 {
-				appName, _, err := getAppNameFromArgs(cmd, args)
-				if err != nil {
-					return err
-				}
-				args = []string{appName}
+				return runBundleDeploy(cmd, opts)
 			}
 
 			err := originalRunE(cmd, args)
@@ -189,12 +146,10 @@ without an APP_NAME argument, this command runs an enhanced deployment pipeline:
 2. Deploys the project to the workspace
 3. Runs the app
 
-When an APP_NAME argument is provided (or when not in a project directory),
+When an APP_NAME argument is provided,
 creates an app deployment using the API directly.
 
-When an API request flag is provided without APP_NAME in a project directory,
-the app name is inferred from databricks.yml and the API is used directly.
-Control flags such as --no-wait and --timeout do not select API mode by themselves.
+API deploy flags, including --no-wait and --timeout, require APP_NAME.
 API deploy flags cannot be combined with bundle deploy flags.
 
 Arguments:
@@ -211,8 +166,8 @@ Examples:
   # Deploy a specific app using the API (even from a project directory)
   databricks apps deploy my-app
 
-  # Infer the app name and deploy a workspace source path using the API
-  databricks apps deploy --source-code-path /Workspace/Users/me/my-app --no-wait
+  # Deploy a workspace source path using the API
+  databricks apps deploy my-app --source-code-path /Workspace/Users/me/my-app --no-wait
 
   # Deploy from project with validation skip
   databricks apps deploy --skip-validation

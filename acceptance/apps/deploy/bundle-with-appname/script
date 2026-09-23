@@ -1,15 +1,31 @@
 # Test: apps deploy API routing in a bundle directory
-# Expected: explicit names and API flags use direct deploy; incompatible flags fail
+# Expected: explicit names use direct deploy; incompatible flags fail
 title "API deploy with an explicit app name"
 trace $CLI apps deploy test-app --no-wait
 
-title "API flags infer the app name from the bundle"
-trace $CLI apps deploy --source-code-path /Workspace/apps/inferred --no-wait
+title "API deploy with a workspace source path"
+# Scope path conversion suppression to the CLI; Python helpers need it on Windows.
+MSYS_NO_PATHCONV=1 trace $CLI apps deploy test-app --source-code-path /Workspace/apps/test-app --no-wait
+
+title "API deploy with a Git source"
+trace $CLI apps deploy test-app --git-branch release --no-wait
 
 title "API and bundle deploy flags cannot be mixed"
-trace musterr $CLI apps deploy --source-code-path /Workspace/apps/inferred --force
+MSYS_NO_PATHCONV=1 trace musterr $CLI apps deploy --source-code-path /Workspace/apps/test-app --force
+trace musterr $CLI apps deploy --git-branch release --skip-validation
+trace musterr $CLI apps deploy test-app --no-wait --target prod
+trace musterr $CLI apps deploy --no-wait --var app_name=my-app
 
-title "API control flags do not select API mode"
-trace musterr $CLI apps deploy --no-wait
+title "Every API deploy flag requires APP_NAME"
+for flag in --no-wait --timeout=1m --source-code-path=/Workspace/apps/test-app --git-branch=release --git-tag=v1 --git-commit=abc --git-source-code-path=app --deployment-id=dep-123 --mode=SNAPSHOT --json='{}'; do
+    MSYS_NO_PATHCONV=1 trace musterr $CLI apps deploy "$flag"
+done
+
+title "Bundle flags cannot be used with APP_NAME"
+trace musterr $CLI apps deploy test-app --force
+trace musterr $CLI apps deploy test-app --target prod
+trace musterr $CLI apps deploy test-app -t prod
+trace musterr $CLI apps deploy test-app --environment prod
+trace musterr $CLI apps deploy test-app --var app_name=my-app
 
 trace print_requests.py //apps

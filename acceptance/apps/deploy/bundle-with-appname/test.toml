@@ -1,6 +1,5 @@
 Cloud = false
 RecordRequests = true
-Env.MSYS_NO_PATHCONV = "1"
 
 [[Server]]
 Pattern = "POST /api/2.0/apps/test-app/deployments"
@@ -8,20 +7,6 @@ Response.Body = '''
 {
   "deployment_id": "dep-123",
   "source_code_path": "/Workspace/apps/test-app",
-  "mode": "SNAPSHOT",
-  "status": {
-    "state": "PENDING",
-    "message": "Deployment pending"
-  }
-}
-'''
-
-[[Server]]
-Pattern = "POST /api/2.0/apps/myapp/deployments"
-Response.Body = '''
-{
-  "deployment_id": "dep-456",
-  "source_code_path": "/Workspace/apps/inferred",
   "mode": "SNAPSHOT",
   "status": {
     "state": "PENDING",

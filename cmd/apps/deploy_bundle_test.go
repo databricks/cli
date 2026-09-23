@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -117,7 +118,7 @@ func TestBundleDeployOverrideHelpText(t *testing.T) {
 	assert.Contains(t, cmd.Long, "--auto-approve")
 	assert.Contains(t, cmd.Long, "--force-lock")
 	assert.Contains(t, cmd.Long, "--source-code-path")
-	assert.Contains(t, cmd.Long, "do not select API mode")
+	assert.Contains(t, cmd.Long, "API deploy flags, including --no-wait and --timeout, require APP_NAME")
 }
 
 func TestApplyDeployFlags(t *testing.T) {
@@ -267,12 +268,20 @@ func TestBundleDeployOverrideRejectsIncompatibleInputs(t *testing.T) {
 			want:  "API deploy flags --git-branch cannot be combined with bundle deploy flags --skip-validation",
 		},
 		{
-			name: "API control flag without app name",
+			name: "API flag without app name",
 			before: func(cmd *cobra.Command) {
 				cmd.Flags().Bool("no-wait", false, "")
 			},
 			flags: []string{"--no-wait"},
-			want:  "API deploy flags --no-wait do not select API mode; provide APP_NAME or an API request flag such as --source-code-path, or omit them to use bundle deploy",
+			want:  "API deploy flags --no-wait require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy",
+		},
+		{
+			name: "new API flag without app name",
+			before: func(cmd *cobra.Command) {
+				cmd.Flags().String("new-api-flag", "", "")
+			},
+			flags: []string{"--new-api-flag=value"},
+			want:  "API deploy flags --new-api-flag require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy",
 		},
 		{
 			name:  "bundle flag with app name",
@@ -283,7 +292,10 @@ func TestBundleDeployOverrideRejectsIncompatibleInputs(t *testing.T) {
 		{
 			name: "bundle variable with app name",
 			after: func(cmd *cobra.Command) {
-				cmd.Flags().StringSlice("var", nil, "")
+				parent := &cobra.Command{Use: "apps"}
+				parent.PersistentFlags().StringSlice("var", nil, "")
+				require.NoError(t, parent.PersistentFlags().SetAnnotation("var", root.BundleFlagAnnotation, nil))
+				parent.AddCommand(cmd)
 			},
 			flags: []string{"--var=app_name=my-app"},
 			args:  []string{"my-app"},
@@ -293,13 +305,7 @@ func TestBundleDeployOverrideRejectsIncompatibleInputs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			preRunCalled := false
-			cmd := &cobra.Command{
-				PreRunE: func(cmd *cobra.Command, args []string) error {
-					preRunCalled = true
-					return nil
-				},
-			}
+			cmd := &cobra.Command{}
 			if tc.before != nil {
 				tc.before(cmd)
 			}
@@ -311,10 +317,9 @@ func TestBundleDeployOverrideRejectsIncompatibleInputs(t *testing.T) {
 			}
 
 			require.NoError(t, cmd.ParseFlags(tc.flags))
-			err := cmd.PreRunE(cmd, tc.args)
+			err := cmd.Args(cmd, tc.args)
 
 			require.EqualError(t, err, tc.want)
-			assert.False(t, preRunCalled)
 		})
 	}
 }

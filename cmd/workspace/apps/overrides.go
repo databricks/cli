@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	appsCli "github.com/databricks/cli/cmd/apps"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
@@ -81,13 +82,17 @@ func init() {
 
 		// Add --var flag support for bundle operations
 		cmd.PersistentFlags().StringSlice("var", []string{}, `set values for variables defined in bundle config. Example: --var="key=value"`)
+		cmd.PersistentFlags().Lookup("var").Annotations = map[string][]string{root.BundleFlagAnnotation: nil}
 	})
 
 	// Register command overrides
 	listOverrides = append(listOverrides, listOverride)
 	listDeploymentsOverrides = append(listDeploymentsOverrides, listDeploymentsOverride)
 	createOverrides = append(createOverrides, createOverride)
-	deployOverrides = append(deployOverrides, appsCli.BundleDeployOverrideWithWrapper(wrapDeploymentError))
+	deployOverrides = append(deployOverrides, func(cmd *cobra.Command, req *apps.CreateAppDeploymentRequest) {
+		gitDeployOverride(cmd, req)
+		appsCli.BundleDeployOverrideWithWrapper(wrapDeploymentError)(cmd, req)
+	})
 	deleteOverrides = append(deleteOverrides, appsCli.BundleDeleteOverrideWithWrapper(wrapDeploymentError))
 	startOverrides = append(startOverrides, appsCli.BundleStartOverrideWithWrapper(wrapDeploymentError))
 	stopOverrides = append(stopOverrides, appsCli.BundleStopOverrideWithWrapper(wrapDeploymentError))
