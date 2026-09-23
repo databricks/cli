@@ -1,0 +1,373 @@
+
+=== Deploy a cluster that declares no libraries
+OK: cluster created
+
+=== Out of band: a job run (or the UI) installs 'six' on the shared cluster
+>>> print_requests.py //libraries/install
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+
+=== Declare the first library (requests): plan installs it, the out-of-band six is skipped
+>>> plan_libs
+{
+  "libraries": {
+    "action": "update",
+    "new": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ],
+    "remote": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  },
+  "libraries[pypi='requests;']": {
+    "action": "update",
+    "new": {
+      "pypi": {
+        "package": "requests"
+      }
+    }
+  },
+  "libraries[pypi='six;']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Restarting cluster [MYCLUSTER_ID] because its libraries changed
+Updated clusters.mycluster
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]"
+  }
+}
+
+=== Declare a second library (urllib3): plan installs the set, requests already present, six skipped
+>>> plan_libs
+{
+  "libraries[pypi='six;']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  },
+  "libraries[pypi='urllib3;']": {
+    "action": "update",
+    "new": {
+      "pypi": {
+        "package": "urllib3"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Restarting cluster [MYCLUSTER_ID] because its libraries changed
+Updated clusters.mycluster
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      },
+      {
+        "pypi": {
+          "package": "urllib3"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]"
+  }
+}
+
+=== Drop urllib3: plan uninstalls only urllib3, leaving declared requests and out-of-band six
+>>> plan_libs
+{
+  "libraries[pypi='six;']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  },
+  "libraries[pypi='urllib3;']": {
+    "action": "update",
+    "old": {
+      "pypi": {
+        "package": "urllib3"
+      }
+    },
+    "remote": {
+      "pypi": {
+        "package": "urllib3"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Restarting cluster [MYCLUSTER_ID] because its libraries changed
+Updated clusters.mycluster
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "urllib3"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]"
+  }
+}
+
+=== Drift: 'requests' is uninstalled out of band; plan reinstalls the declared library
+>>> print_requests.py //libraries/uninstall
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+>>> plan_libs
+{
+  "libraries[pypi='requests;']": {
+    "action": "update",
+    "new": {
+      "pypi": {
+        "package": "requests"
+      }
+    }
+  },
+  "libraries[pypi='six;']": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Restarting cluster [MYCLUSTER_ID] because its libraries changed
+Updated clusters.mycluster
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]"
+  }
+}
+
+=== Remove the last declared library: plan uninstalls requests, out-of-band six survives
+>>> plan_libs
+{
+  "libraries": {
+    "action": "update",
+    "old": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ],
+    "remote": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      },
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Restarting cluster [MYCLUSTER_ID] because its libraries changed
+Updated clusters.mycluster
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/restart",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]"
+  }
+}
+
+=== No-op redeploy: only the out-of-band six remains; plan skips it and nothing changes
+>>> plan_libs
+{
+  "libraries": {
+    "action": "skip",
+    "reason": "backend_default",
+    "remote": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted

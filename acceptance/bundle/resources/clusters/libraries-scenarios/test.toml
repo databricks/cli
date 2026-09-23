@@ -1,0 +1,16 @@
+# Exercises how the cluster resource plans and applies library changes when a library it did not
+# declare is present on the cluster (a job run's task library or a UI install - both cluster-wide).
+# The cluster manages only its own declared libraries: the out-of-band one is always classified skip
+# and is never uninstalled, while declared libraries still install/uninstall and drift is corrected.
+# See removedLibraries in bundle/direct/dresources/cluster.go and the libraries backend_defaults
+# entry in configs/clusters.yml.
+
+# Local only: the scenario needs a library on the cluster the bundle did not install. We inject it
+# with an out-of-band Libraries API call against the fake server, which is deterministic locally but
+# racy against a real (async) install on cloud. The job-installed variant runs on cloud in
+# integration_whl and libraries-job.
+RecordRequests = true
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [".databricks", "databricks.yml"]
