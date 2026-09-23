@@ -59,7 +59,7 @@ tasks:
     generates:
       - docs/_output/**
     cmds:
-      - "uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going"
+      - "uv run --python 3.12 sphinx-build docs docs/_output --show-traceback --nitpicky --fresh-env --keep-going -W"
 
   pydabs-codegen:
     desc: Run pydabs codegen

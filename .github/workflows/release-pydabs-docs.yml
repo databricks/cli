@@ -1,0 +1,102 @@
+name: release-pydabs-docs
+
+# Rebuild the PyDABs Python reference docs after every release and publish the
+# HTML to the `gh-pages` branch (served at https://databricks.github.io/cli/python/).
+# The docs are NOT kept on main — `gh-pages` is their published home, and until
+# now it was refreshed by hand. The generated `.rst` pages live on main; this
+# workflow just runs the Sphinx build and copies the output onto `gh-pages`.
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  # Required by setup-jfrog (GOPROXY exchange).
+  id-token: write
+
+jobs:
+  update-pydabs-docs:
+    runs-on:
+      group: databricks-protected-runner-group
+      labels: linux-ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Build runs against `main`. fetch-tags lets the workflow_dispatch path
+          # below resolve the most recent release tag for the commit message.
+          ref: main
+          fetch-tags: true
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.6.5"
+
+      - name: Determine release tag
+        id: tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then
+            tag="$REF_NAME"
+          else
+            # git tag --list uses fnmatch (no `+`), so post-filter with grep
+            # to match the same shape as the trigger above.
+            tag=$(git tag --list 'v*' --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)
+          fi
+          if [ -z "$tag" ]; then
+            echo "Could not determine a release tag to publish for." >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Publishing for tag $tag"
+
+      - name: Check out gh-pages worktree
+        run: |
+          git fetch origin gh-pages
+          git worktree add "$RUNNER_TEMP/ghpages" origin/gh-pages
+
+      - name: Build the PyDABs docs
+        run: go tool -modfile=tools/task/go.mod task pydabs-docs
+
+      # gh-pages holds the Sphinx output under python/; replace it wholesale so a
+      # dropped resource loses its page. Only python/ is touched — the top-level
+      # .nojekyll, index.html, and experimental/ are left as-is.
+      - name: Copy built docs into the gh-pages worktree
+        run: |
+          rm -rf "$RUNNER_TEMP/ghpages/python"
+          mkdir -p "$RUNNER_TEMP/ghpages/python"
+          cp -R python/docs/_output/. "$RUNNER_TEMP/ghpages/python/"
+
+      - name: Stage regenerated docs on gh-pages
+        working-directory: ${{ runner.temp }}/ghpages
+        run: git add -A python
+
+      - name: Commit and push to gh-pages
+        working-directory: ${{ runner.temp }}/ghpages
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |-
+          if git diff --cached --quiet; then
+            echo "gh-pages already up to date for ${TAG}; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update PyDABs reference docs for ${TAG}"
+          git push origin HEAD:gh-pages
