@@ -16,6 +16,3 @@ normalize_slash:
   # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
   - field: storage_location
     reason: uc_strips_trailing_slash
-backend_defaults:
-  # storage_location is Computed; backend generates it for managed volumes.
-  - field: storage_location

@@ -203,7 +203,7 @@
         },
         "storage": {
           "action": "skip",
-          "reason": "backend_default",
+          "reason": "immutable_backend_value",
           "remote": "dbfs:/pipelines/[UUID]"
         },
         "tags['myjob_name']": {
@@ -238,7 +238,7 @@
       "changes": {
         "storage_location": {
           "action": "skip",
-          "reason": "backend_default",
+          "reason": "immutable_backend_value",
           "remote": "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
         }
       }
