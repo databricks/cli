@@ -1160,8 +1160,10 @@ func newCreateSnapshot() *cobra.Command {
 	// TODO: complex arg: status
 
 	cmd.Use = "create-snapshot PARENT SNAPSHOT_ID"
-	cmd.Short = `Create a Snapshot.`
-	cmd.Long = `Create a Snapshot.
+	cmd.Short = `*Beta* Create a Snapshot.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Create a Snapshot.
 
   Creates a snapshot, an immutable point-in-time copy of a branch's data, within
   the project.
@@ -1176,12 +1178,9 @@ func newCreateSnapshot() *cobra.Command {
     SNAPSHOT_ID: Client-chosen ID for the snapshot. It becomes the final segment of the
       snapshot resource name and cannot be changed after creation.`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(2)
@@ -2236,8 +2235,10 @@ func newDeleteSnapshot() *cobra.Command {
 	cmd.Flags().DurationVar(&deleteSnapshotTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
 
 	cmd.Use = "delete-snapshot NAME"
-	cmd.Short = `Delete a Snapshot.`
-	cmd.Long = `Delete a Snapshot.
+	cmd.Short = `*Beta* Delete a Snapshot.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Delete a Snapshot.
 
   Deletes the specified snapshot.
 
@@ -2250,12 +2251,9 @@ func newDeleteSnapshot() *cobra.Command {
     NAME: The resource name of the snapshot to delete. Format:
       projects/{project_id}/snapshots/{snapshot_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3154,8 +3152,10 @@ func newGetSnapshot() *cobra.Command {
 	var getSnapshotReq postgres.GetSnapshotRequest
 
 	cmd.Use = "get-snapshot NAME"
-	cmd.Short = `Get a Snapshot.`
-	cmd.Long = `Get a Snapshot.
+	cmd.Short = `*Beta* Get a Snapshot.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+Get a Snapshot.
 
   Retrieves information about the specified snapshot.
 
@@ -3163,12 +3163,9 @@ func newGetSnapshot() *cobra.Command {
     NAME: The resource name of the snapshot to retrieve. Format:
       projects/{project_id}/snapshots/{snapshot_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
@@ -3892,20 +3889,19 @@ func newListSnapshots() *cobra.Command {
 	cmd.Flags().Lookup("page-token").Hidden = true
 
 	cmd.Use = "list-snapshots PARENT"
-	cmd.Short = `List Snapshots.`
-	cmd.Long = `List Snapshots.
+	cmd.Short = `*Beta* List Snapshots.`
+	cmd.Long = `This command is in Beta and may change without notice.
+
+List Snapshots.
 
   Returns a paginated list of snapshots in the project.
 
   Arguments:
     PARENT: The project that owns the snapshots. Format: projects/{project_id}`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
-	cmd.Annotations["launch_stage"] = "PRIVATE_PREVIEW"
-	cmd.Annotations["launch_stage_display"] = "Private Preview"
+	cmd.Annotations["launch_stage"] = "PUBLIC_BETA"
+	cmd.Annotations["launch_stage_display"] = "Beta"
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := root.ExactArgs(1)
