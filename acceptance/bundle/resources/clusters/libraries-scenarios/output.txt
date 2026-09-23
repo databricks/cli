@@ -58,13 +58,6 @@ OK: cluster created
   }
 }
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Restarting cluster [MYCLUSTER_ID] because its libraries changed
-Updated clusters.mycluster
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
 >>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
 {
   "method": "POST",
@@ -109,13 +102,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     }
   }
 }
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Restarting cluster [MYCLUSTER_ID] because its libraries changed
-Updated clusters.mycluster
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
 {
@@ -171,13 +157,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     }
   }
 }
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Restarting cluster [MYCLUSTER_ID] because its libraries changed
-Updated clusters.mycluster
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
 {
@@ -254,13 +233,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Restarting cluster [MYCLUSTER_ID] because its libraries changed
-Updated clusters.mycluster
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
 >>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
 {
   "method": "POST",
@@ -311,13 +283,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Restarting cluster [MYCLUSTER_ID] because its libraries changed
-Updated clusters.mycluster
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
 >>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
 {
   "method": "POST",
@@ -356,11 +321,6 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     ]
   }
 }
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
 

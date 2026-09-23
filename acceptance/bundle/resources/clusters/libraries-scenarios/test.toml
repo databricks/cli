@@ -12,5 +12,8 @@
 RecordRequests = true
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# READPLAN=1 feeds the serialized plan to `bundle deploy --plan`, exercising the path where a
+# change's Old value is generic JSON rather than a typed compute.Library (see decodeLibraries).
+EnvMatrix.READPLAN = ["", "1"]
 
-Ignore = [".databricks", "databricks.yml"]
+Ignore = [".databricks", "databricks.yml", "tmp.plan.json"]
