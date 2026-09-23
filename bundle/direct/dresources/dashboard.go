@@ -74,49 +74,6 @@ func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *DashboardSta
 	}
 }
 
-func (r *ResourceDashboard) RemapState(state *DashboardState) *DashboardState {
-	forceSendFields := utils.FilterFields[DashboardState](state.ForceSendFields, []string{
-		"CreateTime",
-		"DashboardId",
-		"LifecycleState",
-		"Path",
-		"UpdateTime",
-		"SerializedDashboard",
-		"DatasetCatalog",
-		"DatasetSchema",
-	}...)
-
-	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
-	// even when false (zero value).
-	if !slices.Contains(forceSendFields, "EmbedCredentials") {
-		forceSendFields = append(forceSendFields, "EmbedCredentials")
-	}
-
-	return &DashboardState{
-		DashboardConfig: resources.DashboardConfig{
-			DisplayName:         state.DisplayName,
-			Etag:                state.Etag,
-			ParentPath:          state.ParentPath,
-			WarehouseId:         state.WarehouseId,
-			SerializedDashboard: state.SerializedDashboard,
-			EmbedCredentials:    state.EmbedCredentials,
-			DatasetCatalog:      state.DatasetCatalog,
-			DatasetSchema:       state.DatasetSchema,
-
-			ForceSendFields: forceSendFields,
-
-			// Output only fields. Remote changes to these are ignored via
-			// ignore_remote_changes in dashboards.yml rather than zeroed here.
-			CreateTime:     state.CreateTime,
-			DashboardId:    state.DashboardId,
-			LifecycleState: state.LifecycleState,
-			Path:           state.Path,
-			UpdateTime:     state.UpdateTime,
-		},
-		Published: state.Published,
-	}
-}
-
 func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*DashboardState, error) {
 	var dashboard *dashboards.Dashboard
 	var publishedDashboard *dashboards.PublishedDashboard
