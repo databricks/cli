@@ -1,0 +1,16 @@
+# Invariant to test: auto-migration on deploy is successful, no drift after deploy
+# Additional checks: no internal errors / panics in any commands
+
+unset DATABRICKS_BUNDLE_ENGINE
+
+invariant_setup
+
+invariant_deploy LOG.deploy DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+# Deploy on the direct default (engine unset): this migrates the terraform state to the
+# direct engine before deploying, so it exercises the auto path (MigrateTerraformState:
+# reverse-interpolate, plan-check/recreate-guard, commit) rather than the explicit
+# "bundle deployment migrate" command that migrate/ covers.
+invariant_deploy LOG.migrate $CLI bundle deploy
+
+invariant_verify_no_drift
