@@ -323,6 +323,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// No version was created, so the deferred CompleteVersion is a no-op and the version
 		// number is left for the next deploy. Both the user declining and a console that
 		// cannot prompt land here.
+		//
+		// A deferred terraform→direct migration wrote the local direct state but has not
+		// committed it (deployCore below never ran): discard it and stay on the terraform
+		// engine, so a declined deploy changes nothing.
+		if b.MigrationDeferred {
+			statemgmt.DiscardDeferredMigration(ctx, b)
+			log.Warnf(ctx, "Migration not committed, staying on terraform state")
+		}
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -368,6 +376,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	if logdiag.HasError(ctx) {
 		return
+	}
+
+	// A deferred terraform→direct migration is committed by deployCore above, which wrote and
+	// pushed the converted direct state. Now that the deploy succeeded, finalize the migration
+	// by cleaning up the superseded terraform state and recording the migration source.
+	if b.MigrationDeferred {
+		statemgmt.FinalizeDeferredMigration(ctx, b, requestedEngine)
 	}
 
 	// Report what was deployed, mirroring "bundle plan". Printed before the

@@ -16,6 +16,7 @@ For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
   recreate resources.volumes.my_volume
+Warn: Migration not committed, staying on terraform state
 Error: the deployment requires destructive actions, but the current console does not support prompting.
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
@@ -26,4 +27,3 @@ Exit code: 1
 
 >>> print_migration_telemetry
 direct_migrate_recreate_planned true
-direct_migrated_via_env true

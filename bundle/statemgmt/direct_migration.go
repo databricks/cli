@@ -32,23 +32,42 @@ import (
 // engine, distinguishing them from the user-invoked "bundle deployment migrate".
 const warnPrefix = "migration to direct: "
 
+// MigrateMode selects how MigrateTerraformState commits the converted state.
+type MigrateMode int
+
+const (
+	// MigratePlan converts the state and loads it into memory only (for `bundle plan`):
+	// nothing is written or pushed and no plan check runs.
+	MigratePlan MigrateMode = iota
+
+	// MigrateDeploy converts the state, plan-checks it (falling back to terraform if the
+	// check fails), and loads it into memory. The deploy commits the converted state itself
+	// once it is approved (deployCore) and then calls FinalizeDeferredMigration to clean up
+	// the terraform state; a declined deploy discards it and stays on terraform.
+	MigrateDeploy
+
+	// MigrateCommit converts the state, plan-checks it, and commits immediately - pushes
+	// resources.json, backs up the terraform state, and opens the local state. Used by
+	// destroy, which has no deployCore to defer the commit to.
+	MigrateCommit
+)
+
 // MigrateTerraformState converts the bundle's terraform state to a direct-engine state
 // and opens b.DeploymentBundle.StateDB with it. Returns false when there is no terraform
 // state to migrate (the caller then opens the direct state normally).
 //
-// When commit is false (plan) the converted state is opened in memory and nothing is
-// written to disk or the workspace. When commit is true (deploy) the migration is
-// plan-checked first; on success resources.json is written and pushed and
-// terraform.tfstate is backed up, so it completes even if the deploy is a no-op.
+// MigratePlan and MigrateDeploy open the converted state in memory and write nothing to
+// disk or the workspace; MigrateDeploy additionally plan-checks it and sets
+// b.MigrationDeferred so the deploy commits it after approval (see FinalizeDeferredMigration).
+// MigrateCommit plan-checks and commits up front: resources.json is written and pushed and
+// terraform.tfstate is backed up.
 //
-// Any failure before resources.json is pushed (parsing, conversion, the empty-state
-// sweep, the plan check, or the push itself) is non-fatal: a warning is emitted, false is
-// returned, and the caller proceeds on the terraform engine, which is still in place. This
-// keeps a failed migration from blocking a deploy that would otherwise succeed. Only a
-// failure after the push (placing or opening the local state) returns an error, because
-// the workspace is already committed to the direct engine by then; re-running recovers by
-// pulling the committed resources.json.
-func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine engine.EngineSetting, commit bool) (bool, error) {
+// Any failure before a commit (parsing, conversion, the empty-state sweep, the plan check,
+// or - for MigrateCommit - the push) is non-fatal: a warning is emitted, false is returned,
+// and the caller proceeds on the terraform engine, which is still in place. Only a failure
+// after MigrateCommit's push returns an error, because the workspace is already committed to
+// the direct engine by then; re-running recovers by pulling the committed resources.json.
+func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine engine.EngineSetting, mode MigrateMode) (bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
@@ -62,11 +81,13 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 
 	_, localDirectPath := b.StateFilenameDirect(ctx)
 
-	// A terraform state with no managed resources carries nothing to migrate. On deploy,
-	// sweep the empty terraform state aside so the direct engine is used from now on; on
-	// plan, just open an empty direct database in memory. No resources.json is written.
+	// A terraform state with no managed resources carries nothing to migrate and cannot
+	// produce a destructive plan, so commit it up front for deploy and destroy (there is
+	// nothing to defer): sweep the empty terraform state aside so the direct engine is used
+	// from now on. Plan just opens an empty direct database in memory. No resources.json is
+	// written.
 	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
-		if commit {
+		if mode != MigratePlan {
 			cmdio.LogString(ctx, "Removing empty terraform state; the direct engine will be used from now on...")
 			if err := BackupTerraformState(ctx, b); err != nil {
 				b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
@@ -99,9 +120,9 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 		return false, nil
 	}
 
-	if commit {
-		// Plan-check the converted state; if it fails, do not commit and fall back to the
-		// terraform engine (the temp file is cleaned up by the deferred Remove).
+	// Plan-check the converted state for deploy and destroy (not plan): validate it can be
+	// planned - falling back to terraform if not - and record the recreate metric.
+	if mode != MigratePlan {
 		plan, err := checkPlanOnTempState(ctx, b, tempStatePath, cfg)
 		if err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigratePlanError, true)
@@ -118,13 +139,15 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 			b.Metrics.SetBoolValue(metrics.DirectMigrateRecreatePlanned, true)
 			log.Infof(ctx, "migration to the direct engine will recreate %v; the deploy's approval gates this", recreated)
 		}
+	}
 
+	if mode == MigrateCommit {
 		// Commit to the workspace by pushing resources.json (serial tf+1). This upload is
 		// the hard commit: once it lands it outranks any leftover terraform state by serial,
 		// so engine selection can no longer pick terraform and the cleanup in
 		// finalizeLocalMigration is best-effort. If the push fails the workspace has not
-		// switched engines, so deploy on terraform this time; the next deploy retries the
-		// migration (the temp file is cleaned up by the deferred Remove).
+		// switched engines, so run on terraform this time; the next run retries the migration
+		// (the temp file is cleaned up by the deferred Remove).
 		if err := pushMigrationToRemote(ctx, b, tempStatePath); err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
 			log.Warnf(ctx, "migration to the direct engine could not be committed to the workspace; deploying on terraform this time: %v", err)
@@ -132,8 +155,8 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 		}
 
 		// The workspace is committed to direct. Place the converted state locally (the
-		// deploy about to run reads it) and best-effort clean up the terraform state. A
-		// local-placement failure is still surfaced — this checkout cannot deploy without
+		// command about to run reads it) and best-effort clean up the terraform state. A
+		// local-placement failure is still surfaced — this checkout cannot proceed without
 		// it — but terraform-cleanup failures only warn.
 		if err := finalizeLocalMigration(ctx, b, tempStatePath, resourceCount); err != nil {
 			b.Metrics.SetBoolValue(metrics.DirectMigrateCommitError, true)
@@ -148,18 +171,74 @@ func MigrateTerraformState(ctx context.Context, b *bundle.Bundle, requiredEngine
 		return true, nil
 	}
 
-	// Plan (no commit): load the converted state into memory. It was just written by this
-	// CLI, so it is at the current schema version and needs no migration.
-	raw, err := os.ReadFile(tempStatePath)
-	if err != nil {
-		return false, fmt.Errorf("reading migrated state: %w", err)
+	if mode == MigratePlan {
+		// Plan never persists the state, so load the converted state into memory only. It was
+		// just written by this CLI, so it is at the current schema version and needs no migration.
+		raw, err := os.ReadFile(tempStatePath)
+		if err != nil {
+			return false, fmt.Errorf("reading migrated state: %w", err)
+		}
+		var data dstate.Database
+		if err := json.Unmarshal(raw, &data); err != nil {
+			return false, fmt.Errorf("parsing migrated state: %w", err)
+		}
+		b.DeploymentBundle.StateDB.OpenWithData(localDirectPath, data)
+		return true, nil
 	}
-	var data dstate.Database
-	if err := json.Unmarshal(raw, &data); err != nil {
-		return false, fmt.Errorf("parsing migrated state: %w", err)
+
+	// MigrateDeploy: place the converted state in the local direct state file so the deploy
+	// (deployCore) has a base to persist even when the deploy is a no-op - an in-memory state
+	// is dropped by Finalize when there are no operations. The remote push and terraform-state
+	// cleanup are deferred to the approved deploy (deployCore's push + FinalizeDeferredMigration),
+	// so the workspace is untouched until then; a declined deploy removes this local file
+	// (DiscardDeferredMigration) and stays on terraform.
+	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
+		return false, fmt.Errorf("creating local state directory for migration: %w", err)
 	}
-	b.DeploymentBundle.StateDB.OpenWithData(localDirectPath, data)
+	if err := os.Rename(tempStatePath, localDirectPath); err != nil {
+		return false, fmt.Errorf("writing local direct state for migration: %w", err)
+	}
+	if err := b.DeploymentBundle.StateDB.Open(ctx, localDirectPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
+		return false, fmt.Errorf("opening migrated local state: %w", err)
+	}
+
+	// The deploy commits this state once approved and then FinalizeDeferredMigration cleans up
+	// terraform. Report the migration now; a declined deploy adds a "not committed" warning.
+	b.MigrationDeferred = true
+	suffix := "s"
+	if resourceCount == 1 {
+		suffix = ""
+	}
+	cmdio.LogString(ctx, fmt.Sprintf("Migrated %d resource%s to direct deployment engine.", resourceCount, suffix))
 	return true, nil
+}
+
+// FinalizeDeferredMigration completes a MigrateDeploy migration after the deploy has
+// committed the converted direct state: it backs up the now-superseded terraform state
+// (remote and local, best-effort) and records which source triggered the migration. The
+// deploy phase calls it only once the deploy is approved and applied, so a declined deploy
+// leaves the terraform state untouched. The "Migrated N resources" summary was already
+// printed when the converted state was prepared.
+func FinalizeDeferredMigration(ctx context.Context, b *bundle.Bundle, requiredEngine engine.EngineSetting) {
+	BackupRemoteTerraformState(ctx, b)
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	if err := os.Rename(localTerraformPath, localTerraformPath+".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Warnf(ctx, "automatic migration to direct engine: could not back up local terraform state: %v", err)
+	}
+	recordAutoMigrateSource(b, requiredEngine)
+}
+
+// DiscardDeferredMigration undoes a MigrateDeploy migration whose deploy was declined: it
+// removes the local direct state file and WAL the migration wrote and resets the in-memory
+// state, so nothing is committed and the run stays on the terraform state. The remote
+// workspace was never touched (its push is part of the approved deploy).
+func DiscardDeferredMigration(ctx context.Context, b *bundle.Bundle) {
+	// DiscardWrite closes and removes the WAL and resets the in-memory state.
+	b.DeploymentBundle.StateDB.DiscardWrite(ctx)
+	_, localDirectPath := b.StateFilenameDirect(ctx)
+	if err := os.Remove(localDirectPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Warnf(ctx, "could not remove local direct state after a declined migration: %v", err)
+	}
 }
 
 // recordAutoMigrateSource sets exactly one of the migrated-via-* telemetry keys, per how

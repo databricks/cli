@@ -19,6 +19,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
   recreate resources.schemas.my_schema
+Warn: Migration not committed, staying on terraform state
 Error: the deployment requires destructive actions, but the current console does not support prompting.
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
@@ -29,10 +30,11 @@ Exit code: 1
 
 >>> print_migration_telemetry
 direct_migrate_recreate_planned true
-direct_migrated_via_env true
 
 === With --auto-approve the recreate moves the schema to the new catalog on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
+Warn: migration to direct: schemas.my_schema: catalog_name differs between config ("othercat_[UNIQUE_NAME]") and terraform state ("main"); this resource will be recreated.
+Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:

@@ -332,7 +332,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// the terraform engine. Read-only commands set none of these options and keep
 		// reading the Terraform state as-is.
 		if b.MigratingToDirect && needsState {
-			if err := migrateTerraformToDirect(ctx, b, stateDesc, requiredEngine, opts.CommitStateMigration || opts.Deploy); err != nil {
+			// deploy defers the commit to the deploy phase (after approval); destroy has no
+			// deploy phase to defer to, so it commits up front; other state-reading commands
+			// (plan, run) migrate in memory only.
+			mode := statemgmt.MigratePlan
+			if opts.Deploy {
+				mode = statemgmt.MigrateDeploy
+			} else if opts.CommitStateMigration {
+				mode = statemgmt.MigrateCommit
+			}
+			if err := migrateTerraformToDirect(ctx, b, stateDesc, requiredEngine, mode); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -572,14 +581,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 // deploy still runs; only a failure after the commit returns an error. The caller tags the
 // user agent with the resolved stateDesc.Engine afterwards.
 //
-// commit is true for the commands that apply changes (deploy, destroy): the converted
-// state is written and pushed and terraform.tfstate is backed up. Plan and read-only
-// commands pass false and keep the converted state in memory only.
-func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requiredEngine engine.EngineSetting, commit bool) error {
+// mode selects how the converted state is committed: MigrateDeploy loads it in memory and
+// lets the approved deploy commit it, MigrateCommit (destroy) commits it up front, and
+// MigratePlan (plan, run) keeps it in memory only. See MigrateTerraformState.
+func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requiredEngine engine.EngineSetting, mode statemgmt.MigrateMode) error {
 	if requiredEngine.IsDefault {
 		cmdio.LogString(ctx, "Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).")
 	}
-	migrated, err := statemgmt.MigrateTerraformState(ctx, b, requiredEngine, commit)
+	migrated, err := statemgmt.MigrateTerraformState(ctx, b, requiredEngine, mode)
 	if err != nil {
 		return fmt.Errorf("migrating Terraform state to the direct engine: %w", err)
 	}
