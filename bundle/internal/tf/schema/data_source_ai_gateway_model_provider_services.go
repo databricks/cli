@@ -73,9 +73,19 @@ type DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustomDi
 	Plaintext string `json:"plaintext,omitempty"`
 }
 
+type DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustomDirectHeaderAuthApiKeyValue struct {
+	Plaintext string `json:"plaintext,omitempty"`
+}
+
+type DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustomDirectHeaderAuth struct {
+	ApiKeyName  string                                                                                                `json:"api_key_name,omitempty"`
+	ApiKeyValue *DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustomDirectHeaderAuthApiKeyValue `json:"api_key_value,omitempty"`
+}
+
 type DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustomDirect struct {
-	ApiKey  *DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustomDirectApiKey `json:"api_key,omitempty"`
-	BaseUrl string                                                                                 `json:"base_url,omitempty"`
+	ApiKey     *DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustomDirectApiKey     `json:"api_key,omitempty"`
+	BaseUrl    string                                                                                     `json:"base_url,omitempty"`
+	HeaderAuth *DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustomDirectHeaderAuth `json:"header_auth,omitempty"`
 }
 
 type DataSourceAiGatewayModelProviderServicesModelProviderServicesConfigCustom struct {

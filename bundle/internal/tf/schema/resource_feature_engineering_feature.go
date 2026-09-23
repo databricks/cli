@@ -189,6 +189,14 @@ type ResourceFeatureEngineeringFeatureSourceDeltaTableSource struct {
 	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
+type ResourceFeatureEngineeringFeatureSourceFeatureViewSourceFeatureReferences struct {
+	Feature string `json:"feature"`
+}
+
+type ResourceFeatureEngineeringFeatureSourceFeatureViewSource struct {
+	FeatureReferences []ResourceFeatureEngineeringFeatureSourceFeatureViewSourceFeatureReferences `json:"feature_references,omitempty"`
+}
+
 type ResourceFeatureEngineeringFeatureSourceKafkaSourceEntityColumnIdentifiers struct {
 	VariantExprPath string `json:"variant_expr_path"`
 }
@@ -229,11 +237,12 @@ type ResourceFeatureEngineeringFeatureSourceStreamSource struct {
 }
 
 type ResourceFeatureEngineeringFeatureSource struct {
-	DeltaTableSource *ResourceFeatureEngineeringFeatureSourceDeltaTableSource `json:"delta_table_source,omitempty"`
-	KafkaSource      *ResourceFeatureEngineeringFeatureSourceKafkaSource      `json:"kafka_source,omitempty"`
-	Lateness         *ResourceFeatureEngineeringFeatureSourceLateness         `json:"lateness,omitempty"`
-	RequestSource    *ResourceFeatureEngineeringFeatureSourceRequestSource    `json:"request_source,omitempty"`
-	StreamSource     *ResourceFeatureEngineeringFeatureSourceStreamSource     `json:"stream_source,omitempty"`
+	DeltaTableSource  *ResourceFeatureEngineeringFeatureSourceDeltaTableSource  `json:"delta_table_source,omitempty"`
+	FeatureViewSource *ResourceFeatureEngineeringFeatureSourceFeatureViewSource `json:"feature_view_source,omitempty"`
+	KafkaSource       *ResourceFeatureEngineeringFeatureSourceKafkaSource       `json:"kafka_source,omitempty"`
+	Lateness          *ResourceFeatureEngineeringFeatureSourceLateness          `json:"lateness,omitempty"`
+	RequestSource     *ResourceFeatureEngineeringFeatureSourceRequestSource     `json:"request_source,omitempty"`
+	StreamSource      *ResourceFeatureEngineeringFeatureSourceStreamSource      `json:"stream_source,omitempty"`
 }
 
 type ResourceFeatureEngineeringFeatureTimeWindowContinuous struct {

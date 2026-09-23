@@ -138,6 +138,7 @@
             "root_path": null,
             "run_as": [
               {
+                "group_name": "",
                 "service_principal_name": "[UUID]",
                 "user_name": ""
               }
