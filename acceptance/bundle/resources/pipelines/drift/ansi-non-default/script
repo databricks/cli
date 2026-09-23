@@ -1,0 +1,9 @@
+trace $CLI bundle deploy
+pipeline_id=$(read_id.py my)
+
+title "A non-default remote ANSI value remains drift"
+edit_resource.py pipelines "$pipeline_id" <<'PYTHON'
+r["configuration"] = {"spark.sql.ansi.enabled": "false"}
+PYTHON
+trace $CLI bundle plan | contains.py "update pipelines.my"
+trace $CLI bundle plan -o json | nostamp | jq '.plan["resources.pipelines.my"].changes.configuration'

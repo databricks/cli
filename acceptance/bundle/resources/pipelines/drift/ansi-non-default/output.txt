@@ -1,0 +1,20 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-non-default/default/files...
+Created pipelines.my
+Files: 4 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== A non-default remote ANSI value remains drift
+>>> [CLI] bundle plan
+update pipelines.my
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+{
+  "action": "update",
+  "remote": {
+    "spark.sql.ansi.enabled": "false"
+  }
+}
