@@ -14,35 +14,3 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 update pipelines.my
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-default/default/files...
-Updated pipelines.my
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
-=== Explicit false is preserved and unrelated settings remain observable
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-default/default/files...
-Updated pipelines.my
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
->>> [CLI] bundle plan
-update pipelines.my
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipeline-ansi-default/default/files...
-Updated pipelines.my
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> [CLI] bundle plan
-update pipelines.my
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged

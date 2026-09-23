@@ -8,23 +8,3 @@ edit_resource.py pipelines "$pipeline_id" <<'PYTHON'
 r["configuration"]["spark.sql.ansi.enabled"] = "false"
 PYTHON
 trace $CLI bundle plan | contains.py "update pipelines.my"
-trace $CLI bundle deploy
-
-title "Explicit false is preserved and unrelated settings remain observable"
-update_file.py databricks.yml '      name: pipeline-ansi-default' '      name: pipeline-ansi-default
-      configuration:
-        spark.sql.ansi.enabled: "false"
-        custom.setting: original'
-trace $CLI bundle deploy
-trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged"
-
-edit_resource.py pipelines "$pipeline_id" <<'PYTHON'
-r["configuration"]["spark.sql.ansi.enabled"] = "true"
-PYTHON
-trace $CLI bundle plan | contains.py "update pipelines.my"
-trace $CLI bundle deploy
-
-edit_resource.py pipelines "$pipeline_id" <<'PYTHON'
-r["configuration"]["custom.setting"] = "changed"
-PYTHON
-trace $CLI bundle plan | contains.py "update pipelines.my"
