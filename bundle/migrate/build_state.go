@@ -16,7 +16,6 @@ import (
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
-	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
@@ -207,12 +206,10 @@ func BuildStateFromTF(
 		}
 
 		// Reconcile id-composing fields with the deployed terraform state so a pending id
-		// change surfaces in the plan instead of being snapshotted as already applied. Only
-		// for the main resource node (len 3); permissions/grants sub-nodes carry no id fields.
-		if len(parts) == 3 {
-			if err := reconcileIDFields(adapter, srcGroup, srcName, sv.Value, tfAttrs); err != nil {
-				return warningsSeen, fmt.Errorf("%s: reconciling id fields: %w", node, err)
-			}
+		// change surfaces in the plan instead of being snapshotted as already applied. A no-op
+		// for permissions/grants sub-nodes: their adapters declare no id fields.
+		if err := reconcileIDFields(adapter, srcGroup, srcName, sv.Value, tfAttrs); err != nil {
+			return warningsSeen, fmt.Errorf("%s: reconciling id fields: %w", node, err)
 		}
 
 		// Compact hashed_fields fields so the migrated state stays small. Not needed for
@@ -261,7 +258,20 @@ func reconcileIDFields(adapter *dresources.Adapter, group, name string, stateVal
 		if err != nil {
 			continue
 		}
-		if idFieldNormalizedEqual(configVal, deployedVal) {
+
+		// Every id-composing field is a string (a name, catalog_name, storage path, ...).
+		configStr, ok1 := configVal.(string)
+		deployedStr, ok2 := deployedVal.(string)
+		if !ok1 || !ok2 {
+			return fmt.Errorf("id field %q: expected string values, got config %T and deployed %T", rule.Field.String(), configVal, deployedVal)
+		}
+
+		// UC identifier names are case-insensitive and UC strips trailing slashes from storage
+		// paths, so a config value that differs from the deployed one only by that normalization
+		// is not a real change: keep the config value (it converges). A genuine difference means
+		// the user changed the id without deploying it — record the deployed value so the next
+		// plan surfaces the recreate (provided-id) or rename (updatable-id).
+		if strings.EqualFold(strings.TrimRight(configStr, "/"), strings.TrimRight(deployedStr, "/")) {
 			continue
 		}
 		if err := structaccess.Set(stateValue, path, deployedVal); err != nil {
@@ -269,18 +279,4 @@ func reconcileIDFields(adapter *dresources.Adapter, group, name string, stateVal
 		}
 	}
 	return nil
-}
-
-// idFieldNormalizedEqual reports whether two id-field values differ only by backend
-// normalization. UC identifier names are case-insensitive and UC strips trailing slashes
-// from storage paths, so for string id fields a case- and trailing-slash-insensitive
-// comparison treats a normalized value as unchanged. Non-string values fall back to exact
-// comparison.
-func idFieldNormalizedEqual(a, b any) bool {
-	as, aok := a.(string)
-	bs, bok := b.(string)
-	if aok && bok {
-		return strings.EqualFold(strings.TrimRight(as, "/"), strings.TrimRight(bs, "/"))
-	}
-	return structdiff.IsEqual(a, b)
 }
