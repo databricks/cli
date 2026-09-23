@@ -3,7 +3,7 @@ databricks-bundles
 
 `databricks-bundles` package implements Python support for Declarative Automation Bundles.
 
-See `Bundle configuration in Python <https://docs.databricks.com/aws/en/dev-tools/bundles/python>`_.
+See `What is Python support for Declarative Automation Bundles? (TBD) <#>`_.
 
 
 .. toctree::
