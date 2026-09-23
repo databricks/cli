@@ -63,6 +63,7 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
       ],
       "action": "skip",
       "remote_state": {
+        "creator": "[USERNAME]",
         "direct_access_index_spec": {
           "embedding_vector_columns": [
             {
@@ -77,7 +78,10 @@ Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
         "index_subtype": "HYBRID",
         "index_type": "DIRECT_ACCESS",
         "name": "main.default.vs_index_[UNIQUE_NAME]",
-        "primary_key": "id"
+        "primary_key": "id",
+        "status": {
+          "ready": true
+        }
       },
       "changes": {
         "direct_access_index_spec.schema_json": {

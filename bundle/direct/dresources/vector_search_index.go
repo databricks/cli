@@ -51,20 +51,28 @@ func (s VectorSearchIndexState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-// VectorSearchIndexRemote is remote state. It mirrors the state's shape (embeds
-// CreateVectorIndexRequest plus endpoint_uuid) rather than the raw vectorsearch.VectorIndex,
-// so remote and state agree field-by-field and RemapState is a plain copy. endpoint_uuid is
-// looked up from the endpoint service since the index API itself doesn't return it.
+// VectorSearchIndexRemote is remote state. It embeds CreateVectorIndexRequest (the state's
+// shape, so RemapState is a plain copy and the auto-copier can take over) and, alongside it,
+// retains the API's output-only VectorIndex fields (creator, endpoint_id, status) so remote
+// information is not discarded. endpoint_uuid is looked up from the endpoint service since the
+// index API itself doesn't return it.
 type VectorSearchIndexRemote struct {
 	vectorsearch.CreateVectorIndexRequest
+
+	// Output-only fields carried through from the VectorIndex response for visibility. They are
+	// not part of the state, so RemapState and the copier don't copy them into it.
+	Creator    string                          `json:"creator,omitempty"`
+	EndpointId string                          `json:"endpoint_id,omitempty"`
+	Status     *vectorsearch.VectorIndexStatus `json:"status,omitempty"`
+
 	EndpointUuid string `json:"endpoint_uuid,omitempty"`
 }
 
 // newVectorSearchIndexRemote builds the remote state from a raw index and the resolved
 // endpoint UUID. The API returns delta_sync_index_spec as *DeltaSyncVectorIndexSpecResponse
 // (which carries the output-only pipeline_id); map it to the *Request shape the state uses so
-// RemapState (and the auto-copier) can copy it directly. Other index fields not present on
-// CreateVectorIndexRequest (status, creator, etc.) are output-only and dropped here.
+// RemapState (and the auto-copier) can copy it directly. The other output-only VectorIndex
+// fields (creator, endpoint_id, status) are carried through on the remote.
 func newVectorSearchIndexRemote(index *vectorsearch.VectorIndex, endpointUuid string) *VectorSearchIndexRemote {
 	remote := &VectorSearchIndexRemote{
 		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
@@ -76,6 +84,9 @@ func newVectorSearchIndexRemote(index *vectorsearch.VectorIndex, endpointUuid st
 			IndexType:             index.IndexType,
 			PrimaryKey:            index.PrimaryKey,
 		},
+		Creator:      index.Creator,
+		EndpointId:   index.EndpointId,
+		Status:       index.Status,
 		EndpointUuid: endpointUuid,
 	}
 	if index.DeltaSyncIndexSpec != nil {
