@@ -3,6 +3,11 @@
 # handed over to the service (see the TODO in dstate.Open).
 EnvMatrix.DMS = [""]
 
+# schema.yml sets custom_max_retention_hours, which the terraform databricks_schema resource cannot
+# set (only direct does), so a terraform-first migrate would drift. schema_tf_compat.yml keeps migrate
+# coverage for schemas.
+EnvMatrixExclude.no_schema_custom_retention = ["INPUT_CONFIG=schema.yml.tmpl"]
+
 # vector_search_endpoints and vector_search_indexes have no terraform converter
 EnvMatrixExclude.no_vector_search_endpoint = ["INPUT_CONFIG=vector_search_endpoint.yml.tmpl"]
 EnvMatrixExclude.no_vector_search_index = ["INPUT_CONFIG=vector_search_index.yml.tmpl"]
@@ -51,15 +56,10 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 # volume schema_name ("inconsistent final plan"). Covered by no_drift on direct.
 EnvMatrixExclude.no_volume_uppercase = ["INPUT_CONFIG=volume_uppercase_name.yml.tmpl"]
 
+# UC secrets are direct-only (no terraform converter), so the terraform deploy that seeds
+# the migration fails for them.
 EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]
 
 # Terraform types sampling_fraction as an integer and truncates 0.5; covered by no_drift.
 EnvMatrixExclude.no_model_serving_endpoint_telemetry = ["INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]
 
-# schema.yml.tmpl drifts through auto-migration on main: a plain schema does not converge
-
-# after migrate-then-deploy. The migrate-before-deploy change (#6749) fixes it and drops this
-
-# exclusion.
-
-EnvMatrixExclude.no_schema = ["INPUT_CONFIG=schema.yml.tmpl"]
