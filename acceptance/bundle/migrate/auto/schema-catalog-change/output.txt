@@ -13,7 +13,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Move the schema to another catalog. Without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
-Warn: migration to direct: schemas.my_schema: catalog_name differs between config ("othercat_[UNIQUE_NAME]") and terraform state ("main"); this resource will be recreated
+Warn: migration to direct: schemas.my_schema: catalog_name differs between config ("othercat_[UNIQUE_NAME]") and terraform state ("main"); this resource will be recreated.
 Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 
