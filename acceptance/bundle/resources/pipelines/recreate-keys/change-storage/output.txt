@@ -6,6 +6,8 @@ bundle:
 resources:
   pipelines:
     my:
+      configuration:
+        spark.sql.ansi.enabled: "true"
       name: test-pipeline-[UNIQUE_NAME]
       storage: dbfs:/pipelines/custom
       #catalog: mycatalog1
@@ -29,6 +31,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 {
   "body": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
@@ -75,6 +80,9 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 {
   "body": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
@@ -105,6 +113,9 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   "run_as_user_name": "[USERNAME]",
   "spec": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"

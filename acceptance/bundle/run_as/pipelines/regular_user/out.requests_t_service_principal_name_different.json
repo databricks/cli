@@ -1,6 +1,9 @@
 {
   "body": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different/state/metadata.json"
