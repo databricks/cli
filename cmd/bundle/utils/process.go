@@ -37,6 +37,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 	"golang.org/x/mod/semver"
 )
@@ -221,10 +222,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
-		ctx, stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
+		stateDesc = statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(opts.AlwaysPull), requiredEngine)
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
+		ctx = useragent.InContext(ctx, "engine", string(stateDesc.Engine))
 		cmd.SetContext(ctx)
 		if stateDesc.Engine.IsDirect() {
 			resolveDeploymentHistory(ctx, b, stateDesc)
