@@ -8,6 +8,7 @@ trap cleanup EXIT
 
 title "Deploy the pipeline on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
 
 title "Change immutable storage. Without --auto-approve the recreate is refused"
 # storage is a recreate_on_changes field on pipelines (not an id field). After the migration
@@ -16,6 +17,7 @@ title "Change immutable storage. Without --auto-approve the recreate is refused"
 # refuses it without --auto-approve (exit 1) and nothing is changed.
 update_file.py databricks.yml "$UNIQUE_NAME-init" "$UNIQUE_NAME-changed"
 trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace print_recreate_planned_metric
 
 title "With --auto-approve the recreate is applied on direct"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
