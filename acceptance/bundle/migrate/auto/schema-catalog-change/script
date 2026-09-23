@@ -17,15 +17,16 @@ title "Deploy the schema on terraform in catalog 'main'"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Move the schema to another catalog. Without --auto-approve the recreate is refused"
-# reconcileIDFields records the deployed catalog, so the plan sees a real change; schemas
-# recreate on it, and terraform refuses the destructive recreate without --auto-approve.
+# reconcileIDFields records the deployed catalog, so after the migration commits (state
+# becomes direct) the plan sees a real change; schemas recreate on it, and the deploy refuses
+# the destructive recreate without --auto-approve (exit 1).
 update_file.py databricks.yml "catalog_name: main" "catalog_name: $TARGET_CATALOG"
 trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
 
-title "With --auto-approve the recreate moves the schema to the new catalog"
+title "With --auto-approve the recreate moves the schema to the new catalog on direct"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
 
-title "Retry on direct: state now matches the backend, so the migration succeeds"
+title "Redeploy on direct: the schema now matches config, so the plan is a clean no-op"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "The schema exists in the new catalog and the local state is direct"

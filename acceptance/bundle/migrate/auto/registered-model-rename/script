@@ -10,15 +10,15 @@ title "Deploy the schema and registered model on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Rename the model (an immutable id field) and deploy on direct"
-# name is a provided id field on registered models, so a rename recreates. The migration
-# seeds the deployed name into the converted state, so its plan check detects the recreate
-# against the real backend and falls back to terraform, which recreates the model. Unlike
-# schemas/volumes, registered models are not in the destructive-approval group (a model
-# recreate loses no data), so no --auto-approve is required.
+# name is a provided id field on registered models, so a rename recreates. reconcileIDFields
+# seeds the deployed name into the converted state, so the migration commits (state becomes
+# direct) and its plan sees a real recreate. Unlike schemas/volumes, registered models are
+# not in the destructive-approval group (a model recreate loses no data), so the recreate
+# applies on direct without --auto-approve.
 update_file.py databricks.yml "themodel-$UNIQUE_NAME" "themodel-$UNIQUE_NAME-renamed"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
-title "Retry on direct: state now matches the backend, so the migration succeeds"
+title "Redeploy on direct: the model now matches config, so the plan is a clean no-op"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "The model exists under the new name and the local state is direct"

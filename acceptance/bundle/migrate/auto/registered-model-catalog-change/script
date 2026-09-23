@@ -17,14 +17,14 @@ title "Deploy the model on terraform in catalog 'main'"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Move the model to another catalog and deploy on direct"
-# reconcileIDFields records the deployed catalog, so the plan sees a real change and the model
-# recreates. Registered models are not in the destructive-approval group, so the recreate
-# applies without --auto-approve: the migration guard falls back to terraform, which recreates
-# the model in the new catalog.
+# reconcileIDFields records the deployed catalog, so after the migration commits (state
+# becomes direct) the plan sees a real change and the model recreates. Registered models are
+# not in the destructive-approval group, so the recreate applies on direct without
+# --auto-approve, moving the model to the new catalog.
 update_file.py databricks.yml "catalog_name: main" "catalog_name: $TARGET_CATALOG"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
-title "Retry on direct: state now matches the backend, so the migration succeeds"
+title "Redeploy on direct: the model now matches config, so the plan is a clean no-op"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "The model exists in the new catalog and the local state is direct"

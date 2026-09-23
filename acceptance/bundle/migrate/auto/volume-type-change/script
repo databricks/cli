@@ -4,13 +4,14 @@ export DATABRICKS_BUNDLE_ENGINE=
 # registered external location on a real workspace, so this is not Cloud-enabled. The
 # recreate class it covers is verified on cloud by schema-rename / registered-model-rename.
 
-# volume_type is both a provided id field and a recreate_on_changes field. The user
-# legitimately changes it in config. reconcileIDFields records the deployed value, the plan
-# sees a real change, and it recreates - so the recreate guard keeps the run on terraform.
+# volume_type is both a provided id field and a recreate_on_changes field. reconcileIDFields
+# records the deployed value, so after the migration commits (state becomes direct) the plan
+# sees a real change and recreates. Volumes are in the destructive-approval group, so the
+# deploy refuses the recreate without --auto-approve (exit 1).
 
 title "Deploy on terraform with volume_type MANAGED"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
-title "Change volume_type (immutable) in config, then migrate to direct"
+title "Change volume_type (immutable); without --auto-approve the recreate is refused"
 update_file.py databricks.yml "volume_type: MANAGED" "volume_type: EXTERNAL"
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
