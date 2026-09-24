@@ -171,39 +171,47 @@ func TestWindowsShimDisablesInheritedDelayedExpansion(t *testing.T) {
 	assert.JSONEq(t, `{"Username":"oauthtoken","Secret":"secret"}`, string(out))
 }
 
-func TestWindowsShimPropagatesTokenFailure(t *testing.T) {
+func TestWindowsShimPropagatesTokenExitCode(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("Windows command shim test")
 	}
+	if testing.Short() {
+		t.Skip("builds a native Windows executable")
+	}
 
 	dir := t.TempDir()
-	fakeDatabricks := filepath.Join(dir, "databricks.cmd")
-	require.NoError(t, os.WriteFile(fakeDatabricks, []byte("@echo off\r\nexit /b 42\r\n"), 0o644))
-
-	shim := filepath.Join(dir, "docker-credential-databricks.cmd")
-	require.NoError(t, os.WriteFile(shim, []byte(cmdShimScript(fakeDatabricks)), 0o644))
-
-	err := exec.Command(shim, "get").Run()
-	var exitErr *exec.ExitError
-	require.ErrorAs(t, err, &exitErr)
-	assert.Equal(t, 42, exitErr.ExitCode())
+	fakeSource := filepath.Join(dir, "main.go")
+	require.NoError(t, os.WriteFile(fakeSource, []byte(`package main
+import "os"
+func main() {
+	if os.Getenv("FAKE_EXIT_FAILURE") == "1" {
+		os.Exit(42)
+	}
 }
-
-func TestWindowsShimReturnsSuccessWhenTokenSucceeds(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.Skip("Windows command shim test")
-	}
-
-	dir := t.TempDir()
-	fakeDatabricks := filepath.Join(dir, "databricks.cmd")
-	require.NoError(t, os.WriteFile(fakeDatabricks, []byte("@echo off\r\nexit /b 0\r\n"), 0o644))
+`), 0o644))
+	fakeDatabricks := filepath.Join(dir, "databricks.exe")
+	build := exec.Command("go", "build", "-o", fakeDatabricks, fakeSource)
+	buildOutput, err := build.CombinedOutput()
+	require.NoError(t, err, string(buildOutput))
 
 	shim := filepath.Join(dir, "docker-credential-databricks.cmd")
 	require.NoError(t, os.WriteFile(shim, []byte(cmdShimScript(fakeDatabricks)), 0o644))
 
-	cmd := exec.Command(shim, "get")
-	require.NoError(t, cmd.Run())
-	assert.Equal(t, 0, cmd.ProcessState.ExitCode())
+	t.Run("failure with inherited ERRORLEVEL", func(t *testing.T) {
+		cmd := exec.Command(shim, "get")
+		cmd.Env = append(os.Environ(), "ERRORLEVEL=0", "FAKE_EXIT_FAILURE=1")
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.ErrorAs(t, err, &exitErr)
+		assert.Equal(t, 42, exitErr.ExitCode())
+	})
+
+	t.Run("success", func(t *testing.T) {
+		cmd := exec.Command(shim, "get")
+		cmd.Env = append(os.Environ(), "ERRORLEVEL=42", "FAKE_EXIT_FAILURE=0")
+		require.NoError(t, cmd.Run())
+		assert.Equal(t, 0, cmd.ProcessState.ExitCode())
+	})
 }
 
 func TestInstallShimReportsPathStatus(t *testing.T) {
