@@ -1,7 +1,7 @@
 # metricviews
 
-Go serialization/deserialization for [Databricks metric-view](https://docs.databricks.com/aws/en/metric-views/) YAML definitions (versions 0.1, 1.0, and 1.1; single- and multi-source).
-It mirrors the YAML shapes accepted by the metric-view serde implementation in the backend.
+Go serialization/deserialization for YAML definitions of [Databricks metric views](https://docs.databricks.com/aws/en/metric-views/) (versions 0.1, 1.0, and 1.1; single- and multi-source).
+It mirrors the YAML shapes accepted by the backend.
 
 ## Scope
 

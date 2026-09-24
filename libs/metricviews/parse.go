@@ -78,7 +78,8 @@ func peek(root *yaml.Node) (version, viewType string, hasViewType, hasSources bo
 	return version, viewType, hasViewType, hasSources
 }
 
-// Parse parses metric-view YAML, dispatching on version and (for 1.1) view_type.
+// Parse parses YAML definitions for metric views, dispatching on version and
+// (for 1.1) view_type.
 func Parse(data []byte) (*MetricView, error) {
 	var root yaml.Node
 	if err := yaml.Unmarshal(data, &root); err != nil {
