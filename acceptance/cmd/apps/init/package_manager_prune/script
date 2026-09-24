@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Test pnpm (default) — should keep pnpm lockfiles, remove npm lockfile
+trace $CLI apps init --name test-app-pnpm --skip-install
+
+echo "=== test-app-pnpm lockfiles ==="
+ls -1 test-app-pnpm/ | grep -E "lock|workspace" || echo "(none)"
+
+# Test npm — should keep npm lockfile, remove pnpm lockfiles
+trace $CLI apps init --name test-app-npm --package-manager npm --skip-install
+
+echo "=== test-app-npm lockfiles ==="
+ls -1 test-app-npm/ | grep -E "lock|workspace" || echo "(none)"

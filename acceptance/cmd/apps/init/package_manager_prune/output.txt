@@ -1,0 +1,33 @@
+
+>>> [CLI] apps init --name test-app-pnpm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/test-app-pnpm
+  Files: 5
+
+  Next steps:
+
+    cd test-app-pnpm
+    npm ci && npm run dev
+
+=== test-app-pnpm lockfiles ===
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+>>> [CLI] apps init --name test-app-npm --package-manager npm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/test-app-npm
+  Files: 5
+
+  Next steps:
+
+    cd test-app-npm
+    npm ci && npm run dev
+
+=== test-app-npm lockfiles ===
+package-lock.json

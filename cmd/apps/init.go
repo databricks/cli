@@ -981,7 +981,7 @@ func awaitBackgroundNpmInstall(ctx context.Context, ch <-chan error) error {
 
 func runCreate(ctx context.Context, opts createOptions) error {
 	// Validate package manager early to provide clear feedback.
-	_, err := pkgmanager.Resolve(opts.packageManager)
+	selectedManager, err := pkgmanager.Resolve(opts.packageManager)
 	if err != nil {
 		return err
 	}
@@ -1457,6 +1457,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return runErr
 	}
 	projectCreated = true // From here on, cleanup on failure
+
+	// Prune non-selected package manager artifacts.
+	if err := selectedManager.Prune(destDir); err != nil {
+		return fmt.Errorf("prune package manager artifacts: %w", err)
+	}
 
 	// For pre-rendered templates, update package.json name (not a .tmpl file)
 	// and serve as a safety net for the agentic flow.
