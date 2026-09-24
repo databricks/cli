@@ -72,4 +72,3 @@ if ! diff -u "$expected" <(grep -v '^artifacts.json$' "$actual"); then
   echo "release artifact directory contains missing or extra files" >&2
   exit 1
 fi
-

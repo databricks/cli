@@ -1,1 +1,1 @@
-* Reject null bundle variables with a source location, report variable-file access errors, support nested `for_each_task` run arguments, and strengthen resource schema reflection checks.
+* Reject null bundle variables with a source location, report variable-file access errors, support nested `for_each_task` run arguments, and strengthen resource schema reflection checks. ([#6840](https://github.com/databricks/cli/pull/6840))

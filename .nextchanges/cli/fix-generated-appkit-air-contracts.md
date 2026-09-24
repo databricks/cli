@@ -1,1 +1,1 @@
-* Fix generated CLI response and request-field handling, harden AppKit project initialization, and correct AI Runtime conversion, cancellation, and environment behavior.
+* Fix generated CLI response and request-field handling, harden AppKit project initialization, and correct AI Runtime conversion, cancellation, and environment behavior. ([#6840](https://github.com/databricks/cli/pull/6840))
