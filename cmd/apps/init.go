@@ -1044,6 +1044,18 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		refLabel = "branch " + opts.branch
 	}
 
+	// Apply version-based package manager constraints: pnpm is only supported
+	// from a specific AppKit version onwards. If the resolved version is below the
+	// threshold, downgrade pnpm requests to npm (with a warning).
+	if usingDefaultTemplate {
+		effective, downgraded := pkgmanager.EffectiveManager(selectedManager, gitRef)
+		if downgraded {
+			log.Warnf(ctx, "Package manager %q is not supported for AppKit version %s, using npm instead",
+				selectedManager.Name, refLabel)
+		}
+		selectedManager = effective
+	}
+
 	// Start cloning in the background so it runs while the user types the name.
 	branchForClone := opts.branch
 	subdirForClone := ""
