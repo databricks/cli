@@ -62,13 +62,12 @@ func EnsureUniqueProfile(ctx context.Context, profiler profile.Profiler, p profi
 	if p.WorkspaceID == "" || p.WorkspaceID == auth.WorkspaceIDNone {
 		matches = append(matches, p)
 	}
-	var validProfiles profile.Profiles
+	var names []string
 	for _, candidate := range matches {
 		if ValidateProfile(candidate) == nil {
-			validProfiles = append(validProfiles, candidate)
+			names = append(names, candidate.Name)
 		}
 	}
-	names := validProfiles.Names()
 	if len(names) <= 1 {
 		return nil
 	}

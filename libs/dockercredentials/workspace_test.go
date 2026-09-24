@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/dockercredentials"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/experimental/mocks"
+	mockcatalog "github.com/databricks/databricks-sdk-go/experimental/mocks/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -18,11 +18,16 @@ import (
 )
 
 func TestWorkspaceID(t *testing.T) {
-	for _, id := range []string{"123", "", auth.WorkspaceIDNone} {
+	t.Run("configured", func(t *testing.T) {
+		got, err := dockercredentials.WorkspaceID(t.Context(), profile.Profile{WorkspaceID: "123"}, nil)
+		require.NoError(t, err)
+		assert.Equal(t, "123", got)
+	})
+
+	for _, id := range []string{"", auth.WorkspaceIDNone} {
 		t.Run(id, func(t *testing.T) {
 			server := testserver.New(t)
 			server.Handle("GET", "/api/2.0/preview/scim/v2/Me", func(req testserver.Request) any {
-				assert.NotEqual(t, "123", id, "configured IDs must not require a request")
 				assert.Empty(t, req.Headers.Get(auth.WorkspaceIDHeader))
 				return testserver.Response{Headers: http.Header{"X-Databricks-Org-Id": {"456"}}, Body: map[string]any{}}
 			})
@@ -31,11 +36,7 @@ func TestWorkspaceID(t *testing.T) {
 			w.Config.WorkspaceID = "ambient-id"
 			got, err := dockercredentials.WorkspaceID(t.Context(), profile.Profile{Name: "workspace", WorkspaceID: id}, w)
 			require.NoError(t, err)
-			want := "456"
-			if id == "123" {
-				want = "123"
-			}
-			assert.Equal(t, want, got)
+			assert.Equal(t, "456", got)
 		})
 	}
 }
@@ -52,9 +53,9 @@ func TestWorkspaceRegion(t *testing.T) {
 		{name: "error", err: wantErr, wantError: "summary failed"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			m := mocks.NewMockWorkspaceClient(t)
-			m.GetMockMetastoresAPI().EXPECT().Summary(mock.Anything).Return(&catalog.GetMetastoreSummaryResponse{Region: tt.region}, tt.err)
-			got, err := dockercredentials.WorkspaceRegion(t.Context(), profile.Profile{Name: "workspace"}, m.WorkspaceClient.Metastores)
+			metastores := mockcatalog.NewMockMetastoresInterface(t)
+			metastores.EXPECT().Summary(mock.Anything).Return(&catalog.GetMetastoreSummaryResponse{Region: tt.region}, tt.err)
+			got, err := dockercredentials.WorkspaceRegion(t.Context(), profile.Profile{Name: "workspace"}, metastores)
 			if tt.wantError != "" {
 				assert.ErrorContains(t, err, `resolve workspace region for profile "workspace": `+tt.wantError)
 				if tt.err != nil {
