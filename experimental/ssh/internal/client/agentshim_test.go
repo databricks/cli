@@ -1,6 +1,9 @@
 package client
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -25,6 +28,8 @@ func TestPrependPath(t *testing.T) {
 	assert.Equal(t, []string{"/b", "/a"}, filepath.SplitList(os.Getenv("PATH")))
 	prependPath(t.Context(), "/new")
 	assert.Equal(t, []string{"/new", "/b", "/a"}, filepath.SplitList(os.Getenv("PATH")))
+	prependPath(t.Context(), "/c", "/d", "/a")
+	assert.Equal(t, []string{"/c", "/d", "/a", "/new", "/b"}, filepath.SplitList(os.Getenv("PATH")))
 }
 
 func TestRemovePath(t *testing.T) {
@@ -35,7 +40,7 @@ func TestRemovePath(t *testing.T) {
 
 func TestAcquireSetupLock(t *testing.T) {
 	home := t.TempDir()
-	lockPath := filepath.Join(home, agentDir, setupLockName)
+	lockPath := filepath.Join(home, agentRootDir, setupLockName)
 
 	// Acquire creates the sentinel; release removes it.
 	unlock, err := acquireSetupLock(t.Context(), home)
@@ -56,29 +61,44 @@ func TestAcquireSetupLock(t *testing.T) {
 	unlock2()
 }
 
-func TestNodeDownloadArch(t *testing.T) {
-	assert.Equal(t, "x64", nodeDownloadArch("amd64"))
-	assert.Equal(t, "arm64", nodeDownloadArch("arm64"))
-	assert.Empty(t, nodeDownloadArch("mips"))
+func TestNodeArchiveSpec(t *testing.T) {
+	x64Spec := nodeArchiveSpec("amd64")
+	assert.Contains(t, x64Spec.archiveURL, "nodejs.org/dist")
+	assert.Equal(t, "npm", x64Spec.binaryName)
+	assert.Equal(t, nodeX64LinuxChecksum, x64Spec.checksum)
+	assert.Equal(t, "node", x64Spec.dirName)
+
+	arm64Spec := nodeArchiveSpec("arm64")
+	assert.Contains(t, arm64Spec.archiveURL, "nodejs.org/dist")
+	assert.Equal(t, "npm", arm64Spec.binaryName)
+	assert.Equal(t, nodeArm64LinuxChecksum, arm64Spec.checksum)
+	assert.Equal(t, "node", arm64Spec.dirName)
+
+	unknownSpec := nodeArchiveSpec("riscv")
+	assert.Empty(t, unknownSpec.archiveURL)
+	assert.Equal(t, "npm", unknownSpec.binaryName)
+	assert.Empty(t, unknownSpec.checksum)
+	assert.Equal(t, "node", unknownSpec.dirName)
 }
 
-func TestLatestNodeTarball(t *testing.T) {
-	gzSum, x64Sum, armSum := strings.Repeat("0", 64), strings.Repeat("a", 64), strings.Repeat("b", 64)
-	body := gzSum + "  node-v24.1.0-linux-x64.tar.gz\n" + // .gz is skipped (want .xz)
-		x64Sum + "  node-v24.1.0-linux-x64.tar.xz\n" +
-		armSum + "  node-v24.1.0-linux-arm64.tar.xz\n"
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(body))
-	}))
-	defer srv.Close()
+func TestUvArchiveSpec(t *testing.T) {
+	x64Spec := uvArchiveSpec("amd64")
+	assert.Contains(t, x64Spec.archiveURL, "github.com/astral-sh/uv/releases")
+	assert.Equal(t, "uv", x64Spec.binaryName)
+	assert.Equal(t, uvX64LinuxChecksum, x64Spec.checksum)
+	assert.Equal(t, "uv", x64Spec.dirName)
 
-	name, sum, err := latestNodeTarball(t.Context(), srv.URL, "x64")
-	require.NoError(t, err)
-	assert.Equal(t, "node-v24.1.0-linux-x64.tar.xz", name)
-	assert.Equal(t, x64Sum, sum)
+	arm64Spec := uvArchiveSpec("arm64")
+	assert.Contains(t, arm64Spec.archiveURL, "github.com/astral-sh/uv/releases")
+	assert.Equal(t, "uv", arm64Spec.binaryName)
+	assert.Equal(t, uvArm64LinuxChecksum, arm64Spec.checksum)
+	assert.Equal(t, "uv", arm64Spec.dirName)
 
-	_, _, err = latestNodeTarball(t.Context(), srv.URL, "ppc64le")
-	assert.Error(t, err)
+	unknownSpec := uvArchiveSpec("riscv")
+	assert.Empty(t, unknownSpec.archiveURL)
+	assert.Equal(t, "uv", unknownSpec.binaryName)
+	assert.Empty(t, unknownSpec.checksum)
+	assert.Equal(t, "uv", unknownSpec.dirName)
 }
 
 func TestDownloadVerified(t *testing.T) {
@@ -90,7 +110,12 @@ func TestDownloadVerified(t *testing.T) {
 	defer srv.Close()
 
 	t.Run("matching checksum writes the file", func(t *testing.T) {
-		path, err := downloadVerified(t.Context(), srv.URL, hex.EncodeToString(sum[:]))
+		path, err := downloadVerified(t.Context(), archiveSpec{
+			archiveURL: srv.URL,
+			binaryName: "npm",
+			checksum:   hex.EncodeToString(sum[:]),
+			dirName:    "node",
+		})
 		require.NoError(t, err)
 		defer os.Remove(path)
 		got, err := os.ReadFile(path)
@@ -99,10 +124,97 @@ func TestDownloadVerified(t *testing.T) {
 	})
 
 	t.Run("mismatched checksum errors and leaves no file", func(t *testing.T) {
-		_, err := downloadVerified(t.Context(), srv.URL, strings.Repeat("0", 64))
+		_, err := downloadVerified(t.Context(), archiveSpec{
+			archiveURL: srv.URL,
+			binaryName: "npm",
+			checksum:   strings.Repeat("0", 64),
+			dirName:    "node",
+		})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "checksum mismatch")
 	})
+}
+
+// tarGz returns a gzipped tar archive holding a single member at name.
+func tarGz(t *testing.T, name string, content []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	require.NoError(t, tw.WriteHeader(&tar.Header{Name: name, Mode: 0o755, Size: int64(len(content))}))
+	_, err := tw.Write(content)
+	require.NoError(t, err)
+	require.NoError(t, tw.Close())
+	require.NoError(t, gz.Close())
+	return buf.Bytes()
+}
+
+func TestEnsureBinary(t *testing.T) {
+	t.Run("unsupported architecture errors", func(t *testing.T) {
+		_, err := ensureBinary(t.Context(), t.TempDir(), nodeArchiveSpec("riscv"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unsupported architecture")
+	})
+
+	nodeArchive := tarGz(t, "node/bin/npm", []byte("#!/bin/sh\necho npm\n"))
+	nodeSum := sha256.Sum256(nodeArchive)
+	uvArchive := tarGz(t, "uv/uv", []byte("#!/bin/sh\necho uv\n"))
+	uvSum := sha256.Sum256(uvArchive)
+
+	var downloads int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		downloads++
+		switch r.URL.Path {
+		case "/node.tar.gz":
+			_, _ = w.Write(nodeArchive)
+		case "/uv.tar.gz":
+			_, _ = w.Write(uvArchive)
+		default:
+			panic("unsupported archive " + r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	home := t.TempDir()
+	for _, c := range []struct {
+		spec       archiveSpec
+		wantBinDir string
+	}{
+		{spec: archiveSpec{
+			archiveURL: srv.URL + "/node.tar.gz",
+			binaryName: "npm",
+			checksum:   hex.EncodeToString(nodeSum[:]),
+			dirName:    "node",
+			binDirName: "bin",
+		}, wantBinDir: filepath.Join(home, agentDepsDir, "node", "bin"),
+		},
+		{spec: archiveSpec{
+			archiveURL: srv.URL + "/uv.tar.gz",
+			binaryName: "uv",
+			checksum:   hex.EncodeToString(uvSum[:]),
+			dirName:    "uv",
+		}, wantBinDir: filepath.Join(home, agentDepsDir, "uv"),
+		},
+	} {
+		t.Run("downloads, extracts, and returns the bin dir ("+c.spec.binaryName+")", func(t *testing.T) {
+			beforeDownloads := downloads
+			binDir, err := ensureBinary(t.Context(), home, c.spec)
+			require.NoError(t, err)
+			assert.Equal(t, c.wantBinDir, binDir)
+			_, err = os.Stat(filepath.Join(binDir, c.spec.binaryName))
+			require.NoError(t, err)
+			assert.Equal(t, beforeDownloads+1, downloads)
+		})
+
+		t.Run("no-op when the binary is already installed ("+c.spec.binaryName+")", func(t *testing.T) {
+			beforeDownloads := downloads
+			binDir, err := ensureBinary(t.Context(), home, c.spec)
+			require.NoError(t, err)
+			assert.Equal(t, c.wantBinDir, binDir)
+			assert.Equal(t, beforeDownloads, downloads, "an existing install must not re-download")
+		})
+	}
+
 }
 
 func TestSupportedAgents(t *testing.T) {
