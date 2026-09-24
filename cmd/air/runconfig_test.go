@@ -137,7 +137,7 @@ containers:
 func TestMultiImageExample(t *testing.T) {
 	cfg, err := loadRunConfig("examples/multi-image-example.yaml")
 	require.NoError(t, err)
-	assert.Equal(t, "multi_image_example", cfg.ExperimentName)
+	assert.Equal(t, "qwen_grpo_multi_image", cfg.ExperimentName)
 	assert.Len(t, cfg.Containers, 2)
 }
 

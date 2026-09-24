@@ -1,35 +1,143 @@
-# Replace both Unity Catalog image paths with images available in your workspace,
-# then run:
+# A complete two-node GRPO example using Qwen/Qwen2.5-0.5B-Instruct and
+# trl-lib/DeepMath-103K. Rank 0 serves rollouts with vLLM; rank 1 trains for
+# three epochs with TRL and streams updated weights back to the vLLM server.
+#
+# Before running, publish two UC container images and replace the paths below:
+#   - inference image: Python, CUDA, vLLM 0.20-0.30, curl
+#   - training image:  Python, CUDA, PyTorch, transformers, datasets, accelerate,
+#                      and TRL compatible with the inference image's vLLM
+#
+# Run with:
 #   databricks air run --file cmd/air/examples/multi-image-example.yaml --watch
-experiment_name: multi_image_example
+experiment_name: qwen_grpo_multi_image
 
 compute:
   accelerator_type: GPU_1xA10
   num_accelerators: 2
 
-# The ranks across all containers must partition every node rank exactly once.
-# This compute creates two nodes, so the available ranks are 0 and 1.
 containers:
+  # Rank 0 is a dedicated generation server. The small supervisor on port 9000
+  # lets the trainer stop this long-running role when training finishes.
   - name: inference
-    command: |
-      echo "role=$ROLE node_rank=$NODE_RANK"
-      env | sort
     ranks: [0]
-    unity_catalog_image: main.default.inference:latest
+    unity_catalog_image: main.air_examples.vllm:0.20.0
     environment_variables:
       variables:
-        ROLE: inference
-        MODEL_NAME: llama
-        # Secret references are resolved at run time:
-        # HF_TOKEN: "{{secrets/research/hf_token}}"
-
-  - name: dataproc
+        MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
+        HF_HOME: /local_disk0/huggingface
+        VLLM_SERVER_DEV_MODE: "1"
     command: |
-      echo "role=$ROLE node_rank=$NODE_RANK"
-      env | sort
+      set -euo pipefail
+
+      vllm serve "$MODEL_ID" \
+        --host 0.0.0.0 \
+        --port 8000 \
+        --tensor-parallel-size 1 \
+        --gpu-memory-utilization 0.60 \
+        --max-model-len 1024 \
+        --weight-transfer-config '{"backend":"nccl"}' \
+        --logprobs-mode processed_logprobs \
+        --max-logprobs -1 &
+      export VLLM_PID=$!
+
+      # POST /shutdown terminates vLLM and lets this role exit after training.
+      python - <<'PY'
+      import os
+      import signal
+      import threading
+      from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+      vllm_pid = int(os.environ["VLLM_PID"])
+
+      class Handler(BaseHTTPRequestHandler):
+          def do_POST(self):
+              if self.path != "/shutdown":
+                  self.send_error(404)
+                  return
+              try:
+                  os.kill(vllm_pid, signal.SIGTERM)
+              except ProcessLookupError:
+                  pass
+              self.send_response(200)
+              self.end_headers()
+              self.wfile.write(b"shutting down\n")
+              threading.Thread(target=self.server.shutdown, daemon=True).start()
+
+          def log_message(self, *_):
+              pass
+
+      server = ThreadingHTTPServer(("0.0.0.0", 9000), Handler)
+      server.serve_forever()
+      PY
+
+      wait "$VLLM_PID" || status=$?
+      # SIGTERM from the trainer is the expected clean shutdown.
+      if [ "${status:-0}" -ne 0 ] && [ "${status:-0}" -ne 143 ]; then
+        exit "$status"
+      fi
+
+  # Rank 1 waits for rank 0, performs GRPO training for three epochs, and asks
+  # rank 0 to shut down when it exits (successfully or otherwise).
+  - name: trainer
     ranks: [1]
-    unity_catalog_image: main.default.dataproc:latest
+    unity_catalog_image: main.air_examples.trl:latest
     environment_variables:
       variables:
-        ROLE: dataproc
-        SHARD_COUNT: "8"
+        MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
+        HF_HOME: /local_disk0/huggingface
+    command: |
+      set -euo pipefail
+
+      cleanup() {
+        curl --silent --show-error --max-time 10 \
+          --request POST "http://${MASTER_ADDR}:9000/shutdown" || true
+      }
+      trap cleanup EXIT
+
+      echo "Waiting for the vLLM server at ${MASTER_ADDR}:8000"
+      until curl --fail --silent "http://${MASTER_ADDR}:8000/health" >/dev/null; do
+        sleep 5
+      done
+
+      python - <<'PY'
+      import os
+
+      from datasets import load_dataset
+      from trl import GRPOConfig, GRPOTrainer
+      from trl.rewards import accuracy_reward
+
+      model_id = os.environ["MODEL_ID"]
+      server_host = os.environ["MASTER_ADDR"]
+
+      # Use a small, real subset so the example remains practical on two A10s.
+      dataset = load_dataset("trl-lib/DeepMath-103K", split="train").select(range(128))
+
+      args = GRPOConfig(
+          output_dir="/local_disk0/qwen-grpo-output",
+          num_train_epochs=3,
+          per_device_train_batch_size=2,
+          gradient_accumulation_steps=4,
+          learning_rate=5e-6,
+          num_generations=2,
+          max_completion_length=128,
+          bf16=True,
+          gradient_checkpointing=True,
+          logging_steps=1,
+          save_strategy="epoch",
+          report_to="none",
+          use_vllm=True,
+          vllm_mode="server",
+          vllm_server_host=server_host,
+          vllm_server_port=8000,
+          vllm_server_timeout=600.0,
+      )
+
+      trainer = GRPOTrainer(
+          model=model_id,
+          args=args,
+          reward_funcs=accuracy_reward,
+          train_dataset=dataset,
+      )
+      trainer.train()
+      trainer.save_model()
+      PY
