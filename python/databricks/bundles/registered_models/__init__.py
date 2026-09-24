@@ -4,11 +4,9 @@ __all__ = [
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
-    "Privilege",
     "PrivilegeAssignment",
     "PrivilegeAssignmentDict",
     "PrivilegeAssignmentParam",
-    "PrivilegeParam",
     "RegisteredModel",
     "RegisteredModelAlias",
     "RegisteredModelAliasDict",
@@ -22,10 +20,6 @@ from databricks.bundles.registered_models._models.lifecycle import (
     Lifecycle,
     LifecycleDict,
     LifecycleParam,
-)
-from databricks.bundles.registered_models._models.privilege import (
-    Privilege,
-    PrivilegeParam,
 )
 from databricks.bundles.registered_models._models.privilege_assignment import (
     PrivilegeAssignment,

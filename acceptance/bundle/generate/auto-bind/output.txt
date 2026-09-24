@@ -14,15 +14,13 @@ Successfully bound job with an id '[NUMID]'
 
 >>> ls src/
 test.py
-
->>> cat resources/test_job.job.yml
       name: auto-bind-job-[UNIQUE_NAME]
 
 === Deploy the bound job:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/auto-bind-test-[UNIQUE_NAME]/files...
 Updated jobs.test_job
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 === Destroy the bundle:

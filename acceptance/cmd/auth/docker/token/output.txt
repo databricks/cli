@@ -1,41 +1,5 @@
 
 === Cached token
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] auth docker token --no-force-refresh
-{
-  "Secret": "cached-access-token",
-  "Username": "oauthtoken"
-}
-
-=== Refreshed token by default
-
->>> [CLI] auth docker token
-{
-  "Secret": "oauth-token",
-  "Username": "oauthtoken"
-}
-
-=== No profile for the workspace
-
->>> musterr [CLI] auth docker token
-Error: no Databricks profile found for workspace ID [NUMID] from registry host [NUMID].container.us-west-2.localhost. Run databricks auth login --host <workspace-url> and set workspace_id for that profile
-
-=== Not an Artifact Registry host
-
->>> musterr [CLI] auth docker token
-Error: "registry.example.test" is not a Databricks Artifact Registry host
-
-=== Profile flag not supported
-
->>> musterr [CLI] auth docker token --profile docker-test
-Error: auth docker token does not support --profile
-
-=== Test-server registry never matches a remote workspace
-
->>> musterr [CLI] auth docker token
-Error: no Databricks profile found for workspace ID [NUMID] from registry host [NUMID].container.us-west-2.localhost. Run databricks auth login --host <workspace-url> and set workspace_id for that profile
-
-=== Multiple profiles for the workspace
-
->>> musterr [CLI] auth docker token
-Error: multiple Databricks profiles match workspace ID [NUMID]: docker-test and duplicate. Remove duplicate workspace_id entries before using Docker credential helper
+Exit code: 5

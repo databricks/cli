@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -67,6 +68,45 @@ func TestAppDoCreate_RetriesWhenAppIsDeleting(t *testing.T) {
 	assert.Equal(t, "test-app", name)
 	assert.Equal(t, 2, createCallCount, "expected Create to be called twice (1 retry)")
 	assert.Equal(t, 1, getCallCount, "expected Get to be called once to check app state")
+}
+
+func TestAppDoCreate_RetriesWhenComputeStatusIsUnavailable(t *testing.T) {
+	server := testserver.New(t)
+	createCallCount := 0
+	getCallCount := 0
+	server.Handle("POST", "/api/2.0/apps", func(req testserver.Request) any {
+		createCallCount++
+		if createCallCount == 1 {
+			return testserver.Response{
+				StatusCode: 409,
+				Body: map[string]string{
+					"error_code": "RESOURCE_ALREADY_EXISTS",
+					"message":    "An app with the same name already exists.",
+				},
+			}
+		}
+		return apps.App{
+			Name:          "test-app",
+			ComputeStatus: &apps.ComputeStatus{State: apps.ComputeStateActive},
+		}
+	})
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		getCallCount++
+		return apps.App{Name: req.Vars["name"]}
+	})
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	name, _, err := (&ResourceApp{}).New(client).DoCreate(t.Context(), &AppState{App: apps.App{Name: "test-app"}})
+
+	require.NoError(t, err)
+	assert.Equal(t, "test-app", name)
+	assert.Equal(t, 2, createCallCount)
+	assert.Equal(t, 1, getCallCount)
 }
 
 // TestAppDoCreate_RetriesWhenGetReturnsNotFound verifies that DoCreate retries
@@ -206,4 +246,99 @@ func TestAppRequestBody_StripsSourceCodePathFromForceSendFields(t *testing.T) {
 
 	// Other ForceSendFields entries must be preserved.
 	assert.Contains(t, body.ForceSendFields, "Name")
+}
+
+func TestAppUpdateRequestBodyPreservesUnmanagedComputeForDescriptionOnly(t *testing.T) {
+	config := &AppState{App: apps.App{
+		Name:        "my-app",
+		Description: "new description",
+	}}
+	entry := &PlanEntry{
+		RemoteState: &AppRemote{App: apps.App{
+			Name:                "my-app",
+			Description:         "old description",
+			ComputeSize:         apps.ComputeSize("LARGE"),
+			ComputeMinInstances: 2,
+			ComputeMaxInstances: 7,
+		}},
+		Changes: deployplan.Changes{
+			"description": {Action: deployplan.Update},
+		},
+	}
+
+	body, err := appUpdateRequestBody(config, entry)
+
+	require.NoError(t, err)
+	assert.Equal(t, "new description", body.Description)
+	assert.Equal(t, apps.ComputeSize("LARGE"), body.ComputeSize)
+	assert.Equal(t, 2, body.ComputeMinInstances)
+	assert.Equal(t, 7, body.ComputeMaxInstances)
+}
+
+func TestAppUpdateRequestBodySendsEveryMaskedField(t *testing.T) {
+	entry := &PlanEntry{
+		RemoteState: &AppRemote{App: apps.App{Name: "my-app"}},
+		Changes:     deployplan.Changes{"description": {Action: deployplan.Update}},
+	}
+	config := &AppState{App: apps.App{Name: "my-app", Description: "new description"}}
+
+	body, err := appUpdateRequestBody(config, entry)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, appUpdateForceSendFields, body.ForceSendFields)
+}
+
+func TestAppUpdateRequestBodyOverlaysExplicitComputeChanges(t *testing.T) {
+	config := &AppState{App: apps.App{
+		Name:                "my-app",
+		ComputeSize:         apps.ComputeSize("MEDIUM"),
+		ComputeMinInstances: 1,
+		ComputeMaxInstances: 3,
+	}}
+	entry := &PlanEntry{
+		RemoteState: &AppRemote{App: apps.App{
+			Name:                "my-app",
+			ComputeSize:         apps.ComputeSize("LARGE"),
+			ComputeMinInstances: 2,
+			ComputeMaxInstances: 7,
+		}},
+		Changes: deployplan.Changes{
+			"compute_size":          {Action: deployplan.Update},
+			"compute_min_instances": {Action: deployplan.Update},
+			"compute_max_instances": {Action: deployplan.Update},
+		},
+	}
+
+	body, err := appUpdateRequestBody(config, entry)
+
+	require.NoError(t, err)
+	assert.Equal(t, apps.ComputeSize("MEDIUM"), body.ComputeSize)
+	assert.Equal(t, 1, body.ComputeMinInstances)
+	assert.Equal(t, 3, body.ComputeMaxInstances)
+}
+
+func TestAppWaitForCreateRetriesUntilComputeStatusIsAvailable(t *testing.T) {
+	server := testserver.New(t)
+	getCallCount := 0
+	server.Handle("GET", "/api/2.0/apps/{name}", func(req testserver.Request) any {
+		getCallCount++
+		if getCallCount == 1 {
+			return apps.App{Name: req.Vars["name"]}
+		}
+		return apps.App{
+			Name:          req.Vars["name"],
+			ComputeStatus: &apps.ComputeStatus{State: apps.ComputeStateActive},
+		}
+	})
+	testserver.AddDefaultHandlers(server)
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  server.URL,
+		Token: "testtoken",
+	})
+	require.NoError(t, err)
+
+	remote, err := (&ResourceApp{}).New(client).waitForApp(t.Context(), client, "test-app")
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, getCallCount)
+	assert.Equal(t, apps.ComputeStateActive, remote.ComputeStatus.State)
 }

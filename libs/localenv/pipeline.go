@@ -510,7 +510,7 @@ func (p *Pipeline) applyMerge(_ context.Context, mergedBytes []byte, greenfield 
 		p.res.BackupPath = filepath.ToSlash(backup)
 	}
 
-	if err := atomicfile.Write(pyproject, mergedBytes, 0o644); err != nil {
+	if err := atomicfile.Write(pyproject, mergedBytes, 0o644, atomicfile.PreserveMode()); err != nil {
 		code := ErrMerge
 		if greenfield {
 			code = ErrWrite

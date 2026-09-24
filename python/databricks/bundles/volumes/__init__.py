@@ -4,18 +4,14 @@ __all__ = [
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
-    "Privilege",
     "PrivilegeAssignment",
     "PrivilegeAssignmentDict",
     "PrivilegeAssignmentParam",
-    "PrivilegeParam",
     "Volume",
     "VolumeDict",
     "VolumeGrant",
     "VolumeGrantDict",
     "VolumeGrantParam",
-    "VolumeGrantPrivilege",
-    "VolumeGrantPrivilegeParam",
     "VolumeParam",
     "VolumeType",
     "VolumeTypeParam",
@@ -27,7 +23,6 @@ from databricks.bundles.volumes._models.lifecycle import (
     LifecycleDict,
     LifecycleParam,
 )
-from databricks.bundles.volumes._models.privilege import Privilege, PrivilegeParam
 from databricks.bundles.volumes._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentDict,
@@ -39,5 +34,3 @@ from databricks.bundles.volumes._models.volume_type import VolumeType, VolumeTyp
 VolumeGrant = PrivilegeAssignment
 VolumeGrantDict = PrivilegeAssignmentDict
 VolumeGrantParam = PrivilegeAssignmentParam
-VolumeGrantPrivilege = Privilege
-VolumeGrantPrivilegeParam = PrivilegeParam

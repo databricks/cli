@@ -16,8 +16,6 @@ Add the following section to the jobs permissions:
 
 
 === After first deploy
->>> has_manage_run
-
 === After second deploy
 >>> [CLI] bundle deploy -qq
 Warning: app "my_app" references jobs "my_job" which has permissions set. To prevent permission override after deploying the app, please add the app service principal to the jobs permissions

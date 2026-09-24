@@ -14,7 +14,9 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go"
+	sdkapi "github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/sdk-go/core/apierr"
 	files "github.com/databricks/sdk-go/files/v2"
 	"github.com/databricks/sdk-go/options/client"
@@ -33,6 +35,9 @@ const cloudResponseHeaderTimeout = 60 * time.Second
 func httpStatus(err error) int {
 	if aerr, ok := errors.AsType[*apierr.APIError](err); ok {
 		return aerr.HTTPStatusCode()
+	}
+	if aerr, ok := errors.AsType[*sdkapi.APIError](err); ok {
+		return aerr.StatusCode
 	}
 	return -1
 }
@@ -190,11 +195,17 @@ func newTransferClient(n int) *http.Client {
 // config, reusing its auth instead of re-reading a profile. cfg is passed by
 // pointer because config.Config embeds a sync.Mutex and must not be copied.
 func newFilesAPIClient(ctx context.Context, cfg *config.Config) (*files.Client, error) {
+	clientConfig, err := config.HTTPClientConfigFromConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	apiClient := httpclient.NewApiClient(clientConfig)
 	copts := []client.Option{
 		client.WithHost(cfg.Host),
 		client.WithCredentials(configCredentials{cfg: cfg}),
 		client.WithoutConfigFile(),
 		client.WithoutEnv(),
+		client.WithHTTPClient(&http.Client{Transport: apiClient}),
 	}
 	// The workspace routing header is needed on unified ("SPOG") hosts; the CLI's
 	// "none" sentinel means "no workspace ID", so it is not forwarded.
@@ -367,6 +378,11 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 			return directoryNotEmptyError{absPath}
 		}
 		return err
+	}
+	if aerr, ok := errors.AsType[*sdkapi.APIError](err); ok && aerr.StatusCode == http.StatusBadRequest {
+		if info := aerr.ErrorDetails().ErrorInfo; info != nil && info.Reason == "FILES_API_DIRECTORY_IS_NOT_EMPTY" {
+			return directoryNotEmptyError{absPath}
+		}
 	}
 
 	// On GCS-backed storage a directory created implicitly is just a key prefix

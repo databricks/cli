@@ -240,9 +240,16 @@ func (p *Project) virtualEnvPython(ctx context.Context) string {
 		return overridePython
 	}
 	if runtime.GOOS == "windows" {
-		return filepath.Join(p.virtualEnvPath(ctx), "Scripts", "python.exe")
+		return filepath.Join(virtualEnvScriptsDir(p.virtualEnvPath(ctx), runtime.GOOS), "python.exe")
 	}
-	return filepath.Join(p.virtualEnvPath(ctx), "bin", "python3")
+	return filepath.Join(virtualEnvScriptsDir(p.virtualEnvPath(ctx), runtime.GOOS), "python3")
+}
+
+func virtualEnvScriptsDir(venv, goos string) string {
+	if goos == "windows" {
+		return filepath.Join(venv, "Scripts")
+	}
+	return filepath.Join(venv, "bin")
 }
 
 func (p *Project) loginFile(ctx context.Context) string {

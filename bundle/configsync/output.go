@@ -90,7 +90,7 @@ func WriteResult(out io.Writer, jsonOutput bool, stats *Stats, files []FileChang
 // SaveFiles writes all file changes to disk.
 func SaveFiles(ctx context.Context, b *bundle.Bundle, files []FileChange) error {
 	for _, file := range files {
-		err := atomicfile.Write(file.Path, []byte(file.ModifiedContent), 0o644, atomicfile.MkDir(0o755))
+		err := atomicfile.Write(file.Path, []byte(file.ModifiedContent), 0o644, atomicfile.MkDir(0o755), atomicfile.PreserveMode())
 		if err != nil {
 			return err
 		}

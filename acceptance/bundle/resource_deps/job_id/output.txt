@@ -4,88 +4,15 @@ create jobs.bar
 create jobs.foo
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.bar
-Created jobs.foo
-Files: 4 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py --nostamp //jobs
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job bar",
-    "queue": {
-      "enabled": true
-    }
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job foo",
-    "queue": {
-      "enabled": true
-    },
-    "tasks": [
-      {
-        "run_job_task": {
-          "job_id": [BAR_ID]
-        },
-        "task_key": "job_task"
-      }
-    ]
-  }
-}
-
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Deleted jobs.bar
-Deleted jobs.foo
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 2 deleted, 0 unchanged
-
->>> print_requests.py --nostamp //jobs
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [FOO_ID]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [BAR_ID]
-  }
-}
-
->>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Destroy: 0 deleted
-
->>> print_requests.py --nostamp //jobs
+Exit code: 1

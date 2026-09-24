@@ -229,9 +229,9 @@ func probePluginCLI(ctx context.Context, agent *agents.Agent) (string, error) {
 }
 
 // InstallPluginForAgent registers the databricks marketplace and installs the
-// plugin through the agent's own CLI, returning the record to persist in state.
-// It never falls back to skills: a blocked install returns a *BlockedError.
-func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope, ref string) (PluginRecord, error) {
+// plugin through the agent's own CLI, returning the authoritative manifest
+// version to persist in state. It never falls back to skills.
+func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope string) (PluginRecord, error) {
 	if agent.Plugin == nil {
 		return PluginRecord{}, &BlockedError{Agent: agent.Name, Reason: ReasonNoPlugin}
 	}
@@ -274,11 +274,12 @@ func InstallPluginForAgent(ctx context.Context, agent *agents.Agent, nativeScope
 		return PluginRecord{}, &BlockedError{Agent: agent.Name, Reason: ReasonInstallFailed, Detail: stderrOf(err)}
 	}
 
+	version, _ := agent.DatabricksPluginVersionForScope(ctx, nativeScope)
 	return PluginRecord{
 		Marketplace:          agent.Plugin.Marketplace,
 		Plugin:               agent.Plugin.ID,
 		Scope:                nativeScope,
-		Version:              DisplaySkillsVersion(ref),
+		Version:              version,
 		InstalledMarketplace: installedMarketplace,
 	}, nil
 }

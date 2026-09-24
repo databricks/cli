@@ -4,28 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Created model_serving_endpoints.test_endpoint
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] serving-endpoints get [ENDPOINT_ID]
-{
-  "on_update_success": [
-    "user1@example.com"
-  ]
-}
-
->>> update_file.py databricks.yml user1@example.com user2@example.com
-
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Updated model_serving_endpoints.test_endpoint
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
-=== There a bug in TF where it does not actually update the email notifications for a serving endpoint.
->>> print_requests.py //serving-endpoints
-
->>> [CLI] serving-endpoints get [ENDPOINT_ID]
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -34,3 +13,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 1 deleted
+
+Exit code: 5

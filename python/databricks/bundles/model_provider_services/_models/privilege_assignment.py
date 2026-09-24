@@ -6,10 +6,6 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
-from databricks.bundles.model_provider_services._models.privilege import (
-    Privilege,
-    PrivilegeParam,
-)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -25,7 +21,7 @@ class PrivilegeAssignment:
     For deleted principals, `principal` is empty while `principal_id` is populated.
     """
 
-    privileges: VariableOrList[Privilege] = field(default_factory=list)
+    privileges: VariableOrList[str] = field(default_factory=list)
     """
     The privileges assigned to the principal.
     """
@@ -47,7 +43,7 @@ class PrivilegeAssignmentDict(TypedDict, total=False):
     For deleted principals, `principal` is empty while `principal_id` is populated.
     """
 
-    privileges: VariableOrList[PrivilegeParam]
+    privileges: VariableOrList[str]
     """
     The privileges assigned to the principal.
     """

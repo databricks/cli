@@ -12,10 +12,10 @@ Created pipelines.foo
 Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
-
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+update pipelines.foo
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 === Update storage, triggering recreate for pipeline; this means updating downstream deps
 >>> update_file.py databricks.yml storage: dbfs:/my-storage storage: dbfs:/my-new-storage
@@ -34,106 +34,23 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating 
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
   recreate resources.pipelines.foo
-Updated jobs.bar
 Recreated pipelines.foo
+Updated jobs.bar
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 1 changed, 1 deleted, 0 unchanged
-
->>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
 
 === Fetch resource IDs and verify remote state
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] pipelines get [FOO_ID_2]
-{
-  "creator_user_name": "[USERNAME]",
-  "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-  "last_modified": [UNIX_TIME_MILLIS][0],
-  "name": "pipeline foo",
-  "pipeline_id": "[FOO_ID_2]",
-  "run_as_user_name": "[USERNAME]",
-  "spec": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "id": "[FOO_ID_2]",
-    "name": "pipeline foo",
-    "storage": "dbfs:/my-new-storage"
-  },
-  "state": "IDLE"
-}
-
->>> [CLI] jobs get [BAR_ID]
-{
-  "created_time": [UNIX_TIME_MILLIS][1],
-  "creator_user_name": "[USERNAME]",
-  "job_id": [BAR_ID],
-  "run_as_user_name": "[USERNAME]",
-  "settings": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "description": "depends on foo id [FOO_ID_2]",
-    "edit_mode": "UI_LOCKED",
-    "email_notifications": {},
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job bar",
-    "queue": {
-      "enabled": true
-    },
-    "timeout_seconds": 0,
-    "webhook_notifications": {}
-  }
-}
-
-=== Follow up plan & deploy do nothing
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
-
->>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.bar
-  delete resources.pipelines.foo
-
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
-  delete resources.pipelines.foo
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Destroy: 2 deleted
-
->>> print_requests.py --nostamp //jobs //pipelines ^//api/2.0/bundle
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [BAR_ID]
-  }
-}
-{
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[FOO_ID_2]"
-}
-
->>> musterr [CLI] pipelines get [FOO_ID]
-Error: The specified pipeline [FOO_ID] was not found.
-
->>> musterr [CLI] pipelines get [FOO_ID_2]
-Error: The specified pipeline [FOO_ID_2] was not found.
-
->>> musterr [CLI] jobs get [BAR_ID]
-Error: Job [BAR_ID] does not exist.
+Exit code: 1

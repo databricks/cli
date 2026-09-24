@@ -1,0 +1,15 @@
+
+=== Reject overwrite of the same local file
+
+>>> musterr [CLI] fs cp --overwrite source.txt source.txt
+Error: source and destination refer to the same file: source.txt
+
+=== Reject overwrite through a symlink alias
+
+>>> musterr [CLI] fs cp --overwrite source.txt alias.txt
+Error: source and destination refer to the same file: source.txt
+
+=== Source remains intact
+
+>>> cat source.txt
+this content must survive

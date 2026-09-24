@@ -1,0 +1,11 @@
+
+>>> musterr [CLI] bundle validate
+Error: no value assigned to required variable broken. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_broken environment variable, or .databricks/bundle/<target>/variable-overrides.json
+
+Name: null-variable
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/null-variable/default
+
+Found 1 error

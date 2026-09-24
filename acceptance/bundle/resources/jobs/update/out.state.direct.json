@@ -5,7 +5,7 @@
  "serial": 1,
  "state": {
   "resources.jobs.foo": {
-   "__id__": "[FOO_ID]",
+   "__id__": "[NUMID]",
    "state": {
     "deployment": {
      "kind": "BUNDLE",

@@ -1135,6 +1135,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.VectorSearchEndpointUpdateBudgetPolicy(req, req.Vars["endpoint_name"])
 	})
 
+	server.Handle("PATCH", "/api/2.0/ai-search/{name...}", func(req Request) any {
+		return req.Workspace.AiSearchEndpointUpdate(req)
+	})
+
 	// Vector Search Indexes:
 
 	server.Handle("POST", "/api/2.0/vector-search/indexes", func(req Request) any {

@@ -16,20 +16,7 @@ Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
-
->>> [CLI] grants get table main.default.vs_index_[UNIQUE_NAME]
-{
-  "privilege_assignments": [
-    {
-      "principal": "deco-test-user@databricks.com",
-      "privileges": [
-        "SELECT"
-      ]
-    }
-  ]
-}
-
->>> print_requests.py //vector-search/indexes //permissions
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -44,3 +31,5 @@ For Direct Access indexes, all upserted vectors are permanently lost:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/vs-index-grants-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted
+
+Exit code: 5

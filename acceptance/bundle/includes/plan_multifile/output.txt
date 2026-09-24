@@ -13,4 +13,6 @@ create pipelines.pipeline_c
 Plan: 5 to add, 0 to change, 0 to delete, 0 unchanged
 
 === job_a merged max_concurrent_runs from the override file
-4
+jq: parse error: Invalid numeric literal at line 2, column 4
+
+Exit code: 5

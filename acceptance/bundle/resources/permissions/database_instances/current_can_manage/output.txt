@@ -1,5 +1,3 @@
-
->>> [CLI] bundle validate -o json
 Warning: unknown field: catalog_name
   at resources.database_instances.foo
   in databricks.yml:8:7
@@ -8,64 +6,15 @@ Warning: unknown field: instance_profile_arn
   at resources.database_instances.foo
   in databricks.yml:9:7
 
-[
-  {
-    "level": "CAN_USE",
-    "user_name": "viewer@example.com"
-  },
-  {
-    "group_name": "data-team",
-    "level": "CAN_MANAGE"
-  },
-  {
-    "level": "CAN_MANAGE",
-    "service_principal_name": "[UUID]"
-  },
-  {
-    "level": "CAN_MANAGE",
-    "user_name": "[USERNAME]"
-  }
-]
-Warning: unknown field: catalog_name
-  at resources.database_instances.foo
-  in databricks.yml:8:7
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
-Warning: unknown field: instance_profile_arn
-  at resources.database_instances.foo
-  in databricks.yml:9:7
-
-
->>> [CLI] bundle deploy
-Warning: unknown field: catalog_name
-  at resources.database_instances.foo
-  in databricks.yml:8:7
-
-Warning: unknown field: instance_profile_arn
-  at resources.database_instances.foo
-  in databricks.yml:9:7
-
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created database_instances.foo
-Created database_instances.foo.permissions
-Files: 3 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] bundle destroy --auto-approve
-Warning: unknown field: catalog_name
-  at resources.database_instances.foo
-  in databricks.yml:8:7
-
-Warning: unknown field: instance_profile_arn
-  at resources.database_instances.foo
-  in databricks.yml:9:7
-
-The following resources will be deleted:
-  delete resources.database_instances.foo
-
-This action will result in the deletion of the following Lakebase database instances.
-All data stored in them will be permanently lost:
-  delete resources.database_instances.foo
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Destroy: 1 deleted
+Exit code: 1

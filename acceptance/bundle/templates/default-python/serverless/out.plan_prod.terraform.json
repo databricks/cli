@@ -13,5 +13,12 @@
     "resources.pipelines.my_default_python_etl.permissions": {
       "action": "create"
     }
-  }
+  },
+  "uploads": [
+    {
+      "source": "dist/my_default_python-0.0.1-py3-none-any.whl",
+      "remote_name": "my_default_python-0.0.1-py3-none-any.whl",
+      "sha256": "93d9a[NUMID]a[NUMID]f62ba0f53e90ea06f53a6512e7b5bc167e489c"
+    }
+  ]
 }

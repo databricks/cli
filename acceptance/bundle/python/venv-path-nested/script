@@ -1,0 +1,8 @@
+
+uv venv -q .venv
+uv pip install -q "$DATABRICKS_BUNDLES_WHEEL"
+
+trace withdir nested $CLI bundle validate --output json | \
+  jq "pick(.experimental.python)"
+
+rm -fr .venv nested/.databricks __pycache__ nested/__pycache__

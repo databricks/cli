@@ -8,6 +8,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+const pipelineANSIDefaultKey = "spark.sql.ansi.enabled"
+
+const pipelineANSIDefaultValue = "true"
+
 func (s *FakeWorkspace) PipelineGet(pipelineId string) Response {
 	defer s.LockUnlock()()
 
@@ -95,6 +99,12 @@ func setSpecDefaults(spec *pipelines.PipelineSpec, pipelineId string) {
 	// (ref: https://docs.databricks.com/gcp/en/dlt/hive-metastore#specify-a-storage-location)
 	if spec.Storage == "" && spec.Catalog == "" {
 		spec.Storage = "dbfs:/pipelines/" + pipelineId
+	}
+	if spec.Configuration == nil {
+		spec.Configuration = map[string]string{}
+	}
+	if _, ok := spec.Configuration[pipelineANSIDefaultKey]; !ok {
+		spec.Configuration[pipelineANSIDefaultKey] = pipelineANSIDefaultValue
 	}
 }
 

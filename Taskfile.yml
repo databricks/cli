@@ -241,8 +241,8 @@ tasks:
   # --- Code checks ---
 
   tidy:
-    desc: Run go mod tidy across all Go modules (root, tools, codegen)
-    deps: ['tidy-root', 'tidy-tools', 'tidy-codegen']
+    desc: Run go mod tidy across all Go modules (root, tools, tools/task, codegen)
+    deps: ['tidy-root', 'tidy-tools', 'tidy-task', 'tidy-codegen']
 
   tidy-root:
     desc: Run go mod tidy in root module
@@ -263,6 +263,15 @@ tasks:
       - go.mod
       - go.sum
       - "**/*.go"
+    cmds:
+      - "go mod tidy"
+
+  tidy-task:
+    desc: Run go mod tidy in tools/task/ module
+    dir: tools/task
+    sources:
+      - go.mod
+      - go.sum
     cmds:
       - "go mod tidy"
 

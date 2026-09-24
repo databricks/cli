@@ -41,7 +41,8 @@ func TestPythonMutator_Name_applyMutators(t *testing.T) {
 func TestPythonMutator_loadResources(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 
-	rootPath := filepath.Join(t.TempDir(), "my_project")
+	rootPath, err := os.Getwd()
+	require.NoError(t, err)
 
 	b := loadYaml("databricks.yml", `
 experimental:
@@ -60,7 +61,7 @@ workspace: { current_user: { userName: test }}`)
 	ctx := withProcessStub(
 		t,
 		[]string{
-			interpreterPath(".venv"),
+			interpreterPath(filepath.Join(rootPath, ".venv")),
 			"-m",
 			"databricks.bundles.build",
 			"--phase",
@@ -120,7 +121,7 @@ workspace: { current_user: { userName: test }}`)
 	}
 
 	// output of locations.json should be applied to underlying dyn.Value
-	err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
 		// location is databricks.yml, because output contains resource as-is
 		jobName0, err := dyn.GetByPath(v, dyn.MustPathFromString("resources.jobs.job0.name"))
 		require.NoError(t, err)
@@ -303,6 +304,34 @@ experimental:
 	diag := bundle.Apply(t.Context(), b, mutator)
 
 	assert.EqualError(t, diag.Error(), expectedError)
+}
+
+func TestPythonMutator_relativeVenvUsesBundleRoot(t *testing.T) {
+	bundleRoot := t.TempDir()
+	nestedDir := filepath.Join(bundleRoot, "nested")
+	require.NoError(t, os.MkdirAll(nestedDir, 0o755))
+	t.Chdir(nestedDir)
+	createFakeVEnv(t, filepath.Join(bundleRoot, ".venv"))
+
+	b := loadYaml("databricks.yml", `
+python:
+  venv_path: .venv
+  resources: ["resources:load_resources"]
+bundle:
+  name: my_project`)
+	b.BundleRootPath = bundleRoot
+
+	ctx := withProcessStub(
+		t,
+		[]string{},
+		"{\"bundle\":{\"name\":\"my_project\"},\"python\":{\"venv_path\":\".venv\",\"resources\":[\"resources:load_resources\"]},\"experimental\":{\"python\":{\"venv_path\":\".venv\",\"resources\":[\"resources:load_resources\"]}}}",
+		"",
+		"",
+	)
+
+	diags := bundle.Apply(ctx, b, PythonMutator(PythonMutatorPhaseLoadResources))
+
+	assert.NoError(t, diags.Error())
 }
 
 func TestGetOps_Python(t *testing.T) {
@@ -594,7 +623,10 @@ func loadYaml(name, content string) *bundle.Bundle {
 
 func withFakeVEnv(t *testing.T, venvPath string) {
 	t.Chdir(t.TempDir())
+	createFakeVEnv(t, venvPath)
+}
 
+func createFakeVEnv(t *testing.T, venvPath string) {
 	interpreterPath := interpreterPath(venvPath)
 
 	err := os.MkdirAll(filepath.Dir(interpreterPath), 0o755)

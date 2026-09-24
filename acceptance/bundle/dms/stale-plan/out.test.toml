@@ -1,4 +1,5 @@
 Cloud = true
+RecordRequests = true
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 EnvMatrix.DMS = ["true"]
 EnvMatrix.READPLAN = ["", "1"]

@@ -1,0 +1,1 @@
+* Saved bundle plans now carry an upload manifest and validate local artifacts before deployment. Plan replay rejects incompatible overrides, stale or mismatched uploads, and performs active-run checks before uploads or resource changes.

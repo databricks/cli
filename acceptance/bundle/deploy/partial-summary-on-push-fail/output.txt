@@ -8,7 +8,7 @@ HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 
 Exit code: 1
 

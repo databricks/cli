@@ -10,6 +10,15 @@ resources:
           notebook_task:
             notebook_path: /Workspace/test
 
+    downstream_job:
+      name: my-downstream-job
+      tags:
+        run_result: ${resources.job_runs.my_run.state.result_state}
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/test
+
   job_runs:
     my_run:
       job_id: ${resources.jobs.my_job.id}

@@ -45,12 +45,7 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "target_qps": 1
   }
 }
-
->>> [CLI] vector-search-endpoints get-endpoint vs-endpoint-[UNIQUE_NAME]
-{
-  "name": "vs-endpoint-[UNIQUE_NAME]",
-  "endpoint_type": "STANDARD"
-}
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -59,3 +54,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-endpoint-target-qps-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+Exit code: 5

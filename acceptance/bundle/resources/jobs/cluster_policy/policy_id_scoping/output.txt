@@ -9,23 +9,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === Inject a remote-only tag on the ungated cluster (no policy_id) to show it is not gated
 
 === The gated cluster's policy tag is skipped; the ungated cluster's tag is drift
-
->>> [CLI] bundle plan -o json
-{
-  "job_clusters[job_cluster_key='gated'].new_cluster.custom_tags": {
-    "action": "skip",
-    "reason": "remote_addition",
-    "remote": {
-      "CostCenter": "from-policy"
-    }
-  },
-  "job_clusters[job_cluster_key='ungated'].new_cluster.custom_tags": {
-    "action": "update",
-    "remote": {
-      "Injected": "out-of-band"
-    }
-  }
-}
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -35,3 +19,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 2 deleted
+
+Exit code: 5

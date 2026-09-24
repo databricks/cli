@@ -77,3 +77,8 @@ def test_parse_schema():
     )
 
     assert _parse_schema(spec) == expected
+
+
+def test_parse_unconstrained_string_schema():
+    schema = _parse_schema({"type": "string"})
+    assert schema == Schema(type=SchemaType.STRING)

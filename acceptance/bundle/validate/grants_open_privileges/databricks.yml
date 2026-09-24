@@ -1,0 +1,17 @@
+bundle:
+  name: grants-open-privileges
+
+resources:
+  schemas:
+    grant_schema:
+      name: grants_open_privileges
+      catalog_name: main
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - CREATE_SECRET
+            - READ_SECRET
+            - WRITE_SECRET
+            - REFERENCE_SECRET
+            - CREATE_FEATURE
+            - READ_FEATURE

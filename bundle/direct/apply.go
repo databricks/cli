@@ -138,15 +138,33 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	// Wait for asynchronous teardown to finish before re-creating the same
 	// name. Done after DeleteState so the bundle stays consistent if the wait
 	// times out — the resource is no longer tracked in state, retry on next plan.
-	// The general delete-wait stays uncapped; we only pass the already-resolved
-	// RESOURCE_MAX_WAIT so a resource that opts in can bound its own poll by it.
+	// The general delete-wait stays uncapped; pass the already-resolved
+	// RESOURCE_MAX_WAIT to both recreate phases so opted-in resources can bound
+	// their asynchronous teardown and name-release polls.
+	recreateCtx := dresources.WithResourceMaxWait(ctx, d.MaxWait)
+
 	// A NotFound means the resource is gone, which is the success the wait polls for.
-	err = d.Adapter.WaitAfterDelete(dresources.WithResourceMaxWait(ctx, d.MaxWait), oldID)
+	err = d.Adapter.WaitAfterDelete(recreateCtx, oldID)
 	if err != nil && !apierr.IsMissing(err) {
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
-	return d.Create(ctx, db, newState)
+	return d.Create(recreateCtx, db, newState)
+}
+
+// Resume waits for an existing resource whose planned deployment was skipped.
+func (d *DeploymentUnit) Resume(ctx context.Context, id string) error {
+	ctx = log.WithPrefix(ctx, "resuming "+d.ResourceKey)
+	ctx = d.withResourceKey(ctx)
+	_, err := waitCapped(ctx, d.MaxWait, "resumption of "+d.ResourceKey, func(ctx context.Context) (struct{}, error) {
+		return struct{}{}, retryOnTransientErr(ctx, func() error {
+			return d.Adapter.WaitAfterResume(ctx, id)
+		})
+	})
+	if err != nil {
+		return fmt.Errorf("waiting after resuming id=%s: %w", id, err)
+	}
+	return nil
 }
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {

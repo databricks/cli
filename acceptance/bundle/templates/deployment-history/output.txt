@@ -65,6 +65,6 @@ Please refer to the README.md file for "getting started" instructions.
 >>> grep -A1 ^experimental: output/lakeflow-integrations/my_lakeflow_integrations/databricks.yml
 experimental:
   deployment_history: true
+Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] bundle validate -o json
-json.experimental.deployment_history = true;
+Exit code: 1

@@ -43,96 +43,16 @@ Resources:
 
 === change the run configuration and redeploy
 >>> update_file.py databricks.yml env: dev env: prod
-
->>> [CLI] bundle plan -o json
-{
-  "depends_on": [
-    {
-      "node": "resources.jobs.my_job",
-      "label": "${resources.jobs.my_job.id}"
-    }
-  ],
-  "action": "recreate",
-  "new_state": {
-    "value": {
-      "job_id": [MY_JOB_ID],
-      "job_parameters": {
-        "env": "prod"
-      },
-      "result_state": "SUCCESS"
-    }
-  },
-  "remote_state": {
-    "job_id": [MY_JOB_ID],
-    "job_parameters": {
-      "env": "dev"
-    },
-    "result_state": "SUCCESS",
-    "run_id": [MY_RUN_ID],
-    "run_name": "my-job",
-    "run_page_url": "[DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]",
-    "run_type": "JOB_RUN",
-    "state": {
-      "life_cycle_state": "TERMINATED",
-      "result_state": "SUCCESS"
-    }
-  },
-  "changes": {
-    "job_parameters['env']": {
-      "action": "recreate",
-      "reason": "immutable",
-      "old": "dev",
-      "new": "prod",
-      "remote": "dev"
-    },
-    "result_state": {
-      "action": "skip",
-      "reason": "remote_already_set",
-      "new": "SUCCESS",
-      "remote": "SUCCESS"
-    }
-  }
-}
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default/files...
-Output from job_runs.my_run: id=[MY_RUN_ID_2]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?o=[NUMID]
-Output from job_runs.my_run: id=[MY_RUN_ID_2]: SUCCESS
-Recreated job_runs.my_run
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
-
->>> [CLI] bundle summary
-Name: job-runs-redeploy
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
-Resources:
-  Job Runs:
-    my_run:
-      Name: 
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID_2]?w=[NUMID]
-  Jobs:
-    my_job:
-      Name: my-job
-      URL:  [DATABRICKS_URL]/jobs/[MY_JOB_ID]?w=[NUMID]
-
-=== the config change triggered a second, different run and left the previous one alone
->>> print_requests.py --keep //jobs/runs/delete
-
->>> print_requests.py //jobs/run-now
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/run-now",
-  "body": {
-    "idempotency_token": "[UUID]",
-    "job_id": [MY_JOB_ID],
-    "job_parameters": {
-      "env": "prod"
-    }
-  }
-}
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -141,3 +61,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-redeploy/default
 
 Destroy: 1 deleted
+
+Exit code: 1

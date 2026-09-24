@@ -1,0 +1,29 @@
+bundle:
+  name: postgres-omitted-ids-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "Postgres generated IDs"
+      pg_version: 16
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_roles:
+    owner:
+      parent: ${resources.postgres_branches.main.id}
+      postgres_role: app_owner
+
+  postgres_databases:
+    my_database:
+      parent: ${resources.postgres_branches.main.id}
+      postgres_database: app_db
+      role: ${resources.postgres_roles.owner.id}

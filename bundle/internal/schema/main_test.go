@@ -9,11 +9,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,6 +35,20 @@ func TestJobRunIdempotencyTokenIsNotInSchema(t *testing.T) {
 
 	assert.NotContains(t, s.Properties, "idempotency_token")
 	assert.Contains(t, s.Properties, "job_id")
+}
+
+func TestClearPrivilegeEnum(t *testing.T) {
+	privilegeSchema := clearPrivilegeEnum(reflect.TypeFor[catalog.Privilege](), jsonschema.Schema{
+		Type: jsonschema.StringType,
+		Enum: []any{"SELECT"},
+	})
+	assert.Nil(t, privilegeSchema.Enum)
+
+	otherSchema := clearPrivilegeEnum(reflect.TypeFor[string](), jsonschema.Schema{
+		Type: jsonschema.StringType,
+		Enum: []any{"SELECT"},
+	})
+	assert.Equal(t, []any{"SELECT"}, otherSchema.Enum)
 }
 
 func copyFile(src, dst string) error {
@@ -112,4 +129,29 @@ func TestNoDetachedAnnotations(t *testing.T) {
 	_, unknown, err := loadAnnotationsFile("annotations.yml", g)
 	require.NoError(t, err)
 	assert.Empty(t, unknown, "Detached annotations found; run `./task generate-schema` to drop them")
+}
+
+func TestPipelineRunAsDescriptionOverride(t *testing.T) {
+	const want = "Specifies the identity used to run the pipeline. Set one of `user_name`, `service_principal_name`, or `group_name`."
+
+	g, err := configTypeGraph()
+	require.NoError(t, err)
+	source, unknown, err := loadAnnotationsFile("annotations.yml", g)
+	require.NoError(t, err)
+	assert.Empty(t, unknown)
+
+	pipelineType := getPath(reflect.TypeFor[resources.Pipeline]())
+	assert.Equal(t, want, source[pipelineType].Fields["run_as"].Description)
+
+	doc, err := clijson.Parse(cliJSONPath)
+	require.NoError(t, err)
+	extracted, err := newParser(doc.Schemas).extractAnnotations(reflect.TypeFor[config.Root]())
+	require.NoError(t, err)
+	handler, err := newAnnotationHandler(extracted, source)
+	require.NoError(t, err)
+	schema, err := jsonschema.FromType(reflect.TypeFor[resources.Pipeline](), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{handler.addAnnotations})
+	require.NoError(t, err)
+	runAs, ok := schema.Properties["run_as"]
+	require.True(t, ok)
+	assert.Equal(t, want, runAs.Description)
 }

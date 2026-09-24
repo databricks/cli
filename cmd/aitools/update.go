@@ -79,8 +79,9 @@ preview what would change without downloading.`,
 
 			// The plugin version recorded on update tracks the skills release.
 			// Tolerate a resolution error (skip plugin updates, still do skills).
+			// The plugin version is resolved from the agent manifest after each
+			// native update; raw-skill ref resolution gates only raw-skill work.
 			ref, _, refErr := installer.GetSkillsRef(ctx)
-
 			for _, scope := range scopes {
 				if len(scopes) > 1 {
 					cmdio.LogString(ctx, fmt.Sprintf("Updating %s skills...", scope))
@@ -94,11 +95,9 @@ preview what would change without downloading.`,
 				if err != nil {
 					return err
 				}
-
 				if check && refErr == nil && state != nil && len(state.Plugins) > 0 {
 					printPluginCheckResults(ctx, state, installer.DisplaySkillsVersion(ref))
 				}
-
 				migrationCandidates, err := pluginMigrationCandidatesForScope(ctx, scope, state)
 				if err != nil {
 					return err
@@ -108,8 +107,8 @@ preview what would change without downloading.`,
 				}
 
 				// Update plugin agents through their own CLI (check mode skips this).
-				if !check && refErr == nil {
-					pluginUpdates, err := updatePluginsFn(ctx, scope, ref)
+				if !check {
+					pluginUpdates, err := updatePluginsFn(ctx, scope)
 					if err != nil {
 						return err
 					}
@@ -117,14 +116,16 @@ preview what would change without downloading.`,
 						cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s", pu.Agent, versionToken(pu.Version)))
 					}
 
-					migrated, err := migrateLegacyRawSkillsToPlugins(ctx, scope, ref, migrationCandidates)
-					if err != nil {
-						return err
-					}
-					if migrated {
-						state, err = installer.LoadState(dir)
+					if refErr == nil {
+						migrated, err := migrateLegacyRawSkillsToPlugins(ctx, scope, ref, migrationCandidates)
 						if err != nil {
 							return err
+						}
+						if migrated {
+							state, err = installer.LoadState(dir)
+							if err != nil {
+								return err
+							}
 						}
 					}
 				}
@@ -132,7 +133,7 @@ preview what would change without downloading.`,
 				// Reconcile file skills for non-plugin agents. Skip entirely for a
 				// pure-plugin install (no file skills to maintain); keep calling for
 				// no-state installs so the "no skills or plugins installed" guidance still fires.
-				if state == nil || len(state.Skills) > 0 {
+				if refErr == nil && (state == nil || len(state.Skills) > 0) {
 					opts := installer.UpdateOptions{
 						Check:   check,
 						Force:   force,
@@ -224,8 +225,7 @@ func migrateLegacyRawSkillsToPlugins(ctx context.Context, scope, ref string, can
 	migrated := make([]pluginMigrationResult, 0, len(candidates))
 	for _, candidate := range candidates {
 		agent := candidate.agent
-		cmdio.LogString(ctx, fmt.Sprintf("Installing databricks plugin for %s...", agent.DisplayName))
-		rec, err := updateInstallPluginForAgentFn(ctx, agent, candidate.nativeScope, ref)
+		rec, err := updateInstallPluginForAgentFn(ctx, agent, candidate.nativeScope)
 		if err != nil {
 			cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", agent.DisplayName, err)))
 			continue
@@ -251,13 +251,20 @@ func migrateLegacyRawSkillsToPlugins(ctx context.Context, scope, ref string, can
 func printPluginCheckResults(ctx context.Context, state *installer.InstallState, latest string) {
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		rec := state.Plugins[name]
+		version := rec.Version
+		if agent := agents.ByName(name); agent != nil {
+			authoritative, found := agent.DatabricksPluginVersionForScope(ctx, rec.Scope)
+			if found || agent.HasPluginVersionReader() {
+				version = authoritative
+			}
+		}
 		status := "up to date"
-		if rec.Version == "" {
+		if version == "" {
 			status = "version unknown"
-		} else if rec.Version != latest {
+		} else if !pluginVersionAtLeast(version, latest) {
 			status = "update available"
 		}
-		cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s (%s)", agentDisplayName(name), versionToken(rec.Version), status))
+		cmdio.LogString(ctx, fmt.Sprintf("  %s  databricks plugin %s (%s)", agentDisplayName(name), versionToken(version), status))
 	}
 }
 

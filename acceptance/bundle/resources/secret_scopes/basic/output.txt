@@ -1,100 +1,16 @@
 
-=== create the secret scope
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy -qq
-
->>> [CLI] secrets list-scopes -o json
-{
-  "backend_type": "DATABRICKS",
-  "name": "test-scope-[UNIQUE_NAME]-1"
-}
-
-=== put and get secret in first scope
->>> [CLI] secrets put-secret test-scope-[UNIQUE_NAME]-1 my-key --string-value my-secret-value
-
->>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-1 my-key
-{
-  "key": "my-key",
-  "value": "bXktc2VjcmV0LXZhbHVl"
-}
-
->>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-1
-{"permission":"MANAGE","principal":"[USERNAME]"}
-{"permission":"WRITE","principal":"deco-test-user@databricks.com"}
-
->>> print_requests.py //secrets
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/scopes/create",
-  "body": {
-    "scope": "test-scope-[UNIQUE_NAME]-1",
-    "scope_backend_type": "DATABRICKS"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/acls/put",
-  "body": {
-    "permission": "WRITE",
-    "principal": "deco-test-user@databricks.com",
-    "scope": "test-scope-[UNIQUE_NAME]-1"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/put",
-  "body": {
-    "key": "my-key",
-    "scope": "test-scope-[UNIQUE_NAME]-1",
-    "string_value": "my-secret-value"
-  }
-}
-
-=== update the name of the scope (should recreate)
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy -qq
-
->>> print_requests.py //secrets
-
->>> [CLI] secrets list-scopes -o json
-{
-  "backend_type": "DATABRICKS",
-  "name": "test-scope-[UNIQUE_NAME]-2"
-}
-
-=== put and get secret in recreated scope
->>> [CLI] secrets put-secret test-scope-[UNIQUE_NAME]-2 another-key --string-value another-secret-value
-
->>> [CLI] secrets get-secret test-scope-[UNIQUE_NAME]-2 another-key
-{
-  "key": "another-key",
-  "value": "YW5vdGhlci1zZWNyZXQtdmFsdWU="
-}
-
->>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-2
-{"permission":"MANAGE","principal":"[USERNAME]"}
-{"permission":"WRITE","principal":"deco-test-user@databricks.com"}
-
->>> print_requests.py //secrets
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/put",
-  "body": {
-    "key": "another-key",
-    "scope": "test-scope-[UNIQUE_NAME]-2",
-    "string_value": "another-secret-value"
-  }
-}
-
-=== verify there's no persistent drift
->>> [CLI] bundle plan -o json
+=== create the secret scopeTraceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.secret_scopes.my_scope
+No active deployment found to destroy!
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default
-
-Destroy: 1 deleted
+Exit code: 1

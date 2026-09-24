@@ -48,6 +48,50 @@ func TestPipelineCreate_AllowsSingleSegmentTargetSchemaName(t *testing.T) {
 	assert.Equal(t, 0, response.StatusCode)
 }
 
+func TestPipelineCreate_SynthesizesANSIDefault(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.PipelineCreate(Request{
+		Body: []byte(`{"name":"p","serverless":true}`),
+	})
+	require.Equal(t, 0, response.StatusCode)
+
+	created, ok := response.Body.(pipelines.CreatePipelineResponse)
+	require.True(t, ok)
+	stored := workspace.Pipelines[created.PipelineId]
+	require.NotNil(t, stored.Spec)
+	assert.Equal(t, "true", stored.Spec.Configuration[pipelineANSIDefaultKey])
+}
+
+func TestPipelineCreate_PreservesExplicitANSIDefault(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+
+	response := workspace.PipelineCreate(Request{
+		Body: []byte(`{"name":"p","serverless":true,"configuration":{"spark.sql.ansi.enabled":"false"}}`),
+	})
+	require.Equal(t, 0, response.StatusCode)
+
+	created, ok := response.Body.(pipelines.CreatePipelineResponse)
+	require.True(t, ok)
+	stored := workspace.Pipelines[created.PipelineId]
+	require.NotNil(t, stored.Spec)
+	assert.Equal(t, "false", stored.Spec.Configuration[pipelineANSIDefaultKey])
+}
+
+func TestPipelineUpdate_SynthesizesANSIDefault(t *testing.T) {
+	workspace := NewFakeWorkspace("http://test", "dbapi123")
+	pipelineID := createTestPipeline(t, workspace)
+
+	response := workspace.PipelineUpdate(Request{
+		Body: []byte(`{"name":"p","serverless":true}`),
+	}, pipelineID)
+	require.Equal(t, 0, response.StatusCode)
+
+	stored := workspace.Pipelines[pipelineID]
+	require.NotNil(t, stored.Spec)
+	assert.Equal(t, "true", stored.Spec.Configuration[pipelineANSIDefaultKey])
+}
+
 func TestPipelineStartUpdate_HandlesNonExistentPipeline(t *testing.T) {
 	workspace := NewFakeWorkspace("http://test", "dbapi123")
 

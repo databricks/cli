@@ -12,7 +12,8 @@ import (
 )
 
 func TestGenerateHostConfigSetsServerAliveInterval(t *testing.T) {
-	config := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/myhost", "cluster-123", "databricks ssh connect --proxy")
+	config, err := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/myhost", "cluster-123", "databricks ssh connect --proxy")
+	require.NoError(t, err)
 
 	// `ssh setup` and `--ide` reach ssh through this block and nothing else, so the option has to
 	// be in it.
@@ -30,12 +31,63 @@ func TestGenerateHostConfigPinsHostKeyAlias(t *testing.T) {
 	// `ssh setup --name myhost --cluster cluster-123` writes `Host myhost` but pins the server
 	// key under the cluster ID, so the block has to carry `HostKeyAlias cluster-123` for ssh to
 	// find the pinned entry under strict checking (DECO-27882).
-	config := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/cluster-123", "cluster-123", "databricks ssh connect --proxy")
+	config, err := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/cluster-123", "cluster-123", "databricks ssh connect --proxy")
+	require.NoError(t, err)
 	assert.Contains(t, config, "\n    HostKeyAlias cluster-123\n")
 
 	// An empty alias omits the directive entirely rather than emitting a bare `HostKeyAlias`.
-	noAlias := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/myhost", "", "databricks ssh connect --proxy")
+	noAlias, err := GenerateHostConfig("myhost", "root", "/keys/myhost", "/known-hosts/myhost", "", "databricks ssh connect --proxy")
+	require.NoError(t, err)
 	assert.NotContains(t, noAlias, "HostKeyAlias")
+}
+
+func TestValidateHostName(t *testing.T) {
+	for _, hostName := range []string{"a", "A9", "host-name_1"} {
+		assert.NoError(t, ValidateHostName(hostName))
+	}
+	for _, hostName := range []string{"", "-host", "_host", "host.name", "host name", "host/name", `host\name`, "host\x00name", "host\rname", "host\nname"} {
+		assert.Error(t, ValidateHostName(hostName), "hostName=%q", hostName)
+	}
+}
+
+func TestGetHostConfigPathRejectsEscapingNames(t *testing.T) {
+	for _, hostName := range []string{"../escape", filepath.Join("..", "escape"), filepath.Join(string(filepath.Separator), "absolute")} {
+		_, err := GetHostConfigPath(t.Context(), hostName)
+		assert.Error(t, err, "hostName=%q", hostName)
+	}
+}
+
+func TestGenerateHostConfigRejectsUnsafeValues(t *testing.T) {
+	tests := []struct {
+		name     string
+		hostName string
+		userName string
+		identity string
+		known    string
+		alias    string
+		proxy    string
+	}{
+		{name: "host name", hostName: "../host"},
+		{name: "user name", hostName: "host", userName: "root\nUser injected"},
+		{name: "identity file", hostName: "host", identity: "/key\rUser injected"},
+		{name: "known hosts file", hostName: "host", known: "/known\x00hosts"},
+		{name: "host key alias", hostName: "host", alias: "cluster\nHost injected"},
+		{name: "ProxyCommand", hostName: "host", proxy: "proxy\rProxyCommand injected"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userName := cmpOr(tt.userName, "root")
+			_, err := GenerateHostConfig(tt.hostName, userName, cmpOr(tt.identity, "/key"), cmpOr(tt.known, "/known"), cmpOr(tt.alias, "alias"), cmpOr(tt.proxy, "proxy"))
+			assert.Error(t, err)
+		})
+	}
+}
+
+func cmpOr(value, fallback string) string {
+	if value != "" {
+		return value
+	}
+	return fallback
 }
 
 func TestGetConfigDir(t *testing.T) {

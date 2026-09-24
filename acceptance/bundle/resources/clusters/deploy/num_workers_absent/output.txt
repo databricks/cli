@@ -3,38 +3,16 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-num-workers-absent/default/files...
 Created clusters.cluster1
 Created clusters.cluster2
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/print_requests.py", line 312, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/print_requests.py", line 305, in main
+    print(json.dumps(req, indent=2))
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
 
->>> print_requests.py //clusters/create
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/create",
-  "body": {
-    "autotermination_minutes": 60,
-    "cluster_name": "test-cluster-1",
-    "node_type_id": "[NODE_TYPE_ID]",
-    "num_workers": 0,
-    "spark_conf": {
-      "spark.executor.memory": "2g"
-    },
-    "spark_version": "13.3.x-scala2.12"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/create",
-  "body": {
-    "autoscale": {
-      "max_workers": 7,
-      "min_workers": 2
-    },
-    "autotermination_minutes": 60,
-    "cluster_name": "test-cluster-2",
-    "node_type_id": "[NODE_TYPE_ID]",
-    "spark_conf": {
-      "spark.executor.memory": "2g"
-    },
-    "spark_version": "13.3.x-scala2.12"
-  }
-}
+Exit code: 5

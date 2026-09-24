@@ -1,0 +1,9 @@
+
+>>> [CLI] bundle validate --strict
+Name: grants-open-privileges
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/grants-open-privileges/default
+
+Validation OK!

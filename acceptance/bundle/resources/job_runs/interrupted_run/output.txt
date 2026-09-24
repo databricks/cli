@@ -10,7 +10,9 @@ HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Files: 3 uploaded, 0 deleted
+Error: cannot create resources.jobs.downstream_job: dependency failed: resources.job_runs.my_run
+
+Files: 2 uploaded, 0 deleted
 
 Exit code: 1
 
@@ -60,22 +62,24 @@ Exit code: 1
   }
 }
 
-=== Badness: the next deploy does not wait for that run
+=== the next deploy waits for that run
 >>> [CLI] bundle deploy --plan tmp.plan.json
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default/files...
+Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
+Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
+Created jobs.downstream_job
 Files: 1 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+Resources: 1 created, 0 changed, 0 deleted, 2 unchanged
 
-=== the same run is still tracked, and nothing was cancelled, deleted or triggered
->>> read_state.py job_runs my_run id result_state
-job_runs my_run id='[MY_RUN_ID]' result_state=None
-
->>> print_requests.py //jobs
+=== the dependent resource receives the terminal run statejq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
+  delete resources.jobs.downstream_job
   delete resources.jobs.my_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-interrupted-run/default
 
-Destroy: 1 deleted
+Destroy: 2 deleted
+
+Exit code: 5

@@ -5,12 +5,7 @@ Created vector_search_endpoints.my_endpoint
 Created vector_search_indexes.my_index
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]
-{"count":"bigint","id":"int","label":"string","score":"float","small":"smallint","tags":"array<int>","tiny":"tinyint","vector":"array<float>"}
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -25,3 +20,5 @@ For Direct Access indexes, all upserted vectors are permanently lost:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/vs-index-schema-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted
+
+Exit code: 5

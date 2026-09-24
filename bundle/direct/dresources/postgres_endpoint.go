@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -66,6 +68,10 @@ func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint)
 }
 
 func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *PostgresEndpointState {
+	spec := remote.EndpointSpec
+	if spec.SuspendTimeoutDuration == nil && remote.Status != nil {
+		spec.SuspendTimeoutDuration = remote.Status.SuspendTimeoutDuration
+	}
 	return &PostgresEndpointState{
 		EndpointId: remote.EndpointId,
 		Parent:     remote.Parent,
@@ -74,7 +80,7 @@ func (*ResourcePostgresEndpoint) RemapState(remote *PostgresEndpointRemote) *Pos
 		// it, so RemapState leaves it false.
 		ReplaceExisting: false,
 
-		EndpointSpec: remote.EndpointSpec,
+		EndpointSpec: spec,
 	}
 }
 
@@ -183,17 +189,24 @@ var endpointOneofGroups = map[string]string{
 	"suspend_timeout_duration": "suspension",
 }
 
+const postgresSuspendTimeoutDefault = 24 * time.Hour
+
 func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, entry *PlanEntry) (*PostgresEndpointRemote, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
 	// Prefix with "spec." because the API expects paths relative to the Endpoint object,
 	// not relative to our flattened state type.
 	fieldPaths := collectUpdatePathsWithPrefix(entry.Changes, "spec.", endpointOneofGroups)
+	// The suspension members share one masked group. When the configured timeout is
+	// removed, populate that group with the documented 24-hour backend default.
+	spec := config.EndpointSpec
+	if slices.Contains(fieldPaths, "spec.suspension") && !spec.NoSuspension && spec.SuspendTimeoutDuration == nil {
+		spec.SuspendTimeoutDuration = duration.New(postgresSuspendTimeoutDefault)
+	}
 
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
 		Endpoint: postgres.Endpoint{
-			Spec: &config.EndpointSpec,
-
+			Spec: &spec,
 			// Output-only fields.
 			EndpointId:      "",
 			CreateTime:      nil,

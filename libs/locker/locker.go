@@ -156,19 +156,31 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		modes = append(modes, filer.OverwriteIfExists)
 	}
 
+	wrote := false
 	err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), modes...)
 	if err != nil {
 		// If the write failed because the lock file already exists, don't return
-		// the error and instead fall through to [assertLockHeld] below.
-		// This function will return a more descriptive error message that includes
+		// the error and instead fall through to [assertLockHeld] below. This
+		// function will return a more descriptive error message that includes
 		// details about the current holder of the lock.
 		if !errors.Is(err, fs.ErrExist) {
 			return err
 		}
+	} else {
+		wrote = true
 	}
 
 	err = locker.assertLockHeld(ctx)
 	if err != nil {
+		if wrote {
+			// We created the candidate lock, so make it temporarily active and use
+			// the ownership-checked Unlock path for compensation. If another actor
+			// replaced it, Unlock refuses to delete their lock.
+			locker.State = &newLockerState
+			locker.Active = true
+			cleanupErr := locker.Unlock(ctx)
+			return errors.Join(err, cleanupErr)
+		}
 		return err
 	}
 

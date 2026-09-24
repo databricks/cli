@@ -224,6 +224,9 @@ func (s *Sync) GetFileList(ctx context.Context) ([]fileset.File, error) {
 }
 
 func (s *Sync) RunContinuous(ctx context.Context) error {
+	if s.PollInterval <= 0 {
+		return errors.New("poll interval must be greater than zero")
+	}
 	ticker := time.NewTicker(s.PollInterval)
 	defer ticker.Stop()
 

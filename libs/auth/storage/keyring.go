@@ -2,11 +2,15 @@ package storage
 
 import (
 	"cmp"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/google/uuid"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/oauth2"
@@ -14,7 +18,7 @@ import (
 
 // keyringServiceName is the service name used for every entry the CLI writes
 // to the OS-native secure store. The account field carries the per-entry
-// cache key the U2M manager passes through Store.Put / Lookup.
+// cache key passed through LockedStore.Put and Store.Lookup.
 const keyringServiceName = "databricks-cli"
 
 // keyringProbeAccountPrefix is prefixed onto a per-call random suffix to form
@@ -75,6 +79,13 @@ type keyringStore struct {
 	backend        keyringBackend
 	timeout        time.Duration
 	keyringSvcName string
+
+	// operationMu excludes new backend calls while a transaction waits for
+	// timed-out calls to finish before releasing the cross-process sidecar.
+	operationMu sync.RWMutex
+	pendingMu   sync.Mutex
+	pending     int
+	pendingDone chan struct{}
 }
 
 // NewKeyringStore returns a Store backed by the OS-native secure store (via
@@ -94,11 +105,11 @@ func NewKeyringStore() Store {
 //
 // Used by the login path, where we want to validate both read and write
 // capability before committing to the keyring backend.
-func ProbeKeyring() error {
-	return probeWithBackend(zalandoBackend{}, defaultKeyringTimeout)
+func ProbeKeyring(ctx context.Context) error {
+	return probeWithBackend(ctx, zalandoBackend{}, defaultKeyringTimeout)
 }
 
-func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
+func probeWithBackend(ctx context.Context, backend keyringBackend, timeout time.Duration) error {
 	c := &keyringStore{
 		backend:        backend,
 		timeout:        timeout,
@@ -106,13 +117,15 @@ func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
 	}
 	account := keyringProbeAccountPrefix + uuid.NewString()
 	tok := &oauth2.Token{AccessToken: "probe"}
-	if err := c.Put(account, Entry{Token: tok}); err != nil {
-		return fmt.Errorf("write: %w", err)
-	}
-	if err := c.Delete(account); err != nil {
-		return fmt.Errorf("delete: %w", err)
-	}
-	return nil
+	return c.WithLock(ctx, func(locked LockedStore) error {
+		if err := locked.Put(account, Entry{Token: tok}); err != nil {
+			return fmt.Errorf("write: %w", err)
+		}
+		if err := locked.Delete(account); err != nil {
+			return fmt.Errorf("delete: %w", err)
+		}
+		return nil
+	})
 }
 
 // ProbeKeyringRead returns nil if the OS keyring accepted a Get for a
@@ -122,43 +135,67 @@ func probeWithBackend(backend keyringBackend, timeout time.Duration) error {
 //
 // Used by the read path so probing does not write to the keyring. A
 // successful probe is indistinguishable from the user not having an
-// entry for that probe account; we treat both as "reachable".
-func ProbeKeyringRead() error {
-	return probeReadWithBackend(zalandoBackend{}, defaultKeyringTimeout)
+// entry for this probe account; we treat both as "reachable".
+func ProbeKeyringRead(ctx context.Context) error {
+	return probeReadWithBackend(ctx, zalandoBackend{}, defaultKeyringTimeout)
 }
 
-func probeReadWithBackend(backend keyringBackend, timeout time.Duration) error {
+func probeReadWithBackend(_ context.Context, backend keyringBackend, timeout time.Duration) error {
 	c := &keyringStore{
 		backend:        backend,
 		timeout:        timeout,
 		keyringSvcName: keyringServiceName,
 	}
 	account := keyringProbeAccountPrefix + uuid.NewString()
-	err := c.withTimeout("get", func() error {
-		_, gerr := c.backend.Get(c.keyringSvcName, account)
-		return gerr
-	})
-	if errors.Is(err, keyring.ErrNotFound) {
+	_, err := c.readEntry(account)
+	if errors.Is(err, ErrNotFound) {
 		return nil
 	}
 	return err
 }
 
-// Put implements the Store interface.
-func (k *keyringStore) Put(key string, e Entry) error {
+// WithLock implements Store using the same stable sidecar as the plaintext
+// store. Timed-out backend calls are allowed to finish before the sidecar is
+// released so a late write cannot overlap the next transaction.
+func (k *keyringStore) WithLock(ctx context.Context, fn func(LockedStore) error) error {
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return fmt.Errorf("failed loading home directory: %w", err)
+	}
+	lockLocation := filepath.Join(home, tokenStoreLockFilePath)
+	return withTokenStoreFileLock(ctx, lockLocation, func() error {
+		k.operationMu.Lock()
+		defer k.operationMu.Unlock()
+		err := fn(&keyringLockedStore{store: k})
+		k.waitForPending()
+		return err
+	})
+}
+
+type keyringLockedStore struct {
+	store *keyringStore
+}
+
+// Lookup implements LockedStore, returning ErrNotFound on a miss.
+func (s *keyringLockedStore) Lookup(key string) (Entry, error) {
+	return s.store.readEntry(key)
+}
+
+// Put implements LockedStore.
+func (s *keyringLockedStore) Put(key string, e Entry) error {
 	raw, err := json.Marshal(keyringEntry(e))
 	if err != nil {
 		return fmt.Errorf("marshal token: %w", err)
 	}
-	return k.withTimeout("set", func() error {
-		return k.backend.Set(k.keyringSvcName, key, string(raw))
+	return s.store.withTimeout("set", func() error {
+		return s.store.backend.Set(s.store.keyringSvcName, key, string(raw))
 	})
 }
 
-// Delete implements the Store interface. Removing a missing entry is a no-op.
-func (k *keyringStore) Delete(key string) error {
-	return k.withTimeout("delete", func() error {
-		err := k.backend.Delete(k.keyringSvcName, key)
+// Delete implements LockedStore. Removing a missing entry is a no-op.
+func (s *keyringLockedStore) Delete(key string) error {
+	return s.store.withTimeout("delete", func() error {
+		err := s.store.backend.Delete(s.store.keyringSvcName, key)
 		if errors.Is(err, keyring.ErrNotFound) {
 			return nil
 		}
@@ -166,8 +203,14 @@ func (k *keyringStore) Delete(key string) error {
 	})
 }
 
-// Lookup implements the Store interface, returning ErrNotFound on a miss.
+// Lookup implements Store.
 func (k *keyringStore) Lookup(key string) (Entry, error) {
+	k.operationMu.RLock()
+	defer k.operationMu.RUnlock()
+	return k.readEntry(key)
+}
+
+func (k *keyringStore) readEntry(key string) (Entry, error) {
 	var raw string
 	err := k.withTimeout("get", func() error {
 		got, gerr := k.backend.Get(k.keyringSvcName, key)
@@ -222,20 +265,53 @@ func (e *TimeoutError) Error() string {
 	return fmt.Sprintf("keyring %s timed out", cmp.Or(e.Op, "operation"))
 }
 
-// withTimeout runs op in a goroutine and returns its error, or a
-// *TimeoutError if op does not complete before k.timeout elapses. The
-// goroutine is not cancelled; it will complete (or outlive the process)
-// in the background. This mirrors the pattern used by GitHub CLI; see
-// https://github.com/cli/cli/blob/trunk/internal/keyring/keyring.go.
+// withTimeout runs op in a goroutine and returns a *TimeoutError when the
+// backend exceeds k.timeout. Timed-out goroutines remain tracked until they
+// finish; WithLock waits for them before releasing the cross-process sidecar.
 func (k *keyringStore) withTimeout(op string, fn func() error) error {
+	k.startPending()
 	ch := make(chan error, 1)
 	go func() {
+		defer k.finishPending()
 		ch <- fn()
 	}()
+	timer := time.NewTimer(k.timeout)
+	defer timer.Stop()
 	select {
 	case err := <-ch:
 		return err
-	case <-time.After(k.timeout):
+	case <-timer.C:
 		return &TimeoutError{Op: op}
+	}
+}
+
+func (k *keyringStore) startPending() {
+	k.pendingMu.Lock()
+	defer k.pendingMu.Unlock()
+	if k.pending == 0 {
+		k.pendingDone = make(chan struct{})
+	}
+	k.pending++
+}
+
+func (k *keyringStore) finishPending() {
+	k.pendingMu.Lock()
+	defer k.pendingMu.Unlock()
+	k.pending--
+	if k.pending == 0 {
+		close(k.pendingDone)
+	}
+}
+
+func (k *keyringStore) waitForPending() {
+	for {
+		k.pendingMu.Lock()
+		if k.pending == 0 {
+			k.pendingMu.Unlock()
+			return
+		}
+		done := k.pendingDone
+		k.pendingMu.Unlock()
+		<-done
 	}
 }

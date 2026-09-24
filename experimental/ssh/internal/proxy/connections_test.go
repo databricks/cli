@@ -60,6 +60,62 @@ func TestConnectionsManager_TryAdd_MaxClientsReached(t *testing.T) {
 	assert.False(t, exists2)
 }
 
+func TestConnectionsManager_TryAdd_ConcurrentDuplicateID(t *testing.T) {
+	const attemptCount = 64
+	cm := NewConnectionsManager(attemptCount, time.Hour)
+	start := make(chan struct{})
+	results := make(chan bool, attemptCount)
+
+	var wg sync.WaitGroup
+	for range attemptCount {
+		wg.Go(func() {
+			<-start
+			results <- cm.TryAdd("duplicate", &proxyConnection{})
+		})
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+
+	successes := 0
+	for added := range results {
+		if added {
+			successes++
+		}
+	}
+	require.Equal(t, 1, successes)
+	assert.Equal(t, 1, cm.Count())
+	_, exists := cm.Get("duplicate")
+	assert.True(t, exists)
+}
+
+func TestConnectionsManager_TryAdd_ConcurrentCapacityRace(t *testing.T) {
+	const attemptCount = 256
+	cm := NewConnectionsManager(1, time.Hour)
+	start := make(chan struct{})
+	results := make(chan bool, attemptCount)
+
+	var wg sync.WaitGroup
+	for i := range attemptCount {
+		wg.Go(func() {
+			<-start
+			results <- cm.TryAdd(fmt.Sprintf("connection-%d", i), &proxyConnection{})
+		})
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+
+	successes := 0
+	for added := range results {
+		if added {
+			successes++
+		}
+	}
+	assert.Equal(t, 1, successes)
+	assert.Equal(t, 1, cm.Count())
+}
+
 func TestConnectionsManager_Remove(t *testing.T) {
 	cm := NewConnectionsManager(3, time.Hour)
 	conn := &proxyConnection{}

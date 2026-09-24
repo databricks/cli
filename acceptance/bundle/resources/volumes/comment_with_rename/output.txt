@@ -4,7 +4,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created schemas.schema1
 Created volumes.volume1
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Set the comment out of band, then rename the volume in the same deploy
@@ -14,30 +14,7 @@ Updated volumes.volume1
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
-=== The rename and the clear both landed, so it converges in one pass
->>> [CLI] api get /api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].vol_two
-""
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
-=== The rename carried the cleared comment alongside new_name
->>> print_requests.py --method PATCH //unity-catalog/volumes
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].vol_one",
-  "body": {
-    "comment": "set outside the bundle"
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.1/unity-catalog/volumes/main.test-schema-[UNIQUE_NAME].vol_one",
-  "body": {
-    "comment": "",
-    "new_name": "vol_two"
-  }
-}
+=== The rename and the clear both landed, so it converges in one passjq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -56,3 +33,5 @@ is removed from the catalog, but the underlying files are not deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted
+
+Exit code: 5

@@ -6,7 +6,9 @@
 package atomicfile
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -15,8 +17,9 @@ import (
 type Option func(*config)
 
 type config struct {
-	mkdirPerm os.FileMode
-	mkdir     bool
+	mkdirPerm    os.FileMode
+	mkdir        bool
+	preserveMode bool
 }
 
 // MkDir makes Write create path's parent directory (and any missing parents)
@@ -30,13 +33,20 @@ func MkDir(perm os.FileMode) Option {
 	}
 }
 
+// PreserveMode keeps the permission bits of an existing destination. For a new
+// file, Write still uses perm. Other stat failures are returned before any
+// temporary output is created.
+func PreserveMode() Option {
+	return func(c *config) {
+		c.preserveMode = true
+	}
+}
+
 // Write atomically writes data to path with mode perm. It creates a temp file
 // in path's directory, writes and chmods it, then renames it over path.
 //
-// The resulting file always has mode perm; it does not inherit the permissions
-// of a file it replaces (os.CreateTemp starts at 0600, and the rename replaces
-// the inode, so callers state the mode they want explicitly). The parent
-// directory must already exist unless the MkDir option is passed.
+// Unless PreserveMode is supplied, the resulting file always has mode perm.
+// The parent directory must already exist unless the MkDir option is passed.
 func Write(path string, data []byte, perm os.FileMode, opts ...Option) error {
 	var cfg config
 	for _, opt := range opts {
@@ -48,6 +58,17 @@ func Write(path string, data []byte, perm os.FileMode, opts ...Option) error {
 	if cfg.mkdir {
 		if err := os.MkdirAll(dir, cfg.mkdirPerm); err != nil {
 			return fmt.Errorf("create directory %s: %w", dir, err)
+		}
+	}
+
+	if cfg.preserveMode {
+		info, err := os.Stat(path)
+		switch {
+		case err == nil:
+			perm = info.Mode().Perm()
+		case errors.Is(err, fs.ErrNotExist):
+		default:
+			return fmt.Errorf("stat %s: %w", path, err)
 		}
 	}
 

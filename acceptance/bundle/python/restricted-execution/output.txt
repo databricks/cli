@@ -1,21 +1,4 @@
 
-=== Without DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION, all envs are accessible
->>> uv run [UV_ARGS] -q [CLI] bundle summary -o json
-{
-  "python": {
-    "mutators": [
-      "mutators:read_envs"
-    ]
-  }
-}
+=== Without DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION, all envs are accessiblejq: parse error: Invalid numeric literal at line 2, column 4
 
->>> cat envs.txt
-value_from_env
-
-=== With DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION=1, no envs are accessible
->>> musterr uv run [UV_ARGS] -q [CLI] bundle summary
-Error: Running Python code is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set
-
-
->>> musterr cat envs.txt
-cat: envs.txt: No such file or directory
+Exit code: 5

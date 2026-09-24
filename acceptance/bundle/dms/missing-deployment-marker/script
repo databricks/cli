@@ -1,0 +1,5 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+trace MSYS_NO_PATHCONV=1 $CLI workspace delete "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-missing-marker-${UNIQUE_NAME}/default/state/resources.deployment.json"
+trace musterr $CLI bundle plan

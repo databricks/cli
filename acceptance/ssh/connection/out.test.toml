@@ -1,4 +1,5 @@
 Cloud = false
+RecordRequests = true
 GOOS.darwin = false
 GOOS.linux = true
 GOOS.windows = false

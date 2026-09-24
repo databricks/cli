@@ -1,27 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -t dev -o json
-{
-  "catalogs": {
-    "my_catalog": {
-      "name": "mycatalog"
-    }
-  },
-  "model_serving_endpoints": {
-    "my_endpoint": {
-      "ai_gateway": {
-        "inference_table_config": {
-          "catalog_name": "${resources.catalogs.my_catalog.name}",
-          "enabled": true,
-          "schema_name": "${resources.schemas.my_schema.name}"
-        }
-      },
-      "name": "dev_[USERNAME]_my-endpoint"
-    }
-  },
-  "schemas": {
-    "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
-      "name": "dev_[USERNAME]_myschema"
-    }
-  }
-}
+Exit code: 5

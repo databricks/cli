@@ -25,6 +25,10 @@ on:
         type: boolean
         default: true
 
+# Operational prerequisite: the stale ghcr.io/databricks/cli:latest tag is
+# refreshed only by a release-owner dispatch with update_latest=true; the CLI
+# release workflow intentionally remains artifact-only.
+
 jobs:
   docker:
     runs-on:
@@ -64,10 +68,15 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           TAG="${{ inputs.tag }}"
+          curl -sfL \
+            "https://github.com/databricks/cli/releases/download/${TAG}/databricks_cli_${VERSION}_SHA256SUMS" \
+            -o /tmp/databricks_cli_${VERSION}_SHA256SUMS
           for ARCH in amd64 arm64; do
             curl -sfL \
               "https://github.com/databricks/cli/releases/download/${TAG}/databricks_cli_${VERSION}_linux_${ARCH}.tar.gz" \
               -o "/tmp/databricks_${ARCH}.tar.gz"
+            grep "databricks_cli_${VERSION}_linux_${ARCH}.tar.gz" \
+              /tmp/databricks_cli_${VERSION}_SHA256SUMS | sha256sum --check --strict -
             mkdir -p "/tmp/cli_${ARCH}"
             tar -xzf "/tmp/databricks_${ARCH}.tar.gz" -C "/tmp/cli_${ARCH}" databricks
           done
@@ -98,6 +107,11 @@ jobs:
             --tag "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}" \
             "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-amd64" \
             "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-arm64"
+
+      - name: Smoke test release images
+        run: |
+          .github/scripts/docker-image-smoke.sh "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-amd64" amd64
+          .github/scripts/docker-image-smoke.sh "ghcr.io/databricks/cli:${{ steps.version.outputs.version }}-arm64" arm64
 
       - name: Update latest multi-arch manifest
         if: inputs.update_latest

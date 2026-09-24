@@ -20,11 +20,9 @@ __all__ = [
     "LifecycleParam",
     "PipelineType",
     "PipelineTypeParam",
-    "Privilege",
     "PrivilegeAssignment",
     "PrivilegeAssignmentDict",
     "PrivilegeAssignmentParam",
-    "PrivilegeParam",
     "VectorIndexType",
     "VectorIndexTypeParam",
     "VectorSearchIndex",
@@ -65,10 +63,6 @@ from databricks.bundles.vector_search_indexes._models.lifecycle import (
 from databricks.bundles.vector_search_indexes._models.pipeline_type import (
     PipelineType,
     PipelineTypeParam,
-)
-from databricks.bundles.vector_search_indexes._models.privilege import (
-    Privilege,
-    PrivilegeParam,
 )
 from databricks.bundles.vector_search_indexes._models.privilege_assignment import (
     PrivilegeAssignment,

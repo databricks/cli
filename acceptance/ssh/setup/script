@@ -8,20 +8,23 @@ $CLI ssh setup --name=my-cluster --cluster=$TEST_DEFAULT_CLUSTER_ID --max-client
 # --server-timeout have to appear there or `ssh my-cluster` silently starts a server with the
 # defaults.
 title "ProxyCommand written by setup --max-clients=25 --server-timeout=48h\n"
-sed -n 's/.*\(ssh connect --proxy.*\)/\1/p' "$HOME/.databricks/ssh-tunnel-configs/my-cluster"
+grep -oE -- '--(cluster|auto-start-cluster|shutdown-delay|max-clients|server-timeout)=[^ '\''"]+' "$HOME/.databricks/ssh-tunnel-configs/my-cluster" | tr '\n' ' ' | awk '{$1=$1; print}'
 
 # A shutdown delay longer than the default 24h lifetime worked before --server-timeout existed,
 # and `ssh setup` persisted it into the ProxyCommand. OpenSSH runs that ProxyCommand verbatim, so
 # the delay has to keep raising the lifetime rather than becoming an error the user cannot fix.
 title "A shutdown delay beyond the default lifetime raises it, no --server-timeout needed\n"
 $CLI ssh setup --name=long-delay --cluster=$TEST_DEFAULT_CLUSTER_ID --shutdown-delay=48h &>LOG.long-delay
-sed -n 's/.*\(ssh connect --proxy.*\)/\1/p' "$HOME/.databricks/ssh-tunnel-configs/long-delay"
+grep -oE -- '--(cluster|auto-start-cluster|shutdown-delay|max-clients|server-timeout)=[^ '\''"]+' "$HOME/.databricks/ssh-tunnel-configs/long-delay" | tr '\n' ' ' | awk '{$1=$1; print}'
 
 # Holding the job run open for detached processes is fixed at submission too, so a host
 # configured through setup can only ask for it here.
 title "ProxyCommand written by setup --keep-detached-processes\n"
 $CLI ssh setup --name=keep-detached --cluster=$TEST_DEFAULT_CLUSTER_ID --keep-detached-processes &>LOG.keep-detached
-sed -n 's/.*\(ssh connect --proxy.*\)/\1/p' "$HOME/.databricks/ssh-tunnel-configs/keep-detached"
+grep -oE -- '--(cluster|auto-start-cluster|shutdown-delay|keep-detached-processes|max-clients|server-timeout)(=[^ '\''"]+)?' "$HOME/.databricks/ssh-tunnel-configs/keep-detached" | tr '\n' ' ' | awk '{$1=$1; print}'
+
+title "Rejects an unsafe host alias before client or file work"
+musterr trace $CLI ssh setup --name=../escape --cluster=$TEST_DEFAULT_CLUSTER_ID
 
 title "Rejects a server that would refuse every connection"
 musterr trace $CLI ssh setup --name=broken --cluster=$TEST_DEFAULT_CLUSTER_ID --max-clients=0

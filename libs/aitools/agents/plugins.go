@@ -15,36 +15,33 @@ import (
 // entry as "<id>@<marketplace>" (e.g. "databricks@claude-plugins-official").
 const pluginManifestFile = "installed_plugins.json"
 
-// pluginInstall is one install record in an agent's plugin manifest. A plugin
-// installed in more than one scope has several records; only the version is
-// consumed here.
 type pluginInstall struct {
+	Scope   string `json:"scope"`
 	Version string `json:"version"`
 }
 
-// DatabricksPluginVersion reports the recorded version of the databricks plugin
-// in the agent's own plugin manifest and whether the plugin is installed at all.
-// This catches installs done through `databricks aitools install` and a direct
-// `<agent> plugin install`, unlike the CLI's own state file, which only records
-// CLI-driven installs. Each agent's manifest format differs, so parsing is
-// delegated to a per-agent reader; agents without a verified reader report
-// ("", false), i.e. "not installed as far as we can tell".
-func (a *Agent) DatabricksPluginVersion(ctx context.Context) (string, bool) {
+// DatabricksPluginVersionForScope reports the version from the agent's own
+// manifest for nativeScope. An empty nativeScope retains the historical
+// highest-version behavior for callers that do not know a native scope.
+func (a *Agent) DatabricksPluginVersionForScope(ctx context.Context, nativeScope string) (string, bool) {
 	if a.pluginVersion == nil {
 		return "", false
 	}
-	return a.pluginVersion(ctx, a)
+	return a.pluginVersion(ctx, a, nativeScope)
 }
 
-// claudePluginVersion reads the databricks plugin version from Claude Code's
-// installed_plugins.json (<ConfigDir>/plugins/), which keys each entry as
-// "<id>@<marketplace>" (e.g. "databricks@claude-plugins-official") with one
-// record per install scope. Any read/parse failure reports ("", false), so an
-// unreadable manifest reads as "not installed". When the plugin is recorded for
-// more than one scope, the highest recorded version is returned (they match in
-// the common single-scope case, but the cache can retain a stale scope); the
-// version is "" when installed but unversioned.
-func claudePluginVersion(ctx context.Context, a *Agent) (string, bool) {
+// HasPluginVersionReader reports whether this agent has a verified manifest
+// reader. Callers may fall back to CLI state only when this is false.
+func (a *Agent) HasPluginVersionReader() bool {
+	return a.pluginVersion != nil
+}
+
+// DatabricksPluginVersion is the compatibility wrapper for unscoped lookups.
+func (a *Agent) DatabricksPluginVersion(ctx context.Context) (string, bool) {
+	return a.DatabricksPluginVersionForScope(ctx, "")
+}
+
+func claudePluginVersion(ctx context.Context, a *Agent, nativeScope string) (string, bool) {
 	configDir, err := a.ConfigDir(ctx)
 	if err != nil {
 		return "", false
@@ -64,10 +61,19 @@ func claudePluginVersion(ctx context.Context, a *Agent) (string, bool) {
 		if id != databricksPluginID {
 			continue
 		}
-		// Installed. Report the highest version across scopes;
+		if nativeScope != "" {
+			for _, install := range installs {
+				if install.Scope == nativeScope {
+					return install.Version, true
+				}
+			}
+			if len(installs) == 1 && installs[0].Scope == "" {
+				return installs[0].Version, true
+			}
+			return "", false
+		}
 		best := ""
 		for _, install := range installs {
-			// Compare as semver (versions are unprefixed, e.g. "0.2.9").
 			if install.Version != "" && (best == "" || semver.Compare("v"+install.Version, "v"+best) > 0) {
 				best = install.Version
 			}

@@ -234,27 +234,43 @@ func FormatMetadata(userName string, serverPort int, clusterID string) string {
 // This method serializes the ClientOptions into a command-line invocation that will
 // be parsed back into ClientOptions when the SSH ProxyCommand is executed.
 func (o *ClientOptions) ToProxyCommand() (string, error) {
+	args, err := o.proxyCommandArguments()
+	if err != nil {
+		return "", err
+	}
+	quotedArgs := make([]string, len(args))
+	for i, arg := range args {
+		quotedArgs[i] = quoteProxyCommandArgument(arg)
+	}
+	return strings.Join(quotedArgs, " "), nil
+}
+
+func (o *ClientOptions) proxyCommandArguments() ([]string, error) {
+	if err := o.validateProxyCommandValues(); err != nil {
+		return nil, err
+	}
 	executablePath, err := os.Executable()
 	if err != nil {
-		return "", fmt.Errorf("failed to get current executable path: %w", err)
+		return nil, fmt.Errorf("failed to get current executable path: %w", err)
+	}
+	if err := validateProxyCommandValue("executable path", executablePath); err != nil {
+		return nil, err
 	}
 
-	var proxyCommand string
+	args := []string{executablePath, "ssh", "connect", "--proxy"}
 	if o.IsServerlessMode() {
-		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --name=%s --shutdown-delay=%s",
-			executablePath, o.ConnectionName, o.ShutdownDelay.String())
+		args = append(args, "--name="+o.ConnectionName, "--shutdown-delay="+o.ShutdownDelay.String())
 		if o.Accelerator != "" {
-			proxyCommand += " --accelerator=" + o.Accelerator
+			args = append(args, "--accelerator="+o.Accelerator)
 		}
 		if o.UsagePolicyID != "" {
-			proxyCommand += " --usage-policy-id=" + o.UsagePolicyID
+			args = append(args, "--usage-policy-id="+o.UsagePolicyID)
 		}
 	} else {
-		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
-			executablePath, o.ClusterID, o.AutoStartCluster, o.ShutdownDelay.String())
+		args = append(args, "--cluster="+o.ClusterID, "--auto-start-cluster="+strconv.FormatBool(o.AutoStartCluster), "--shutdown-delay="+o.ShutdownDelay.String())
 	}
 	if o.KeepDetachedProcesses {
-		proxyCommand += " --keep-detached-processes"
+		args = append(args, "--keep-detached-processes")
 	}
 
 	// Both of these are fixed when the server job is submitted, and for a host configured by
@@ -262,42 +278,66 @@ func (o *ClientOptions) ToProxyCommand() (string, error) {
 	// carried here or the user's choice is lost. Zero means "not set": the receiving command
 	// then applies its own flag default.
 	if o.MaxClients > 0 {
-		proxyCommand += " --max-clients=" + strconv.Itoa(o.MaxClients)
+		args = append(args, "--max-clients="+strconv.Itoa(o.MaxClients))
 	}
 
 	if o.ServerTimeout > 0 {
-		proxyCommand += " --server-timeout=" + o.ServerTimeout.String()
+		args = append(args, "--server-timeout="+o.ServerTimeout.String())
 	}
 
 	if o.ServerMetadata != "" {
-		proxyCommand += " --metadata=" + o.ServerMetadata
+		args = append(args, "--metadata="+o.ServerMetadata)
 	}
 
 	if o.HandoverTimeout > 0 {
-		proxyCommand += " --handover-timeout=" + o.HandoverTimeout.String()
+		args = append(args, "--handover-timeout="+o.HandoverTimeout.String())
 	}
 
 	if o.Profile != "" {
-		proxyCommand += " --profile=" + o.Profile
+		args = append(args, "--profile="+o.Profile)
 	}
 
 	if o.Liteswap != "" {
-		proxyCommand += " --liteswap=" + o.Liteswap
+		args = append(args, "--liteswap="+o.Liteswap)
 	}
 
 	if o.EnvironmentVersion > 0 {
-		proxyCommand += " --environment-version=" + strconv.Itoa(o.EnvironmentVersion)
+		args = append(args, "--environment-version="+strconv.Itoa(o.EnvironmentVersion))
 	}
 
 	if o.BaseEnvironment != "" {
-		// Shell-quote the value: this command is persisted as an OpenSSH ProxyCommand
-		// and executed via the shell, and base environments accept user-controlled
-		// display names/paths that may contain spaces or shell metacharacters.
-		// Single-quoting (unlike strconv.Quote's double quotes) prevents any expansion.
-		proxyCommand += " --base-environment=" + shellSingleQuote(o.BaseEnvironment)
+		args = append(args, "--base-environment="+o.BaseEnvironment)
 	}
+	return args, nil
+}
 
-	return proxyCommand, nil
+func (o *ClientOptions) validateProxyCommandValues() error {
+	values := []struct {
+		name  string
+		value string
+	}{
+		{"cluster ID", o.ClusterID},
+		{"connection name", o.ConnectionName},
+		{"accelerator", o.Accelerator},
+		{"usage policy ID", o.UsagePolicyID},
+		{"server metadata", o.ServerMetadata},
+		{"profile", o.Profile},
+		{"liteswap", o.Liteswap},
+		{"base environment", o.BaseEnvironment},
+	}
+	for _, item := range values {
+		if err := validateProxyCommandValue(item.name, item.value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateProxyCommandValue(name, value string) error {
+	if strings.ContainsAny(value, "\x00\r\n") {
+		return fmt.Errorf("%s contains a forbidden NUL, carriage return, or newline", name)
+	}
+	return nil
 }
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) (retErr error) {
@@ -567,12 +607,6 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 }
 
 func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath, knownHostsPath string, serverPort int, clusterID string, opts ClientOptions) error {
-	// Ensure the Include directive exists in the main SSH config
-	err := sshconfig.EnsureIncludeDirective(ctx, configPath)
-	if err != nil {
-		return err
-	}
-
 	// Generate ProxyCommand with server metadata
 	optsWithMetadata := opts
 	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
@@ -585,7 +619,16 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 	// The host key is pinned under the session ID (see pinServerHostKey), so emit it as
 	// HostKeyAlias to keep the key lookup matching the pinned entry (DECO-27882). Here the
 	// host alias already is the session ID, but passing it explicitly keeps the two in step.
-	hostConfig := sshconfig.GenerateHostConfig(hostName, userName, keyPath, knownHostsPath, opts.SessionIdentifier(), proxyCommand)
+	hostConfig, err := sshconfig.GenerateHostConfig(hostName, userName, keyPath, knownHostsPath, opts.SessionIdentifier(), proxyCommand)
+	if err != nil {
+		return err
+	}
+
+	// Ensure the Include directive exists in the main SSH config
+	err = sshconfig.EnsureIncludeDirective(ctx, configPath)
+	if err != nil {
+		return err
+	}
 
 	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, true)
 	if err != nil {

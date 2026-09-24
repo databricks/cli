@@ -1,3 +1,5 @@
+
+>>> [CLI] bundle plan
 create secret_scopes.my_scope
 create secret_scopes.my_scope.permissions
 

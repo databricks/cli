@@ -146,6 +146,7 @@ func (c *runConfig) validate() error {
 		if !taskKeyRe.MatchString(v) {
 			return fmt.Errorf("invalid mlflow_run_name %q: only alphanumeric characters, hyphens, and underscores are allowed", v)
 		}
+		*c.MLflowRunName = v
 	}
 
 	if c.MLflowExperimentDirectory != nil {
@@ -157,6 +158,7 @@ func (c *runConfig) validate() error {
 		if !strings.HasPrefix(v, "/Workspace") {
 			return fmt.Errorf("mlflow_experiment_directory must start with '/Workspace', got: %s", v)
 		}
+		*c.MLflowExperimentDirectory = v
 	}
 
 	if c.MLflowArtifactLocation != nil {

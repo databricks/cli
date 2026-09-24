@@ -1,12 +1,5 @@
 
 >>> [CLI] auth login --host [DATABRICKS_URL]
+Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] auth token --host [DATABRICKS_URL]
-json.access_token = "oauth-token";
-
->>> [CLI] auth login --host [DATABRICKS_URL] --profile test
-Profile test was successfully saved
-
->>> [CLI] auth profiles
-Name            Host                    Valid
-test (Default)  [DATABRICKS_URL]  YES
+Exit code: 1

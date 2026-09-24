@@ -1,8 +1,4 @@
-
->>> [CLI] auth describe --profile u2m-profile --output json
+jq: parse error: Invalid numeric literal at line 2, column 4
 Warn: [hostmetadata] failed to fetch host metadata for https://u2m-profile.databricks.test, will skip for 1m0s
-{
-  "mode": "secure",
-  "location": "OS keyring (service: databricks-cli)",
-  "source": "default"
-}
+
+Exit code: 5

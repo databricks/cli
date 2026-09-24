@@ -22,12 +22,19 @@ const (
 type Registry struct {
 	WorkspaceID string
 	Host        string
+	DNSZone     string
 }
 
 // ServesWorkspaceHost reports whether r may receive tokens for workspaceHost.
-// Loopback test-server registries and real workspaces never match each other.
+// Registry and workspace DNS zones must match exactly. Loopback test-server
+// registries and real workspaces never match each other.
 func (r Registry) ServesWorkspaceHost(workspaceHost string) bool {
-	return strings.HasSuffix(r.Host, localRegistryDNSZone) == isLocalWorkspaceHost(workspaceHost)
+	return r.servesWorkspaceHostInZones(workspaceHost, registryDNSZones())
+}
+
+func (r Registry) servesWorkspaceHostInZones(workspaceHost string, zones []string) bool {
+	zone, err := registryDNSZoneForWorkspaceHostInZones(workspaceHost, zones)
+	return err == nil && r.DNSZone == zone
 }
 
 // ValidateWorkspaceHost checks that a workspace host can be used to derive an Artifact Registry host.
@@ -50,6 +57,10 @@ func ValidateRegion(region string) error {
 
 // RegistryHost builds a registry host in the workspace's cloud and environment DNS zone.
 func RegistryHost(workspaceID, region, workspaceHost string) (string, error) {
+	return registryHostInZones(workspaceID, region, workspaceHost, registryDNSZones())
+}
+
+func registryHostInZones(workspaceID, region, workspaceHost string, zones []string) (string, error) {
 	workspaceID = strings.TrimSpace(workspaceID)
 	region = strings.TrimSpace(region)
 	if workspaceID == "" {
@@ -61,11 +72,32 @@ func RegistryHost(workspaceID, region, workspaceHost string) (string, error) {
 	if err := ValidateRegion(region); err != nil {
 		return "", err
 	}
-	dnsZone, err := registryDNSZoneForWorkspaceHost(workspaceHost)
+	dnsZone, err := registryDNSZoneForWorkspaceHostInZones(workspaceHost, zones)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s.container.%s%s", workspaceID, region, dnsZone), nil
+	return registryHostForZone(workspaceID, region, dnsZone), nil
+}
+
+func registryHostForZone(workspaceID, region, dnsZone string) string {
+	return fmt.Sprintf("%s.container.%s%s", workspaceID, region, dnsZone)
+}
+
+var databricksDNSZones = collectRegistryDNSZones()
+
+func collectRegistryDNSZones() []string {
+	environments := environment.AllEnvironments()
+	result := make([]string, 0, len(environments))
+	for _, env := range environments {
+		if env.DnsZone != "" {
+			result = append(result, env.DnsZone)
+		}
+	}
+	return result
+}
+
+func registryDNSZones() []string {
+	return databricksDNSZones
 }
 
 // normalizeServerAddress accepts the bare host or HTTPS URL forms allowed by Docker's credential-helper protocol.
@@ -99,32 +131,35 @@ func normalizeServerAddress(raw string) (string, error) {
 
 // ParseRegistryHost normalizes a Databricks Artifact Registry address and extracts its workspace ID.
 func ParseRegistryHost(raw string) (Registry, error) {
+	return parseRegistryHost(raw, registryDNSZones())
+}
+
+func parseRegistryHost(raw string, zones []string) (Registry, error) {
 	host, err := normalizeServerAddress(raw)
 	if err != nil {
 		return Registry{}, err
 	}
 
-	dnsZone, ok := matchingDatabricksDNSZone(host)
+	dnsZone, ok := matchingDNSZone(host, zones)
 	if strings.HasSuffix(host, localRegistryDNSZone) {
 		dnsZone, ok = localRegistryDNSZone, true
 	}
 	if !ok {
 		return Registry{}, fmt.Errorf("%q is not a Databricks Artifact Registry host", host)
 	}
-
 	trimmed := strings.TrimSuffix(host, dnsZone)
 	workspaceID, region, ok := strings.Cut(trimmed, registryHostInfix)
 	if !ok || !isDNSLabel(workspaceID) || !isDNSLabel(region) {
 		return Registry{}, fmt.Errorf("%q is not a Databricks Artifact Registry host", host)
 	}
-
-	return Registry{
-		WorkspaceID: workspaceID,
-		Host:        host,
-	}, nil
+	return Registry{WorkspaceID: workspaceID, Host: host, DNSZone: dnsZone}, nil
 }
 
 func registryDNSZoneForWorkspaceHost(raw string) (string, error) {
+	return registryDNSZoneForWorkspaceHostInZones(raw, registryDNSZones())
+}
+
+func registryDNSZoneForWorkspaceHostInZones(raw string, zones []string) (string, error) {
 	if isLocalWorkspaceHost(raw) {
 		return localRegistryDNSZone, nil
 	}
@@ -132,23 +167,32 @@ func registryDNSZoneForWorkspaceHost(raw string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("parse workspace host: %w", err)
 	}
-	dnsZone, ok := matchingDatabricksDNSZone(host)
+	dnsZone, ok := matchingDNSZone(host, zones)
 	if !ok {
 		return "", fmt.Errorf("%q is not a supported Databricks workspace host", host)
 	}
 	return dnsZone, nil
 }
 
-// isLocalWorkspaceHost matches the plain-HTTP loopback test server that OAuth login also accepts.
+// isLocalWorkspaceHost matches reserved loopback test hosts accepted by the
+// Docker credential helper. They must never match a real workspace registry.
 func isLocalWorkspaceHost(raw string) bool {
 	u, err := url.Parse(strings.TrimSpace(raw))
-	return err == nil && u.Scheme == "http" && u.Hostname() == "127.0.0.1"
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return false
+	}
+	host := u.Hostname()
+	return host == "127.0.0.1" || host == "localhost" || strings.HasSuffix(host, ".localhost")
 }
 
-func matchingDatabricksDNSZone(host string) (string, bool) {
-	dnsZone := strings.ToLower(environment.GetEnvironmentForHostname(host).DnsZone)
-	// The SDK defaults unknown hosts to AWS production, so verify that the returned zone actually matched.
-	return dnsZone, dnsZone != "" && strings.HasSuffix(host, dnsZone)
+func matchingDNSZone(host string, zones []string) (string, bool) {
+	var matched string
+	for _, zone := range zones {
+		if strings.HasSuffix(host, zone) && len(zone) > len(matched) {
+			matched = zone
+		}
+	}
+	return matched, matched != ""
 }
 
 // isDNSLabel accepts one lowercase ASCII label: letters, digits, and interior hyphens, up to 63 bytes.

@@ -6,9 +6,13 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	cliauth "github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/env"
@@ -18,6 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const filesAPITestTimeout = time.Second
 
 func TestNewFilesAPIClientDoesNotResolveAmbientConfig(t *testing.T) {
 	server := testserver.New(t)
@@ -65,6 +71,119 @@ workspace_id = ambient-profile-workspace
 			require.NoError(t, err)
 		})
 	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func newTestFilesAPIClient(t *testing.T, cfg *databricks.Config) *files.Client {
+	t.Helper()
+
+	workspaceClient, err := databricks.NewWorkspaceClient(cfg)
+	require.NoError(t, err)
+	client, err := newFilesAPIClient(t.Context(), workspaceClient.Config)
+	require.NoError(t, err)
+	return client
+}
+
+func TestNewFilesAPIClientTimesOutStalledResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, req *http.Request) {
+		<-req.Context().Done()
+	}))
+	defer server.Close()
+
+	client := newTestFilesAPIClient(t, &databricks.Config{
+		Host:                server.URL,
+		Token:               "test-token",
+		HTTPTimeoutSeconds:  int(filesAPITestTimeout.Seconds()),
+		RetryTimeoutSeconds: 2,
+	})
+	filePath := "/Volumes/main/schema/volume/file"
+
+	start := time.Now()
+	_, err := client.GetFileMetadata(t.Context(), files.GetFileMetadataRequest{FilePath: &filePath})
+	require.ErrorContains(t, err, "1s of inactivity")
+	assert.Less(t, time.Since(start), 3*time.Second)
+}
+
+func TestNewFilesAPIClientExtendsTimeoutForProgressingResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		flusher := w.(http.Flusher)
+		for _, chunk := range []string{`{`, `"contents":[]`, `}`} {
+			_, err := w.Write([]byte(chunk))
+			if err != nil {
+				return
+			}
+			flusher.Flush()
+			time.Sleep(500 * time.Millisecond)
+		}
+	}))
+	defer server.Close()
+
+	client := newTestFilesAPIClient(t, &databricks.Config{
+		Host:                server.URL,
+		Token:               "test-token",
+		HTTPTimeoutSeconds:  int(filesAPITestTimeout.Seconds()),
+		RetryTimeoutSeconds: 5,
+	})
+	directoryPath := "/Volumes/main/schema/volume"
+
+	start := time.Now()
+	_, err := client.ListDirectoryContents(t.Context(), files.ListDirectoryContentsRequest{DirectoryPath: &directoryPath})
+	require.NoError(t, err)
+	assert.Greater(t, time.Since(start), filesAPITestTimeout)
+}
+
+func TestNewFilesAPIClientUsesCustomTransport(t *testing.T) {
+	var requests atomic.Int32
+	transport := roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if req.URL.Path == "/.well-known/databricks-config" {
+			return &http.Response{StatusCode: http.StatusNotFound, Status: "404 Not Found", Header: make(http.Header), Body: http.NoBody, Request: req}, nil
+		}
+		requests.Add(1)
+		assert.Equal(t, http.MethodHead, req.Method)
+		assert.Equal(t, "/api/2.0/fs/files/Volumes/main/schema/volume/file", req.URL.Path)
+		assert.Equal(t, "Bearer test-token", req.Header.Get("Authorization"))
+		return &http.Response{StatusCode: http.StatusOK, Status: "200 OK", Header: make(http.Header), Body: http.NoBody, Request: req}, nil
+	})
+
+	client := newTestFilesAPIClient(t, &databricks.Config{
+		Host:          "https://workspace.test",
+		Token:         "test-token",
+		HTTPTransport: transport,
+	})
+	filePath := "/Volumes/main/schema/volume/file"
+	_, err := client.GetFileMetadata(t.Context(), files.GetFileMetadataRequest{FilePath: &filePath})
+	require.NoError(t, err)
+	assert.Equal(t, int32(1), requests.Load())
+}
+
+func TestNewFilesClientAllowsDelayedFilesAPIResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		select {
+		case <-time.After(500 * time.Millisecond):
+			_, _ = io.WriteString(w, `{}`)
+		case <-t.Context().Done():
+		}
+	}))
+	defer server.Close()
+
+	workspaceClient, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:                server.URL,
+		Token:               "test-token",
+		HTTPTimeoutSeconds:  int(filesAPITestTimeout.Seconds()),
+		RetryTimeoutSeconds: 2,
+	})
+	require.NoError(t, err)
+	client, err := NewFilesClient(t.Context(), workspaceClient, "/")
+	require.NoError(t, err)
+
+	entries, err := client.ReadDir(t.Context(), "/")
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
 func deleteDirectoryWithError(t *testing.T, statusCode int, errorCode, reason string) error {

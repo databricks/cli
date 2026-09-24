@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -92,7 +93,7 @@ func (e *Entrypoint) Prepare(cmd *cobra.Command) (map[string]string, error) {
 
 func (e *Entrypoint) preparePython(ctx context.Context, environment map[string]string) {
 	venv := e.virtualEnvPath(ctx)
-	environment["PATH"] = e.joinPaths(filepath.Join(venv, "bin"), env.Get(ctx, "PATH"))
+	environment["PATH"] = e.joinPaths(virtualEnvScriptsDir(venv, runtime.GOOS), env.Get(ctx, "PATH"))
 
 	// PYTHONPATH extends the standard lookup locations for module files. It follows the same structure as
 	// the shell's PATH, where you specify one or more directory paths separated by the appropriate delimiter

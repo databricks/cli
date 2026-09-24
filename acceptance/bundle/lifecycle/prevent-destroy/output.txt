@@ -12,8 +12,10 @@ Validation OK!
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/prevent-destroy/default/files...
 Created pipelines.my_pipelines
 Created schemas.my_schema
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> errcode [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+update pipelines.my_pipelines
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged

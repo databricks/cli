@@ -4,52 +4,16 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluste
 Created clusters.cluster1
 Created clusters.cluster2
 Created clusters.cluster3
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/print_requests.py", line 312, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/print_requests.py", line 305, in main
+    print(json.dumps(req, indent=2))
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
 
->>> print_requests.py //clusters/create
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/create",
-  "body": {
-    "autotermination_minutes": 60,
-    "aws_attributes": {},
-    "cluster_name": "test-cluster-1",
-    "instance_pool_id": "ip-[NUMID]",
-    "num_workers": 2,
-    "spark_conf": {
-      "spark.executor.memory": "2g"
-    },
-    "spark_version": "13.3.x-scala2.12"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/create",
-  "body": {
-    "autotermination_minutes": 60,
-    "azure_attributes": {},
-    "cluster_name": "test-cluster-2",
-    "instance_pool_id": "ip-[NUMID]",
-    "num_workers": 2,
-    "spark_conf": {
-      "spark.executor.memory": "2g"
-    },
-    "spark_version": "13.3.x-scala2.12"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/create",
-  "body": {
-    "autotermination_minutes": 60,
-    "cluster_name": "test-cluster-3",
-    "gcp_attributes": {},
-    "instance_pool_id": "ip-[NUMID]",
-    "num_workers": 2,
-    "spark_conf": {
-      "spark.executor.memory": "2g"
-    },
-    "spark_version": "13.3.x-scala2.12"
-  }
-}
+Exit code: 5

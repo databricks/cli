@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"io/fs"
 	"path"
+	"path/filepath"
 	"slices"
 	"time"
 
@@ -38,6 +39,17 @@ func toJsonDirEntry(f fs.DirEntry, baseDir string, isAbsolute bool) (*jsonDirEnt
 	}, nil
 }
 
+func absoluteLsBaseDir(fullPath string, absolute bool) (string, error) {
+	if !absolute || isDbfsPath(fullPath) {
+		return fullPath, nil
+	}
+	baseDir, err := filepath.Abs(fullPath)
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(baseDir), nil
+}
+
 func newLsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "ls DIR_PATH",
@@ -59,6 +71,10 @@ func newLsCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
+		baseDir, err := absoluteLsBaseDir(args[0], absolute)
+		if err != nil {
+			return err
+		}
 
 		entries, err := f.ReadDir(ctx, path)
 		if err != nil {
@@ -67,7 +83,7 @@ func newLsCommand() *cobra.Command {
 
 		jsonDirEntries := make([]jsonDirEntry, len(entries))
 		for i, entry := range entries {
-			jsonDirEntry, err := toJsonDirEntry(entry, args[0], absolute)
+			jsonDirEntry, err := toJsonDirEntry(entry, baseDir, absolute)
 			if err != nil {
 				return err
 			}

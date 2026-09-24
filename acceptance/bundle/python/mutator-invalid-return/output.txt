@@ -1,0 +1,60 @@
+Error: Failed to apply 'invalid_return' mutator
+  at resources.jobs.my_job
+  in mutators.py:5:1
+
+Traceback (most recent call last):
+  File "/Users/zhu/Library/Caches/uv/archive-v0/BqiGf28g0cOCmhP9/lib/python3.10/site-packages/databricks/bundles/build.py", line 154, in _apply_mutator_for_type
+    raise TypeError(
+TypeError: Mutator 'invalid_return' returned dict, expected Job
+
+
+{
+  "bundle": {
+    "environment": "default",
+    "git": {
+      "bundle_root_path": "."
+    },
+    "name": "my_project",
+    "target": "default"
+  },
+  "experimental": {
+    "python": {
+      "mutators": [
+        "mutators:invalid_return"
+      ]
+    }
+  },
+  "python": {
+    "mutators": [
+      "mutators:invalid_return"
+    ]
+  },
+  "resources": {
+    "jobs": {
+      "my_job": {
+        "max_concurrent_runs": 1,
+        "name": "Untitled",
+        "queue": {
+          "enabled": true
+        },
+        "tasks": []
+      }
+    }
+  },
+  "sync": {
+    "paths": []
+  },
+  "workspace": {
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/artifacts",
+    "current_user": {
+      "domain_friendly_name": "[USERNAME]",
+      "id": "[USERID]",
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state"
+  }
+}

@@ -207,6 +207,17 @@ func (r *ResourceJobRun) WaitAfterCreate(ctx context.Context, id string, _ *JobR
 	return r.waitForRun(ctx, id)
 }
 
+// WaitAfterResumeNeeded reports whether a skipped run has a known nonterminal lifecycle.
+func (*ResourceJobRun) WaitAfterResumeNeeded(remote *JobRunRemote) bool {
+	return remote != nil && remote.State != nil && !runIsTerminal(remote.State.LifeCycleState)
+}
+
+// WaitAfterResume resumes polling an existing run after an interrupted wait.
+func (r *ResourceJobRun) WaitAfterResume(ctx context.Context, id string) error {
+	_, err := r.waitForRun(ctx, id)
+	return err
+}
+
 // waitForRun polls the run until it stops, and fails unless it succeeded.
 func (r *ResourceJobRun) waitForRun(ctx context.Context, id string) (*JobRunRemote, error) {
 	runID, err := parseRunID(id)

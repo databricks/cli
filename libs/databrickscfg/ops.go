@@ -1,15 +1,21 @@
 package databrickscfg
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/filelock"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"gopkg.in/ini.v1"
@@ -150,9 +156,61 @@ func resolveConfigFilePath(ctx context.Context, filename string) (string, error)
 		if err != nil {
 			return "", fmt.Errorf("cannot find homedir: %w", err)
 		}
+
 		filename = fmt.Sprintf("%s%s", homedir, filename[1:])
 	}
 	return filename, nil
+}
+
+func resolveConfigTarget(ctx context.Context, filename string) (string, error) {
+	resolved, err := resolveConfigFilePath(ctx, filename)
+	if err != nil {
+		return "", err
+	}
+	resolved, err = filepath.Abs(resolved)
+	if err != nil {
+		return "", fmt.Errorf("resolve %s: %w", resolved, err)
+	}
+	target, err := filepath.EvalSymlinks(resolved)
+	if err == nil {
+		return target, nil
+	}
+	if _, lstatErr := os.Lstat(resolved); !errors.Is(lstatErr, fs.ErrNotExist) {
+		return "", fmt.Errorf("resolve config file %s: %w", resolved, err)
+	}
+	dir, dirErr := filepath.EvalSymlinks(filepath.Dir(resolved))
+	if dirErr != nil {
+		return "", fmt.Errorf("resolve config directory for %s: %w", resolved, dirErr)
+	}
+	return filepath.Join(dir, filepath.Base(resolved)), nil
+}
+
+func withConfigFileLock(ctx context.Context, filename string, fn func(string) error) (err error) {
+	target, err := resolveConfigTarget(ctx, filename)
+	if err != nil {
+		return err
+	}
+	release, err := filelock.Acquire(ctx, target+".lock", time.Minute)
+	if err != nil {
+		return fmt.Errorf("lock config file %s: %w", target, err)
+	}
+	defer func() {
+		err = errors.Join(err, release())
+	}()
+	return fn(target)
+}
+
+func mutateConfigFile(ctx context.Context, filename string, fn func(*config.File) error) error {
+	return withConfigFileLock(ctx, filename, func(target string) error {
+		configFile, err := loadOrCreateConfigFile(ctx, target)
+		if err != nil {
+			return err
+		}
+		if err := fn(configFile); err != nil {
+			return err
+		}
+		return writeConfigFile(ctx, configFile)
+	})
 }
 
 // GetDefaultProfileFrom returns the name of the default profile from an
@@ -215,24 +273,17 @@ func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) 
 	if profileName == databricksSettingsSection {
 		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
 	}
-
-	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
-	if err != nil {
-		return err
-	}
-
-	section, err := configFile.GetSection(databricksSettingsSection)
-	if err != nil {
-		// Section doesn't exist, create it.
-		section, err = configFile.NewSection(databricksSettingsSection)
+	return mutateConfigFile(ctx, configFilePath, func(configFile *config.File) error {
+		section, err := configFile.GetSection(databricksSettingsSection)
 		if err != nil {
-			return fmt.Errorf("cannot create %s section: %w", databricksSettingsSection, err)
+			section, err = configFile.NewSection(databricksSettingsSection)
+			if err != nil {
+				return fmt.Errorf("cannot create %s section: %w", databricksSettingsSection, err)
+			}
 		}
-	}
-
-	section.Key(defaultProfileKey).SetValue(profileName)
-
-	return writeConfigFile(ctx, configFile)
+		section.Key(defaultProfileKey).SetValue(profileName)
+		return nil
+	})
 }
 
 // SetConfiguredAuthStorage writes the auth_storage key to the [__settings__]
@@ -240,73 +291,60 @@ func SetDefaultProfile(ctx context.Context, profileName, configFilePath string) 
 // keyring is unreachable, so subsequent commands skip the keyring probe and
 // route directly to the file cache.
 func SetConfiguredAuthStorage(ctx context.Context, value, configFilePath string) error {
-	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
-	if err != nil {
-		return err
-	}
-
-	section, err := configFile.GetSection(databricksSettingsSection)
-	if err != nil {
-		section, err = configFile.NewSection(databricksSettingsSection)
+	return mutateConfigFile(ctx, configFilePath, func(configFile *config.File) error {
+		section, err := configFile.GetSection(databricksSettingsSection)
 		if err != nil {
-			return fmt.Errorf("cannot create %s section: %w", databricksSettingsSection, err)
+			section, err = configFile.NewSection(databricksSettingsSection)
+			if err != nil {
+				return fmt.Errorf("cannot create %s section: %w", databricksSettingsSection, err)
+			}
 		}
-	}
-
-	section.Key(authStorageKey).SetValue(value)
-
-	return writeConfigFile(ctx, configFile)
+		section.Key(authStorageKey).SetValue(value)
+		return nil
+	})
 }
 
 // SaveResourcesToProfile writes (or clears) the `resources` key on a profile
-// section. `resources` is a comma-separated list of RFC 8707 resource indicators
-// requested during U2M login. An empty list removes the key. The profile
-// section must already exist.
-//
-// TODO: this value should ideally be passed with other values in Config.
-// This requires updating the SDK first, and then this dependency. The current
-// code is a short-cut to allow the CLI to support resources without having to
-// go through that cross-repos loop.
+// section. New values are JSON string arrays so commas and whitespace inside
+// individual RFC 8707 resource indicators remain significant. An empty list
+// removes the key. The profile section must already exist.
 func SaveResourcesToProfile(ctx context.Context, profileName, configFilePath string, resources []string) error {
-	configFile, err := loadOrCreateConfigFile(ctx, configFilePath)
-	if err != nil {
-		return err
-	}
-	section, err := configFile.GetSection(profileName)
-	if err != nil {
-		return fmt.Errorf("profile %q not found: %w", profileName, err)
-	}
-	if len(resources) == 0 {
-		section.DeleteKey("resources")
-	} else {
-		section.Key("resources").SetValue(strings.Join(resources, ","))
-	}
-	return writeConfigFile(ctx, configFile)
+	return mutateConfigFile(ctx, configFilePath, func(configFile *config.File) error {
+		section, err := configFile.GetSection(profileName)
+		if err != nil {
+			return fmt.Errorf("profile %q not found: %w", profileName, err)
+		}
+		if len(resources) == 0 {
+			section.DeleteKey("resources")
+			return nil
+		}
+		encoded, err := json.Marshal(resources)
+		if err != nil {
+			return fmt.Errorf("encode RFC 8707 resources: %w", err)
+		}
+		section.Key("resources").SetValue(string(encoded))
+		return nil
+	})
 }
 
 // ClearDefaultProfile removes the default_profile key from the [__settings__]
 // section if the current default matches the given profile name.
 func ClearDefaultProfile(ctx context.Context, profileName, configFilePath string) error {
-	configFile, err := loadConfigFile(ctx, configFilePath)
-	if err != nil {
-		return err
-	}
-	if configFile == nil {
-		return nil
-	}
-
-	current := GetConfiguredDefaultProfileFrom(configFile)
-	if current != profileName {
-		return nil
-	}
-
-	section, err := configFile.GetSection(databricksSettingsSection)
-	if err != nil {
-		return nil //nolint:nilerr // no settings section means no default to clear
-	}
-
-	section.DeleteKey(defaultProfileKey)
-	return writeConfigFile(ctx, configFile)
+	return withConfigFileLock(ctx, configFilePath, func(target string) error {
+		configFile, err := loadConfigFile(ctx, target)
+		if err != nil || configFile == nil {
+			return err
+		}
+		if GetConfiguredDefaultProfileFrom(configFile) != profileName {
+			return nil
+		}
+		section, err := configFile.GetSection(databricksSettingsSection)
+		if err != nil {
+			return nil //nolint:nilerr
+		}
+		section.DeleteKey(defaultProfileKey)
+		return writeConfigFile(ctx, configFile)
+	})
 }
 
 func loadOrCreateConfigFile(ctx context.Context, filename string) (*config.File, error) {
@@ -392,32 +430,43 @@ var enableDefaultHeader = sync.OnceFunc(func() {
 	ini.DefaultHeader = true
 })
 
+var writeAtomicFile = atomicfile.Write
+
 func writeConfigFile(ctx context.Context, configFile *config.File) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	enableDefaultHeader()
 	section := configFile.Section(ini.DefaultSection)
 	if len(section.Keys()) == 0 && section.Comment == "" {
 		section.Comment = defaultComment
 	}
-	if err := backupConfigFile(ctx, configFile); err != nil {
+
+	var rendered bytes.Buffer
+	if _, err := configFile.WriteTo(&rendered); err != nil {
+		return fmt.Errorf("render %s: %w", configFile.Path(), err)
+	}
+	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return configFile.SaveTo(configFile.Path())
-}
-
-func backupConfigFile(ctx context.Context, configFile *config.File) error {
-	orig, backupErr := os.ReadFile(configFile.Path())
-	if len(orig) > 0 && backupErr == nil {
+	orig, err := os.ReadFile(configFile.Path())
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("read %s for backup: %w", configFile.Path(), err)
+	}
+	if len(orig) > 0 {
 		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
-		err := os.WriteFile(configFile.Path()+".bak", orig, fileMode)
-		if err != nil {
+		if err := writeAtomicFile(configFile.Path()+".bak", orig, fileMode, atomicfile.PreserveMode()); err != nil {
 			return fmt.Errorf("backup: %w", err)
 		}
 		log.Infof(ctx, "Overwriting %s", configFile.Path())
-	} else if backupErr != nil {
-		log.Warnf(ctx, "Failed to backup %s: %v. Proceeding to save",
-			configFile.Path(), backupErr)
 	} else {
 		log.Infof(ctx, "Saving %s", configFile.Path())
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := writeAtomicFile(configFile.Path(), rendered.Bytes(), fileMode, atomicfile.PreserveMode()); err != nil {
+		return fmt.Errorf("write %s: %w", configFile.Path(), err)
 	}
 	return nil
 }
@@ -431,77 +480,58 @@ func SaveToProfile(ctx context.Context, cfg *config.Config, clearKeys ...string)
 	if cfg.Profile == databricksSettingsSection {
 		return fmt.Errorf("profile name %q is reserved for internal use", databricksSettingsSection)
 	}
-
-	configFile, err := loadOrCreateConfigFile(ctx, cfg.ConfigFile)
-	if err != nil {
-		return err
-	}
-
-	// Check before writing so the new section (without keys yet) is not counted.
-	firstProfile := isFirstProfileInFile(configFile)
 	profileName := cfg.Profile
-
-	section, err := matchOrCreateSection(ctx, configFile, cfg)
-	if err != nil {
-		return err
-	}
-
-	// zeroval profile name before adding it to a section
-	cfg.Profile = ""
-	cfg.ConfigFile = ""
-
-	// Explicitly remove keys the caller wants cleared.
-	for _, key := range clearKeys {
-		section.DeleteKey(key)
-	}
-
-	// Write non-zero fields from the new config. Iterates ConfigAttributes
-	// in declaration order for deterministic key ordering on new profiles.
-	for _, attr := range config.ConfigAttributes {
-		if attr.IsZero(cfg) {
-			continue
+	configFilePath := cfg.ConfigFile
+	return mutateConfigFile(ctx, configFilePath, func(configFile *config.File) error {
+		firstProfile := isFirstProfileInFile(configFile)
+		section, err := matchOrCreateSection(ctx, configFile, cfg)
+		if err != nil {
+			return err
 		}
-		key := section.Key(attr.Name)
-		key.SetValue(attr.GetString(cfg))
-	}
-
-	// Auto-set default profile when saving the first profile to the config file.
-	if firstProfile && profileName != "" {
-		settingsSection := configFile.Section(databricksSettingsSection)
-		settingsSection.Key(defaultProfileKey).SetValue(profileName)
-		log.Debugf(ctx, "Auto-setting default profile to %q (first profile)", profileName)
-	}
-
-	return writeConfigFile(ctx, configFile)
+		cfg.Profile = ""
+		cfg.ConfigFile = ""
+		defer func() {
+			cfg.Profile = profileName
+			cfg.ConfigFile = configFilePath
+		}()
+		for _, key := range clearKeys {
+			section.DeleteKey(key)
+		}
+		for _, attr := range config.ConfigAttributes {
+			if attr.IsZero(cfg) {
+				continue
+			}
+			section.Key(attr.Name).SetValue(attr.GetString(cfg))
+		}
+		if firstProfile && profileName != "" {
+			configFile.Section(databricksSettingsSection).Key(defaultProfileKey).SetValue(profileName)
+			log.Debugf(ctx, "Auto-setting default profile to %q (first profile)", profileName)
+		}
+		return nil
+	})
 }
 
 // DeleteProfile removes the named profile section from the databrickscfg file.
 // It creates a backup of the original file before modifying it.
 func DeleteProfile(ctx context.Context, profileName, configFilePath string) error {
-	configFile, err := config.LoadFile(configFilePath)
-	if err != nil {
-		return fmt.Errorf("cannot load config file %s: %w", configFilePath, err)
-	}
-
-	// If the profile doesn't exist, return an error to avoid
-	// creating a backup file with the same content as the original file.
-	if _, err := configFile.SectionsByName(profileName); err != nil {
-		return fmt.Errorf("profile %q not found: %w", profileName, err)
-	}
-
-	// If trying to delete the default section, clear its keys.
-	// This ensures that the default section is always present at the top of the file.
-	if profileName == ini.DefaultSection {
-		section := configFile.Section(ini.DefaultSection)
-
-		for _, key := range section.Keys() {
-			section.DeleteKey(key.Name())
+	return withConfigFileLock(ctx, configFilePath, func(target string) error {
+		configFile, err := config.LoadFile(target)
+		if err != nil {
+			return fmt.Errorf("cannot load config file %s: %w", target, err)
 		}
-	} else {
-		configFile.DeleteSection(profileName)
-	}
-
-	return writeConfigFile(ctx, configFile)
+		if _, err := configFile.SectionsByName(profileName); err != nil {
+			return fmt.Errorf("profile %q not found: %w", profileName, err)
+		}
+		if profileName == ini.DefaultSection {
+			section := configFile.Section(ini.DefaultSection)
+			for _, key := range section.Keys() {
+				section.DeleteKey(key.Name())
+			}
+		} else {
+			configFile.DeleteSection(profileName)
+		}
+		return writeConfigFile(ctx, configFile)
+	})
 }
 
 func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {

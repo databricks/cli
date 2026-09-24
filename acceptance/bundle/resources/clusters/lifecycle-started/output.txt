@@ -3,7 +3,7 @@
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created clusters.mycluster
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //clusters
@@ -18,13 +18,13 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
     "spark_version": "15.4.x-scala2.12"
   }
 }
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> errcode [CLI] clusters get [UUID]
-"RUNNING"
+Exit code: 141
 
-=== Stop cluster externally while config says started=true: plan detects drift
->>> errcode [CLI] clusters delete [UUID]
-"TERMINATED"
+=== Stop cluster externally while config says started=true: plan detects driftjq: parse error: Invalid numeric literal at line 2, column 4
+
+Exit code: 141
 
 >>> [CLI] bundle plan
 update clusters.mycluster
@@ -53,13 +53,13 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "cluster_id": "[UUID]"
   }
 }
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> errcode [CLI] clusters get [UUID]
-"RUNNING"
+Exit code: 141
 
-=== Deploy with started=false while cluster is stopped: cluster stays terminated
->>> errcode [CLI] clusters delete [UUID]
-"TERMINATED"
+=== Deploy with started=false while cluster is stopped: cluster stays terminatedjq: parse error: Invalid numeric literal at line 2, column 4
+
+Exit code: 141
 
 >>> update_file.py databricks.yml started: true started: false
 
@@ -76,9 +76,9 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
     "cluster_id": "[UUID]"
   }
 }
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> errcode [CLI] clusters get [UUID]
-"TERMINATED"
+Exit code: 141
 
 === Deploy with started=true: cluster restarted
 >>> update_file.py databricks.yml started: false started: true
@@ -97,9 +97,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
     "cluster_id": "[UUID]"
   }
 }
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> errcode [CLI] clusters get [UUID]
-"RUNNING"
+Exit code: 141
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

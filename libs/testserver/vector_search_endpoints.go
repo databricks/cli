@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/databricks/databricks-sdk-go/service/aisearch"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
@@ -115,4 +117,36 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 	return Response{
 		Body: endpoint,
 	}
+}
+
+// AiSearchEndpointUpdate models the AIP endpoint update used for usage policy changes.
+func (s *FakeWorkspace) AiSearchEndpointUpdate(req Request) Response {
+	defer s.LockUnlock()()
+
+	if req.URL.Query().Get("update_mask") != "usage_policy_id" {
+		return Response{StatusCode: http.StatusBadRequest, Body: "unexpected update mask"}
+	}
+
+	var endpoint aisearch.Endpoint
+	if err := json.Unmarshal(req.Body, &endpoint); err != nil {
+		return Response{
+			StatusCode: http.StatusBadRequest,
+			Body:       fmt.Sprintf("cannot unmarshal request body: %s", err),
+		}
+	}
+	parts := strings.Split(req.Vars["name"], "/")
+	if len(parts) != 4 || parts[0] != "workspaces" || parts[2] != "endpoints" {
+		return Response{StatusCode: http.StatusBadRequest, Body: "invalid endpoint name"}
+	}
+	endpointName := parts[3]
+	if _, exists := s.VectorSearchEndpoints[endpointName]; !exists {
+		return Response{
+			StatusCode: http.StatusNotFound,
+			Body: map[string]string{
+				"error_code": "RESOURCE_DOES_NOT_EXIST",
+				"message":    fmt.Sprintf("Vector search endpoint %s not found", endpointName),
+			},
+		}
+	}
+	return Response{Body: endpoint}
 }

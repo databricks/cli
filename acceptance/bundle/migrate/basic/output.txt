@@ -9,7 +9,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test
 Created jobs.test_job
 Created pipelines.test_pipeline
 Created volumes.test_volume
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle deployment migrate
@@ -76,58 +76,15 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
+contains error: 'engine/direct' not found in the output.
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/print_requests.py", line 312, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/print_requests.py", line 305, in main
+    print(json.dumps(req, indent=2))
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
 
->>> print_requests.py --get //jobs/get
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
-"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
-
-=== Should show that it's already migrated
->>> musterr [CLI] bundle deployment migrate
-Error: already using direct engine
-Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
-[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-resources.json: remote direct state serial=6 lineage="[UUID]"
-[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
-
-=== Extra plan: should have no drift
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
-
-=== Update databricks.yml, run plan & update
->>> update_file.py databricks.yml Migration Migrated
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
-update jobs.test_job
-update pipelines.test_pipeline
-
-Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Updated jobs.test_job
-Updated pipelines.test_pipeline
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
-
-=== Different target, still on terraform
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t prod
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
-Created jobs.test_job
-Created pipelines.test_pipeline
-Created schemas.test_schema
-Created volumes.test_volume
-Files: 8 uploaded, 0 deleted
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod
-[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod --force-pull
-terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
-[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"
+Exit code: 1

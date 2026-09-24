@@ -99,6 +99,9 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			if err != nil {
 				return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
 			}
+			if err := b.hydrateSensitiveFields(resourceKey, adapter, sv.Value); err != nil {
+				return fmt.Errorf("hydrating sensitive fields for plan entry %s: %w", resourceKey, err)
+			}
 			b.StateCache.Store(resourceKey, sv)
 		}
 
@@ -118,6 +121,45 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	}
 
 	b.Plan = plan
+	return nil
+}
+
+func (b *DeploymentBundle) hydrateSensitiveFields(resourceKey string, adapter *dresources.Adapter, state any) error {
+	fields := adapter.GetSensitiveFields()
+	if len(fields) == 0 {
+		return nil
+	}
+	if b.Config == nil {
+		return errors.New("resolved bundle config is required to hydrate sensitive fields")
+	}
+
+	input, err := b.Config.GetResourceConfig(resourceKey)
+	if err != nil {
+		return fmt.Errorf("loading current resource config: %w", err)
+	}
+	if input == nil {
+		return fmt.Errorf("current resource config for %s is missing", resourceKey)
+	}
+
+	for _, field := range fields {
+		path, err := structpath.ParsePath(field)
+		if err != nil {
+			return fmt.Errorf("parsing sensitive field path %q: %w", field, err)
+		}
+		value, err := structaccess.Get(input, path)
+		if err != nil {
+			if _, ok := errors.AsType[*structaccess.NotFoundError](err); ok {
+				continue
+			}
+			return fmt.Errorf("reading current sensitive field %q: %w", field, err)
+		}
+		if value == nil {
+			continue
+		}
+		if err := structaccess.Set(state, path, value); err != nil {
+			return fmt.Errorf("setting cached sensitive field %q: %w", field, err)
+		}
+	}
 	return nil
 }
 
@@ -991,6 +1033,11 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 	}
 
 	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.FieldTriggersRecreate(fieldPath))
+	if targetAction == deployplan.Skip && adapter.HasWaitAfterResume() {
+		if remoteState, ok := b.RemoteStateCache.Load(targetResourceKey); ok && adapter.WaitAfterResumeNeeded(remoteState) {
+			return nil, errDelayed
+		}
+	}
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -497,5 +498,91 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	}
 	if !pi {
 		t.Fatal(`Expected stub command 'python[\S]+ -m pip install --upgrade --upgrade-strategy eager .' not found`)
+	}
+}
+
+func TestInstallerPreservesPreviousLibraryOnFailure(t *testing.T) {
+	tests := []struct {
+		name          string
+		zipStatus     int
+		dependencyErr error
+		hookErr       error
+		breakVersion  bool
+	}{
+		{name: "download", zipStatus: http.StatusInternalServerError},
+		{name: "dependency", dependencyErr: errors.New("dependency failed")},
+		{name: "version", breakVersion: true},
+		{name: "hook", hookErr: errors.New("hook failed")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/.well-known/databricks-config":
+					w.WriteHeader(http.StatusNotFound)
+				case "/databrickslabs/blueprint/v0.3.15/labs.yml":
+					raw, err := os.ReadFile("testdata/installed-in-home/.databricks/labs/blueprint/lib/labs.yml")
+					assert.NoError(t, err)
+					_, err = w.Write(raw)
+					assert.NoError(t, err)
+				case "/repos/databrickslabs/blueprint/zipball/v0.3.15":
+					if tt.zipStatus != 0 {
+						w.WriteHeader(tt.zipStatus)
+						return
+					}
+					raw, err := zipballFromFolder("testdata/installed-in-home/.databricks/labs/blueprint/lib")
+					assert.NoError(t, err)
+					_, err = w.Write(raw)
+					assert.NoError(t, err)
+				case "/api/2.1/clusters/get":
+					respondWithJSON(t, w, &compute.ClusterDetails{State: compute.StateRunning})
+				default:
+					t.Errorf("unexpected request: %s", r.URL.Path)
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}))
+			defer server.Close()
+
+			ctx := installerContext(t, server)
+			libDir, err := project.PathInLabs(ctx, "blueprint", "lib")
+			require.NoError(t, err)
+			require.NoError(t, os.MkdirAll(libDir, ownerRWXworldRX))
+			sentinel := filepath.Join(libDir, "sentinel")
+			require.NoError(t, os.WriteFile(sentinel, []byte("previous"), ownerRW))
+
+			if tt.breakVersion {
+				versionPath, err := project.PathInLabs(ctx, "blueprint", "state", "version.json")
+				require.NoError(t, err)
+				require.NoError(t, os.MkdirAll(versionPath, ownerRWXworldRX))
+			}
+
+			ctx, stub := process.WithStub(ctx)
+			stub.WithStdoutFor(`python[\S]+ --version`, "Python 3.10.5")
+			stub.WithStderrFor(`python[\S]+ -m venv .*/.databricks/labs/blueprint/state/venv`, "[mock venv create]")
+			pipErr := tt.dependencyErr
+			if pipErr != nil {
+				stub.WithFailureFor(`python[\S]+ -m pip install --upgrade --upgrade-strategy eager .`, pipErr)
+			} else {
+				stub.WithStderrFor(`python[\S]+ -m pip install --upgrade --upgrade-strategy eager .`, "[mock pip install]")
+			}
+			if tt.hookErr != nil {
+				stub.WithFailureFor(`python[\S]+ install.py`, tt.hookErr)
+			} else {
+				stub.WithStdoutFor(`python[\S]+ install.py`, "setting up important infrastructure")
+			}
+
+			ctx = env.Set(ctx, "DATABRICKS_HOST", server.URL)
+			ctx = env.Set(ctx, "DATABRICKS_TOKEN", "...")
+			ctx = env.Set(ctx, "DATABRICKS_CLUSTER_ID", "installer-cluster")
+			ctx = env.Set(ctx, "DATABRICKS_WAREHOUSE_ID", "installer-warehouse")
+
+			r := testcli.NewRunner(t, ctx, "labs", "install", "blueprint", "--debug")
+			_, _, err = r.Run()
+			require.Error(t, err)
+			contents, readErr := os.ReadFile(sentinel)
+			require.NoError(t, readErr)
+			assert.Equal(t, "previous", string(contents))
+		})
 	}
 }

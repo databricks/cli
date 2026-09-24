@@ -1,3 +1,5 @@
+
+>>> [CLI] bundle summary -o json
 {
   "bundle": {
     "environment": "default",

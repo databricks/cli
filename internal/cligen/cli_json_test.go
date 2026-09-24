@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/databricks/cli/internal/clijson"
 )
 
 // cliJSONPath is the checked-in contract instance, relative to this package.
@@ -150,4 +152,79 @@ func TestCliJSONIsInterpretable(t *testing.T) {
 			t.Errorf("%s rendered invalid Go: %v", bf.name, err)
 		}
 	}
+}
+
+func TestCheckedInCliJSONFieldClassification(t *testing.T) {
+	doc, err := clijson.Parse(cliJSONPath)
+	if err != nil {
+		t.Fatalf("parse %s: %v", cliJSONPath, err)
+	}
+	commands := fromContract(doc.Commands)
+	method := findMethod(t, commands, "Lakeview", "Create")
+	want := map[string]bool{
+		"parent_path":  true,
+		"etag":         true,
+		"dashboard_id": false,
+	}
+	for name, isCLIRequestField := range want {
+		field := findField(t, method.AllFields, name)
+		if got := field.IsCLIRequestField(); got != isCLIRequestField {
+			t.Errorf("Lakeview.Create field %q IsCLIRequestField() = %v, want %v", name, got, isCLIRequestField)
+		}
+	}
+}
+
+func TestCheckedInCliJSONFieldlessResponses(t *testing.T) {
+	doc, err := clijson.Parse(cliJSONPath)
+	if err != nil {
+		t.Fatalf("parse %s: %v", cliJSONPath, err)
+	}
+	fieldless := normalizeFieldlessResponses(doc.Commands, doc.Schemas)
+	commands := fromContractWithFieldless(doc.Commands, fieldless)
+	for _, target := range []struct {
+		service string
+		method  string
+	}{
+		{service: "AccountMetastoreAssignments", method: "Create"},
+		{service: "AccountMetastoreAssignments", method: "Delete"},
+		{service: "AiGateway", method: "DeleteMcpServiceUserMappedCredential"},
+	} {
+		t.Run(target.service+"."+target.method, func(t *testing.T) {
+			method := findMethod(t, commands, target.service, target.method)
+			if method.Response == nil || !method.Response.IsEmptyResponse || !method.Response.IsFieldlessResponse {
+				t.Errorf("response is not normalized as a fieldless empty response: %#v", method.Response)
+			}
+		})
+	}
+	explicit := findMethod(t, commands, "Budgets", "Delete")
+	if explicit.Response == nil || !explicit.Response.IsEmptyResponse || explicit.Response.IsFieldlessResponse {
+		t.Errorf("explicit empty response was treated as fieldless: %#v", explicit.Response)
+	}
+}
+
+func findMethod(t *testing.T, commands *CommandsBlock, serviceName, methodName string) *MethodJSON {
+	t.Helper()
+	for _, service := range commands.Services {
+		if service.Name != serviceName {
+			continue
+		}
+		for _, method := range service.Methods {
+			if method.Name == methodName {
+				return method
+			}
+		}
+	}
+	t.Fatalf("method %s.%s not found", serviceName, methodName)
+	return nil
+}
+
+func findField(t *testing.T, fields []*FieldJSON, name string) *FieldJSON {
+	t.Helper()
+	for _, field := range fields {
+		if field.Name == name {
+			return field
+		}
+	}
+	t.Fatalf("field %q not found", name)
+	return nil
 }

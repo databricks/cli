@@ -4,126 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Created model_serving_endpoints.test_endpoint
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] serving-endpoints get [ENDPOINT_ID]
-{
-  "served_entities": [
-    {
-      "external_model": {
-        "name": "gpt-4o-mini",
-        "openai_config": {
-          "openai_api_key": "{{secrets/test-scope/openai-key}}"
-        },
-        "provider": "openai",
-        "task": "llm/v1/chat"
-      },
-      "name": "prod"
-    }
-  ],
-  "traffic_config": {
-    "routes": [
-      {
-        "served_entity_name": "prod",
-        "served_model_name": "prod",
-        "traffic_percentage": 100
-      }
-    ]
-  }
-}
-
->>> update_file.py databricks.yml value: my-team-one value: my-team-two
-
->>> update_file.py databricks.yml catalog_name: "first-inference-catalog" catalog_name: "second-inference-catalog"
-
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Updated model_serving_endpoints.test_endpoint
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py //serving-endpoints
-{
-  "method": "POST",
-  "path": "/api/2.0/serving-endpoints",
-  "body": {
-    "ai_gateway": {
-      "inference_table_config": {
-        "catalog_name": "first-inference-catalog"
-      }
-    },
-    "config": {
-      "served_entities": [
-        {
-          "external_model": {
-            "name": "gpt-4o-mini",
-            "openai_config": {
-              "openai_api_key": "{{secrets/test-scope/openai-key}}"
-            },
-            "provider": "openai",
-            "task": "llm/v1/chat"
-          },
-          "name": "prod"
-        }
-      ]
-    },
-    "name": "[ENDPOINT_ID]",
-    "tags": [
-      {
-        "key": "team",
-        "value": "my-team-one"
-      }
-    ]
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/tags",
-  "body": {
-    "add_tags": [
-      {
-        "key": "team",
-        "value": "my-team-two"
-      }
-    ]
-  }
-}
-{
-  "method": "PUT",
-  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/ai-gateway",
-  "body": {
-    "inference_table_config": {
-      "catalog_name": "second-inference-catalog"
-    }
-  }
-}
-
->>> [CLI] serving-endpoints get [ENDPOINT_ID]
-{
-  "served_entities": [
-    {
-      "external_model": {
-        "name": "gpt-4o-mini",
-        "openai_config": {
-          "openai_api_key": "{{secrets/test-scope/openai-key}}"
-        },
-        "provider": "openai",
-        "task": "llm/v1/chat"
-      },
-      "name": "prod"
-    }
-  ],
-  "traffic_config": {
-    "routes": [
-      {
-        "served_entity_name": "prod",
-        "served_model_name": "prod",
-        "traffic_percentage": 100
-      }
-    ]
-  }
-}
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -132,3 +13,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 1 deleted
+
+Exit code: 5

@@ -27,11 +27,19 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> errcode assert_not_exists.py .databricks/bundle/default/resources.json.wal
+jq: parse error: Invalid numeric literal at line 2, column 4
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/print_state.py", line 233, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/print_state.py", line 229, in main
+    print_file(filename)
+    ~~~~~~~~~~^^^^^^^^^^
+  File "[TESTROOT]/bin/print_state.py", line 22, in print_file
+    print(data, end="")
+    ~~~~~^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
 
->>> errcode print_state.py
-{
-  "serial": 1,
-  "state_keys": [
-    "resources.jobs.test_job"
-  ]
-}
+Exit code: 1
+
+Exit code: 5

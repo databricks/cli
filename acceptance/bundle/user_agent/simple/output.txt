@@ -8,8 +8,6 @@ Workspace:
 
 Validation OK!
 
->>> print_requests.py --sort --get
-
 >>> [CLI] bundle summary
 Name: test-bundle
 Target: default
@@ -22,14 +20,10 @@ Resources:
       Name: myschema
       URL:  (not deployed)
 
->>> print_requests.py --sort --get
-
 >>> [CLI] bundle plan
 create schemas.foo
 
 Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
-
->>> print_requests.py --sort --get
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -37,17 +31,11 @@ Created schemas.foo
 Files: 1 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --sort --get ^//telemetry-ext
-
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> print_requests.py --sort --get
-
 >>> [CLI] bundle run foo
 Error: resource with key "foo" not found
-
->>> print_requests.py --sort --get
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -59,5 +47,3 @@ This action will result in the deletion of the following UC schemas. Any underly
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Destroy: 1 deleted
-
->>> print_requests.py --sort --get

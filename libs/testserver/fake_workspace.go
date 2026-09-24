@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
+
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -343,8 +345,12 @@ func applyUpdatedFields(existing, update any, fields map[string]json.RawMessage)
 	src := reflect.ValueOf(update)
 
 	for i := range src.Type().NumField() {
-		name := structtag.JSONTag(src.Type().Field(i).Tag.Get("json")).Name()
-		if name == "" || name == "-" {
+		field := src.Type().Field(i)
+		if structaccess.IsSkippedField(field) {
+			continue
+		}
+		name := structtag.JSONTag(field.Tag.Get("json")).Name()
+		if name == "" {
 			continue
 		}
 		if _, ok := fields[name]; !ok {
@@ -842,13 +848,17 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 		delete(s.files, path)
 		delete(s.directories, path)
 	} else {
+		prefix := strings.TrimSuffix(path, "/") + "/"
+		if prefix == "/" {
+			prefix = ""
+		}
 		for key := range s.files {
-			if strings.HasPrefix(key, path) {
+			if key == path || strings.HasPrefix(key, prefix) {
 				delete(s.files, key)
 			}
 		}
 		for key := range s.directories {
-			if strings.HasPrefix(key, path) {
+			if key == path || strings.HasPrefix(key, prefix) {
 				delete(s.directories, key)
 			}
 		}

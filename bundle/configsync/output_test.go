@@ -3,6 +3,7 @@ package configsync
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -78,6 +79,18 @@ func TestSaveFiles_MultipleFiles(t *testing.T) {
 	content, err = os.ReadFile(file2Path)
 	require.NoError(t, err)
 	assert.Equal(t, content2, string(content))
+}
+
+func TestSaveFilesPreservesExistingMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not honor unix file modes")
+	}
+	path := filepath.Join(t.TempDir(), "databricks.yml")
+	require.NoError(t, os.WriteFile(path, []byte("old"), 0o640))
+	require.NoError(t, SaveFiles(t.Context(), &bundle.Bundle{}, []FileChange{{Path: path, ModifiedContent: "new"}}))
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o640), info.Mode().Perm())
 }
 
 func TestSaveFiles_EmptyList(t *testing.T) {

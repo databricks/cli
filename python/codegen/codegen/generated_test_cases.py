@@ -167,6 +167,9 @@ def _synth_ref(
     module = _module_of(namespace, ref)
 
     if schema.type == openapi.SchemaType.STRING:
+        if not schema.enum:
+            return _synth_scalar("string", hint)
+
         value = schema.enum[0]
 
         return _Enum(value, class_name, module, _camel_to_upper_snake(value))

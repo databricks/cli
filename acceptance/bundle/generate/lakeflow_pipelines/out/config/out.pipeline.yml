@@ -2,6 +2,8 @@ resources:
   pipelines:
     out:
       name: lakeflow-pipeline
+      configuration:
+        "spark.sql.ansi.enabled": "true"
       libraries:
         - glob:
             include: ../pipeline/transformations/**

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -45,6 +46,8 @@ type DeploymentUnit struct {
 
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
+	// Config is the current resolved bundle config. It is only used in memory while applying a redacted plan.
+	Config           *config.Root
 	StateDB          dstate.DeploymentState
 	Adapters         map[string]*dresources.Adapter
 	Plan             *deployplan.Plan

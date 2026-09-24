@@ -186,7 +186,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{ if not .IsJsonOnly }}
 	{{- $hasFieldMask := $request.HasFieldMask -}}
 	{{range .AllFields -}}
-		{{- if not .Required -}}
+		{{- if and (not .Required) .IsCLIRequestField -}}
 			{{- /* clusters/events special case: cli.json models its pagination as
 			       token-only (page_token), while genkit's cli_v0 modeled it as
 			       offset/limit. To keep the rendered flags byte-identical, page_token
@@ -212,8 +212,6 @@ func new{{.PascalName}}() *cobra.Command {
 			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
-			{{else if .IsComputed -}}
-			{{else if .IsOutputOnly -}}
 			{{else if .Entity.Enum }}cmd.Flags().Var(&{{- template "request-body-obj" (dict "Method" $method "Field" .)}}, "{{.KebabName}}", `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}. {{end}}Supported values: {{template "printArray" .Entity.Enum}}{{if $hasFieldMask}}. Wire name: '{{.Name}}'.{{end}}`)
 			{{else if or .Entity.IsDuration .Entity.IsTimestamp .Entity.IsFieldMask}} var {{.CamelName}}Param string
 			cmd.Flags().StringVar(&{{.CamelName}}Param, "{{.KebabName}}", {{.CamelName}}Param, `{{.Summary | without "`" | trimSuffix "."}}{{if .Summary}}.{{end}}{{if $hasFieldMask}} Wire name: '{{.Name}}'.{{end}}`)
@@ -396,7 +394,7 @@ func new{{.PascalName}}() *cobra.Command {
 				{{- template "args-scan" (dict "Arg" $arg "Field" $field "Method" $method "HasIdPrompt" $hasIdPrompt "ExcludeFromJson" $excludeFromJson)}}
 			{{- end -}}
 			{{- range .AllFields -}}
-			{{- if and (not .Required) (not .IsComputed) (not .IsOutputOnly)}}
+			{{- if and (not .Required) .IsCLIRequestField}}
 				{{if or .Entity.IsDuration .Entity.IsTimestamp .Entity.IsFieldMask}}
 			        if {{.CamelName}}Param != "" {
 						{{template "parse-well-known-type" (dict "Method" $method "Field" . "SourceValue" (printf "%sParam" .CamelName))}}
@@ -519,8 +517,10 @@ func new{{.PascalName}}() *cobra.Command {
 
 		{{if not $method.Response.IsEmptyResponse -}}
 		  response{{ if not $method.Pagination}}, err{{end}} :=
-		{{- else -}}
+		{{- else if not $method.Response.IsFieldlessResponse -}}
 		  err =
+		{{- else -}}
+		  _, err =
 		{{- end}}
 		{{- if $service.IsAccounts}}a{{else}}w{{end}}.
 		{{- if $service.HasParent }}

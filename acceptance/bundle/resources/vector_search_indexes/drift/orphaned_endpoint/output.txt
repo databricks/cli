@@ -29,14 +29,7 @@ Created vector_search_endpoints.vs_endpoint
 Recreated vector_search_indexes.my_index
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 1 deleted, 0 unchanged
-
->>> [CLI] vector-search-indexes get-index main.default.vs_index_[UNIQUE_NAME]
-{
-  "name": "main.default.vs_index_[UNIQUE_NAME]",
-  "endpoint_name": "vs-endpoint-[UNIQUE_NAME]",
-  "index_type": "DIRECT_ACCESS",
-  "primary_key": "id"
-}
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -51,3 +44,5 @@ For Direct Access indexes, all upserted vectors are permanently lost:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/drift-vs-index-orphaned-endpoint-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted
+
+Exit code: 5

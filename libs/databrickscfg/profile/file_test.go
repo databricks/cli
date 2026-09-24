@@ -87,7 +87,7 @@ func TestLoadProfilesResources(t *testing.T) {
 	err := os.WriteFile(configPath, []byte(`[u2m]
 host = https://workspace.test
 auth_type = databricks-cli
-resources = https://workspace.test/ai-gateway/mcp/system.ai.github,https://workspace.test/ai-gateway/mcp/system.ai.slack
+resources = ["https://workspace.test/ai-gateway/mcp/system.ai.github", "https://workspace.test/ai-gateway/mcp/system.ai.slack"]
 `), 0o600)
 	require.NoError(t, err)
 
@@ -95,7 +95,7 @@ resources = https://workspace.test/ai-gateway/mcp/system.ai.github,https://works
 	profiles, err := (FileProfilerImpl{}).LoadProfiles(ctx, MatchAllProfiles)
 	require.NoError(t, err)
 	require.Len(t, profiles, 1)
-	assert.Equal(t, "https://workspace.test/ai-gateway/mcp/system.ai.github,https://workspace.test/ai-gateway/mcp/system.ai.slack", profiles[0].Resources)
+	assert.Equal(t, `["https://workspace.test/ai-gateway/mcp/system.ai.github", "https://workspace.test/ai-gateway/mcp/system.ai.slack"]`, profiles[0].Resources)
 }
 
 func TestLoadProfilesMatchWorkspace(t *testing.T) {

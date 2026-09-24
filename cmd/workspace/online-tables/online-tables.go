@@ -73,7 +73,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().StringVar(&createReq.Table.Name, "name", createReq.Table.Name, `Full three-part (catalog, schema, table) name of the table.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create"
 	cmd.Short = `*Public Preview* Create an Online Table.`

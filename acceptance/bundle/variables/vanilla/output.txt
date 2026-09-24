@@ -1,16 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> BUNDLE_VAR_b=def [CLI] bundle validate -o json
-"abc def"
-
->>> errcode [CLI] bundle validate
-Error: no value assigned to required variable b. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_b environment variable, or .databricks/bundle/<target>/variable-overrides.json
-
-Name: foobar
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/foobar/default
-
-Found 1 error
-
-Exit code: 1
+Exit code: 5

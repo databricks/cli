@@ -1,1 +1,3 @@
+
+>>> has_manage_run
 true

@@ -42,6 +42,9 @@ For serverless connections, use ` + "`databricks ssh connect`" + ` (no setup ste
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts, recreating existing SSH host configs without asking")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := setup.ValidateHostName(hostName); err != nil {
+			return err
+		}
 		// We want to avoid the situation where the setup command works because it pulls the auth config from a bundle,
 		// but later on the `ssh host-name` command fails when executed outside of the bundle directory.
 		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))

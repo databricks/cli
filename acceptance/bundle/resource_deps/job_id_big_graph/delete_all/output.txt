@@ -282,11 +282,7 @@ Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> [CLI] bundle plan
-
 === Delete all via empty.yml
->>> [CLI] bundle plan
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deleted jobs.chain_bottom

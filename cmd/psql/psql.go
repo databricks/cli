@@ -204,9 +204,12 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 // Returns an error for malformed paths.
 func parseResourcePath(input string) (project, branch, endpoint string, err error) {
 	parts := strings.Split(input, "/")
+	if len(parts) != 2 && len(parts) != 4 && len(parts) != 6 {
+		return "", "", "", fmt.Errorf("invalid resource path: %s", input)
+	}
 
 	// Must start with projects/{project_id}
-	if len(parts) < 2 || parts[0] != "projects" {
+	if parts[0] != "projects" {
 		return "", "", "", fmt.Errorf("invalid resource path: %s", input)
 	}
 	if parts[1] == "" {
@@ -216,7 +219,7 @@ func parseResourcePath(input string) (project, branch, endpoint string, err erro
 
 	// Optional: branches/{branch_id}
 	if len(parts) > 2 {
-		if len(parts) < 4 || parts[2] != "branches" {
+		if parts[2] != "branches" {
 			return "", "", "", errors.New("invalid resource path: expected 'branches' after project")
 		}
 		if parts[3] == "" {
@@ -227,7 +230,7 @@ func parseResourcePath(input string) (project, branch, endpoint string, err erro
 
 	// Optional: endpoints/{endpoint_id}
 	if len(parts) > 4 {
-		if len(parts) < 6 || parts[4] != "endpoints" {
+		if parts[4] != "endpoints" {
 			return "", "", "", errors.New("invalid resource path: expected 'endpoints' after branch")
 		}
 		if parts[5] == "" {

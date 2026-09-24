@@ -23,37 +23,9 @@ Resources:
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default/files...
 Created database_instances.my_database
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] database get-database-instance test-db-instance-single-[UNIQUE_NAME]
-{
-  "capacity": "CU_1",
-  "creation_time": "[TIMESTAMP]",
-  "creator": "[USERNAME]",
-  "effective_capacity": "CU_1",
-  "effective_enable_pg_native_login": false,
-  "effective_enable_readable_secondaries": false,
-  "effective_node_count": 1,
-  "effective_retention_window_in_days": 7,
-  "effective_stopped": false,
-  "name": "test-db-instance-single-[UNIQUE_NAME]",
-  "pg_version": "PG_VERSION_16",
-  "state": "AVAILABLE",
-  "uid": "[UUID]"
-}
-
->>> [CLI] bundle summary
-Name: deploy-lakebase-single-instance-[UNIQUE_NAME]
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
-Resources:
-  Database instances:
-    my_database:
-      Name: test-db-instance-single-[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/compute/database-instances/test-db-instance-single-[UNIQUE_NAME]
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -66,3 +38,5 @@ All data stored in them will be permanently lost:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+Exit code: 5

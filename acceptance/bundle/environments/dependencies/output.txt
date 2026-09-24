@@ -13,130 +13,17 @@ Uploading dist/test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files...
 Created jobs.test_job
 Created pipelines.test_pipeline
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | .body.environments [OUTPUT_DIR]/out.requests.txt
-[
-  {
-    "environment_key": "test_env",
-    "spec": {
-      "client": "1",
-      "dependencies": [
-        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
-        "-r \"/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt\"",
-        "-r '/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt'",
-        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
-        "-i http://myindexurl.com",
-        "--index-url http://myindexurl.com",
-        "test_package",
-        "test_package==2.0.1",
-        "test_package>=2.0.1",
-        "test_package==2.0.*",
-        "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/artifacts/.internal/test.whl",
-        "/Workspace/Users/test@databricks.com/test-package.whl",
-        "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
-        "beautifulsoup4[security, tests] ~= 4.12.3",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
-        "--find-links=/Workspace/Users/test"
-      ]
-    }
-  },
-  {
-    "environment_key": "test_env_2",
-    "spec": {
-      "client": "1",
-      "dependencies": [
-        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt"
-      ]
-    }
-  }
-]
-
->>> jq -s .[] | select(.path=="/api/2.0/pipelines") [OUTPUT_DIR]/out.requests.txt
-{
-  "method": "POST",
-  "path": "/api/2.0/pipelines",
-  "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "environment": {
-      "dependencies": [
-        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
-        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
-        "-i http://myindexurl.com",
-        "--index-url http://myindexurl.com",
-        "/Workspace/Users/[USERNAME]/.bundle/dependencies/default/artifacts/.internal/test.whl",
-        "/Workspace/Users/test@databricks.com/test-package.whl",
-        "test_package",
-        "test_package==2.0.1",
-        "test_package>=2.0.1",
-        "test_package==2.0.*",
-        "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
-        "--find-links=/Workspace/Users/test"
-      ]
-    },
-    "name": "Test Pipeline"
-  }
-}
-
->>> [CLI] bundle validate -o json
-[
-  {
-    "environment_key": "test_env",
-    "spec": {
-      "client": "1",
-      "dependencies": [
-        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
-        "-r \"/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt\"",
-        "-r '/Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/Path With Spaces/requirements.txt'",
-        "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
-        "-i http://myindexurl.com",
-        "--index-url http://myindexurl.com",
-        "test_package",
-        "test_package==2.0.1",
-        "test_package>=2.0.1",
-        "test_package==2.0.*",
-        "./dist/*.whl",
-        "/Workspace/Users/test@databricks.com/test-package.whl",
-        "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
-        "beautifulsoup4[security, tests] ~= 4.12.3",
-        "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
-        "--find-links=/Workspace/Users/test"
-      ]
-    }
-  },
-  {
-    "environment_key": "test_env_2",
-    "spec": {
-      "client": "1",
-      "dependencies": [
-        "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt"
-      ]
-    }
-  }
-]
-
->>> [CLI] bundle validate -o json
-{
-  "dependencies": [
-    "-r /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/requirements.txt",
-    "-e /Workspace/Users/[USERNAME]/.bundle/dependencies/default/files/file.py",
-    "-i http://myindexurl.com",
-    "--index-url http://myindexurl.com",
-    "./dist/*.whl",
-    "/Workspace/Users/test@databricks.com/test-package.whl",
-    "test_package",
-    "test_package==2.0.1",
-    "test_package>=2.0.1",
-    "test_package==2.0.*",
-    "beautifulsoup4>=1.0.0,~=1.2.0,<2.0.0",
-    "requests[security] @ https://github.com/psf/requests/archive/refs/heads/main.zip",
-    "--find-links=/Workspace/Users/test"
-  ]
-}
+Exit code: 1

@@ -135,6 +135,9 @@ def _generate_code(
 
             dataclasses[schema_name] = generated
         elif schema.type == openapi.SchemaType.STRING:
+            if schema_name.endswith("catalog.Privilege"):
+                continue
+
             generated = generated_enum.generate_enum(namespace, schema_name, schema)
 
             enums[schema_name] = generated

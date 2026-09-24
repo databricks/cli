@@ -2,16 +2,16 @@
   "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.pipelines.foo1": {
-      "action": "skip"
+      "action": "update"
     },
     "resources.pipelines.foo2": {
-      "action": "skip"
+      "action": "update"
     },
     "resources.pipelines.foo3": {
-      "action": "skip"
+      "action": "update"
     },
     "resources.pipelines.foo4": {
-      "action": "skip"
+      "action": "update"
     }
   }
 }

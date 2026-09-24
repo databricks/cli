@@ -306,6 +306,14 @@ func buildBundleValue(ctx context.Context, cfg *runConfig, configPath, codeSourc
 		aiRuntimeTask["code_source_path"] = nv(codeSourcePath, line)
 		line++
 	}
+	if cfg.Compute.PriorityClass != nil && *cfg.Compute.PriorityClass != "" {
+		aiRuntimeTask["priority_class"] = nv(*cfg.Compute.PriorityClass, line)
+		line++
+	}
+	if imagePath := cfg.unityCatalogImagePath(); imagePath != "" {
+		aiRuntimeTask["unity_catalog_image_path"] = nv(imagePath, line)
+		line++
+	}
 	if cfg.MLflowRunName != nil {
 		aiRuntimeTask["mlflow_run"] = nv(*cfg.MLflowRunName, line)
 		line++

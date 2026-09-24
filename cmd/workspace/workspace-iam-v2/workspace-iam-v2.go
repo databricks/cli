@@ -283,6 +283,7 @@ func newCreateServicePrincipalProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createServicePrincipalProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createServicePrincipalProxyReq.ServicePrincipal.ApplicationId, "application-id", createServicePrincipalProxyReq.ServicePrincipal.ApplicationId, `Application ID of the service principal.`)
 	cmd.Flags().StringVar(&createServicePrincipalProxyReq.ServicePrincipal.ExternalId, "external-id", createServicePrincipalProxyReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
 
 	cmd.Use = "create-service-principal-proxy DISPLAY_NAME ACCOUNT_SP_STATUS"
@@ -501,7 +502,6 @@ func newCreateWorkspaceAssignmentDetailProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceAssignmentDetailProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "create-workspace-assignment-detail-proxy PRINCIPAL_ID"
@@ -596,7 +596,6 @@ func newCreateWorkspaceAssignmentProxy() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceAssignmentProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "create-workspace-assignment-proxy PRINCIPAL_ID"
@@ -2677,6 +2676,7 @@ func newUpdateServicePrincipalProxy() *cobra.Command {
 
 	cmd.Flags().Var(&updateServicePrincipalProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateServicePrincipalProxyReq.ServicePrincipal.ApplicationId, "application-id", updateServicePrincipalProxyReq.ServicePrincipal.ApplicationId, `Application ID of the service principal.`)
 	cmd.Flags().StringVar(&updateServicePrincipalProxyReq.ServicePrincipal.ExternalId, "external-id", updateServicePrincipalProxyReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
 
 	cmd.Use = "update-service-principal-proxy SERVICE_PRINCIPAL_ID UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
@@ -2900,7 +2900,6 @@ func newUpdateWorkspaceAssignmentDetailProxy() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentDetailProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "update-workspace-assignment-detail-proxy PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"
@@ -3008,7 +3007,6 @@ func newUpdateWorkspaceAssignmentProxy() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentProxyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "update-workspace-assignment-proxy PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"

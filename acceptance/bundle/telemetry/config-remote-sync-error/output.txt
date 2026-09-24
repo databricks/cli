@@ -3,12 +3,6 @@
 Error: state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found
 
 Exit code: 1
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> cat [OUTPUT_DIR]/out.requests.txt
-{
-  "engine": "terraform",
-  "state_source": "local",
-  "states_available_count": 0,
-  "error_message": "state snapshot not available: resources state snapshot not found remotely at resources-config-sync-snapshot.json: state snapshot not found",
-  "error_category": "STATE_NOT_FOUND"
-}
+Exit code: 5

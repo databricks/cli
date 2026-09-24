@@ -1,23 +1,7 @@
-
->>> [CLI] bundle validate --output json
+jq: parse error: Invalid numeric literal at line 2, column 4
 Error: expected a file for "resources.pipelines.nyc_taxi_pipeline.libraries[0].file.path" but got a notebook: file at [TEST_TMP_DIR]/notebooks/nyc_taxi_loader.py is a notebook
 
 
-Exit code: 1
-{
-  "resources": {
-    "pipelines": {
-      "nyc_taxi_pipeline": {
-        "channel": "CURRENT",
-        "edition": "ADVANCED",
-        "libraries": [
-          {
-            "file": {
-              "path": "notebooks/nyc_taxi_loader.py"
-            }
-          }
-        ]
-      }
-    }
-  }
-}
+Exit code: 141
+
+Exit code: 5

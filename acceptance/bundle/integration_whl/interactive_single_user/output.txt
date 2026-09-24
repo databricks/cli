@@ -38,8 +38,6 @@ Created clusters.test_cluster
 Created jobs.some_other_job
 Files: 14 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] bundle run some_other_job
 Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING
@@ -47,8 +45,6 @@ Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
 
 === Make a change to code without version change and run the job again
 >>> [CLI] bundle deploy -qq
-
->>> [CLI] bundle run some_other_job
 Run URL: [DATABRICKS_URL]/jobs/[SOME_OTHER_JOB_ID]/runs/[NUMID]?o=[NUMID]
 
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING

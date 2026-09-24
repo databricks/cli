@@ -3,6 +3,7 @@ package sandbox
 import (
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -96,6 +97,67 @@ func TestBuildSSHArgsQuoting(t *testing.T) {
 			} else {
 				assert.Equal(t, tc.expected, tail)
 			}
+		})
+	}
+}
+
+func TestValidateSSHArgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		dashAt  int
+		wantErr bool
+	}{
+		{name: "default target", args: nil, dashAt: -1},
+		{name: "one target", args: []string{"sandbox-id"}, dashAt: -1},
+		{name: "multiple targets", args: []string{"one", "two"}, dashAt: -1, wantErr: true},
+		{name: "target and remote args", args: []string{"sandbox-id", "echo", "hello"}, dashAt: 1},
+		{name: "multiple targets before dash", args: []string{"one", "two", "echo", "hello"}, dashAt: 2, wantErr: true},
+		{name: "remote args without target", args: []string{"-L", "8080:localhost:8080"}, dashAt: 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSSHArgs(tt.args, tt.dashAt)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestSSHCommandArgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr bool
+	}{
+		{name: "default target", args: nil},
+		{name: "one target", args: []string{"sandbox-id"}},
+		{name: "remote args without target", args: []string{"--", "-L", "8080:localhost:8080"}},
+		{name: "target and remote args", args: []string{"sandbox-id", "--", "bash", "-c", "echo hello"}},
+		{name: "multiple targets", args: []string{"one", "two"}, wantErr: true},
+		{name: "multiple targets before dash", args: []string{"one", "two", "--", "echo", "hello"}, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.args == nil {
+				tt.args = []string{}
+			}
+			cmd := newSSHCommand()
+			cmd.PreRunE = nil
+			cmd.RunE = func(*cobra.Command, []string) error { return nil }
+			cmd.SetArgs(tt.args)
+
+			err := cmd.Execute()
+			if tt.wantErr {
+				assert.EqualError(t, err, "sandbox ssh accepts at most one sandbox ID before --")
+				return
+			}
+			assert.NoError(t, err)
 		})
 	}
 }

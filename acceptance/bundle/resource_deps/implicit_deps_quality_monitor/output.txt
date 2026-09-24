@@ -1,25 +1,7 @@
-
->>> [CLI] bundle validate -t dev -o json
+jq: parse error: Invalid numeric literal at line 2, column 4
 Warning: required field "assets_dir" is not set
   at resources.quality_monitors.my_monitor
   in databricks.yml:16:7
 
-{
-  "catalogs": {
-    "my_catalog": {
-      "name": "mycatalog"
-    }
-  },
-  "quality_monitors": {
-    "my_monitor": {
-      "output_schema_name": "${resources.catalogs.my_catalog.name}.${resources.schemas.my_schema.name}",
-      "table_name": "mycatalog.myschema.mytable"
-    }
-  },
-  "schemas": {
-    "my_schema": {
-      "catalog_name": "${resources.catalogs.my_catalog.name}",
-      "name": "dev_[USERNAME]_myschema"
-    }
-  }
-}
+
+Exit code: 5

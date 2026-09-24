@@ -3,8 +3,6 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/no_permissions/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_telemetry_bool_values
 dms_compat_auto true
 dms_undeclared_deploying_user false
 dms_undeclared_group false
@@ -20,8 +18,6 @@ state_path_other false
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_declared/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_telemetry_bool_values
 dms_compat_auto true
 dms_undeclared_deploying_user false
 dms_undeclared_group false
@@ -49,8 +45,6 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/user_not_declared/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_telemetry_bool_values
 dms_compat_only_self_undeclared true
 dms_undeclared_deploying_user true
 dms_undeclared_group false
@@ -66,8 +60,6 @@ state_path_other false
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/other_user_not_declared/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_telemetry_bool_values
 dms_compat_not true
 dms_undeclared_deploying_user false
 dms_undeclared_group false
@@ -83,8 +75,6 @@ state_path_other false
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/workspace_other/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_telemetry_bool_values
 dms_compat_auto true
 dms_undeclared_deploying_user false
 dms_undeclared_group false
@@ -112,8 +102,6 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_users_can_manage/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_telemetry_bool_values
 dms_compat_auto true
 dms_undeclared_deploying_user false
 dms_undeclared_group false
@@ -129,8 +117,6 @@ state_path_other false
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/shared_not_declared/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_telemetry_bool_values
 dms_compat_not true
 dms_undeclared_deploying_user false
 dms_undeclared_group true

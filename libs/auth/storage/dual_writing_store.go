@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 // TokenKeyProvider supplies the primary key used to store an OAuth token.
 type TokenKeyProvider interface {
 	GetCacheKey() string
@@ -13,13 +15,8 @@ type hostCacheKeyProvider interface {
 	GetHostCacheKey() string
 }
 
-// DualWritingStore wraps a Store so that every write under the
-// primary OAuth cache key is also mirrored under the legacy host-based key.
-// This preserves the cross-SDK compatibility convention historically
-// implemented inside the SDK's PersistentAuth.dualWrite.
-//
-// Mirroring happens inside Put, so callers do not need a separate write for
-// the legacy host-based key.
+// DualWritingStore wraps a Store so every write under the primary OAuth cache
+// key is also mirrored under the legacy host-based key.
 type DualWritingStore struct {
 	inner Store
 	arg   TokenKeyProvider
@@ -33,53 +30,69 @@ func NewDualWritingStore(inner Store, arg TokenKeyProvider) *DualWritingStore {
 	return &DualWritingStore{inner: inner, arg: arg}
 }
 
-// Put implements [Store]. Writes under the primary key are also mirrored under
-// the host key (when distinct); writes under any other key pass through
-// unchanged so that an explicit host-key write does not recursively re-expand.
-//
-// The host-key mirror is best-effort: if the second Put fails, the error
-// is silently dropped. The host-key entry is a backward-compat shim for old
-// Go SDK versions (v0.61-v0.103) that still look up by host. Failing the
-// whole Put call would break primary login over a non-essential mirror,
-// so a stale host-key entry is the lesser harm.
-func (s *DualWritingStore) Put(key string, e Entry) error {
+// Lookup implements Store; delegates to the inner store.
+func (s *DualWritingStore) Lookup(key string) (Entry, error) {
+	return s.inner.Lookup(key)
+}
+
+// WithLock implements Store and keeps both mirrored mutations in one
+// transaction on the inner store.
+func (s *DualWritingStore) WithLock(ctx context.Context, fn func(LockedStore) error) error {
+	return s.inner.WithLock(ctx, func(locked LockedStore) error {
+		return fn(&dualLockedStore{store: s, inner: locked})
+	})
+}
+
+type dualLockedStore struct {
+	store *DualWritingStore
+	inner LockedStore
+}
+
+// Lookup implements LockedStore.
+func (s *dualLockedStore) Lookup(key string) (Entry, error) {
+	return s.inner.Lookup(key)
+}
+
+// Put implements LockedStore. The host-key mirror remains best-effort for
+// compatibility with older Go SDK versions.
+func (s *dualLockedStore) Put(key string, e Entry) error {
 	if err := s.inner.Put(key, e); err != nil {
 		return err
 	}
-	primaryKey := s.arg.GetCacheKey()
-	if key != primaryKey {
-		return nil
-	}
-	hostKey := hostCacheKey(s.arg)
-	if hostKey == "" || hostKey == primaryKey {
+	hostKey := s.hostKey(key)
+	if hostKey == "" {
 		return nil
 	}
 	_ = s.inner.Put(hostKey, e)
 	return nil
 }
 
-// Lookup implements [Store]; delegates to the inner store.
-func (s *DualWritingStore) Lookup(key string) (Entry, error) {
-	return s.inner.Lookup(key)
-}
-
-// Delete implements [Store]. Deletes under the primary key are also mirrored
-// under the host key, using the same best-effort compatibility policy as Put.
-func (s *DualWritingStore) Delete(key string) error {
+// Delete implements LockedStore and mirrors the deletion when key is primary.
+func (s *dualLockedStore) Delete(key string) error {
 	if err := s.inner.Delete(key); err != nil {
 		return err
 	}
-	primaryKey := s.arg.GetCacheKey()
-	if key != primaryKey {
-		return nil
-	}
-	hostKey := hostCacheKey(s.arg)
-	if hostKey == "" || hostKey == primaryKey {
+	hostKey := s.hostKey(key)
+	if hostKey == "" {
 		return nil
 	}
 	_ = s.inner.Delete(hostKey)
 	return nil
 }
+
+func (s *dualLockedStore) hostKey(key string) string {
+	primaryKey := s.store.arg.GetCacheKey()
+	if key != primaryKey {
+		return ""
+	}
+	hostKey := hostCacheKey(s.store.arg)
+	if hostKey == primaryKey {
+		return ""
+	}
+	return hostKey
+}
+
+var _ Store = (*DualWritingStore)(nil)
 
 // hostCacheKey mirrors the SDK's former PersistentAuth.hostCacheKey:
 // discovery arguments expose the host via GetDiscoveredHost (populated by

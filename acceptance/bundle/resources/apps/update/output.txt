@@ -10,8 +10,6 @@ Created apps.mykey
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests
-
 >>> [CLI] bundle summary
 Name: test-bundle
 Target: default
@@ -37,8 +35,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Updated apps.mykey
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> print_requests
 
 >>> [CLI] bundle summary
 Name: test-bundle
@@ -78,8 +74,6 @@ Recreated apps.mykey
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
->>> print_requests
-
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
@@ -102,5 +96,3 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Destroy: 1 deleted
-
->>> print_requests

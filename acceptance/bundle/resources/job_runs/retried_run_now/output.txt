@@ -6,7 +6,7 @@ Created jobs.my_job
 Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [DATABRICKS_URL]/jobs/[MY_JOB_ID]/runs/[MY_RUN_ID]?o=[NUMID]
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === run-now was sent twice, both times with the same token
@@ -34,9 +34,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 === the second request was answered with the run the first one started
 >>> read_id.py my_run
 [MY_RUN_ID]
-
->>> [CLI] jobs list-runs -o json
-1
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -45,3 +43,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/job-runs-retried-run-now/default
 
 Destroy: 1 deleted
+
+Exit code: 5

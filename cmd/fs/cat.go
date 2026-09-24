@@ -1,6 +1,9 @@
 package fs
 
 import (
+	"context"
+	"io"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -27,11 +30,16 @@ func newCatCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, r)
+		return renderFile(ctx, r)
 	}
 
 	v := newValidArgs()
 	cmd.ValidArgsFunction = v.Validate
 
 	return cmd
+}
+
+func renderFile(ctx context.Context, r io.ReadCloser) error {
+	defer r.Close()
+	return cmdio.Render(ctx, r)
 }

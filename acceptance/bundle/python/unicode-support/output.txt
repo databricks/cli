@@ -1,43 +1,5 @@
-
->>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+jq: parse error: Invalid numeric literal at line 2, column 4
 Warning: This is a warning message with unicode characters: 🔥🔥🔥
 
-{
-  "variables": {
-    "my_variable": {
-      "default": "my_variable",
-      "description": "🔥🔥🔥",
-      "value": "my_variable"
-    }
-  },
-  "resources": {
-    "jobs": {
-      "job_1": {
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
-        },
-        "edit_mode": "UI_LOCKED",
-        "format": "MULTI_TASK",
-        "max_concurrent_runs": 1,
-        "name": "🔥🔥🔥",
-        "queue": {
-          "enabled": true
-        }
-      },
-      "job_2": {
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
-        },
-        "edit_mode": "UI_LOCKED",
-        "format": "MULTI_TASK",
-        "max_concurrent_runs": 1,
-        "name": "🔥🔥🔥",
-        "queue": {
-          "enabled": true
-        }
-      }
-    }
-  }
-}
+
+Exit code: 5

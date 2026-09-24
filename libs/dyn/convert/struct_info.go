@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
@@ -100,8 +101,12 @@ func buildStructInfo(typ reflect.Type) structInfo {
 		for j := range nf {
 			sf := styp.Field(j)
 
-			// Recurse into anonymous fields.
-			if sf.Anonymous {
+			if structaccess.IsSkippedField(sf) {
+				continue
+			}
+
+			// Recurse only into embedded fields that encoding/json flattens.
+			if structaccess.IsFlattenedEmbed(sf) {
 				queue = append(queue, append(prefix, sf.Index...))
 				continue
 			}
@@ -117,7 +122,7 @@ func buildStructInfo(typ reflect.Type) structInfo {
 
 			jtag := structtag.JSONTag(sf.Tag.Get("json"))
 			name := jtag.Name()
-			if name == "" || name == "-" {
+			if name == "" {
 				continue
 			}
 

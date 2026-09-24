@@ -1,5 +1,5 @@
 {
-  "plan_version": [PLAN_VERSION],
+  "plan_version": 3,
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -27,6 +27,9 @@
       },
       "remote_state": {
         "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "true"
+        },
         "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
@@ -56,6 +59,13 @@
         "storage": "dbfs:/pipelines/custom"
       },
       "changes": {
+        "configuration": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "spark.sql.ansi.enabled": "true"
+          }
+        },
         "ingestion_definition": {
           "action": "recreate",
           "reason": "immutable",

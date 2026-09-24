@@ -13,23 +13,17 @@ trace $CLI bundle deploy
 rm -f "$OUT_REQUESTS"
 trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 
-title "Remove suspend_timeout_duration: neither engine can apply it"
-trace update_file.py databricks.yml "      suspend_timeout_duration: 300s" ""
+title "Remove suspend_timeout_duration and restore the default"
+trace update_file.py databricks.yml '      suspend_timeout_duration: "300s"' ""
 
-# Both engines plan the removal and neither applies it, but they fail differently, so the
-# deploy and the drift it leaves stay in per-engine files. The direct engine masks
-# spec.suspension with no member of that oneof in the body and the API rejects it; the
-# Terraform provider masks the whole spec, which the API accepts and then ignores. See
-# test.toml.
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f "$OUT_REQUESTS"
-errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle deploy
 trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
-# Read the endpoint back to see whether the removal reached it, then plan again to
-# record the drift it leaves behind: direct still has the removal pending and will
-# fail again on every deploy, terraform applied it and is clean.
+# The documented default converges the existing suspension oneof; a second plan
+# is clean for both engines.
 trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 trace $CLI bundle plan &> out.plan.drift.$DATABRICKS_BUNDLE_ENGINE.txt
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.drift.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq -e '[.plan[] | select(.action != "skip")] | length == 0'

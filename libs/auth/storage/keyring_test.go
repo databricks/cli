@@ -1,11 +1,13 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/zalando/go-keyring"
@@ -21,9 +23,16 @@ type fakeBackend struct {
 	getErr    error
 	deleteErr error
 
-	setBlock    bool // if true, Set blocks forever (for timeout tests)
-	getBlock    bool
-	deleteBlock bool
+	setDelay    time.Duration
+	getDelay    time.Duration
+	deleteDelay time.Duration
+
+	setRelease    <-chan struct{}
+	setStarted    chan<- struct{}
+	getRelease    <-chan struct{}
+	getStarted    chan<- struct{}
+	deleteRelease <-chan struct{}
+	deleteStarted chan<- struct{}
 }
 
 func newFakeBackend() *fakeBackend {
@@ -33,8 +42,12 @@ func newFakeBackend() *fakeBackend {
 func itemKey(service, account string) string { return service + ":" + account }
 
 func (f *fakeBackend) Set(service, account, secret string) error {
-	if f.setBlock {
-		select {}
+	if f.setDelay > 0 {
+		time.Sleep(f.setDelay)
+	}
+	if f.setRelease != nil {
+		notifyStarted(f.setStarted)
+		<-f.setRelease
 	}
 	if f.setErr != nil {
 		return f.setErr
@@ -44,8 +57,12 @@ func (f *fakeBackend) Set(service, account, secret string) error {
 }
 
 func (f *fakeBackend) Get(service, account string) (string, error) {
-	if f.getBlock {
-		select {}
+	if f.getDelay > 0 {
+		time.Sleep(f.getDelay)
+	}
+	if f.getRelease != nil {
+		notifyStarted(f.getStarted)
+		<-f.getRelease
 	}
 	if f.getErr != nil {
 		return "", f.getErr
@@ -58,14 +75,24 @@ func (f *fakeBackend) Get(service, account string) (string, error) {
 }
 
 func (f *fakeBackend) Delete(service, account string) error {
-	if f.deleteBlock {
-		select {}
+	if f.deleteDelay > 0 {
+		time.Sleep(f.deleteDelay)
+	}
+	if f.deleteRelease != nil {
+		notifyStarted(f.deleteStarted)
+		<-f.deleteRelease
 	}
 	if f.deleteErr != nil {
 		return f.deleteErr
 	}
 	delete(f.items, itemKey(service, account))
 	return nil
+}
+
+func notifyStarted(started chan<- struct{}) {
+	if started != nil {
+		close(started)
+	}
 }
 
 func newTestStore(backend keyringBackend) *keyringStore {
@@ -76,13 +103,31 @@ func newTestStore(backend keyringBackend) *keyringStore {
 	}
 }
 
+func keyringContext(t testing.TB) context.Context {
+	t.Helper()
+	return env.WithUserHomeDir(t.Context(), t.TempDir())
+}
+
+func putKeyring(t testing.TB, store *keyringStore, key string, entry Entry) {
+	t.Helper()
+	require.NoError(t, store.WithLock(keyringContext(t), func(locked LockedStore) error {
+		return locked.Put(key, entry)
+	}))
+}
+
+func deleteKeyring(t testing.TB, store *keyringStore, key string) {
+	t.Helper()
+	require.NoError(t, store.WithLock(keyringContext(t), func(locked LockedStore) error {
+		return locked.Delete(key)
+	}))
+}
+
 func TestKeyringStore_Store_WritesJSON(t *testing.T) {
 	backend := newFakeBackend()
 	c := newTestStore(backend)
 
 	tok := &oauth2.Token{AccessToken: "abc", TokenType: "Bearer"}
-
-	require.NoError(t, c.Put("my-profile", Entry{Token: tok}))
+	putKeyring(t, c, "my-profile", Entry{Token: tok})
 
 	stored, ok := backend.items[itemKey("databricks-cli", "my-profile")]
 	require.True(t, ok, "token should be stored under service=databricks-cli, account=my-profile")
@@ -99,8 +144,9 @@ func TestKeyringStore_Store_PropagatesBackendError(t *testing.T) {
 	backend := newFakeBackend()
 	backend.setErr = boom
 	c := newTestStore(backend)
-
-	err := c.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "x"}})
+	err := c.WithLock(keyringContext(t), func(locked LockedStore) error {
+		return locked.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "x"}})
+	})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
 }
@@ -108,9 +154,9 @@ func TestKeyringStore_Store_PropagatesBackendError(t *testing.T) {
 func TestKeyringStore_Lookup_ReturnsStoredToken(t *testing.T) {
 	backend := newFakeBackend()
 	c := newTestStore(backend)
-
 	want := &oauth2.Token{AccessToken: "abc", TokenType: "Bearer"}
-	require.NoError(t, c.Put("my-profile", Entry{Token: want}))
+
+	putKeyring(t, c, "my-profile", Entry{Token: want})
 
 	got, err := c.Lookup("my-profile")
 	require.NoError(t, err)
@@ -170,9 +216,8 @@ func TestKeyringStore_Lookup_CorruptedJSONReturnsError(t *testing.T) {
 func TestKeyringStore_StoreNil_DeletesEntry(t *testing.T) {
 	backend := newFakeBackend()
 	c := newTestStore(backend)
-
-	require.NoError(t, c.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
-	require.NoError(t, c.Delete("my-profile"))
+	putKeyring(t, c, "my-profile", Entry{Token: &oauth2.Token{AccessToken: "abc"}})
+	deleteKeyring(t, c, "my-profile")
 
 	_, ok := backend.items[itemKey("databricks-cli", "my-profile")]
 	assert.False(t, ok, "entry should be gone after delete")
@@ -182,8 +227,9 @@ func TestKeyringStore_StoreNil_MissingIsIdempotent(t *testing.T) {
 	backend := newFakeBackend()
 	backend.deleteErr = keyring.ErrNotFound
 	c := newTestStore(backend)
-
-	err := c.Delete("never-stored")
+	err := c.WithLock(keyringContext(t), func(locked LockedStore) error {
+		return locked.Delete("never-stored")
+	})
 	require.NoError(t, err, "deleting a missing entry must not error")
 }
 
@@ -192,46 +238,81 @@ func TestKeyringStore_StoreNil_PropagatesOtherDeleteErrors(t *testing.T) {
 	backend := newFakeBackend()
 	backend.deleteErr = boom
 	c := newTestStore(backend)
-
-	err := c.Delete("my-profile")
+	err := c.WithLock(keyringContext(t), func(locked LockedStore) error {
+		return locked.Delete("my-profile")
+	})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, boom)
 }
 
-func TestKeyringStore_Store_TimesOut(t *testing.T) {
+func TestKeyringStore_Store_TimesOutAndWaitsForBackend(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
 	backend := newFakeBackend()
-	backend.setBlock = true
-	c := newTestStore(backend) // 100ms timeout from newTestStore
+	backend.setStarted = started
+	backend.setRelease = release
+	c := newTestStore(backend)
+	ctx := keyringContext(t)
 
-	start := time.Now()
-	err := c.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "x"}})
+	result := make(chan error, 1)
+	go func() {
+		result <- c.WithLock(ctx, func(locked LockedStore) error {
+			return locked.Put("my-profile", Entry{Token: &oauth2.Token{AccessToken: "x"}})
+		})
+	}()
+	<-started
+	select {
+	case err := <-result:
+		t.Fatalf("transaction returned before backend completion: %v", err)
+	case <-time.After(2 * c.timeout):
+	}
+	close(release)
+	err := <-result
 	require.Error(t, err)
-
 	var timeoutErr *TimeoutError
 	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
-	assert.Less(t, time.Since(start), 2*time.Second, "should time out quickly")
 }
 
 func TestKeyringStore_Lookup_TimesOut(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
 	backend := newFakeBackend()
-	backend.getBlock = true
+	backend.getStarted = started
+	backend.getRelease = release
 	c := newTestStore(backend)
 
 	_, err := c.Lookup("my-profile")
+	close(release)
 	require.Error(t, err)
-
 	var timeoutErr *TimeoutError
 	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
+	<-started
 }
 
-func TestKeyringStore_StoreNil_TimesOut(t *testing.T) {
+func TestKeyringStore_Delete_TimesOutAndWaitsForBackend(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
 	backend := newFakeBackend()
-	backend.deleteBlock = true
+	backend.deleteStarted = started
+	backend.deleteRelease = release
 	c := newTestStore(backend)
+	ctx := keyringContext(t)
 
-	err := c.Delete("my-profile")
+	result := make(chan error, 1)
+	go func() {
+		result <- c.WithLock(ctx, func(locked LockedStore) error {
+			return locked.Delete("my-profile")
+		})
+	}()
+	<-started
+	select {
+	case err := <-result:
+		t.Fatalf("transaction returned before backend completion: %v", err)
+	case <-time.After(2 * c.timeout):
+	}
+	close(release)
+	err := <-result
 	require.Error(t, err)
-
 	var timeoutErr *TimeoutError
 	assert.ErrorAs(t, err, &timeoutErr, "expected TimeoutError, got %T: %v", err, err)
 }
@@ -242,7 +323,7 @@ func TestProbeKeyring(t *testing.T) {
 		name        string
 		setErr      error
 		deleteErr   error
-		setBlock    bool
+		setDelay    time.Duration
 		timeout     time.Duration
 		wantErr     error
 		wantTimeout bool
@@ -259,8 +340,8 @@ func TestProbeKeyring(t *testing.T) {
 		},
 		{
 			name:        "set times out",
-			setBlock:    true,
-			timeout:     50 * time.Millisecond,
+			setDelay:    100 * time.Millisecond,
+			timeout:     10 * time.Millisecond,
 			wantTimeout: true,
 		},
 		{
@@ -276,9 +357,9 @@ func TestProbeKeyring(t *testing.T) {
 			backend := newFakeBackend()
 			backend.setErr = tc.setErr
 			backend.deleteErr = tc.deleteErr
-			backend.setBlock = tc.setBlock
+			backend.setDelay = tc.setDelay
 
-			err := probeWithBackend(backend, tc.timeout)
+			err := probeWithBackend(keyringContext(t), backend, tc.timeout)
 
 			switch {
 			case tc.wantErr != nil:
@@ -301,7 +382,7 @@ func TestProbeKeyringRead(t *testing.T) {
 	cases := []struct {
 		name        string
 		getErr      error
-		getBlock    bool
+		getDelay    time.Duration
 		timeout     time.Duration
 		wantErr     error
 		wantTimeout bool
@@ -322,8 +403,8 @@ func TestProbeKeyringRead(t *testing.T) {
 		},
 		{
 			name:        "get times out",
-			getBlock:    true,
-			timeout:     50 * time.Millisecond,
+			getDelay:    100 * time.Millisecond,
+			timeout:     10 * time.Millisecond,
 			wantTimeout: true,
 		},
 	}
@@ -332,9 +413,9 @@ func TestProbeKeyringRead(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			backend := newFakeBackend()
 			backend.getErr = tc.getErr
-			backend.getBlock = tc.getBlock
+			backend.getDelay = tc.getDelay
 
-			err := probeReadWithBackend(backend, tc.timeout)
+			err := probeReadWithBackend(keyringContext(t), backend, tc.timeout)
 
 			switch {
 			case tc.wantErr != nil:

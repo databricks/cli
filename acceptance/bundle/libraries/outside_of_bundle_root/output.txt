@@ -7,55 +7,6 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default
 
 Validation OK!
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json
-[
-  {
-    "whl": "../lib/*.whl"
-  }
-]
-
->>> [CLI] bundle validate -o json
-[
-  "../lib/*.whl"
-]
-
->>> [CLI] bundle validate -o json
-[
-  "../lib/*.whl"
-]
-
->>> [CLI] bundle deploy
-Uploading ../lib/test.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/files...
-Created jobs.test
-Created pipelines.pipeline
-Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
-=== Check that the job libraries are uploaded and the path is correct in the job
->>> cat [OUTPUT_DIR]/out.requests.txt
-[
-  {
-    "whl": "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
-  }
-]
-
->>> cat [OUTPUT_DIR]/out.requests.txt
-[
-  "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
-]
-
->>> cat [OUTPUT_DIR]/out.requests.txt
-[
-  "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
-]
-
->>> cat [OUTPUT_DIR]/out.requests.txt
-{
-  "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl",
-  "q": {
-    "overwrite": "true"
-  }
-}
+Exit code: 5

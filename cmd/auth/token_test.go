@@ -37,6 +37,10 @@ func (upgradeHintStore) Lookup(string) (storage.Entry, error) {
 	)
 }
 
+func (s upgradeHintStore) WithLock(_ context.Context, fn func(storage.LockedStore) error) error {
+	return fn(s)
+}
+
 var _ storage.Store = upgradeHintStore{}
 
 type failOnCallTransport struct{}
@@ -964,4 +968,10 @@ func TestWriteTokenErrorOutput(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, unauthenticatedErrorCode, got.ErrorCode)
 	assert.Equal(t, "refresh token is invalid", got.Message)
+}
+
+func TestTokenCommandRejectsMultiplePositionalArguments(t *testing.T) {
+	cmd := newTokenCommand(&auth.AuthArguments{})
+	assert.Error(t, cmd.Args(cmd, []string{"one", "two"}))
+	assert.NoError(t, cmd.Args(cmd, []string{"one"}))
 }

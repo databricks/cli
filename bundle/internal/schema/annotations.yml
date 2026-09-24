@@ -1518,6 +1518,9 @@ resources:
             "user_name":
               "description": |-
                 The name of the user granted the permission level.
+        "run_as":
+          "description": |-
+            Specifies the identity used to run the pipeline. Set one of `user_name`, `service_principal_name`, or `group_name`.
         "trigger":
           "deprecation_message": |-
             Use continuous instead

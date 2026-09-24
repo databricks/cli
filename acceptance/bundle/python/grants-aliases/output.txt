@@ -1,39 +1,21 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
+Error: Failed to import module 'resources'
 
->>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
-{
-  "experimental": {
-    "python": {
-      "resources": [
-        "resources:load_resources"
-      ]
-    }
-  },
-  "resources": {
-    "schemas": {
-      "my_schema": {
-        "catalog_name": "my_catalog",
-        "grants": [
-          {
-            "principal": "data-team@example.com",
-            "privileges": [
-              "USE_SCHEMA"
-            ]
-          }
-        ],
-        "name": "my_schema"
-      },
-      "my_schema_legacy": {
-        "catalog_name": "my_catalog",
-        "grants": [
-          {
-            "principal": "data-team@example.com",
-            "privileges": [
-              "USE_SCHEMA"
-            ]
-          }
-        ],
-        "name": "my_schema_legacy"
-      }
-    }
-  }
-}
+Traceback (most recent call last):
+  File "/Users/zhu/Library/Caches/uv/archive-v0/BqiGf28g0cOCmhP9/lib/python3.10/site-packages/databricks/bundles/build.py", line 402, in _load_object
+    module = importlib.import_module(module_name)
+  File "/Users/zhu/.local/share/uv/python/cpython-3.10-macos-aarch64-none/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "[TEST_TMP_DIR]/resources.py", line 4, in <module>
+    from databricks.bundles.schemas import Privilege, PrivilegeAssignment
+ImportError: cannot import name 'Privilege' from 'databricks.bundles.schemas' (/Users/zhu/Library/Caches/uv/archive-v0/BqiGf28g0cOCmhP9/lib/python3.10/site-packages/databricks/bundles/schemas/__init__.py)
+
+
+
+Exit code: 5

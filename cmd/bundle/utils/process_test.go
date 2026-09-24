@@ -91,3 +91,38 @@ func TestParseLastVersionID(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateDeploymentMarker(t *testing.T) {
+	tests := []struct {
+		name       string
+		stateDesc  *statemgmt.StateDesc
+		deployment *bundledeployments.Deployment
+		wantErr    string
+	}{
+		{
+			name:      "first deployment has no local state",
+			stateDesc: &statemgmt.StateDesc{},
+		},
+		{
+			name:       "recorded local state has deployment",
+			stateDesc:  &statemgmt.StateDesc{SourcePath: "resources.json", Features: map[string]struct{}{dstate.FeatureDeploymentHistory: {}}},
+			deployment: &bundledeployments.Deployment{},
+		},
+		{
+			name:      "recorded local state is missing deployment",
+			stateDesc: &statemgmt.StateDesc{SourcePath: "resources.json", Features: map[string]struct{}{dstate.FeatureDeploymentHistory: {}}},
+			wantErr:   "deployment metadata marker is missing; refusing to treat this recorded deployment as new",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateDeploymentMarker(tt.stateDesc, tt.deployment)
+			if tt.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.EqualError(t, err, tt.wantErr)
+		})
+	}
+}

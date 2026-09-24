@@ -1,99 +1,14 @@
-
->>> [CLI] bundle validate -o json
-{
-  "custom_description": "My alert from file\nwith multiple lines\nand a third line\n",
-  "custom_summary": "My alert from file",
-  "display_name": "myalert",
-  "evaluation": {
-    "comparison_operator": "EQUAL",
-    "notification": {
-      "notify_on_ok": false,
-      "retrigger_seconds": 1
-    },
-    "source": {
-      "aggregation": "MAX",
-      "display": "1",
-      "name": "1"
-    },
-    "threshold": {
-      "value": {
-        "double_value": 2
-      }
-    }
-  },
-  "file_path": "alert.dbalert.json",
-  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/resources",
-  "query_text": "select 2\n",
-  "schedule": {
-    "quartz_cron_schedule": "44 19 */1 * * ?",
-    "timezone_id": "Europe/Amsterdam"
-  },
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-}
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/files...
-Created alerts.myalert
-Files: 5 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] alerts-v2 get-alert [ALERT_ID]
-{
-  "display_name": "myalert",
-  "lifecycle_state": "ACTIVE",
-  "custom_summary": "My alert from file",
-  "evaluation": {
-    "comparison_operator": "EQUAL",
-    "notification": {
-      "notify_on_ok": false,
-      "retrigger_seconds": 1
-    },
-    "source": {
-      "aggregation": "MAX",
-      "display": "1",
-      "name": "1"
-    },
-    "threshold": {
-      "value": {
-        "double_value": 2
-      }
-    }
-  },
-  "query_text": "select 2\n",
-  "schedule": {
-    "quartz_cron_schedule": "44 19 */1 * * ?",
-    "timezone_id": "Europe/Amsterdam"
-  },
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-}
-
-=== assert that the uploaded alert file is the same as the local one
->>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/resources/myalert.dbalert.json
-
->>> diff local_normalized.json exported_normalized.json
-
->>> [CLI] alerts-v2 get-alert [ALERT_ID]
-{
-  "display_name": "myalert",
-  "lifecycle_state": "ACTIVE"
-}
-
->>> [CLI] bundle summary
-Name: alerts-with-file-[UNIQUE_NAME]
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default
-Resources:
-  Alerts:
-    myalert:
-      Name: myalert
-      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.alerts.myalert
-
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default
 
-Destroy: 1 deleted
+Error: failed to create deployment version: No stub found for pattern: POST /api/2.0/bundle/deployments/versions (501 <nil>)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/bundle/deployments/versions?version_id=1
+HTTP Status: 501 Not Implemented
+API error_code: <nil>
+API message: No stub found for pattern: POST /api/2.0/bundle/deployments/versions
+
+
+Exit code: 1

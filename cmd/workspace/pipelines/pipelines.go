@@ -123,12 +123,11 @@ Apply the latest environment to the pipeline.
 		}
 		applyEnvironmentReq.PipelineId = args[0]
 
-		response, err := w.Pipelines.ApplyEnvironment(ctx, applyEnvironmentReq)
+		_, err = w.Pipelines.ApplyEnvironment(ctx, applyEnvironmentReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

@@ -4,74 +4,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/file
 Created model_serving_endpoints.test_endpoint
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] serving-endpoints get [ENDPOINT_ID]
-[
-  {
-    "key": "team",
-    "value": "my-team-one"
-  }
-]
-
->>> update_file.py databricks.yml value: my-team-one value: my-team-two
-
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Updated model_serving_endpoints.test_endpoint
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py //serving-endpoints
-{
-  "method": "POST",
-  "path": "/api/2.0/serving-endpoints",
-  "body": {
-    "config": {
-      "served_entities": [
-        {
-          "external_model": {
-            "name": "gpt-4o-mini",
-            "openai_config": {
-              "openai_api_key": "{{secrets/test-scope/openai-key}}"
-            },
-            "provider": "openai",
-            "task": "llm/v1/chat"
-          },
-          "name": "prod"
-        }
-      ]
-    },
-    "name": "[ENDPOINT_ID]",
-    "tags": [
-      {
-        "key": "team",
-        "value": "my-team-one"
-      }
-    ]
-  }
-}
-{
-  "method": "PATCH",
-  "path": "/api/2.0/serving-endpoints/[ENDPOINT_ID]/tags",
-  "body": {
-    "add_tags": [
-      {
-        "key": "team",
-        "value": "my-team-two"
-      }
-    ]
-  }
-}
-
->>> [CLI] serving-endpoints get [ENDPOINT_ID]
-[
-  {
-    "key": "team",
-    "value": "my-team-two"
-  }
-]
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -80,3 +13,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 1 deleted
+
+Exit code: 5

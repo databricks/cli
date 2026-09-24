@@ -197,6 +197,13 @@ func TestHandleWatchResultPrintsProfileAwareResumeCommand(t *testing.T) {
 	assert.NotContains(t, out, "The workload was not canceled")
 }
 
+func TestFinishJSONWatchCancellationOmitsTerminalEnvelope(t *testing.T) {
+	var buf bytes.Buffer
+	err := finishJSONWatch(t.Context(), &buf, "777", "https://dashboard.test", nil, context.Canceled)
+	require.ErrorIs(t, err, context.Canceled)
+	assert.Empty(t, buf.String())
+}
+
 func TestHandleWatchResultPassesThroughOtherErrors(t *testing.T) {
 	want := errors.New("stream failed")
 	var buf bytes.Buffer

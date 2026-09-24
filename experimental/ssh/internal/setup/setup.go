@@ -14,6 +14,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
+// ValidateHostName checks that hostName is safe as an OpenSSH host alias and config filename.
+func ValidateHostName(hostName string) error {
+	return sshconfig.ValidateHostName(hostName)
+}
+
 type SetupOptions struct {
 	// A host name to add to the SSH config
 	HostName string
@@ -46,6 +51,9 @@ type SetupOptions struct {
 }
 
 func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand string) (string, error) {
+	if err := ValidateHostName(opts.HostName); err != nil {
+		return "", err
+	}
 	identityFilePath, err := keys.GetLocalSSHKeyPath(ctx, opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
@@ -64,8 +72,8 @@ func generateHostConfig(ctx context.Context, opts SetupOptions, proxyCommand str
 	// user-facing name differs from the cluster ID, ssh would look the key up under the name
 	// and fail strict checking, so pass the cluster ID as HostKeyAlias to match the pinned
 	// entry (DECO-27882).
-	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, knownHostsPath, opts.ClusterID, proxyCommand)
-	return hostConfig, nil
+	hostConfig, err := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, knownHostsPath, opts.ClusterID, proxyCommand)
+	return hostConfig, err
 }
 
 // clusterSelectionPrompt is a package-level var so tests can replace it with a mock.
@@ -91,6 +99,10 @@ func defaultClusterSelectionPrompt(ctx context.Context, client *databricks.Works
 }
 
 func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOptions) error {
+	if err := ValidateHostName(opts.HostName); err != nil {
+		return err
+	}
+
 	// Reject invalid server-lifecycle flag values before the cluster picker and
 	// cluster-access check: these values don't depend on cluster details.
 	if opts.MaxClients < 1 {
@@ -101,6 +113,23 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 	}
 	if opts.ShutdownDelay > opts.ServerTimeout {
 		return fmt.Errorf("--shutdown-delay (%s) cannot be longer than --server-timeout (%s)", opts.ShutdownDelay, opts.ServerTimeout)
+	}
+
+	clientOpts := sshclient.ClientOptions{
+		ClusterID:             opts.ClusterID,
+		AutoStartCluster:      opts.AutoStartCluster,
+		ShutdownDelay:         opts.ShutdownDelay,
+		MaxClients:            opts.MaxClients,
+		ServerTimeout:         opts.ServerTimeout,
+		KeepDetachedProcesses: opts.KeepDetachedProcesses,
+		Profile:               opts.Profile,
+	}
+	// Build the ProxyCommand before resolving the cluster so unsafe persisted values are
+	// rejected before the picker or any cluster API request. Rebuild it after a picker resolves
+	// an omitted cluster so the generated command never carries an empty cluster ID.
+	proxyCommand, err := clientOpts.ToProxyCommand()
+	if err != nil {
+		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
 	if opts.ClusterID == "" {
@@ -115,31 +144,21 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return errors.New("cluster ID is required")
 	}
 
-	err := sshclient.ValidateClusterAccess(ctx, client, opts.ClusterID)
-	if err != nil {
-		return err
+	if opts.ClusterID != clientOpts.ClusterID {
+		clientOpts.ClusterID = opts.ClusterID
+		proxyCommand, err = clientOpts.ToProxyCommand()
+		if err != nil {
+			return fmt.Errorf("failed to generate ProxyCommand: %w", err)
+		}
 	}
 
-	// Build the ProxyCommand after the cluster ID is resolved. When the user
-	// omits --cluster, the ID is only known after the interactive picker above,
-	// so building it earlier would serialize an empty --cluster= flag.
-	clientOpts := sshclient.ClientOptions{
-		ClusterID:             opts.ClusterID,
-		AutoStartCluster:      opts.AutoStartCluster,
-		ShutdownDelay:         opts.ShutdownDelay,
-		MaxClients:            opts.MaxClients,
-		ServerTimeout:         opts.ServerTimeout,
-		KeepDetachedProcesses: opts.KeepDetachedProcesses,
-		Profile:               opts.Profile,
-	}
-	// The ProxyCommand is persisted in the SSH config, so reject values that would produce a
-	// tunnel that can never work (e.g. --max-clients=0) here rather than at first `ssh <name>`.
 	if err := clientOpts.Validate(); err != nil {
 		return err
 	}
-	proxyCommand, err := clientOpts.ToProxyCommand()
+
+	err = sshclient.ValidateClusterAccess(ctx, client, opts.ClusterID)
 	if err != nil {
-		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
+		return err
 	}
 
 	configPath, err := sshconfig.GetMainConfigPathOrDefault(ctx, opts.SSHConfigPath)

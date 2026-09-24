@@ -122,6 +122,10 @@ func (c *copy) cpFileToDir(ctx context.Context, sourcePath, targetDir string) er
 }
 
 func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string) error {
+	if err := c.rejectLocalSelfCopy(sourcePath, targetPath); err != nil {
+		return err
+	}
+
 	// Get reader for file at source path
 	r, err := c.sourceFiler.Read(ctx, sourcePath)
 	if err != nil {
@@ -156,6 +160,24 @@ func (c *copy) cpFileToFile(ctx context.Context, sourcePath, targetPath string) 
 		return writeErr
 	}
 	return c.emitFileCopiedEvent(ctx, sourcePath, targetPath)
+}
+
+func (c *copy) rejectLocalSelfCopy(sourcePath, targetPath string) error {
+	if !c.overwrite || c.sourceScheme != "" || c.targetScheme != "" {
+		return nil
+	}
+	sourceInfo, err := os.Stat(sourcePath)
+	if err != nil {
+		return nil //nolint:nilerr
+	}
+	targetInfo, err := os.Stat(targetPath)
+	if err != nil {
+		return nil //nolint:nilerr
+	}
+	if os.SameFile(sourceInfo, targetInfo) {
+		return fmt.Errorf("source and destination refer to the same file: %s", filepath.ToSlash(sourcePath))
+	}
+	return nil
 }
 
 // TODO: emit these events on stderr

@@ -1,18 +1,12 @@
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.dst_git
-Created jobs.dst_pipeline
-Created jobs.dst_tasks
-Created jobs.src_git
-Created jobs.src_tasks
-Created pipelines.src_pipeline
-Files: 3 uploaded, 0 deleted
-Resources: 6 created, 0 changed, 0 deleted, 0 unchanged
-/path/to/wheel.whl
-main
-mycluster
-src-git
-src-tasks
+Exit code: 1

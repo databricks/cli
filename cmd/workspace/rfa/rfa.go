@@ -220,7 +220,6 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 
 	cmd.Flags().Var(&updateAccessRequestDestinationsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: destination_source_securable
 	// TODO: array: destinations
 
 	cmd.Use = "update-access-request-destinations UPDATE_MASK SECURABLE"

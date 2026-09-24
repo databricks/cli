@@ -60,6 +60,9 @@ View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID
   "run_as_user_name": "[USERNAME]",
   "spec": {
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/state/metadata.json"

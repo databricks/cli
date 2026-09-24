@@ -1,0 +1,17 @@
+bundle:
+  name: schema-grants-secret-privileges-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_secret_privileges_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - CREATE_SECRET
+            - READ_SECRET
+            - WRITE_SECRET
+            - REFERENCE_SECRET
+            - CREATE_FEATURE
+            - READ_FEATURE

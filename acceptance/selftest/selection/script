@@ -32,5 +32,8 @@ trace selection M:acceptance/bundle/invariant/configs/vector_search_index.yml.tm
 title "Renaming a fixture out of a test selects the test that lost it\n"
 trace selection R100:acceptance/selftest/basic/output.txt:docs/example.txt
 
+title "An ancestor test.toml selects all descendant tests\n"
+trace selection M:acceptance/selftest/record_cloud/test.toml
+
 title "The limit keeps the highest scoring tests\n"
 trace selection -limit 3 A:acceptance/selftest/basic/script M:acceptance/selftest/diff/script M:acceptance/bundle/invariant/configs/job.yml.tmpl

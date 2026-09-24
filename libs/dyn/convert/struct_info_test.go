@@ -18,12 +18,21 @@ func TestStructInfoPlain(t *testing.T) {
 
 		// Qux must be skipped.
 		Qux string `json:"-"`
+
+		// A dash followed by options names the field "-".
+		//nolint:govet,staticcheck // fixture intentionally exercises optioned dash tags
+		Dash string `json:"-,omitempty"`
+		//nolint:govet,staticcheck // fixture intentionally exercises optioned dash tags
+		DashNoOpts string `json:"-,"`
+		//nolint:govet,staticcheck // fixture intentionally exercises optioned dash tags
+		DashOmitAll string `json:"-,omitempty,string"`
 	}
 
 	si := getStructInfo(reflect.TypeFor[Tmp]())
-	assert.Len(t, si.Fields, 2)
+	assert.Len(t, si.Fields, 3)
 	assert.Equal(t, []int{0}, si.Fields["foo"])
 	assert.Equal(t, []int{1}, si.Fields["bar"])
+	assert.Equal(t, []int{4}, si.Fields["-"])
 }
 
 func TestStructInfoAnonymousByValue(t *testing.T) {

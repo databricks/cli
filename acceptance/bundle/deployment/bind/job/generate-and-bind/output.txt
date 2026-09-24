@@ -12,8 +12,6 @@ Job configuration successfully saved to resources/test_job_key.job.yml
 
 >>> ls src/
 test.py
-
->>> cat resources/test_job_key.job.yml
       name: generate-job-[UNIQUE_NAME]
 
 >>> [CLI] bundle deployment bind test_job_key [NUMID] --auto-approve
@@ -23,7 +21,7 @@ Run 'bundle deploy' to deploy changes to your workspace
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]/files...
 Updated jobs.test_job_key
-Files: 7 uploaded, 0 deleted
+Files: 6 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve

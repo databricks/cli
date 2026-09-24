@@ -4,7 +4,7 @@ Building code_source...
 Uploading code.tgz...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.job
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Expecting code_source_path rewritten to the uploaded artifact remote path
@@ -23,6 +23,4 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "experiment": "my-experiment"
 }
 
-=== Expecting the code_source tarball to be uploaded
->>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/code.tgz"
+=== Expecting the code_source tarball to be uploaded"/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/code.tgz"

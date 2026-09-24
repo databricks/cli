@@ -50,12 +50,12 @@ func TestInstallPluginForAgentClaudeSuccess(t *testing.T) {
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
 
-	rec, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+	rec, err := InstallPluginForAgent(ctx, claudeAgent(), "user")
 	require.NoError(t, err)
 	assert.Equal(t, "databricks-agent-skills", rec.Marketplace)
 	assert.Equal(t, "databricks", rec.Plugin)
 	assert.Equal(t, "user", rec.Scope)
-	assert.Equal(t, "0.2.6", rec.Version)
+	assert.Empty(t, rec.Version)
 	assert.True(t, rec.InstalledMarketplace)
 
 	cmds := stub.Commands()
@@ -75,7 +75,7 @@ func TestInstallPluginForAgentSharedMarketplace(t *testing.T) {
 	// before refreshing and installing. Use the real registry spec.
 	agent := agents.ByName(agents.NameClaudeCode)
 
-	rec, err := InstallPluginForAgent(ctx, agent, "user", "main")
+	rec, err := InstallPluginForAgent(ctx, agent, "user")
 	require.NoError(t, err)
 	assert.Equal(t, "claude-plugins-official", rec.Marketplace)
 	assert.True(t, rec.InstalledMarketplace, "an absent shared marketplace is added by us")
@@ -91,7 +91,7 @@ func TestInstallPluginForAgentCodexUsesAddNoScope(t *testing.T) {
 	ctx, stub := process.WithStub(t.Context())
 	stub.WithCallback(func(*exec.Cmd) error { return nil })
 
-	_, err := InstallPluginForAgent(ctx, codexAgent(), "user", "v0.2.6")
+	_, err := InstallPluginForAgent(ctx, codexAgent(), "user")
 	require.NoError(t, err)
 
 	cmds := stub.Commands()
@@ -102,7 +102,7 @@ func TestInstallPluginForAgentCodexUsesAddNoScope(t *testing.T) {
 }
 
 func TestInstallPluginForAgentNoPlugin(t *testing.T) {
-	_, err := InstallPluginForAgent(t.Context(), noPluginAgent(), "user", "v0.2.6")
+	_, err := InstallPluginForAgent(t.Context(), noPluginAgent(), "user")
 	var be *BlockedError
 	require.ErrorAs(t, err, &be)
 	assert.Equal(t, ReasonNoPlugin, be.Reason)
@@ -112,7 +112,7 @@ func TestInstallPluginForAgentCLINotOnPath(t *testing.T) {
 	stubAgentLookPath(t, false)
 	ctx, stub := process.WithStub(t.Context())
 
-	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user")
 	var be *BlockedError
 	require.ErrorAs(t, err, &be)
 	assert.Equal(t, ReasonCLINotOnPath, be.Reason)
@@ -126,7 +126,7 @@ func TestInstallPluginForAgentInstallFails(t *testing.T) {
 	stub.WithStderrFor("claude plugin install", "you must run `copilot login`").
 		WithFailureFor("claude plugin install", errors.New("exit status 1"))
 
-	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user")
 	var be *BlockedError
 	require.ErrorAs(t, err, &be)
 	assert.Equal(t, ReasonInstallFailed, be.Reason)
@@ -142,7 +142,7 @@ func TestInstallPluginForAgentMarketplaceAlreadyPresent(t *testing.T) {
 	// not claim ownership (and must not de-register it on uninstall).
 	stub.WithStdoutFor("plugin marketplace list", "databricks-agent-skills\n")
 
-	rec, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+	rec, err := InstallPluginForAgent(ctx, claudeAgent(), "user")
 	require.NoError(t, err)
 	assert.False(t, rec.InstalledMarketplace, "a pre-existing marketplace must not be recorded as ours")
 }
@@ -154,7 +154,7 @@ func TestInstallPluginRollsBackMarketplaceOnInstallFailure(t *testing.T) {
 	// Marketplace absent (empty list) so we add it; then the plugin install fails.
 	stub.WithFailureFor("plugin install", errors.New("boom"))
 
-	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user")
 	var be *BlockedError
 	require.ErrorAs(t, err, &be)
 	assert.Equal(t, ReasonInstallFailed, be.Reason)
@@ -169,7 +169,7 @@ func TestInstallPluginRollsBackMarketplaceOnRefreshFailure(t *testing.T) {
 	// Marketplace absent (empty list) so we add it; then the refresh fails.
 	stub.WithFailureFor("plugin marketplace update", errors.New("boom"))
 
-	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user", "v0.2.6")
+	_, err := InstallPluginForAgent(ctx, claudeAgent(), "user")
 	var be *BlockedError
 	require.ErrorAs(t, err, &be)
 	assert.Equal(t, ReasonInstallFailed, be.Reason)
@@ -422,16 +422,16 @@ func TestUpdateInstalledPlugins(t *testing.T) {
 		},
 	}))
 
-	updated, err := UpdateInstalledPlugins(ctx, ScopeGlobal, "v0.2.7")
+	updated, err := UpdateInstalledPlugins(ctx, ScopeGlobal)
 	require.NoError(t, err)
 	require.Len(t, updated, 1)
 	assert.Equal(t, "GitHub Copilot", updated[0].Agent)
-	assert.Equal(t, "0.2.7", updated[0].Version)
+	assert.Empty(t, updated[0].Version)
 	assert.Contains(t, stub.Commands(), "copilot plugin update databricks@databricks-agent-skills")
 
 	state, err := LoadState(dir)
 	require.NoError(t, err)
-	assert.Equal(t, "0.2.7", state.Plugins[agents.NameCopilot].Version)
+	assert.Empty(t, state.Plugins[agents.NameCopilot].Version)
 }
 
 func TestUpdateInstalledPluginsUsesRecordedClaudeScope(t *testing.T) {
@@ -452,7 +452,7 @@ func TestUpdateInstalledPluginsUsesRecordedClaudeScope(t *testing.T) {
 				},
 			}))
 
-			updated, err := UpdateInstalledPlugins(ctx, ScopeGlobal, "v0.2.7")
+			updated, err := UpdateInstalledPlugins(ctx, ScopeGlobal)
 			require.NoError(t, err)
 			require.Len(t, updated, 1)
 

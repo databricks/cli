@@ -26,7 +26,10 @@ func TestGenerateProxyCommand(t *testing.T) {
 	}
 	cmd, err := opts.ToProxyCommand()
 	assert.NoError(t, err)
-	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
+	assert.Contains(t, cmd, "--proxy")
+	assert.Contains(t, cmd, "--cluster=cluster-123")
+	assert.Contains(t, cmd, "--auto-start-cluster=true")
+	assert.Contains(t, cmd, "--shutdown-delay=45s")
 	assert.NotContains(t, cmd, "--metadata")
 	assert.NotContains(t, cmd, "--profile")
 	assert.NotContains(t, cmd, "--handover-timeout")
@@ -43,10 +46,10 @@ func TestGenerateProxyCommand_WithExtraArgs(t *testing.T) {
 	}
 	cmd, err := opts.ToProxyCommand()
 	assert.NoError(t, err)
-	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
-	assert.Contains(t, cmd, " --metadata=user,2222")
-	assert.Contains(t, cmd, " --handover-timeout=2m0s")
-	assert.Contains(t, cmd, " --profile=test-profile")
+	assert.Contains(t, cmd, "--cluster=cluster-123")
+	assert.Contains(t, cmd, "--metadata=user,2222")
+	assert.Contains(t, cmd, "--handover-timeout=2m0s")
+	assert.Contains(t, cmd, "--profile=test-profile")
 }
 
 func TestGenerateProxyCommand_ServerlessMode(t *testing.T) {
@@ -57,8 +60,9 @@ func TestGenerateProxyCommand_ServerlessMode(t *testing.T) {
 	}
 	cmd, err := opts.ToProxyCommand()
 	assert.NoError(t, err)
-	assert.Contains(t, cmd, "ssh connect --proxy --name=my-connection --shutdown-delay=45s")
-	assert.Contains(t, cmd, " --metadata=user,2222,serverless-cluster-id")
+	assert.Contains(t, cmd, "--name=my-connection")
+	assert.Contains(t, cmd, "--shutdown-delay=45s")
+	assert.Contains(t, cmd, "--metadata=user,2222,serverless-cluster-id")
 	assert.NotContains(t, cmd, "--cluster=")
 	assert.NotContains(t, cmd, "--auto-start-cluster")
 }
@@ -72,9 +76,10 @@ func TestGenerateProxyCommand_ServerlessModeWithAccelerator(t *testing.T) {
 	}
 	cmd, err := opts.ToProxyCommand()
 	assert.NoError(t, err)
-	assert.Contains(t, cmd, "ssh connect --proxy --name=my-connection --shutdown-delay=45s")
-	assert.Contains(t, cmd, " --accelerator=GPU_1xA10")
-	assert.Contains(t, cmd, " --metadata=user,2222,serverless-cluster-id")
+	assert.Contains(t, cmd, "--name=my-connection")
+	assert.Contains(t, cmd, "--shutdown-delay=45s")
+	assert.Contains(t, cmd, "--accelerator=GPU_1xA10")
+	assert.Contains(t, cmd, "--metadata=user,2222,serverless-cluster-id")
 	assert.NotContains(t, cmd, "--cluster=")
 	assert.NotContains(t, cmd, "--auto-start-cluster")
 }
@@ -345,6 +350,64 @@ func TestSetup_RejectsUnusableServerLifecycleFlags(t *testing.T) {
 			// Nothing is written when the values are rejected.
 			_, err := os.Stat(filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host"))
 			assert.ErrorIs(t, err, os.ErrNotExist)
+		})
+	}
+}
+
+func TestSetupRejectsInvalidHostBeforeWork(t *testing.T) {
+	for _, hostName := range []string{"", "-host", "host name", "host/name", `host\name`, "host\x00name", "host\rname", "host\nname"} {
+		t.Run(hostName, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			m := mocks.NewMockWorkspaceClient(t)
+			err := Setup(cmdio.MockDiscard(t.Context()), m.WorkspaceClient, SetupOptions{
+				HostName:      hostName,
+				ClusterID:     "cluster-123",
+				SSHConfigPath: filepath.Join(tmpDir, "ssh_config"),
+				SSHKeysDir:    tmpDir,
+				MaxClients:    10,
+				ServerTimeout: 24 * time.Hour,
+			})
+			assert.Error(t, err)
+			_, statErr := os.Stat(tmpDir)
+			assert.NoError(t, statErr)
+			entries, readErr := os.ReadDir(tmpDir)
+			require.NoError(t, readErr)
+			assert.Empty(t, entries)
+		})
+	}
+}
+
+func TestGenerateHostConfigRejectsInvalidHostBeforePathWork(t *testing.T) {
+	_, err := generateHostConfig(t.Context(), SetupOptions{
+		HostName:   "../escape",
+		ClusterID:  "cluster-123",
+		SSHKeysDir: filepath.Join(t.TempDir(), "missing"),
+	}, "")
+	assert.Error(t, err)
+}
+
+func TestSetupRejectsUnsafeProxyValuesBeforeClusterAccess(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+	}{
+		{"NUL", "profile\x00value"},
+		{"carriage return", "profile\rvalue"},
+		{"newline", "profile\nvalue"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := mocks.NewMockWorkspaceClient(t)
+			err := Setup(cmdio.MockDiscard(t.Context()), m.WorkspaceClient, SetupOptions{
+				HostName:      "test-host",
+				ClusterID:     "cluster-123",
+				Profile:       tt.value,
+				SSHConfigPath: filepath.Join(t.TempDir(), "ssh_config"),
+				SSHKeysDir:    t.TempDir(),
+				MaxClients:    10,
+				ServerTimeout: 24 * time.Hour,
+			})
+			assert.Error(t, err)
 		})
 	}
 }

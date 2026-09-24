@@ -127,6 +127,29 @@ jobs:
       - name: Stage bundle JSON schema for upload
         run: cp bundle/schema/jsonschema.json dist/
 
+      - name: Verify release artifacts
+        shell: bash
+        run: |
+          if [[ -n "${{ inputs.tag }}" || "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]]; then
+            VERSION="${{ inputs.tag || github.ref_name }}"
+            VERSION="${VERSION#v}"
+            MODE=release
+          else
+            VERSION="$(tr -d '[:space:]' < .nextchanges/version)-dev+$(git rev-parse --short HEAD)"
+            MODE=snapshot
+          fi
+          .github/scripts/check-release-artifacts.sh dist "$VERSION" "$MODE"
+
+      - name: Verify plain and snapshot build versions
+        if: ${{ inputs.tag == '' && !startsWith(github.ref, 'refs/tags/') }}
+        shell: bash
+        run: |
+          VERSION="$(tr -d '[:space:]' < .nextchanges/version)-dev+$(git rev-parse --short HEAD)"
+          PLAIN="$RUNNER_TEMP/databricks-plain"
+          go build -o "$PLAIN" .
+          .github/scripts/check-build-version.sh "$PLAIN" "$VERSION"
+          .github/scripts/check-build-version.sh dist/linux_amd64/databricks "$VERSION"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

@@ -3,6 +3,8 @@ from dataclasses import replace
 from io import StringIO
 from pathlib import Path
 
+import pytest
+
 from databricks.bundles.build import (
     _append_resources,
     _apply_mutators,
@@ -105,7 +107,6 @@ def test_write_location():
 
 def test_write_output_unicode():
     out = StringIO()
-
     _write_output(out, {"unicode": "🔥🔥🔥"})
 
     assert out.getvalue() == '{"unicode": "🔥🔥🔥"}'
@@ -432,6 +433,112 @@ def test_pipeline_mutators():
         == expected_location
     )
     assert new_resources.pipelines["pipeline_0"].name == "My Pipeline (updated)"
+
+
+def test_mutators_follow_configured_order_across_resource_types():
+    bundle = Bundle(target="default")
+    resources = Resources()
+    resources.add_job("job_0", Job())
+    resources.add_pipeline("pipeline_0", {"name": "Pipeline"})
+    order = []
+
+    @pipeline_mutator
+    def record_pipeline(pipeline: Pipeline) -> Pipeline:
+        order.append("pipeline")
+        return pipeline
+
+    @job_mutator
+    def record_job(job: Job) -> Job:
+        order.append("job")
+        return job
+
+    @job_mutator
+    def write_order(job: Job) -> Job:
+        return replace(job, description=",".join(order))
+
+    new_resources, diagnostics = _apply_mutators(
+        bundle=bundle,
+        resources=resources,
+        mutator_functions=[record_pipeline, record_job, write_order],
+    )
+
+    assert not diagnostics.has_error()
+    assert new_resources.jobs["job_0"].description == "pipeline,job"
+
+
+@pytest.mark.parametrize(
+    ("returned", "expected_type"),
+    [
+        (None, "NoneType"),
+        ({"name": "not a Job"}, "dict"),
+        (Pipeline(name="not a Job"), "Pipeline"),
+    ],
+)
+def test_mutator_invalid_return(returned, expected_type):
+    bundle = Bundle(target="default")
+    resources = Resources()
+    resources.add_job("job_0", Job(description="unchanged"))
+
+    @job_mutator
+    def invalid_return(job: Job):
+        return returned
+
+    new_resources, diagnostics = _apply_mutators(
+        bundle=bundle,
+        resources=resources,
+        mutator_functions=[invalid_return],
+    )
+
+    assert new_resources.jobs["job_0"].description == "unchanged"
+    assert len(diagnostics.items) == 1
+    diagnostic = diagnostics.items[0]
+    assert diagnostic.summary == "Failed to apply 'invalid_return' mutator"
+    assert diagnostic.path == ("resources", "jobs", "job_0")
+    assert f"returned {expected_type}, expected Job" in diagnostic.detail
+
+
+def test_load_resources_from_input_normalizes_null_maps():
+    resources, diagnostics = _load_resources_from_input(
+        {"resources": {"jobs": None, "pipelines": None}}
+    )
+
+    assert not diagnostics.has_error()
+    assert resources.jobs == {}
+    assert resources.pipelines == {}
+
+    resources, diagnostics = _load_resources_from_input({"resources": None})
+
+    assert not diagnostics.has_error()
+    assert resources.jobs == {}
+
+
+def test_parse_bundle_info_normalizes_null_variables():
+    bundle = _parse_bundle_info(
+        {
+            "bundle": {"target": "default"},
+            "variables": {
+                "configured": {"value": "value"},
+                "unset": None,
+            },
+        }
+    )
+
+    assert bundle.variables == {"configured": "value", "unset": None}
+
+    bundle = _parse_bundle_info({"bundle": {"target": "default"}, "variables": None})
+
+    assert bundle.variables == {}
+
+
+def test_append_resources_creates_null_resource_map():
+    input = {"resources": None}
+    resources = Resources()
+    resources.add_job("job_0", Job(name="Job"))
+
+    output = _append_resources(input, resources)
+
+    assert output["resources"]["jobs"]["job_0"]["name"] == "Job"
+    assert input == {"resources": None}
 
 
 def test_mutators_unmodified():

@@ -1,47 +1,12 @@
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] bundle validate -o json
-{
-  "foo": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "foo-[UNIQUE_NAME]",
-    "queue": {
-      "enabled": true
-    }
-  },
-  "process": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "process-[UNIQUE_NAME]",
-    "parameters": [
-      {
-        "default": "/Volumes/main/${resources.jobs.foo.creator_user_name}/${resources.jobs.foo.creator_user_name}",
-        "name": "data_path"
-      }
-    ],
-    "queue": {
-      "enabled": true
-    }
-  }
-}
-{
-  "data": {
-    "catalog_name": "main",
-    "name": "${resources.jobs.foo.creator_user_name}",
-    "schema_name": "${resources.jobs.foo.creator_user_name}",
-    "volume_path": "/Volumes/main/${resources.jobs.foo.creator_user_name}/${resources.jobs.foo.creator_user_name}",
-    "volume_type": "MANAGED"
-  }
-}
-
->>> print_requests.py --nostamp //jobs
+Exit code: 1

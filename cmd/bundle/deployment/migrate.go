@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/shellquote"
 	"github.com/spf13/cobra"
@@ -189,24 +190,38 @@ To start using direct engine, set "engine: direct" under bundle in your databric
 		}
 		tempStatePathAutoRemove = false
 
+		backupCreated := backupTerraformStateForManualMigration(ctx, localTerraformPath)
+
 		localTerraformBackupPath := localTerraformPath + backupSuffix
 
-		err = os.Rename(localTerraformPath, localTerraformBackupPath)
-		if err != nil {
-			// not fatal, since we've increased serial
-			logdiag.LogError(ctx, err)
-		}
+		undoInstructions := migrationUndoInstructions(backupCreated, localPath, localTerraformBackupPath, localTerraformPath)
 
 		cmdio.LogString(ctx, fmt.Sprintf(`Success! Migrated %d resources to direct engine state file: %s
 
 Validate the migration by running "databricks bundle plan%s", there should be no actions planned.
 
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
-
-To undo the migration, remove %s and rename %s to %s
-`, len(state), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
+%s`, len(state), localPath, extraArgsStr, extraArgsStr, undoInstructions))
 		return nil
 	}
 
 	return cmd
+}
+
+func backupTerraformStateForManualMigration(ctx context.Context, localTerraformPath string) bool {
+	backupPath := localTerraformPath + backupSuffix
+	if err := os.Rename(localTerraformPath, backupPath); err != nil {
+		// The direct state is already installed. Keep the original Terraform
+		// state in place and report the cleanup failure without failing migration.
+		log.Warnf(ctx, "could not back up local terraform state to %s: %v", backupPath, err)
+		return false
+	}
+	return true
+}
+
+func migrationUndoInstructions(backupCreated bool, localPath, backupPath, terraformPath string) string {
+	if !backupCreated {
+		return ""
+	}
+	return fmt.Sprintf("\nTo undo the migration, remove %s and rename %s to %s\n", localPath, backupPath, terraformPath)
 }

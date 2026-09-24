@@ -135,6 +135,25 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return true
 		}
 
+		resumed := false
+		// A skip normally performs no operation. If the adapter supports resuming
+		// readiness, continue waiting on the persisted ID; the remote-state refresh
+		// below then caches the settled value for dependent resources without
+		// changing the persisted state format.
+		if action == deployplan.Skip && d.Adapter.HasWaitAfterResume() && d.Adapter.WaitAfterResumeNeeded(entry.RemoteState) {
+			id := b.StateDB.GetResourceID(resourceKey)
+			if id == "" {
+				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing entry in state", errorPrefix))
+				return false
+			}
+			if err = d.Resume(ctx, id); err != nil {
+				b.StateDB.RecordFailure(resourceKey, id, err)
+				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+				return false
+			}
+			resumed = true
+		}
+
 		// We don't keep NewState around for 'skip' nodes
 
 		if action != deployplan.Skip {
@@ -178,7 +197,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// TODO: Note, we only really need remote state if there are remote references.
 		//       The graph includes edges for both local and remote references. The local references are
 		//       already resolved and should not play a role here.
-		needRemoteState := len(g.Adj[resourceKey]) > 0
+		needRemoteState := len(g.Adj[resourceKey]) > 0 || resumed
 		if needRemoteState {
 			id := b.StateDB.GetResourceID(d.ResourceKey)
 			if id == "" {

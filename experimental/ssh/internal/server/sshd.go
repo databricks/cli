@@ -115,7 +115,9 @@ func sshdConfigContent(hostKeyPath, authorizedKeysPath, setEnv string) string {
 }
 
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {
-	return exec.CommandContext(ctx, "/usr/sbin/sshd", "-f", configPath, "-i")
+	cmd := exec.CommandContext(ctx, "/usr/sbin/sshd", "-f", configPath, "-i")
+	cmd.SysProcAttr = sshdSysProcAttr()
+	return cmd
 }
 
 // escapeEnvValue escapes a value for use in sshd SetEnv directive.

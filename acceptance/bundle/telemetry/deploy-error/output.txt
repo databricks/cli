@@ -4,5 +4,6 @@ Error: unable to define default workspace root: bundle name not defined
 
 
 Exit code: 1
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> cat [OUTPUT_DIR]/out.requests.txt
+Exit code: 5

@@ -122,12 +122,11 @@ func newCancelPendingClusterEnforcement() *cobra.Command {
 			cancelPendingClusterEnforcementReq.ClusterId = args[0]
 		}
 
-		response, err := w.PolicyComplianceForClusters.CancelPendingClusterEnforcement(ctx, cancelPendingClusterEnforcementReq)
+		_, err = w.PolicyComplianceForClusters.CancelPendingClusterEnforcement(ctx, cancelPendingClusterEnforcementReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

@@ -1,0 +1,12 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-missing-marker-[UNIQUE_NAME]/default/files...
+Created jobs.foo
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-missing-marker-[UNIQUE_NAME]/default/state/resources.deployment.json
+
+>>> musterr [CLI] bundle plan
+Error: deployment metadata marker is missing; refusing to treat this recorded deployment as new
+

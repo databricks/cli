@@ -1,5 +1,5 @@
 {
-  "plan_version": [PLAN_VERSION],
+  "plan_version": 3,
   "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.catalogs.main_catalog": {

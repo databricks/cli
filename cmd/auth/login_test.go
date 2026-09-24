@@ -35,28 +35,50 @@ func newTestStore() storage.Store {
 
 type putErrorStore struct {
 	storage.Store
+	err           error
+	withLockCalls int
+}
+
+func (s *putErrorStore) WithLock(ctx context.Context, fn func(storage.LockedStore) error) error {
+	s.withLockCalls++
+	return s.Store.WithLock(ctx, func(locked storage.LockedStore) error {
+		return fn(&putErrorLockedStore{LockedStore: locked, err: s.err})
+	})
+}
+
+type putErrorLockedStore struct {
+	storage.LockedStore
 	err error
 }
 
-func (s *putErrorStore) Put(string, storage.Entry) error {
-	return s.err
-}
+func (s *putErrorLockedStore) Put(string, storage.Entry) error { return s.err }
 
 type countingStore struct {
 	storage.Store
 	putCalls int
 }
 
-func (s *countingStore) Put(key string, entry storage.Entry) error {
-	s.putCalls++
-	return s.Store.Put(key, entry)
+func (s *countingStore) WithLock(ctx context.Context, fn func(storage.LockedStore) error) error {
+	return s.Store.WithLock(ctx, func(locked storage.LockedStore) error {
+		return fn(&countingLockedStore{LockedStore: locked, store: s})
+	})
+}
+
+type countingLockedStore struct {
+	storage.LockedStore
+	store *countingStore
+}
+
+func (s *countingLockedStore) Put(key string, entry storage.Entry) error {
+	s.store.putCalls++
+	return s.LockedStore.Put(key, entry)
 }
 
 func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
 	const profileName = "TEST"
 	inner := storage.NewMemoryStore()
-	require.NoError(t, inner.Put(profileName, storage.Entry{
-		Token: &oauth2.Token{AccessToken: "old-token"},
+	require.NoError(t, inner.WithLock(t.Context(), func(locked storage.LockedStore) error {
+		return locked.Put(profileName, storage.Entry{Token: &oauth2.Token{AccessToken: "old-token"}})
 	}))
 	storeErr := errors.New("put failed")
 	store := &putErrorStore{Store: inner, err: storeErr}
@@ -66,8 +88,15 @@ func TestStoreLoginTokenDeletesStaleTokenOnFailure(t *testing.T) {
 	err = storeLoginToken(t.Context(), store, storage.StorageModeSecure, arg, &oauth2.Token{AccessToken: "new-token"})
 
 	assert.ErrorIs(t, err, storeErr)
+	assert.Equal(t, 1, store.withLockCalls)
 	_, err = inner.Lookup(profileName)
 	assert.ErrorIs(t, err, storage.ErrNotFound)
+}
+
+func TestLoginCommandRejectsMultiplePositionalArguments(t *testing.T) {
+	cmd := newLoginCommand(&auth.AuthArguments{})
+	assert.Error(t, cmd.Args(cmd, []string{"one", "two"}))
+	assert.NoError(t, cmd.Args(cmd, []string{"one"}))
 }
 
 // logBuffer is a thread-safe bytes.Buffer for capturing log output in tests.
@@ -521,32 +550,37 @@ func TestU2MResourcesFromProfile(t *testing.T) {
 		name    string
 		profile *profile.Profile
 		want    []string
+		wantErr string
 	}{
-		{name: "no profile"},
-		{
-			name:    "implicit auth type",
-			profile: &profile.Profile{Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
-		},
-		{
-			name:    "M2M auth type",
-			profile: &profile.Profile{AuthType: "oauth-m2m", Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
-		},
-		{
-			name:    "U2M auth type single resource",
-			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github"},
-			want:    []string{"https://workspace.test/ai-gateway/mcp/system.ai.github"},
-		},
-		{
-			name:    "U2M auth type multiple resources",
-			profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: "https://workspace.test/ai-gateway/mcp/system.ai.github, https://workspace.test/ai-gateway/mcp/system.ai.slack"},
-			want:    []string{"https://workspace.test/ai-gateway/mcp/system.ai.github", "https://workspace.test/ai-gateway/mcp/system.ai.slack"},
-		},
+		{name: "no profile", want: nil},
+		{name: "implicit auth type", profile: &profile.Profile{Resources: "https://workspace.test/resource"}, want: nil},
+		{name: "M2M auth type", profile: &profile.Profile{AuthType: "oauth-m2m", Resources: "https://workspace.test/resource"}, want: nil},
+		{name: "empty", profile: &profile.Profile{AuthType: authTypeDatabricksCLI}, want: []string{}},
+		{name: "legacy comma list", profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: "https://one.test/r, https://two.test/r"}, want: []string{"https://one.test/r", "https://two.test/r"}},
+		{name: "JSON array", profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: `["https://one.test/r?a=1, 2"," https://two.test/r "] `}, want: []string{"https://one.test/r?a=1, 2", " https://two.test/r "}},
+		{name: "malformed array", profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: `["unterminated"`}, wantErr: "parse RFC 8707 resources"},
+		{name: "wrong element type", profile: &profile.Profile{AuthType: authTypeDatabricksCLI, Resources: `[42]`}, wantErr: "parse RFC 8707 resources"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, u2mResourcesFromProfile(tt.profile))
+			got, err := u2mResourcesFromProfile(tt.profile)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+func TestParseU2MResources(t *testing.T) {
+	for _, raw := range []string{"", "  ", ",,"} {
+		got, err := parseU2MResources(raw)
+		require.NoError(t, err)
+		assert.Empty(t, got)
+		assert.NotNil(t, got)
 	}
 }
 

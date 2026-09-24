@@ -349,15 +349,9 @@ func newPatchPublicAccountSetting() *cobra.Command {
 	// TODO: complex arg: collaboration_platform_connectivity
 	// TODO: complex arg: effective_aibi_dashboard_embedding_access_policy
 	// TODO: complex arg: effective_aibi_dashboard_embedding_approved_domains
-	// TODO: complex arg: effective_allowed_apps_user_api_scopes
 	// TODO: complex arg: effective_automatic_cluster_update_workspace
-	// TODO: complex arg: effective_boolean_val
-	// TODO: complex arg: effective_collaboration_platform_connectivity
-	// TODO: complex arg: effective_integer_val
-	// TODO: complex arg: effective_operational_email_custom_recipient
 	// TODO: complex arg: effective_personal_compute
 	// TODO: complex arg: effective_restrict_workspace_admins
-	// TODO: complex arg: effective_string_val
 	// TODO: complex arg: effective_workspace_label
 	// TODO: complex arg: integer_val
 	cmd.Flags().StringVar(&patchPublicAccountSettingReq.Setting.Name, "name", patchPublicAccountSettingReq.Setting.Name, `Name of the setting.`)
@@ -446,8 +440,6 @@ func newPatchPublicAccountUserPreference() *cobra.Command {
 	cmd.Flags().Var(&patchPublicAccountUserPreferenceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: boolean_val
-	// TODO: complex arg: effective_boolean_val
-	// TODO: complex arg: effective_string_val
 	cmd.Flags().StringVar(&patchPublicAccountUserPreferenceReq.Setting.Name, "name", patchPublicAccountUserPreferenceReq.Setting.Name, `Name of the setting.`)
 	// TODO: complex arg: string_val
 	cmd.Flags().StringVar(&patchPublicAccountUserPreferenceReq.Setting.UserId, "user-id", patchPublicAccountUserPreferenceReq.Setting.UserId, `User ID of the user.`)

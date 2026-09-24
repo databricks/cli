@@ -12,6 +12,9 @@ Terraform will perform the following actions:
   ~ resource "databricks_pipeline" "foo" {
       + catalog                = "main"
       + channel                = "CURRENT"
+      ~ configuration          = {
+          - "spark.sql.ansi.enabled" = "true" -> null
+        }
       + edition                = "ADVANCED"
         id                     = "[NEW_PIPELINE_ID]"
       ~ name                   = "lakeflow-pipeline" -> "test-pipeline"

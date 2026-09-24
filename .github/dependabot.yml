@@ -22,6 +22,12 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 14
+  - package-ecosystem: "gomod"
+    directory: "/tools/task"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 14
   # acceptance/ holds generated template output and test fixtures, not real
   # project dependencies. Some pin a placeholder version (e.g.
   # databricks-bundles==x.y.z, produced by a test.toml Repls rule) that is not

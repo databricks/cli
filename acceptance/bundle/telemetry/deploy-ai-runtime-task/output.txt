@@ -4,19 +4,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created jobs.job
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> cat [OUTPUT_DIR]/out.requests.txt
-[
-  {
-    "key": "ai_runtime_task_multitask",
-    "value": false
-  },
-  {
-    "key": "ai_runtime_task_scheduled",
-    "value": true
-  },
-  {
-    "key": "has_ai_runtime_task",
-    "value": true
-  }
-]
+Exit code: 5

@@ -854,6 +854,20 @@ func TestApplyMergeFailsOnUnreadableDirWithoutOverwritingBackup(t *testing.T) {
 	assert.Equal(t, "ORIGINAL BACKUP\n", string(got), "the canonical backup must not be overwritten")
 }
 
+func TestApplyMergePreservesExistingMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not honor unix file modes")
+	}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "pyproject.toml")
+	require.NoError(t, os.WriteFile(path, []byte("old\n"), 0o640))
+	p := &Pipeline{ProjectDir: dir, res: &Result{Phases: initialPhases()}}
+	require.NoError(t, p.applyMerge(t.Context(), []byte("new\n"), false))
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o640), info.Mode().Perm())
+}
+
 func TestPipelineConstraintsOnlyOmitsDBConnect(t *testing.T) {
 	dir := t.TempDir()
 	srv := newTestServer(t)

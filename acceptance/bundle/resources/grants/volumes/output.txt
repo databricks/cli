@@ -1,68 +1,12 @@
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
-Created schemas.grants_schema
-Created volumes.grants_volume
-Created volumes.grants_volume.grants
-Files: 5 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py //permissions
-
->>> [CLI] grants get volume main.schema_grants_[UNIQUE_NAME].volume_name
-{
-  "privilege_assignments": [
-    {
-      "principal": "deco-test-user@databricks.com",
-      "privileges": [
-        "READ_VOLUME",
-        "WRITE_VOLUME"
-      ]
-    }
-  ]
-}
-
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
-Updated volumes.grants_volume.grants
-Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 2 unchanged
-
->>> print_requests.py //permissions
-
->>> [CLI] grants get volume main.schema_grants_[UNIQUE_NAME].volume_name
-{
-  "privilege_assignments": [
-    {
-      "principal": "deco-test-user@databricks.com",
-      "privileges": [
-        "MANAGE",
-        "READ_VOLUME"
-      ]
-    }
-  ]
-}
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.schemas.grants_schema
-  delete resources.volumes.grants_volume
-
-This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete resources.schemas.grants_schema
-
-This action will result in the deletion of the following volumes.
-For managed volumes, the files stored in the volume are also deleted from your
-cloud tenant within 30 days. For external volumes, the metadata about the volume
-is removed from the catalog, but the underlying files are not deleted:
-  delete resources.volumes.grants_volume
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
-
-Destroy: 2 deleted
-
->>> print_requests.py //permissions
+Exit code: 1

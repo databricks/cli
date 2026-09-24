@@ -23,6 +23,10 @@ type A struct {
 	M       map[string]int `json:"m,omitempty"`
 	L       []string       `json:"l,omitempty"`
 	Ignored string         `json:"-"`
+	//nolint:govet,staticcheck // fixture intentionally exercises optioned dash tags
+	NamedDash string `json:"-,omitempty"`
+	//nolint:govet,staticcheck // fixture intentionally exercises optioned dash tags
+	NamedDashOnly string `json:"-,"`
 }
 
 type C struct {
@@ -181,6 +185,18 @@ func TestGetStructDiff(t *testing.T) {
 			a:    A{X: 5, Ignored: "old"},
 			b:    A{X: 5, Ignored: "new"},
 			want: nil,
+		},
+		{
+			name: "optioned dash field is named",
+			a:    A{NamedDash: "old"},
+			b:    A{NamedDash: "new"},
+			want: []ResolvedChange{{Field: "-", Old: "old", New: "new"}},
+		},
+		{
+			name: "dash with empty option is named",
+			a:    A{NamedDashOnly: "old"},
+			b:    A{NamedDashOnly: "new"},
+			want: []ResolvedChange{{Field: "-", Old: "old", New: "new"}},
 		},
 
 		// ForceSendFields with non-empty fields (omitempty)

@@ -606,3 +606,32 @@ func TestConvertToDabsRejectsUnsupported(t *testing.T) {
 		require.ErrorContains(t, err, "usage_policy_name is not yet supported")
 	})
 }
+
+func TestConvertToDabsPreservesRuntimeFieldsAndTrimsMLflow(t *testing.T) {
+	path := writeConfigFile(t, "run.yaml", `
+experiment_name: my-run
+command: python train.py
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 1
+  pool_id: capacity-1
+  priority_class: critical
+mlflow_run_name: "  run-42  "
+mlflow_experiment_directory: "  /Workspace/Users/me/experiment  "
+environment:
+  unity_catalog_image: main.air.training:prod
+`)
+	loaded, err := loadRunConfig(path)
+	require.NoError(t, err)
+	assert.Equal(t, "run-42", *loaded.MLflowRunName)
+	assert.Equal(t, "/Workspace/Users/me/experiment", *loaded.MLflowExperimentDirectory)
+
+	root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+	require.NoError(t, err)
+	job := "resources.jobs." + loaded.ExperimentName
+	aiRuntimeTask := job + ".tasks[0].ai_runtime_task"
+	assert.Equal(t, "CRITICAL", get(t, root, aiRuntimeTask+".priority_class").MustString())
+	assert.Equal(t, "main.air.training:prod", get(t, root, aiRuntimeTask+".unity_catalog_image_path").MustString())
+	assert.Equal(t, "run-42", get(t, root, aiRuntimeTask+".mlflow_run").MustString())
+	assert.Equal(t, "/Workspace/Users/me/experiment", get(t, root, aiRuntimeTask+".mlflow_experiment_directory").MustString())
+}

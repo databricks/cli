@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"runtime"
@@ -88,18 +89,25 @@ func (d *defaultDiscoveryClient) IntrospectToken(ctx context.Context, host, acce
 }
 
 // storeLoginToken persists a token after login has finished any optional
-// profile update.
+// profile update. The complete write and stale-token cleanup share one
+// transaction.
 func storeLoginToken(ctx context.Context, tokenStore storage.Store, mode storage.StorageMode, arg u2m.OAuthArgument, token *oauth2.Token) error {
 	tokenStore = storage.WrapForOAuthArgument(ctx, tokenStore, mode, arg)
 	key := arg.GetCacheKey()
-	if err := tokenStore.Put(key, storage.Entry{Token: token}); err != nil {
-		storeErr := fmt.Errorf("store token: %w", err)
-		// The profile is already saved, but the old token may still be present.
-		// Delete it so later commands cannot use it with the updated profile.
-		if deleteErr := tokenStore.Delete(key); deleteErr != nil {
-			return errors.Join(storeErr, fmt.Errorf("delete stale token: %w", deleteErr))
+	err := tokenStore.WithLock(ctx, func(locked storage.LockedStore) error {
+		if err := locked.Put(key, storage.Entry{Token: token}); err != nil {
+			storeErr := fmt.Errorf("store token: %w", err)
+			// The profile is already saved, but the old token may still be present.
+			// Delete it so later commands cannot use it with the updated profile.
+			if deleteErr := locked.Delete(key); deleteErr != nil {
+				return errors.Join(storeErr, fmt.Errorf("delete stale token: %w", deleteErr))
+			}
+			return storeErr
 		}
-		return storeErr
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 	storage.PinSecureMode(ctx, mode, storage.StorageModeUnknown)
 	return nil
@@ -112,6 +120,7 @@ func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	}
 	cmd := &cobra.Command{
 		Use:   "login [PROFILE]",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Log into a Databricks workspace or account",
 		Long: fmt.Sprintf(`Log into a Databricks workspace or account.
 
@@ -283,7 +292,10 @@ a new profile is created.
 			clientID = u2mClientIDFromProfile(existingProfile)
 		}
 		if len(resources) == 0 {
-			resources = u2mResourcesFromProfile(existingProfile)
+			resources, err = u2mResourcesFromProfile(existingProfile)
+			if err != nil {
+				return err
+			}
 		}
 
 		// If no host is available from any source, use the discovery flow
@@ -298,6 +310,7 @@ a new profile is created.
 				timeout:         loginTimeout,
 				scopes:          scopes,
 				clientID:        clientID,
+				resources:       resources,
 				existingProfile: existingProfile,
 				browserFunc:     getBrowserFunc(cmd),
 				tokenStore:      tokenStore,
@@ -683,6 +696,7 @@ type discoveryLoginInputs struct {
 	profileName     string
 	timeout         time.Duration
 	scopes          string
+	resources       []string
 	clientID        string
 	existingProfile *profile.Profile
 	browserFunc     func(string) error
@@ -714,6 +728,9 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	}
 	if len(scopesList) > 0 {
 		opts = append(opts, u2m.WithScopes(scopesList))
+	}
+	if len(in.resources) > 0 {
+		opts = append(opts, u2m.WithResources(in.resources))
 	}
 	discoveryHost := env.Get(ctx, discoveryHostEnvVar)
 	if discoveryHost != "" {
@@ -805,6 +822,11 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		}
 		return fmt.Errorf("saving profile %q: %w", in.profileName, err)
 	}
+	if len(in.resources) > 0 {
+		if err := databrickscfg.SaveResourcesToProfile(ctx, in.profileName, configFile, in.resources); err != nil {
+			return err
+		}
+	}
 	if err := storeLoginToken(ctx, in.tokenStore, in.mode, arg, tok); err != nil {
 		return err
 	}
@@ -846,11 +868,32 @@ func u2mClientIDFromProfile(p *profile.Profile) string {
 
 // u2mResourcesFromProfile returns the RFC 8707 resource indicators saved on a
 // databricks-cli-auth profile, so `login`/`auth token` re-request the same ones.
-func u2mResourcesFromProfile(p *profile.Profile) []string {
+func u2mResourcesFromProfile(p *profile.Profile) ([]string, error) {
 	if p == nil || p.AuthType != authTypeDatabricksCLI {
-		return nil
+		return nil, nil
 	}
-	return splitScopes(p.Resources)
+	return parseU2MResources(p.Resources)
+}
+
+// parseU2MResources accepts new JSON-array values and the legacy comma-list
+// used before RFC 8707 resource indicators were persisted unambiguously.
+func parseU2MResources(raw string) ([]string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return []string{}, nil
+	}
+	if strings.HasPrefix(raw, "[") {
+		var resources []string
+		if err := json.Unmarshal([]byte(raw), &resources); err != nil {
+			return nil, fmt.Errorf("parse RFC 8707 resources: %w", err)
+		}
+		return resources, nil
+	}
+	resources := splitScopes(raw)
+	if resources == nil {
+		return []string{}, nil
+	}
+	return resources, nil
 }
 
 // promptForWorkspaceSelection lists workspaces for a SPOG account and lets the

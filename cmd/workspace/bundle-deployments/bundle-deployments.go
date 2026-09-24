@@ -179,7 +179,6 @@ func newCreateDeployment() *cobra.Command {
 
 	cmd.Flags().Var(&createDeploymentReq.Deployment.DeploymentMode, "deployment-mode", `Bundle target deployment mode (development or production). Supported values: [DEPLOYMENT_MODE_DEVELOPMENT, DEPLOYMENT_MODE_PRODUCTION]`)
 	cmd.Flags().StringVar(&createDeploymentReq.Deployment.DisplayName, "display-name", createDeploymentReq.Deployment.DisplayName, `Human-readable name for the deployment, up to 256 characters.`)
-	// TODO: complex arg: git_info
 	cmd.Flags().StringVar(&createDeploymentReq.Deployment.InitialParentPath, "initial-parent-path", createDeploymentReq.Deployment.InitialParentPath, `The workspace path of the existing folder where the deployment is initially created.`)
 	cmd.Flags().StringVar(&createDeploymentReq.Deployment.TargetName, "target-name", createDeploymentReq.Deployment.TargetName, `The bundle target name associated with this deployment.`)
 	// TODO: complex arg: workspace_info

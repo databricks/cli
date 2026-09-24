@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/databricks-sdk-go/common/types/duration"
 )
 
@@ -228,7 +229,11 @@ func getStructFields(typ reflect.Type) []reflect.StructField {
 		field := front.Value.(reflect.StructField)
 		bfsQueue.Remove(front)
 
-		if !field.Anonymous {
+		if structaccess.IsSkippedField(field) {
+			continue
+		}
+
+		if !structaccess.IsFlattenedEmbed(field) {
 			fields = append(fields, field)
 			continue
 		}
@@ -236,7 +241,7 @@ func getStructFields(typ reflect.Type) []reflect.StructField {
 		fieldType := field.Type
 
 		// Embedded types can only be struct{} or pointer to struct{}. Multiple
-		// levels of pointers are not allowed by the Go compiler. So we only
+		// levels of pointers are not allowed by the Go compiler. So only
 		// dereference pointers once.
 		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
@@ -276,12 +281,11 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		if skip {
 			continue
 		}
-
 		jsonTags := strings.Split(structField.Tag.Get("json"), ",")
 		fieldName := jsonTags[0]
 		// Do not include fields in the schema that will not be serialized during
 		// JSON marshalling.
-		if fieldName == "" || fieldName == "-" || !structField.IsExported() {
+		if fieldName == "" || structaccess.IsSkippedField(structField) || !structField.IsExported() {
 			continue
 		}
 

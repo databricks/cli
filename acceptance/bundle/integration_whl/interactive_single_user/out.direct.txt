@@ -1,6 +1,10 @@
+
+>>> [CLI] bundle run some_other_job
 Hello from my func
 Got arguments:
 ['my_test_code', 'one', 'two']
+
+>>> [CLI] bundle run some_other_job
 Hello from my func
 Got arguments:
 ['my_test_code', 'one', 'two']

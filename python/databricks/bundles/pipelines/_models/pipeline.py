@@ -202,9 +202,7 @@ class Pipeline(Resource):
 
     run_as: VariableOrOptional[RunAs] = None
     """
-    Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
-    
-    Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+    Specifies the identity used to run the pipeline. Set one of `user_name`, `service_principal_name`, or `group_name`.
     """
 
     schema: VariableOrOptional[str] = None
@@ -399,9 +397,7 @@ class PipelineDict(TypedDict, total=False):
 
     run_as: VariableOrOptional[RunAsParam]
     """
-    Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.
-    
-    Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
+    Specifies the identity used to run the pipeline. Set one of `user_name`, `service_principal_name`, or `group_name`.
     """
 
     schema: VariableOrOptional[str]

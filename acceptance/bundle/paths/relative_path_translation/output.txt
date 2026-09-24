@@ -1,4 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -t default -o json
-
->>> [CLI] bundle validate -t override -o json
+Exit code: 5

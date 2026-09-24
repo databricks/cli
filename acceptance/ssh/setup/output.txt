@@ -1,12 +1,16 @@
 
 === ProxyCommand written by setup --max-clients=25 --server-timeout=48h
-ssh connect --proxy --cluster=[TEST_DEFAULT_CLUSTER_ID] --auto-start-cluster=true --shutdown-delay=10m0s --max-clients=25 --server-timeout=48h0m0s
+--cluster=[TEST_DEFAULT_CLUSTER_ID] --auto-start-cluster=true --shutdown-delay=10m0s --max-clients=25 --server-timeout=48h0m0s
 
 === A shutdown delay beyond the default lifetime raises it, no --server-timeout needed
-ssh connect --proxy --cluster=[TEST_DEFAULT_CLUSTER_ID] --auto-start-cluster=true --shutdown-delay=48h0m0s --max-clients=10 --server-timeout=48h0m0s
+--cluster=[TEST_DEFAULT_CLUSTER_ID] --auto-start-cluster=true --shutdown-delay=48h0m0s --max-clients=10 --server-timeout=48h0m0s
 
 === ProxyCommand written by setup --keep-detached-processes
-ssh connect --proxy --cluster=[TEST_DEFAULT_CLUSTER_ID] --auto-start-cluster=true --shutdown-delay=10m0s --keep-detached-processes --max-clients=10 --server-timeout=24h0m0s
+--cluster=[TEST_DEFAULT_CLUSTER_ID] --auto-start-cluster=true --shutdown-delay=10m0s --keep-detached-processes --max-clients=10 --server-timeout=24h0m0s
+
+=== Rejects an unsafe host alias before client or file work
+>>> [CLI] ssh setup --name=../escape --cluster=[TEST_DEFAULT_CLUSTER_ID]
+Error: host name "../escape" must start with a letter or number and contain only letters, numbers, dashes, and underscores
 
 === Rejects a server that would refuse every connection
 >>> [CLI] ssh setup --name=broken --cluster=[TEST_DEFAULT_CLUSTER_ID] --max-clients=0

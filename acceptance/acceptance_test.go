@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"maps"
-	"math/rand/v2"
 	"net/http"
 	"os"
 	"os/exec"
@@ -29,6 +28,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/databricks/cli/acceptance/internal"
+	"github.com/databricks/cli/acceptance/internal/bundlecleanup"
 	"github.com/databricks/cli/acceptance/internal/selection"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/internal/testutil"
@@ -493,12 +493,13 @@ func testAccept(t *testing.T, inprocessMode bool, selectedTests []string, skipTo
 	t.Setenv("NODE_TYPE_ID", nodeTypeID)
 	repls.Set(nodeTypeID, "[NODE_TYPE_ID]")
 
-	// On cloud, tag every $UNIQUE_NAME with a per-run prefix (see newBundleNamePrefix)
-	// so this run's bundles can be attributed and swept by the post-run cleanup step
-	// (TestCleanupLeakedBundles) after every matrix leg finishes. Off cloud names need
-	// no attribution: each local test gets a throwaway in-memory fake workspace.
+	// Tag every cloud bundle with an exact run prefix so a failed or cancelled
+	// invocation can still be swept with the value printed in the test log.
 	if cloudEnv != "" {
-		bundleNamePrefix = newBundleNamePrefix()
+		var err error
+		bundleNamePrefix, err = bundlecleanup.NewBundleNamePrefix(t.Context())
+		require.NoError(t, err)
+		t.Logf("bundle cleanup prefix: %q", bundleNamePrefix)
 	}
 
 	testDirs := getTests(t)
@@ -749,52 +750,9 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 	return ""
 }
 
-// Cap at 11 digits: the prefix "ci<runID>x<suffix>" plus the 8-char random
-// minimum must fit the 26-char unique name (26 - 8 - len("ci")-len("x") -
-// bundleLegSuffixLen = 11), so a longer GITHUB_RUN_ID is treated as absent
-// rather than building a prefix ciUniqueName would silently drop.
-var ciRunID = regexp.MustCompile(`^[0-9]{1,11}$`)
-
-// bundleLegSuffixLen is the length of the per-process random suffix that keeps
-// each matrix leg's bundle names distinct within a run (useful when eyeballing
-// leaked deployments). The run-wide cleanup matches on the "ci<runID>x" prefix
-// alone, so it sweeps every leg regardless of the suffix.
-const bundleLegSuffixLen = 4
-
 // bundleNamePrefix is the sweepable prefix embedded into every $UNIQUE_NAME on
-// cloud runs (see newBundleNamePrefix / ciUniqueName). Set once in testAccept,
-// empty off cloud where names need no attribution.
+// cloud runs. It is empty off cloud, where each test gets a throwaway workspace.
 var bundleNamePrefix string
-
-// ciRunPrefix returns the run-wide "ci<runID>x" prefix that attributes every
-// bundle a cloud run deploys to its GitHub run, so they can be swept by
-// acceptance/cleanup and tools/sweep_test_resources.py. The run id (all digits)
-// is delimited by "x" so the prefix stays collision-free between runs whose ids
-// share a leading substring. Returns "" when GITHUB_RUN_ID is unset or not a
-// valid numeric id (e.g. a local `deco env run`).
-func ciRunPrefix() string {
-	runID := os.Getenv("GITHUB_RUN_ID")
-	if !ciRunID.MatchString(runID) {
-		return ""
-	}
-	return "ci" + runID + "x"
-}
-
-// newBundleNamePrefix builds the "ci<runID>x<suffix>" prefix that ciUniqueName
-// stamps into every $UNIQUE_NAME so deployed bundles can be attributed and swept.
-// Returns "" on non-CI runs (no GITHUB_RUN_ID), where cleanup is not automatic.
-func newBundleNamePrefix() string {
-	prefix := ciRunPrefix()
-	if prefix == "" {
-		return ""
-	}
-	const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
-	suffix := make([]byte, bundleLegSuffixLen)
-	for i := range suffix {
-		suffix[i] = alphabet[rand.IntN(len(alphabet))]
-	}
-	return prefix + string(suffix)
-}
 
 // ciUniqueName prepends prefix to the random unique name, preserving its length
 // (e.g. "app-$UNIQUE_NAME" is exactly the 30-char app name maximum) and its
@@ -802,8 +760,6 @@ func newBundleNamePrefix() string {
 // (app names, Python and Unity Catalog identifiers). Returns random unchanged
 // when prefix is empty or too long to leave at least 8 random characters.
 func ciUniqueName(prefix, random string) string {
-	// newBundleNamePrefix keeps the prefix short enough to leave at least this
-	// many random characters (empty prefix trivially fits); a longer one is a bug.
 	const minRandom = 8
 	cut := len(random) - len(prefix)
 	if cut < minRandom {
@@ -1161,32 +1117,27 @@ var envAliases = map[string]string{
 }
 
 // buildTestEnv builds the test environment from config.Env and customEnv.
-// customEnv (from EnvMatrix) takes precedence over config.Env.
+// A custom full-name key wins over its alias in the same matrix; otherwise an
+// alias expands before inherited Env values so the custom value takes precedence.
 func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
-	env := make([]string, 0, len(configEnv)+len(customEnv))
+	custom := slices.Clone(customEnv)
+	for _, kv := range customEnv {
+		key, value, _ := strings.Cut(kv, "=")
+		full, ok := envAliases[key]
+		if !ok || hasKey(customEnv, full) {
+			continue
+		}
+		custom = append(custom, full+"="+value)
+	}
 
-	// Add config.Env first (but skip keys that exist in customEnv)
+	env := make([]string, 0, len(configEnv)+len(custom))
 	for _, key := range slices.Sorted(maps.Keys(configEnv)) {
-		if hasKey(customEnv, key) {
+		if hasKey(custom, key) {
 			continue
 		}
 		env = append(env, key+"="+configEnv[key])
 	}
-
-	// Add customEnv second (takes precedence)
-	env = append(env, customEnv...)
-
-	// An alias sets the variable it stands for, unless the test set that itself.
-	for _, kv := range customEnv {
-		key, value, _ := strings.Cut(kv, "=")
-		full, ok := envAliases[key]
-		if !ok || hasKey(env, full) {
-			continue
-		}
-		env = append(env, full+"="+value)
-	}
-
-	return env
+	return append(env, custom...)
 }
 
 func hasKey(env []string, key string) bool {
@@ -1331,41 +1282,44 @@ func shouldShowDiff(pathNew, valueNew string) bool {
 	return strings.HasPrefix(filepath.Base(pathNew), "out")
 }
 
-// Returns combined script.prepare (root) + script.prepare (parent) + ... + script + ... + script.cleanup (parent) + ...
-// Note, cleanups are not executed if main script fails; that's not a huge issue, since it runs it temp dir.
+// readMergedScriptContents combines parent prepares, the main script, and
+// child-to-parent cleanups. Each stage runs in a subshell with its own errexit
+// setting, so cleanup always runs while retaining the stage's failure status.
 func readMergedScriptContents(t *testing.T, dir string) string {
 	scriptContents := testutil.ReadFile(t, filepath.Join(dir, EntryPointScript))
-
-	// Wrap script contents in a subshell such that changing the working
-	// directory only affects the main script and not cleanup.
-	scriptContents = "(\n" + scriptContents + ")\n"
-
 	var prepares []string
 	var cleanups []string
 
 	for {
-		x, ok := tryReading(t, filepath.Join(dir, CleanupScript))
-		if ok {
-			cleanups = append(cleanups, x)
+		if contents, ok := tryReading(t, filepath.Join(dir, CleanupScript)); ok {
+			cleanups = append(cleanups, contents)
 		}
-
-		x, ok = tryReading(t, filepath.Join(dir, PrepareScript))
-		if ok {
-			prepares = append(prepares, x)
+		if contents, ok := tryReading(t, filepath.Join(dir, PrepareScript)); ok {
+			prepares = append(prepares, contents)
 		}
-
-		if dir == "" || dir == "." {
+		parent := filepath.Dir(dir)
+		if parent == dir {
 			break
 		}
-
-		dir = filepath.Dir(dir)
-		require.True(t, filepath.IsLocal(dir))
+		dir = parent
+		require.True(t, filepath.IsAbs(dir) || filepath.IsLocal(dir))
 	}
 
 	slices.Reverse(prepares)
-	prepares = append(prepares, scriptContents)
-	prepares = append(prepares, cleanups...)
-	return strings.Join(prepares, "\n")
+	var script strings.Builder
+	script.WriteString(strings.Join(prepares, "\n"))
+	script.WriteString("\n__acc_main_status=0\nset +e\n(\nset -e\n")
+	script.WriteString(scriptContents)
+	script.WriteString("\n)\n__acc_main_status=$?\n__acc_cleanup_status=0\n")
+	for _, cleanup := range cleanups {
+		script.WriteString("(\nset -e\n")
+		script.WriteString(cleanup)
+		script.WriteString("\n)\n__acc_cleanup_one_status=$?\n")
+		script.WriteString("if (( __acc_cleanup_one_status != 0 && __acc_cleanup_status == 0 )); then __acc_cleanup_status=$__acc_cleanup_one_status; fi\n")
+	}
+	script.WriteString("if (( __acc_main_status != 0 )); then exit \"$__acc_main_status\"; fi\n")
+	script.WriteString("exit \"$__acc_cleanup_status\"\n")
+	return script.String()
 }
 
 func getBuildDirRoot(cwd string) string {
@@ -1684,9 +1638,11 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 				outputs[relPath] = true
 			}
 			return nil
-		} else {
-			inputs[relPath] = true
 		}
+		if relPath == "test.toml" {
+			return nil
+		}
+		inputs[relPath] = true
 
 		if _, ok := Scripts[name]; ok {
 			return nil

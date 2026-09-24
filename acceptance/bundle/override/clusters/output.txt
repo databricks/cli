@@ -1,33 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json -t default
-{
-  "autoscale": {
-    "max_workers": 7,
-    "min_workers": 2
-  },
-  "autotermination_minutes": 60,
-  "cluster_name": "foo",
-  "node_type_id": "[NODE_TYPE_ID]",
-  "num_workers": 2,
-  "spark_conf": {
-    "spark.executor.memory": "2g"
-  },
-  "spark_version": "13.3.x-scala2.12"
-}
-
->>> [CLI] bundle validate -o json -t development
-{
-  "autoscale": {
-    "max_workers": 3,
-    "min_workers": 1
-  },
-  "autotermination_minutes": 60,
-  "cluster_name": "foo-override",
-  "node_type_id": "m5.xlarge",
-  "num_workers": 3,
-  "spark_conf": {
-    "spark.executor.memory": "4g",
-    "spark.executor.memory2": "4g"
-  },
-  "spark_version": "15.2.x-scala2.12"
-}
+Exit code: 5

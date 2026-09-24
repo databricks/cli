@@ -118,14 +118,19 @@ func getDefaultBuildVersion() string {
 	}
 
 	out := DefaultSemver
-
-	// Append revision as build metadata.
+	// Match GoReleaser's snapshot version, which uses the same short commit.
 	if v, ok := m["vcs.revision"]; ok {
-		// First 12 characters of the commit SHA is plenty to identify one.
-		out = fmt.Sprintf("%s+%s", out, v[0:12])
+		out = versionWithRevision(out, v)
 	}
 
 	return out
+}
+
+func versionWithRevision(version, revision string) string {
+	if len(revision) > 7 {
+		revision = revision[:7]
+	}
+	return fmt.Sprintf("%s+%s", version, revision)
 }
 
 func initialize() Info {

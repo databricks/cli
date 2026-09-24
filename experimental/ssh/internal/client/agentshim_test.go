@@ -1,13 +1,16 @@
 package client
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"io/fs"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -34,26 +37,78 @@ func TestRemovePath(t *testing.T) {
 }
 
 func TestAcquireSetupLock(t *testing.T) {
+	if os.Getenv("DATABRICKS_TEST_SETUP_LOCK_HELPER") != "" {
+		runSetupLockHelper(t)
+		return
+	}
+
 	home := t.TempDir()
 	lockPath := filepath.Join(home, agentDir, setupLockName)
-
-	// Acquire creates the sentinel; release removes it.
 	unlock, err := acquireSetupLock(t.Context(), home)
 	require.NoError(t, err)
-	_, statErr := os.Stat(lockPath)
-	require.NoError(t, statErr, "lock sentinel should exist while held")
+	require.FileExists(t, lockPath)
 	unlock()
-	_, statErr = os.Stat(lockPath)
-	assert.ErrorIs(t, statErr, fs.ErrNotExist, "lock sentinel should be gone after release")
+	require.FileExists(t, lockPath, "descriptor release must not remove the persistent lock file")
+}
 
-	// A lock left behind by a dead process is reclaimed once stale, not waited on
-	// forever.
-	require.NoError(t, os.WriteFile(lockPath, nil, 0o644))
-	stale := time.Now().Add(-2 * setupLockStaleAfter)
-	require.NoError(t, os.Chtimes(lockPath, stale, stale))
-	unlock2, err := acquireSetupLock(t.Context(), home)
+func runSetupLockHelper(t *testing.T) {
+	home := os.Getenv("DATABRICKS_TEST_SETUP_LOCK_HOME")
+	unlock, err := acquireSetupLock(t.Context(), home)
 	require.NoError(t, err)
-	unlock2()
+	defer unlock()
+	fmt.Fprintln(os.Stdout, "locked")
+	_, err = io.Copy(io.Discard, os.Stdin)
+	require.NoError(t, err)
+}
+
+func TestAcquireSetupLockHonorsContextAcrossProcesses(t *testing.T) {
+	home := t.TempDir()
+	owner := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^TestAcquireSetupLock$")
+	owner.Env = append(os.Environ(),
+		"DATABRICKS_TEST_SETUP_LOCK_HELPER=1",
+		"DATABRICKS_TEST_SETUP_LOCK_HOME="+home,
+	)
+	stdin, err := owner.StdinPipe()
+	require.NoError(t, err)
+	stdout, err := owner.StdoutPipe()
+	require.NoError(t, err)
+	require.NoError(t, owner.Start())
+	t.Cleanup(func() {
+		_ = stdin.Close()
+		_ = owner.Wait()
+	})
+
+	ready, err := bufio.NewReader(stdout).ReadString('\n')
+	require.NoError(t, err)
+	require.Equal(t, "locked\n", ready)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+	_, err = acquireSetupLock(ctx, home)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.FileExists(t, filepath.Join(home, agentDir, setupLockName))
+}
+
+func TestAcquireSetupLockReusesPersistentFileAfterOwnerExits(t *testing.T) {
+	home := t.TempDir()
+	owner := exec.CommandContext(t.Context(), os.Args[0], "-test.run=^TestAcquireSetupLock$")
+	owner.Env = append(os.Environ(),
+		"DATABRICKS_TEST_SETUP_LOCK_HELPER=1",
+		"DATABRICKS_TEST_SETUP_LOCK_HOME="+home,
+	)
+	stdin, err := owner.StdinPipe()
+	require.NoError(t, err)
+	stdout, err := owner.StdoutPipe()
+	require.NoError(t, err)
+	require.NoError(t, owner.Start())
+	_, err = bufio.NewReader(stdout).ReadString('\n')
+	require.NoError(t, err)
+	require.NoError(t, stdin.Close())
+	require.NoError(t, owner.Wait())
+
+	unlock, err := acquireSetupLock(t.Context(), home)
+	require.NoError(t, err)
+	unlock()
 }
 
 func TestNodeDownloadArch(t *testing.T) {

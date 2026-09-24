@@ -1,0 +1,10 @@
+title "Reject overwrite of the same local file\n"
+trace musterr $CLI fs cp --overwrite source.txt source.txt
+
+title "Reject overwrite through a symlink alias\n"
+ln -s source.txt alias.txt
+trace musterr $CLI fs cp --overwrite source.txt alias.txt
+rm alias.txt
+
+title "Source remains intact\n"
+trace cat source.txt

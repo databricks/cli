@@ -1,0 +1,1 @@
+* Fix SSH connection admission races, coordinate first-run agent setup with a persistent file lock, preserve detached work according to `--keep-detached-processes`, validate and quote persisted SSH configuration safely, and make release downloads bounded and cancellable.

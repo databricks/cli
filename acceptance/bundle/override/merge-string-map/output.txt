@@ -1,27 +1,7 @@
-
->>> [CLI] bundle validate -o json -t dev
+jq: parse error: Invalid numeric literal at line 2, column 4
 Warning: expected map, found string
   at resources.clusters.my_cluster
   in databricks.yml:6:17
 
-{
-  "clusters": {
-    "my_cluster": {
-      "autotermination_minutes": 60,
-      "spark_version": "25"
-    }
-  }
-}
 
->>> [CLI] bundle validate -t dev
-Warning: expected map, found string
-  at resources.clusters.my_cluster
-  in databricks.yml:6:17
-
-Name: merge-string-map
-Target: dev
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/merge-string-map/dev
-
-Found 1 warning
+Exit code: 5

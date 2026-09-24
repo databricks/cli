@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
@@ -153,12 +154,42 @@ func replaceLine(data []byte, old, new string) []byte {
 	return []byte(strings.Join(lines, "\n"))
 }
 
+var hostNameRegex = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
+
+// ValidateHostName checks that hostName is safe as both an OpenSSH host alias
+// and a host config filename.
+func ValidateHostName(hostName string) error {
+	if !hostNameRegex.MatchString(hostName) {
+		return fmt.Errorf("host name %q must start with a letter or number and contain only letters, numbers, dashes, and underscores", hostName)
+	}
+	return nil
+}
+
+func validateSSHConfigValue(name, value string) error {
+	if strings.ContainsAny(value, "\x00\r\n") {
+		return fmt.Errorf("%s contains a forbidden NUL, carriage return, or newline", name)
+	}
+	return nil
+}
+
 func GetHostConfigPath(ctx context.Context, hostName string) (string, error) {
+	if filepath.IsAbs(hostName) || filepath.VolumeName(hostName) != "" {
+		return "", fmt.Errorf("host name %q must be relative", hostName)
+	}
+
 	configDir, err := GetConfigDir(ctx)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(configDir, hostName), nil
+	configPath := filepath.Join(configDir, hostName)
+	rel, err := filepath.Rel(configDir, configPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve host config path: %w", err)
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("host name %q escapes the host config directory", hostName)
+	}
+	return configPath, nil
 }
 
 func HostConfigExists(ctx context.Context, hostName string) (bool, error) {
@@ -219,7 +250,26 @@ func PromptRecreateConfig(ctx context.Context, hostName string) (bool, error) {
 // matters whenever the user-facing hostName differs from it, as with
 // `ssh setup --name <alias> --cluster <id>`: without it ssh would look the key up under the
 // alias, find no matching entry, and fail strict host key checking (DECO-27882).
-func GenerateHostConfig(hostName, userName, identityFile, knownHostsFile, hostKeyAlias, proxyCommand string) string {
+func GenerateHostConfig(hostName, userName, identityFile, knownHostsFile, hostKeyAlias, proxyCommand string) (string, error) {
+	if err := ValidateHostName(hostName); err != nil {
+		return "", err
+	}
+	values := []struct {
+		name  string
+		value string
+	}{
+		{"user name", userName},
+		{"identity file", identityFile},
+		{"known hosts file", knownHostsFile},
+		{"host key alias", hostKeyAlias},
+		{"ProxyCommand", proxyCommand},
+	}
+	for _, item := range values {
+		if err := validateSSHConfigValue(item.name, item.value); err != nil {
+			return "", err
+		}
+	}
+
 	hostKeyAliasLine := ""
 	if hostKeyAlias != "" {
 		hostKeyAliasLine = fmt.Sprintf("    HostKeyAlias %s\n", hostKeyAlias)
@@ -234,5 +284,5 @@ Host %s
 %s    IdentitiesOnly yes
     IdentityFile %q
     ProxyCommand %s
-`, hostName, userName, ServerAliveIntervalSeconds, knownHostsFile, hostKeyAliasLine, identityFile, proxyCommand)
+`, hostName, userName, ServerAliveIntervalSeconds, knownHostsFile, hostKeyAliasLine, identityFile, proxyCommand), nil
 }

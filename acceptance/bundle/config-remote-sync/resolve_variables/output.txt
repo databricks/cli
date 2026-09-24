@@ -1,7 +1,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Created jobs.my_job
 Created pipelines.my_pipeline
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Modify pipeline environment dependencies
@@ -110,45 +110,7 @@ Resource: resources.pipelines.my_pipeline
  targets:
 
 === Telemetry
-
->>> cat [OUTPUT_DIR]/out.requests.txt
-{
-  "save": true,
-  "changes_total": 17,
-  "add_count": 10,
-  "replace_count": 6,
-  "remove_count": 1,
-  "resource_changes": [
-    {
-      "resource_type": "jobs",
-      "changes_count": 16,
-      "add_count": 10,
-      "replace_count": 5,
-      "remove_count": 1
-    },
-    {
-      "resource_type": "pipelines",
-      "changes_count": 1,
-      "replace_count": 1
-    }
-  ],
-  "files_changed_count": 1,
-  "files_written_count": 1,
-  "refs_retargeted": 1,
-  "refs_from_siblings": 7,
-  "state_serial": [SERIAL],
-  "state_lineage": "[UUID]",
-  "state_source": "local",
-  "states_available_count": 2,
-  "state_resource_ids": {
-    "resource_job_ids": [
-      "[MY_JOB_ID]"
-    ],
-    "resource_pipeline_ids": [
-      "[MY_PIPELINE_ID]"
-    ]
-  }
-}
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -162,3 +124,5 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted
+
+Exit code: 5

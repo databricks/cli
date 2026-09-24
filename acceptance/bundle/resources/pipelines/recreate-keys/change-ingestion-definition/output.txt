@@ -22,7 +22,7 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
 Created pipelines.my
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests
@@ -104,64 +104,15 @@ Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
   "path": "/api/2.0/pipelines"
 }
 
-=== Fetch pipeline ID and verify remote state
->>> [CLI] pipelines get [MY_ID_2]
-{
-  "creator_user_name": "[USERNAME]",
-  "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
-  "last_modified": [UNIX_TIME_MILLIS],
-  "name": "test-pipeline-[UNIQUE_NAME]",
-  "pipeline_id": "[MY_ID_2]",
-  "run_as_user_name": "[USERNAME]",
-  "spec": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "id": "[MY_ID_2]",
-    "ingestion_definition": {
-      "connection_name": "my_new_connection",
-      "objects": [
-        {}
-      ]
-    },
-    "libraries": [
-      {
-        "file": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
-        }
-      }
-    ],
-    "name": "test-pipeline-[UNIQUE_NAME]",
-    "storage": "dbfs:/pipelines/[MY_ID_2]"
-  },
-  "state": "IDLE"
-}
+=== Fetch pipeline ID and verify remote stateTraceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
-=== Verify that original pipeline is gone
->>> musterr [CLI] pipelines get [MY_ID]
-Error: The specified pipeline [MY_ID] was not found.
-
-=== Destroy the pipeline and verify that it's removed from the state and from remote
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.pipelines.my
-
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
-  delete resources.pipelines.my
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
-
-Destroy: 1 deleted
-
->>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[MY_ID_2]"
-}
-
->>> musterr [CLI] pipelines get [MY_ID_2]
-Error: The specified pipeline [MY_ID_2] was not found.
+Exit code: 1

@@ -1,10 +1,14 @@
 package quickstart
 
 import (
+	"bytes"
+	"io"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestQuickstartForInteractiveReturnsHumanGuide(t *testing.T) {
@@ -21,6 +25,35 @@ func TestQuickstartForNonInteractiveReturnsAgentGuide(t *testing.T) {
 	// Frontmatter must be stripped so the output starts at the heading.
 	assert.True(t, strings.HasPrefix(out, "# Databricks Quickstart"))
 	assert.NotContains(t, out, "name: databricks-quickstart")
+}
+
+func TestQuickstartUsesStdoutTTYCapability(t *testing.T) {
+	ctx, testIO := cmdio.SetupTest(t.Context(), cmdio.TestOptions{PromptSupported: true})
+	t.Cleanup(testIO.Done)
+
+	t.Run("TTY stdout", func(t *testing.T) {
+		var stdout bytes.Buffer
+		cmd := New()
+		cmd.SetArgs([]string{})
+		cmd.SetContext(ctx)
+		cmd.SetOut(cmdio.FakeTTY(&stdout))
+		require.NoError(t, cmd.Execute())
+		assert.Contains(t, stdout.String(), "# Welcome to Databricks")
+		assert.NotContains(t, stdout.String(), "## Golden rules")
+	})
+
+	t.Run("piped stdout", func(t *testing.T) {
+		var stdout bytes.Buffer
+		cmd := New()
+		cmd.SetArgs([]string{})
+		cmd.SetContext(ctx)
+		cmd.SetIn(io.NopCloser(strings.NewReader("")))
+		cmd.SetOut(&stdout)
+		cmd.SetErr(io.Discard)
+		require.NoError(t, cmd.Execute())
+		assert.Contains(t, stdout.String(), "# Databricks Quickstart")
+		assert.Contains(t, stdout.String(), "## Golden rules")
+	})
 }
 
 func TestStripFrontmatter(t *testing.T) {

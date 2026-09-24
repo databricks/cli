@@ -14,10 +14,12 @@ import (
 // Claude Code's manifest reader (the format these tests write).
 func agentWithConfigDir(dir string) *Agent {
 	return &Agent{
-		Name:          "test-agent",
-		DisplayName:   "Test Agent",
-		ConfigDir:     func(_ context.Context) (string, error) { return dir, nil },
-		pluginVersion: claudePluginVersion,
+		Name:        "test-agent",
+		DisplayName: "Test Agent",
+		ConfigDir:   func(_ context.Context) (string, error) { return dir, nil },
+		pluginVersion: func(ctx context.Context, a *Agent, nativeScope string) (string, bool) {
+			return claudePluginVersion(ctx, a, nativeScope)
+		},
 	}
 }
 
@@ -72,4 +74,27 @@ func TestDatabricksPluginVersionWithoutReader(t *testing.T) {
 	version, ok := a.DatabricksPluginVersion(t.Context())
 	assert.False(t, ok)
 	assert.Empty(t, version)
+}
+
+func TestDatabricksPluginVersionForScope(t *testing.T) {
+	configDir := t.TempDir()
+	writeManifest(t, configDir, `{"plugins":{"databricks@m":[{"scope":"user","version":"0.2.9"},{"scope":"project","version":"0.2.18"}]}}`)
+	a := agentWithConfigDir(configDir)
+
+	version, ok := a.DatabricksPluginVersionForScope(t.Context(), "user")
+	assert.True(t, ok)
+	assert.Equal(t, "0.2.9", version)
+	version, ok = a.DatabricksPluginVersionForScope(t.Context(), "project")
+	assert.True(t, ok)
+	assert.Equal(t, "0.2.18", version)
+	_, ok = a.DatabricksPluginVersionForScope(t.Context(), "local")
+	assert.False(t, ok)
+}
+
+func TestDatabricksPluginVersionForUnscopedRecord(t *testing.T) {
+	configDir := t.TempDir()
+	writeManifest(t, configDir, `{"plugins":{"databricks@m":[{"version":"0.2.18"}]}}`)
+	version, ok := agentWithConfigDir(configDir).DatabricksPluginVersionForScope(t.Context(), "user")
+	assert.True(t, ok)
+	assert.Equal(t, "0.2.18", version)
 }

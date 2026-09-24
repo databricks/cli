@@ -1,5 +1,5 @@
 {
-  "plan_version": [PLAN_VERSION],
+  "plan_version": 3,
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -8,6 +8,9 @@
       "action": "skip",
       "remote_state": {
         "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "true"
+        },
         "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
@@ -24,6 +27,13 @@
         "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
+        "configuration": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "spark.sql.ansi.enabled": "true"
+          }
+        },
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",
@@ -41,6 +51,9 @@
       "action": "skip",
       "remote_state": {
         "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "true"
+        },
         "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
@@ -57,6 +70,13 @@
         "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
+        "configuration": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "spark.sql.ansi.enabled": "true"
+          }
+        },
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",
@@ -74,6 +94,9 @@
       "action": "skip",
       "remote_state": {
         "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "true"
+        },
         "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
@@ -90,6 +113,13 @@
         "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
+        "configuration": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "spark.sql.ansi.enabled": "true"
+          }
+        },
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",
@@ -107,6 +137,9 @@
       "action": "skip",
       "remote_state": {
         "channel": "CURRENT",
+        "configuration": {
+          "spark.sql.ansi.enabled": "true"
+        },
         "creator_user_name": "[USERNAME]",
         "deployment": {
           "kind": "BUNDLE",
@@ -123,6 +156,13 @@
         "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
+        "configuration": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "spark.sql.ansi.enabled": "true"
+          }
+        },
         "storage": {
           "action": "skip",
           "reason": "immutable_backend_value",

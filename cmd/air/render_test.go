@@ -2,6 +2,8 @@ package aircmd
 
 import (
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -178,6 +180,19 @@ func TestLink(t *testing.T) {
 	assert.Equal(t, "label", link(false, p.blue, "label", ""))
 	// With color on, the label is wrapped in an OSC 8 hyperlink to the url.
 	assert.Contains(t, link(true, p.blue, "label", "https://h.test"), termenv.Hyperlink("https://h.test", "label"))
+}
+
+func TestAIRuntimeEnvironmentVersionFallsBackToBaseEnvironment(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == jobsRunsGetPath {
+			_, _ = w.Write([]byte(`{"environments":[{"environment_key":"default","spec":{"base_environment":"workspace-base-environments/databricks_ai_v5"}}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	t.Cleanup(srv.Close)
+
+	assert.Equal(t, "workspace-base-environments/databricks_ai_v5", aiRuntimeEnvironmentVersion(t.Context(), newTestWorkspaceClient(t, srv.URL), 7))
 }
 
 func TestStatusStyleSelectors(t *testing.T) {

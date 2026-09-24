@@ -30,7 +30,7 @@ func newTestDockerTokenCommand(t *testing.T, load TokenLoader) (*cobra.Command, 
 	require.NoError(t, databrickscfg.SaveToProfile(ctx, &config.Config{
 		ConfigFile:  configFile,
 		Profile:     "workspace",
-		Host:        "https://workspace.cloud.databricks.test",
+		Host:        "https://workspace.localhost",
 		WorkspaceID: "123456789",
 		AuthType:    auth.AuthTypeDatabricksCli,
 	}))
@@ -44,7 +44,7 @@ func newTestDockerTokenCommand(t *testing.T, load TokenLoader) (*cobra.Command, 
 	cmd := newDockerTokenCommand(load)
 	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
-	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.localhost\n"))
 	cmd.SetOut(stdout)
 	return cmd, stdout
 }
@@ -101,7 +101,7 @@ func TestRunDockerTokenUsesConfiguredProfiler(t *testing.T) {
 		Profiles: profile.Profiles{
 			{
 				Name:        "workspace",
-				Host:        "https://workspace.cloud.databricks.test",
+				Host:        "https://workspace.localhost",
 				WorkspaceID: "123456789",
 				AuthType:    auth.AuthTypeDatabricksCli,
 			},
@@ -117,7 +117,7 @@ func TestRunDockerTokenUsesConfiguredProfiler(t *testing.T) {
 	cmd := &cobra.Command{Use: "token"}
 	var stdout bytes.Buffer
 	cmd.SetContext(ctx)
-	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.localhost\n"))
 	cmd.SetOut(&stdout)
 
 	err := runDockerToken(ctx, cmd, tokenOptions{
@@ -136,7 +136,7 @@ func TestRunDockerTokenUsesMatchedProfileAccountID(t *testing.T) {
 		Profiles: profile.Profiles{
 			{
 				Name:        "workspace",
-				Host:        "https://workspace.cloud.databricks.test",
+				Host:        "https://workspace.localhost",
 				AccountID:   "profile-account",
 				WorkspaceID: "123456789",
 				AuthType:    auth.AuthTypeDatabricksCli,
@@ -146,7 +146,7 @@ func TestRunDockerTokenUsesMatchedProfileAccountID(t *testing.T) {
 
 	cmd := &cobra.Command{Use: "token"}
 	cmd.SetContext(ctx)
-	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.localhost\n"))
 	cmd.SetOut(&bytes.Buffer{})
 
 	err := runDockerToken(ctx, cmd, tokenOptions{
@@ -161,12 +161,13 @@ func TestRunDockerTokenUsesMatchedProfileAccountID(t *testing.T) {
 func TestDockerTokenProfileSelectsByWorkspaceID(t *testing.T) {
 	registry := dockercredentials.Registry{
 		WorkspaceID: "123456789",
-		Host:        "123456789.container.us-west-2.cloud.databricks.test",
+		Host:        "123456789.container.us-west-2.localhost",
+		DNSZone:     ".localhost",
 	}
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{{
 			Name:        "workspace",
-			Host:        "https://workspace.dev.cloud.databricks.test",
+			Host:        "https://workspace.localhost",
 			WorkspaceID: registry.WorkspaceID,
 			AuthType:    auth.AuthTypeDatabricksCli,
 		}},
@@ -179,19 +180,20 @@ func TestDockerTokenProfileSelectsByWorkspaceID(t *testing.T) {
 func TestDockerTokenProfileRejectsDuplicateWorkspaceID(t *testing.T) {
 	registry := dockercredentials.Registry{
 		WorkspaceID: "123456789",
-		Host:        "123456789.container.us-west-2.cloud.databricks.test",
+		Host:        "123456789.container.us-west-2.localhost",
+		DNSZone:     ".localhost",
 	}
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
 			{
 				Name:        "prod",
-				Host:        "https://workspace.cloud.databricks.test",
+				Host:        "https://workspace-prod.localhost",
 				WorkspaceID: registry.WorkspaceID,
 				AuthType:    auth.AuthTypeDatabricksCli,
 			},
 			{
 				Name:        "dev",
-				Host:        "https://workspace.dev.cloud.databricks.test",
+				Host:        "https://workspace-dev.localhost",
 				WorkspaceID: registry.WorkspaceID,
 				AuthType:    auth.AuthTypeDatabricksCli,
 			},
@@ -205,19 +207,20 @@ func TestDockerTokenProfileRejectsDuplicateWorkspaceID(t *testing.T) {
 func TestDockerTokenProfileIgnoresUnsupportedDuplicateProfile(t *testing.T) {
 	registry := dockercredentials.Registry{
 		WorkspaceID: "123456789",
-		Host:        "123456789.container.us-west-2.cloud.databricks.test",
+		Host:        "123456789.container.us-west-2.localhost",
+		DNSZone:     ".localhost",
 	}
 	profiler := profile.InMemoryProfiler{
 		Profiles: profile.Profiles{
 			{
 				Name:        "workspace",
-				Host:        "https://workspace.cloud.databricks.test",
+				Host:        "https://workspace.localhost",
 				WorkspaceID: registry.WorkspaceID,
 				AuthType:    auth.AuthTypeDatabricksCli,
 			},
 			{
 				Name:                 "m2m",
-				Host:                 "https://workspace.cloud.databricks.test",
+				Host:                 "https://workspace.localhost",
 				WorkspaceID:          registry.WorkspaceID,
 				HasClientCredentials: true,
 			},
@@ -241,7 +244,7 @@ func TestDockerTokenRejectsPositionalArgs(t *testing.T) {
 	})
 	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
-	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.localhost\n"))
 	cmd.SetArgs([]string{"DEFAULT"})
 
 	err := cmd.Execute()
@@ -286,7 +289,7 @@ func TestDockerTokenRejectsAuthSelectionFlags(t *testing.T) {
 			cmd.AddCommand(dockerCmd)
 			cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
 			cmd.SetContext(ctx)
-			cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+			cmd.SetIn(strings.NewReader("123456789.container.us-west-2.localhost\n"))
 			cmd.SetArgs(append([]string{"docker", "token"}, args...))
 
 			err := cmd.Execute()
@@ -331,7 +334,7 @@ func TestDockerTokenErrorsWithoutMatchingProfile(t *testing.T) {
 	})
 	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
-	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.localhost\n"))
 
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, "no Databricks profile found for workspace ID 123456789")
@@ -347,7 +350,7 @@ func TestDockerTokenErrorsWithMultipleMatchingProfiles(t *testing.T) {
 		require.NoError(t, databrickscfg.SaveToProfile(ctx, &config.Config{
 			ConfigFile:  configFile,
 			Profile:     name,
-			Host:        "https://" + name + ".cloud.databricks.test",
+			Host:        "https://" + name + ".localhost",
 			WorkspaceID: "123456789",
 			AuthType:    auth.AuthTypeDatabricksCli,
 		}))
@@ -364,7 +367,7 @@ func TestDockerTokenErrorsWithMultipleMatchingProfiles(t *testing.T) {
 	})
 	cmd.Flags().StringP("profile", "p", "", "~/.databrickscfg profile")
 	cmd.SetContext(ctx)
-	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.cloud.databricks.com\n"))
+	cmd.SetIn(strings.NewReader("123456789.container.us-west-2.localhost\n"))
 
 	err := cmd.Execute()
 	assert.ErrorContains(t, err, "multiple Databricks profiles match workspace ID 123456789")

@@ -1,66 +1,12 @@
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] bundle validate -o json
-{
-  "pipelines": {
-    "bar": {
-      "catalog": "${resources.pipelines.foo.catalog}",
-      "channel": "CURRENT",
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-      },
-      "edition": "ADVANCED",
-      "name": "pbar"
-    },
-    "foo": {
-      "channel": "CURRENT",
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-      },
-      "edition": "ADVANCED",
-      "name": "pfoo"
-    }
-  }
-}
-create pipelines.bar
-create pipelines.foo
-
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
-
->>> print_requests.py --nostamp //pipeline
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created pipelines.bar
-Created pipelines.foo
-Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py --nostamp //pipeline
-{
-  "method": "POST",
-  "path": "/api/2.0/pipelines",
-  "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pfoo"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/pipelines",
-  "body": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pbar"
-  }
-}
+Exit code: 1

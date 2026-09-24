@@ -36,6 +36,13 @@ type syncFlags struct {
 	includeFrom string
 }
 
+func (f *syncFlags) validate() error {
+	if f.watch && f.interval <= 0 {
+		return errors.New("--interval must be greater than zero when using --watch")
+	}
+	return nil
+}
+
 func readPatternsFile(flagName, filePath string) ([]string, error) {
 	if filePath == "" {
 		return nil, nil
@@ -190,7 +197,12 @@ func New() *cobra.Command {
 		return root.MustWorkspaceClient(cmd, args)
 	}
 
-	cmd.PreRunE = mustWorkspaceClient
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if err := f.validate(); err != nil {
+			return err
+		}
+		return mustWorkspaceClient(cmd, args)
+	}
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error

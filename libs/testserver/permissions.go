@@ -194,6 +194,9 @@ func (s *FakeWorkspace) permissionsParentExists(requestObjectType, objectId stri
 			}
 		}
 		return false
+	case "database-projects":
+		_, exists := s.PostgresProjects["projects/"+objectId]
+		return exists
 	}
 	return true
 }
@@ -251,6 +254,13 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 					},
 				}
 			}
+		}
+	}
+
+	if !s.permissionsParentExists(requestObjectType, objectId) {
+		return Response{
+			StatusCode: 404,
+			Body:       map[string]string{"message": fmt.Sprintf("%s %s not found.", requestObjectType, objectId)},
 		}
 	}
 

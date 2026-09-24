@@ -34,6 +34,14 @@ const pendingDeletionTimeout = time.Minute
 // https://github.com/databricks/terraform-provider-databricks/blob/c79d82d9582ab6670468bbff303199906d47905f/vectorsearch/resource_vector_search_index.go#L19
 const createIndexTimeout = 75 * time.Minute
 
+// vectorSearchIndexTimeout bounds a resource poll without exceeding its internal maximum.
+func vectorSearchIndexTimeout(ctx context.Context, maximum time.Duration) time.Duration {
+	if maxWait, ok := resourceMaxWait(ctx); ok && maxWait > 0 {
+		return min(maximum, maxWait)
+	}
+	return maximum
+}
+
 // VectorSearchIndexState tracks the UUID of the endpoint the index is attached
 // to. Without it the planner cannot tell that an index pointing at a deleted
 // and recreated endpoint (same name, different UUID) has been orphaned — the
@@ -157,7 +165,8 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 // The API exposes no DELETING state to poll for instead; remove this once it
 // does, or once CREATE queues behind the pending delete rather than failing.
 func (r *ResourceVectorSearchIndex) createIndex(ctx context.Context, req vectorsearch.CreateVectorIndexRequest) (*vectorsearch.VectorIndex, error) {
-	return retries.Poll(ctx, pendingDeletionTimeout, func() (*vectorsearch.VectorIndex, *retries.Err) {
+	timeout := vectorSearchIndexTimeout(ctx, pendingDeletionTimeout)
+	return retries.Poll(ctx, timeout, func() (*vectorsearch.VectorIndex, *retries.Err) {
 		index, err := r.client.VectorSearchIndexes.CreateIndex(ctx, req)
 		if err == nil {
 			return index, nil
@@ -225,7 +234,8 @@ func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, id stri
 // This does NOT on its own make a recreate safe: the name is released after the
 // index disappears from GET, so createIndex retries the CREATE for the rest.
 func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id string) error {
-	_, err := retries.Poll[struct{}](ctx, deleteIndexTimeout, func() (*struct{}, *retries.Err) {
+	timeout := vectorSearchIndexTimeout(ctx, deleteIndexTimeout)
+	_, err := retries.Poll[struct{}](ctx, timeout, func() (*struct{}, *retries.Err) {
 		_, getErr := r.client.VectorSearchIndexes.GetIndexByIndexName(ctx, id)
 		if getErr != nil {
 			return nil, retries.Halt(getErr)

@@ -267,6 +267,58 @@ func TestCancelAllListError(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to list active runs")
 }
 
+func TestCancelAllPaginatesBeforeCancel(t *testing.T) {
+	var cancelCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/2.2/jobs/runs/list":
+			if r.URL.Query().Get("page_token") == "" {
+				_, _ = w.Write([]byte(runsListBody(t, "next", airBaseRun(111, "me@example.com", "GPU_1xA10", 1, "exp-a"))))
+			} else {
+				_, _ = w.Write([]byte(runsListBody(t, "", airBaseRun(222, "me@example.com", "GPU_1xA10", 1, "exp-b"))))
+			}
+		case "/api/2.2/jobs/runs/cancel":
+			cancelCalls++
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			_, _ = w.Write([]byte(`{"userName":"me@example.com"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	err := runCancelAll(t, newTestWorkspaceClient(t, srv.URL), flags.OutputText, strings.NewReader("y\n"), &buf)
+	require.NoError(t, err)
+	assert.Equal(t, 2, cancelCalls)
+	assert.Contains(t, buf.String(), "run 111")
+	assert.Contains(t, buf.String(), "run 222")
+}
+
+func TestCancelAllEnumerationErrorDoesNotCancel(t *testing.T) {
+	var cancelCalls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/api/2.2/jobs/runs/list" && r.URL.Query().Get("page_token") == "":
+			_, _ = w.Write([]byte(runsListBody(t, "next", airBaseRun(111, "me@example.com", "GPU_1xA10", 1, "exp-a"))))
+		case r.URL.Path == "/api/2.2/jobs/runs/list":
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error_code":"INTERNAL","message":"boom"}`))
+		case r.URL.Path == "/api/2.2/jobs/runs/cancel":
+			cancelCalls++
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			_, _ = w.Write([]byte(`{"userName":"me@example.com"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var buf bytes.Buffer
+	err := runCancelAll(t, newTestWorkspaceClient(t, srv.URL), flags.OutputText, strings.NewReader("y\n"), &buf)
+	require.Error(t, err)
+	assert.Zero(t, cancelCalls)
+	assert.Contains(t, err.Error(), "failed to list active runs")
+}
+
 func TestDisplayCancelPreview(t *testing.T) {
 	var buf bytes.Buffer
 	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &buf, &buf, "", ""))

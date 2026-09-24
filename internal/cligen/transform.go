@@ -1,6 +1,79 @@
 package main
 
-import "github.com/databricks/cli/internal/clijson"
+import (
+	"strings"
+
+	"github.com/databricks/cli/internal/clijson"
+)
+
+// fieldlessResponseArity lists the fieldless SDK methods verified to return
+// (response, error). The CLI contract carries no method return-arity field;
+// all other fieldless methods use the error-only call form.
+type fieldlessResponseKey struct {
+	Service string
+	Account bool
+	Method  string
+}
+
+var fieldlessResponseArity = map[fieldlessResponseKey]struct{}{
+	{Service: "AccountMetastoreAssignments", Account: true, Method: "Create"}:           {},
+	{Service: "AccountMetastoreAssignments", Account: true, Method: "Delete"}:           {},
+	{Service: "AccountMetastoreAssignments", Account: true, Method: "Update"}:           {},
+	{Service: "Metastores", Account: true, Method: "Delete"}:                            {},
+	{Service: "AccountMetastores", Account: true, Method: "Delete"}:                     {},
+	{Service: "AccountStorageCredentials", Account: true, Method: "Delete"}:             {},
+	{Service: "StorageCredentials", Account: true, Method: "Delete"}:                    {},
+	{Service: "ServingEndpoints", Method: "Put"}:                                        {},
+	{Service: "DataQuality", Method: "CancelRefresh"}:                                   {},
+	{Service: "AiGateway", Method: "DeleteMcpServiceUserMappedCredential"}:              {},
+	{Service: "AiSearch", Method: "SyncIndex"}:                                          {},
+	{Service: "Policies", Method: "DeletePolicy"}:                                       {},
+	{Service: "PolicyComplianceForClusters", Method: "CancelPendingClusterEnforcement"}: {},
+	{Service: "QualityMonitors", Method: "Delete"}:                                      {},
+	{Service: "Pipelines", Method: "ApplyEnvironment"}:                                  {},
+	{Service: "Tokens", Method: "Update"}:                                               {},
+}
+
+func fieldlessResponseNeedsResponseSlot(service, method string, account bool) bool {
+	_, ok := fieldlessResponseArity[fieldlessResponseKey{Service: service, Account: account, Method: method}]
+	return ok
+}
+
+// normalizeFieldlessResponses marks named object responses that have a known,
+// fieldless schema as empty responses.
+func normalizeFieldlessResponses(commands *clijson.CommandsBlock, schemas map[string]*clijson.SchemaJSON) map[fieldlessResponseKey]struct{} {
+	if commands == nil {
+		return nil
+	}
+	fieldless := make(map[fieldlessResponseKey]struct{})
+	for _, service := range commands.Services {
+		if service == nil {
+			continue
+		}
+		for _, method := range service.Methods {
+			if method == nil || method.Response == nil || !method.Response.IsObject || method.Response.PascalName == "" {
+				continue
+			}
+			name := method.Response.PascalName
+			schema := schemas[name]
+			if schema == nil {
+				for qualifiedName, candidate := range schemas {
+					if strings.HasSuffix(qualifiedName, "."+name) {
+						schema = candidate
+						break
+					}
+				}
+			}
+			if schema != nil && len(schema.Fields) == 0 {
+				method.Response.IsEmptyResponse = true
+				if fieldlessResponseNeedsResponseSlot(service.Name, method.Name, service.IsAccounts) {
+					fieldless[fieldlessResponseKey{Service: service.Name, Account: service.IsAccounts, Method: method.Name}] = struct{}{}
+				}
+			}
+		}
+	}
+	return fieldless
+}
 
 // fromContract converts the canonical commands block (decoded from cli.json into
 // the verbatim contract types in internal/clijson) into the CLI's render model.
@@ -8,17 +81,33 @@ import "github.com/databricks/cli/internal/clijson"
 // clijson is the single source of truth for the wire shape; this transform is
 // the one place that reads it, so a contract change surfaces here as a compile
 // error rather than silent drift. Render-only state — the byID index, the
-// ParentService/Subservices links, RequestBodyField pointer identity, and
-// noPrompt — is left zero here and populated by CommandsBlock.Resolve().
 func fromContract(c *clijson.CommandsBlock) *CommandsBlock {
+	return fromContractWithFieldless(c, nil)
+}
+
+func fromContractWithFieldless(c *clijson.CommandsBlock, fieldless map[fieldlessResponseKey]struct{}) *CommandsBlock {
 	if c == nil {
 		return nil
 	}
-	return &CommandsBlock{
+	out := &CommandsBlock{
 		Services:            mapSlice(c.Services, fromService),
 		WorkspaceDocsGroups: mapSlice(c.WorkspaceDocsGroups, fromDocsGroup),
 		AccountDocsGroups:   mapSlice(c.AccountDocsGroups, fromDocsGroup),
 	}
+	for _, service := range out.Services {
+		if service == nil {
+			continue
+		}
+		for _, method := range service.Methods {
+			if method == nil || method.Response == nil {
+				continue
+			}
+			if _, ok := fieldless[fieldlessResponseKey{Service: service.Name, Account: service.IsAccounts, Method: method.Name}]; ok {
+				method.Response.IsFieldlessResponse = true
+			}
+		}
+	}
+	return out
 }
 
 // mapSlice maps src through f, preserving nil so that omitempty fields stay

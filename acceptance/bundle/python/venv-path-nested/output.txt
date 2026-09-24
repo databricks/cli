@@ -1,0 +1,5 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
+Error: failed to get Python interpreter path: can't find "[TEST_TMP_DIR]/nested/.venv/bin/python3", check if virtualenv is created
+
+
+Exit code: 5

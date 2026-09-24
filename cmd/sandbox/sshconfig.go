@@ -29,6 +29,8 @@ const (
 	sshConfigEndMarker   = "# <<< databricks sandbox <<<"
 )
 
+var openSSHPathEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`, `%`, `%%`)
+
 // sshConfigPaths returns (managedFile, mainConfig) under the user's
 // ~/.ssh directory.
 func sshConfigPaths(ctx context.Context) (string, string, error) {
@@ -83,6 +85,14 @@ func writeSSHConfig(ctx context.Context, keyPath string, gatewayHosts []string, 
 	return managedPath, mainPath, nil
 }
 
+// quoteOpenSSHPath quotes a filesystem path for use as an OpenSSH config
+// argument. OpenSSH uses double quotes and backslash escapes, and expands
+// percent tokens even inside quotes, so percent signs must be doubled.
+func quoteOpenSSHPath(path string) string {
+	escaped := openSSHPathEscaper.Replace(path)
+	return `"` + escaped + `"`
+}
+
 // buildSSHConfigBlock renders one Host stanza per gateway. Mirrors the
 // snippet the workspace UI's "First time setup?" disclosure recommends
 // — the Host key is the literal gateway hostname (so editor Remote-SSH
@@ -109,7 +119,7 @@ func buildSSHConfigBlock(keyPath string, gatewayHosts []string, gatewayPort stri
 	var b strings.Builder
 	b.WriteString("# Managed by `databricks sandbox register`. Manual edits will be overwritten.\n")
 	for _, gw := range gatewayHosts {
-		fmt.Fprintf(&b, "Host %s\n    Port %s\n    IdentityFile %s\n    IdentitiesOnly yes\n", gw, gatewayPort, keyPath)
+		fmt.Fprintf(&b, "Host %s\n    Port %s\n    IdentityFile %s\n    IdentitiesOnly yes\n", gw, gatewayPort, quoteOpenSSHPath(keyPath))
 	}
 	return b.String()
 }
@@ -125,17 +135,22 @@ func writeManagedConfig(path, content string) error {
 
 // ensureMainIncludesManaged makes sure ~/.ssh/config begins with an
 // `Include <managedPath>` directive bracketed by our begin/end markers.
-// If our block is already present, the file is left alone; if absent,
-// we prepend the block so it takes precedence over any later Host
+// The current managed block is left alone; an outdated block is refreshed.
+// When absent, it is prepended so it takes precedence over any later Host
 // blocks the user has defined (SSH applies the first match per option).
 func ensureMainIncludesManaged(mainPath, managedPath string) error {
-	managedBlock := fmt.Sprintf("%s\nInclude %s\n%s\n", sshConfigBeginMarker, managedPath, sshConfigEndMarker)
+	managedBlock := fmt.Sprintf("%s\nInclude %s\n%s\n", sshConfigBeginMarker, quoteOpenSSHPath(managedPath), sshConfigEndMarker)
 
 	existing, err := os.ReadFile(mainPath)
+	text := string(existing)
 	switch {
 	case err == nil:
-		if hasOurMarkedBlock(string(existing)) {
-			return nil
+		if hasOurMarkedBlock(text) {
+			updated, ok := replaceMarkedBlock(text, managedBlock)
+			if !ok || updated == text {
+				return nil
+			}
+			return atomicfile.Write(mainPath, []byte(updated), 0o600)
 		}
 	case errors.Is(err, fs.ErrNotExist):
 		existing = nil
@@ -156,6 +171,31 @@ func ensureMainIncludesManaged(mainPath, managedPath string) error {
 	}
 
 	return atomicfile.Write(mainPath, buf.Bytes(), 0o600)
+}
+
+// replaceMarkedBlock replaces the sandbox-owned block in text. It returns
+// false when the end marker is missing, leaving malformed user content alone.
+func replaceMarkedBlock(text, replacement string) (string, bool) {
+	begin := strings.Index(text, sshConfigBeginMarker)
+	if begin < 0 {
+		return text, false
+	}
+
+	end := strings.Index(text[begin:], sshConfigEndMarker)
+	if end < 0 {
+		return text, false
+	}
+	end += begin
+	lineStart := strings.LastIndex(text[:begin], "\n") + 1
+	end += len(sshConfigEndMarker)
+	if end < len(text) && text[end] == '\r' {
+		end++
+	}
+	if end < len(text) && text[end] == '\n' {
+		end++
+	}
+
+	return text[:lineStart] + replacement + text[end:], true
 }
 
 // hasOurMarkedBlock reports whether the given config text already has

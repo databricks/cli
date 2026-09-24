@@ -5,30 +5,6 @@ Created pipelines.foo
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] pipelines get [UUID]
-{
-  "spec": {
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "id": "[UUID]",
-    "libraries": [
-      {
-        "notebook": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files/nb"
-        }
-      }
-    ],
-    "name": "test-pipeline",
-    "storage": "dbfs:/pipelines/[UUID]"
-  }
-}
-
->>> [CLI] pipelines deploy --quiet
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-create-pipeline/default/files...
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Exit code: 5

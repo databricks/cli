@@ -1,11 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] clusters get [TEST_DEFAULT_CLUSTER_ID]
-{
-  "cluster_name": "DEFAULT Test Cluster"
-}
-
->>> [CLI] bundle deployment bind cluster1 [TEST_DEFAULT_CLUSTER_ID] --auto-approve
-Successfully bound cluster with an id '[TEST_DEFAULT_CLUSTER_ID]'
-Run 'bundle deploy' to deploy changes to your workspace
-
->>> [CLI] bundle deployment unbind cluster1
+Exit code: 5

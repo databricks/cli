@@ -203,6 +203,11 @@ func (f *FieldJSON) PascalName() string   { return pascalName(f.Name) }
 func (f *FieldJSON) CamelName() string    { return camelName(f.Name) }
 func (f *FieldJSON) ConstantName() string { return constantName(f.Name) }
 
+// IsCLIRequestField reports whether the field can be populated through CLI input.
+func (f *FieldJSON) IsCLIRequestField() bool {
+	return !f.IsOutputOnly && (!f.IsComputed || (f.IsRequestBodyField && !f.IsPath && !f.IsQuery))
+}
+
 // Summary matches genkit Named.Summary.
 func (f *FieldJSON) Summary() string { return summarize(f.Description) }
 
@@ -234,6 +239,10 @@ type EntityJSON struct {
 	// IsEmptyResponse marks a response that carries nothing renderable
 	// (google.protobuf.Empty or a legacy named-but-fieldless response).
 	IsEmptyResponse bool `json:"is_empty_response,omitempty"`
+	// IsFieldlessResponse distinguishes a named zero-field response from an
+	// upstream error-only empty response. Both render silently, but their SDK
+	// methods have different return arities.
+	IsFieldlessResponse bool `json:"-"`
 
 	ArrayValue *EntityJSON      `json:"array_value,omitempty"`
 	MapValue   *EntityJSON      `json:"map_value,omitempty"`

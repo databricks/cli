@@ -244,9 +244,13 @@ func buildAgentEntries(ctx context.Context, states map[string]*installer.Install
 		entry.Installed = map[string]installInfo{}
 		for scope, st := range states {
 			if rec, ok := st.Plugins[a.Name]; ok {
+				version := rec.Version
+				if authoritative, found := a.DatabricksPluginVersionForScope(ctx, rec.Scope); found || a.HasPluginVersionReader() {
+					version = authoritative
+				}
 				entry.Installed[scope] = installInfo{
 					Delivery:    deliveryPlugin.String(),
-					Version:     rec.Version,
+					Version:     version,
 					NativeScope: rec.Scope,
 				}
 				continue
@@ -389,7 +393,7 @@ func agentStatusLabel(a agentEntry, release string) string {
 		if !ok || info.Delivery != deliveryPlugin.String() {
 			continue
 		}
-		stale := info.Version != release
+		stale := !pluginVersionAtLeast(info.Version, release)
 		if version == "" || (upToDate && stale) {
 			version = info.Version
 		}

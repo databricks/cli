@@ -3,7 +3,7 @@
 Uploading whl/source.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.job
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Expecting 2 wheels in libraries section in /jobs/create
@@ -49,9 +49,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   }
 ]
 
-=== Expecting wheel to be uploaded
->>> jq .path
-"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source.whl"
+=== Expecting wheel to be uploaded"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/whl/source.whl"
 "/api/2.0/workspace-files/import-file/Workspace/foo/bar/artifacts/.internal/source.whl"
 
 === Expecting environment dependencies to be updated

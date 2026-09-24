@@ -17,37 +17,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "serialized_dashboard": "{}\n",
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
-
->>> [CLI] lakeview get-published [DASHBOARD_ID]
-{
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
-  "embed_credentials": false
-}
-
->>> [CLI] bundle plan
-update dashboards.my_dashboard
-
-Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/files...
-Updated dashboards.my_dashboard
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-{
-  "display_name": "test dashboard",
-  "lifecycle_state": "ACTIVE",
-  "parent_path": "/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/resources",
-  "path": "/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/resources/test dashboard.lvdash.json",
-  "serialized_dashboard": "{}\n",
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-}
-
->>> [CLI] lakeview get-published [DASHBOARD_ID]
-{
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
-  "embed_credentials": true
-}
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -56,3 +26,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+Exit code: 5

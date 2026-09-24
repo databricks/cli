@@ -234,6 +234,9 @@ def generate_type(namespace: str, ref: str, is_param: bool) -> GeneratedType:
 
         return dict_type()
 
+    if ref.endswith("catalog.Privilege"):
+        return str_type()
+
     class_name = packages.get_class_name(ref)
     package = packages.get_package(namespace, ref)
 

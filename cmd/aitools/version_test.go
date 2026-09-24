@@ -34,7 +34,7 @@ func TestVersionShowsPlugin(t *testing.T) {
 	cmd.SetContext(ctx)
 	require.NoError(t, cmd.RunE(cmd, nil))
 
-	assert.Contains(t, stderr.String(), "Plugin (Claude Code, global, user scope): v0.2.6")
+	assert.Contains(t, stderr.String(), "Plugin (Claude Code, global, user scope): version unknown")
 }
 
 func TestVersionClarifiesLatest(t *testing.T) {
@@ -62,7 +62,7 @@ func TestVersionClarifiesLatest(t *testing.T) {
 
 	output := stderr.String()
 	assert.Contains(t, output, "Skills (global): main")
-	assert.Contains(t, output, "Plugin (Claude Code, global, user scope): latest (tracking main)")
+	assert.Contains(t, output, "Plugin (Claude Code, global, user scope): version unknown")
 }
 
 func TestVersionShowsBothScopes(t *testing.T) {
@@ -156,4 +156,10 @@ func TestVersionAlwaysLabelsScope(t *testing.T) {
 	// is unambiguous where skills/plugins live.
 	assert.Contains(t, output, "Skills (global): v0.1.0")
 	assert.NotContains(t, output, "Skills (project)")
+}
+
+func TestPluginVersionAtLeast(t *testing.T) {
+	assert.True(t, pluginVersionAtLeast("0.2.18", "0.2.10"))
+	assert.True(t, pluginVersionAtLeast("v0.2.10", "0.2.10"))
+	assert.False(t, pluginVersionAtLeast("0.2.9", "0.2.10"))
 }

@@ -1,12 +1,15 @@
 package auth
 
 import (
+	"context"
+
 	"github.com/databricks/cli/libs/auth/storage"
 	"golang.org/x/oauth2"
 )
 
 type inMemoryStore struct {
-	Tokens map[string]*oauth2.Token
+	Tokens        map[string]*oauth2.Token
+	withLockCalls int
 }
 
 // Lookup returns a copy to match real (file-backed) cache behavior, where
@@ -35,6 +38,11 @@ func (i *inMemoryStore) Put(key string, e storage.Entry) error {
 func (i *inMemoryStore) Delete(key string) error {
 	delete(i.Tokens, key)
 	return nil
+}
+
+func (i *inMemoryStore) WithLock(_ context.Context, fn func(storage.LockedStore) error) error {
+	i.withLockCalls++
+	return fn(i)
 }
 
 var _ storage.Store = (*inMemoryStore)(nil)

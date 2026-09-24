@@ -2,5 +2,5 @@ bundle:
   name: test-bundle
 
 variables:
-  myvar:
+  customer_account_12345:
     description: a required variable

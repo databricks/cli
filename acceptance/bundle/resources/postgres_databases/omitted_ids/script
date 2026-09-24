@@ -1,0 +1,38 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+role_name=$(read_id.py owner)
+database_name=$(read_id.py my_database)
+
+trace $CLI postgres get-role "$role_name" | role_fields
+trace $CLI postgres get-database "$database_name" | database_fields
+
+# State serializes these non-omitempty strings, so empty values prove the
+# server-generated IDs were kept only in each deployment entry.
+trace print_state.py | jq -e \
+  --arg role_name "$role_name" \
+  --arg database_name "$database_name" \
+  '.state["resources.postgres_roles.owner"] as $role |
+   .state["resources.postgres_databases.my_database"] as $database |
+   $role.__id__ == $role_name and
+   $role.state.role_id == "" and
+   $database.__id__ == $database_name and
+   $database.state.database_id == "" and
+   $database.state.role == $role_name'
+
+trace $CLI postgres get-role "$role_name" | role_fields | contains.py "\"name\": \"$role_name\""
+trace $CLI postgres get-database "$database_name" | database_fields | contains.py "\"name\": \"$database_name\""
+trace $CLI postgres get-database "$database_name" | database_fields | contains.py "\"role\": \"$role_name\""
+
+echo "$role_name" | grep -Eq "^projects/test-pg-proj-${UNIQUE_NAME}/branches/main/roles/role-[a-f0-9]{8}$"
+echo "$database_name" | grep -Eq "^projects/test-pg-proj-${UNIQUE_NAME}/branches/main/databases/db-[a-f0-9]{8}$"
+
+title "Verify the omitted IDs plan unchanged"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | nostamp | jq -e '[.plan[] | select(.action != "skip")] | length == 0'

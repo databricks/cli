@@ -1,3 +1,5 @@
+
+>>> [CLI] bundle debug refschema
 resources.alerts.*.create_time	string	ALL
 resources.alerts.*.custom_description	string	ALL
 resources.alerts.*.custom_summary	string	ALL

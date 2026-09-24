@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	bundleenv "github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -83,11 +84,10 @@ type ProcessOptions struct {
 	PreDeployChecks bool
 	Deploy          bool
 
+	// BuildLibraries receives the library locations computed by Build.
+	BuildLibraries *phases.LibLocationMap
+
 	// Path to pre-computed plan JSON file (direct engine only).
-	// When set, skips Build and PreDeployChecks phases, and loads the plan from
-	// the file instead of calculating it. Artifact uploads are handled directly
-	// inside Deploy by reading the remote paths from the plan's new_state and
-	// finding the matching local files.
 	ReadPlanPath string
 
 	// PostStateFunc is called at the end of ProcessBundleRet, within the state lifecycle scope
@@ -129,11 +129,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if b == nil {
 				return
 			}
-			errMsg := logdiag.GetFirstErrorSummary(ctx)
-			if errMsg == "" && retErr != nil && !errors.Is(retErr, root.ErrAlreadyPrinted) {
-				errMsg = retErr.Error()
-			}
-			phases.LogDeployTelemetry(ctx, b, errMsg)
+			phases.LogDeployTelemetry(ctx, b)
 		}()
 	}
 
@@ -218,6 +214,10 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	var dmsDeployment *bundledeployments.Deployment
 	var dmsDeploymentID string
 
+	if opts.ReadPlanPath != "" && (cmd.Flag("select").Changed || cmd.Flag("cluster-id").Changed || cmd.Flag("compute-id").Changed) {
+		return b, nil, errors.New("--select, --cluster-id, and --compute-id cannot be used with --plan; regenerate the plan instead")
+	}
+
 	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
@@ -230,9 +230,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		cmd.SetContext(ctx)
 		if stateDesc.Engine.IsDirect() {
 			resolveDeploymentHistory(ctx, b, stateDesc)
+			if !opts.SkipEnforcingDeploymentHistorySetting {
+				if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
+					logdiag.LogError(ctx, err)
+					return b, stateDesc, root.ErrAlreadyPrinted
+				}
+			}
 		}
-
-		// Record the engine the resolved state uses now, so deploy telemetry reports
 		// it even when the deploy fails or is cancelled before deployCore runs.
 		b.Metrics.StateEngine = stateDesc.Engine.ThisOrDefault()
 
@@ -272,6 +276,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	// so they run before phases.Build; the plan file itself is loaded during state
 	// resolution after the build, once the engine is known and the state is open.
 	if opts.ReadPlanPath != "" {
+		if cmd.Flag("select").Changed || cmd.Flag("cluster-id").Changed || cmd.Flag("compute-id").Changed {
+			return b, nil, errors.New("--select, --cluster-id, and --compute-id cannot be used with --plan; regenerate the plan instead")
+		}
 		opts.Build = false
 		opts.PreDeployChecks = false
 	} else if opts.Deploy {
@@ -308,15 +315,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	}
 
 	var libs phases.LibLocationMap
-
+	var uploadLibs phases.LibLocationMap
+	var cleanupUploads func()
 	if opts.Build {
 		t2 := time.Now()
 		libs = phases.Build(ctx, b)
+		if opts.BuildLibraries != nil {
+			*opts.BuildLibraries = libs
+		}
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Build",
 			Value: time.Since(t2).Milliseconds(),
 		})
-
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
@@ -343,17 +353,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			}
 		}
 
-		if stateDesc.Engine.IsDirect() && !opts.SkipEnforcingDeploymentHistorySetting {
-			if err := enforceDeploymentHistorySetting(ctx, b, stateDesc, opts.Deploy || opts.PreDeployChecks); err != nil {
-				logdiag.LogError(ctx, err)
-				return b, stateDesc, root.ErrAlreadyPrinted
-			}
-		}
+		// Deployment-history mismatch is enforced immediately after state resolution.
 
 		if needDirectState && stateDesc.IsDMS() {
 			var err error
 			dmsDeploymentID, dmsDeployment, err = fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 			if err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			if err := validateDeploymentMarker(stateDesc, dmsDeployment); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -433,8 +442,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		}
 
 		// --plan: the engine is now known and the state is open, so validate and load the
-		// precomputed plan. Artifact uploads are handled inside Deploy by extracting remote
-		// paths from the plan's new_state and finding the matching local files.
+		// precomputed plan before any Jobs or Pipelines API calls.
 		if opts.ReadPlanPath != "" {
 			if !stateDesc.Engine.IsDirect() {
 				logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set bundle.engine to \"direct\" or DATABRICKS_BUNDLE_ENGINE=direct)"))
@@ -455,13 +463,26 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
+			uploadLibs, cleanupUploads, err = libraries.PrepareUploadManifest(ctx, b, plan.Uploads)
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+			libs = uploadLibs
+			defer cleanupUploads()
+		}
+	}
+
+	if opts.ReadPlanPath != "" && opts.Deploy {
+		bundle.ApplyContext(ctx, b, statemgmt.CheckRunningResource(stateDesc.Engine))
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	}
 
 	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
-
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
@@ -582,6 +603,13 @@ func fetchDeploymentFromStatePath(ctx context.Context, w *databricks.WorkspaceCl
 	return deploymentID, deployment, nil
 }
 
+func validateDeploymentMarker(stateDesc *statemgmt.StateDesc, dmsDeployment *bundledeployments.Deployment) error {
+	if stateDesc.SourcePath == "" || dmsDeployment != nil {
+		return nil
+	}
+	return errors.New("deployment metadata marker is missing; refusing to treat this recorded deployment as new")
+}
+
 // parseLastVersionID parses the deployment's last recorded version, which the service reports
 // as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
 func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
@@ -609,6 +637,9 @@ func OpenDirectStateForRead(ctx context.Context, b *bundle.Bundle, stateDesc *st
 
 	dmsDeploymentID, dmsDeployment, err := fetchDeploymentFromStatePath(ctx, b.WorkspaceClient(ctx), b.Config.Workspace.StatePath)
 	if err != nil {
+		return err
+	}
+	if err := validateDeploymentMarker(stateDesc, dmsDeployment); err != nil {
 		return err
 	}
 	lastVersionID, err := parseLastVersionID(dmsDeployment)

@@ -3,24 +3,22 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/app-git-source-no-deployment/default/files...
 Created apps.myapp
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Plan is a no-op: git_source drift is skipped while the app has no active deployment
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== git_source is skipped with reason "no active deployment"
->>> [CLI] bundle plan -o json
-{
-  "git_source": {
-    "action": "skip",
-    "reason": "no active deployment",
-    "old": {
-      "branch": "main"
-    },
-    "new": {
-      "branch": "main"
-    }
-  }
-}
+=== git_source is skipped with reason "no active deployment"Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
+
+Exit code: 1

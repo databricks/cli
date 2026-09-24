@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/snapshot"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -39,13 +40,14 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 	cmd.Flags().StringSliceVar(&selectResources, "select", nil, "Plan only the specified resource (e.g. 'my_job' or 'jobs.my_job'). Can be repeated or comma-separated.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		var buildLibraries phases.LibLocationMap
 		opts := utils.ProcessOptions{
 			AlwaysPull:      true,
 			FastValidate:    true,
 			Build:           true,
+			BuildLibraries:  &buildLibraries,
 			PreDeployChecks: true,
 			InitFunc: func(b *bundle.Bundle) {
-				b.Config.Bundle.Force = force
 				b.Select = selectResources
 
 				if cmd.Flag("compute-id").Changed {
@@ -74,6 +76,11 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
+		uploads, err := libraries.NewUploadManifest(ctx, b, buildLibraries)
+		if err != nil {
+			return err
+		}
+		plan.Uploads = uploads
 
 		counts := plan.CountActions()
 

@@ -107,12 +107,11 @@ func newCreate() *cobra.Command {
 
 		createReq.MetastoreId = args[1]
 
-		response, err := a.MetastoreAssignments.Create(ctx, createReq)
+		_, err = a.MetastoreAssignments.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -173,12 +172,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.MetastoreId = args[1]
 
-		response, err := a.MetastoreAssignments.Delete(ctx, deleteReq)
+		_, err = a.MetastoreAssignments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -393,12 +391,11 @@ func newUpdate() *cobra.Command {
 
 		updateReq.MetastoreId = args[1]
 
-		response, err := a.MetastoreAssignments.Update(ctx, updateReq)
+		_, err = a.MetastoreAssignments.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

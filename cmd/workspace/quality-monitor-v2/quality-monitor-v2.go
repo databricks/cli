@@ -68,7 +68,6 @@ func newCreateQualityMonitor() *cobra.Command {
 
 	cmd.Flags().Var(&createQualityMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: anomaly_detection_config
 	// TODO: array: validity_check_configurations
 
 	cmd.Use = "create-quality-monitor OBJECT_TYPE OBJECT_ID"
@@ -362,7 +361,6 @@ func newUpdateQualityMonitor() *cobra.Command {
 
 	cmd.Flags().Var(&updateQualityMonitorJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: anomaly_detection_config
 	// TODO: array: validity_check_configurations
 
 	cmd.Use = "update-quality-monitor OBJECT_TYPE OBJECT_ID OBJECT_TYPE OBJECT_ID"

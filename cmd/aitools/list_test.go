@@ -183,8 +183,8 @@ func TestBuildAgentEntries(t *testing.T) {
 	require.Contains(t, byName, "claude-code")
 	assert.True(t, byName["claude-code"].Managed)
 	assert.Equal(t, "Claude Code", byName["claude-code"].DisplayName)
-	assert.Equal(t, "0.2.6", byName["claude-code"].Installed[installer.ScopeGlobal].Version)
-	assert.Equal(t, "databricks plugin · v0.2.6 · up to date", agentStatusLabel(byName["claude-code"], "0.2.6"))
+	assert.Empty(t, byName["claude-code"].Installed[installer.ScopeGlobal].Version)
+	assert.Equal(t, "databricks plugin · version unknown · update available", agentStatusLabel(byName["claude-code"], "0.2.6"))
 	// SupportsProjectScope is wired straight from the registry: claude-code allows
 	// project scope, whereas the managed/skills-only global-only agents below do not.
 	assert.True(t, byName["claude-code"].SupportsProjectScope)
@@ -314,7 +314,7 @@ func TestBuildAgentEntriesPrefersPluginRecordOverSkillsOnDisk(t *testing.T) {
 
 	cc := byName["claude-code"]
 	assert.Equal(t, "plugin", cc.Installed[installer.ScopeGlobal].Delivery)
-	assert.Equal(t, "0.2.5", cc.Installed[installer.ScopeGlobal].Version)
+	assert.Empty(t, cc.Installed[installer.ScopeGlobal].Version)
 	assert.Equal(t, "user", cc.Installed[installer.ScopeGlobal].NativeScope)
 }
 
@@ -328,7 +328,7 @@ func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
 		"claude-code": {Plugin: "databricks", Version: "0.2.5"},
 	}}
 
-	entries := buildAgentEntries(t.Context(), map[string]*installer.InstallState{
+	entries := buildAgentEntries(env.WithUserHomeDir(t.Context(), t.TempDir()), map[string]*installer.InstallState{
 		installer.ScopeGlobal:  globalState,
 		installer.ScopeProject: projectState,
 	})
@@ -340,12 +340,12 @@ func TestBuildAgentEntriesRecordsPerScopeVersions(t *testing.T) {
 	require.Contains(t, byName, "claude-code")
 	cc := byName["claude-code"]
 	assert.True(t, cc.Managed)
-	assert.Equal(t, "0.2.6", cc.Installed[installer.ScopeGlobal].Version)
-	assert.Equal(t, "0.2.5", cc.Installed[installer.ScopeProject].Version)
+	assert.Empty(t, cc.Installed[installer.ScopeGlobal].Version)
+	assert.Empty(t, cc.Installed[installer.ScopeProject].Version)
 
 	// The renderer collapses the scopes and surfaces the stale one, rather than
 	// hiding it behind the up-to-date scope.
-	assert.Equal(t, "databricks plugin · v0.2.5 · update available", agentStatusLabel(cc, "0.2.6"))
+	assert.Equal(t, "databricks plugin · version unknown · update available", agentStatusLabel(cc, "0.2.6"))
 }
 
 func TestRenderListJSONScopeFiltersSummary(t *testing.T) {

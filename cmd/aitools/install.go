@@ -526,16 +526,16 @@ func executePlan(ctx context.Context, src installer.ManifestSource, plan []agent
 
 	pluginCount := 0
 	if len(pluginItems) > 0 {
-		ref, _, err := installer.GetSkillsRef(ctx)
-		if err != nil {
-			return outcomes, err
+		ref, _, refErr := installer.GetSkillsRef(ctx)
+		if refErr != nil {
+			log.Debugf(ctx, "Could not resolve skills release for plugin state: %v", refErr)
 		}
 		records := map[string]installer.PluginRecord{}
 		for _, it := range pluginItems {
 			if !quiet {
 				cmdio.LogString(ctx, fmt.Sprintf("Installing databricks plugin for %s...", it.agent.DisplayName))
 			}
-			rec, err := installPluginForAgentFn(ctx, it.agent, it.scope, ref)
+			rec, err := installPluginForAgentFn(ctx, it.agent, it.scope)
 			if err != nil {
 				if !quiet {
 					cmdio.LogString(ctx, cmdio.Yellow(ctx, fmt.Sprintf("Skipped %s: %v", it.agent.DisplayName, err)))

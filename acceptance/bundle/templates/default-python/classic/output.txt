@@ -58,22 +58,19 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan -t dev
 Building python_artifact...
 update jobs.sample_job
+update pipelines.my_default_python_etl
 
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
-
->>> [CLI] bundle plan -t dev -o json
+Plan: 0 to add, 2 to change, 0 to delete, 0 unchanged
 Building python_artifact...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files...
-Created jobs.sample_job
-Created jobs.sample_job.permissions
-Created pipelines.my_default_python_etl
-Created pipelines.my_default_python_etl.permissions
-Files: 21 uploaded, 0 deleted
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] bundle plan -t prod
-Building python_artifact...
-Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
-
->>> [CLI] bundle plan -t prod -o json
-Building python_artifact...
+Exit code: 1

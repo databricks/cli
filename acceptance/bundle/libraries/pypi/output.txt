@@ -1,15 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json
-[
-  {
-    "pypi": {
-      "package": "dbt-databricks>=1.8.0,<2.0.0"
-    }
-  }
-]
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pypi/default/files...
-Created jobs.testjob
-Files: 4 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Exit code: 5

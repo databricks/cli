@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/appdeploy"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -122,6 +123,38 @@ func appRequestBody(config *AppState) apps.App {
 	return app
 }
 
+// appUpdateRequestBody starts with the remote App because the update mask is
+// static. Only fields with actionable plan changes are overlaid with desired
+// state; otherwise a description-only update would reset omitted compute
+// settings to their zero values.
+func appUpdateRequestBody(config *AppState, entry *PlanEntry) (apps.App, error) {
+	remote, ok := entry.RemoteState.(*AppRemote)
+	if !ok {
+		return apps.App{}, errors.New("internal error: app remote state has unexpected type")
+	}
+
+	app := remote.App
+	for _, field := range UpdateMaskFields {
+		path, err := structpath.ParsePath(field)
+		if err != nil {
+			return apps.App{}, fmt.Errorf("parsing app update field %q: %w", field, err)
+		}
+		if !entry.Changes.HasChange(path) {
+			continue
+		}
+		value, err := structaccess.Get(config, path)
+		if err != nil {
+			return apps.App{}, fmt.Errorf("reading desired app field %q: %w", field, err)
+		}
+		if err := structaccess.Set(&app, path, value); err != nil {
+			return apps.App{}, fmt.Errorf("overlaying desired app field %q: %w", field, err)
+		}
+	}
+	app = appRequestBody(&AppState{App: app, Config: nil, Lifecycle: nil})
+	app.ForceSendFields = slices.Clone(appUpdateForceSendFields)
+	return app, nil
+}
+
 func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *AppRemote, error) {
 	// Start app compute only when lifecycle.started=true is explicit.
 	// For nil (omitted) or false, use no_compute=true (do not start compute).
@@ -140,16 +173,17 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *AppState) (string, *
 				// Check if the app is in DELETING state - only then should we retry
 				existingApp, getErr := r.client.Apps.GetByName(ctx, config.Name)
 				if getErr != nil {
-					// If we can't get the app (e.g., it was just deleted), retry the create
 					if apierr.IsMissing(getErr) {
 						return nil, retries.Continues("app was deleted, retrying create")
 					}
 					return nil, retries.Halt(err)
 				}
-				if existingApp.ComputeStatus != nil && existingApp.ComputeStatus.State == apps.ComputeStateDeleting {
+				if existingApp.ComputeStatus == nil {
+					return nil, retries.Continues("app compute status is not available, retrying create")
+				}
+				if existingApp.ComputeStatus.State == apps.ComputeStateDeleting {
 					return nil, retries.Continues("app is deleting, retrying create")
 				}
-				// App exists and is not being deleted - this is a hard error
 				return nil, retries.Halt(err)
 			}
 			return nil, retries.Halt(err)
@@ -178,11 +212,27 @@ var UpdateMaskFields = []string{
 
 var updateMask = strings.Join(UpdateMaskFields, ",")
 
+var appUpdateForceSendFields = []string{
+	"Description",
+	"BudgetPolicyId",
+	"UsagePolicyId",
+	"Resources",
+	"UserApiScopes",
+	"ComputeSize",
+	"ComputeMinInstances",
+	"ComputeMaxInstances",
+	"GitRepository",
+	"TelemetryExportDestinations",
+}
+
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *AppState, entry *PlanEntry) (*AppRemote, error) {
 	// Deploy-only fields (source_code_path, config, git_source, lifecycle) are excluded
 	// from the request body; see appRequestBody.
 	if hasAppChanges(entry) {
-		app := appRequestBody(config)
+		app, err := appUpdateRequestBody(config, entry)
+		if err != nil {
+			return nil, err
+		}
 		request := apps.AsyncUpdateAppRequest{
 			App:        &app,
 			AppName:    id,
@@ -353,6 +403,9 @@ func (r *ResourceApp) waitForApp(ctx context.Context, w *databricks.WorkspaceCli
 		app, err := w.Apps.GetByName(ctx, name)
 		if err != nil {
 			return nil, retries.Halt(err)
+		}
+		if app.ComputeStatus == nil {
+			return nil, retries.Continues("app compute status is not available")
 		}
 		status := app.ComputeStatus.State
 		statusMessage := app.ComputeStatus.Message

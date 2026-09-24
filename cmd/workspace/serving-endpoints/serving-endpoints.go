@@ -1107,12 +1107,11 @@ Update rate limits of a serving endpoint.
 		}
 		putReq.Name = args[0]
 
-		response, err := w.ServingEndpoints.Put(ctx, putReq)
+		_, err = w.ServingEndpoints.Put(ctx, putReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

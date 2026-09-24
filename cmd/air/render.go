@@ -163,8 +163,8 @@ func genAIComputeTask(run *jobs.Run) *jobs.GenAiComputeTask {
 	return run.Tasks[0].GenAiComputeTask
 }
 
-// aiRuntimeEnvironmentVersion returns the serverless environment version an
-// ai_runtime run used (e.g. "4"), read from the Jobs GetRun response's
+// aiRuntimeEnvironmentVersion returns the serverless environment version or
+// base environment an ai_runtime run used, read from the Jobs GetRun response's
 // environments[] entry keyed by aiRuntimeEnvironmentKey. The typed SDK Run has
 // no environments field, so the value is fetched with a raw request. Best-effort:
 // returns "" (logged) on any error or when the run declares no environment.
@@ -179,6 +179,7 @@ func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceCli
 			EnvironmentKey string `json:"environment_key"`
 			Spec           struct {
 				EnvironmentVersion string `json:"environment_version"`
+				BaseEnvironment    string `json:"base_environment"`
 			} `json:"spec"`
 		} `json:"environments"`
 	}
@@ -191,7 +192,10 @@ func aiRuntimeEnvironmentVersion(ctx context.Context, w *databricks.WorkspaceCli
 	}
 	for _, e := range resp.Environments {
 		if e.EnvironmentKey == aiRuntimeEnvironmentKey {
-			return e.Spec.EnvironmentVersion
+			if e.Spec.EnvironmentVersion != "" {
+				return e.Spec.EnvironmentVersion
+			}
+			return e.Spec.BaseEnvironment
 		}
 	}
 	return ""

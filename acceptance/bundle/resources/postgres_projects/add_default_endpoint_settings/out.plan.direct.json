@@ -1,5 +1,5 @@
 {
-  "plan_version": [PLAN_VERSION],
+  "plan_version": 3,
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -54,12 +54,6 @@
           "reason": "spec:input_only",
           "old": "Test Project for Adding Default Endpoint Settings",
           "new": "Test Project for Adding Default Endpoint Settings"
-        },
-        "history_retention_duration": {
-          "action": "skip",
-          "reason": "spec:input_only",
-          "old": "604800s",
-          "new": "604800s"
         },
         "pg_version": {
           "action": "skip",

@@ -33,19 +33,28 @@ func TestWriteUsesGivenMode(t *testing.T) {
 	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
 }
 
-func TestWriteDoesNotPreserveReplacedMode(t *testing.T) {
+func TestWritePreservesReplacedModeWithOption(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Windows does not honor unix file modes")
 	}
 	path := filepath.Join(t.TempDir(), "out")
-	require.NoError(t, os.WriteFile(path, []byte("old"), 0o600))
+	require.NoError(t, os.WriteFile(path, []byte("old"), 0o640))
 
-	// Replacing a 0600 file with perm 0644 yields 0644, not the old mode.
-	require.NoError(t, Write(path, []byte("new"), 0o644))
+	require.NoError(t, Write(path, []byte("new"), 0o644, PreserveMode()))
 
 	info, err := os.Stat(path)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+	assert.Equal(t, os.FileMode(0o640), info.Mode().Perm())
+}
+
+func TestWriteUsesCreationModeForNewFileWithPreserveMode(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "out")
+	require.NoError(t, Write(path, []byte("new"), 0o644, PreserveMode()))
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(path)
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o644), info.Mode().Perm())
+	}
 }
 
 func TestWriteOverwrites(t *testing.T) {

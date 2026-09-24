@@ -1,7 +1,7 @@
 package ssh
 
 import (
-	"strings"
+	"os"
 	"testing"
 	"time"
 
@@ -26,12 +26,17 @@ func TestSetupProxyCommandRoundTripsThroughConnect(t *testing.T) {
 	proxyCommand, err := opts.ToProxyCommand()
 	require.NoError(t, err)
 
-	_, args, found := strings.Cut(proxyCommand, " ssh connect ")
-	require.True(t, found, "proxy command %q must invoke 'ssh connect'", proxyCommand)
+	args, err := proxyCommandArgumentsForTest(proxyCommand)
+	require.NoError(t, err)
+	executable, err := os.Executable()
+	require.NoError(t, err)
+	assert.Equal(t, executable, args[0])
+	require.GreaterOrEqual(t, len(args), 4)
+	assert.Equal(t, "ssh", args[1])
+	assert.Equal(t, "connect", args[2])
 
 	flags := newConnectCommand().Flags()
-	require.NoError(t, flags.Parse(strings.Fields(args)))
-
+	require.NoError(t, flags.Parse(args[3:]))
 	proxyMode, err := flags.GetBool("proxy")
 	require.NoError(t, err)
 	assert.True(t, proxyMode)
@@ -55,6 +60,31 @@ func TestSetupProxyCommandRoundTripsThroughConnect(t *testing.T) {
 	serverTimeout, err := flags.GetDuration("server-timeout")
 	require.NoError(t, err)
 	assert.Equal(t, opts.ServerTimeout, serverTimeout)
+}
+
+func TestSetupProxyCommandRoundTripsSpecialValues(t *testing.T) {
+	profile := "profile with spaces, 'quote', $dollar, `backtick`, and ; metacharacters"
+	baseEnvironment := "env with spaces, 'quote', $dollar, `backtick`, and ; metacharacters"
+	opts := client.ClientOptions{
+		ConnectionName:  "serverless-conn",
+		Profile:         profile,
+		BaseEnvironment: baseEnvironment,
+	}
+	command, err := opts.ToProxyCommand()
+	require.NoError(t, err)
+
+	args, err := proxyCommandArgumentsForTest(command)
+	require.NoError(t, err)
+	assert.Contains(t, args, "--profile="+profile)
+	assert.Contains(t, args, "--base-environment="+baseEnvironment)
+}
+
+func TestSetupCommandRejectsInvalidHostBeforeClientInitialization(t *testing.T) {
+	cmd := newSetupCommand()
+	require.NoError(t, cmd.Flags().Set("name", "../escape"))
+	err := cmd.PreRunE(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "host name")
 }
 
 // Both commands start the same server, so a value the user does not override has to mean the

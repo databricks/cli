@@ -71,6 +71,16 @@ Selected 3 changed tests (limit=50, 0 not selected)
 Selected 1 changed tests (limit=50, 0 not selected)
     1  ^selftest$/^basic$
 
+=== An ancestor test.toml selects all descendant tests
+
+>>> selection M:acceptance/selftest/record_cloud/test.toml
+Selected 5 changed tests (limit=50, 0 not selected)
+    5  ^selftest$/^record_cloud$/^basic$
+    5  ^selftest$/^record_cloud$/^error$
+    5  ^selftest$/^record_cloud$/^pipeline-crud$
+    5  ^selftest$/^record_cloud$/^volume-io$
+    5  ^selftest$/^record_cloud$/^workspace-file-io$
+
 === The limit keeps the highest scoring tests
 
 >>> selection -limit 3 A:acceptance/selftest/basic/script M:acceptance/selftest/diff/script M:acceptance/bundle/invariant/configs/job.yml.tmpl

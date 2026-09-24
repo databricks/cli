@@ -126,6 +126,32 @@ func TestListAirRunsPaginates(t *testing.T) {
 	assert.Equal(t, "2", rows[1].RunID)
 }
 
+func TestListAirRunsExactScanLimitIsExhausted(t *testing.T) {
+	runs := make([]jobs.BaseRun, maxListScan)
+	for i := range runs {
+		runs[i] = airBaseRun(int64(i+1), "me@example.com", "GPU_1xH100", 1, "exp")
+	}
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, runsServer(t, runsListBody(t, "", runs...)).URL), listQuery{activeOnly: true})
+	rows, err := f.next(maxListScan)
+	require.NoError(t, err)
+	assert.Len(t, rows, maxListScan)
+	assert.True(t, f.exhausted)
+	assert.False(t, f.strategy.truncated())
+}
+
+func TestListAirRunsScanLimitWithMoreItemsIsTruncated(t *testing.T) {
+	runs := make([]jobs.BaseRun, maxListScan+1)
+	for i := range runs {
+		runs[i] = airBaseRun(int64(i+1), "me@example.com", "GPU_1xH100", 1, "exp")
+	}
+	f := newRunFetcher(t.Context(), newTestWorkspaceClient(t, runsServer(t, runsListBody(t, "", runs...)).URL), listQuery{activeOnly: true})
+	rows, err := f.next(maxListScan)
+	require.NoError(t, err)
+	assert.Len(t, rows, maxListScan)
+	assert.True(t, f.exhausted)
+	assert.True(t, f.strategy.truncated())
+}
+
 // TestRunFetcherResumesAcrossCalls covers the lazy paging the interactive table
 // relies on: a next() that stops mid-page must resume on the following call, then
 // report exhaustion.

@@ -19,6 +19,17 @@ import (
 
 const defaultGatewayPort = "2222"
 
+func validateSSHArgs(args []string, dashAt int) error {
+	preDashArgs := len(args)
+	if dashAt >= 0 {
+		preDashArgs = dashAt
+	}
+	if preDashArgs > 1 {
+		return errors.New("sandbox ssh accepts at most one sandbox ID before --")
+	}
+	return nil
+}
+
 func newSSHCommand() *cobra.Command {
 	var gatewayPort string
 
@@ -37,7 +48,9 @@ Examples:
   databricks sandbox ssh -- ls -la /home                  # run command on default sandbox
   databricks sandbox ssh happy-panda-1234 -- cat /etc/os-release  # run command on specific sandbox
   databricks sandbox ssh -- -L 8080:localhost:8080        # port forwarding on default sandbox`,
-		Args:              cobra.ArbitraryArgs,
+		Args: func(cmd *cobra.Command, args []string) error {
+			return validateSSHArgs(args, cmd.ArgsLenAtDash())
+		},
 		PreRunE:           root.MustWorkspaceClient,
 		ValidArgsFunction: completeSandboxIDs,
 		RunE: func(cmd *cobra.Command, args []string) error {

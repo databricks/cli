@@ -1,42 +1,42 @@
+Warn: Running in dry-run mode. No actual changes will be made.
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run
-Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded project-folder
 Uploaded project-folder/app.py
 Uploaded project-folder/app.yaml
 Uploaded project-folder/query.sql
+Warn: Running in dry-run mode. No actual changes will be made.
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.*
-Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded project-folder
 Uploaded project-folder/query.sql
+Warn: Running in dry-run mode. No actual changes will be made.
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql
-Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
+Warn: Running in dry-run mode. No actual changes will be made.
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/*.py
-Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded ignored-folder
 Uploaded ignored-folder/script.py
+Warn: Running in dry-run mode. No actual changes will be made.
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run --exclude project-folder/app.* --exclude project-folder/query.sql --include ignored-folder/**/*.py
-Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded ignored-folder/folder1
 Uploaded ignored-folder/folder1/script.py
 Uploaded ignored-folder/script.py
+Warn: Running in dry-run mode. No actual changes will be made.
 
 >>> [CLI] sync . /Users/[USERNAME] --dry-run --include ignored-folder/** --include !ignored-folder/folder1/big-blob
-Warn: Running in dry-run mode. No actual changes will be made.
 Initial Sync Complete
 Uploaded .gitignore
 Uploaded ignored-folder/folder1

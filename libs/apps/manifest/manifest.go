@@ -152,8 +152,8 @@ func (m *Manifest) GetPlugins() []Plugin {
 	return plugins
 }
 
-// GetSelectablePlugins returns plugins the user can choose during init.
-// Excludes mandatory plugins (they are always included automatically).
+// GetSelectablePlugins returns non-mandatory, non-deprecated plugins the user
+// can choose during init.
 func (m *Manifest) GetSelectablePlugins() []Plugin {
 	var selectable []Plugin
 	for _, p := range m.GetPlugins() {
@@ -164,18 +164,18 @@ func (m *Manifest) GetSelectablePlugins() []Plugin {
 	return selectable
 }
 
-// GetMandatoryPlugins returns plugins marked as requiredByTemplate.
+// GetMandatoryPlugins returns non-deprecated plugins marked as requiredByTemplate.
 func (m *Manifest) GetMandatoryPlugins() []Plugin {
 	var mandatory []Plugin
 	for _, p := range m.GetPlugins() {
-		if p.RequiredByTemplate {
+		if p.RequiredByTemplate && !p.Deprecated {
 			mandatory = append(mandatory, p)
 		}
 	}
 	return mandatory
 }
 
-// GetMandatoryPluginNames returns the names of all mandatory plugins.
+// GetMandatoryPluginNames returns the names of all non-deprecated mandatory plugins.
 func (m *Manifest) GetMandatoryPluginNames() []string {
 	var names []string
 	for _, p := range m.GetMandatoryPlugins() {

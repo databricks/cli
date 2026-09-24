@@ -24,6 +24,10 @@ func (stubStore) Put(string, Entry) error      { return nil }
 func (stubStore) Lookup(string) (Entry, error) { return Entry{}, ErrNotFound }
 func (stubStore) Delete(string) error          { return nil }
 
+func (s stubStore) WithLock(_ context.Context, fn func(LockedStore) error) error {
+	return fn(s)
+}
+
 // memStore is a functional in-memory Store for exercising the OAuth wrappers.
 type memStore struct{ entries map[string]Entry }
 
@@ -41,13 +45,17 @@ func (m *memStore) Lookup(key string) (Entry, error) {
 
 func (m *memStore) Delete(key string) error { delete(m.entries, key); return nil }
 
+func (m *memStore) WithLock(_ context.Context, fn func(LockedStore) error) error {
+	return fn(m)
+}
+
 func fakeFactories(t *testing.T) storeFactories {
 	t.Helper()
 	return storeFactories{
 		newFile:          func(context.Context) (Store, error) { return stubStore{source: "file"}, nil },
 		newKeyring:       func() Store { return stubStore{source: "keyring"} },
-		probeKeyring:     func() error { return nil },
-		probeKeyringRead: func() error { return nil },
+		probeKeyring:     func(context.Context) error { return nil },
+		probeKeyringRead: func(context.Context) error { return nil },
 	}
 }
 
@@ -130,8 +138,8 @@ func TestResolveStore_FileFactoryErrorPropagates(t *testing.T) {
 	factories := storeFactories{
 		newFile:          func(context.Context) (Store, error) { return nil, boom },
 		newKeyring:       func() Store { return stubStore{source: "keyring"} },
-		probeKeyring:     func() error { return nil },
-		probeKeyringRead: func() error { return nil },
+		probeKeyring:     func(context.Context) error { return nil },
+		probeKeyringRead: func(context.Context) error { return nil },
 	}
 
 	_, _, err := resolveStoreWith(ctx, StorageModePlaintext, factories)
@@ -150,7 +158,7 @@ func TestApplyReadFallback_PlaintextSkipsProbe(t *testing.T) {
 	ctx := t.Context()
 	probed := false
 	f := fakeFactories(t)
-	f.probeKeyringRead = func() error {
+	f.probeKeyringRead = func(context.Context) error {
 		probed = true
 		return nil
 	}
@@ -168,7 +176,7 @@ func TestApplyReadFallback_ExplicitSecureSkipsProbe(t *testing.T) {
 	ctx := t.Context()
 	probed := false
 	f := fakeFactories(t)
-	f.probeKeyringRead = func() error {
+	f.probeKeyringRead = func(context.Context) error {
 		probed = true
 		return errors.New("unreachable")
 	}
@@ -198,7 +206,7 @@ func TestApplyReadFallback_DefaultSecure_ProbeFail_FallsBack(t *testing.T) {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 	f := fakeFactories(t)
-	f.probeKeyringRead = func() error { return errors.New("no keyring") }
+	f.probeKeyringRead = func(context.Context) error { return errors.New("no keyring") }
 
 	got, mode, err := applyReadFallback(ctx, StorageModeSecure, false, f)
 
@@ -232,7 +240,7 @@ func TestApplyReadFallback_DefaultSecure_ProbeTimeout_StaysOnKeyring(t *testing.
 			configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 			f := fakeFactories(t)
-			f.probeKeyringRead = func() error { return tc.probeErr }
+			f.probeKeyringRead = func(context.Context) error { return tc.probeErr }
 
 			got, mode, err := applyReadFallback(ctx, StorageModeSecure, false, f)
 
@@ -252,7 +260,7 @@ func TestResolveStoreForLogin_PlaintextSkipsProbe(t *testing.T) {
 	ctx := t.Context()
 	probed := false
 	f := fakeFactories(t)
-	f.probeKeyring = func() error {
+	f.probeKeyring = func(context.Context) error {
 		probed = true
 		return nil
 	}
@@ -282,7 +290,7 @@ func TestResolveStoreForLogin_ExplicitEnvSecure_ProbeFail_Errors(t *testing.T) {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 	f := fakeFactories(t)
-	f.probeKeyring = func() error { return errors.New("no keyring") }
+	f.probeKeyring = func(context.Context) error { return errors.New("no keyring") }
 
 	_, _, err := resolveStoreForLoginWith(ctx, "", f)
 	require.Error(t, err)
@@ -300,7 +308,7 @@ func TestResolveStoreForLogin_ExplicitConfigSecure_ProbeFail_Errors(t *testing.T
 	require.NoError(t, os.WriteFile(configPath, []byte("[__settings__]\nauth_storage = secure\n"), 0o600))
 
 	f := fakeFactories(t)
-	f.probeKeyring = func() error { return errors.New("no keyring") }
+	f.probeKeyring = func(context.Context) error { return errors.New("no keyring") }
 
 	_, _, err := resolveStoreForLoginWith(ctx, "", f)
 	require.Error(t, err)
@@ -316,7 +324,7 @@ func TestResolveStoreForLogin_ExplicitOverrideSecure_ProbeFail_Errors(t *testing
 	ctx := t.Context()
 
 	f := fakeFactories(t)
-	f.probeKeyring = func() error { return errors.New("no keyring") }
+	f.probeKeyring = func(context.Context) error { return errors.New("no keyring") }
 
 	_, _, err := resolveStoreForLoginWith(ctx, StorageModeSecure, f)
 	require.Error(t, err)
@@ -329,7 +337,7 @@ func TestApplyLoginFallback_DefaultSecure_ProbeFail_FallsBackAndPersists(t *test
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 	f := fakeFactories(t)
-	f.probeKeyring = func() error { return errors.New("no keyring") }
+	f.probeKeyring = func(context.Context) error { return errors.New("no keyring") }
 
 	got, mode, err := applyLoginFallback(ctx, StorageModeSecure, false, f)
 
@@ -348,7 +356,7 @@ func TestApplyLoginFallback_ExplicitSecure_ProbeFail_Errors(t *testing.T) {
 	configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 	f := fakeFactories(t)
-	f.probeKeyring = func() error { return errors.New("no keyring") }
+	f.probeKeyring = func(context.Context) error { return errors.New("no keyring") }
 
 	_, _, err := applyLoginFallback(ctx, StorageModeSecure, true, f)
 	require.Error(t, err)
@@ -383,7 +391,7 @@ func TestApplyLoginFallback_ProbeTimeout_StaysOnKeyring(t *testing.T) {
 			configPath := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 
 			f := fakeFactories(t)
-			f.probeKeyring = func() error { return tc.probeErr }
+			f.probeKeyring = func(context.Context) error { return tc.probeErr }
 
 			got, mode, err := applyLoginFallback(ctx, StorageModeSecure, tc.explicit, f)
 
@@ -522,7 +530,7 @@ func TestWrapForOAuthArgument(t *testing.T) {
 			assert.Equal(t, tc.wantWrap, wrapped, "wrapper presence")
 
 			tok := &oauth2.Token{AccessToken: "abc"}
-			require.NoError(t, got.Put(profileKey, Entry{Token: tok}))
+			put(t, got, profileKey, Entry{Token: tok})
 
 			primary, err := inner.Lookup(profileKey)
 			require.NoError(t, err, "primary key must always be written")

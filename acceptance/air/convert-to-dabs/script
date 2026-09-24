@@ -31,3 +31,10 @@ trace grep -E 'environment_version|base_environment' databricks.yml
 
 title "the Databricks AI bundle validates"
 trace $CLI bundle validate
+
+title "a Unity Catalog image is preserved"
+trace $CLI air convert-to-dabs unity-catalog-image.yaml --output-dir generated-image
+trace grep -F 'unity_catalog_image_path: main.air.training:prod' generated-image/databricks.yml
+
+title "the Unity Catalog image bundle validates"
+(cd generated-image && trace $CLI bundle validate)

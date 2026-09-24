@@ -281,6 +281,7 @@ func newCreateServicePrincipal() *cobra.Command {
 
 	cmd.Flags().Var(&createServicePrincipalJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createServicePrincipalReq.ServicePrincipal.ApplicationId, "application-id", createServicePrincipalReq.ServicePrincipal.ApplicationId, `Application ID of the service principal.`)
 	cmd.Flags().StringVar(&createServicePrincipalReq.ServicePrincipal.ExternalId, "external-id", createServicePrincipalReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
 
 	cmd.Use = "create-service-principal DISPLAY_NAME ACCOUNT_SP_STATUS"
@@ -499,7 +500,6 @@ func newCreateWorkspaceAssignment() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "create-workspace-assignment WORKSPACE_ID PRINCIPAL_ID"
@@ -603,7 +603,6 @@ func newCreateWorkspaceAssignmentDetail() *cobra.Command {
 
 	cmd.Flags().Var(&createWorkspaceAssignmentDetailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "create-workspace-assignment-detail WORKSPACE_ID PRINCIPAL_ID"
@@ -2662,6 +2661,7 @@ func newUpdateServicePrincipal() *cobra.Command {
 
 	cmd.Flags().Var(&updateServicePrincipalJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateServicePrincipalReq.ServicePrincipal.ApplicationId, "application-id", updateServicePrincipalReq.ServicePrincipal.ApplicationId, `Application ID of the service principal.`)
 	cmd.Flags().StringVar(&updateServicePrincipalReq.ServicePrincipal.ExternalId, "external-id", updateServicePrincipalReq.ServicePrincipal.ExternalId, `ExternalId of the service principal in the customer's IdP.`)
 
 	cmd.Use = "update-service-principal SERVICE_PRINCIPAL_ID UPDATE_MASK DISPLAY_NAME ACCOUNT_SP_STATUS"
@@ -2884,7 +2884,6 @@ func newUpdateWorkspaceAssignment() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "update-workspace-assignment WORKSPACE_ID PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"
@@ -2998,7 +2997,6 @@ func newUpdateWorkspaceAssignmentDetail() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceAssignmentDetailJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: effective_entitlements
 	// TODO: array: entitlements
 
 	cmd.Use = "update-workspace-assignment-detail WORKSPACE_ID PRINCIPAL_ID UPDATE_MASK PRINCIPAL_ID"

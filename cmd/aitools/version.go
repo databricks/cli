@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/libs/aitools/agents"
 	"github.com/databricks/cli/libs/aitools/installer"
@@ -77,11 +78,28 @@ func NewVersionCmd() *cobra.Command {
 	return cmd
 }
 
-// printPluginLines prints one line per plugin recorded in the scope's state,
-// labeled with the scope so it is clear where the plugin is installed.
+// pluginVersionAtLeast reports whether installed is at least compatible.
+func pluginVersionAtLeast(installed, compatible string) bool {
+	installed = strings.TrimPrefix(installed, "v")
+	compatible = strings.TrimPrefix(compatible, "v")
+	if installed == "latest" {
+		return compatible == "latest"
+	}
+	if !semver.IsValid("v"+installed) || !semver.IsValid("v"+compatible) {
+		return false
+	}
+	return semver.Compare("v"+installed, "v"+compatible) >= 0
+}
+
 func printPluginLines(ctx context.Context, state *installer.InstallState, scope string) {
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		rec := state.Plugins[name]
+		if agent := agents.ByName(name); agent != nil {
+			authoritative, found := agent.DatabricksPluginVersionForScope(ctx, rec.Scope)
+			if found || agent.HasPluginVersionReader() {
+				rec.Version = authoritative
+			}
+		}
 		scopeLabel := scope
 		if rec.Scope != "" {
 			scopeLabel += ", " + rec.Scope + " scope"

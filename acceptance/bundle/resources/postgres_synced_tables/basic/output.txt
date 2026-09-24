@@ -43,37 +43,7 @@ Created postgres_synced_tables.my_table
 Created schemas.pipeline_storage
 Files: 0 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] postgres get-synced-table synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced
-{
-  "name": "synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced",
-  "unity_catalog_provisioning_state": "ACTIVE"
-}
-
->>> [CLI] bundle summary
-Name: deploy-postgres-synced-table-[UNIQUE_NAME]
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-synced-table-[UNIQUE_NAME]/default
-Resources:
-  Postgres catalogs:
-    my_catalog:
-      Name: lakebase_test_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/lakebase_test_[UNIQUE_NAME]
-  Postgres projects:
-    my_project:
-      Name: Test Project for Synced Table
-  Postgres synced tables:
-    my_table:
-      Name: lakebase_test_[UNIQUE_NAME].public.trips_synced
-      URL:  [DATABRICKS_URL]/explore/data/lakebase_test_[UNIQUE_NAME]/public/trips_synced
-  Schemas:
-    pipeline_storage:
-      Name: pipeline_storage_[UNIQUE_NAME]
-      URL:  [DATABRICKS_URL]/explore/data/main/pipeline_storage_[UNIQUE_NAME]
-
->>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -93,3 +63,5 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 4 deleted
 Cleaning up temporary source table
+
+Exit code: 5

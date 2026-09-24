@@ -61,6 +61,11 @@ func TestTerraformPathToDABs(t *testing.T) {
 			terrPath: "git_source.url",
 			dabsPath: "git_source.git_url",
 		},
+		{
+			group:    "jobs",
+			terrPath: "task.ai_runtime_task.deployments[0].command_path",
+			dabsPath: "tasks.ai_runtime_task.deployments[0].command_path",
+		},
 
 		// Unknown fields pass through unchanged
 		{
@@ -103,6 +108,21 @@ func TestTerraformPathToDABs(t *testing.T) {
 			group:    "pipelines",
 			terrPath: "notification",
 			dabsPath: "notifications",
+		},
+		{
+			group:    "pipelines",
+			terrPath: "run_as.group_name",
+			dabsPath: "run_as.group_name",
+		},
+		{
+			group:    "pipelines",
+			terrPath: "ingestion_definition.objects[0].schema.connector_options.kafka_options.key_transformer.format",
+			dabsPath: "ingestion_definition.objects[0].schema.connector_options.kafka_options.key_transformer.format",
+		},
+		{
+			group:    "model_serving_endpoints",
+			terrPath: "served_entities[0].external_model.amazon_bedrock_config[0].aws_region",
+			dabsPath: "served_entities[0].external_model.amazon_bedrock_config[0].aws_region",
 		},
 
 		// Unknown group: path unchanged

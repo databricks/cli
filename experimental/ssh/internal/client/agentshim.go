@@ -19,7 +19,9 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/filelock"
 	"github.com/databricks/cli/libs/log"
+
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -51,14 +53,10 @@ const (
 	// the file holding the Databricks session context.
 	contextFile = "agent-system-context.md"
 
-	// lock file to serialize first-run toolchain setup across
-	// concurrent SSH clients sharing this driver's $HOME.
+	// Persistent lock file serializing first-run toolchain setup across SSH
+	// clients sharing this driver's $HOME.
 	setupLockName = ".setup.lock"
-
-	// timeout to reclaim a setup lock left behind by a process that died
-	// mid-install. It is deliberately generous: a cold first run can download uv,
-	// ug, and Node
-	setupLockStaleAfter = 2 * time.Minute
+	setupLockWait = time.Minute
 )
 
 type agentSpec struct {
@@ -376,36 +374,18 @@ func ensureToolchain(ctx context.Context, home string) error {
 	return nil
 }
 
-// take a machine-local lock (an O_EXCL sentinel file) serializing first-run setup
-// across SSH clients. It blocks until the lock is free, reclaiming one left behind
-// by a dead process after setupLockStaleAfter. The returned func releases the lock.
+// acquireSetupLock serializes first-run setup across SSH clients. The lock file
+// persists; ownership is held by its descriptor and released when that descriptor closes.
 func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 	lockPath := filepath.Join(home, agentDir, setupLockName)
 	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create %s: %w", filepath.Dir(lockPath), err)
 	}
-	for {
-		f, err := os.OpenFile(lockPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
-		if err == nil {
-			_ = f.Close()
-			return func() { _ = os.Remove(lockPath) }, nil
-		}
-		if !errors.Is(err, os.ErrExist) {
-			return nil, fmt.Errorf("failed to acquire setup lock: %w", err)
-		}
-		// Held by another process: reclaim it if stale, otherwise wait and retry.
-		if info, statErr := os.Stat(lockPath); statErr == nil && time.Since(info.ModTime()) > setupLockStaleAfter {
-			log.Warnf(ctx, "reclaiming stale agent-shim setup lock at %s", lockPath)
-			_ = os.Remove(lockPath)
-			continue
-		}
-		log.Infof(ctx, "waiting for a concurrent setup to finish")
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(time.Second):
-		}
+	unlock, err := filelock.Acquire(ctx, lockPath, setupLockWait)
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire setup lock: %w", err)
 	}
+	return func() { _ = unlock() }, nil
 }
 
 func launchAgent(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) error {

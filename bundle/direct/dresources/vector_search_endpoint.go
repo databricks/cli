@@ -2,19 +2,23 @@ package dresources
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/aisearch"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 )
 
 var (
 	pathBudgetPolicyId = structpath.MustParsePath("budget_policy_id")
 	pathTargetQps      = structpath.MustParsePath("target_qps")
+	pathUsagePolicyId  = structpath.MustParsePath("usage_policy_id")
 )
 
 // VectorSearchEndpointRemote is remote state for a vector search endpoint. It embeds API response
@@ -113,6 +117,23 @@ func (r *ResourceVectorSearchEndpoint) DoUpdate(ctx context.Context, id string, 
 			EndpointName:    id,
 			TargetQps:       config.TargetQps,
 			ForceSendFields: nil,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if entry.Changes.HasChange(pathUsagePolicyId) {
+		// AI Search requires the endpoint's full workspace resource name.
+		endpointName := fmt.Sprintf("workspaces/%s/endpoints/%s", r.client.Config.WorkspaceID, id)
+		_, err := r.client.AiSearch.UpdateEndpoint(ctx, aisearch.UpdateEndpointRequest{
+			Endpoint: aisearch.Endpoint{ //nolint:exhaustruct
+				Name:            endpointName,
+				UsagePolicyId:   config.UsagePolicyId,
+				ForceSendFields: []string{"UsagePolicyId"},
+			},
+			Name:       endpointName,
+			UpdateMask: fieldmask.FieldMask{Paths: []string{"usage_policy_id"}},
 		})
 		if err != nil {
 			return nil, err

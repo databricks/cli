@@ -20,6 +20,22 @@ type testCase struct {
 	getOnlyErr string // if set, Validate passes but Get returns this error
 }
 
+func TestIsSkippedField(t *testing.T) {
+	typ := reflect.TypeFor[struct {
+		Skipped string `json:"-"`
+		//nolint:govet,staticcheck // fixture intentionally exercises optioned dash tags
+		NamedDash string `json:"-,omitempty"`
+		//nolint:govet,staticcheck // fixture intentionally exercises optioned dash tags
+		NamedDashOnly string `json:"-,"`
+		Normal        string `json:"normal,omitempty"`
+	}]()
+
+	require.False(t, IsSkippedField(typ.Field(1)))
+	require.False(t, IsSkippedField(typ.Field(2)))
+	require.False(t, IsSkippedField(typ.Field(3)))
+	require.True(t, IsSkippedField(typ.Field(0)))
+}
+
 func testGet(t *testing.T, obj any, path string, want any) {
 	t.Helper()
 	got, err := GetByString(obj, path)

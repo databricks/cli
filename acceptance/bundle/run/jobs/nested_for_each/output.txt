@@ -1,0 +1,6 @@
+
+>>> [CLI] bundle deploy
+Error: expected a notebook for "resources.jobs.nested_job.tasks[0].for_each_task.task.notebook_task.notebook_path" but got a file: file at [TEST_TMP_DIR]/notebook.py is not a notebook
+
+
+Exit code: 1

@@ -69,6 +69,21 @@ func TestParseResourcePath(t *testing.T) {
 			input:   "something/else",
 			wantErr: "invalid resource path",
 		},
+		{
+			name:    "extra segment after project",
+			input:   "projects/my-project/extra",
+			wantErr: "invalid resource path",
+		},
+		{
+			name:    "extra segment after branch",
+			input:   "projects/my-project/branches/main/extra",
+			wantErr: "invalid resource path",
+		},
+		{
+			name:    "extra segment after endpoint",
+			input:   "projects/my-project/branches/main/endpoints/primary/extra",
+			wantErr: "invalid resource path",
+		},
 	}
 
 	for _, tc := range tests {

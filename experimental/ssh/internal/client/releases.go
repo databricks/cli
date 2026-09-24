@@ -26,6 +26,8 @@ import (
 
 type releaseProvider func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error)
 
+var releaseDownloadHTTPClient = &http.Client{Timeout: 10 * time.Minute}
+
 func UploadTunnelReleases(ctx context.Context, client *databricks.WorkspaceClient, version, releasesDir string) error {
 	versionedDir, err := workspace.GetWorkspaceVersionedDir(ctx, client, version)
 	if err != nil {
@@ -185,12 +187,21 @@ func getLocalRelease(ctx context.Context, architecture, version, releasesDir str
 }
 
 func getGithubRelease(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+	return getGithubReleaseWithClient(ctx, architecture, version, releasesDir, releaseDownloadHTTPClient)
+}
+
+func getGithubReleaseWithClient(ctx context.Context, architecture, version, releasesDir string, client *http.Client) (io.ReadCloser, error) {
 	// TODO: download and check databricks_cli_<version>_SHA256SUMS
 	fileName := getReleaseName(architecture, version)
 	downloadURL := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, fileName)
 	log.Infof(ctx, "Downloading %s from %s", fileName, downloadURL)
 
-	resp, err := http.Get(downloadURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request for %s: %w", downloadURL, err)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", downloadURL, err)
 	}

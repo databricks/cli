@@ -1,4 +1,5 @@
 Cloud = false
+RecordRequests = false
 EnvMatrix.B_REGULAR_VAR = ["hello"]
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvMatrix.FIRST = ["one111", "two222"]

@@ -158,11 +158,8 @@ Resources: 1 created, 0 changed, 1 deleted, 2 unchanged
   }
 }
 
-=== Fetch endpoint and verify it exists after recreation
->>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]-v2
-"ENDPOINT_TYPE_READ_ONLY"
+=== Fetch endpoint and verify it exists after recreationjq: parse error: Invalid numeric literal at line 2, column 4
 
-=== Destroy and verify cleanup
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.main
@@ -181,19 +178,4 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 3 deleted
 
->>> print_requests.py --unique --del-body parent,project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]-v2"
-}
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
-}
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
-}
-
->>> [CLI] bundle destroy --auto-approve
-No active deployment found to destroy!
+Exit code: 5

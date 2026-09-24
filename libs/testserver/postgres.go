@@ -228,6 +228,13 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		}
 	}
 
+	if updateProject.Spec != nil && updateProject.Spec.HistoryRetentionDuration == nil {
+		mask := req.URL.Query().Get("update_mask")
+		if maskContains(mask, "spec") || maskContains(mask, "spec.history_retention_duration") {
+			updateProject.Spec.HistoryRetentionDuration = duration.New(defaultHistoryRetention)
+		}
+	}
+
 	// Apply updates from spec to status
 	if updateProject.Spec != nil {
 		if project.Status == nil {
@@ -236,9 +243,8 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 		if updateProject.Spec.DisplayName != "" {
 			project.Status.DisplayName = updateProject.Spec.DisplayName
 		}
-		// Verified against a real workspace: dropping the field from config sends a
-		// mask naming it with no value in the body, and the API keeps the previous
-		// value rather than clearing it. So a removal never takes effect.
+		// A masked removal is materialized by the engine as the documented default
+		// before this handler runs, so applying the value converges the remote state.
 		if updateProject.Spec.HistoryRetentionDuration != nil {
 			project.Status.HistoryRetentionDuration = updateProject.Spec.HistoryRetentionDuration
 		}
@@ -304,6 +310,13 @@ func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
 					delete(s.postgresImplicitEndpoints, epName)
 				}
 			}
+		}
+	}
+
+	rolePrefix := name + "/branches/"
+	for roleName := range s.PostgresRoles {
+		if strings.HasPrefix(roleName, rolePrefix) {
+			delete(s.PostgresRoles, roleName)
 		}
 	}
 
@@ -529,6 +542,13 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 		if strings.HasPrefix(epName, endpointPrefix) {
 			delete(s.PostgresEndpoints, epName)
 			delete(s.postgresImplicitEndpoints, epName)
+		}
+	}
+
+	rolePrefix := name + "/roles/"
+	for roleName := range s.PostgresRoles {
+		if strings.HasPrefix(roleName, rolePrefix) {
+			delete(s.PostgresRoles, roleName)
 		}
 	}
 
@@ -997,6 +1017,15 @@ func validateUpdateMask(req Request, allowed []string, oneofGroups map[string][]
 	return nil
 }
 
+func maskContains(mask, path string) bool {
+	for entry := range strings.SplitSeq(mask, ",") {
+		if strings.TrimSpace(entry) == path {
+			return true
+		}
+	}
+	return false
+}
+
 // wholeSpecMasked reports whether the update_mask names the whole spec message (a bare
 // "spec" path), as the Terraform provider does.
 func wholeSpecMasked(mask string) bool {
@@ -1088,6 +1117,13 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 		}
 	}
 
+	if updateEndpoint.Spec != nil && !updateEndpoint.Spec.NoSuspension && updateEndpoint.Spec.SuspendTimeoutDuration == nil {
+		mask := req.URL.Query().Get("update_mask")
+		if maskContains(mask, "spec") || maskContains(mask, "spec.suspension") {
+			updateEndpoint.Spec.SuspendTimeoutDuration = duration.New(defaultSuspendTimeout)
+		}
+	}
+
 	// Apply updates from spec to status
 	if updateEndpoint.Spec != nil {
 		if endpoint.Status == nil {
@@ -1145,8 +1181,9 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID string, replaceExisting bool) Response {
 	defer s.LockUnlock()()
 
+	// The real API generates a valid leaf ID when database_id is omitted.
 	if databaseID == "" {
-		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database_id' is required, expected non-default value (not "")!`)
+		databaseID = "db-" + nextUUID()[:8]
 	}
 
 	// Check if parent branch exists
@@ -1165,10 +1202,20 @@ func (s *FakeWorkspace) PostgresDatabaseCreate(req Request, parent, databaseID s
 	}
 
 	// The real Lakebase API requires the owning role on create and rejects an empty
-	// one with this exact error (verified on aws-ucws 2026-07-13). The fake does
-	// not synthesize a default, matching that behavior.
+	// one with this exact error (verified on aws-ucws 2026-07-13).
 	if database.Spec == nil || database.Spec.Role == "" {
 		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'database.spec.role' is required, expected non-default value (not "")!`)
+	}
+
+	if _, exists := s.PostgresRoles[database.Spec.Role]; !exists {
+		roleName := parent + "/roles/owner"
+		if database.Spec.Role != roleName {
+			roleID := database.Spec.Role[strings.LastIndex(database.Spec.Role, "/")+1:]
+			return postgresErrorResponse(404, "NOT_FOUND", fmt.Sprintf("role not found; role_id:%q [TraceId: %s]", roleID, nextTraceID()))
+		}
+		// The project owner is implicit on real branches. Materialize it only when
+		// referenced so ordinary role-list responses do not expose fake state.
+		s.createDefaultRoleLocked(parent)
 	}
 
 	name := fmt.Sprintf("%s/databases/%s", parent, databaseID)
@@ -1876,6 +1923,25 @@ func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 
 	// Each branch implicitly provisions a primary read-write endpoint.
 	s.createDefaultEndpointLocked(branchName)
+}
+
+// createDefaultRoleLocked creates the implicit project owner role for a branch (caller must hold lock).
+func (s *FakeWorkspace) createDefaultRoleLocked(branchName string) {
+	now := nowTime()
+	roleName := branchName + "/roles/owner"
+	s.PostgresRoles[roleName] = postgres.Role{
+		Name:       roleName,
+		RoleId:     "owner",
+		Parent:     branchName,
+		CreateTime: now,
+		UpdateTime: now,
+		Status: &postgres.RoleRoleStatus{
+			RoleId:       "owner",
+			PostgresRole: "app_owner",
+			IdentityType: postgres.RoleIdentityTypeUser,
+			AuthMethod:   postgres.RoleAuthMethodLakebaseOauthV1,
+		},
+	}
 }
 
 // createDefaultEndpointLocked creates the implicit primary read-write endpoint for

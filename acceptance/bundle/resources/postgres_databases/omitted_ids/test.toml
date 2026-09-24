@@ -1,0 +1,4 @@
+Cloud = true
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

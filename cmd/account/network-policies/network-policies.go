@@ -69,6 +69,7 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 
 	cmd.Flags().Var(&createNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", createNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object.`)
 	// TODO: complex arg: egress
 	// TODO: complex arg: ingress
 	// TODO: complex arg: ingress_dry_run
@@ -331,6 +332,7 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 
 	cmd.Flags().Var(&updateNetworkPolicyRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, "account-id", updateNetworkPolicyRpcReq.NetworkPolicy.AccountId, `The associated account ID for this Network Policy object.`)
 	// TODO: complex arg: egress
 	// TODO: complex arg: ingress
 	// TODO: complex arg: ingress_dry_run

@@ -8,10 +8,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sync"
+	"runtime"
+	"time"
 
 	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/filelock"
 	"golang.org/x/oauth2"
 )
 
@@ -21,6 +23,10 @@ const (
 	// for backward compatibility with tokens written by older CLI versions,
 	// even though the Go identifiers now use the "store" vocabulary.
 	tokenStoreFilePath = ".databricks/token-cache.json"
+
+	// tokenStoreLockFilePath is the stable process-wide sidecar used to
+	// coordinate both file and keyring token transactions.
+	tokenStoreLockFilePath = ".databricks/token-cache.lock"
 
 	// ownerExecReadWrite is the permission for the .databricks directory.
 	ownerExecReadWrite = 0o700
@@ -71,9 +77,7 @@ func WithFileLocation(fileLocation string) FileStoreOption {
 // implements the Store interface.
 type fileStore struct {
 	fileLocation string
-
-	// locker protects the token store file from concurrent reads and writes.
-	locker sync.Mutex
+	lockLocation string
 }
 
 // NewFileStore creates a new file-backed Store. By default, tokens are stored
@@ -89,6 +93,11 @@ func NewFileStore(ctx context.Context, opts ...FileStoreOption) (Store, error) {
 	if err := c.init(ctx); err != nil {
 		return nil, err
 	}
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(c.fileLocation, ownerReadWrite); err != nil {
+			return nil, fmt.Errorf("secure token cache permissions: %w", err)
+		}
+	}
 	// Fail fast if the store is not working.
 	if _, err := c.load(); err != nil {
 		return nil, fmt.Errorf("load: %w", err)
@@ -96,11 +105,40 @@ func NewFileStore(ctx context.Context, opts ...FileStoreOption) (Store, error) {
 	return c, nil
 }
 
-// Put implements the Store interface.
-func (c *fileStore) Put(key string, e Entry) error {
-	c.locker.Lock()
-	defer c.locker.Unlock()
+// Lookup implements Store.
+func (c *fileStore) Lookup(key string) (Entry, error) {
 	f, err := c.load()
+	if err != nil {
+		return Entry{}, fmt.Errorf("load: %w", err)
+	}
+	return lookupFileEntry(f, key)
+}
+
+// WithLock implements Store. The stable sidecar coordinates plaintext writes
+// with other CLI processes using either the file or keyring backend.
+func (c *fileStore) WithLock(ctx context.Context, fn func(LockedStore) error) error {
+	return withTokenStoreFileLock(ctx, c.lockLocation, func() error {
+		return fn(&fileLockedStore{store: c})
+	})
+}
+
+type fileLockedStore struct {
+	store *fileStore
+}
+
+// Lookup implements LockedStore.
+func (s *fileLockedStore) Lookup(key string) (Entry, error) {
+	f, err := s.store.load()
+	if err != nil {
+		return Entry{}, fmt.Errorf("load: %w", err)
+	}
+	return lookupFileEntry(f, key)
+}
+
+// Put implements LockedStore. Every mutation reloads the file so multiple
+// entries written by one callback cannot overwrite each other.
+func (s *fileLockedStore) Put(key string, e Entry) error {
+	f, err := s.store.load()
 	if err != nil {
 		return fmt.Errorf("load: %w", err)
 	}
@@ -108,17 +146,20 @@ func (c *fileStore) Put(key string, e Entry) error {
 		f.Tokens = map[string]*fileEntry{}
 	}
 	f.Tokens[key] = &fileEntry{Token: e.Token}
-	return c.write(f)
+	return s.store.write(f)
 }
 
-// Lookup implements the Store interface.
-func (c *fileStore) Lookup(key string) (Entry, error) {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-	f, err := c.load()
+// Delete implements LockedStore. Every mutation reloads the file.
+func (s *fileLockedStore) Delete(key string) error {
+	f, err := s.store.load()
 	if err != nil {
-		return Entry{}, fmt.Errorf("load: %w", err)
+		return fmt.Errorf("load: %w", err)
 	}
+	delete(f.Tokens, key)
+	return s.store.write(f)
+}
+
+func lookupFileEntry(f *tokenStoreFile, key string) (Entry, error) {
 	fe, ok := f.Tokens[key]
 	if !ok {
 		return Entry{}, ErrNotFound
@@ -126,16 +167,16 @@ func (c *fileStore) Lookup(key string) (Entry, error) {
 	return Entry{Token: fe.Token}, nil
 }
 
-// Delete implements the Store interface. Removing a missing key is a no-op.
-func (c *fileStore) Delete(key string) error {
-	c.locker.Lock()
-	defer c.locker.Unlock()
-	f, err := c.load()
-	if err != nil {
-		return fmt.Errorf("load: %w", err)
+func withTokenStoreFileLock(ctx context.Context, lockLocation string, fn func() error) error {
+	if err := os.MkdirAll(filepath.Dir(lockLocation), ownerExecReadWrite); err != nil {
+		return fmt.Errorf("create token cache lock directory: %w", err)
 	}
-	delete(f.Tokens, key)
-	return c.write(f)
+	release, err := filelock.Acquire(ctx, lockLocation, time.Minute)
+	if err != nil {
+		return fmt.Errorf("acquire token cache lock: %w", err)
+	}
+	err = fn()
+	return errors.Join(err, release())
 }
 
 // write marshals f and atomically replaces the store file.
@@ -153,12 +194,12 @@ func (c *fileStore) write(f *tokenStoreFile) error {
 // init initializes the token store file. It creates the file and directory if
 // they do not already exist.
 func (c *fileStore) init(ctx context.Context) error {
-	// set the default file location
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return fmt.Errorf("failed loading home directory: %w", err)
+	}
+	c.lockLocation = filepath.Join(home, tokenStoreLockFilePath)
 	if c.fileLocation == "" {
-		home, err := env.UserHomeDir(ctx)
-		if err != nil {
-			return fmt.Errorf("failed loading home directory: %w", err)
-		}
 		c.fileLocation = filepath.Join(home, tokenStoreFilePath)
 	}
 	// Create the store file if it does not exist.

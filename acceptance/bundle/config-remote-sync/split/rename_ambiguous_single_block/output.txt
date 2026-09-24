@@ -67,8 +67,6 @@ Exit code: 1
 2
 
 === Checking depends_on (gamma's dependencies):
-
->>> grep -A5 task_key: gamma databricks.yml
           depends_on:
             - task_key: zzz
             - {task_key: aaa}

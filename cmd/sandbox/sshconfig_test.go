@@ -27,7 +27,7 @@ func TestBuildSSHConfigBlockShape(t *testing.T) {
 	assert.Contains(t, block, "# Managed by")
 	assert.Contains(t, block, "Host uw2.dbrx.dev\n")
 	assert.Contains(t, block, "Port 2222")
-	assert.Contains(t, block, "IdentityFile /home/u/.ssh/sandbox_ed25519")
+	assert.Contains(t, block, `IdentityFile "/home/u/.ssh/sandbox_ed25519"`)
 	assert.Contains(t, block, "IdentitiesOnly yes")
 
 	// No HostName — Host already IS the real host, so HostName would
@@ -66,7 +66,12 @@ func TestBuildSSHConfigBlockMultipleGateways(t *testing.T) {
 	// Each Host should be followed by Port + IdentityFile, so a naive
 	// "Port 2222" count is a quick sanity check on per-gateway repetition.
 	assert.Equal(t, 2, strings.Count(block, "Port 2222"))
-	assert.Equal(t, 2, strings.Count(block, "IdentityFile /home/u/.ssh/sandbox_ed25519"))
+	assert.Equal(t, 2, strings.Count(block, `IdentityFile "/home/u/.ssh/sandbox_ed25519"`))
+}
+
+func TestBuildSSHConfigBlockEscapesOpenSSHPath(t *testing.T) {
+	block := buildSSHConfigBlock(`/home/user name/.ssh/key"with\slash%token`, []string{"gateway.example.test"}, "2222")
+	assert.Contains(t, block, `IdentityFile "/home/user name/.ssh/key\"with\\slash%%token"`)
 }
 
 func TestWriteManagedConfigCreatesWithRightPerms(t *testing.T) {
@@ -122,8 +127,37 @@ func TestEnsureMainIncludesManagedCreatesFileFromScratch(t *testing.T) {
 	require.NoError(t, err)
 	text := string(data)
 	assert.Contains(t, text, sshConfigBeginMarker)
-	assert.Contains(t, text, "Include "+managedPath)
+	assert.Contains(t, text, `Include "`+managedPath+`"`)
 	assert.Contains(t, text, sshConfigEndMarker)
+}
+
+func TestEnsureMainIncludesManagedEscapesOpenSSHPath(t *testing.T) {
+	dir := t.TempDir()
+	mainPath := filepath.Join(dir, "config")
+	managedPath := filepath.Join(dir, `managed config\with"quote%token`)
+
+	require.NoError(t, ensureMainIncludesManaged(mainPath, managedPath))
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+	escapedPath := strings.NewReplacer(`\`, `\\`, `"`, `\"`, `%`, `%%`).Replace(managedPath)
+	assert.Contains(t, string(data), `Include "`+escapedPath+`"`)
+}
+
+func TestEnsureMainIncludesManagedReplacesLegacyUnquotedPath(t *testing.T) {
+	dir := t.TempDir()
+	mainPath := filepath.Join(dir, "config")
+	managedPath := filepath.Join(dir, "managed config")
+	oldBlock := sshConfigBeginMarker + "\nInclude " + managedPath + "\n" + sshConfigEndMarker + "\n"
+	userConfig := "Host example\n    User alice\n"
+	require.NoError(t, os.WriteFile(mainPath, []byte(oldBlock+userConfig), 0o600))
+
+	require.NoError(t, ensureMainIncludesManaged(mainPath, managedPath))
+	data, err := os.ReadFile(mainPath)
+	require.NoError(t, err)
+	text := string(data)
+	assert.Contains(t, text, `Include "`+managedPath+`"`)
+	assert.NotContains(t, text, "Include "+managedPath+"\n")
+	assert.Contains(t, text, userConfig)
 }
 
 func TestEnsureMainIncludesManagedIsIdempotent(t *testing.T) {

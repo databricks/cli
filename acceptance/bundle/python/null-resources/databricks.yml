@@ -1,0 +1,10 @@
+bundle:
+  name: my_project
+
+sync: {paths: []}
+
+python:
+  resources:
+    - "resources:load_resources"
+
+resources:

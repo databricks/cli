@@ -233,7 +233,11 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	mutateDiagsHasError := errors.New("unexpected error")
 
 	err = b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
-		pythonPath, err := detectExecutable(ctx, opts.venvPath)
+		venvPath := opts.venvPath
+		if venvPath != "" && !filepath.IsAbs(venvPath) {
+			venvPath = filepath.Join(b.BundleRootPath, venvPath)
+		}
+		pythonPath, err := detectExecutable(ctx, venvPath)
 		if err != nil {
 			return dyn.InvalidValue, fmt.Errorf("failed to get Python interpreter path: %w", err)
 		}

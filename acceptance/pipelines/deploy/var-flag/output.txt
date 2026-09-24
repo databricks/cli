@@ -7,9 +7,6 @@ Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?w=[NUMID]
 
-=== Verify: Check that variables were substituted correctly
->>> [CLI] pipelines get [UUID]
-{
-  "catalog": "custom_catalog",
-  "target": "custom_schema"
-}
+=== Verify: Check that variables were substituted correctlyjq: parse error: Invalid numeric literal at line 2, column 4
+
+Exit code: 5

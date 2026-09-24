@@ -36,7 +36,7 @@ denser, agent-oriented version instead.`,
 	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		content := quickstartFor(cmdio.IsPromptSupported(cmd.Context()))
+		content := quickstartFor(cmdio.IsOutputTTY(cmd.OutOrStdout()))
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), content)
 		return err
 	}

@@ -398,7 +398,6 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask must be a single string, with multiple fields separated by commas (no spaces).`)
 	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.AwsRegion, "aws-region", updateReq.CustomerFacingWorkspace.AwsRegion, ``)
-	// TODO: complex arg: azure_workspace_info
 	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Cloud, "cloud", updateReq.CustomerFacingWorkspace.Cloud, `The cloud name.`)
 	// TODO: complex arg: cloud_resource_container
 	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.CredentialsId, "credentials-id", updateReq.CustomerFacingWorkspace.CredentialsId, `ID of the workspace's credential configuration object.`)

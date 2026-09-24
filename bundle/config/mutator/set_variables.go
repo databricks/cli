@@ -2,7 +2,9 @@ package mutator
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -99,7 +101,10 @@ func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
 
 	filePath := filepath.Join(b.BundleRootPath, getDefaultVariableFilePath(b.Config.Bundle.Target))
 	if _, err := os.Stat(filePath); err != nil {
-		return dyn.InvalidValue, nil
+		if errors.Is(err, fs.ErrNotExist) {
+			return dyn.InvalidValue, nil
+		}
+		return dyn.InvalidValue, diag.FromErr(fmt.Errorf("failed to stat variables file %s: %w", filePath, err))
 	}
 
 	f, err := os.ReadFile(filePath)
@@ -124,6 +129,18 @@ func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {
 }
 
 func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	for name, variable := range b.Config.Variables {
+		if variable == nil {
+			path := dyn.MustPathFromString("variables." + name)
+			return diag.Diagnostics{{
+				Severity:  diag.Error,
+				Summary:   fmt.Sprintf("variable %s cannot be null", name),
+				Locations: b.Config.GetLocations(path.String()),
+				Paths:     []dyn.Path{path},
+			}}
+		}
+	}
+
 	defaults, diags := readVariablesFromFile(b)
 	if diags.HasError() {
 		return diags

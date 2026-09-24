@@ -86,7 +86,7 @@ func setupPluginMock(t *testing.T) *[]pluginCall {
 	})
 
 	var calls []pluginCall
-	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, scope, ref string) (installer.PluginRecord, error) {
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, scope string) (installer.PluginRecord, error) {
 		calls = append(calls, pluginCall{agent: a.Name, scope: scope})
 		return installer.PluginRecord{Marketplace: "databricks-agent-skills", Plugin: "databricks", Scope: scope, Version: "0.2.6"}, nil
 	}
@@ -113,6 +113,9 @@ func setupTestAgents(t *testing.T) string {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 	t.Setenv("USERPROFILE", tmp)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
+	t.Setenv("GOOSE_PATH_ROOT", "")
+	t.Setenv("PI_CODING_AGENT_DIR", "")
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
 	return tmp
@@ -241,7 +244,7 @@ func TestExecutePlanSkipBlockedPluginExit0(t *testing.T) {
 	orig := installPluginForAgentFn
 	origRec := recordPluginInstallsFn
 	t.Cleanup(func() { installPluginForAgentFn = orig; recordPluginInstallsFn = origRec })
-	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _ string) (installer.PluginRecord, error) {
 		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonCLINotOnPath}
 	}
 	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
@@ -406,7 +409,7 @@ func TestInstallOutputJSONReportsErrorCategories(t *testing.T) {
 	origInstall := installPluginForAgentFn
 	origRecord := recordPluginInstallsFn
 	t.Cleanup(func() { installPluginForAgentFn = origInstall; recordPluginInstallsFn = origRecord })
-	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _ string) (installer.PluginRecord, error) {
 		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed, Detail: "boom"}
 	}
 	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
@@ -453,7 +456,7 @@ func TestInstallOutputJSONThroughRoot(t *testing.T) {
 	origInstall := installPluginForAgentFn
 	origRecord := recordPluginInstallsFn
 	t.Cleanup(func() { installPluginForAgentFn = origInstall; recordPluginInstallsFn = origRecord })
-	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _, _ string) (installer.PluginRecord, error) {
+	installPluginForAgentFn = func(_ context.Context, a *agents.Agent, _ string) (installer.PluginRecord, error) {
 		return installer.PluginRecord{}, &installer.BlockedError{Agent: a.Name, Reason: installer.ReasonInstallFailed, Detail: "boom"}
 	}
 	recordPluginInstallsFn = func(context.Context, string, map[string]installer.PluginRecord, string) error { return nil }
@@ -574,6 +577,9 @@ func TestInstallNoAgentsDetected(t *testing.T) {
 	t.Setenv("HOME", tmp)
 	t.Setenv("USERPROFILE", tmp)
 	fakeBinsOnPath(t) // no agent binaries
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
+	t.Setenv("GOOSE_PATH_ROOT", "")
+	t.Setenv("PI_CODING_AGENT_DIR", "")
 	plugins := setupPluginMock(t)
 	skills := setupInstallMock(t)
 

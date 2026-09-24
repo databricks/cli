@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -44,6 +45,10 @@ func (s *testStore) Delete(key string) error {
 	return nil
 }
 
+func (s *testStore) WithLock(_ context.Context, fn func(LockedStore) error) error {
+	return fn(s)
+}
+
 // plainArg implements OAuthArgument only, exercising the "no host key" branch.
 type plainArg struct {
 	key string
@@ -75,7 +80,7 @@ func TestDualWritingStorePutPrimaryMirrorsHost(t *testing.T) {
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc", RefreshToken: "r"}
 
-	require.NoError(t, c.Put("profile-a", Entry{Token: tok}))
+	put(t, c, "profile-a", Entry{Token: tok})
 
 	primary, err := inner.Lookup("profile-a")
 	require.NoError(t, err)
@@ -90,9 +95,9 @@ func TestDualWritingStoreDeletePrimaryMirrorsHost(t *testing.T) {
 	inner := newDualWritingTestStore()
 	arg := hostArg{key: "profile-a", hostKey: "https://example.databricks.com"}
 	s := NewDualWritingStore(inner, arg)
-	require.NoError(t, s.Put("profile-a", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
+	put(t, s, "profile-a", Entry{Token: &oauth2.Token{AccessToken: "abc"}})
 
-	require.NoError(t, s.Delete("profile-a"))
+	deleteEntry(t, s, "profile-a")
 
 	_, err := inner.Lookup("profile-a")
 	require.ErrorIs(t, err, ErrNotFound)
@@ -108,7 +113,7 @@ func TestDualWritingStorePutNonPrimaryDoesNotMirror(t *testing.T) {
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc"}
 
-	require.NoError(t, c.Put("https://example.databricks.com", Entry{Token: tok}))
+	put(t, c, "https://example.databricks.com", Entry{Token: tok})
 
 	host, err := inner.Lookup("https://example.databricks.com")
 	require.NoError(t, err)
@@ -123,7 +128,7 @@ func TestDualWritingStorePutNoHostKey(t *testing.T) {
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc"}
 
-	require.NoError(t, c.Put("profile-a", Entry{Token: tok}))
+	put(t, c, "profile-a", Entry{Token: tok})
 
 	got, err := inner.Lookup("profile-a")
 	require.NoError(t, err)
@@ -137,7 +142,7 @@ func TestDualWritingStorePutHostKeyEqualsPrimary(t *testing.T) {
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc"}
 
-	require.NoError(t, c.Put("https://example.databricks.com", Entry{Token: tok}))
+	put(t, c, "https://example.databricks.com", Entry{Token: tok})
 
 	assert.Len(t, inner.entries, 1)
 }
@@ -148,7 +153,7 @@ func TestDualWritingStoreDiscoveryArgWithDiscoveredHost(t *testing.T) {
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc"}
 
-	require.NoError(t, c.Put("profile-a", Entry{Token: tok}))
+	put(t, c, "profile-a", Entry{Token: tok})
 
 	primary, err := inner.Lookup("profile-a")
 	require.NoError(t, err)
@@ -165,7 +170,7 @@ func TestDualWritingStoreDiscoveryArgWithEmptyDiscoveredHost(t *testing.T) {
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc"}
 
-	require.NoError(t, c.Put("profile-a", Entry{Token: tok}))
+	put(t, c, "profile-a", Entry{Token: tok})
 
 	assert.Len(t, inner.entries, 1)
 	primary, err := inner.Lookup("profile-a")
@@ -178,7 +183,7 @@ func TestDualWritingStoreLookupDelegates(t *testing.T) {
 	arg := hostArg{key: "profile-a", hostKey: "https://example.databricks.com"}
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc"}
-	require.NoError(t, inner.Put("profile-a", Entry{Token: tok}))
+	put(t, inner, "profile-a", Entry{Token: tok})
 
 	got, err := c.Lookup("profile-a")
 	require.NoError(t, err)
@@ -203,6 +208,12 @@ func (s *failOnHostKeyStore) Put(key string, e Entry) error {
 	return s.testStore.Put(key, e)
 }
 
+func (s *failOnHostKeyStore) WithLock(ctx context.Context, fn func(LockedStore) error) error {
+	return s.testStore.WithLock(ctx, func(_ LockedStore) error {
+		return fn(s)
+	})
+}
+
 func TestDualWritingStorePutHostKeyFailureIsBestEffort(t *testing.T) {
 	const (
 		profileKey = "profile-a"
@@ -213,7 +224,7 @@ func TestDualWritingStorePutHostKeyFailureIsBestEffort(t *testing.T) {
 	c := NewDualWritingStore(inner, arg)
 	tok := &oauth2.Token{AccessToken: "abc"}
 
-	require.NoError(t, c.Put(profileKey, Entry{Token: tok}), "host-key mirror failure must not propagate to primary Put")
+	put(t, c, profileKey, Entry{Token: tok})
 
 	primary, err := inner.Lookup(profileKey)
 	require.NoError(t, err)

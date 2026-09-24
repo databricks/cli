@@ -1,3 +1,5 @@
+
+>>> [CLI] pipelines get [UUID]
 {
   "creator_user_name": "[USERNAME]",
   "effective_publishing_mode": "DEFAULT_PUBLISHING_MODE",
@@ -11,6 +13,9 @@
   "spec": {
     "catalog": "main",
     "channel": "CURRENT",
+    "configuration": {
+      "spark.sql.ansi.enabled": "true"
+    },
     "deployment": {
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"

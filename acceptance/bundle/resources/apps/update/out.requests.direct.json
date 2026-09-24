@@ -1,3 +1,5 @@
+
+>>> print_requests
 {
   "method": "POST",
   "path": "/api/2.0/apps",
@@ -9,17 +11,40 @@
     "name": "myappname"
   }
 }
+
+>>> print_requests
 {
   "method": "POST",
   "path": "/api/2.0/apps/myappname/update",
   "body": {
     "app": {
+      "app_status": {
+        "message": "App status is unavailable.",
+        "state": "UNAVAILABLE"
+      },
+      "budget_policy_id": "",
+      "compute_max_instances": 0,
+      "compute_min_instances": 0,
+      "compute_size": "MEDIUM",
+      "compute_status": {
+        "message": "App compute is stopped.",
+        "state": "STOPPED"
+      },
       "description": "MY_APP_DESCRIPTION",
-      "name": "myappname"
+      "forward_user_access_token": true,
+      "id": "1000",
+      "name": "myappname",
+      "service_principal_client_id": "[UUID]",
+      "service_principal_id": [NUMID],
+      "service_principal_name": "app-myappname",
+      "url": "myappname-123.cloud.databricksapps.com",
+      "usage_policy_id": ""
     },
     "update_mask": "description,budget_policy_id,usage_policy_id,resources,user_api_scopes,compute_size,compute_min_instances,compute_max_instances,git_repository,telemetry_export_destinations"
   }
 }
+
+>>> print_requests
 {
   "method": "DELETE",
   "path": "/api/2.0/apps/myappname"
@@ -35,6 +60,8 @@
     "name": "mynewappname"
   }
 }
+
+>>> print_requests
 {
   "method": "DELETE",
   "path": "/api/2.0/apps/mynewappname"

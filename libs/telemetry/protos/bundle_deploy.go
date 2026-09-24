@@ -7,9 +7,6 @@ type BundleDeployEvent struct {
 	// UUID associated with the deployment.
 	DeploymentId string `json:"deployment_id,omitempty"`
 
-	// Error message encountered during the bundle deploy command, if any.
-	ErrorMessage string `json:"error_message,omitempty"`
-
 	// Deprecated: superseded by ResourcesMetadata.Resources[*].Count, which covers
 	// every resource type rather than this hand-maintained subset. Both are
 	// populated during the transition; do not add fields here for new types.

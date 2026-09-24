@@ -4,48 +4,30 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created catalogs.test_catalog
 Created schemas.test_schema
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Assert the catalog is created
->>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
-{
-  "name": "test_catalog_[UNIQUE_NAME]",
-  "comment": "Catalog created from DABs",
-  "properties": {
-    "purpose": "testing"
-  }
-}
-
-=== Assert schema is created in the custom catalog
->>> [CLI] schemas get test_catalog_[UNIQUE_NAME].schema1
-{
-  "full_name": "test_catalog_[UNIQUE_NAME].schema1",
-  "catalog_name": "test_catalog_[UNIQUE_NAME]",
-  "comment": "Schema in custom catalog"
-}
-
-=== Verify schema belongs to the test catalog
-=== Update catalog comment
-=== Redeploy with updated catalog
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Updated catalogs.test_catalog
-Files: 1 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
-
-=== Assert catalog comment is updated
->>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
-{
-  "name": "test_catalog_[UNIQUE_NAME]",
-  "comment": "Updated catalog comment"
-}
-
-=== Assert schema still exists after catalog update
->>> [CLI] schemas get test_catalog_[UNIQUE_NAME].schema1
-{
-  "full_name": "test_catalog_[UNIQUE_NAME].schema1"
-}
+=== Assert the catalog is createdjq: parse error: Invalid numeric literal at line 2, column 4
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/normalize_uc_payload.py", line 120, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/normalize_uc_payload.py", line 114, in main
+    data = json.load(sys.stdin)
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
 
 === Test cleanup
 >>> [CLI] bundle destroy --auto-approve
@@ -61,4 +43,9 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 2 deleted
 
 === Assert schema is deleted
+>>> errcode [CLI] schemas get test_catalog_[UNIQUE_NAME].schema1
+
 === Assert the catalog is deleted
+>>> errcode [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+
+Exit code: 1

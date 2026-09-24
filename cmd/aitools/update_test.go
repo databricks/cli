@@ -71,7 +71,7 @@ func TestUpdateCheckPrintsPluginState(t *testing.T) {
 		require.Fail(t, "pure plugin check should not update raw skills")
 		return nil, nil
 	}
-	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) {
+	updatePluginsFn = func(context.Context, string) ([]installer.PluginUpdate, error) {
 		require.Fail(t, "check mode must not run plugin update commands")
 		return nil, nil
 	}
@@ -92,7 +92,7 @@ func TestUpdateCheckPrintsPluginState(t *testing.T) {
 	cmd.SetArgs([]string{"--scope", "global", "--check"})
 
 	require.NoError(t, cmd.Execute())
-	assert.Contains(t, stderr.String(), "Claude Code  databricks plugin v0.2.6 (up to date)")
+	assert.Contains(t, stderr.String(), "Claude Code  databricks plugin version unknown (version unknown)")
 }
 
 func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
@@ -109,18 +109,18 @@ func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
 		}
 		return &installer.UpdateResult{}, nil
 	}
-	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) {
+	updatePluginsFn = func(context.Context, string) ([]installer.PluginUpdate, error) {
 		return nil, nil
 	}
 
 	var installed []pluginCall
-	updateInstallPluginForAgentFn = func(_ context.Context, a *agents.Agent, scope, ref string) (installer.PluginRecord, error) {
+	updateInstallPluginForAgentFn = func(_ context.Context, a *agents.Agent, scope string) (installer.PluginRecord, error) {
 		installed = append(installed, pluginCall{agent: a.Name, scope: scope})
 		return installer.PluginRecord{
 			Marketplace: a.Plugin.Marketplace,
 			Plugin:      a.Plugin.ID,
 			Scope:       scope,
-			Version:     installer.DisplaySkillsVersion(ref),
+			Version:     installer.DisplaySkillsVersion("0.2.6"),
 		}, nil
 	}
 
@@ -158,7 +158,7 @@ func TestUpdateMigratesManagedRawSkillsToPlugins(t *testing.T) {
 	}, installed)
 	assert.Equal(t, []string{agents.NameClaudeCode, agents.NameCodex, agents.NameCopilot}, cleaned)
 	assert.Equal(t, []string{agents.NameCursor}, rawUpdateAgents)
-	assert.Contains(t, stderr.String(), "Installing databricks plugin for Claude Code...")
+	assert.Contains(t, stderr.String(), "Claude Code  databricks plugin v0.2.6")
 	assert.Contains(t, stderr.String(), "GitHub Copilot  databricks plugin v0.2.6")
 
 	state, err := installer.LoadState(dir)
@@ -180,18 +180,18 @@ func TestUpdateKeepsRawSkillsWhenPluginMigrationStateWriteFails(t *testing.T) {
 		require.Fail(t, "raw skill update should not continue after migration state write fails")
 		return nil, nil
 	}
-	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) {
+	updatePluginsFn = func(context.Context, string) ([]installer.PluginUpdate, error) {
 		return nil, nil
 	}
 
 	var installed []string
-	updateInstallPluginForAgentFn = func(_ context.Context, a *agents.Agent, scope, ref string) (installer.PluginRecord, error) {
+	updateInstallPluginForAgentFn = func(_ context.Context, a *agents.Agent, scope string) (installer.PluginRecord, error) {
 		installed = append(installed, a.Name)
 		return installer.PluginRecord{
 			Marketplace: a.Plugin.Marketplace,
 			Plugin:      a.Plugin.ID,
 			Scope:       scope,
-			Version:     installer.DisplaySkillsVersion(ref),
+			Version:     installer.DisplaySkillsVersion("0.2.6"),
 		}, nil
 	}
 
@@ -239,11 +239,11 @@ func TestUpdateCheckPrintsPluginMigrationPlan(t *testing.T) {
 	resetUpdatePluginSeams(t)
 	setupUpdateMock(t)
 
-	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) {
+	updatePluginsFn = func(context.Context, string) ([]installer.PluginUpdate, error) {
 		require.Fail(t, "check mode must not run plugin update commands")
 		return nil, nil
 	}
-	updateInstallPluginForAgentFn = func(context.Context, *agents.Agent, string, string) (installer.PluginRecord, error) {
+	updateInstallPluginForAgentFn = func(context.Context, *agents.Agent, string) (installer.PluginRecord, error) {
 		require.Fail(t, "check mode must not install plugins")
 		return installer.PluginRecord{}, nil
 	}
@@ -293,10 +293,10 @@ func TestUpdateDoesNotMigratePluginAgentWithoutManagedRawSkills(t *testing.T) {
 		}
 		return &installer.UpdateResult{}, nil
 	}
-	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) {
+	updatePluginsFn = func(context.Context, string) ([]installer.PluginUpdate, error) {
 		return nil, nil
 	}
-	updateInstallPluginForAgentFn = func(context.Context, *agents.Agent, string, string) (installer.PluginRecord, error) {
+	updateInstallPluginForAgentFn = func(context.Context, *agents.Agent, string) (installer.PluginRecord, error) {
 		require.Fail(t, "must not migrate without managed raw skills")
 		return installer.PluginRecord{}, nil
 	}
@@ -424,7 +424,7 @@ func TestUpdateProjectIncludesProjectSkillAgents(t *testing.T) {
 		}
 		return &installer.UpdateResult{}, nil
 	}
-	updatePluginsFn = func(context.Context, string, string) ([]installer.PluginUpdate, error) { return nil, nil }
+	updatePluginsFn = func(context.Context, string) ([]installer.PluginUpdate, error) { return nil, nil }
 
 	cmd := NewUpdateCmd()
 	cmd.SetContext(ctx)

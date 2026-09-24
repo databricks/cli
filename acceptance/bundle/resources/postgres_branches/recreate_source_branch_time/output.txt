@@ -14,20 +14,16 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 recreate postgres_branches.dev_branch
 
 Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
-
->>> [CLI] bundle plan -o json
-
->>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-branch-fork-[UNIQUE_NAME]/default/files...
-
-This action will result in the deletion or recreation of the following Lakebase branches.
-All data stored in them will be permanently lost:
-  recreate resources.postgres_branches.dev_branch
-Recreated postgres_branches.dev_branch
-Files: 0 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 1 deleted, 1 unchanged
-
->>> print_requests.py --del-body project_id,branch_id --sort //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -45,3 +41,5 @@ All data stored in them will be permanently lost:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-postgres-branch-fork-[UNIQUE_NAME]/default
 
 Destroy: 2 deleted
+
+Exit code: 1

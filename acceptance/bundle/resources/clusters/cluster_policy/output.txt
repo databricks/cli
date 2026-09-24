@@ -3,7 +3,7 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created cluster_policies.my_policy
 Created clusters.my_cluster
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === A cluster policy tag on a standalone cluster is not drift
@@ -12,17 +12,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === ...classified remote_addition
-
->>> [CLI] bundle plan -o json
-{
-  "custom_tags": {
-    "action": "skip",
-    "reason": "remote_addition",
-    "remote": {
-      "CostCenter": "from-policy"
-    }
-  }
-}
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -32,3 +22,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 Destroy: 2 deleted
+
+Exit code: 5

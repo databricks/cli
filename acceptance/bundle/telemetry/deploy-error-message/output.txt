@@ -1,9 +1,10 @@
 
 >>> [CLI] bundle deploy
-Error: no value assigned to required variable myvar. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_myvar environment variable, or .databricks/bundle/<target>/variable-overrides.json
+Error: no value assigned to required variable customer_account_12345. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_customer_account_12345 environment variable, or .databricks/bundle/<target>/variable-overrides.json
 
 
 Exit code: 1
 
->>> cat [OUTPUT_DIR]/out.requests.txt
-no value assigned to required variable myvar. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_myvar environment variable, or [REDACTED_REL_PATH](json)
+=== Assert customer diagnostics are not sent in telemetryjq: parse error: Invalid numeric literal at line 2, column 4
+
+Exit code: 5

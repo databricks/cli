@@ -13,7 +13,17 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-const currentPlanVersion = 2
+const currentPlanVersion = 3
+
+// UploadManifestEntry records the local file used to produce a bundle upload and
+// the exact basename and digest expected by a saved plan. Source is always
+// relative to the bundle root and uses slash separators.
+type UploadManifestEntry struct {
+	Source       string `json:"source"`
+	RemoteName   string `json:"remote_name"`
+	SHA256       string `json:"sha256"`
+	PatchedWheel bool   `json:"patched_wheel,omitempty"`
+}
 
 type Plan struct {
 	PlanVersion int    `json:"plan_version,omitempty"`
@@ -27,6 +37,9 @@ type Plan struct {
 	Features map[string]struct{} `json:"features,omitempty"`
 
 	Plan map[string]*PlanEntry `json:"plan,omitzero"`
+
+	// Uploads makes the plan authoritative for local artifact replay.
+	Uploads []UploadManifestEntry `json:"uploads,omitempty"`
 
 	// NotSelected is the number of resources removed by FilterToSelected via the
 	// --select flag. Serialized so the summary survives a deploy from a plan file

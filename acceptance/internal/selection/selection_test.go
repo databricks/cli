@@ -271,6 +271,55 @@ func TestFromDiffInvariantTestToml(t *testing.T) {
 	assert.Empty(t, result.Tests())
 }
 
+func TestFromDiffAncestorTestTomlSelectsDescendants(t *testing.T) {
+	result := fromDiff(t, diffLines("M\tacceptance/cmd/sync/test.toml"), 10)
+	assert.False(t, result.FullSuite)
+	assert.Equal(t, map[string][]string{
+		"cmd/sync/nested":        nil,
+		"cmd/sync/nested/deeper": nil,
+	}, result.Tests())
+}
+
+func TestFromDiffAncestorTestTomlPreservesInvariantVariantOrder(t *testing.T) {
+	diff := diffLines(
+		"M\tacceptance/bundle/invariant/configs/job.yml.tmpl",
+		"M\tacceptance/bundle/invariant/test.toml",
+	)
+	result := fromDiff(t, diff, 10)
+	assert.Equal(t, map[string][]string{
+		"bundle/invariant/apps": {"INPUT_CONFIG=job.yml.tmpl"},
+		"bundle/invariant/jobs": {"INPUT_CONFIG=job.yml.tmpl"},
+	}, result.Tests())
+}
+
+func TestFromDiffSharedInputsSelectFullSuite(t *testing.T) {
+	for _, path := range []string{
+		"acceptance/script.prepare",
+		"acceptance/script.cleanup",
+		"acceptance/bin/print_requests.py",
+		"acceptance/internal/config.go",
+		"libs/testserver/fake_workspace.go",
+	} {
+		result := fromDiff(t, diffLines("M\t"+path), 1)
+		assert.True(t, result.FullSuite, path)
+		assert.Len(t, result.Selected, len(testDirs), path)
+	}
+}
+
+func TestFromDiffNestedTestTomlSelectsDescendants(t *testing.T) {
+	result := fromDiff(t, diffLines("M\tacceptance/cmd/sync/nested/test.toml"), 10)
+	assert.False(t, result.FullSuite)
+	assert.Equal(t, map[string][]string{
+		"cmd/sync/nested":        nil,
+		"cmd/sync/nested/deeper": nil,
+	}, result.Tests())
+}
+
+func TestFromDiffSharedInputPrefixDoesNotMatchSimilarPath(t *testing.T) {
+	result := fromDiff(t, diffLines("M\tlibs/testserver-extra/file.go"), 10)
+	assert.Empty(t, result.Tests())
+}
+
 func TestFromDiffSkipsConfigNotInMatrix(t *testing.T) {
 	// An invariant dir that does not run the changed config would be selected with every
 	// variant skipped, spending the limit on a test that runs nothing.

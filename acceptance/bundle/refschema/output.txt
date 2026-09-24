@@ -18,5 +18,3 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
       --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"
-
->>> [CLI] bundle debug refschema

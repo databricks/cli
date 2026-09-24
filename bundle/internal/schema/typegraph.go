@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/cli/libs/structs/structaccess"
 )
 
 // typeGraph captures, for every annotatable type reachable from the root
@@ -105,26 +106,30 @@ func structFieldOrder(typ reflect.Type, props map[string]*jsonschema.Schema) []s
 		field := front.Value.(reflect.StructField)
 		bfsQueue.Remove(front)
 
-		if field.Anonymous {
-			fieldType := field.Type
-			if fieldType.Kind() == reflect.Pointer {
-				fieldType = fieldType.Elem()
-			}
-			for f := range fieldType.Fields() {
-				bfsQueue.PushBack(f)
-			}
+		if structaccess.IsSkippedField(field) {
 			continue
 		}
 
-		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
-		if seen[name] {
+		if !structaccess.IsFlattenedEmbed(field) {
+			name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+			if seen[name] {
+				continue
+			}
+			if _, ok := props[name]; !ok {
+				continue
+			}
+			seen[name] = true
+			names = append(names, name)
 			continue
 		}
-		if _, ok := props[name]; !ok {
-			continue
+
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Pointer {
+			fieldType = fieldType.Elem()
 		}
-		seen[name] = true
-		names = append(names, name)
+		for f := range fieldType.Fields() {
+			bfsQueue.PushBack(f)
+		}
 	}
 	return names
 }

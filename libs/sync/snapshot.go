@@ -127,7 +127,7 @@ func (s *Snapshot) Save(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
 	}
-	if err := atomicfile.Write(s.snapshotPath, bytes, 0o644); err != nil {
+	if err := atomicfile.Write(s.snapshotPath, bytes, 0o644, atomicfile.PreserveMode()); err != nil {
 		return fmt.Errorf("failed to write sync snapshot to disk: %s", err)
 	}
 	return nil

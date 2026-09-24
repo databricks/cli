@@ -1,45 +1,5 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json
-{
-  "test": {
-    "files": [
-      {
-        "source": "[TEST_TMP_DIR]/resources/a1.txt"
-      },
-      {
-        "source": "[TEST_TMP_DIR]/resources/subdir/hello.txt"
-      }
-    ],
-    "path": "[TEST_TMP_DIR]"
-  }
-}
+Exit code: 141
 
->>> withdir resources [CLI] bundle validate -o json
-{
-  "test": {
-    "files": [
-      {
-        "source": "[TEST_TMP_DIR]/resources/a1.txt"
-      },
-      {
-        "source": "[TEST_TMP_DIR]/resources/subdir/hello.txt"
-      }
-    ],
-    "path": "[TEST_TMP_DIR]"
-  }
-}
-
->>> withdir other_dir [CLI] bundle validate -o json
-{
-  "test": {
-    "files": [
-      {
-        "source": "[TEST_TMP_DIR]/resources/a1.txt"
-      },
-      {
-        "source": "[TEST_TMP_DIR]/resources/subdir/hello.txt"
-      }
-    ],
-    "path": "[TEST_TMP_DIR]"
-  }
-}
+Exit code: 5

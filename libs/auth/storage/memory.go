@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"sync"
 
 	"golang.org/x/oauth2"
@@ -32,18 +33,26 @@ func cloneEntry(e Entry) Entry {
 	return e
 }
 
-// Put implements Store.
+// Put implements LockedStore.
 func (s *memoryStore) Put(key string, e Entry) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.entries[key] = cloneEntry(e)
 	return nil
 }
 
-// Lookup implements Store. Returns ErrNotFound when the key is absent.
+// Delete implements LockedStore.
+func (s *memoryStore) Delete(key string) error {
+	delete(s.entries, key)
+	return nil
+}
+
+// Lookup implements Store.
 func (s *memoryStore) Lookup(key string) (Entry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	return s.LookupLocked(key)
+}
+
+func (s *memoryStore) LookupLocked(key string) (Entry, error) {
 	e, ok := s.entries[key]
 	if !ok {
 		return Entry{}, ErrNotFound
@@ -51,10 +60,30 @@ func (s *memoryStore) Lookup(key string) (Entry, error) {
 	return cloneEntry(e), nil
 }
 
-// Delete implements Store.
-func (s *memoryStore) Delete(key string) error {
+// Lookup implements LockedStore.
+func (s *memoryLockedStore) Lookup(key string) (Entry, error) {
+	return s.store.LookupLocked(key)
+}
+
+// WithLock implements Store.
+func (s *memoryStore) WithLock(_ context.Context, fn func(LockedStore) error) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	delete(s.entries, key)
-	return nil
+	return fn(&memoryLockedStore{store: s})
 }
+
+type memoryLockedStore struct {
+	store *memoryStore
+}
+
+// Put implements LockedStore.
+func (s *memoryLockedStore) Put(key string, e Entry) error {
+	return s.store.Put(key, e)
+}
+
+// Delete implements LockedStore.
+func (s *memoryLockedStore) Delete(key string) error {
+	return s.store.Delete(key)
+}
+
+var _ Store = (*memoryStore)(nil)

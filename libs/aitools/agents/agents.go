@@ -57,11 +57,10 @@ type Agent struct {
 	// agent has no plugin and skills files are its native delivery.
 	Plugin *PluginSpec
 	// pluginVersion reads the installed databricks plugin version from the
-	// agent's own plugin manifest. Each agent's manifest format differs, so it is
-	// set per agent (only for formats we have verified); when nil,
-	// DatabricksPluginVersion reports no version. New agents extend support by
-	// providing their own reader here.
-	pluginVersion func(ctx context.Context, a *Agent) (string, bool)
+	// agent's own plugin manifest. nativeScope is the agent-native install
+	// scope (for example, user or project). Each agent's manifest format
+	// differs, so this is set per agent only for formats we have verified.
+	pluginVersion func(ctx context.Context, a *Agent, nativeScope string) (string, bool)
 }
 
 // Detected reports whether the agent is installed: its config directory exists,

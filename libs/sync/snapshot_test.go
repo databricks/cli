@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -407,4 +408,16 @@ func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
 	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
 	assert.Equal(t, "www.foobar.test", snapshot.Host)
 	assert.Equal(t, "/Repos/foo/bar", snapshot.RemotePath)
+}
+
+func TestSnapshotSavePreservesExistingMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not honor unix file modes")
+	}
+	snapshot := &Snapshot{snapshotPath: filepath.Join(t.TempDir(), "snapshot.json"), SnapshotState: &SnapshotState{}}
+	require.NoError(t, os.WriteFile(snapshot.snapshotPath, []byte("old"), 0o640))
+	require.NoError(t, snapshot.Save(t.Context()))
+	info, err := os.Stat(snapshot.snapshotPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o640), info.Mode().Perm())
 }

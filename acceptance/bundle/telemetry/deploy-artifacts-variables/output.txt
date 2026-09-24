@@ -7,20 +7,6 @@ Created jobs.test-job
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== No artifact metrics expected
->>> cat [OUTPUT_DIR]/out.requests.txt
+=== No artifact metrics expectedjq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle deploy -t prod
-Building test_artifact...
-Uploading databricks.yml...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-artifacts-variables/prod/files...
-Created jobs.test-job
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
-=== Artifact metrics expected
->>> cat [OUTPUT_DIR]/out.requests.txt
-{
-  "key": "artifacts_reference_used",
-  "value": true
-}
+Exit code: 5

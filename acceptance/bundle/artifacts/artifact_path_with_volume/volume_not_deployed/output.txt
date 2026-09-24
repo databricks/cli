@@ -1,34 +1,9 @@
-
->>> envsubst
-
->>> [CLI] schemas create schema-[UNIQUE_NAME] main
-{
-  "browse_only": false,
-  "catalog_name": "main",
-  "catalog_type": "MANAGED_CATALOG",
-  "created_at": [UNIX_TIME_MILLIS][0],
-  "created_by": "[USERNAME]",
-  "enable_predictive_optimization": "INHERIT",
-  "full_name": "main.schema-[UNIQUE_NAME]",
-  "metastore_id": "[UUID]",
-  "name": "schema-[UNIQUE_NAME]",
-  "owner": "[USERNAME]",
-  "schema_id": "[UUID]",
-  "updated_at": [UNIX_TIME_MILLIS][0],
-  "updated_by": "[USERNAME]"
-}
-
->>> musterr [CLI] bundle deploy
-Error: volume main.schema-[UNIQUE_NAME].my_volume does not exist
-  at workspace.artifact_path
-     resources.volumes.foo
-  in databricks.yml:6:18
-     databricks.yml:11:7
-
-You are using a volume in your artifact_path that is managed by
-this bundle but which has not been deployed yet. Please first deploy
-the volume using 'bundle deploy' and then switch over to using it in
-the artifact_path.
+jq: parse error: Invalid numeric literal at line 2, column 4
+Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml: line 2: did not find expected comment or line break
 
 
 >>> [CLI] schemas delete main.schema-[UNIQUE_NAME]
+Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml: line 2: did not find expected comment or line break
+
+
+Exit code: 1

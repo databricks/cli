@@ -3,9 +3,11 @@ package dresources
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -60,9 +62,13 @@ func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *
 }
 
 func (*ResourcePostgresProject) RemapState(remote *PostgresProjectRemote) *PostgresProjectState {
+	spec := remote.ProjectSpec
+	if spec.HistoryRetentionDuration == nil && remote.Status != nil {
+		spec.HistoryRetentionDuration = remote.Status.HistoryRetentionDuration
+	}
 	return &PostgresProjectState{
 		ProjectId:   remote.ProjectId,
-		ProjectSpec: remote.ProjectSpec,
+		ProjectSpec: spec,
 
 		// purge_on_delete is a delete-time query parameter; the GET API never
 		// returns it, so RemapState leaves it false.
@@ -143,6 +149,8 @@ var projectOneofGroups = map[string]string{
 	"default_endpoint_settings.suspend_timeout_duration": "default_endpoint_settings.suspension",
 }
 
+const postgresHistoryRetentionDefault = 7 * 24 * time.Hour
+
 func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, entry *PlanEntry) (*PostgresProjectRemote, error) {
 	// Build the mask from the plan's change list and prefix with "spec." (the
 	// API expects paths relative to Project). The API rejects mask entries
@@ -162,11 +170,18 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 	if len(fieldPaths) == 0 {
 		return nil, nil
 	}
+	// The API requires every masked field in the body. Removal therefore means
+	// explicitly restoring the documented seven-day backend default, not sending nil.
+	spec := config.ProjectSpec
+	if slices.Contains(fieldPaths, "spec.history_retention_duration") && spec.HistoryRetentionDuration == nil {
+		spec.HistoryRetentionDuration = duration.New(postgresHistoryRetentionDefault)
+	}
 
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
-			Spec:                &config.ProjectSpec,
+			// InitialBranchSpec is not part of the update payload.
 			InitialBranchSpec:   nil,
+			Spec:                &spec,
 			InitialEndpointSpec: nil,
 
 			// Output-only fields.

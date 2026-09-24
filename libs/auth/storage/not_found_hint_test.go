@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,6 +22,10 @@ func (missingStore) Put(string, Entry) error      { return nil }
 func (missingStore) Lookup(string) (Entry, error) { return Entry{}, ErrNotFound }
 func (missingStore) Delete(string) error          { return nil }
 
+func (s missingStore) WithLock(_ context.Context, fn func(LockedStore) error) error {
+	return fn(s)
+}
+
 // foundStore always returns a token. Used to confirm the wrapper passes
 // successful lookups through unchanged.
 type foundStore struct{ tok *oauth2.Token }
@@ -29,6 +34,10 @@ func (s foundStore) Put(string, Entry) error      { return nil }
 func (s foundStore) Lookup(string) (Entry, error) { return Entry{Token: s.tok}, nil }
 func (s foundStore) Delete(string) error          { return nil }
 
+func (s foundStore) WithLock(_ context.Context, fn func(LockedStore) error) error {
+	return fn(s)
+}
+
 // boomStore returns a non-ErrNotFound error. The wrapper must not add a
 // "run auth login" hint here; the error is about something else.
 type boomStore struct{ err error }
@@ -36,6 +45,10 @@ type boomStore struct{ err error }
 func (s boomStore) Put(string, Entry) error      { return nil }
 func (s boomStore) Lookup(string) (Entry, error) { return Entry{}, s.err }
 func (s boomStore) Delete(string) error          { return nil }
+
+func (s boomStore) WithLock(_ context.Context, fn func(LockedStore) error) error {
+	return fn(s)
+}
 
 func writeLegacyStore(t *testing.T, path string, hasEntries bool) {
 	t.Helper()
@@ -118,7 +131,9 @@ func TestNotFoundHintStore_SuccessfulLookupUnchanged(t *testing.T) {
 
 func TestNotFoundHintStore_PutIsDelegated(t *testing.T) {
 	s := &notFoundHintStore{inner: missingStore{}, mode: StorageModeSecure, legacyStorePath: ""}
-	require.NoError(t, s.Put("k", Entry{Token: &oauth2.Token{AccessToken: "abc"}}))
+	require.NoError(t, s.WithLock(t.Context(), func(locked LockedStore) error {
+		return locked.Put("k", Entry{Token: &oauth2.Token{AccessToken: "abc"}})
+	}))
 }
 
 func TestHintForNotFound(t *testing.T) {

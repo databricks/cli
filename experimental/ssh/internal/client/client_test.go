@@ -1,9 +1,9 @@
 package client_test
 
 import (
-	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -298,7 +298,8 @@ func TestGenerateDefaultConnectionNameMatchesRegex(t *testing.T) {
 func TestToProxyCommand(t *testing.T) {
 	exe, err := os.Executable()
 	require.NoError(t, err)
-	quoted := fmt.Sprintf("%q", exe)
+	quote := quoteProxyCommandArgumentForTest
+	quotedExe := quote(exe)
 
 	tests := []struct {
 		name string
@@ -308,89 +309,32 @@ func TestToProxyCommand(t *testing.T) {
 		{
 			name: "dedicated cluster",
 			opts: client.ClientOptions{ClusterID: "abc-123", ShutdownDelay: 5 * time.Minute},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=5m0s",
+			want: strings.Join([]string{quotedExe, quote("ssh"), quote("connect"), quote("--proxy"), quote("--cluster=abc-123"), quote("--auto-start-cluster=false"), quote("--shutdown-delay=5m0s")}, " "),
 		},
 		{
-			name: "dedicated cluster with auto-start",
-			opts: client.ClientOptions{ClusterID: "abc-123", AutoStartCluster: true, ShutdownDelay: 5 * time.Minute},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=true --shutdown-delay=5m0s",
+			name: "serverless options",
+			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10", UsagePolicyID: "pol-1", ShutdownDelay: 2 * time.Minute},
+			want: strings.Join([]string{quotedExe, quote("ssh"), quote("connect"), quote("--proxy"), quote("--name=my-conn"), quote("--shutdown-delay=2m0s"), quote("--accelerator=GPU_1xA10"), quote("--usage-policy-id=pol-1")}, " "),
 		},
 		{
-			name: "serverless",
-			opts: client.ClientOptions{ConnectionName: "my-conn", ShutdownDelay: 2 * time.Minute},
-			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s",
+			name: "server lifecycle values",
+			opts: client.ClientOptions{ClusterID: "abc-123", ShutdownDelay: 5 * time.Minute, MaxClients: 25, ServerTimeout: 48 * time.Hour, KeepDetachedProcesses: true},
+			want: strings.Join([]string{quotedExe, quote("ssh"), quote("connect"), quote("--proxy"), quote("--cluster=abc-123"), quote("--auto-start-cluster=false"), quote("--shutdown-delay=5m0s"), quote("--keep-detached-processes"), quote("--max-clients=25"), quote("--server-timeout=48h0m0s")}, " "),
 		},
 		{
-			name: "serverless with accelerator",
-			opts: client.ClientOptions{ConnectionName: "my-conn", Accelerator: "GPU_1xA10", ShutdownDelay: 2 * time.Minute},
-			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --accelerator=GPU_1xA10",
+			name: "connection values",
+			opts: client.ClientOptions{ClusterID: "abc-123", ServerMetadata: "user,2222,abc-123", HandoverTimeout: 10 * time.Minute, Profile: "my-profile", Liteswap: "test-env", EnvironmentVersion: 4},
+			want: strings.Join([]string{quotedExe, quote("ssh"), quote("connect"), quote("--proxy"), quote("--cluster=abc-123"), quote("--auto-start-cluster=false"), quote("--shutdown-delay=0s"), quote("--metadata=user,2222,abc-123"), quote("--handover-timeout=10m0s"), quote("--profile=my-profile"), quote("--liteswap=test-env"), quote("--environment-version=4")}, " "),
 		},
 		{
-			name: "serverless with usage policy",
-			opts: client.ClientOptions{ConnectionName: "my-conn", UsagePolicyID: "pol-1", ShutdownDelay: 2 * time.Minute},
-			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --usage-policy-id=pol-1",
+			name: "profile shell metacharacters",
+			opts: client.ClientOptions{ClusterID: "abc-123", Profile: "space apostrophe' dollar$ backtick` semicolon; $(touch pwned)"},
+			want: strings.Join([]string{quotedExe, quote("ssh"), quote("connect"), quote("--proxy"), quote("--cluster=abc-123"), quote("--auto-start-cluster=false"), quote("--shutdown-delay=0s"), quote("--profile=space apostrophe' dollar$ backtick` semicolon; $(touch pwned)")}, " "),
 		},
 		{
-			// Both are fixed at server submission, so a host configured by `ssh setup` can only
-			// carry them through the ProxyCommand.
-			name: "with server lifecycle flags",
-			opts: client.ClientOptions{ClusterID: "abc-123", ShutdownDelay: 5 * time.Minute, MaxClients: 25, ServerTimeout: 48 * time.Hour},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=5m0s --max-clients=25 --server-timeout=48h0m0s",
-		},
-		{
-			name: "serverless with server lifecycle flags",
-			opts: client.ClientOptions{ConnectionName: "my-conn", ShutdownDelay: 2 * time.Minute, MaxClients: 25, ServerTimeout: 48 * time.Hour},
-			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --max-clients=25 --server-timeout=48h0m0s",
-		},
-		{
-			// Carried into the ProxyCommand so a reconnect through ssh asks for the same
-			// mode, instead of starting a server that would sweep the detached work.
-			name: "dedicated cluster keeping detached processes",
-			opts: client.ClientOptions{ClusterID: "abc-123", KeepDetachedProcesses: true, ShutdownDelay: 5 * time.Minute},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=5m0s --keep-detached-processes",
-		},
-		{
-			name: "serverless keeping detached processes",
-			opts: client.ClientOptions{ConnectionName: "my-conn", KeepDetachedProcesses: true, ShutdownDelay: 5 * time.Minute},
-			want: quoted + " ssh connect --proxy --name=my-conn --shutdown-delay=5m0s --keep-detached-processes",
-		},
-		{
-			name: "with metadata",
-			opts: client.ClientOptions{ClusterID: "abc-123", ServerMetadata: "user,2222,abc-123"},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --metadata=user,2222,abc-123",
-		},
-		{
-			name: "with handover timeout",
-			opts: client.ClientOptions{ClusterID: "abc-123", HandoverTimeout: 10 * time.Minute},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --handover-timeout=10m0s",
-		},
-		{
-			name: "with profile",
-			opts: client.ClientOptions{ClusterID: "abc-123", Profile: "my-profile"},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --profile=my-profile",
-		},
-		{
-			name: "with liteswap",
-			opts: client.ClientOptions{ClusterID: "abc-123", Liteswap: "test-env"},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --liteswap=test-env",
-		},
-		{
-			name: "with environment version",
-			opts: client.ClientOptions{ClusterID: "abc-123", EnvironmentVersion: 4},
-			want: quoted + " ssh connect --proxy --cluster=abc-123 --auto-start-cluster=false --shutdown-delay=0s --environment-version=4",
-		},
-		{
-			name: "serverless with base environment",
-			opts: client.ClientOptions{ConnectionName: "my-conn", BaseEnvironment: "my env", ShutdownDelay: 2 * time.Minute},
-			want: quoted + ` ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --base-environment='my env'`,
-		},
-		{
-			// The proxy command is executed via the shell, so a base environment
-			// containing shell metacharacters must be single-quoted (and embedded
-			// single quotes escaped) so nothing is expanded or word-split.
-			name: "serverless with base environment containing shell metacharacters",
-			opts: client.ClientOptions{ConnectionName: "my-conn", BaseEnvironment: `$(touch pwned) '; rm -rf /`, ShutdownDelay: 2 * time.Minute},
-			want: quoted + ` ssh connect --proxy --name=my-conn --shutdown-delay=2m0s --base-environment='$(touch pwned) '\''; rm -rf /'`,
+			name: "base environment shell metacharacters",
+			opts: client.ClientOptions{ConnectionName: "my-conn", BaseEnvironment: `my env'; $USER ` + "`whoami`" + `; $(touch pwned)`, ShutdownDelay: 2 * time.Minute},
+			want: strings.Join([]string{quotedExe, quote("ssh"), quote("connect"), quote("--proxy"), quote("--name=my-conn"), quote("--shutdown-delay=2m0s"), quote("--base-environment=my env'; $USER `whoami`; $(touch pwned)")}, " "),
 		},
 	}
 
@@ -400,5 +344,42 @@ func TestToProxyCommand(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+func TestToProxyCommandRejectsPersistedValueControlCharacters(t *testing.T) {
+	tests := []struct {
+		name string
+		opts func(string) client.ClientOptions
+	}{
+		{"cluster ID", func(value string) client.ClientOptions { return client.ClientOptions{ClusterID: value} }},
+		{"connection name", func(value string) client.ClientOptions { return client.ClientOptions{ConnectionName: value} }},
+		{"accelerator", func(value string) client.ClientOptions {
+			return client.ClientOptions{ConnectionName: "conn", Accelerator: value}
+		}},
+		{"usage policy ID", func(value string) client.ClientOptions {
+			return client.ClientOptions{ConnectionName: "conn", UsagePolicyID: value}
+		}},
+		{"server metadata", func(value string) client.ClientOptions {
+			return client.ClientOptions{ClusterID: "cluster", ServerMetadata: value}
+		}},
+		{"profile", func(value string) client.ClientOptions {
+			return client.ClientOptions{ClusterID: "cluster", Profile: value}
+		}},
+		{"liteswap", func(value string) client.ClientOptions {
+			return client.ClientOptions{ClusterID: "cluster", Liteswap: value}
+		}},
+		{"base environment", func(value string) client.ClientOptions {
+			return client.ClientOptions{ConnectionName: "conn", BaseEnvironment: value}
+		}},
+	}
+	for _, tt := range tests {
+		for _, value := range []string{"before\x00after", "before\rafter", "before\nafter"} {
+			t.Run(tt.name, func(t *testing.T) {
+				opts := tt.opts(value)
+				_, err := opts.ToProxyCommand()
+				assert.Error(t, err)
+			})
+		}
 	}
 }

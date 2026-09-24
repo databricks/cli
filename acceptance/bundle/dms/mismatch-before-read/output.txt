@@ -2,7 +2,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-mismatch-before-read-[UNIQUE_NAME]/default/files...
 Created jobs.foo
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> fault.py GET /api/2.0/bundle/deployments/* 500 0 1

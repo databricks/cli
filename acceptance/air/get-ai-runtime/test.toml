@@ -12,6 +12,7 @@ Response.Body = ''
 # so the Environment cell instead comes from the run's environments[].spec (keyed
 # by the task's environment_key), which the typed SDK Run drops — `air get` reads
 # it with a raw request, so this route is hit twice (typed GetRun + that request).
+# Use a base environment so the fallback is exercised in addition to the unit test.
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
@@ -23,7 +24,7 @@ Response.Body = '''
   "end_time": 1700000012000,
   "state": {"life_cycle_state": "TERMINATED", "result_state": "SUCCESS"},
   "environments": [
-    {"environment_key": "default", "spec": {"environment_version": "4"}}
+    {"environment_key": "default", "spec": {"base_environment": "workspace-base-environments/databricks_ai_v5"}}
   ],
   "tasks": [
     {

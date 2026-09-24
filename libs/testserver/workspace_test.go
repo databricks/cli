@@ -88,6 +88,22 @@ func TestWorkspaceDeleteNonRecursiveRequiresEmptyDirectory(t *testing.T) {
 	assert.Equal(t, 404, getStatus(t, server.URL, "/a/b"))
 }
 
+func TestWorkspaceDeleteRecursiveMatchesPathComponents(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+
+	mkdirs(t, server.URL, "/a/child")
+	mkdirs(t, server.URL, "/ab/child")
+	require.Equal(t, 200, importFile(t, server.URL, "/a/file", "content"))
+	require.Equal(t, 200, importFile(t, server.URL, "/ab/file", "content"))
+
+	assert.Equal(t, 200, workspaceDelete(t, server.URL, "/a", true))
+	assert.Equal(t, 404, getStatus(t, server.URL, "/a"))
+	assert.Equal(t, 404, getStatus(t, server.URL, "/a/child"))
+	assert.Equal(t, 200, getStatus(t, server.URL, "/ab"))
+	assert.Equal(t, 200, getStatus(t, server.URL, "/ab/child"))
+}
+
 // mkdirs creates all intermediate directories, matching "mkdir -p".
 func TestWorkspaceMkdirsRecursive(t *testing.T) {
 	server := testserver.New(t)

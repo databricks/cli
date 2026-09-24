@@ -4,18 +4,14 @@ __all__ = [
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
-    "Privilege",
     "PrivilegeAssignment",
     "PrivilegeAssignmentDict",
     "PrivilegeAssignmentParam",
-    "PrivilegeParam",
     "Schema",
     "SchemaDict",
     "SchemaGrant",
     "SchemaGrantDict",
     "SchemaGrantParam",
-    "SchemaGrantPrivilege",
-    "SchemaGrantPrivilegeParam",
     "SchemaParam",
 ]
 
@@ -25,7 +21,6 @@ from databricks.bundles.schemas._models.lifecycle import (
     LifecycleDict,
     LifecycleParam,
 )
-from databricks.bundles.schemas._models.privilege import Privilege, PrivilegeParam
 from databricks.bundles.schemas._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentDict,
@@ -36,5 +31,3 @@ from databricks.bundles.schemas._models.schema import Schema, SchemaDict, Schema
 SchemaGrant = PrivilegeAssignment
 SchemaGrantDict = PrivilegeAssignmentDict
 SchemaGrantParam = PrivilegeAssignmentParam
-SchemaGrantPrivilege = Privilege
-SchemaGrantPrivilegeParam = PrivilegeParam

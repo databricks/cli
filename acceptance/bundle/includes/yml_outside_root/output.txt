@@ -7,41 +7,6 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/yml_outside_root/default
 
 Validation OK!
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json
-{
-  "deployment": {
-    "kind": "BUNDLE",
-    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/yml_outside_root/default/state/metadata.json"
-  },
-  "edit_mode": "UI_LOCKED",
-  "format": "MULTI_TASK",
-  "max_concurrent_runs": 1,
-  "name": "include_outside_root",
-  "queue": {
-    "enabled": true
-  },
-  "tasks": [
-    {
-      "description": "task_description",
-      "task_key": "task_key"
-    }
-  ]
-}
-
->>> [CLI] bundle validate -o json
-{
-  "paths": [
-    "."
-  ]
-}
-
->>> [CLI] bundle validate -o json
-{
-  "environment": "default",
-  "git": {
-    "bundle_root_path": "."
-  },
-  "name": "yml_outside_root",
-  "target": "default"
-}
+Exit code: 5

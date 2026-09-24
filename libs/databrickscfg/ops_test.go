@@ -1,11 +1,19 @@
 package databrickscfg
 
 import (
+	"context"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/filelock"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -203,7 +211,7 @@ func TestSaveResourcesToProfile(t *testing.T) {
 
 	contents, err := os.ReadFile(path)
 	require.NoError(t, err)
-	assert.Contains(t, string(contents), "resources = https://foo/ai-gateway/mcp/system.ai.github,https://foo/ai-gateway/mcp/system.ai.slack")
+	assert.Contains(t, string(contents), "resources = [\"https://foo/ai-gateway/mcp/system.ai.github\",\"https://foo/ai-gateway/mcp/system.ai.slack\"]")
 
 	// An empty list clears the key.
 	require.NoError(t, SaveResourcesToProfile(ctx, "u2m", path, nil))
@@ -212,11 +220,173 @@ func TestSaveResourcesToProfile(t *testing.T) {
 	assert.NotContains(t, string(contents), "resources")
 }
 
+func TestSaveResourcesToProfilePreservesResourceContents(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	require.NoError(t, SaveToProfile(ctx, &config.Config{ConfigFile: path, Profile: "u2m", Host: "https://workspace.test"}))
+	resources := []string{"https://workspace.test/resource?a=1, 2", " https://workspace.test/resource with spaces "}
+	require.NoError(t, SaveResourcesToProfile(ctx, "u2m", path, resources))
+
+	file, err := config.LoadFile(path)
+	require.NoError(t, err)
+	assert.JSONEq(t, `["https://workspace.test/resource?a=1, 2"," https://workspace.test/resource with spaces "]`, file.Section("u2m").Key("resources").String())
+}
+
+func TestSetDefaultProfileResolvesSymlinkBeforeLockAndReplacement(t *testing.T) {
+	ctx := t.Context()
+	dir := t.TempDir()
+	target := filepath.Join(dir, "target")
+	link := filepath.Join(dir, "config")
+	require.NoError(t, os.WriteFile(target, []byte("[profile]\nhost = https://workspace.test\n"), 0o640))
+	if err := os.Symlink(target, link); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+
+	require.NoError(t, SetDefaultProfile(ctx, "profile", link))
+	contents, err := os.ReadFile(target)
+	require.NoError(t, err)
+	assert.Contains(t, string(contents), "default_profile = profile")
+	linkInfo, err := os.Lstat(link)
+	require.NoError(t, err)
+	assert.NotZero(t, linkInfo.Mode()&os.ModeSymlink)
+	assert.FileExists(t, target+".lock")
+	if runtime.GOOS != "windows" {
+		lockInfo, err := os.Stat(target + ".lock")
+		require.NoError(t, err)
+		assert.Equal(t, os.FileMode(0o600), lockInfo.Mode().Perm())
+	}
+	assert.NoFileExists(t, link+".lock")
+}
+
+func TestConfigMutationCancellationPreservesFiles(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "databrickscfg")
+	original := "[profile]\nhost = https://workspace.test\n"
+	require.NoError(t, os.WriteFile(path, []byte(original), 0o640))
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := SetDefaultProfile(ctx, "profile", path)
+	require.ErrorIs(t, err, context.Canceled)
+	contents, readErr := os.ReadFile(path)
+	require.NoError(t, readErr)
+	assert.Equal(t, original, string(contents))
+	assert.NoFileExists(t, path+".bak")
+}
+
+func TestConfigMutationFaultLeavesParseableFiles(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "databrickscfg")
+	original := "[profile]\nhost = https://workspace.test\n"
+	require.NoError(t, os.WriteFile(path, []byte(original), 0o640))
+	resolvedPath, err := filepath.EvalSymlinks(path)
+	require.NoError(t, err)
+
+	originalWriter := writeAtomicFile
+	t.Cleanup(func() { writeAtomicFile = originalWriter })
+	writeAtomicFile = func(target string, _ []byte, _ os.FileMode, _ ...atomicfile.Option) error {
+		if target == resolvedPath {
+			return errors.New("injected write failure")
+		}
+		return originalWriter(target, []byte(original), fileMode, atomicfile.PreserveMode())
+	}
+	err = SetDefaultProfile(t.Context(), "profile", path)
+	require.ErrorContains(t, err, "injected write failure")
+	_, err = config.LoadFile(path)
+	require.NoError(t, err)
+	_, err = config.LoadFile(path + ".bak")
+	require.NoError(t, err)
+	entries, readErr := os.ReadDir(dir)
+	require.NoError(t, readErr)
+	for _, entry := range entries {
+		assert.NotContains(t, entry.Name(), ".tmp")
+	}
+}
+
+func TestConcurrentConfigMutationsRetainBothKeys(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte("[profile]\nhost = https://workspace.test\n"), fileMode))
+
+	var wg sync.WaitGroup
+	errs := make([]error, 2)
+	wg.Go(func() {
+		errs[0] = SetDefaultProfile(t.Context(), "profile", path)
+	})
+	wg.Go(func() {
+		errs[1] = SetConfiguredAuthStorage(t.Context(), "plaintext", path)
+	})
+	wg.Wait()
+	require.NoError(t, errs[0])
+	require.NoError(t, errs[1])
+	defaultProfile, err := GetConfiguredDefaultProfile(t.Context(), path)
+	require.NoError(t, err)
+	authStorage, err := GetConfiguredAuthStorage(t.Context(), path)
+	require.NoError(t, err)
+	assert.Equal(t, "profile", defaultProfile)
+	assert.Equal(t, "plaintext", authStorage)
+}
+
+func TestConfigMutationPreservesMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not honor unix file modes")
+	}
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte("[profile]\nhost = https://workspace.test\n"), 0o640))
+	require.NoError(t, SetDefaultProfile(t.Context(), "profile", path))
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o640), info.Mode().Perm())
+}
+
+const configMutationHelperEnv = "DATABRICKS_CFG_MUTATION_HELPER"
+
+func TestConfigMutationHelperProcess(t *testing.T) {
+	path := os.Getenv(configMutationHelperEnv)
+	if path == "" {
+		t.Skip("helper process only")
+	}
+	require.NoError(t, SetDefaultProfile(t.Context(), "child", path))
+}
+
+func TestConfigMutationWaitsForCrossProcessLock(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("subprocess helper uses a Unix test binary")
+	}
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	require.NoError(t, os.WriteFile(path, []byte("[profile]\nhost = https://workspace.test\n"), fileMode))
+	release, err := filelock.Acquire(t.Context(), path+".lock", time.Minute)
+	require.NoError(t, err)
+	cmd := exec.Command(os.Args[0], "-test.run=^TestConfigMutationHelperProcess$")
+	cmd.Env = append(os.Environ(), configMutationHelperEnv+"="+path)
+	require.NoError(t, cmd.Start())
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	select {
+	case err := <-done:
+		require.Fail(t, "config mutation bypassed held lock", "error: %v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+	require.NoError(t, release())
+	require.NoError(t, <-done)
+	file, err := config.LoadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "child", file.Section(databricksSettingsSection).Key(defaultProfileKey).String())
+}
+
 func TestSaveResourcesToProfile_MissingProfile(t *testing.T) {
 	ctx := t.Context()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 	err := SaveResourcesToProfile(ctx, "does-not-exist", path, []string{"https://foo/ai-gateway/mcp/system.ai.github"})
 	assert.ErrorContains(t, err, `profile "does-not-exist" not found`)
+}
+
+func TestSaveToProfileRestoresInput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	cfg := &config.Config{ConfigFile: path, Profile: "profile", Host: "https://workspace.test"}
+	require.NoError(t, SaveToProfile(t.Context(), cfg))
+	assert.Equal(t, path, cfg.ConfigFile)
+	assert.Equal(t, "profile", cfg.Profile)
 }
 
 func TestGetDefaultProfile(t *testing.T) {

@@ -1,3 +1,5 @@
+
+>>> [CLI] bundle plan
 delete jobs.chain_bottom
 delete jobs.chain_mid
 delete jobs.chain_top

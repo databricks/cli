@@ -1,6 +1,8 @@
 package mutator
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -158,4 +160,30 @@ func TestSetComplexVariablesViaEnvVariablesIsNotAllowed(t *testing.T) {
 
 	_, err = setVariable(t.Context(), v, &variable, "foo", dyn.NilValue)
 	assert.ErrorContains(t, err, "setting via environment variables (BUNDLE_VAR_foo) is not supported for complex variable foo")
+}
+
+func TestReadVariablesFromFileReportsStatErrors(t *testing.T) {
+	root := t.TempDir()
+	databricksDir := filepath.Join(root, ".databricks")
+	require.NoError(t, os.MkdirAll(databricksDir, 0o755))
+	// A regular file in place of the bundle directory makes Stat return ENOTDIR.
+	require.NoError(t, os.WriteFile(filepath.Join(databricksDir, "bundle"), []byte("not a directory"), 0o600))
+
+	b := &bundle.Bundle{BundleRootPath: root}
+	_, diags := readVariablesFromFile(b)
+	require.Error(t, diags.Error())
+	assert.Contains(t, diags.Error().Error(), "failed to stat variables file")
+}
+
+func TestSetVariablesRejectsNullVariable(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{"broken": nil},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, SetVariables())
+	require.Error(t, diags.Error())
+	assert.Equal(t, "variable broken cannot be null", diags[0].Summary)
+	assert.Equal(t, []dyn.Path{dyn.MustPathFromString("variables.broken")}, diags[0].Paths)
 }

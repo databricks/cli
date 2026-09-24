@@ -194,9 +194,11 @@ func TestLogout(t *testing.T) {
 			// Verify token cache state.
 			if tc.isNonU2M {
 				// Non-U2M profiles should not touch the token cache at all.
+				assert.Zero(t, tokenStore.withLockCalls)
 				assert.NotNil(t, tokenStore.Tokens[tc.profileName], "expected token %q to be preserved for non-U2M profile", tc.profileName)
 				assert.NotNil(t, tokenStore.Tokens[tc.hostBasedKey], "expected token %q to be preserved for non-U2M profile", tc.hostBasedKey)
 			} else {
+				assert.Equal(t, 1, tokenStore.withLockCalls)
 				assert.Nil(t, tokenStore.Tokens[tc.profileName], "expected token %q to be removed", tc.profileName)
 				if tc.isSharedKey {
 					assert.NotNil(t, tokenStore.Tokens[tc.hostBasedKey], "expected token %q to be preserved", tc.hostBasedKey)

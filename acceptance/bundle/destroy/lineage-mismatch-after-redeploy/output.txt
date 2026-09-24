@@ -4,7 +4,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
 Created jobs.test_job
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
@@ -21,19 +21,19 @@ Destroy: 1 deleted
 
 === and leaves the bundle state dir clean, with no empty scaffolding directories:
 
->>> find .databricks -name terraform -prune -o -print
 .databricks
 .databricks/.gitignore
 .databricks/bundle
 .databricks/bundle/default
 .databricks/bundle/default/deployment.json
+>>> find .databricks -name terraform -prune -o -print
 
 === Machine B: fresh deploy of the same bundle (mints a new lineage L2 remotely)
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lineage-mismatch-after-redeploy/default/files...
 Created jobs.test_job
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Machine A with a lingering local state: any command that pulls remote state now fails

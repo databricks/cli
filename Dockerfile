@@ -14,6 +14,7 @@ RUN /build/docker/setup.sh
 
 # Start from a fresh base image, to remove any build artifacts and scripts.
 FROM alpine:3.22@sha256:55ae5d250caebc548793f321534bc6a8ef1d116f334f18f4ada1b2daad3251b2
+RUN apk add --no-cache git && git config --system --add safe.directory '*'
 
 ENV DATABRICKS_TF_EXEC_PATH "/app/bin/terraform"
 ENV DATABRICKS_TF_CLI_CONFIG_FILE "/app/config/config.tfrc"

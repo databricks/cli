@@ -161,6 +161,11 @@ func TestDefaultSemverSortsAboveLastRelease(t *testing.T) {
 	assert.Positive(t, semver.Compare(next, v), "the upcoming release must sort above the dev build")
 }
 
+func TestVersionWithRevisionUsesShortCommit(t *testing.T) {
+	assert.Equal(t, "1.19.0-dev+abc1234", versionWithRevision("1.19.0-dev", "abc123456789"))
+	assert.Equal(t, "1.19.0-dev+abc", versionWithRevision("1.19.0-dev", "abc"))
+}
+
 func TestGetSanitizedVersion(t *testing.T) {
 	tests := []struct {
 		name     string

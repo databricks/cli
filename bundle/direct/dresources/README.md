@@ -39,9 +39,9 @@ Do **not** derive update mask field names from `entry.Changes`. The paths in `en
 
 If a resource has fields that must not be sent in updates (deploy-only, lifecycle-only, etc.), document them explicitly with a `var` block and a comment explaining each exclusion.
 
-## Async APIs: WaitAfterCreate / WaitAfterUpdate
+## Async APIs: WaitAfterCreate / WaitAfterUpdate / WaitAfterResume
 
-For resources whose create or update is asynchronous (the resource is not immediately ready after the call returns), implement `WaitAfterCreate` and/or `WaitAfterUpdate` instead of polling inline inside DoCreate/DoUpdate. These are the correct extension points in the framework, and polling inline bypasses state persistence timing.
+For resources whose create or update is asynchronous (the resource is not immediately ready after the call returns), implement `WaitAfterCreate` and/or `WaitAfterUpdate` instead of polling inline inside DoCreate/DoUpdate. When planning intentionally skips an existing asynchronous resource that may not be ready yet, implement `WaitAfterResume` to resume the wait without creating a replacement. These are the correct extension points in the framework, and polling inline bypasses state persistence timing.
 
 ## Slice ordering: KeyedSlices
 

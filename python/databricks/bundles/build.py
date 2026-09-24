@@ -86,10 +86,10 @@ def _load_resources_from_input(input: dict) -> tuple[Resources, Diagnostics]:
     resources = Resources()
     diagnostics = Diagnostics()
 
-    input_resources = input.get("resources", {})
+    input_resources = input.get("resources") or {}
 
     for tpe in _ResourceType.all():
-        input_resources_by_tpe = input_resources.get(tpe.plural_name, {})
+        input_resources_by_tpe = input_resources.get(tpe.plural_name) or {}
 
         for resource_name, resource_dict in input_resources_by_tpe.items():
             try:
@@ -115,55 +115,66 @@ def _apply_mutators(
 ) -> tuple[Resources, Diagnostics]:
     diagnostics = Diagnostics()
 
-    for tpe in _ResourceType.all():
-        resources, diagnostics = diagnostics.extend_tuple(
-            _apply_mutators_for_type(bundle, resources, tpe, mutator_functions)
+    for mutator in mutator_functions:
+        tpe = next(
+            tpe
+            for tpe in _ResourceType.all()
+            if mutator.resource_type == tpe.resource_type
         )
+        resources, mutator_diagnostics = _apply_mutator_for_type(
+            bundle, resources, tpe, mutator
+        )
+        diagnostics = diagnostics.extend(mutator_diagnostics)
+
+        if mutator_diagnostics.has_error():
+            return resources, diagnostics
 
     return resources, diagnostics
 
 
-def _apply_mutators_for_type(
+def _apply_mutator_for_type(
     bundle: Bundle,
     resources: Resources,
     tpe: _ResourceType,
-    mutator_functions: list[ResourceMutator],
+    mutator: ResourceMutator,
 ) -> tuple[Resources, Diagnostics]:
     resources_dict = getattr(resources, tpe.plural_name)
 
     for resource_name, resource in resources_dict.items():
-        for mutator in mutator_functions:
-            if mutator.resource_type != tpe.resource_type:
-                continue
+        location = Location.from_callable(mutator.function)
 
-            location = Location.from_callable(mutator.function)
+        try:
+            if _get_num_args(mutator.function) == 1:
+                new_resource = mutator.function(resource)
+            else:
+                # defensive copy so that one function doesn't affect another
+                new_resource = mutator.function(deepcopy(bundle), resource)
 
-            try:
-                if _get_num_args(mutator.function) == 1:
-                    new_resource = mutator.function(resource)
-                else:
-                    # defensive copy so that one function doesn't affect another
-                    new_resource = mutator.function(deepcopy(bundle), resource)
-
-                # mutating resource in-place works, but we can't tell when it happens,
-                # so we only update location if new instance is returned
-
-                if new_resource is not resource:
-                    if location:
-                        resources.add_location(
-                            ("resources", tpe.plural_name, resource_name), location
-                        )
-                    resources_dict[resource_name] = new_resource
-                    resource = new_resource
-            except Exception as exc:
-                mutator_name = mutator.function.__name__
-
-                return resources, Diagnostics.from_exception(
-                    exc=exc,
-                    summary=f"Failed to apply '{mutator_name}' mutator",
-                    location=location,
-                    path=("resources", tpe.plural_name, resource_name),
+            if not isinstance(new_resource, tpe.resource_type):
+                raise TypeError(
+                    f"Mutator '{mutator.function.__name__}' returned "
+                    f"{type(new_resource).__name__}, expected {tpe.resource_type.__name__}"
                 )
+
+            # mutating resource in-place works, but we can't tell when it happens,
+            # so we only update location if new instance is returned
+
+            if new_resource is not resource:
+                if location:
+                    resources.add_location(
+                        ("resources", tpe.plural_name, resource_name), location
+                    )
+                resources_dict[resource_name] = new_resource
+                resource = new_resource
+        except Exception as exc:
+            mutator_name = mutator.function.__name__
+
+            return resources, Diagnostics.from_exception(
+                exc=exc,
+                summary=f"Failed to apply '{mutator_name}' mutator",
+                location=location,
+                path=("resources", tpe.plural_name, resource_name),
+            )
 
     return resources, Diagnostics()
 
@@ -271,8 +282,10 @@ def python_mutator(
 
 def _parse_bundle_info(input: dict) -> Bundle:
     bundle = input.get("bundle", {})
-    variables = {k: v.get("value") for k, v in input.get("variables", {}).items()}
-
+    variables = {
+        k: v.get("value") if v is not None else None
+        for k, v in (input.get("variables") or {}).items()
+    }
     return Bundle(
         target=bundle["target"],
         variables=variables,
@@ -290,9 +303,9 @@ def _append_resources(bundle: dict, resources: Resources) -> dict:
         resources_dict = getattr(resources, tpe.plural_name)
 
         if resources_dict:
-            new_bundle["resources"] = new_bundle.get("resources", {})
-            new_bundle["resources"][tpe.plural_name] = new_bundle["resources"].get(
-                tpe.plural_name, {}
+            new_bundle["resources"] = new_bundle.get("resources") or {}
+            new_bundle["resources"][tpe.plural_name] = (
+                new_bundle["resources"].get(tpe.plural_name) or {}
             )
 
             for resource_name, resource in resources_dict.items():

@@ -1,0 +1,9 @@
+bundle:
+  name: my_project
+
+sync: {paths: []}
+
+python:
+  venv_path: .venv
+  resources:
+    - "resources:load_resources"

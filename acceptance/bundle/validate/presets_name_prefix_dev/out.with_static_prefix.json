@@ -1,3 +1,5 @@
+
+>>> musterr [CLI] bundle validate -o json
 {
   "bundle": {
     "deployment": {

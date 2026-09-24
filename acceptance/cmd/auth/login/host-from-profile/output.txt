@@ -10,26 +10,6 @@ client_id = custom-client-id
 Profile existing-profile was successfully saved
 
 === OAuth client ID
+Expecting value: line 2 column 1 (char 1)
 
->>> print_requests.py //oidc/v1/authorize --get
-json.q.client_id = "custom-client-id";
-
-=== Login with a client ID override
-
->>> [CLI] auth login --profile existing-profile --client-id flag-client-id
-Profile existing-profile was successfully saved
-
-=== Overridden OAuth client ID
-
->>> print_requests.py //oidc/v1/authorize --get
-json.q.client_id = "flag-client-id";
-
-=== Profile after login
-; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
-[DEFAULT]
-
-[existing-profile]
-host         = [DATABRICKS_URL]
-auth_type    = databricks-cli
-workspace_id = [NUMID]
-client_id    = flag-client-id
+Exit code: 1

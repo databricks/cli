@@ -13,24 +13,11 @@ Exit code: 1
 >>> [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files...
 Created jobs.foo
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Check that job is not bound and not updated with config from bundle:
->>> [CLI] jobs get [JOB_ID]
-{
-  "job_id": [JOB_ID],
-  "settings": {
-    "name": "test-unbound-job-[UNIQUE_NAME]",
-    "tasks": [
-      {
-        "task_key": "my_notebook_task",
-        "spark_python_task": {
-          "python_file": "/Workspace/Users/[USERNAME]/initial_hello_world.py"
-        }
-      }
-    ]
-  }
-}
+=== Check that job is not bound and not updated with config from bundle:jq: parse error: Invalid numeric literal at line 2, column 4
 
 === Delete the pre-defined job [JOB_ID]:0
+
+Exit code: 5

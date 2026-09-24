@@ -21,11 +21,16 @@ title "a run that is still going is skipped"
 $CLI bundle plan -o json > tmp.plan.json
 trace jq '.plan["resources.job_runs.my_run"]' tmp.plan.json
 
-# Replay the plan captured while the run was still going: a fresh plan would
-# re-read it, and the testserver would settle it on that GET.
-title "Badness: the next deploy does not wait for that run"
+# Replay the plan captured while the run was still going. Apply resumes polling
+# the existing run instead of triggering another one, then publishes its terminal
+# remote state to anything that depends on it.
+title "the next deploy waits for that run"
 trace $CLI bundle deploy --plan tmp.plan.json
 
-title "the same run is still tracked, and nothing was cancelled, deleted or triggered"
+title "the dependent resource receives the terminal run state"
+downstream_id=$(read_id.py downstream_job)
+trace $CLI jobs get $downstream_id -o json | jq -r ".settings.tags.run_result"
+
+title "the same run is tracked in the existing state format, and nothing was cancelled, deleted or triggered"
 trace read_state.py job_runs my_run id result_state
-trace print_requests.py //jobs
+trace print_requests.py --nostamp //jobs

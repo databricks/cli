@@ -97,13 +97,22 @@ all active runs submitted by the current user.
 				cmdio.LogString(ctx, fmt.Sprintf("Searching active runs for %s in %s...", me.UserName, host))
 			}
 
-			// Fetch every active run (up to the scan bound) so --all cancels all
-			// of them, not just the first page.
+			// Enumerate every page before requesting cancellation. A partial list
+			// would make --all silently miss active runs, so any scan cap or API
+			// failure aborts before the first cancel request.
 			fetcher := newRunFetcher(ctx, w, listQuery{activeOnly: true, userFilter: me.UserName})
-			rows, err := fetcher.next(maxListScan)
-			if err != nil {
-				return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
-					fmt.Errorf("failed to list active runs: %w", err))
+			var rows []listRow
+			for !fetcher.exhausted {
+				page, err := fetcher.next(jobsPageLimit)
+				if err != nil {
+					return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+						fmt.Errorf("failed to list active runs: %w", err))
+				}
+				if fetcher.strategy.truncated() {
+					return renderError(ctx, cmd, "INTERNAL_ERROR", "TRANSIENT", true,
+						fmt.Errorf("failed to list active runs: stopped after scanning %d runs", maxListScan))
+				}
+				rows = append(rows, page...)
 			}
 
 			runIDs = make([]string, 0, len(rows))

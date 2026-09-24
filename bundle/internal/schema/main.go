@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/internal/clijson"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/jsonschema"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -238,6 +239,15 @@ func configTypeGraph() (*typeGraph, error) {
 	return newTypeGraph(reflect.TypeFor[config.Root](), removeJobsFields, removePipelineFields)
 }
 
+// clearPrivilegeEnum keeps Unity Catalog grant privileges open-ended. The Grants
+// API accepts documented privilege strings that may be newer than the SDK enum.
+func clearPrivilegeEnum(typ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	if typ == reflect.TypeFor[catalog.Privilege]() {
+		s.Enum = nil
+	}
+	return s
+}
+
 func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
 
@@ -287,6 +297,7 @@ func generateSchema(workdir, outputFile, cliJSONFile string, docsMode bool) {
 		removeDeploymentFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
+		clearPrivilegeEnum,
 		removeOutputOnlyFields,
 	}
 	if !docsMode {

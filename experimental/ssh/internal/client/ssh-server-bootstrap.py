@@ -18,6 +18,10 @@ LINGER_POLL_SECONDS = 15
 # flood the run log for as long as the work lives.
 LINGER_REPORT_SECONDS = 300
 
+# Grace periods for the child-process sweep after the server exits.
+CHILD_SWEEP_TIMEOUT_SECONDS = 5
+CHILD_SWEEP_POLL_SECONDS = 0.1
+
 # Exit statuses collected by the SIGCHLD subreaper handler, keyed by pid. The handler
 # can reap the server subprocess before Popen.wait() does, in which case Popen would
 # report exit code 0; this map preserves the real status.
@@ -60,68 +64,86 @@ def setup_subreaper():
     signal.signal(signal.SIGCHLD, sigchld_handler)
 
 
-def kill_all_children():
-    try:
-        current_pid = os.getpid()
-        while True:
-            result = subprocess.run(["pgrep", "-P", str(current_pid)], capture_output=True, text=True, check=False)
-            if result.returncode != 0 or not result.stdout.strip():
-                break
-            subprocess.run(["pkill", "-P", str(current_pid)], check=False)
-            time.sleep(0.1)
-        print("All descendant processes terminated")
-    except Exception as e:
-        print(f"Error while killing child processes: {e}")
+def adopted_children(server_pid, proc_root="/proc", self_pid=None):
+    """Return every live adopted child except the server process.
 
+    PR_SET_CHILD_SUBREAPER reparents orphaned session processes here, including work that
+    remained in the server's process group. Process group membership does not determine
+    ownership here: after the server exits, every other child is a notebook survivor.
 
-def kill_server_group(server_pgid):
-    """Terminate the SSH server's own process group.
-
-    That group holds exactly what the tunnel started: the server and the sshd processes it
-    spawned per connection. A process that deliberately left the group - which is what tmux,
-    setsid and disown do - is not in it, so detached work survives this. Killing by parentage
-    instead (pkill -P) would sweep those too, because PR_SET_CHILD_SUBREAPER makes this
-    process adopt every orphan in the session.
+    Reads /proc directly because the process running the enumeration would otherwise appear
+    among the children it queries.
     """
-    try:
-        os.killpg(server_pgid, signal.SIGTERM)
-        print(f"Terminated SSH server process group {server_pgid}")
-    except ProcessLookupError:
-        print(f"SSH server process group {server_pgid} is already gone")
-
-
-def detached_descendants(server_pgid):
-    """Adopted children of this process that are outside the SSH server's process group.
-
-    PR_SET_CHILD_SUBREAPER makes every orphan in the session reparent to this process, so
-    work that detached itself - tmux, setsid, disown, a plain background command - resurfaces
-    here as a direct child. The server's own sshd children stay in its group and are excluded.
-
-    Reads /proc directly, mirroring detachedDescendants in internal/server/descendants.go.
-    Asking ps for this process's children cannot work: ps is one of them, and subprocess.run
-    leaves it in this process's group, so it matches its own query on every poll and the
-    survivor list is never empty.
-    """
-    self_pid = os.getpid()
-    survivors = []
-    for entry in os.listdir("/proc"):
-        if not entry.isdigit():
+    if self_pid is None:
+        self_pid = os.getpid()
+    children = []
+    for entry in os.listdir(proc_root):
+        if not entry.isdigit() or int(entry) == server_pid:
             continue
         try:
-            with open(f"/proc/{entry}/stat") as stat_file:
-                # Split on the last ')' rather than from the left: the comm field before it
-                # can contain both spaces and parentheses. state, ppid and pgrp follow it.
-                state, ppid, pgrp = stat_file.read().rsplit(")", 1)[1].split()[:3]
+            with open(f"{proc_root}/{entry}/stat") as stat_file:
+                # Split on the last ')' because the comm field can contain spaces and parentheses.
+                state, ppid, _ = stat_file.read().rsplit(")", 1)[1].split()[:3]
         except OSError:
             # The process exited while we were walking /proc.
             continue
-        if ppid != str(self_pid) or pgrp == str(server_pgid):
+        if ppid != str(self_pid) or state.startswith("Z"):
             continue
-        # Zombies are already dead; the SIGCHLD handler collects them.
-        if state.startswith("Z"):
-            continue
-        survivors.append(entry)
-    return sorted(survivors, key=int)
+        children.append(entry)
+    return sorted(children, key=int)
+
+
+def send_child_signal(child_pid, sig):
+    try:
+        os.kill(int(child_pid), sig)
+    except ProcessLookupError:
+        pass
+
+
+def wait_for_adopted_children_exit(
+    server_pid,
+    timeout,
+    enumerate_children,
+    monotonic,
+    sleep,
+):
+    deadline = monotonic() + timeout
+    while True:
+        remaining = enumerate_children(server_pid)
+        if not remaining:
+            return remaining
+        remaining_time = deadline - monotonic()
+        if remaining_time <= 0:
+            return remaining
+        sleep(min(CHILD_SWEEP_POLL_SECONDS, remaining_time))
+
+
+def sweep_adopted_children(
+    server_pid,
+    *,
+    enumerate_children=None,
+    signal_child=None,
+    monotonic=None,
+    sleep=None,
+):
+    """Terminate adopted children without ever signaling the server process."""
+    enumerate_children = enumerate_children or adopted_children
+    signal_child = signal_child or send_child_signal
+    monotonic = monotonic or time.monotonic
+    sleep = sleep or time.sleep
+
+    for child_pid in enumerate_children(server_pid):
+        signal_child(child_pid, signal.SIGTERM)
+    remaining = wait_for_adopted_children_exit(
+        server_pid, CHILD_SWEEP_TIMEOUT_SECONDS, enumerate_children, monotonic, sleep
+    )
+    for child_pid in remaining:
+        signal_child(child_pid, signal.SIGKILL)
+    remaining = wait_for_adopted_children_exit(
+        server_pid, CHILD_SWEEP_TIMEOUT_SECONDS, enumerate_children, monotonic, sleep
+    )
+    if remaining:
+        raise TimeoutError(f"timed out terminating adopted child processes: {','.join(remaining)}")
 
 
 def has_children():
@@ -133,24 +155,21 @@ def has_children():
     return True
 
 
-def wait_for_detached_descendants(server_pgid):
-    """Hold the notebook open while detached work is still running.
+def wait_for_adopted_children(server_pid, enumerate_children=None, has_children_fn=None):
+    """Hold the notebook open while adopted work is still running.
 
-    WSFS authorises an I/O by walking the live process tree for a registered ancestor, and
-    this process is the registered one. Returning while detached work is still alive would
-    reparent it to PID 1, outside the registered subtree, and silently strip its /Workspace
-    and /Volumes access - trading a visible failure for an invisible one. Holding the run
-    open instead keeps the cluster from auto-terminating, which is why it is opt-in.
-
-    The work decides how long this takes. The only bound is the run's own timeout
-    (--server-timeout), which Jobs enforces and the client requires to be set, so this loop
-    cannot hold a cluster indefinitely.
+    WSFS authorises I/O by walking the live process tree for a registered ancestor, and this
+    process is the registered one. Returning while adopted work is alive would reparent it to
+    PID 1, outside the registered subtree, silently removing its workspace access. The run's
+    own timeout bounds this loop.
     """
+    enumerate_children = enumerate_children or adopted_children
+    has_children_fn = has_children_fn or has_children
     reported = None
     reported_at = 0.0
     while True:
-        survivors = detached_descendants(server_pgid)
-        if not survivors and not has_children():
+        survivors = enumerate_children(server_pid)
+        if not survivors and not has_children_fn():
             print("No detached processes left, releasing the run", flush=True)
             return
         now = time.monotonic()
@@ -276,13 +295,8 @@ def run_ssh_server():
         stderr=subprocess.STDOUT,
         text=True,
         errors="replace",
-        # Make the server a session and process group leader, so teardown can target exactly
-        # the processes the tunnel started. See kill_server_group.
-        start_new_session=True,
     )
-    # The server leads the new group, so the group id is its pid. Recorded here because the
-    # pid may already have been reaped by the time we tear the group down.
-    server_pgid = proc.pid
+    server_pid = proc.pid
     try:
         for line in proc.stdout:
             # flush so the run-page logs stay live while the server is running
@@ -302,16 +316,13 @@ def run_ssh_server():
             # The tail size matches maxRunFailureTraceBytes, the cap the client prints to the terminal.
             raise RuntimeError(f"SSH server exited with code {returncode}. Last server logs:\n" + "".join(tail)[-2000:])
     finally:
-        # Always reap the server and the sshd children it spawned; they are the only things
-        # in its process group. What happens to work that left that group depends on the mode:
-        # keep it and hold the run open as its WSFS anchor, or sweep it as we always have.
-        # Narrowing the sweep without holding the run open would leave survivors alive but cut
-        # off from /Workspace, which is a worse failure than the one it fixes.
-        kill_server_group(server_pgid)
+        # Once the server has exited, every adopted child except the server itself is a
+        # survivor. Keep mode holds the run open for all of them; sweep mode escalates from
+        # SIGTERM to SIGKILL without ever signaling the server PID.
         if keep_detached_processes:
-            wait_for_detached_descendants(server_pgid)
+            wait_for_adopted_children(server_pid)
         else:
-            kill_all_children()
+            sweep_adopted_children(server_pid)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,10 @@ compute:
   accelerator_type: GPU_1xA10
   num_accelerators: 1
   pool_id: capacity-1
+  priority_class: NORMAL
 mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
+mlflow_run_name: "  run-42  "
+mlflow_experiment_directory: "  /Workspace/Users/tester/experiments  "
 environment:
   version: 5
   dependencies:

@@ -21,6 +21,7 @@ import (
 type tokenStoreMock struct {
 	store  func(key string, t *oauth2.Token) error
 	lookup func(key string) (*oauth2.Token, error)
+	lock   func()
 }
 
 func (m *tokenStoreMock) Put(key string, e storage.Entry) error {
@@ -33,6 +34,13 @@ func (m *tokenStoreMock) Lookup(key string) (storage.Entry, error) {
 }
 
 func (m *tokenStoreMock) Delete(string) error { return nil }
+
+func (m *tokenStoreMock) WithLock(_ context.Context, fn func(storage.LockedStore) error) error {
+	if m.lock != nil {
+		m.lock()
+	}
+	return fn(m)
+}
 
 func TestToken(t *testing.T) {
 	cache := &tokenStoreMock{
@@ -125,6 +133,16 @@ func (m MockOAuthEndpointSupplier) GetUnifiedOAuthEndpoints(ctx context.Context,
 
 func (m MockOAuthEndpointSupplier) GetEndpointsFromURL(_ context.Context, _ string) (*OAuthAuthorizationServer, error) {
 	return nil, ErrOAuthNotSupported
+}
+
+type trackingOAuthEndpointSupplier struct {
+	MockOAuthEndpointSupplier
+	called func()
+}
+
+func (s trackingOAuthEndpointSupplier) GetAccountOAuthEndpoints(ctx context.Context, accountHost, accountID string) (*OAuthAuthorizationServer, error) {
+	s.called()
+	return s.MockOAuthEndpointSupplier.GetAccountOAuthEndpoints(ctx, accountHost, accountID)
 }
 
 func TestPersistentAuthClientID(t *testing.T) {
@@ -285,6 +303,136 @@ func TestToken_RefreshesExpiredAccessToken(t *testing.T) {
 	}
 	if tok.RefreshToken != "" {
 		t.Errorf("p.Token(): want refresh token '', got %s", tok.RefreshToken)
+	}
+}
+
+func TestToken_RefreshUsesRereadRotatedRefreshToken(t *testing.T) {
+	lookups := 0
+	cache := &tokenStoreMock{
+		lookup: func(string) (*oauth2.Token, error) {
+			lookups++
+			if lookups == 1 {
+				return &oauth2.Token{AccessToken: "old", RefreshToken: "old-refresh", Expiry: time.Now().Add(-time.Hour)}, nil
+			}
+			return &oauth2.Token{AccessToken: "old", RefreshToken: "rotated-refresh", Expiry: time.Now().Add(-time.Hour)}, nil
+		},
+		store: func(_ string, token *oauth2.Token) error {
+			if token.RefreshToken != "new-refresh" {
+				t.Fatalf("stored refresh token = %q, want new-refresh", token.RefreshToken)
+			}
+			return nil
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewPersistentAuth(t.Context(),
+		WithTokenStore(cache),
+		WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{{
+			Method:          "POST",
+			Resource:        "/oidc/accounts/xyz/v1/token",
+			ExpectedRequest: url.Values{"client_id": {"databricks-cli"}, "grant_type": {"refresh_token"}, "refresh_token": {"rotated-refresh"}},
+			Response:        `access_token=new-access&refresh_token=new-refresh`,
+			ResponseHeaders: map[string][]string{"Content-Type": {"application/x-www-form-urlencoded"}},
+		}}}),
+		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+		WithOAuthArgument(arg),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+
+	token, err := p.Token()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if token.AccessToken != "new-access" {
+		t.Fatalf("access token = %q, want new-access", token.AccessToken)
+	}
+}
+
+func TestToken_ReusesFreshConcurrentReplacement(t *testing.T) {
+	lookups := 0
+	cache := &tokenStoreMock{
+		lookup: func(string) (*oauth2.Token, error) {
+			lookups++
+			if lookups == 1 {
+				return &oauth2.Token{AccessToken: "old", RefreshToken: "refresh", Expiry: time.Now().Add(-time.Hour)}, nil
+			}
+			return &oauth2.Token{AccessToken: "winner", RefreshToken: "rotated", Expiry: time.Now().Add(time.Hour)}, nil
+		},
+		store: func(string, *oauth2.Token) error {
+			t.Fatal("unexpected write after concurrent refresh")
+			return nil
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewPersistentAuth(t.Context(),
+		WithTokenStore(cache),
+		WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{}}),
+		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+		WithOAuthArgument(arg),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+
+	token, err := p.Token()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if token.AccessToken != "winner" {
+		t.Fatalf("access token = %q, want winner", token.AccessToken)
+	}
+}
+
+func TestToken_DiscoversEndpointsBeforeStoreTransaction(t *testing.T) {
+	lookups := 0
+	endpointDiscovered := false
+	cache := &tokenStoreMock{
+		lookup: func(string) (*oauth2.Token, error) {
+			lookups++
+			return &oauth2.Token{AccessToken: "old", RefreshToken: "refresh", Expiry: time.Now().Add(-time.Hour)}, nil
+		},
+		lock: func() {
+			if !endpointDiscovered {
+				t.Fatal("store transaction started before OAuth endpoint discovery")
+			}
+		},
+	}
+	arg, err := NewBasicAccountOAuthArgument("https://accounts.cloud.databricks.test", "xyz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewPersistentAuth(t.Context(),
+		WithTokenStore(cache),
+		WithOAuthEndpointSupplier(trackingOAuthEndpointSupplier{called: func() { endpointDiscovered = true }}),
+		WithOAuthArgument(arg),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+
+	cache.lookup = func(string) (*oauth2.Token, error) {
+		lookups++
+		if lookups == 1 {
+			return &oauth2.Token{AccessToken: "old", RefreshToken: "refresh", Expiry: time.Now().Add(-time.Hour)}, nil
+		}
+		return &oauth2.Token{AccessToken: "old", Expiry: time.Now().Add(-time.Hour)}, nil
+	}
+	_, err = p.Token()
+	if !errors.Is(err, ErrMissingRefreshToken) {
+		t.Fatalf("Token() error = %v, want ErrMissingRefreshToken", err)
+	}
+	if !endpointDiscovered || lookups != 2 {
+		t.Fatalf("endpointDiscovered=%t lookups=%d", endpointDiscovered, lookups)
 	}
 }
 
@@ -477,7 +625,7 @@ func TestToken_ZeroExpiryDoesNotTriggerRefresh(t *testing.T) {
 	}
 }
 
-func TestToken_ReturnsError(t *testing.T) {
+func TestToken_InvalidGrantCodeClassifiesAnyDescription(t *testing.T) {
 	ctx := t.Context()
 	cache := &tokenStoreMock{
 		lookup: func(key string) (*oauth2.Token, error) {
@@ -520,8 +668,28 @@ func TestToken_ReturnsError(t *testing.T) {
 	if tok != nil {
 		t.Errorf("p.Token(): want nil, got %v", tok)
 	}
-	if !strings.Contains(err.Error(), "Invalid Client (error code: invalid_grant)") {
-		t.Errorf("p.Token(): want error containing 'Invalid Client (error code: invalid_grant)', got %v", err)
+	if _, ok := errors.AsType[*InvalidRefreshTokenError](err); !ok {
+		t.Errorf("p.Token(): want InvalidRefreshTokenError, got %v", err)
+	}
+}
+
+func TestIsInvalidRefreshGrant(t *testing.T) {
+	tests := []struct {
+		name        string
+		code        string
+		description string
+		want        bool
+	}{
+		{name: "protocol code", code: "invalid_grant", description: "different wording", want: true},
+		{name: "legacy description", code: "invalid_request", description: "Refresh token is invalid", want: true},
+		{name: "unrelated", code: "temporarily_unavailable", description: "Try again", want: false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isInvalidRefreshGrant(test.code, test.description); got != test.want {
+				t.Errorf("isInvalidRefreshGrant() = %t, want %t", got, test.want)
+			}
+		})
 	}
 }
 
@@ -864,12 +1032,14 @@ func TestForceRefreshToken_WithMemoryStorePreservesCachedRefreshToken(t *testing
 	if err != nil {
 		t.Fatalf("NewBasicAccountOAuthArgument(): %v", err)
 	}
-	if err := tokenStore.Put(arg.GetCacheKey(), storage.Entry{Token: &oauth2.Token{
-		AccessToken:  "still-valid",
-		RefreshToken: "refresh-me",
-		Expiry:       time.Now().Add(1 * time.Hour),
-	}}); err != nil {
-		t.Fatalf("Put(): %v", err)
+	if err := tokenStore.WithLock(t.Context(), func(locked storage.LockedStore) error {
+		return locked.Put(arg.GetCacheKey(), storage.Entry{Token: &oauth2.Token{
+			AccessToken:  "still-valid",
+			RefreshToken: "refresh-me",
+			Expiry:       time.Now().Add(1 * time.Hour),
+		}})
+	}); err != nil {
+		t.Fatalf("WithLock(): %v", err)
 	}
 
 	p, err := NewPersistentAuth(

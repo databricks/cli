@@ -1,4 +1,4 @@
-package structaccess
+package structaccess_test
 
 import (
 	"reflect"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -44,38 +45,37 @@ func TestGet_ConfigRoot_JobTagsAccess(t *testing.T) {
 		},
 	}
 
-	// Access a value inside the tags map
-	v, err := GetByString(root, "resources.jobs.my_job.tags.env")
+	v, err := structaccess.GetByString(root, "resources.jobs.my_job.tags.env")
 	require.NoError(t, err)
 	require.Equal(t, "dev", v)
-	require.NoError(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tags.env"))
-	require.NoError(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tags.anything"))
-	require.Error(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tags.env.inner"))
-	require.Error(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tags1"))
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tags.env"))
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tags.anything"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tags.env.inner"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tags1"))
 
 	// Array indexing test (1)
-	v, err = GetByString(root, "resources.jobs.my_job.tasks[0].task_key")
+	v, err = structaccess.GetByString(root, "resources.jobs.my_job.tasks[0].task_key")
 	require.NoError(t, err)
 	require.Equal(t, "t1", v)
-	require.NoError(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].task_key"))
-	require.Error(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].task_key.inner"))
-	require.Error(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].task_key1"))
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].task_key"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].task_key.inner"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].task_key1"))
 
 	// Array indexing test (2)
-	v, err = GetByString(root, "resources.jobs.my_job.tasks[0].notebook_task.notebook_path")
+	v, err = structaccess.GetByString(root, "resources.jobs.my_job.tasks[0].notebook_task.notebook_path")
 	require.NoError(t, err)
 	require.Equal(t, "/Workspace/Users/user@example.com/nb", v)
-	require.NoError(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path"))
-	require.Error(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path.inner"))
-	require.Error(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path1"))
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path.inner"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.jobs.my_job.tasks[0].notebook_task.notebook_path1"))
 
 	// Test ambiguous field access: outer is ignored because it has bundle tag
-	v, err = GetByString(root, "resources.apps.my_app.url")
+	v, err = structaccess.GetByString(root, "resources.apps.my_app.url")
 	require.NoError(t, err)
 	require.Equal(t, "app_inner_url", v)
-	require.NoError(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.apps.my_app.url"))
-	require.Error(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.apps.my_app.url.inner"))
-	require.Error(t, ValidateByString(reflect.TypeFor[config.Root](), "resources.apps.my_app.url1"))
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.apps.my_app.url"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.apps.my_app.url.inner"))
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[config.Root](), "resources.apps.my_app.url1"))
 }
 
 // A bundle resource embeds a config struct that embeds the SDK request struct, so its
@@ -86,29 +86,29 @@ func TestGetSet_DoublyEmbeddedField(t *testing.T) {
 	project := &resources.PostgresProject{} //exhaustruct:ignore
 	project.ProjectId = "p"
 
-	require.NoError(t, ValidateByString(reflect.TypeOf(project), "budget_policy_id"))
+	require.NoError(t, structaccess.ValidateByString(reflect.TypeOf(project), "budget_policy_id"))
 
-	require.NoError(t, SetByString(project, "budget_policy_id", "abc"))
+	require.NoError(t, structaccess.SetByString(project, "budget_policy_id", "abc"))
 	require.Equal(t, "abc", project.BudgetPolicyId)
 
-	value, err := GetByString(project, "budget_policy_id")
+	value, err := structaccess.GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
 	require.Equal(t, "abc", value)
 
 	// An explicit empty value is recorded on ProjectSpec, which declares the field.
-	require.NoError(t, SetByString(project, "budget_policy_id", ""))
+	require.NoError(t, structaccess.SetByString(project, "budget_policy_id", ""))
 	require.Contains(t, project.ProjectSpec.ForceSendFields, "BudgetPolicyId")
 	require.NotContains(t, project.ForceSendFields, "BudgetPolicyId")
 
-	value, err = GetByString(project, "budget_policy_id")
+	value, err = structaccess.GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
 	// The empty string, not nil: that is what separates an explicit "" from an absent field.
 	require.Equal(t, any(""), value)
 
 	// And dropping it again leaves the field absent.
-	require.NoError(t, SetByString(project, "budget_policy_id", nil))
+	require.NoError(t, structaccess.SetByString(project, "budget_policy_id", nil))
 	require.NotContains(t, project.ProjectSpec.ForceSendFields, "BudgetPolicyId")
-	value, err = GetByString(project, "budget_policy_id")
+	value, err = structaccess.GetByString(project, "budget_policy_id")
 	require.NoError(t, err)
 	require.Nil(t, value)
 }

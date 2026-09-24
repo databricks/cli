@@ -1,5 +1,6 @@
 errcode trace $CLI bundle deploy
+title "Assert customer diagnostics are not sent in telemetry"
 
-trace cat "$OUT_REQUESTS" | jq -r 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.error_message'
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event | {has_error_message: has("error_message"), contains_customer_diagnostic: (tostring | contains("customer_account_12345"))}'
 
 rm "$OUT_REQUESTS"

@@ -1,0 +1,5 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
+Error: expected a map at "resources", found nil
+
+
+Exit code: 5

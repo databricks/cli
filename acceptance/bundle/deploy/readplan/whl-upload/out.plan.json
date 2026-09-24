@@ -1,5 +1,5 @@
 {
-  "plan_version": [PLAN_VERSION],
+  "plan_version": 3,
   "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.jobs.my_job": {
@@ -21,7 +21,7 @@
             {
               "libraries": [
                 {
-                  "whl": "/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/whl-upload/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
                 }
               ],
               "new_cluster": {
@@ -39,5 +39,13 @@
         }
       }
     }
-  }
+  },
+  "uploads": [
+    {
+      "source": "dist/my_test_code-0.0.1-py3-none-any.whl",
+      "remote_name": "my_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
+      "sha256": "d1cdeb0a9129031d8cd09bb1681c5c712e188b[NUMID]d9bf04d3cd63708ad",
+      "patched_wheel": true
+    }
+  ]
 }

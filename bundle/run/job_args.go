@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
 
@@ -59,6 +60,11 @@ func (a jobTaskNotebookParamArgs) CompleteArgs(args []string, toComplete string)
 	for _, t := range a.Tasks {
 		if nt := t.NotebookTask; nt != nil {
 			maps.Copy(parameters, nt.BaseParameters)
+		}
+		if t.ForEachTask != nil {
+			if nt := t.ForEachTask.Task.NotebookTask; nt != nil {
+				maps.Copy(parameters, nt.BaseParameters)
+			}
 		}
 	}
 	return genericCompleteKeyValueArgs(args, toComplete, slices.Collect(maps.Keys(parameters)))
@@ -127,37 +133,11 @@ func (r *jobRunner) posArgsHandler() argsHandler {
 	if len(job.Parameters) > 0 {
 		return &jobParameterArgs{job}
 	}
-
-	// Handle task parameters otherwise.
+	// Handle task parameters otherwise. Include the task nested in a for_each_task
+	// so a job's effective task set determines the argument mode.
 	seen := make(map[jobTaskType]bool)
 	for _, t := range job.Tasks {
-		if t.NotebookTask != nil {
-			seen[jobTaskTypeNotebook] = true
-		}
-		if t.SparkJarTask != nil {
-			seen[jobTaskTypeSparkJar] = true
-		}
-		if t.SparkPythonTask != nil {
-			seen[jobTaskTypeSparkPython] = true
-		}
-		if t.SparkSubmitTask != nil {
-			seen[jobTaskTypeSparkSubmit] = true
-		}
-		if t.PipelineTask != nil {
-			seen[jobTaskTypePipeline] = true
-		}
-		if t.PythonWheelTask != nil {
-			seen[jobTaskTypePythonWheel] = true
-		}
-		if t.SqlTask != nil {
-			seen[jobTaskTypeSql] = true
-		}
-		if t.DbtTask != nil {
-			seen[jobTaskTypeDbt] = true
-		}
-		if t.RunJobTask != nil {
-			seen[jobTaskTypeRunJob] = true
-		}
+		addTaskTypes(t, seen)
 	}
 
 	// Cannot handle positional arguments if we have more than one task type.
@@ -178,5 +158,38 @@ func (r *jobRunner) posArgsHandler() argsHandler {
 	default:
 		// No positional argument handling for other task types.
 		return nopArgsHandler{}
+	}
+}
+
+func addTaskTypes(t jobs.Task, seen map[jobTaskType]bool) {
+	if t.NotebookTask != nil {
+		seen[jobTaskTypeNotebook] = true
+	}
+	if t.SparkJarTask != nil {
+		seen[jobTaskTypeSparkJar] = true
+	}
+	if t.SparkPythonTask != nil {
+		seen[jobTaskTypeSparkPython] = true
+	}
+	if t.SparkSubmitTask != nil {
+		seen[jobTaskTypeSparkSubmit] = true
+	}
+	if t.PipelineTask != nil {
+		seen[jobTaskTypePipeline] = true
+	}
+	if t.PythonWheelTask != nil {
+		seen[jobTaskTypePythonWheel] = true
+	}
+	if t.SqlTask != nil {
+		seen[jobTaskTypeSql] = true
+	}
+	if t.DbtTask != nil {
+		seen[jobTaskTypeDbt] = true
+	}
+	if t.RunJobTask != nil {
+		seen[jobTaskTypeRunJob] = true
+	}
+	if t.ForEachTask != nil {
+		addTaskTypes(t.ForEachTask.Task, seen)
 	}
 }

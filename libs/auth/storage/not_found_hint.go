@@ -10,28 +10,44 @@ import (
 	"github.com/databricks/cli/libs/env"
 )
 
-// notFoundHintStore wraps a Store so Lookup returns ErrNotFound with
-// a hint pointing the user at `databricks auth login`. When mode is secure
-// and the legacy file-backed cache has entries, the hint uses the upgrade-
-// specific copy so users who logged in with an older CLI version know why
-// their cached credentials are no longer being read.
-//
-// errors.Is(err, ErrNotFound) continues to return true because the
-// wrap uses %w; PersistentAuth's branches on ErrNotFound still fire.
-//
-// Put and Delete are delegated unchanged; only Lookup needs the message polish.
+// notFoundHintStore wraps a Store so Lookup returns ErrNotFound with a hint
+// pointing the user at `databricks auth login`. WithLock preserves the same
+// hint for reads performed by PersistentAuth while coordinating mutations.
 type notFoundHintStore struct {
 	inner           Store
 	mode            StorageMode
 	legacyStorePath string
 }
 
-func (s *notFoundHintStore) Put(key string, e Entry) error {
+func (s *notFoundHintStore) Lookup(key string) (Entry, error) {
+	return s.hintLookup(s.inner.Lookup(key))
+}
+
+// WithLock implements Store.
+func (s *notFoundHintStore) WithLock(ctx context.Context, fn func(LockedStore) error) error {
+	return s.inner.WithLock(ctx, func(locked LockedStore) error {
+		return fn(&notFoundHintLockedStore{store: s, inner: locked})
+	})
+}
+
+type notFoundHintLockedStore struct {
+	store *notFoundHintStore
+	inner LockedStore
+}
+
+func (s *notFoundHintLockedStore) Lookup(key string) (Entry, error) {
+	return s.store.hintLookup(s.inner.Lookup(key))
+}
+
+func (s *notFoundHintLockedStore) Put(key string, e Entry) error {
 	return s.inner.Put(key, e)
 }
 
-func (s *notFoundHintStore) Lookup(key string) (Entry, error) {
-	e, err := s.inner.Lookup(key)
+func (s *notFoundHintLockedStore) Delete(key string) error {
+	return s.inner.Delete(key)
+}
+
+func (s *notFoundHintStore) hintLookup(e Entry, err error) (Entry, error) {
 	if err == nil || !errors.Is(err, ErrNotFound) {
 		return e, err
 	}
@@ -40,8 +56,6 @@ func (s *notFoundHintStore) Lookup(key string) (Entry, error) {
 	}
 	return Entry{}, &notFoundHint{msg: "no cached credentials; run `databricks auth login` to sign in"}
 }
-
-func (s *notFoundHintStore) Delete(key string) error { return s.inner.Delete(key) }
 
 // notFoundHint replaces ErrNotFound's terse "token not found" string
 // with an actionable message while still satisfying errors.Is(err,

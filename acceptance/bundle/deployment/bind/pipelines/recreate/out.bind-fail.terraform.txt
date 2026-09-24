@@ -14,6 +14,9 @@ Terraform will perform the following actions:
       + cause                  = (known after apply)
       + channel                = "CURRENT"
       + cluster_id             = (known after apply)
+      - configuration          = {
+          - "spark.sql.ansi.enabled" = "true"
+        } -> null
       - continuous             = false -> null
       ~ creator_user_name      = "[USERNAME]" -> (known after apply)
       - development            = false -> null

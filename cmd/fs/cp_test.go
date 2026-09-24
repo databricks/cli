@@ -5,12 +5,59 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestCopyRejectsLocalSelfCopyBeforeOpeningFiles(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "source.txt")
+	require.NoError(t, os.WriteFile(source, []byte("keep me"), 0o600))
+
+	tests := []struct {
+		name   string
+		source string
+		target string
+	}{
+		{name: "relative alias", source: "source.txt", target: "./source.txt"},
+		{name: "symlink alias", source: "source.txt", target: "source-link.txt"},
+	}
+	t.Chdir(dir)
+	require.NoError(t, os.Symlink("source.txt", "source-link.txt"))
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			read := false
+			write := false
+			c := copy{
+				overwrite: true,
+				sourceFiler: &mockFiler{read: func(context.Context, string) (io.ReadCloser, error) {
+					read = true
+					return nil, errors.New("read must not be called")
+				}},
+				targetFiler: &mockFiler{write: func(context.Context, string, io.Reader, ...filer.WriteMode) error {
+					write = true
+					return nil
+				}},
+			}
+			err := c.cpFileToFile(t.Context(), tt.source, tt.target)
+			require.ErrorContains(t, err, "same file")
+			assert.False(t, read)
+			assert.False(t, write)
+		})
+	}
+
+	contents, err := os.ReadFile(source)
+	require.NoError(t, err)
+	assert.Equal(t, "keep me", string(contents))
+}
 
 // mockFiler mocks filer.Filer.
 type mockFiler struct {

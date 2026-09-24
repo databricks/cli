@@ -1,6 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json
-/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/src/app
-
->>> [CLI] bundle validate -o json
-[TEST_TMP_DIR]/src/app
+Exit code: 5

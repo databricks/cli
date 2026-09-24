@@ -12,8 +12,6 @@ Created jobs.foo
 Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --nostamp //jobs
-
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
@@ -31,66 +29,18 @@ Updated jobs.foo
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
->>> print_requests.py --nostamp //jobs
-
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== Fetch job ID and verify remote state
->>> [CLI] jobs get [FOO_ID]
+=== Fetch job ID and verify remote stateTraceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] jobs get [BAR_ID]
-{
-  "created_time": [UNIX_TIME_MILLIS],
-  "creator_user_name": "[USERNAME]",
-  "job_id": [BAR_ID],
-  "run_as_user_name": "[USERNAME]",
-  "settings": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "description": "depends on foo id [FOO_ID]",
-    "edit_mode": "UI_LOCKED",
-    "email_notifications": {},
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "bar",
-    "queue": {
-      "enabled": true
-    },
-    "timeout_seconds": 0,
-    "webhook_notifications": {}
-  }
-}
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.bar
-  delete resources.jobs.foo
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Destroy: 2 deleted
-
->>> print_requests.py --nostamp //jobs
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [BAR_ID]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [FOO_ID]
-  }
-}
-
->>> musterr [CLI] jobs get [FOO_ID]
-Error: Job [FOO_ID] does not exist.
-
->>> musterr [CLI] jobs get [BAR_ID]
-Error: Job [BAR_ID] does not exist.
+Exit code: 1

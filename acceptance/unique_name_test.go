@@ -20,6 +20,6 @@ func TestCIUniqueName(t *testing.T) {
 	// An 11-digit run id plus the 4-char suffix leaves exactly the 8-char random minimum: prepended.
 	assert.Equal(t, "ci15799017600xabcdosr5mzrr", ciUniqueName("ci15799017600xabcd", random))
 
-	// A prefix too long to leave 8 random chars is a bug in newBundleNamePrefix, so it panics.
+	// A prefix too long to leave 8 random chars is a bug in the prefix constructor, so it panics.
 	assert.Panics(t, func() { ciUniqueName("ci159990176001xabcd", random) })
 }

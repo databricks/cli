@@ -1,3 +1,5 @@
+
+>>> [CLI] bundle init . --config-file input.json --output-dir output -o json
 {
   "outputs": [
     "projects/alpha/yz/databricks.yml",

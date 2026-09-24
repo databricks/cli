@@ -7,5 +7,13 @@
     "resources.pipelines.my_default_python_etl": {
       "action": "create"
     }
-  }
+  },
+  "uploads": [
+    {
+      "source": "dist/my_default_python-0.0.1-py3-none-any.whl",
+      "remote_name": "my_default_python-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl",
+      "sha256": "b1f6420884ec09c[NUMID]a385bba0731e4974f5a84f9f2738906ba",
+      "patched_wheel": true
+    }
+  ]
 }

@@ -4,82 +4,15 @@ create schemas.grants_schema
 create schemas.grants_schema.grants
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
->>> [CLI] bundle plan -o json
-
->>> print_requests.py --get //permissions
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
-Created schemas.grants_schema
-Created schemas.grants_schema.grants
-Files: 4 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py //permissions
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
->>> [CLI] grants get schema main.schema_grants_[UNIQUE_NAME]
-{
-  "privilege_assignments": [
-    {
-      "principal": "deco-test-user@databricks.com",
-      "privileges": [
-        "CREATE_TABLE",
-        "USE_SCHEMA"
-      ]
-    }
-  ]
-}
-
->>> [CLI] bundle plan -o json
-
->>> print_requests.py --get //permissions
-{
-  "method": "GET",
-  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
-}
-{
-  "method": "GET",
-  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
-}
-{
-  "method": "GET",
-  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
-}
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
-Updated schemas.grants_schema.grants
-Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
-
->>> print_requests.py //permissions
-
->>> [CLI] grants get schema main.schema_grants_[UNIQUE_NAME]
-{
-  "privilege_assignments": [
-    {
-      "principal": "deco-test-user@databricks.com",
-      "privileges": [
-        "APPLY_TAG",
-        "CREATE_TABLE"
-      ]
-    }
-  ]
-}
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.schemas.grants_schema
-
-This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete resources.schemas.grants_schema
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
-
-Destroy: 1 deleted
-
->>> print_requests.py //permissions
+Exit code: 1

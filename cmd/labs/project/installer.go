@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/cmd/labs/github"
@@ -82,7 +83,7 @@ type installer struct {
 }
 
 func (i *installer) Install(ctx context.Context) error {
-	err := i.EnsureFoldersExist()
+	err := i.ensureInstallFoldersExist()
 	if err != nil {
 		return fmt.Errorf("folders: %w", err)
 	}
@@ -103,36 +104,157 @@ func (i *installer) Install(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("login: %w", err)
 	}
-	if !i.offlineInstall {
-		err = i.downloadLibrary(ctx)
-		if err != nil {
-			return fmt.Errorf("lib: %w", err)
+
+	if i.offlineInstall {
+		if _, err := os.Stat(i.LibDir()); errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("no local installation found: %w", err)
 		}
+		return i.completeInstall(ctx, w)
 	}
 
-	if _, err := os.Stat(i.LibDir()); errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("no local installation found: %w", err)
-	}
-	err = i.setupPythonVirtualEnvironment(ctx, w)
+	err = i.installDownloadedLibrary(ctx, w)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (i *installer) installDownloadedLibrary(ctx context.Context, w *databricks.WorkspaceClient) (err error) {
+	libDir := i.LibDir()
+	stagingDir, err := os.MkdirTemp(filepath.Dir(libDir), ".lib-staging-")
+	if err != nil {
+		return fmt.Errorf("create library staging directory: %w", err)
+	}
+	defer os.RemoveAll(stagingDir)
+
+	if err := i.downloadLibrary(ctx, stagingDir); err != nil {
+		return fmt.Errorf("lib: %w", err)
+	}
+	if err := validateLibrary(stagingDir); err != nil {
+		return fmt.Errorf("validate staged library: %w", err)
+	}
+
+	txn := newLibraryTransaction(libDir, stagingDir)
+	if err := txn.swap(); err != nil {
+		return fmt.Errorf("swap library: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, txn.rollback())
+		}
+	}()
+
+	if err = i.completeInstall(ctx, w); err != nil {
+		return err
+	}
+	if err = txn.commit(); err != nil {
+		return fmt.Errorf("commit library installation: %w", err)
+	}
+	return nil
+}
+
+func (i *installer) completeInstall(ctx context.Context, w *databricks.WorkspaceClient) error {
+	if err := i.setupPythonVirtualEnvironment(ctx, w); err != nil {
 		return fmt.Errorf("python: %w", err)
 	}
-	err = i.recordVersion(ctx)
-	if err != nil {
+	if err := i.recordVersion(ctx); err != nil {
 		return fmt.Errorf("record version: %w", err)
 	}
-	// TODO: failing install hook for "clean installations" (not upgrages)
-	// should trigger removal of the project, otherwise users end up with
-	// misconfigured CLIs
-	err = i.runInstallHook(ctx)
-	if err != nil {
+	if err := i.runInstallHook(ctx); err != nil {
 		return fmt.Errorf("installer: %w", err)
 	}
 	return nil
 }
 
+func (i *installer) ensureInstallFoldersExist() error {
+	dirs := []string{i.CacheDir(), i.ConfigDir(), i.StateDir()}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, ownerRWXworldRX); err != nil {
+			return fmt.Errorf("folder %s: %w", dir, err)
+		}
+	}
+	return nil
+}
+
+func validateLibrary(libDir string) error {
+	info, err := os.Stat(filepath.Join(libDir, "labs.yml"))
+	if err != nil {
+		return fmt.Errorf("stat labs.yml: %w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return errors.New("labs.yml is not a regular file")
+	}
+	return nil
+}
+
+type libraryTransaction struct {
+	libDir     string
+	stagingDir string
+	backupDir  string
+	hadLibrary bool
+	rename     func(string, string) error
+	removeAll  func(string) error
+}
+
+func newLibraryTransaction(libDir, stagingDir string) *libraryTransaction {
+	return &libraryTransaction{
+		libDir:     libDir,
+		stagingDir: stagingDir,
+		backupDir:  stagingDir + "-backup",
+		rename:     os.Rename,
+		removeAll:  os.RemoveAll,
+	}
+}
+
+func (t *libraryTransaction) swap() error {
+	_, err := os.Stat(t.libDir)
+	switch {
+	case err == nil:
+		t.hadLibrary = true
+		if err := t.rename(t.libDir, t.backupDir); err != nil {
+			return fmt.Errorf("back up current library: %w", err)
+		}
+	case !errors.Is(err, fs.ErrNotExist):
+		return fmt.Errorf("stat current library: %w", err)
+	}
+	if err := t.rename(t.stagingDir, t.libDir); err != nil {
+		installErr := fmt.Errorf("install staged library: %w", err)
+		if t.hadLibrary {
+			return errors.Join(installErr, t.rollback())
+		}
+		return installErr
+	}
+	return nil
+}
+
+func (t *libraryTransaction) rollback() error {
+	var errs []error
+	if err := t.removeAll(t.libDir); err != nil {
+		errs = append(errs, fmt.Errorf("remove failed library: %w", err))
+	}
+	if t.hadLibrary {
+		if err := t.rename(t.backupDir, t.libDir); err != nil {
+			errs = append(errs, fmt.Errorf("restore previous library: %w", err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func (t *libraryTransaction) commit() error {
+	if !t.hadLibrary {
+		return nil
+	}
+	if err := t.removeAll(t.backupDir); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (i *installer) Upgrade(ctx context.Context) error {
-	err := i.downloadLibrary(ctx)
+	if err := i.cleanupLib(ctx); err != nil {
+		return fmt.Errorf("lib: %w", err)
+	}
+	err := i.downloadLibrary(ctx, i.LibDir())
 	if err != nil {
 		return fmt.Errorf("lib: %w", err)
 	}
@@ -157,11 +279,13 @@ func (i *installer) warning(s string) {
 
 func (i *installer) cleanupLib(ctx context.Context) error {
 	libDir := i.LibDir()
-	err := os.RemoveAll(libDir)
-	if err != nil {
+	if err := os.RemoveAll(libDir); err != nil {
 		return fmt.Errorf("remove all: %w", err)
 	}
-	return os.MkdirAll(libDir, ownerRWXworldRX)
+	if err := os.MkdirAll(libDir, ownerRWXworldRX); err != nil {
+		return fmt.Errorf("create library directory: %w", err)
+	}
+	return nil
 }
 
 func (i *installer) recordVersion(ctx context.Context) error {
@@ -193,15 +317,9 @@ func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, err
 	return w, nil
 }
 
-func (i *installer) downloadLibrary(ctx context.Context) error {
+func (i *installer) downloadLibrary(ctx context.Context, libTarget string) error {
 	sp := cmdio.NewSpinner(ctx)
 	defer sp.Close()
-	sp.Update("Cleaning up previous installation if necessary")
-	err := i.cleanupLib(ctx)
-	if err != nil {
-		return fmt.Errorf("cleanup: %w", err)
-	}
-	libTarget := i.LibDir()
 	// we may support wheels, jars, and golang binaries. but those are not zipballs
 	if i.IsZipball() {
 		sp.Update("Downloading and unpacking zipball for " + i.version)

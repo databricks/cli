@@ -1,27 +1,9 @@
-
->>> envsubst
-
->>> [CLI] schemas create schema-[UNIQUE_NAME] main
-{
-  "browse_only": false,
-  "catalog_name": "main",
-  "catalog_type": "MANAGED_CATALOG",
-  "created_at": [UNIX_TIME_MILLIS][0],
-  "created_by": "[USERNAME]",
-  "enable_predictive_optimization": "INHERIT",
-  "full_name": "main.schema-[UNIQUE_NAME]",
-  "metastore_id": "[UUID]",
-  "name": "schema-[UNIQUE_NAME]",
-  "owner": "[USERNAME]",
-  "schema_id": "[UUID]",
-  "updated_at": [UNIX_TIME_MILLIS][0],
-  "updated_by": "[USERNAME]"
-}
-
->>> musterr [CLI] bundle deploy
-Error: volume main.schema-[UNIQUE_NAME].doesnotexist does not exist
-  at workspace.artifact_path
-  in databricks.yml:6:18
+jq: parse error: Invalid numeric literal at line 2, column 4
+Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml: line 2: did not find expected comment or line break
 
 
 >>> [CLI] schemas delete main.schema-[UNIQUE_NAME]
+Error: failed to load [TEST_TMP_DIR]/databricks.yml: yaml: line 2: did not find expected comment or line break
+
+
+Exit code: 1

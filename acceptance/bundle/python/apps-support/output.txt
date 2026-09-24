@@ -1,28 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
-{
-  "experimental": {
-    "python": {
-      "mutators": [
-        "mutators:update_app"
-      ],
-      "resources": [
-        "resources:load_resources"
-      ]
-    }
-  },
-  "resources": {
-    "apps": {
-      "my_app_1": {
-        "description": "My app",
-        "name": "my_app_1 (updated)",
-        "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/files/app1"
-      },
-      "my_app_2": {
-        "description": "My app (2)",
-        "name": "my_app_2 (updated)",
-        "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/files/app2"
-      }
-    }
-  }
-}
+Exit code: 5

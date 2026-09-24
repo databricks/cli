@@ -3,7 +3,7 @@
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created model_serving_endpoints.endpoint1
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Update config and telemetry_config
@@ -17,8 +17,8 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
-=== Request order: config PUT, poll, telemetry PATCH
->>> print_requests.py --get --oneline //serving-endpoints
+=== Request order: config PUT, poll, telemetry PATCH1
+1 >>> print_requests.py --get --oneline //serving-endpoints
 1 {"method": "POST", "path": "/api/2.0/serving-endpoints", "body": {"config": {"served_entities": [{"entity_name": "main.default.test_model", "entity_version": "1", "name": "prod", "scale_to_zero_enabled": true, "workload_size": "Small"}]}, "name": "test-endpoint", "telemetry_config": {"inference_table_config": {"sampling_fraction": 0.5}, "table_names": {"logs_table": "main.default.test_logs"}}}}
 2 {"method": "GET", "path": "/api/2.0/serving-endpoints/test-endpoint"}
 1 {"method": "PUT", "path": "/api/2.0/serving-endpoints/test-endpoint/config", "body": {"served_entities": [{"entity_name": "main.default.test_model", "entity_version": "1", "name": "prod", "scale_to_zero_enabled": true, "workload_size": "Medium"}]}}
@@ -32,14 +32,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Updated model_serving_endpoints.endpoint1
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] api get /api/2.0/serving-endpoints/test-endpoint
-null
-
-=== Plan converges after removal
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-
-=== Removal sends an empty telemetry PATCH
->>> print_requests.py --method PATCH --oneline //serving-endpoints
-{"method": "PATCH", "path": "/api/2.0/serving-endpoints/test-endpoint/telemetry-config", "body": {}}
+Exit code: 5

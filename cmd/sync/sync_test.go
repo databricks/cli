@@ -120,3 +120,17 @@ func TestExcludeFromFlag(t *testing.T) {
 	expected := []string{"node_modules/", "*.log", "build/", "temp/*.tmp"}
 	assert.ElementsMatch(t, expected, opts.Exclude)
 }
+
+func TestSyncRejectsNonPositiveWatchInterval(t *testing.T) {
+	for _, interval := range []string{"0s", "-1s"} {
+		t.Run(interval, func(t *testing.T) {
+			rootCmd := root.New(cmdctx.GenerateExecId(t.Context()))
+			rootCmd.AddCommand(New())
+			rootCmd.AddGroup(&cobra.Group{ID: "development"})
+			rootCmd.SetArgs([]string{"sync", "--watch", "--interval", interval})
+
+			err := rootCmd.Execute()
+			assert.EqualError(t, err, "--interval must be greater than zero when using --watch")
+		})
+	}
+}

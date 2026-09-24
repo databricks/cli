@@ -16,6 +16,8 @@ func TestFromTypeBasic(t *testing.T) {
 		I             *int   `json:"i,omitempty"`
 		V             any    `json:"v,omitempty"`
 		TriplePointer ***int `json:"triple_pointer,omitempty"`
+		//nolint:govet,staticcheck // fixture intentionally exercises optioned dash tags
+		OptionedDash string `json:"-,omitempty"`
 
 		// These fields should be ignored in the resulting schema.
 		NotAnnotated   string
@@ -88,6 +90,9 @@ func TestFromTypeBasic(t *testing.T) {
 					},
 					"triple_pointer": {
 						Reference: &intRef,
+					},
+					"-": {
+						Reference: &strRef,
 					},
 				},
 				AdditionalProperties: false,

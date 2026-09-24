@@ -1,24 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
-{
-  "experimental": {
-    "python": {
-      "mutators": [
-        "mutators:update_synced_database_table"
-      ],
-      "resources": [
-        "resources:load_resources"
-      ]
-    }
-  },
-  "resources": {
-    "synced_database_tables": {
-      "my_synced_table_1": {
-        "name": "main.default.my_synced_table_1 (updated)"
-      },
-      "my_synced_table_2": {
-        "name": "main.default.my_synced_table_2 (updated)"
-      }
-    }
-  }
-}
+Exit code: 5

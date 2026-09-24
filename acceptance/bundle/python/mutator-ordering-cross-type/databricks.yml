@@ -1,0 +1,18 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  mutators:
+    - "mutators:record_pipeline"
+    - "mutators:record_job"
+    - "mutators:write_order"
+
+resources:
+  jobs:
+    my_job:
+      tasks: []
+  pipelines:
+    my_pipeline:
+      name: My Pipeline

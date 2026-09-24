@@ -184,16 +184,22 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			printStatusEvent(out, current, previous)
 		}
 		err = runLogs(watchCtx, cmd, req)
-
-		// Re-resolve the run for the closing envelope. STATUS events only fire on
-		// the Bricklens path, so the terminal status must come from the run's
-		// actual state — correct whether Bricklens or the MLflow fallback served
-		// the logs.
-		printTerminalEvent(out, runIDStr, watchTerminalStatus(ctx, w, runID), dashboardURL)
-		return err
+		return finishJSONWatch(ctx, out, runIDStr, dashboardURL, w, err)
 	}
 
 	return cmd
+}
+
+// finishJSONWatch completes a JSON watch without turning an interrupted stream
+// into a terminal status envelope. The submitted event remains the last event so
+// consumers can resume the run explicitly.
+func finishJSONWatch(ctx context.Context, out io.Writer, runID, dashboardURL string, w *databricks.WorkspaceClient, err error) error {
+	if errors.Is(err, context.Canceled) {
+		return err
+	}
+	runIDInt, _ := strconv.ParseInt(runID, 10, 64)
+	printTerminalEvent(out, runID, watchTerminalStatus(ctx, w, runIDInt), dashboardURL)
+	return err
 }
 
 func airLogsCommand(profile, runID string) string {

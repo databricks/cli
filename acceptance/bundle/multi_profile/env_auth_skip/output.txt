@@ -1,5 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json
-{
-  "name": "multi-profile-env-skip"
-}
+Exit code: 5

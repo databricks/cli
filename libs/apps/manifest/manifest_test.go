@@ -218,6 +218,27 @@ func TestGetMandatoryPlugins(t *testing.T) {
 	assert.Equal(t, []string{"core", "server"}, names)
 }
 
+func TestGetMandatoryPluginsExcludesDeprecated(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"server": {
+				Name:               "server",
+				RequiredByTemplate: true,
+			},
+			"legacy": {
+				Name:               "legacy",
+				RequiredByTemplate: true,
+				Deprecated:         true,
+			},
+		},
+	}
+
+	mandatory := m.GetMandatoryPlugins()
+	require.Len(t, mandatory, 1)
+	assert.Equal(t, "server", mandatory[0].Name)
+	assert.Equal(t, []string{"server"}, m.GetMandatoryPluginNames())
+}
+
 func TestGetMandatoryPluginsEmpty(t *testing.T) {
 	m := &manifest.Manifest{
 		Plugins: map[string]manifest.Plugin{

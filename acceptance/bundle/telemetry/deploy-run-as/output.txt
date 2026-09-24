@@ -4,11 +4,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created jobs.test_job
 Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> cat [OUTPUT_DIR]/out.requests.txt
-
->>> cat telemetry.json
-{
-  "key": "run_as_set",
-  "value": true
-}
+Exit code: 5

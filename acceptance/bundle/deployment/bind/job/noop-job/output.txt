@@ -1,14 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] jobs create --json {"name": "My Job"}
-
->>> [CLI] bundle deployment bind job_1 [NUMID] --auto-approve
-Successfully bound job with an id '[NUMID]'
-Run 'bundle deploy' to deploy changes to your workspace
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/default/files...
-Updated jobs.job_1
-Files: 3 uploaded, 0 deleted
-Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> [CLI] jobs get [NUMID] --output json
+Exit code: 5

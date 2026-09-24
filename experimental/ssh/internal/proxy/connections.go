@@ -8,12 +8,13 @@ import (
 // ConnectionsManager manages concurrent websocket clients and sends a shutdown signal if no
 // clients are connected for a specified duration.
 type ConnectionsManager struct {
-	maxClients      int
-	shutdownDelay   time.Duration
-	shutdownTimer   *time.Timer
+	maxClients    int
+	shutdownDelay time.Duration
+	shutdownTimer *time.Timer
+	connections   map[string]*proxyConnection
+	connectionsMu sync.Mutex
+	// Methods that touch both mutexes acquire connectionsMu first.
 	shutdownTimerMu sync.Mutex
-	connections     map[string]*proxyConnection
-	connectionsMu   sync.Mutex
 	TimedOut        chan bool
 }
 
@@ -35,19 +36,17 @@ func (cm *ConnectionsManager) Count() int {
 }
 
 func (cm *ConnectionsManager) TryAdd(id string, conn *proxyConnection) bool {
-	count := cm.Count()
-	if count >= cm.maxClients {
-		return false
-	}
-	cm.addConnection(id, conn)
-	cm.cancelShutdownTimer()
-	return true
-}
-
-func (cm *ConnectionsManager) addConnection(id string, conn *proxyConnection) {
 	cm.connectionsMu.Lock()
 	defer cm.connectionsMu.Unlock()
+	if _, exists := cm.connections[id]; exists {
+		return false
+	}
+	if len(cm.connections) >= cm.maxClients {
+		return false
+	}
 	cm.connections[id] = conn
+	cm.cancelShutdownTimer()
+	return true
 }
 
 func (cm *ConnectionsManager) Get(id string) (*proxyConnection, bool) {
@@ -58,17 +57,12 @@ func (cm *ConnectionsManager) Get(id string) (*proxyConnection, bool) {
 }
 
 func (cm *ConnectionsManager) Remove(id string) {
-	cm.removeConnection(id)
-	count := cm.Count()
-	if count <= 0 {
-		cm.startShutdownTimer(cm.shutdownDelay)
-	}
-}
-
-func (cm *ConnectionsManager) removeConnection(id string) {
 	cm.connectionsMu.Lock()
 	defer cm.connectionsMu.Unlock()
 	delete(cm.connections, id)
+	if len(cm.connections) == 0 {
+		cm.startShutdownTimer(cm.shutdownDelay)
+	}
 }
 
 func (cm *ConnectionsManager) ExtendIdleTimeout(delay time.Duration) {

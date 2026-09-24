@@ -2,6 +2,7 @@ package apps
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -909,166 +910,344 @@ func TestRunManifestOnlyUsesTemplatePathEnvVar(t *testing.T) {
 }
 
 func TestCopyFileDeps(t *testing.T) {
-	ctx := t.Context()
-
 	srcDir := t.TempDir()
 	destDir := t.TempDir()
-
-	// Create a fake tarball in srcDir
 	tgzContent := []byte("fake-tarball-content")
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "my-pkg-1.0.0.tgz"), tgzContent, 0o644))
 
-	// package.json with file: dep, a registry dep, and a devDep with file:
 	pkgJSON := []byte(`{
 		"dependencies": {
 			"my-pkg": "file:./my-pkg-1.0.0.tgz",
 			"lodash": "4.17.21"
 		},
 		"devDependencies": {
-			"missing-pkg": "file:./nonexistent.tgz"
+			"my-dev-pkg": "file:./my-dev-pkg-1.0.0.tgz"
 		}
 	}`)
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "my-dev-pkg-1.0.0.tgz"), []byte("dev-tarball"), 0o644))
 
-	copyFileDeps(ctx, pkgJSON, srcDir, destDir)
+	require.NoError(t, copyFileDeps(pkgJSON, srcDir, destDir))
 
-	// The file: dep should be copied
 	copied, err := os.ReadFile(filepath.Join(destDir, "my-pkg-1.0.0.tgz"))
 	require.NoError(t, err)
 	assert.Equal(t, tgzContent, copied)
-
-	// The registry dep should NOT create any file
+	copied, err = os.ReadFile(filepath.Join(destDir, "my-dev-pkg-1.0.0.tgz"))
+	require.NoError(t, err)
+	assert.Equal(t, []byte("dev-tarball"), copied)
 	_, err = os.Stat(filepath.Join(destDir, "4.17.21"))
 	assert.ErrorIs(t, err, fs.ErrNotExist)
-
-	// The missing file: dep should be skipped gracefully (no panic, no error)
-	_, err = os.Stat(filepath.Join(destDir, "nonexistent.tgz"))
-	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestCopyFileDepsInvalidJSON(t *testing.T) {
-	ctx := t.Context()
-	srcDir := t.TempDir()
+func TestCopyFileDepsRejectsInvalidJSON(t *testing.T) {
 	destDir := t.TempDir()
-
-	// Should not panic on invalid JSON
-	copyFileDeps(ctx, []byte("not json"), srcDir, destDir)
-
-	// destDir should remain empty
-	entries, err := os.ReadDir(destDir)
-	require.NoError(t, err)
-	assert.Empty(t, entries)
-}
-
-func TestCopyFileDepsNoDeps(t *testing.T) {
-	ctx := t.Context()
-	srcDir := t.TempDir()
-	destDir := t.TempDir()
-
-	// package.json with no file: deps
-	pkgJSON := []byte(`{"dependencies": {"react": "19.0.0"}}`)
-	copyFileDeps(ctx, pkgJSON, srcDir, destDir)
+	require.Error(t, copyFileDeps([]byte("not json"), t.TempDir(), destDir))
 
 	entries, err := os.ReadDir(destDir)
 	require.NoError(t, err)
 	assert.Empty(t, entries)
 }
 
-func skipIfNoNpm(t *testing.T) {
+func TestCopyFileDepsRejectsParentAndAbsoluteSource(t *testing.T) {
+	srcDir := t.TempDir()
+	absolutePath := filepath.ToSlash(t.TempDir())
+	tests := []struct {
+		name string
+		path string
+	}{
+		{name: "parent", path: "../outside.tgz"},
+		{name: "absolute", path: absolutePath},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			destDir := t.TempDir()
+			pkgJSON := []byte(`{"dependencies":{"pkg":"file:` + tt.path + `"}}`)
+			err := copyFileDeps(pkgJSON, srcDir, destDir)
+			require.Error(t, err)
+			entries, err := os.ReadDir(destDir)
+			require.NoError(t, err)
+			assert.Empty(t, entries)
+		})
+	}
+}
+
+func TestCopyFileDepsRejectsSourceSymlinkOutsideRoot(t *testing.T) {
+	srcDir := t.TempDir()
+	outsideDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(outsideDir, "package.tgz"), []byte("outside"), 0o644))
+	if err := os.Symlink(filepath.Join(outsideDir, "package.tgz"), filepath.Join(srcDir, "package.tgz")); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+
+	pkgJSON := []byte(`{"dependencies":{"pkg":"file:./package.tgz"}}`)
+	err := copyFileDeps(pkgJSON, srcDir, t.TempDir())
+	require.ErrorContains(t, err, "resolves outside root")
+}
+
+func TestCopyFileDepsRejectsDestinationSymlinkOutsideRoot(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+	outsideDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(srcDir, "packages"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "packages", "package.tgz"), []byte("package"), 0o644))
+	if err := os.Symlink(outsideDir, filepath.Join(destDir, "packages")); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+
+	pkgJSON := []byte(`{"dependencies":{"pkg":"file:./packages/package.tgz"}}`)
+	err := copyFileDeps(pkgJSON, srcDir, destDir)
+	require.ErrorContains(t, err, "outside root")
+	assert.NoFileExists(t, filepath.Join(outsideDir, "package.tgz"))
+}
+
+func TestCopyFileDepsRejectsDanglingDestinationSymlinkOutsideRoot(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(srcDir, "packages"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "packages", "package.tgz"), []byte("package"), 0o644))
+	if err := os.Symlink(filepath.Join(t.TempDir(), "missing"), filepath.Join(destDir, "packages")); err != nil {
+		t.Skipf("cannot create symlink: %v", err)
+	}
+
+	pkgJSON := []byte(`{"dependencies":{"pkg":"file:./packages/package.tgz"}}`)
+	err := copyFileDeps(pkgJSON, srcDir, destDir)
+	require.ErrorContains(t, err, "resolves outside root")
+}
+
+func TestCopyFileDepsRejectsParentAndAbsoluteDestination(t *testing.T) {
+	srcDir := t.TempDir()
+	absolutePath := filepath.ToSlash(t.TempDir())
+	tests := []struct {
+		name string
+		path string
+	}{
+		{name: "parent", path: "../outside.tgz"},
+		{name: "absolute", path: absolutePath},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pkgJSON := []byte(`{"dependencies":{"pkg":"file:` + tt.path + `"}}`)
+			require.Error(t, copyFileDeps(pkgJSON, srcDir, t.TempDir()))
+		})
+	}
+}
+
+func TestCopyFileDepsRejectsWindowsAbsoluteSourceOnUnix(t *testing.T) {
+	pkgJSON := []byte(`{"dependencies":{"pkg":"file:C:/outside.tgz"}}`)
+	require.Error(t, copyFileDeps(pkgJSON, t.TempDir(), t.TempDir()))
+}
+
+func TestCopyFileDepsRejectsMissingDependency(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+	pkgJSON := []byte(`{"devDependencies":{"missing":"file:./missing.tgz"}}`)
+
+	require.Error(t, copyFileDeps(pkgJSON, srcDir, destDir))
+	entries, err := os.ReadDir(destDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
+}
+
+func stubNpmInstall(t *testing.T, fn func(context.Context, string) error) {
+	t.Helper()
+	orig := runNpmInstall
+	runNpmInstall = fn
+	t.Cleanup(func() { runNpmInstall = orig })
+}
+
+func requireNpmAvailable(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("npm"); err != nil {
 		t.Skip("npm not found in PATH, skipping")
 	}
 }
 
-func TestStartBackgroundNpmInstall_NoLockFile(t *testing.T) {
-	srcDir := t.TempDir()
+func TestCopyFileDepsNoDeps(t *testing.T) {
 	destDir := t.TempDir()
+	pkgJSON := []byte(`{"dependencies":{"react":"19.0.0"}}`)
+	require.NoError(t, copyFileDeps(pkgJSON, t.TempDir(), destDir))
 
-	// Only package.json, no lock file
-	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"test"}`), 0o644))
-
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
-	assert.Nil(t, ch)
+	entries, err := os.ReadDir(destDir)
+	require.NoError(t, err)
+	assert.Empty(t, entries)
 }
 
-func TestStartBackgroundNpmInstall_NoPackageJSON(t *testing.T) {
-	srcDir := t.TempDir()
-	destDir := t.TempDir()
-
-	// Only lock file, no package.json
-	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{}`), 0o644))
-
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
-	assert.Nil(t, ch)
-}
-
-func TestStartBackgroundNpmInstall_CopiesFiles(t *testing.T) {
-	skipIfNoNpm(t)
-
+func TestStartBackgroundNpmInstallDoesNotStartOnDependencyError(t *testing.T) {
+	requireNpmAvailable(t)
+	started := false
+	stubNpmInstall(t, func(context.Context, string) error {
+		started = true
+		return nil
+	})
 	srcDir := t.TempDir()
 	destDir := filepath.Join(t.TempDir(), "output")
+	pkgJSON := []byte(`{"name":"test","dependencies":{"missing":"file:./missing.tgz"}}`)
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{"lockfileVersion":3}`), 0o644))
 
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	require.Error(t, err)
+	assert.Nil(t, ch)
+	assert.False(t, started)
+	assert.NoDirExists(t, destDir)
+}
+
+func TestStartBackgroundNpmInstallDoesNotStartOnCopyError(t *testing.T) {
+	requireNpmAvailable(t)
+	started := false
+	stubNpmInstall(t, func(context.Context, string) error {
+		started = true
+		return nil
+	})
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+	pkgJSON := []byte(`{"dependencies":{"pkg":"file:./packages/package.tgz"}}`)
+	require.NoError(t, os.MkdirAll(filepath.Join(srcDir, "packages"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "packages", "package.tgz"), []byte("package"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{"lockfileVersion":3}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(destDir, "packages"), []byte("not a directory"), 0o644))
+
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	require.ErrorContains(t, err, "not a directory")
+	assert.Nil(t, ch)
+	assert.False(t, started)
+}
+
+func TestStartBackgroundNpmInstallDoesNotStartOnDevDependencyError(t *testing.T) {
+	requireNpmAvailable(t)
+	started := false
+	stubNpmInstall(t, func(context.Context, string) error {
+		started = true
+		return nil
+	})
+	srcDir := t.TempDir()
+	destDir := filepath.Join(t.TempDir(), "output")
+	pkgJSON := []byte(`{"devDependencies":{"missing":"file:./missing.tgz"}}`)
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{"lockfileVersion":3}`), 0o644))
+
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	require.Error(t, err)
+	assert.Nil(t, ch)
+	assert.False(t, started)
+	assert.NoDirExists(t, destDir)
+}
+
+func TestStartBackgroundNpmInstallNoLockFile(t *testing.T) {
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"test"}`), 0o644))
+
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	require.NoError(t, err)
+	assert.Nil(t, ch)
+}
+
+func TestStartBackgroundNpmInstallValidatesBeforeNpmLookup(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	srcDir := t.TempDir()
+	destDir := filepath.Join(t.TempDir(), "output")
+	pkgJSON := []byte(`{"dependencies":{"missing":"file:./missing.tgz"}}`)
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{"lockfileVersion":3}`), 0o644))
+
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	require.Error(t, err)
+	assert.Nil(t, ch)
+	assert.NoDirExists(t, destDir)
+}
+
+func TestStartBackgroundNpmInstallStartsAfterSynchronousPreparation(t *testing.T) {
+	requireNpmAvailable(t)
+	started := make(chan string, 1)
+	stubNpmInstall(t, func(_ context.Context, destDir string) error {
+		started <- destDir
+		return nil
+	})
+	srcDir := t.TempDir()
+	destDir := filepath.Join(t.TempDir(), "output")
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"test"}`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{"lockfileVersion":3}`), 0o644))
+
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	require.NoError(t, err)
+	require.NotNil(t, ch)
+	require.NoError(t, <-ch)
+	assert.Equal(t, destDir, <-started)
+}
+
+func TestStartBackgroundNpmInstallNoPackageJSON(t *testing.T) {
+	srcDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{}`), 0o644))
+
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, t.TempDir(), "test-app")
+	require.ErrorContains(t, err, "package.json not found")
+	assert.Nil(t, ch)
+}
+
+func stubSuccessfulNpmInstall(t *testing.T) {
+	t.Helper()
+	stubNpmInstall(t, func(context.Context, string) error { return nil })
+}
+
+func TestStartBackgroundNpmInstallCopiesFilesWithoutRunningNpm(t *testing.T) {
+	requireNpmAvailable(t)
+	stubSuccessfulNpmInstall(t)
+	srcDir := t.TempDir()
+	destDir := filepath.Join(t.TempDir(), "output")
 	pkgJSON := []byte(`{"name":"{{.projectName}}","version":"1.0.0"}`)
 	lockJSON := []byte(`{"lockfileVersion":3,"packages":{}}`)
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
 
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "my-app")
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "my-app")
+	require.NoError(t, err)
 	require.NotNil(t, ch)
+	require.NoError(t, <-ch)
 
-	// Drain the channel to avoid goroutine leak (npm ci will fail on fake data)
-	<-ch
-
-	// package.json should be written with template substitution
 	got, err := os.ReadFile(filepath.Join(destDir, "package.json"))
 	require.NoError(t, err)
 	assert.Contains(t, string(got), `"my-app"`)
 	assert.NotContains(t, string(got), "{{.projectName}}")
-
-	// package-lock.json should be copied verbatim
 	gotLock, err := os.ReadFile(filepath.Join(destDir, "package-lock.json"))
 	require.NoError(t, err)
 	assert.Equal(t, lockJSON, gotLock)
 }
 
-func TestStartBackgroundNpmInstall_CopiesFileDeps(t *testing.T) {
-	skipIfNoNpm(t)
-
+func TestStartBackgroundNpmInstallCopiesFileDepsWithoutRunningNpm(t *testing.T) {
+	requireNpmAvailable(t)
+	stubSuccessfulNpmInstall(t)
 	srcDir := t.TempDir()
 	destDir := filepath.Join(t.TempDir(), "output")
-
 	tgzContent := []byte("fake-tarball")
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "my-pkg-1.0.0.tgz"), tgzContent, 0o644))
-
 	pkgJSON := []byte(`{"name":"test","dependencies":{"my-pkg":"file:./my-pkg-1.0.0.tgz"}}`)
-	lockJSON := []byte(`{"lockfileVersion":3,"packages":{}}`)
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{"lockfileVersion":3,"packages":{}}`), 0o644))
 
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "test-app")
+	require.NoError(t, err)
 	require.NotNil(t, ch)
-	<-ch
+	require.NoError(t, <-ch)
 
-	// The file: dep tarball should be copied to destDir
 	copied, err := os.ReadFile(filepath.Join(destDir, "my-pkg-1.0.0.tgz"))
 	require.NoError(t, err)
 	assert.Equal(t, tgzContent, copied)
 }
 
-func TestStartBackgroundNpmInstall_TemplateSubstitution(t *testing.T) {
-	skipIfNoNpm(t)
-
+func TestStartBackgroundNpmInstallTemplateSubstitutionWithoutRunningNpm(t *testing.T) {
+	requireNpmAvailable(t)
+	stubSuccessfulNpmInstall(t)
 	srcDir := t.TempDir()
 	destDir := filepath.Join(t.TempDir(), "output")
-
 	pkgJSON := []byte(`{"name":"{{.projectName}}","description":"{{.appDescription}}"}`)
-	lockJSON := []byte(`{"lockfileVersion":3}`)
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
-	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{"lockfileVersion":3}`), 0o644))
 
-	ch := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "cool-project")
+	ch, err := startBackgroundNpmInstall(t.Context(), srcDir, destDir, "cool-project")
+	require.NoError(t, err)
 	require.NotNil(t, ch)
-	<-ch
+	require.NoError(t, <-ch)
 
 	got, err := os.ReadFile(filepath.Join(destDir, "package.json"))
 	require.NoError(t, err)

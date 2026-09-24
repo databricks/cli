@@ -1,3 +1,5 @@
+
+>>> print_state.py
 {
   "version": 4,
   "terraform_version": "1.5.5",
@@ -89,7 +91,9 @@
             "channel": "CURRENT",
             "cluster": [],
             "cluster_id": null,
-            "configuration": null,
+            "configuration": {
+              "spark.sql.ansi.enabled": "true"
+            },
             "continuous": false,
             "creator_user_name": "[USERNAME]",
             "deployment": [

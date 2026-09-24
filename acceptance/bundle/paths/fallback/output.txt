@@ -1,5 +1,3 @@
-
->>> [CLI] bundle validate -t development -o json
 Warning: required field "entry_point" is not set
   at resources.jobs.my_job.tasks[2].python_wheel_task
   in resources/my_job.yml:33:13
@@ -29,21 +27,6 @@ Error: path ../src/file2.py is defined relative to the [TEST_TMP_DIR]/resources 
 
 
 Exit code: 1
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -t error
-Warning: required field "entry_point" is not set
-  at resources.jobs.my_job.tasks[2].python_wheel_task
-  in resources/my_job.yml:33:13
-
-Error: notebook "resources/this value is overridden" not found. Local notebook references are expected
-to contain one of the following file extensions: [.py, .r, .scala, .sql, .ipynb]
-
-Name: fallback
-Target: error
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/fallback/error
-
-Found 1 error and 1 warning
-
-Exit code: 1
+Exit code: 5

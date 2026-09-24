@@ -1,0 +1,3 @@
+trace $CLI bundle deploy
+trace $CLI bundle run nested_job -- --nested=updated
+trace print_requests.py //jobs/run-now

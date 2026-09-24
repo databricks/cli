@@ -282,8 +282,6 @@ Resources: 12 created, 0 changed, 0 deleted, 0 unchanged
   }
 }
 
->>> [CLI] bundle plan
-
 === Destroy all via bundle destroy
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

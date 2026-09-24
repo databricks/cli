@@ -66,6 +66,80 @@ func waitForTestRun(t *testing.T, ctx context.Context, client *databricks.Worksp
 	return r.WaitAfterCreate(ctx, "123", &JobRunState{})
 }
 
+func TestJobRunAdapterImplementsWaitAfterResume(t *testing.T) {
+	adapter, err := NewAdapter((*ResourceJobRun)(nil), "job_runs", nil)
+	require.NoError(t, err)
+	assert.True(t, adapter.HasWaitAfterResume())
+}
+
+func TestJobRunWaitAfterResumeNeeded(t *testing.T) {
+	adapter, err := NewAdapter((*ResourceJobRun)(nil), "job_runs", nil)
+	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		state *jobs.RunState
+		want  bool
+	}{
+		"running":       {state: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning}, want: true},
+		"success":       {state: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateSuccess}},
+		"failed":        {state: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateTerminated, ResultState: jobs.RunResultStateFailed}},
+		"skipped":       {state: &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateSkipped}},
+		"missing state": {},
+	} {
+		t.Run(name, func(t *testing.T) {
+			remote := &JobRunRemote{State: tc.state}
+			assert.Equal(t, tc.want, adapter.WaitAfterResumeNeeded(remote))
+		})
+	}
+	assert.False(t, adapter.WaitAfterResumeNeeded(nil))
+}
+
+func TestAdapterWithoutWaitAfterResume(t *testing.T) {
+	adapter, err := NewAdapter((*ResourceCluster)(nil), "clusters", nil)
+	require.NoError(t, err)
+	assert.False(t, adapter.HasWaitAfterResume())
+}
+
+func TestJobRunWaitAfterResumeDoesNotTriggerAnotherRun(t *testing.T) {
+	var triggered atomic.Int32
+	server := testserver.New(t)
+	server.Handle("POST", "/api/2.2/jobs/run-now", func(testserver.Request) any {
+		triggered.Add(1)
+		return jobs.RunNowResponse{RunId: 123}
+	})
+	server.Handle("GET", "/api/2.2/jobs/runs/get", func(testserver.Request) any {
+		return jobs.Run{RunId: 123, JobId: 456, State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		}}
+	})
+	client := jobRunClientFor(t, server)
+	adapter, err := NewAdapter((*ResourceJobRun)(nil), "job_runs", client)
+	require.NoError(t, err)
+
+	require.NoError(t, adapter.WaitAfterResume(t.Context(), "123"))
+	assert.Zero(t, triggered.Load())
+}
+
+func TestJobRunWaitAfterResumePollsExistingRun(t *testing.T) {
+	var gets atomic.Int32
+	client := jobRunServer(t, func(req testserver.Request) any {
+		state := &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateRunning,
+			ResultState:    "",
+		}
+		if gets.Add(1) > 1 {
+			state.LifeCycleState = jobs.RunLifeCycleStateTerminated
+			state.ResultState = jobs.RunResultStateSuccess
+		}
+		return jobs.Run{RunId: 123, JobId: 456, State: state, RunPageUrl: testRunPageURL}
+	})
+
+	adapter, err := NewAdapter((*ResourceJobRun)(nil), "job_runs", client)
+	require.NoError(t, err)
+	require.NoError(t, adapter.WaitAfterResume(t.Context(), "123"))
+	assert.Equal(t, int32(2), gets.Load())
+}
+
 func TestJobRunWaitFailsOnFailedResult(t *testing.T) {
 	client := jobRunClient(t, &jobs.RunState{
 		LifeCycleState: jobs.RunLifeCycleStateTerminated,

@@ -76,7 +76,6 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	// TODO: complex arg: effective_file_event_queue
 	cmd.Flags().BoolVar(&createReq.EnableFileEvents, "enable-file-events", createReq.EnableFileEvents, `Whether to enable file events on this external location.`)
 	// TODO: complex arg: encryption_details
 	cmd.Flags().BoolVar(&createReq.Fallback, "fallback", createReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)
@@ -387,7 +386,6 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().StringVar(&updateReq.CredentialName, "credential-name", updateReq.CredentialName, `Name of the storage credential used with this location.`)
-	// TODO: complex arg: effective_file_event_queue
 	cmd.Flags().BoolVar(&updateReq.EnableFileEvents, "enable-file-events", updateReq.EnableFileEvents, `Whether to enable file events on this external location.`)
 	// TODO: complex arg: encryption_details
 	cmd.Flags().BoolVar(&updateReq.Fallback, "fallback", updateReq.Fallback, `Indicates whether fallback mode is enabled for this external location.`)

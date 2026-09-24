@@ -270,18 +270,13 @@ func getMatchingProfile(ctx context.Context, profileName string, profiler profil
 //     profiles, the cache key includes the OIDC path
 //     (host/oidc/accounts/<account_id>).
 func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Profiler, tokenStore storage.Store) error {
-	if err := tokenStore.Delete(p.Name); err != nil {
-		return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
-	}
-
 	hostCacheKey, matchFn := hostCacheKeyAndMatchFn(p)
 	if hostCacheKey == "" {
 		return fmt.Errorf("failed to get host-based cache key for profile %q", p.Name)
 	}
 
 	// Only preserve the host-keyed token if another U2M profile shares the
-	// same host. Non-U2M profiles (PAT, M2M, etc.) never use the OAuth
-	// token cache, so they should not prevent cleanup.
+	// same host. Non-U2M profiles never use the OAuth token cache.
 	otherProfiles, err := profiler.LoadProfiles(ctx, func(candidate profile.Profile) bool {
 		return candidate.Name != p.Name && candidate.AuthType == "databricks-cli" && matchFn(candidate)
 	})
@@ -289,12 +284,17 @@ func clearTokenStore(ctx context.Context, p profile.Profile, profiler profile.Pr
 		return fmt.Errorf("failed to load profiles for host cache key %q: %w", hostCacheKey, err)
 	}
 
-	if len(otherProfiles) == 0 {
-		if err := tokenStore.Delete(hostCacheKey); err != nil {
-			return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
+	return tokenStore.WithLock(ctx, func(locked storage.LockedStore) error {
+		if err := locked.Delete(p.Name); err != nil {
+			return fmt.Errorf("failed to delete profile-keyed token for profile %q: %w", p.Name, err)
 		}
-	}
-	return nil
+		if len(otherProfiles) == 0 {
+			if err := locked.Delete(hostCacheKey); err != nil {
+				return fmt.Errorf("failed to delete host-keyed token for %q: %w", hostCacheKey, err)
+			}
+		}
+		return nil
+	})
 }
 
 // hostCacheKeyAndMatchFn returns the host-based token cache key and a profile

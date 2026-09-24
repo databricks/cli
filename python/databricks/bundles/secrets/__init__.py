@@ -4,11 +4,9 @@ __all__ = [
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
-    "Privilege",
     "PrivilegeAssignment",
     "PrivilegeAssignmentDict",
     "PrivilegeAssignmentParam",
-    "PrivilegeParam",
     "Secret",
     "SecretDict",
     "SecretParam",
@@ -20,7 +18,6 @@ from databricks.bundles.secrets._models.lifecycle import (
     LifecycleDict,
     LifecycleParam,
 )
-from databricks.bundles.secrets._models.privilege import Privilege, PrivilegeParam
 from databricks.bundles.secrets._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentDict,

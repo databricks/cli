@@ -32,7 +32,7 @@ musterr() {
 }
 
 trace() {
-    >&2 printf "\n>>> %s\n" "$*"
+    printf "\n>>> %s\n" "$*" | sed 's/[[:space:]]*$//'
 
     if [[ "$1" == *"="* ]]; then
         # If the first argument contains '=', collect all env vars

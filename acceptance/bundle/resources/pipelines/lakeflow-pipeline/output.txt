@@ -11,32 +11,18 @@ Validation OK!
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline-[UNIQUE_NAME]/default/files...
 Created pipelines.foo
-Files: 6 uploaded, 0 deleted
+Files: 5 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> jq -s .[] | select(.path=="/api/2.0/pipelines" and .method == "POST") | .body [OUTPUT_DIR]/out.requests.txt
-{
-  "channel": "CURRENT",
-  "deployment": {
-    "kind": "BUNDLE",
-    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline-[UNIQUE_NAME]/default/state/metadata.json"
-  },
-  "edition": "ADVANCED",
-  "libraries": [
-    {
-      "glob": {
-        "include": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline-[UNIQUE_NAME]/default/files/pipeline/transformations/**"
-      }
-    },
-    {
-      "glob": {
-        "include": "/Workspace/Shared/transformations/**"
-      }
-    }
-  ],
-  "name": "test-pipeline-lakeflow-pipeline-[UNIQUE_NAME]",
-  "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline-[UNIQUE_NAME]/default/files/pipeline"
-}
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -49,3 +35,5 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-pipeline-lakeflow-pipeline-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+Exit code: 1

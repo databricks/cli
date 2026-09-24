@@ -22,13 +22,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
     ]
   }
 }
-
->>> [CLI] grants get schema main.schema_all_priv_manage_[UNIQUE_NAME] -o json
-ALL_PRIVILEGES
-MANAGE
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> errcode [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -40,3 +34,5 @@ This action will result in the deletion of the following UC schemas. Any underly
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-all-privileges-manage-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+Exit code: 5

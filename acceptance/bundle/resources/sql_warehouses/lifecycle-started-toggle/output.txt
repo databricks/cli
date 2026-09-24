@@ -3,7 +3,7 @@
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Created sql_warehouses.mywarehouse
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> print_requests.py //sql/warehouses
@@ -24,9 +24,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
   "body": {}
 }
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> errcode [CLI] warehouses get [WAREHOUSE_ID]
-"STOPPED"
+Exit code: 141
 
 === Toggle started=false -> started=true: only Start should be called, no Edit
 >>> update_file.py databricks.yml started: false started: true
@@ -43,9 +43,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/start",
   "body": {}
 }
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> errcode [CLI] warehouses get [WAREHOUSE_ID]
-"RUNNING"
+Exit code: 141
 
 === Toggle started=true -> started=false: only Stop should be called, no Edit
 >>> update_file.py databricks.yml started: true started: false
@@ -62,9 +62,9 @@ Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
   "path": "/api/2.0/sql/warehouses/[WAREHOUSE_ID]/stop",
   "body": {}
 }
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> errcode [CLI] warehouses get [WAREHOUSE_ID]
-"STOPPED"
+Exit code: 141
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

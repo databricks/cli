@@ -352,7 +352,6 @@ func newCreateModelService() *cobra.Command {
 	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Comment, "comment", createModelServiceReq.ModelService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&createModelServiceReq.ModelService.Name, "name", createModelServiceReq.ModelService.Name, `Resource name of the model service.`)
-	// TODO: array: supported_api_types
 
 	cmd.Use = "create-model-service PARENT MODEL_SERVICE_ID"
 	cmd.Short = `Create a model service.`
@@ -537,12 +536,11 @@ Delete an MCP service user credential.
 
 		deleteMcpServiceUserMappedCredentialReq.Name = args[0]
 
-		response, err := w.AiGateway.DeleteMcpServiceUserMappedCredential(ctx, deleteMcpServiceUserMappedCredentialReq)
+		_, err = w.AiGateway.DeleteMcpServiceUserMappedCredential(ctx, deleteMcpServiceUserMappedCredentialReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -1419,7 +1417,6 @@ func newUpdateModelService() *cobra.Command {
 	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Comment, "comment", updateModelServiceReq.ModelService.Comment, `User-provided description.`)
 	// TODO: complex arg: config
 	cmd.Flags().StringVar(&updateModelServiceReq.ModelService.Name, "name", updateModelServiceReq.ModelService.Name, `Resource name of the model service.`)
-	// TODO: array: supported_api_types
 
 	cmd.Use = "update-model-service NAME UPDATE_MASK"
 	cmd.Short = `Update a model service.`

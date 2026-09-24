@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
 type EnumPatternInfo struct {
@@ -124,6 +125,12 @@ func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 			if bundleTag.Internal() || bundleTag.ReadOnly() {
 				return false
 			}
+		}
+
+		// Unity Catalog grant privileges are open-ended: the SDK enum can lag
+		// behind privilege strings accepted by the Grants API.
+		if fieldType == reflect.TypeFor[catalog.Privilege]() {
+			return true
 		}
 
 		// Check if this field type is an enum

@@ -16,8 +16,8 @@ import (
 type storeFactories struct {
 	newFile          func(context.Context) (Store, error)
 	newKeyring       func() Store
-	probeKeyring     func() error
-	probeKeyringRead func() error
+	probeKeyring     func(context.Context) error
+	probeKeyringRead func(context.Context) error
 }
 
 // defaultStoreFactories returns the production factory set.
@@ -157,7 +157,7 @@ func applyReadFallback(ctx context.Context, mode StorageMode, explicit bool, f s
 		if explicit {
 			return f.newKeyring(), mode, nil
 		}
-		if probeErr := f.probeKeyringRead(); probeErr != nil {
+		if probeErr := f.probeKeyringRead(ctx); probeErr != nil {
 			if _, ok := errors.AsType[*TimeoutError](probeErr); ok {
 				log.Debugf(ctx, "keyring read probe timed out (%v); staying on keyring", probeErr)
 				return f.newKeyring(), mode, nil
@@ -198,7 +198,7 @@ func applyLoginFallback(ctx context.Context, mode StorageMode, explicit bool, f 
 		}
 		return c, mode, nil
 	case StorageModeSecure:
-		if probeErr := f.probeKeyring(); probeErr != nil {
+		if probeErr := f.probeKeyring(ctx); probeErr != nil {
 			// Stay on keyring on timeout: a locked keyring being unlocked
 			// during OAuth is the common case, and a misdiagnosed hang
 			// fails the final Store anyway, which is better than a

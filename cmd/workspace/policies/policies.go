@@ -266,12 +266,11 @@ func newDeletePolicy() *cobra.Command {
 		deletePolicyReq.OnSecurableFullname = args[1]
 		deletePolicyReq.Name = args[2]
 
-		response, err := w.Policies.DeletePolicy(ctx, deletePolicyReq)
+		_, err = w.Policies.DeletePolicy(ctx, deletePolicyReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.

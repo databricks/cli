@@ -1,0 +1,17 @@
+bundle:
+  name: nested-for-each-run
+
+resources:
+  jobs:
+    nested_job:
+      name: nested_job
+      tasks:
+        - task_key: outer
+          for_each_task:
+            inputs: "[1]"
+            task:
+              task_key: inner
+              notebook_task:
+                notebook_path: ./notebook.py
+                base_parameters:
+                  nested: value

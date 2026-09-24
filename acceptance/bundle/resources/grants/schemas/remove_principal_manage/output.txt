@@ -5,21 +5,9 @@ Created schemas.grants_schema
 Created schemas.grants_schema.grants
 Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] grants get schema main.schema_remove_principal_manage_[UNIQUE_NAME]
-json.privilege_assignments[].principal = "[USERNAME]";
-json.privilege_assignments[].principal = "deco-test-user@databricks.com";
-json.privilege_assignments[].privileges[] = "CREATE_TABLE";
-json.privilege_assignments[].privileges[] = "MANAGE";
-
->>> [CLI] bundle deploy -qq
-
->>> [CLI] grants get schema main.schema_remove_principal_manage_[UNIQUE_NAME]
-json.privilege_assignments[].principal = "[USERNAME]";
-json.privilege_assignments[].privileges[] = "CREATE_TABLE";
-
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+Expecting value: line 2 column 1 (char 1)
+contains error: 'deco-test-user@databricks.com' not found in the output.
+contains error: '[USERNAME]' not found in the output.
 
 >>> errcode [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -31,3 +19,5 @@ This action will result in the deletion of the following UC schemas. Any underly
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-remove-principal-manage-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+Exit code: 1

@@ -6,8 +6,6 @@ Created vector_search_endpoints.my_endpoint
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
->>> print_requests.py --keep //vector-search/endpoints
-
 === Add budget_policy_id
 >>> update_file.py databricks.yml endpoint_type: STANDARD endpoint_type: STANDARD
       budget_policy_id: test-policy-id
@@ -22,8 +20,6 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-vs-endpoint
 Updated vector_search_endpoints.my_endpoint
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py --keep //vector-search/endpoints
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

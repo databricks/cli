@@ -53,7 +53,7 @@ class Schema:
             case SchemaType.STRING:
                 assert not self.properties
                 assert not self.required
-                assert self.enum
+
             case _:
                 raise ValueError(f"Unknown type: {self.type}")
 

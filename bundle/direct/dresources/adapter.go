@@ -102,6 +102,13 @@ type IResource interface {
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
 	WaitAfterUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
+	// [Optional] WaitAfterResumeNeeded reports whether a skipped resource still
+	// needs its WaitAfterResume hook to be called.
+	WaitAfterResumeNeeded(remoteState any) bool
+	// [Optional] WaitAfterResume waits for an existing resource whose deployment was skipped
+	// to reach its target state. Unlike WaitAfterCreate, it must not create a replacement.
+	WaitAfterResume(ctx context.Context, id string) error
+
 	// [Optional] WaitAfterDelete waits for the resource to be fully removed after DoDelete returns.
 	// Useful for backends with asynchronous deletion: a follow-up create on the same name (recreate path)
 	// would otherwise race with the in-progress teardown. State is dropped before this is called, so a
@@ -130,17 +137,19 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
-	doDelete           *calladapt.BoundCaller
-	prepareInputConfig *calladapt.BoundCaller
-	isEmptyState       *calladapt.BoundCaller
-	doUpdate           *calladapt.BoundCaller
-	doUpdateWithID     *calladapt.BoundCaller
-	waitAfterCreate    *calladapt.BoundCaller
-	waitAfterUpdate    *calladapt.BoundCaller
-	waitAfterDelete    *calladapt.BoundCaller
-	overrideChangeDesc *calladapt.BoundCaller
-	doResize           *calladapt.BoundCaller
-	isGone             *calladapt.BoundCaller
+	doDelete              *calladapt.BoundCaller
+	prepareInputConfig    *calladapt.BoundCaller
+	isEmptyState          *calladapt.BoundCaller
+	doUpdate              *calladapt.BoundCaller
+	doUpdateWithID        *calladapt.BoundCaller
+	waitAfterCreate       *calladapt.BoundCaller
+	waitAfterUpdate       *calladapt.BoundCaller
+	waitAfterResume       *calladapt.BoundCaller
+	waitAfterResumeNeeded *calladapt.BoundCaller
+	waitAfterDelete       *calladapt.BoundCaller
+	overrideChangeDesc    *calladapt.BoundCaller
+	doResize              *calladapt.BoundCaller
+	isGone                *calladapt.BoundCaller
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
@@ -178,6 +187,8 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		doUpdateWithID:          nil,
 		doResize:                nil,
 		waitAfterCreate:         nil,
+		waitAfterResume:         nil,
+		waitAfterResumeNeeded:   nil,
 		waitAfterUpdate:         nil,
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
@@ -284,6 +295,16 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.waitAfterUpdate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterUpdate")
+	if err != nil {
+		return err
+	}
+
+	a.waitAfterResume, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterResume")
+	if err != nil {
+		return err
+	}
+
+	a.waitAfterResumeNeeded, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterResumeNeeded")
 	if err != nil {
 		return err
 	}
@@ -427,6 +448,17 @@ func (a *Adapter) validate() error {
 			return fmt.Errorf("WaitAfterUpdate must return (remoteType, error), got %d return values", len(a.waitAfterUpdate.OutTypes))
 		}
 		validations = append(validations, "WaitAfterUpdate remoteState return", a.waitAfterUpdate.OutTypes[0], remoteType)
+	}
+
+	if a.waitAfterResume != nil && len(a.waitAfterResume.OutTypes) != 1 {
+		return fmt.Errorf("WaitAfterResume must return error, got %d return values", len(a.waitAfterResume.OutTypes))
+	}
+
+	if a.waitAfterResumeNeeded != nil {
+		validations = append(validations, "WaitAfterResumeNeeded remoteState", a.waitAfterResumeNeeded.InTypes[0], remoteType)
+		if len(a.waitAfterResumeNeeded.OutTypes) != 1 {
+			return fmt.Errorf("WaitAfterResumeNeeded must return bool, got %d return values", len(a.waitAfterResumeNeeded.OutTypes))
+		}
 	}
 
 	err = validateTypes(validations...)
@@ -671,6 +703,34 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, id string, newState any) 
 
 	remoteState := normalizeNilPointer(outs[0])
 	return remoteState, nil
+}
+
+// HasWaitAfterResume returns true if the resource implements WaitAfterResume.
+func (a *Adapter) HasWaitAfterResume() bool {
+	return a.waitAfterResume != nil
+}
+
+// WaitAfterResumeNeeded reports whether a skipped resource still needs its resume wait.
+// Resources without this method do not resume.
+func (a *Adapter) WaitAfterResumeNeeded(remoteState any) bool {
+	if a.waitAfterResumeNeeded == nil {
+		return false
+	}
+	outs, err := a.waitAfterResumeNeeded.Call(remoteState)
+	if err != nil {
+		return false
+	}
+	return outs[0].(bool)
+}
+
+// WaitAfterResume waits for a resource whose deployment was skipped to reach its target state.
+// If the resource doesn't implement this method, this is a no-op.
+func (a *Adapter) WaitAfterResume(ctx context.Context, id string) error {
+	if a.waitAfterResume == nil {
+		return nil
+	}
+	_, err := a.waitAfterResume.Call(ctx, id)
+	return err
 }
 
 // WaitAfterDelete waits for the resource to be fully removed after DoDelete.

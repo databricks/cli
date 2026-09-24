@@ -221,3 +221,42 @@ func TestJobTaskSparkSubmitParamArgs(t *testing.T) {
 		assert.Empty(t, completions)
 	})
 }
+
+func TestJobRunnerPositionalArgumentsIncludeForEachTask(t *testing.T) {
+	tests := []struct {
+		name string
+		task jobs.Task
+		want argsHandler
+	}{
+		{name: "notebook", task: jobs.Task{NotebookTask: &jobs.NotebookTask{}}, want: jobTaskNotebookParamArgs{}},
+		{name: "spark python", task: jobs.Task{SparkPythonTask: &jobs.SparkPythonTask{}}, want: jobTaskPythonParamArgs{}},
+		{name: "python wheel", task: jobs.Task{PythonWheelTask: &jobs.PythonWheelTask{}}, want: jobTaskPythonParamArgs{}},
+		{name: "nested notebook", task: jobs.Task{ForEachTask: &jobs.ForEachTask{Task: jobs.Task{NotebookTask: &jobs.NotebookTask{}}}}, want: jobTaskNotebookParamArgs{}},
+		{name: "nested spark python", task: jobs.Task{ForEachTask: &jobs.ForEachTask{Task: jobs.Task{SparkPythonTask: &jobs.SparkPythonTask{}}}}, want: jobTaskPythonParamArgs{}},
+		{name: "nested python wheel", task: jobs.Task{ForEachTask: &jobs.ForEachTask{Task: jobs.Task{PythonWheelTask: &jobs.PythonWheelTask{}}}}, want: jobTaskPythonParamArgs{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := jobRunner{job: &resources.Job{JobSettings: jobs.JobSettings{Tasks: []jobs.Task{tt.task}}}}
+			assert.IsType(t, tt.want, r.posArgsHandler())
+		})
+	}
+}
+
+func TestJobRunnerPositionalArgumentsRejectMixedNestedTaskTypes(t *testing.T) {
+	r := jobRunner{job: &resources.Job{JobSettings: jobs.JobSettings{Tasks: []jobs.Task{
+		{NotebookTask: &jobs.NotebookTask{}},
+		{ForEachTask: &jobs.ForEachTask{Task: jobs.Task{SparkPythonTask: &jobs.SparkPythonTask{}}}},
+	}}}}
+	assert.IsType(t, nopArgsHandler{}, r.posArgsHandler())
+}
+
+func TestJobTaskNotebookParamArgsCompleteNestedParameters(t *testing.T) {
+	a := jobTaskNotebookParamArgs{Job: &resources.Job{JobSettings: jobs.JobSettings{Tasks: []jobs.Task{
+		{
+			ForEachTask: &jobs.ForEachTask{Task: jobs.Task{NotebookTask: &jobs.NotebookTask{BaseParameters: map[string]string{"nested": "value"}}}},
+		},
+	}}}}
+	completions, _ := a.CompleteArgs(nil, "")
+	assert.Equal(t, []string{"--nested="}, completions)
+}

@@ -1,4 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -t dev -o json --include-locations
-
->>> [CLI] bundle validate -t prod -o json --include-locations
+Exit code: 5

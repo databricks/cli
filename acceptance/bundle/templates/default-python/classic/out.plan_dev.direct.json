@@ -1,5 +1,5 @@
 {
-  "plan_version": [PLAN_VERSION],
+  "plan_version": 3,
   "cli_version": "[CLI_VERSION]",
   "plan": {
     "resources.jobs.sample_job": {
@@ -144,5 +144,13 @@
         }
       }
     }
-  }
+  },
+  "uploads": [
+    {
+      "source": "dist/my_default_python-0.0.1-py3-none-any.whl",
+      "remote_name": "my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
+      "sha256": "04eea6267c42de918734bcc0da2c4de7eb806755abf46f5cc0fe0d076a7802ec",
+      "patched_wheel": true
+    }
+  ]
 }

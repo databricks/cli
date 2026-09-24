@@ -36,6 +36,20 @@ const (
 	invariantDirPrefix     = "bundle/invariant/"
 )
 
+var sharedInputs = []string{
+	"acceptance/script.prepare",
+	"acceptance/script.cleanup",
+	"acceptance/bin/",
+	"acceptance/internal/",
+	"libs/testserver/",
+}
+
+func isSharedInput(path string) bool {
+	return slices.ContainsFunc(sharedInputs, func(prefix string) bool {
+		return path == strings.TrimSuffix(prefix, "/") || strings.HasPrefix(path, prefix)
+	})
+}
+
 // Test is one test the selection picked: a whole test dir, or one variant of it when only
 // some of its variants changed.
 type Test struct {
@@ -71,6 +85,10 @@ type Result struct {
 
 	// Limit is the cap this selection was made with.
 	Limit int
+
+	// FullSuite bypasses Limit because an inherited config or shared harness
+	// input affects every selected local test.
+	FullSuite bool
 }
 
 // Tests maps each selected test dir to the variant filters it runs with, the form the
@@ -89,8 +107,10 @@ func (r Result) Tests() map[string][]string {
 	return tests
 }
 
-// Counts says how many tests were selected and how many the limit cut.
 func (r Result) Counts() string {
+	if r.FullSuite {
+		return fmt.Sprintf("Selected %d changed tests (full local suite)", len(r.Selected))
+	}
 	return fmt.Sprintf("Selected %d changed tests (limit=%d, %d not selected)", len(r.Selected), r.Limit, r.Dropped)
 }
 
@@ -228,22 +248,41 @@ func FromGit(root string, testDirs map[string]bool, limit int) (Result, error) {
 	return FromDiff(root, strings.TrimSpace(string(out)), testDirs, limit), nil
 }
 
-// testDirForFile maps a repo-relative changed file (e.g. acceptance/bundle/foo/script)
-// to its owning test dir relative to acceptance/ (e.g. bundle/foo), or "" if the file
-// is outside acceptance/ or not under any known test dir.
-func testDirForFile(repoRelPath string, testDirs map[string]bool) string {
-	parts := strings.Split(filepath.ToSlash(repoRelPath), "/")
+// testDirsForFile maps a changed file to the test dirs it owns. A regular file
+// belongs to its innermost test dir. An ancestor test.toml belongs to every
+// descendant test because config is inherited down the tree.
+func testDirsForFile(repoRelPath string, testDirs map[string]bool) []string {
+	repoPath := filepath.ToSlash(repoRelPath)
+	if isSharedInput(repoPath) {
+		return slices.Sorted(maps.Keys(testDirs))
+	}
+
+	parts := strings.Split(repoPath, "/")
 	if len(parts) < 2 || parts[0]+"/" != acceptanceDirPrefix {
-		return ""
+		return nil
+	}
+	if filepath.Base(repoPath) == "test.toml" {
+		parent := strings.Join(parts[1:len(parts)-1], "/")
+		if parent == "" {
+			return slices.Sorted(maps.Keys(testDirs))
+		}
+		var owned []string
+		for dir := range testDirs {
+			if dir == parent || strings.HasPrefix(dir, parent+"/") {
+				owned = append(owned, dir)
+			}
+		}
+		slices.Sort(owned)
+		return owned
 	}
 	// Longest ancestor first so nested tests map to the innermost test dir.
 	for depth := len(parts); depth > 1; depth-- {
 		candidate := strings.Join(parts[1:depth], "/")
 		if testDirs[candidate] {
-			return candidate
+			return []string{candidate}
 		}
 	}
-	return ""
+	return nil
 }
 
 // changedDir records how one test dir changed and which of its variants should run.
@@ -390,11 +429,18 @@ func markChanged(dirs changedDirs, dir, path string) *changedDir {
 	return d
 }
 
+func markInherited(dirs changedDirs, dir, path string) *changedDir {
+	d := dirs.get(dir)
+	d.fixture = !isGeneratedFile(path, dir)
+	return d
+}
+
 // FromDiff selects among testDirs the tests touched by `git diff --name-status` output,
 // keeping at most limit of them in the order documented on the score constants. root is the
 // acceptance directory, read for the variants each test dir runs.
 func FromDiff(root, diff string, testDirs map[string]bool, limit int) Result {
 	dirs := changedDirs{}
+	fullSuite := false
 
 	for line := range strings.SplitSeq(diff, "\n") {
 		// A rename line carries both paths ("R100\told\tnew"); the last field is the
@@ -406,11 +452,12 @@ func FromDiff(root, diff string, testDirs map[string]bool, limit int) Result {
 		status := fields[0]
 		path := fields[len(fields)-1]
 
-		// A rename also changes the dir the file left: it lost an input and may no longer
-		// pass. It only counts while that test dir still exists, so moving a whole dir does
-		// not select the dir it came from.
 		if strings.HasPrefix(status, "R") && len(fields) >= 3 {
-			if source := testDirForFile(fields[1], testDirs); source != "" {
+			sourceDirs := testDirsForFile(fields[1], testDirs)
+			if len(sourceDirs) == len(testDirs) || len(sourceDirs) > 1 {
+				fullSuite = true
+			}
+			for _, source := range sourceDirs {
 				markChanged(dirs, source, fields[1])
 			}
 		}
@@ -451,24 +498,33 @@ func FromDiff(root, diff string, testDirs map[string]bool, limit int) Result {
 			}
 		}
 
-		dir := testDirForFile(path, testDirs)
-		if dir == "" {
+		owned := testDirsForFile(path, testDirs)
+		if len(owned) == 0 {
 			continue
 		}
-
-		d := markChanged(dirs, dir, path)
-		if !strings.HasPrefix(status, "R") {
-			d.nonRenameChange = true
+		if isSharedInput(filepath.ToSlash(path)) {
+			fullSuite = true
 		}
-		// The status of the dir's script says how the dir itself changed.
-		if strings.HasSuffix(path, "/script") {
-			switch status {
-			case "A":
-				d.newTest = true
-			case "R100":
-				// Only an identical rename is a pure move. A rename that also rewrote the
-				// script is a change like any other.
-				d.moved = true
+		for _, dir := range owned {
+			var d *changedDir
+			if filepath.Base(filepath.ToSlash(path)) == "test.toml" {
+				d = markInherited(dirs, dir, path)
+			} else {
+				d = markChanged(dirs, dir, path)
+			}
+			if !strings.HasPrefix(status, "R") {
+				d.nonRenameChange = true
+			}
+			// The status of the dir's script says how the dir itself changed.
+			if strings.HasSuffix(path, "/script") {
+				switch status {
+				case "A":
+					d.newTest = true
+				case "R100":
+					// Only an identical rename is a pure move. A rename that also rewrote the
+					// script is a change like any other.
+					d.moved = true
+				}
 			}
 		}
 	}
@@ -494,6 +550,9 @@ func FromDiff(root, diff string, testDirs map[string]bool, limit int) Result {
 		return strings.Compare(a.Name(), b.Name())
 	})
 
+	if fullSuite {
+		return Result{Selected: tests, FullSuite: true, Limit: limit}
+	}
 	dropped := max(len(tests)-limit, 0)
 	tests = tests[:len(tests)-dropped]
 	return Result{Selected: tests, Dropped: dropped, Limit: limit}

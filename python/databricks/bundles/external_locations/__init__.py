@@ -22,11 +22,9 @@ __all__ = [
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
-    "Privilege",
     "PrivilegeAssignment",
     "PrivilegeAssignmentDict",
     "PrivilegeAssignmentParam",
-    "PrivilegeParam",
     "SseEncryptionDetails",
     "SseEncryptionDetailsAlgorithm",
     "SseEncryptionDetailsAlgorithmParam",
@@ -69,10 +67,6 @@ from databricks.bundles.external_locations._models.lifecycle import (
     Lifecycle,
     LifecycleDict,
     LifecycleParam,
-)
-from databricks.bundles.external_locations._models.privilege import (
-    Privilege,
-    PrivilegeParam,
 )
 from databricks.bundles.external_locations._models.privilege_assignment import (
     PrivilegeAssignment,

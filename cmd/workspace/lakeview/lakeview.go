@@ -83,6 +83,8 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.DatasetCatalog, "dataset-catalog", createReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&createReq.DatasetSchema, "dataset-schema", createReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
+	cmd.Flags().StringVar(&createReq.Dashboard.Etag, "etag", createReq.Dashboard.Etag, `The etag for the dashboard.`)
+	cmd.Flags().StringVar(&createReq.Dashboard.ParentPath, "parent-path", createReq.Dashboard.ParentPath, `The workspace path of the folder containing the dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
@@ -163,6 +165,7 @@ func newCreateSchedule() *cobra.Command {
 	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
+	cmd.Flags().StringVar(&createScheduleReq.Schedule.Etag, "etag", createScheduleReq.Schedule.Etag, `The etag for the schedule.`)
 	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
 
@@ -262,6 +265,7 @@ func newCreateSubscription() *cobra.Command {
 
 	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createSubscriptionReq.Subscription.Etag, "etag", createSubscriptionReq.Subscription.Etag, `The etag for the subscription.`)
 	cmd.Flags().BoolVar(&createSubscriptionReq.Subscription.SkipNotify, "skip-notify", createSubscriptionReq.Subscription.SkipNotify, `Controls whether notifications are sent to the subscriber for scheduled dashboard refreshes.`)
 
 	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIBER"
@@ -1187,6 +1191,8 @@ func newRevert() *cobra.Command {
 
 	cmd.Flags().Var(&revertJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&revertReq.Etag, "etag", revertReq.Etag, `The etag for the dashboard.`)
+
 	cmd.Use = "revert DASHBOARD_ID"
 	cmd.Short = `Revert dashboard.`
 	cmd.Long = `Revert dashboard.
@@ -1396,6 +1402,8 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.DatasetCatalog, "dataset-catalog", updateReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&updateReq.DatasetSchema, "dataset-schema", updateReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
+	cmd.Flags().StringVar(&updateReq.Dashboard.Etag, "etag", updateReq.Dashboard.Etag, `The etag for the dashboard.`)
+	cmd.Flags().StringVar(&updateReq.Dashboard.ParentPath, "parent-path", updateReq.Dashboard.ParentPath, `The workspace path of the folder containing the dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
 
@@ -1480,6 +1488,7 @@ func newUpdateSchedule() *cobra.Command {
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
+	cmd.Flags().StringVar(&updateScheduleReq.Schedule.Etag, "etag", updateScheduleReq.Schedule.Etag, `The etag for the schedule.`)
 	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
 

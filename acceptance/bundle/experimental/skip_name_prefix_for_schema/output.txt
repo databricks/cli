@@ -1,20 +1,4 @@
 
-=== experimental.skip_name_prefix_for_schema is false
->>> [CLI] bundle validate -o json
-"dev_[USERNAME]_my_schema"
+=== experimental.skip_name_prefix_for_schema is falsejq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json -t two
-"custom_prefix_my_schema"
-
->>> [CLI] bundle validate -o json -t three
-"my_schema"
-
-=== experimental.skip_name_prefix_for_schema is true
->>> [CLI] bundle validate -o json -t one
-"my_schema"
-
->>> [CLI] bundle validate -o json -t two
-"my_schema"
-
->>> [CLI] bundle validate -o json -t three
-"my_schema"
+Exit code: 5

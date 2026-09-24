@@ -196,8 +196,7 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 }
 
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
-func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
-	errMsg = telemetry.ScrubErrorMessage(errMsg)
+func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 	b.Metrics.SetBoolValue(metrics.DeploymentHistoryEnabled, b.DeploymentBundle.StateDB.IsDeploymentMetadataService())
 
 	resourcesCount := int64(0)
@@ -363,7 +362,6 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		BundleDeployEvent: &protos.BundleDeployEvent{
 			BundleUuid:   bundleUuid,
 			DeploymentId: b.Metrics.DeploymentId.String(),
-			ErrorMessage: errMsg,
 
 			ResourceCount:                     resourcesCount,
 			ResourceJobCount:                  int64(len(b.Config.Resources.Jobs)),

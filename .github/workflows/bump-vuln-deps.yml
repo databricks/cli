@@ -29,8 +29,15 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          # vulnbump lives in the tools module, which is what this job compiles.
           go-version-file: tools/go.mod
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+            tools/task/go.sum
+            bundle/internal/tf/codegen/go.sum
+
+      - name: Build govulncheck
+        run: go build -modfile=tools/go.mod -o "$RUNNER_TEMP/govulncheck" golang.org/x/vuln/cmd/govulncheck
 
       - name: Build vulnbump
         run: go -C tools/vulnbump build -o "$RUNNER_TEMP/vulnbump" .
@@ -40,23 +47,44 @@ jobs:
         run: |
           set -euo pipefail
 
-          # govulncheck is pinned as a tool dependency in tools/go.mod; -modfile
-          # resolves it from there while it scans the root module (the working
-          # directory). Only the root module ships; tools/ and
-          # bundle/internal/tf/codegen are build- and CI-only, so they are not
-          # scanned. Its vulnerability database is fetched from vuln.go.dev at
-          # runtime, so the pinned binary still uses the latest advisories.
+          # govulncheck is pinned as a tool dependency in tools/go.mod. Build it
+          # once, then scan each repository module independently so build- and
+          # CI-only dependencies receive the same coverage as the root module.
+          # Its vulnerability database is fetched from vuln.go.dev at runtime,
+          # so the pinned binary still uses the latest advisories.
           #
           # -scan module reports every advisory affecting a required module,
           # regardless of whether the vulnerable symbol is reachable. In JSON
           # mode govulncheck exits 0 on success whether or not it finds anything,
           # and non-zero only on a real error; a failure must abort the job
           # rather than be silently mistaken for "no vulnerabilities".
-          scan="$(mktemp)"
-          go tool -modfile=tools/go.mod govulncheck -scan module -format json > "$scan"
+          (
+            cd .
+            "$RUNNER_TEMP/govulncheck" -scan module -format json > "$RUNNER_TEMP/root.json"
+          )
+          (
+            cd tools
+            "$RUNNER_TEMP/govulncheck" -scan module -format json > "$RUNNER_TEMP/tools.json"
+          )
+          (
+            cd tools/task
+            "$RUNNER_TEMP/govulncheck" -scan module -format json > "$RUNNER_TEMP/task.json"
+          )
+          (
+            cd bundle/internal/tf/codegen
+            "$RUNNER_TEMP/govulncheck" -scan module -format json > "$RUNNER_TEMP/codegen.json"
+          )
 
           summary_file="$(mktemp)"
-          "$RUNNER_TEMP/vulnbump" . < "$scan" > "$summary_file"
+          for module in . tools tools/task bundle/internal/tf/codegen; do
+            case "$module" in
+              .) scan="$RUNNER_TEMP/root.json" ;;
+              tools) scan="$RUNNER_TEMP/tools.json" ;;
+              tools/task) scan="$RUNNER_TEMP/task.json" ;;
+              bundle/internal/tf/codegen) scan="$RUNNER_TEMP/codegen.json" ;;
+            esac
+            "$RUNNER_TEMP/vulnbump" "$module" < "$scan" >> "$summary_file"
+          done
 
           if git diff --quiet; then
             echo "No vulnerable dependencies to bump."

@@ -339,6 +339,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: limit_config
 	// TODO: array: binding_workspace_ids
 	// TODO: array: custom_tags
+	cmd.Flags().StringVar(&updateReq.Policy.PolicyId, "policy-id", updateReq.Policy.PolicyId, `The Id of the policy.`)
 	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
 
 	cmd.Use = "update POLICY_ID"

@@ -351,12 +351,10 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	return tempStatePath, resourceCount, hasWarnings, &uninterpolatedConfig, nil
 }
 
-// commitMigration pushes the converted direct state to the workspace (the
-// hard commit — once resources.json lands with serial tf+1, it outranks any
-// leftover terraform state regardless of whether the cleanup steps below
-// succeed), then best-effort backs up and removes the terraform state files.
-// Any cleanup failure is logged as a warning and does not affect the
-// migration outcome.
+// commitMigration pushes the converted direct state to the workspace, installs
+// it locally, and only then performs best-effort Terraform state cleanup. The
+// remote push and local installation are the commit; a failure after the remote
+// push is reported without rolling back the committed remote state.
 func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string, resourceCount int) error {
 	_, localDirectPath := b.StateFilenameDirect(ctx)
 
@@ -373,9 +371,12 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 		return fmt.Errorf("pushing direct state to workspace: %w", err)
 	}
 
-	// Migration is committed. The remaining steps are best-effort cleanup:
-	// leftover terraform state files cannot affect engine selection because
-	// resources.json has a higher serial number.
+	if err := installLocalDirectState(tempStatePath, localDirectPath); err != nil {
+		return err
+	}
+
+	// Migration is committed remotely and locally. The remaining steps are
+	// best-effort cleanup and must not change the migration outcome.
 	BackupRemoteTerraformState(ctx, b)
 
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
@@ -383,17 +384,23 @@ func commitMigration(ctx context.Context, b *bundle.Bundle, tempStatePath string
 		log.Warnf(ctx, "automatic migration to direct engine: could not back up local terraform state: %v", err)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
-		log.Warnf(ctx, "automatic migration to direct engine: could not create local state directory: %v", err)
-	} else if err := os.Rename(tempStatePath, localDirectPath); err != nil {
-		log.Warnf(ctx, "automatic migration to direct engine: could not write local direct state: %v", err)
-	}
-
 	suffix := "s"
 	if resourceCount == 1 {
 		suffix = ""
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("Migrated %d resource%s to direct deployment engine.", resourceCount, suffix))
+	return nil
+}
+
+var errLocalDirectStateInstallation = errors.New("workspace migration committed but local direct state installation failed")
+
+func installLocalDirectState(tempStatePath, localDirectPath string) error {
+	if err := os.MkdirAll(filepath.Dir(localDirectPath), 0o700); err != nil {
+		return fmt.Errorf("%w: creating local state directory: %w", errLocalDirectStateInstallation, err)
+	}
+	if err := os.Rename(tempStatePath, localDirectPath); err != nil {
+		return fmt.Errorf("%w: installing local direct state: %w", errLocalDirectStateInstallation, err)
+	}
 	return nil
 }
 

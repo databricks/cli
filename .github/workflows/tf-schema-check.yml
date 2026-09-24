@@ -1,0 +1,50 @@
+name: Terraform schema check
+
+on:
+  pull_request:
+    paths:
+      - "bundle/internal/tf/codegen/**"
+      - "bundle/internal/tf/schema/**"
+      - "Taskfile.yml"
+      - ".github/workflows/tf-schema-check.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "bundle/internal/tf/codegen/**"
+      - "bundle/internal/tf/schema/**"
+      - "Taskfile.yml"
+      - ".github/workflows/tf-schema-check.yml"
+
+permissions:
+  contents: read
+  # Required by setup-jfrog (GOPROXY exchange).
+  id-token: write
+
+jobs:
+  tf-schema:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup JFrog
+        uses: ./.github/actions/setup-jfrog
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            bundle/internal/tf/codegen/go.sum
+            tools/task/go.sum
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+
+      - name: Verify generated Terraform schema
+        run: |-
+          ./task generate-tf-schema
+          git diff --exit-code -- bundle/internal/tf/schema

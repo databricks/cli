@@ -1,3 +1,1 @@
-
->>> [CLI] environments --help
   setup-local                               Set up a local Python environment that matches your Databricks compute

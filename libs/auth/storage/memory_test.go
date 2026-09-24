@@ -12,9 +12,7 @@ import (
 func TestMemoryStore_PutAndLookup(t *testing.T) {
 	s := NewMemoryStore()
 	tok := &oauth2.Token{AccessToken: "abc", RefreshToken: "def"}
-	if err := s.Put("key1", Entry{Token: tok}); err != nil {
-		t.Fatalf("Put: %v", err)
-	}
+	put(t, s, "key1", Entry{Token: tok})
 	got, err := s.Lookup("key1")
 	if err != nil {
 		t.Fatalf("Lookup: %v", err)
@@ -30,9 +28,7 @@ func TestMemoryStore_PutAndLookup(t *testing.T) {
 func TestMemoryStore_PutAndLookupUseCopies(t *testing.T) {
 	s := NewMemoryStore()
 	tok := &oauth2.Token{AccessToken: "abc", RefreshToken: "def"}
-	if err := s.Put("key1", Entry{Token: tok}); err != nil {
-		t.Fatalf("Put: %v", err)
-	}
+	put(t, s, "key1", Entry{Token: tok})
 
 	tok.RefreshToken = "mutated-after-store"
 
@@ -57,12 +53,8 @@ func TestMemoryStore_PutAndLookupUseCopies(t *testing.T) {
 
 func TestMemoryStore_Delete(t *testing.T) {
 	s := NewMemoryStore()
-	if err := s.Put("key1", Entry{Token: &oauth2.Token{AccessToken: "abc"}}); err != nil {
-		t.Fatalf("Put: %v", err)
-	}
-	if err := s.Delete("key1"); err != nil {
-		t.Fatalf("Delete: %v", err)
-	}
+	put(t, s, "key1", Entry{Token: &oauth2.Token{AccessToken: "abc"}})
+	deleteEntry(t, s, "key1")
 	_, err := s.Lookup("key1")
 	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("Lookup after Delete: want ErrNotFound, got %v", err)
@@ -89,7 +81,9 @@ func TestMemoryStore_ConcurrentPutAndLookup(t *testing.T) {
 			defer wg.Done()
 			for j := range iterations {
 				key := fmt.Sprintf("%s-%d", prefix, j)
-				_ = s.Put(key, Entry{Token: &oauth2.Token{AccessToken: key}})
+				_ = s.WithLock(t.Context(), func(locked LockedStore) error {
+					return locked.Put(key, Entry{Token: &oauth2.Token{AccessToken: key}})
+				})
 			}
 		}()
 		go func() {

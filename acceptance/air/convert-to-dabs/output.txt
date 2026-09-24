@@ -56,6 +56,9 @@ resources:
                   accelerator_count: 1
                   provisioned_capacity_id: capacity-1
             code_source_path: ./dist/code_source.tgz
+            priority_class: NORMAL
+            mlflow_run: run-42
+            mlflow_experiment_directory: /Workspace/Users/[USERNAME]/experiments
             mlflow_artifact_location: dbfs:/Volumes/main/default/artifacts
       environments:
         - environment_key: default
@@ -198,5 +201,39 @@ Target: dev
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/databricks-ai-v5-smoke-test/dev
+
+Validation OK!
+
+=== a Unity Catalog image is preserved
+>>> [CLI] air convert-to-dabs unity-catalog-image.yaml --output-dir generated-image
+Wrote a Databricks Asset Bundle to generated-image:
+  databricks.yml
+  generated_artifacts/training_config.yaml
+  generated_artifacts/command.sh
+
+To deploy and run this workload as a bundle:
+  1. cd generated-image
+  2. [CLI] bundle validate
+  3. [CLI] bundle deploy
+  4. [CLI] bundle run unity-catalog-image-smoke-test --no-wait
+
+bundle deploy uploads the code source and launch scripts automatically.
+To see what it deployed and where: [CLI] bundle summary
+
+Unlike `air run` (which submits an ephemeral run), bundle deploy creates a
+persistent job that is not garbage-collected. When you are done, remove the
+job and its uploaded files with:
+  [CLI] bundle destroy
+
+>>> grep -F unity_catalog_image_path: main.air.training:prod generated-image/databricks.yml
+            unity_catalog_image_path: main.air.training:prod
+
+=== the Unity Catalog image bundle validates
+>>> [CLI] bundle validate
+Name: unity-catalog-image-smoke-test
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/unity-catalog-image-smoke-test/dev
 
 Validation OK!

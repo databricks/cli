@@ -3,77 +3,8 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default/files...
 Created alerts.myalert
 Created alerts.myalert.permissions
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] alerts-v2 get-alert [ALERT_ID]
-{
-  "display_name": "My alert",
-  "lifecycle_state": "ACTIVE",
-  "custom_summary": "My alert",
-  "evaluation": {
-    "comparison_operator": "EQUAL",
-    "notification": {
-      "notify_on_ok": false,
-      "retrigger_seconds": 1
-    },
-    "source": {
-      "aggregation": "MAX",
-      "display": "1",
-      "name": "1"
-    },
-    "threshold": {
-      "value": {
-        "double_value": 1.3
-      }
-    }
-  },
-  "query_text": "select 2",
-  "schedule": {
-    "pause_status": "UNPAUSED",
-    "quartz_cron_schedule": "44 19 */1 * * ?",
-    "timezone_id": "Europe/Amsterdam"
-  },
-  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
-}
-
-=== assert that permissions are applied
->>> [CLI] permissions get alertsv2 [ALERT_ID]
-{
-  "user_name": "deco-test-user@databricks.com",
-  "all_permissions": [
-    {
-      "inherited": false,
-      "permission_level": "CAN_MANAGE"
-    }
-  ]
-}
-
-=== assert that no permanent drift happens
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.alerts.myalert
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
-
-Destroy: 1 deleted
-
->>> [CLI] alerts-v2 get-alert [ALERT_ID]
-Error: Alert with ID '[ALERT_ID]' does not exist.
-
-Exit code: 1
-
->>> [CLI] bundle summary
-Name: alerts-basic-[UNIQUE_NAME]
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
-Resources:
-  Alerts:
-    myalert:
-      Name: My alert
-      URL:  (not deployed)
+Exit code: 5

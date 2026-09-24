@@ -1,11 +1,16 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"syscall"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -94,4 +99,73 @@ func TestNewHTTP11WorkspaceClient(t *testing.T) {
 
 	// The source config is not mutated: it keeps its own (nil) transport.
 	assert.Nil(t, src.HTTPTransport)
+}
+
+type releaseRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f releaseRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+type trackingReadCloser struct {
+	io.Reader
+	closed bool
+}
+
+func (r *trackingReadCloser) Close() error {
+	r.closed = true
+	return nil
+}
+
+func TestReleaseDownloadHTTPClientTimeout(t *testing.T) {
+	assert.Equal(t, 10*time.Minute, releaseDownloadHTTPClient.Timeout)
+}
+
+func TestGetGithubReleaseWithClientRequest(t *testing.T) {
+	body := &trackingReadCloser{Reader: strings.NewReader("release")}
+	client := &http.Client{Transport: releaseRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		assert.Equal(t, http.MethodGet, req.Method)
+		assert.Equal(t, "https://github.com/databricks/cli/releases/download/v1.2.3/databricks_cli_1.2.3_linux_arm64.zip", req.URL.String())
+		assert.Equal(t, t.Context(), req.Context())
+		return &http.Response{StatusCode: http.StatusOK, Body: body}, nil
+	})}
+
+	release, err := getGithubReleaseWithClient(t.Context(), "arm64", "1.2.3", "", client)
+	require.NoError(t, err)
+	assert.Same(t, body, release)
+}
+
+func TestGetGithubReleaseWithClientClosesNonOKBody(t *testing.T) {
+	body := &trackingReadCloser{Reader: strings.NewReader("not found")}
+	client := &http.Client{Transport: releaseRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusNotFound, Body: body}, nil
+	})}
+
+	release, err := getGithubReleaseWithClient(t.Context(), "amd64", "1.2.3", "", client)
+	require.Error(t, err)
+	assert.Nil(t, release)
+	assert.True(t, body.closed)
+}
+
+func TestGetGithubReleaseWithClientCancellation(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		entered := make(chan struct{})
+		client := &http.Client{Transport: releaseRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+			close(entered)
+			<-req.Context().Done()
+			return nil, req.Context().Err()
+		})}
+		errCh := make(chan error, 1)
+		go func() {
+			_, err := getGithubReleaseWithClient(ctx, "amd64", "1.2.3", "", client)
+			errCh <- err
+		}()
+
+		<-entered
+		cancel()
+		err := <-errCh
+		require.Error(t, err)
+		assert.ErrorIs(t, err, context.Canceled)
+	})
 }

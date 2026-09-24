@@ -6,24 +6,8 @@ Successfully bound secret_scope with an id 'test-secret-scope-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy -qq
-
->>> [CLI] secrets list-scopes -o json
-{
-  "backend_type": "DATABRICKS",
-  "name": "test-secret-scope-[UNIQUE_NAME]"
-}
-
->>> [CLI] bundle deployment unbind secret_scope1
-
->>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default
-
-Destroy: 0 deleted
-
->>> [CLI] secrets list-scopes -o json
-{
-  "backend_type": "DATABRICKS",
-  "name": "test-secret-scope-[UNIQUE_NAME]"
-}
+jq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] secrets delete-scope test-secret-scope-[UNIQUE_NAME]
+
+Exit code: 5

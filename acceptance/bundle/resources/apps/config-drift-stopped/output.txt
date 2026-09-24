@@ -4,64 +4,21 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/config-drift-stopped-[UNIQUE_NAME]/default/files...
 ✓ Deployment succeeded
 Created apps.myapp
-Files: 5 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Change config while running: drift is detected (active deployment present)
 >>> update_file.py databricks.yml original_value changed_value
-
->>> [CLI] bundle plan -o json
-{
-  "config.env[0].value": {
-    "action": "update",
-    "old": "original_value",
-    "new": "changed_value",
-    "remote": "original_value"
-  }
-}
-
-=== Stop the app: the backend clears the active deployment
->>> [CLI] apps stop [UNIQUE_NAME]
-"STOPPED"
-
-=== Same config change is now skipped: no active deployment to compare against
->>> [CLI] bundle plan -o json
-{
-  "config": {
-    "action": "skip",
-    "reason": "no active deployment",
-    "old": {
-      "command": [
-        "python",
-        "app.py"
-      ],
-      "env": [
-        {
-          "name": "MY_VAR",
-          "value": "original_value"
-        }
-      ]
-    },
-    "new": {
-      "command": [
-        "python",
-        "app.py"
-      ],
-      "env": [
-        {
-          "name": "MY_VAR",
-          "value": "changed_value"
-        }
-      ]
-    }
-  },
-  "config.env[0].value": {
-    "action": "skip",
-    "reason": "no active deployment",
-    "old": "original_value",
-    "new": "changed_value"
-  }
-}
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -70,3 +27,5 @@ The following resources will be deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/config-drift-stopped-[UNIQUE_NAME]/default
 
 Destroy: 1 deleted
+
+Exit code: 1

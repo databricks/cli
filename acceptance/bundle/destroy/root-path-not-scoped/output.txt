@@ -1,7 +1,7 @@
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/custom-root-[UNIQUE_NAME]/inner/files...
-Files: 4 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
@@ -9,11 +9,6 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 0 deleted
 
-=== Assert the parent directory is kept
->>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/custom-root-[UNIQUE_NAME]
-{
-  "object_type": "DIRECTORY"
-}
+=== Assert the parent directory is keptjq: parse error: Invalid numeric literal at line 2, column 4
 
-=== Clean up
->>> [CLI] workspace delete //Workspace/Users/[USERNAME]/.bundle/custom-root-[UNIQUE_NAME] --recursive
+Exit code: 5

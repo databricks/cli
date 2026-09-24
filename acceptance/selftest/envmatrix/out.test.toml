@@ -1,4 +1,5 @@
 Cloud = false
+RecordRequests = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
 EnvMatrix.FIRST = ["overriden-in-inner"]
 EnvMatrix.THIRD = ["three $FIRST"]

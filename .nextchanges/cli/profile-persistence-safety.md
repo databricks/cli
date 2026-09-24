@@ -1,0 +1,1 @@
+* Serialize `.databrickscfg` mutations with symlink-aware locks and atomic replacement, preserve RFC 8707 resource indicators exactly, and bind Docker credentials to the workspace's DNS environment.

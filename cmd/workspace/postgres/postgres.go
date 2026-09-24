@@ -137,7 +137,6 @@ func newCreateBranch() *cobra.Command {
 	cmd.Flags().BoolVar(&createBranchReq.ReplaceExisting, "replace-existing", createBranchReq.ReplaceExisting, `If true, update the branch if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createBranchReq.Branch.Name, "name", createBranchReq.Branch.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-branch PARENT BRANCH_ID"
 	cmd.Short = `Create a Branch.`
@@ -264,7 +263,6 @@ func newCreateCatalog() *cobra.Command {
 
 	cmd.Flags().StringVar(&createCatalogReq.Catalog.Name, "name", createCatalogReq.Catalog.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-catalog CATALOG_ID"
 	cmd.Short = `Register a Database in UC.`
@@ -532,7 +530,6 @@ func newCreateDataApi() *cobra.Command {
 
 	cmd.Flags().StringVar(&createDataApiReq.DataApi.Name, "name", createDataApiReq.DataApi.Name, `Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-data-api PARENT"
 	cmd.Short = `Enable Data API for a database.`
@@ -656,7 +653,6 @@ func newCreateDatabase() *cobra.Command {
 	cmd.Flags().BoolVar(&createDatabaseReq.ReplaceExisting, "replace-existing", createDatabaseReq.ReplaceExisting, `If true, update the database if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createDatabaseReq.Database.Name, "name", createDatabaseReq.Database.Name, `The resource name of the database.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-database PARENT"
 	cmd.Short = `Create a Database.`
@@ -781,7 +777,6 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Flags().BoolVar(&createEndpointReq.ReplaceExisting, "replace-existing", createEndpointReq.ReplaceExisting, `If true, update the endpoint if it already exists instead of returning an error.`)
 	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-endpoint PARENT ENDPOINT_ID"
 	cmd.Short = `Create an Endpoint.`
@@ -910,7 +905,6 @@ func newCreateProject() *cobra.Command {
 	// TODO: complex arg: initial_endpoint_spec
 	cmd.Flags().StringVar(&createProjectReq.Project.Name, "name", createProjectReq.Project.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-project PROJECT_ID"
 	cmd.Short = `Create a Project.`
@@ -1036,7 +1030,6 @@ func newCreateRole() *cobra.Command {
 	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID to use for the Role, which will become the final component of the role's resource name.`)
 	cmd.Flags().StringVar(&createRoleReq.Role.Name, "name", createRoleReq.Role.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-role PARENT"
 	cmd.Short = `Create a Postgres Role for a Branch.`
@@ -1157,7 +1150,6 @@ func newCreateSnapshot() *cobra.Command {
 
 	cmd.Flags().StringVar(&createSnapshotReq.Snapshot.Name, "name", createSnapshotReq.Snapshot.Name, `The resource name of the snapshot.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-snapshot PARENT SNAPSHOT_ID"
 	cmd.Short = `*Beta* Create a Snapshot.`
@@ -1283,7 +1275,6 @@ func newCreateSyncedTable() *cobra.Command {
 
 	cmd.Flags().StringVar(&createSyncedTableReq.SyncedTable.Name, "name", createSyncedTableReq.SyncedTable.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-synced-table SYNCED_TABLE_ID"
 	cmd.Short = `Create a Synced Database Table.`
@@ -4173,7 +4164,6 @@ func newUpdateBranch() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateBranchReq.Branch.Name, "name", updateBranchReq.Branch.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "update-branch NAME UPDATE_MASK"
 	cmd.Short = `Update a Branch.`
@@ -4300,7 +4290,6 @@ func newUpdateDataApi() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateDataApiReq.DataApi.Name, "name", updateDataApiReq.DataApi.Name, `Resource name: projects/{project_id}/branches/{branch_id}/databases/{database_id}/data-api.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "update-data-api NAME UPDATE_MASK"
 	cmd.Short = `Update Data API configuration.`
@@ -4429,7 +4418,6 @@ func newUpdateDatabase() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateDatabaseReq.Database.Name, "name", updateDatabaseReq.Database.Name, `The resource name of the database.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "update-database NAME UPDATE_MASK"
 	cmd.Short = `Update a Database.`
@@ -4553,7 +4541,6 @@ func newUpdateEndpoint() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "update-endpoint NAME UPDATE_MASK"
 	cmd.Short = `Update an Endpoint.`
@@ -4682,7 +4669,6 @@ func newUpdateProject() *cobra.Command {
 	// TODO: complex arg: initial_endpoint_spec
 	cmd.Flags().StringVar(&updateProjectReq.Project.Name, "name", updateProjectReq.Project.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "update-project NAME UPDATE_MASK"
 	cmd.Short = `Update a Project.`
@@ -4808,7 +4794,6 @@ func newUpdateRole() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateRoleReq.Role.Name, "name", updateRoleReq.Role.Name, `Output only.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "update-role NAME UPDATE_MASK"
 	cmd.Short = `Update a Postgres Role for a Branch.`

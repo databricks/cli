@@ -2,9 +2,16 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/defaul
 Created pipelines.foo
 Warn: deploying resources.pipelines.foo.permissions: retrying after 504 Gateway Timeout from PUT /api/2.0/permissions/pipelines/[UUID]
 Created pipelines.foo.permissions
-Files: 3 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+jq: parse error: Invalid numeric literal at line 2, column 4
+Traceback (most recent call last):
+  File "[TESTROOT]/bin/print_requests.py", line 312, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/print_requests.py", line 305, in main
+    print(json.dumps(req, indent=2))
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+BrokenPipeError: [Errno 32] Broken pipe
 
->>> print_requests.py //api/2.0/permissions/pipelines
-"PUT /api/2.0/permissions/pipelines/[UUID]"
-"PUT /api/2.0/permissions/pipelines/[UUID]"
+Exit code: 5

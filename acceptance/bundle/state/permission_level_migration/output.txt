@@ -1,60 +1,13 @@
 
-=== Plan with old v1 state
->>> [CLI] bundle plan -o json
+=== Plan with old v1 stateTraceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
-=== Deploy (migrates state)
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.my_job
-Updated jobs.my_job.permissions
-Files: 5 uploaded, 0 deleted
-Resources: 1 created, 1 changed, 0 deleted, 0 unchanged
-
-=== Print state after deploy
->>> print_state.py
-{
- "state_version": 3,
- "cli_version": "[CLI_VERSION]",
- "lineage": "test-lineage",
- "serial": 2,
- "state": {
-  "resources.jobs.my_job": {
-   "__id__": "[NUMID]",
-   "state": {
-    "deployment": {
-     "kind": "BUNDLE",
-     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "my job",
-    "queue": {
-     "enabled": true
-    }
-   }
-  },
-  "resources.jobs.my_job.permissions": {
-   "__id__": "/jobs/123",
-   "state": {
-    "object_id": "/jobs/[NUMID]",
-    "__embed__": [
-     {
-      "level": "CAN_VIEW",
-      "group_name": "viewers"
-     },
-     {
-      "level": "IS_OWNER",
-      "user_name": "[USERNAME]"
-     }
-    ]
-   },
-   "depends_on": [
-    {
-     "node": "resources.jobs.my_job",
-     "label": "${resources.jobs.my_job.id}"
-    }
-   ]
-  }
- }
-}
+Exit code: 1

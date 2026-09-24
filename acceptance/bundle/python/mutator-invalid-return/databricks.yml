@@ -1,0 +1,13 @@
+bundle:
+  name: my_project
+
+sync: {paths: []}
+
+python:
+  mutators:
+    - "mutators:invalid_return"
+
+resources:
+  jobs:
+    my_job:
+      tasks: []

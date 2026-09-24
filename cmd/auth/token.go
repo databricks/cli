@@ -40,6 +40,7 @@ func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthA
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "token [PROFILE]",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Get authentication token",
 		Long: `Get authentication token from the local cache in ~/.databricks/token-cache.json.
 Refresh the access token if it is expired or close to expiry. Use --force-refresh
@@ -79,7 +80,7 @@ and secret is not supported.`,
 			persistentAuthOpts: nil,
 		})
 		if err != nil {
-			if cmd.Flag("output").Changed && root.OutputType(cmd) == flags.OutputJSON {
+			if root.OutputType(cmd) == flags.OutputJSON {
 				if _, ok := errors.AsType[*u2m.InvalidRefreshTokenError](err); ok {
 					if outputErr := writeTokenErrorOutput(cmd.OutOrStdout(), err); outputErr != nil {
 						return outputErr
@@ -291,7 +292,11 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 	if clientID := u2mClientIDFromProfile(existingProfile); clientID != "" {
 		allArgs = append(allArgs, u2m.WithClientID(clientID))
 	}
-	if resources := u2mResourcesFromProfile(existingProfile); len(resources) > 0 {
+	resources, err := u2mResourcesFromProfile(existingProfile)
+	if err != nil {
+		return nil, err
+	}
+	if len(resources) > 0 {
 		allArgs = append(allArgs, u2m.WithResources(resources))
 	}
 	allArgs = append(allArgs, u2m.WithOAuthArgument(oauthArgument))
@@ -452,7 +457,10 @@ func runInlineLogin(ctx context.Context, profiler profile.Profiler, tokenStore s
 
 	// Preserve RFC 8707 resource indicators from the existing profile so the
 	// inline login requests the same resources the user previously configured.
-	resourcesList := u2mResourcesFromProfile(existingProfile)
+	resourcesList, err := u2mResourcesFromProfile(existingProfile)
+	if err != nil {
+		return "", nil, err
+	}
 
 	oauthArgument, err := loginArgs.ToOAuthArgument()
 	if err != nil {

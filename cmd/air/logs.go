@@ -190,6 +190,9 @@ func runLogs(ctx context.Context, cmd *cobra.Command, req logRequest) error {
 
 	out := cmd.OutOrStdout()
 	success, err := fetchLogs(ctx, w, out, req, status)
+	if errors.Is(err, context.Canceled) {
+		return err
+	}
 	if err != nil {
 		if errors.Is(err, apierr.ErrResourceDoesNotExist) {
 			return renderError(ctx, cmd, "NOT_FOUND", "NOT_FOUND", false,

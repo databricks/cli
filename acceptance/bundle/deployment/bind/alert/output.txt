@@ -1,32 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] alerts-v2 create-alert --json @alert.json
-
->>> [CLI] bundle deployment bind my_alert [ALERT_ID] --auto-approve
-Successfully bound alert with an id '[ALERT_ID]'
-Run 'bundle deploy' to deploy changes to your workspace
-
->>> [CLI] bundle summary
-Name: test-bind-alert-[UNIQUE_NAME]
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-alert-[UNIQUE_NAME]/default
-Resources:
-  Alerts:
-    my_alert:
-      Name: test-alert
-      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
-
->>> [CLI] bundle deployment unbind my_alert
-
->>> [CLI] bundle summary
-Name: test-bind-alert-[UNIQUE_NAME]
-Target: default
-Workspace:
-  User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bind-alert-[UNIQUE_NAME]/default
-Resources:
-  Alerts:
-    my_alert:
-      Name: test-alert
-      URL:  (not deployed)
+Exit code: 5

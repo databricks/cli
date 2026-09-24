@@ -1,4 +1,5 @@
 Cloud = true
+RecordRequests = true
 CloudEnvs.azure = false
 CloudEnvs.gcp = false
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]

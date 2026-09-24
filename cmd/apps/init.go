@@ -426,7 +426,7 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 		config.Features = selected
 	}
 
-	// Always include mandatory plugins.
+	// Always include mandatory, non-deprecated plugins.
 	config.Features = appendUnique(config.Features, m.GetMandatoryPluginNames()...)
 
 	// Collect resources for the user's actual selection.
@@ -830,39 +830,80 @@ func findProjectSrcDir(templateDir string) string {
 	return templateDir
 }
 
-// startBackgroundNpmInstall copies the package files from the template into
-// destDir and launches `npm ci` in the background. The caller should await
-// the returned channel BEFORE writing other files to destDir to prevent
-// concurrent writes. Returns nil if the template is not a Node.js project
-// or npm is not available.
+// runNpmInstall runs npm ci in the prepared project directory.
+var runNpmInstall = func(ctx context.Context, destDir string) error {
+	cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
+	cmd.Dir = destDir
+	return cmd.Run()
+}
+
+// startBackgroundNpmInstall prepares the package files from the template in
+// destDir and launches `npm ci` in the background. The caller should await the
+// returned channel BEFORE writing other files to destDir to prevent concurrent
+// writes. It returns a nil channel without an error if the template has no
+// lock file or npm is not available.
 //
 // IMPORTANT: All reads from srcProjectDir happen synchronously before the
 // goroutine launches. The template directory may be cleaned up after this
 // function returns, so file reads must not be deferred to the goroutine.
-func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, projectName string) <-chan error {
-	lockFile := filepath.Join(srcProjectDir, "package-lock.json")
-	if _, err := os.Stat(lockFile); err != nil {
-		return nil
+func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, projectName string) (<-chan error, error) {
+	lockData, err := os.ReadFile(filepath.Join(srcProjectDir, "package-lock.json"))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("read package-lock.json: %w", err)
+	}
+
+	pkgData, err := preparePackageJSON(srcProjectDir, projectName)
+	if err != nil {
+		return nil, err
+	}
+	fileDeps, err := prepareFileDeps(pkgData, srcProjectDir, destDir)
+	if err != nil {
+		return nil, err
 	}
 
 	if _, err := exec.LookPath("npm"); err != nil {
-		return nil
+		return nil, nil //nolint:nilerr
 	}
 
+	// Create the destination only after package parsing and all source and
+	// destination path validation have completed.
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
-		log.Warnf(ctx, "Failed to create %s: %v, skipping background npm install", destDir, err)
-		return nil
+		return nil, fmt.Errorf("create %s: %w", destDir, err)
+	}
+	if err := copyPreparedFileDeps(fileDeps, destDir); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(filepath.Join(destDir, "package.json"), pkgData, 0o644); err != nil {
+		return nil, fmt.Errorf("write package.json: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(destDir, "package-lock.json"), lockData, 0o644); err != nil {
+		return nil, fmt.Errorf("write package-lock.json: %w", err)
 	}
 
-	// Copy package.json (apply template substitution so the file is valid JSON)
-	// and package-lock.json (no template vars — copy raw).
-	var pkgWritten bool
+	ch := make(chan error, 1)
+	go func() {
+		ch <- runNpmInstall(ctx, destDir)
+	}()
+
+	log.Debugf(ctx, "Started background npm install in %s", destDir)
+	return ch, nil
+}
+
+// preparePackageJSON reads and renders the template package manifest without
+// creating the destination directory.
+func preparePackageJSON(srcDir, projectName string) ([]byte, error) {
 	for _, name := range []string{"package.json", "package.json.tmpl"} {
-		src := filepath.Join(srcProjectDir, name)
-		content, err := os.ReadFile(src)
+		content, err := os.ReadFile(filepath.Join(srcDir, name))
 		if err != nil {
-			continue
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return nil, fmt.Errorf("read %s: %w", name, err)
 		}
+
 		minVars := templateData(templateVars{
 			ProjectName:    projectName,
 			AppDescription: prompt.DefaultAppDescription,
@@ -870,88 +911,177 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		})
 		tmpl, err := template.New(name).Option("missingkey=zero").Parse(string(content))
 		if err != nil {
-			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
-			break
+			return nil, fmt.Errorf("parse %s: %w", name, err)
 		}
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, minVars); err != nil {
-			pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), content, 0o644) == nil
-			break
+			return nil, fmt.Errorf("render %s: %w", name, err)
 		}
-		pkgWritten = os.WriteFile(filepath.Join(destDir, "package.json"), buf.Bytes(), 0o644) == nil
-		break
+		return buf.Bytes(), nil
 	}
-
-	if !pkgWritten {
-		log.Warnf(ctx, "Failed to write package.json to %s, skipping background npm install", destDir)
-		return nil
-	}
-
-	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
-	pkgData, err := os.ReadFile(filepath.Join(destDir, "package.json"))
-	if err != nil {
-		log.Warnf(ctx, "Failed to read package.json for file dep copy: %v", err)
-	} else {
-		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
-	}
-
-	// Copy package-lock.json raw (never has template vars).
-	lockData, err := os.ReadFile(lockFile)
-	if err != nil {
-		log.Warnf(ctx, "Failed to read package-lock.json: %v, skipping background npm install", err)
-		return nil
-	}
-	if err := os.WriteFile(filepath.Join(destDir, "package-lock.json"), lockData, 0o644); err != nil {
-		log.Warnf(ctx, "Failed to write package-lock.json: %v, skipping background npm install", err)
-		return nil
-	}
-
-	ch := make(chan error, 1)
-	go func() {
-		cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
-		cmd.Dir = destDir
-		cmd.Stdout = nil
-		cmd.Stderr = nil
-		ch <- cmd.Run()
-	}()
-
-	log.Debugf(ctx, "Started background npm install in %s", destDir)
-	return ch
+	return nil, errors.New("package.json not found")
 }
 
-// copyFileDeps copies local file: protocol dependencies (e.g., .tgz tarballs)
-// from srcDir to destDir so that npm ci can resolve them.
-func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
+type preparedFileDep struct {
+	relativePath string
+	data         []byte
+}
+
+// prepareFileDeps parses and validates local file: dependencies without
+// writing to the destination.
+func prepareFileDeps(pkgJSON []byte, srcDir, destDir string) ([]preparedFileDep, error) {
 	var pkg struct {
 		Dependencies    map[string]string `json:"dependencies"`
 		DevDependencies map[string]string `json:"devDependencies"`
 	}
 	if err := json.Unmarshal(pkgJSON, &pkg); err != nil {
-		log.Debugf(ctx, "Failed to parse package.json for file dep copy: %v", err)
-		return
+		return nil, fmt.Errorf("parse package.json for file dependencies: %w", err)
 	}
+
+	var prepared []preparedFileDep
 	for _, deps := range []map[string]string{pkg.Dependencies, pkg.DevDependencies} {
-		for _, v := range deps {
-			if !strings.HasPrefix(v, "file:") {
+		for _, name := range slices.Sorted(maps.Keys(deps)) {
+			value := deps[name]
+			if !strings.HasPrefix(value, "file:") {
 				continue
 			}
-			relPath := filepath.Clean(strings.TrimPrefix(v, "file:"))
-			src := filepath.Join(srcDir, relPath)
+			relPath := strings.TrimPrefix(value, "file:")
+			src, err := resolveFileDependencyPath(srcDir, relPath, true)
+			if err != nil {
+				return nil, fmt.Errorf("validate source for file dependency %s: %w", name, err)
+			}
+			if _, err := resolveFileDependencyPath(destDir, relPath, false); err != nil {
+				return nil, fmt.Errorf("validate destination for file dependency %s: %w", name, err)
+			}
 			data, err := os.ReadFile(src)
 			if err != nil {
-				log.Debugf(ctx, "Skipping file dep %s: %v", relPath, err)
-				continue
+				return nil, fmt.Errorf("read file dependency %s: %w", name, err)
 			}
-			dst := filepath.Join(destDir, relPath)
-			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-				log.Debugf(ctx, "Failed to create dir for file dep %s: %v", relPath, err)
-				continue
-			}
-			if err := os.WriteFile(dst, data, 0o644); err != nil {
-				log.Debugf(ctx, "Failed to copy file dep %s: %v", relPath, err)
-			}
+			prepared = append(prepared, preparedFileDep{relativePath: relPath, data: data})
 		}
 	}
+	return prepared, nil
+}
+
+// resolveFileDependencyPath validates a file: dependency path and returns its
+// fully resolved location within root.
+func resolveFileDependencyPath(root, relPath string, source bool) (string, error) {
+	if relPath == "" {
+		return "", errors.New("path is empty")
+	}
+	if filepath.IsAbs(relPath) || filepath.VolumeName(relPath) != "" || strings.HasPrefix(relPath, "/") || strings.HasPrefix(relPath, `\`) || (len(relPath) >= 3 && relPath[1] == ':' && (relPath[2] == '/' || relPath[2] == '\\')) {
+		return "", fmt.Errorf("path %q is absolute", relPath)
+	}
+	if slices.Contains(strings.FieldsFunc(relPath, func(r rune) bool { return r == '/' || r == '\\' }), "..") {
+		return "", fmt.Errorf("path %q contains '..'", relPath)
+	}
+
+	resolvedRoot, err := resolvedPathForContainment(root)
+	if err != nil {
+		return "", fmt.Errorf("resolve root %s: %w", root, err)
+	}
+	resolvedPath, err := resolvedPathForContainment(filepath.Join(root, relPath))
+	if err != nil {
+		return "", fmt.Errorf("resolve path %q: %w", relPath, err)
+	}
+	rel, err := filepath.Rel(resolvedRoot, resolvedPath)
+	if err != nil {
+		return "", err
+	}
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", fmt.Errorf("path %q resolves outside root %s", relPath, root)
+	}
+	if source {
+		info, err := os.Stat(resolvedPath)
+		if err != nil {
+			return "", err
+		}
+		if info.IsDir() {
+			return "", fmt.Errorf("path %q is a directory", relPath)
+		}
+	}
+	return resolvedPath, nil
+}
+
+// resolvedPathForContainment resolves every existing symlink component,
+// including dangling links, then appends missing path components.
+func resolvedPathForContainment(path string) (string, error) {
+	return resolvedPathForContainmentDepth(path, 0)
+}
+
+// resolvedPathForContainmentDepth bounds recursive symlink resolution.
+func resolvedPathForContainmentDepth(path string, depth int) (string, error) {
+	if depth > 255 {
+		return "", errors.New("too many symlinks")
+	}
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	root := filepath.VolumeName(absPath)
+	if filepath.IsAbs(absPath) {
+		root += string(filepath.Separator)
+	} else {
+		root = "."
+	}
+	parts := strings.Split(strings.TrimPrefix(absPath, root), string(filepath.Separator))
+	resolved := root
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		next := filepath.Join(resolved, part)
+		info, err := os.Lstat(next)
+		switch {
+		case err == nil && info.Mode()&os.ModeSymlink != 0:
+			target, err := os.Readlink(next)
+			if err != nil {
+				return "", err
+			}
+			if !filepath.IsAbs(target) {
+				target = filepath.Join(filepath.Dir(next), target)
+			}
+			resolved, err = resolvedPathForContainmentDepth(target, depth+1)
+			if err != nil {
+				return "", err
+			}
+		case err == nil:
+			resolved = next
+		case errors.Is(err, fs.ErrNotExist):
+			resolved = next
+			for _, missing := range parts[i+1:] {
+				resolved = filepath.Join(resolved, missing)
+			}
+			return resolved, nil
+		default:
+			return "", err
+		}
+	}
+	return resolved, nil
+}
+
+// copyPreparedFileDeps copies validated dependency data into destDir.
+func copyPreparedFileDeps(fileDeps []preparedFileDep, destDir string) error {
+	for _, dep := range fileDeps {
+		dst := filepath.Join(destDir, dep.relativePath)
+		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+			return fmt.Errorf("create destination for file dependency %s: %w", dep.relativePath, err)
+		}
+		if err := os.WriteFile(dst, dep.data, 0o644); err != nil {
+			return fmt.Errorf("copy file dependency %s: %w", dep.relativePath, err)
+		}
+	}
+	return nil
+}
+
+// copyFileDeps copies local file: protocol dependencies from srcDir to
+// destDir. Any parsing, path validation, read, or copy failure is returned.
+func copyFileDeps(pkgJSON []byte, srcDir, destDir string) error {
+	fileDeps, err := prepareFileDeps(pkgJSON, srcDir, destDir)
+	if err != nil {
+		return err
+	}
+	return copyPreparedFileDeps(fileDeps, destDir)
 }
 
 // awaitBackgroundNpmInstall waits for the background npm install to complete.
@@ -1186,7 +1316,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	srcProjectDir := findProjectSrcDir(templateDir)
 	var npmInstallCh <-chan error
 	if !opts.skipInstall {
-		npmInstallCh = startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
+		npmInstallCh, err = startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
+		if err != nil {
+			// Validation happens before destination creation. A later write or
+			// copy error can leave a partial non-in-place project behind.
+			if !inPlace {
+				os.RemoveAll(destDir)
+			}
+			return err
+		}
 	}
 
 	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
@@ -1278,7 +1416,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		maps.Copy(resourceValues, setVals)
 	}
 
-	// Always include mandatory plugins regardless of user selection or flags.
+	// Always include mandatory, non-deprecated plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
 	// Warn when --features adds plugins that the pre-rendered template

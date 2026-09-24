@@ -1,3 +1,5 @@
+
+>>> print_requests.py --del-body project_id,branch_id,endpoint_id,database_id,role_id,catalog_id,synced_table_id --sort --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 {
   "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"

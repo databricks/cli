@@ -67,7 +67,8 @@ func Generate(jsonPath, targetDir string) ([]string, error) {
 	if doc.Commands == nil {
 		return nil, fmt.Errorf("%s: missing \"commands\" block", jsonPath)
 	}
-	batch := fromContract(doc.Commands)
+	fieldlessResponses := normalizeFieldlessResponses(doc.Commands, doc.Schemas)
+	batch := fromContractWithFieldless(doc.Commands, fieldlessResponses)
 	if err := batch.Resolve(); err != nil {
 		return nil, fmt.Errorf("%s: %w", jsonPath, err)
 	}

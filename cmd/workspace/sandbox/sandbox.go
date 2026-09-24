@@ -77,7 +77,6 @@ func newCreateSandbox() *cobra.Command {
 	cmd.Flags().StringVar(&createSandboxReq.Sandbox.DisplayName, "display-name", createSandboxReq.Sandbox.DisplayName, `Human-readable display label for the sandbox.`)
 	cmd.Flags().StringVar(&createSandboxReq.Sandbox.Name, "name", createSandboxReq.Sandbox.Name, `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "create-sandbox SANDBOX_ID"
 	cmd.Short = `*Beta* Create a sandbox.`
@@ -577,7 +576,6 @@ func newUpdateSandbox() *cobra.Command {
 	cmd.Flags().StringVar(&updateSandboxReq.Sandbox.DisplayName, "display-name", updateSandboxReq.Sandbox.DisplayName, `Human-readable display label for the sandbox.`)
 	cmd.Flags().StringVar(&updateSandboxReq.Sandbox.Name, "name", updateSandboxReq.Sandbox.Name, `The sandbox resource name, in the form sandboxes/{sandbox_id}.`)
 	// TODO: complex arg: spec
-	// TODO: complex arg: status
 
 	cmd.Use = "update-sandbox NAME UPDATE_MASK"
 	cmd.Short = `*Beta* Update a sandbox.`

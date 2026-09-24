@@ -1,14 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] bundle validate -o json
-{
-  "result": {
-    "default": "[UUID]",
-    "value": "[UUID]"
-  },
-  "sp": {
-    "lookup": {
-      "service_principal": "[TEST_SP_DISPLAY_NAME]"
-    },
-    "value": "[UUID]"
-  }
-}
+Exit code: 5

@@ -373,9 +373,9 @@ func isFreshReplacement(old, candidate, cached *oauth2.Token) bool {
 	return !cached.Expiry.Before(candidate.Expiry.Add(-storeUpdateRecoveryExpiryDelta))
 }
 
-// recoverStoreUpdate checks whether a concurrent store update completed.
-// Retrying reads instead of writes avoids recreating the write race.
-func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth2.Token {
+// recoverStoreUpdate checks whether a store update completed after a failed
+// write. All recovery reads stay inside the caller's transaction.
+func (a *PersistentAuth) recoverStoreUpdate(locked storage.LockedStore, old, candidate *oauth2.Token) *oauth2.Token {
 	delay := storeUpdateRecoveryInitialDelay
 	for attempt := range storeUpdateRecoveryAttempts {
 		if attempt > 0 {
@@ -389,7 +389,7 @@ func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth
 			delay *= storeUpdateRecoveryDelayFactor
 		}
 
-		cached, err := a.store.Lookup(a.oAuthArgument.GetCacheKey())
+		cached, err := locked.Lookup(a.oAuthArgument.GetCacheKey())
 		if err == nil && isFreshReplacement(old, candidate, cached.Token) {
 			return cached.Token
 		}
@@ -397,14 +397,9 @@ func (a *PersistentAuth) recoverStoreUpdate(old, candidate *oauth2.Token) *oauth
 	return nil
 }
 
-// refresh refreshes the token for the given OAuthArgument, storing the new
-// token in the cache.
-//
-// This read-refresh-write sequence is not coordinated across processes.
-// Because the CLI is stateless, two separate CLI invocations can load the same
-// cached refresh token, both attempt a refresh, and race to update the cache.
-// This should be fixed in a follow-up by adding cross-process coordination
-// around refresh and cache writes.
+// refresh exchanges the re-read refresh token and persists the replacement
+// through one coordinated store transaction. OAuth endpoint discovery happens
+// before acquiring the transaction lock.
 func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) {
 	// Fail fast with ErrMissingRefreshToken instead of letting the oauth2
 	// library attempt to refresh and return a misleading error (e.g. "token
@@ -417,56 +412,84 @@ func (a *PersistentAuth) refresh(oldToken *oauth2.Token) (*oauth2.Token, error) 
 	if err != nil {
 		return nil, err
 	}
-	ctx := a.setOAuthContext(a.ctx)
-	// Force the oauth2 library to refresh by ensuring the token appears
-	// expired. PersistentAuth owns the refresh decision (including the
-	// proactive buffer), so the oauth2 library should always perform the
-	// refresh when asked.
-	expired := *oldToken
-	expired.Expiry = time.Now().Add(-time.Minute)
-	t, err := cfg.TokenSource(ctx, &expired).Token()
-	if err != nil {
-		// The default RoundTripper of our httpclient.ApiClient returns an error
-		// if the response status code is not 2xx. This isn't compliant with the
-		// RoundTripper interface, so this error isn't handled by the oauth2
-		// library. We need to handle it here.
-		if internalHttpError, ok := errors.AsType[*httpclient.HttpError](err); ok {
-			// error fields
-			// https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
-			var errResponse struct {
-				Error            string `json:"error"`
-				ErrorDescription string `json:"error_description"`
-			}
-			if unmarshalErr := json.Unmarshal([]byte(internalHttpError.Message), &errResponse); unmarshalErr != nil {
-				return nil, fmt.Errorf("unmarshal: %w", unmarshalErr)
-			}
-			// Invalid refresh tokens get their own error type so they can be
-			// better presented to users.
-			if errResponse.ErrorDescription == "Refresh token is invalid" {
-				return nil, &InvalidRefreshTokenError{err}
-			}
-			return nil, fmt.Errorf("%s (error code: %s)", errResponse.ErrorDescription, errResponse.Error)
+
+	var refreshed *oauth2.Token
+	callbackStarted := false
+	err = a.store.WithLock(a.ctx, func(locked storage.LockedStore) error {
+		callbackStarted = true
+		entry, err := locked.Lookup(a.oAuthArgument.GetCacheKey())
+		if err != nil {
+			return fmt.Errorf("cache: %w", err)
+		}
+		current := entry.Token
+		if current.AccessToken != oldToken.AccessToken && current.Valid() {
+			refreshed = current
+			return nil
+		}
+		if current.RefreshToken == "" {
+			return ErrMissingRefreshToken
 		}
 
-		// Handle responses from well-behaved *http.Client implementations.
-		if httpErr, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
-			// Invalid refresh tokens get their own error type so they can be
-			// better presented to users.
-			if httpErr.ErrorDescription == "Refresh token is invalid" {
-				return nil, &InvalidRefreshTokenError{err}
+		t, err := a.exchangeRefreshToken(cfg, current)
+		if err != nil {
+			return err
+		}
+		if err := locked.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t}); err != nil {
+			if cached := a.recoverStoreUpdate(locked, current, t); cached != nil {
+				refreshed = cached
+				return nil
 			}
-			return nil, fmt.Errorf("%s (error code: %s)", httpErr.ErrorDescription, httpErr.ErrorCode)
+			return fmt.Errorf("cache update: %w", err)
+		}
+		refreshed = t
+		return nil
+	})
+	if err != nil {
+		if !callbackStarted {
+			return nil, fmt.Errorf("cache transaction: %w", err)
 		}
 		return nil, err
 	}
-	err = a.store.Put(a.oAuthArgument.GetCacheKey(), storage.Entry{Token: t})
-	if err != nil {
-		if cached := a.recoverStoreUpdate(oldToken, t); cached != nil {
-			return cached, nil
-		}
-		return nil, fmt.Errorf("cache update: %w", err)
+	return refreshed, nil
+}
+
+func (a *PersistentAuth) exchangeRefreshToken(cfg *oauth2.Config, token *oauth2.Token) (*oauth2.Token, error) {
+	ctx := a.setOAuthContext(a.ctx)
+	expired := *token
+	expired.Expiry = time.Now().Add(-time.Minute)
+	t, err := cfg.TokenSource(ctx, &expired).Token()
+	if err == nil {
+		return t, nil
 	}
-	return t, nil
+
+	// The default RoundTripper of our httpclient.ApiClient returns an error
+	// for non-2xx responses, which prevents oauth2.RetrieveError from being
+	// produced. Decode the RFC 6749 error body on that path.
+	if internalErr, ok := errors.AsType[*httpclient.HttpError](err); ok {
+		var response struct {
+			Error            string `json:"error"`
+			ErrorDescription string `json:"error_description"`
+		}
+		if unmarshalErr := json.Unmarshal([]byte(internalErr.Message), &response); unmarshalErr != nil {
+			return nil, fmt.Errorf("unmarshal: %w", unmarshalErr)
+		}
+		if isInvalidRefreshGrant(response.Error, response.ErrorDescription) {
+			return nil, &InvalidRefreshTokenError{err}
+		}
+		return nil, fmt.Errorf("%s (error code: %s)", response.ErrorDescription, response.Error)
+	}
+
+	if retrieveErr, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
+		if isInvalidRefreshGrant(retrieveErr.ErrorCode, retrieveErr.ErrorDescription) {
+			return nil, &InvalidRefreshTokenError{err}
+		}
+		return nil, fmt.Errorf("%s (error code: %s)", retrieveErr.ErrorDescription, retrieveErr.ErrorCode)
+	}
+	return nil, err
+}
+
+func isInvalidRefreshGrant(code, description string) bool {
+	return code == "invalid_grant" || description == "Refresh token is invalid"
 }
 
 // Challenge initiates the OAuth2 login flow for the given OAuthArgument. The

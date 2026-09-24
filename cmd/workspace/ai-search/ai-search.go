@@ -82,12 +82,9 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Flags().StringVar(&createEndpointReq.EndpointId, "endpoint-id", createEndpointReq.EndpointId, `The user-supplied short name for the Endpoint, per AIP-133.`)
 	cmd.Flags().StringVar(&createEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", createEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
 	// TODO: array: custom_tags
-	// TODO: complex arg: endpoint_status
 	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
 	cmd.Flags().IntVar(&createEndpointReq.Endpoint.ReplicaCount, "replica-count", createEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
-	// TODO: complex arg: scaling_info
 	cmd.Flags().IntVar(&createEndpointReq.Endpoint.TargetQps, "target-qps", createEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
-	// TODO: complex arg: throughput_info
 	cmd.Flags().StringVar(&createEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", createEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
 
 	cmd.Use = "create-endpoint PARENT ENDPOINT_TYPE"
@@ -189,7 +186,6 @@ func newCreateIndex() *cobra.Command {
 	// TODO: complex arg: direct_access_index_spec
 	cmd.Flags().Var(&createIndexReq.Index.IndexSubtype, "index-subtype", `The subtype of the index. Supported values: [FULL_TEXT, HYBRID, VECTOR]`)
 	cmd.Flags().StringVar(&createIndexReq.Index.Name, "name", createIndexReq.Index.Name, `Name of the AI Search index.`)
-	// TODO: complex arg: status
 
 	cmd.Use = "create-index PARENT PRIMARY_KEY INDEX_TYPE"
 	cmd.Short = `*Public Preview* Create an AI Search index.`
@@ -965,12 +961,11 @@ Synchronize an AI Search index.
 
 		syncIndexReq.Name = args[0]
 
-		response, err := w.AiSearch.SyncIndex(ctx, syncIndexReq)
+		_, err = w.AiSearch.SyncIndex(ctx, syncIndexReq)
 		if err != nil {
 			return err
 		}
-
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -1005,12 +1000,9 @@ func newUpdateEndpoint() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.BudgetPolicyId, "budget-policy-id", updateEndpointReq.Endpoint.BudgetPolicyId, `The user-selected budget policy id for the endpoint.`)
 	// TODO: array: custom_tags
-	// TODO: complex arg: endpoint_status
 	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Name of the AI Search endpoint.`)
 	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.ReplicaCount, "replica-count", updateEndpointReq.Endpoint.ReplicaCount, `The client-supplied desired number of replicas for the endpoint, applied at create/update time.`)
-	// TODO: complex arg: scaling_info
 	cmd.Flags().IntVar(&updateEndpointReq.Endpoint.TargetQps, "target-qps", updateEndpointReq.Endpoint.TargetQps, `Target QPS for the endpoint.`)
-	// TODO: complex arg: throughput_info
 	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.UsagePolicyId, "usage-policy-id", updateEndpointReq.Endpoint.UsagePolicyId, `The usage policy id applied to the endpoint.`)
 
 	cmd.Use = "update-endpoint NAME UPDATE_MASK ENDPOINT_TYPE"

@@ -5,20 +5,76 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
+	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestInitForApplyHydratesOnlySensitiveFieldsIntoCache(t *testing.T) {
+	const yml = `
+resources:
+  secrets:
+    my_secret:
+      catalog_name: main
+      schema_name: schema
+      name: my_secret
+      value: resolved-secret
+      comment: current-comment
+`
+	root, diags := config.LoadFromBytes("databricks.yml", []byte(yml))
+	require.Empty(t, diags)
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	redacted := &catalog.Secret{
+		CatalogName:    "main",
+		SchemaName:     "schema",
+		Name:           "my_secret",
+		Value:          sensitiveRedactedValue,
+		Comment:        "plan-comment",
+		EffectiveValue: sensitiveRedactedValue,
+	}
+	newState, err := structvar.NewStructVar(redacted, nil).ToJSON()
+	require.NoError(t, err)
+	originalPlanState := bytes.Clone(newState.Value)
+	plan := deployplan.NewPlanDirect()
+	const resourceKey = "resources.secrets.my_secret"
+	plan.Plan[resourceKey] = &deployplan.PlanEntry{
+		Action:   deployplan.Create,
+		NewState: newState,
+	}
+	b := &DeploymentBundle{Config: root, Adapters: adapters}
+	require.NoError(t, b.StateDB.Open(
+		t.Context(), t.TempDir()+"/resources.json", dstate.WithRecovery(false),
+		dstate.WithWrite(true), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{},
+	))
+
+	require.NoError(t, b.InitForApply(t.Context(), nil, plan))
+
+	cached, ok := b.StateCache.Load(resourceKey)
+	require.True(t, ok)
+	state, ok := cached.Value.(*catalog.Secret)
+	require.True(t, ok)
+	assert.Equal(t, "resolved-secret", state.Value)
+	assert.Equal(t, "plan-comment", state.Comment)
+	assert.Equal(t, sensitiveRedactedValue, state.EffectiveValue)
+	assert.Equal(t, string(originalPlanState), string(plan.Plan[resourceKey].NewState.Value))
+	planState, err := plan.Plan[resourceKey].NewState.ToStructVar(adapters["secrets"].StateType())
+	require.NoError(t, err)
+	assert.Equal(t, sensitiveRedactedValue, planState.Value.(*catalog.Secret).Value)
+}
 
 func TestDynPathToStructPath(t *testing.T) {
 	tests := []struct {
@@ -417,7 +473,7 @@ func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
 }
 
 // A run that has not stopped yet may still succeed, so the plan leaves it
-// alone rather than recreating it. Skip does not resume an abandoned wait.
+// alone rather than recreating it. Apply resumes the wait on the existing run.
 func TestJobRunInProgressIsSkip(t *testing.T) {
 	for _, lifeCycleState := range []jobs.RunLifeCycleState{
 		jobs.RunLifeCycleStatePending,

@@ -162,6 +162,51 @@ func TestMaxClients(t *testing.T) {
 	}
 }
 
+func TestConcurrentMaxClients(t *testing.T) {
+	server := createTestServer(t, 1, time.Hour)
+	defer server.Close()
+
+	const attemptCount = 64
+	dialCtx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
+	defer cancel()
+	start := make(chan struct{})
+	type result struct {
+		conn *websocket.Conn
+		err  error
+	}
+	results := make(chan result, attemptCount)
+	var wg sync.WaitGroup
+	for i := range attemptCount {
+		wg.Go(func() {
+			<-start
+			url := fmt.Sprintf("ws%s?id=connection-%d", server.URL[4:], i)
+			conn, response, err := websocket.DefaultDialer.DialContext(dialCtx, url, nil) // nolint:bodyclose
+			if response != nil && response.Body != nil {
+				response.Body.Close()
+			}
+			results <- result{conn: conn, err: err}
+		})
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+
+	var admitted *websocket.Conn
+	admittedCount := 0
+	for result := range results {
+		if result.err == nil {
+			admittedCount++
+			admitted = result.conn
+			continue
+		}
+		assert.Error(t, result.err)
+	}
+	if admitted != nil {
+		defer admitted.Close()
+	}
+	assert.Equal(t, 1, admittedCount)
+}
+
 func TestHandover(t *testing.T) {
 	t.Run("without keepalive", func(t *testing.T) {
 		runHandoverExchange(t, time.Hour)

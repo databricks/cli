@@ -1,36 +1,3 @@
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
-{
-  "experimental": {
-    "python": {
-      "mutators": [
-        "mutators:update_pipeline"
-      ],
-      "resources": [
-        "resources:load_resources"
-      ]
-    }
-  },
-  "resources": {
-    "pipelines": {
-      "my_pipeline_1": {
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "name": "My Pipeline 1 (updated)"
-      },
-      "my_pipeline_2": {
-        "channel": "CURRENT",
-        "deployment": {
-          "kind": "BUNDLE",
-          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
-        },
-        "edition": "ADVANCED",
-        "name": "My Pipeline 2 (updated)"
-      }
-    }
-  }
-}
+Exit code: 5

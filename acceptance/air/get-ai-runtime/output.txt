@@ -27,7 +27,7 @@
 │  MLflow Run    my-run                                          │
 │  User          user@example.com                                │
 │  Accelerators  1x A10                                          │
-│  Environment   4                                               │
+│  Environment   workspace-base-environments/databricks_ai_v5    │
 │                                                                │
 ╰────────────────────────────────────────────────────────────────╯
 

@@ -78,11 +78,9 @@ __all__ = [
     "ModelProviderServiceConfigServiceCredentialParam",
     "ModelProviderServiceDict",
     "ModelProviderServiceParam",
-    "Privilege",
     "PrivilegeAssignment",
     "PrivilegeAssignmentDict",
     "PrivilegeAssignmentParam",
-    "PrivilegeParam",
     "RateLimit",
     "RateLimitDict",
     "RateLimitParam",
@@ -221,10 +219,6 @@ from databricks.bundles.model_provider_services._models.model_provider_service_c
     ModelProviderServiceConfigServiceCredential,
     ModelProviderServiceConfigServiceCredentialDict,
     ModelProviderServiceConfigServiceCredentialParam,
-)
-from databricks.bundles.model_provider_services._models.privilege import (
-    Privilege,
-    PrivilegeParam,
 )
 from databricks.bundles.model_provider_services._models.privilege_assignment import (
     PrivilegeAssignment,

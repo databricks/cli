@@ -424,11 +424,9 @@ type PluginUpdate struct {
 	Version string
 }
 
-// UpdateInstalledPlugins runs the plugin update for every plugin recorded in the
-// given scope's state, bumping each record's version to ref. A plugin that can't
-// be updated (CLI missing, etc.) is skipped with a warning, never failed, to
-// keep the non-interactive update prompt-free and exit-0 on partial success.
-func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpdate, error) {
+// UpdateInstalledPlugins updates every plugin recorded in the scope and
+// persists the authoritative version reported by the agent manifest.
+func UpdateInstalledPlugins(ctx context.Context, scope string) ([]PluginUpdate, error) {
 	dir, err := skillsDir(ctx, scope)
 	if err != nil {
 		return nil, err
@@ -441,7 +439,6 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 		return nil, nil
 	}
 
-	version := DisplaySkillsVersion(ref)
 	var updated []PluginUpdate
 	for _, name := range slices.Sorted(maps.Keys(state.Plugins)) {
 		agent := agents.ByName(name)
@@ -454,6 +451,7 @@ func UpdateInstalledPlugins(ctx context.Context, scope, ref string) ([]PluginUpd
 			log.Warnf(ctx, "Skipped %s: %v", agent.DisplayName, err)
 			continue
 		}
+		version, _ := agent.DatabricksPluginVersionForScope(ctx, rec.Scope)
 		rec.Version = version
 		state.Plugins[name] = rec
 		updated = append(updated, PluginUpdate{Agent: agent.DisplayName, Version: version})

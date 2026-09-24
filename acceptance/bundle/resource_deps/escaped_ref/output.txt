@@ -1,70 +1,13 @@
 
-=== depends_on: only the real reference creates an edge
->>> jq .plan | map_values(.depends_on) plan.json
-{
-  "resources.jobs.bar": null,
-  "resources.jobs.foo": [
-    {
-      "node": "resources.jobs.bar",
-      "label": "${resources.jobs.bar.id}"
-    }
-  ]
-}
+=== depends_on: only the real reference creates an edgeTraceback (most recent call last):
+  File "[TESTROOT]/bin/nostamp.py", line 79, in <module>
+    main()
+    ~~~~^^
+  File "[TESTROOT]/bin/nostamp.py", line 74, in main
+    data, idx = decoder.raw_decode(text, idx)
+                ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/zhu/.local/share/uv/python/cpython-3.13.3-macos-aarch64-none/lib/python3.13/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 2 column 1 (char 1)
 
-=== Payload: escaped stays literal, real is resolved
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.bar
-Created jobs.foo
-Files: 4 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_requests.py //jobs --sort --nostamp
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job bar",
-    "queue": {
-      "enabled": true
-    }
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job foo",
-    "queue": {
-      "enabled": true
-    },
-    "tasks": [
-      {
-        "notebook_task": {
-          "base_parameters": {
-            "escaped": "${resources.jobs.bar.id}",
-            "mixed": "${runtime} [NUMID]",
-            "real": "[NUMID]",
-            "same_name": "${resources.jobs.bar.id} [NUMID]"
-          },
-          "notebook_path": "/notebook",
-          "source": "WORKSPACE"
-        },
-        "task_key": "job_task"
-      }
-    ]
-  }
-}
+Exit code: 1

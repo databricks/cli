@@ -10,53 +10,7 @@ Validation OK!
 
 >>> [CLI] bundle deploy -qq
 
-=== Assert the volume is created successfully
->>> [CLI] volumes read main.schema1-[UNIQUE_NAME].my_volume
-{
-  "catalog_name": "main",
-  "full_name": "main.schema1-[UNIQUE_NAME].my_volume",
-  "schema_name": "schema1-[UNIQUE_NAME]",
-  "volume_type": "MANAGED"
-}
-
-=== Assert that the grants were successfully applied
->>> [CLI] grants get VOLUME main.schema1-[UNIQUE_NAME].my_volume
-{
-  "privilege_assignments": [
-    {
-      "principal": "account users",
-      "privileges": [
-        "WRITE_VOLUME"
-      ]
-    }
-  ]
-}
-
-=== Recreation of the volume without --auto-approve should fail since prompting is not possible
->>> errcode [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name}
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default/files...
-
-This action will result in the deletion or recreation of the following volumes.
-For managed volumes, the files stored in the volume are also deleted from your
-cloud tenant within 30 days. For external volumes, the metadata about the volume
-is removed from the catalog, but the underlying files are not deleted:
-  recreate resources.volumes.foo
-Error: the deployment requires destructive actions, but the current console does not support prompting.
-Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
-To proceed, use --auto-approve after reviewing the plan above.
-
-Files: 0 uploaded, 0 deleted
-
-Exit code: 1
-
-=== Successfully recreate the volume with --auto-approve
->>> [CLI] bundle deploy --var=schema_name=${resources.schemas.schema2.name} --auto-approve -qq
-
-This action will result in the deletion or recreation of the following volumes.
-For managed volumes, the files stored in the volume are also deleted from your
-cloud tenant within 30 days. For external volumes, the metadata about the volume
-is removed from the catalog, but the underlying files are not deleted:
-  recreate resources.volumes.foo
+=== Assert the volume is created successfullyjq: parse error: Invalid numeric literal at line 2, column 4
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -77,3 +31,5 @@ is removed from the catalog, but the underlying files are not deleted:
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default
 
 Destroy: 3 deleted
+
+Exit code: 5

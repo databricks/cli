@@ -1,11 +1,12 @@
 package labs
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/cmd/labs/project"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/spf13/cobra"
 )
 
@@ -34,7 +35,7 @@ func newShowCommand() *cobra.Command {
 				return err
 			}
 			if len(installed) == 0 {
-				return errors.New("no projects found")
+				return fmt.Errorf("labs project %q not found: %w", args[0], apierr.ErrNotFound)
 			}
 			name := args[0]
 			for _, v := range installed {
@@ -52,7 +53,7 @@ func newShowCommand() *cobra.Command {
 					"is_python":   v.IsPythonProject(),
 				})
 			}
-			return nil
+			return fmt.Errorf("labs project %q not found: %w", name, apierr.ErrNotFound)
 		},
 	}
 }

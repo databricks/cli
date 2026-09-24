@@ -9,8 +9,6 @@ __all__ = [
     "CatalogGrant",
     "CatalogGrantDict",
     "CatalogGrantParam",
-    "CatalogGrantPrivilege",
-    "CatalogGrantPrivilegeParam",
     "CatalogParam",
     "EncryptionSettings",
     "EncryptionSettingsDict",
@@ -18,11 +16,9 @@ __all__ = [
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
-    "Privilege",
     "PrivilegeAssignment",
     "PrivilegeAssignmentDict",
     "PrivilegeAssignmentParam",
-    "PrivilegeParam",
 ]
 
 
@@ -46,7 +42,6 @@ from databricks.bundles.catalogs._models.lifecycle import (
     LifecycleDict,
     LifecycleParam,
 )
-from databricks.bundles.catalogs._models.privilege import Privilege, PrivilegeParam
 from databricks.bundles.catalogs._models.privilege_assignment import (
     PrivilegeAssignment,
     PrivilegeAssignmentDict,
@@ -56,5 +51,3 @@ from databricks.bundles.catalogs._models.privilege_assignment import (
 CatalogGrant = PrivilegeAssignment
 CatalogGrantDict = PrivilegeAssignmentDict
 CatalogGrantParam = PrivilegeAssignmentParam
-CatalogGrantPrivilege = Privilege
-CatalogGrantPrivilegeParam = PrivilegeParam

@@ -270,7 +270,8 @@ type jobsScanStrategy struct {
 	host        string
 	workspaceID int64
 
-	scanned int
+	scanned       int
+	truncatedScan bool
 }
 
 func newJobsScanStrategy(ctx context.Context, w *databricks.WorkspaceClient, q listQuery) *jobsScanStrategy {
@@ -312,6 +313,9 @@ func (s *jobsScanStrategy) next(want int) ([]listedRun, error) {
 		}
 		entries = append(entries, listedRun{row: buildListRow(run, s.host, s.workspaceID), runID: run.RunId, taskRunID: taskRunID(run)})
 	}
+	if s.scanned >= maxListScan {
+		s.truncatedScan = s.iter.HasNext(s.ctx)
+	}
 	return entries, nil
 }
 
@@ -320,7 +324,7 @@ func (s *jobsScanStrategy) done() bool {
 }
 
 func (s *jobsScanStrategy) truncated() bool {
-	return s.scanned >= maxListScan
+	return s.truncatedScan
 }
 
 // warnIfTruncated logs when a scan hit its safety cap, so one-shot output signals

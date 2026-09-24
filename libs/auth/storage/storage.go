@@ -8,6 +8,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 
 	"golang.org/x/oauth2"
@@ -28,16 +29,26 @@ type Entry struct {
 	Token *oauth2.Token
 }
 
-// Store is the CLI's token-storage abstraction: a key/value store with no
-// policy of its own. Implementations are the plaintext file cache and the OS
-// keyring and in-memory stores. The entry schema can evolve with additive
-// metadata without changing the Store interface.
+// Store provides read-only access to the token store and coordinates
+// mutations through WithLock. Implementations must not expose mutable
+// operations directly.
 type Store interface {
-	// Put writes e under key, replacing any existing entry.
-	Put(key string, e Entry) error
-
 	// Lookup returns the entry stored under key, or ErrNotFound.
 	Lookup(key string) (Entry, error)
+
+	// WithLock runs fn while holding the store's transaction lock. The
+	// callback owns no lock-release operation; WithLock releases the lock
+	// after fn returns, including when fn returns an error.
+	WithLock(ctx context.Context, fn func(LockedStore) error) error
+}
+
+// LockedStore exposes token mutations only while a Store transaction is held.
+type LockedStore interface {
+	// Lookup returns the entry stored under key, or ErrNotFound.
+	Lookup(key string) (Entry, error)
+
+	// Put writes e under key, replacing any existing entry.
+	Put(key string, e Entry) error
 
 	// Delete removes the entry under key. Deleting a missing entry is not an
 	// error.

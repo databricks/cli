@@ -19,10 +19,10 @@ invariant_verify_no_drift
 # applied as an update that converges -- a field the config stops declaring must be sent as its zero
 # value, not silently dropped from the request (which either fails or drifts forever). Runs only on the
 # non-READPLAN variant (the saved-plan path is orthogonal) and only for configs that tag a field.
-# `# CANNOT_REMOVE` documents a field whose removal is broken and is deliberately kept; the marker is
-# matched with its `# ` prefix so neither it nor prose mentioning the marker is stripped.
-if [[ -z "$READPLAN" ]] && grep -q '# CAN_REMOVE' databricks.yml; then
-    grep -v '# CAN_REMOVE' databricks.yml > databricks.yml.new
+# `# CANNOT_REMOVE` documents a field whose removal is broken and is deliberately kept. Only the
+# documented trailing tag matches, so neither it nor prose mentioning the marker is stripped.
+if [[ -z "$READPLAN" ]] && grep -q '# CAN_REMOVE$' databricks.yml; then
+    grep -v '# CAN_REMOVE$' databricks.yml > databricks.yml.new
     mv databricks.yml.new databricks.yml
     cp databricks.yml LOG.config.removed
 

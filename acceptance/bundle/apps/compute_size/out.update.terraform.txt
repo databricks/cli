@@ -16,8 +16,12 @@ update API instead.
 Files: 3 uploaded, 0 deleted
 
 Exit code: 1
+jq: parse error: Invalid numeric literal at line 2, column 4
 
->>> [CLI] apps get app-[UNIQUE_NAME]
-{
-  "compute_size": "LARGE"
-}
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.my_app
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/app-compute-size-[UNIQUE_NAME]
+
+Destroy: 1 deleted
