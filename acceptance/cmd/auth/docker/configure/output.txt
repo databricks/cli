@@ -113,3 +113,20 @@ Configured Docker credential helper for [NUMID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
 No requests sent
+
+=== Explicit --region resolves a missing workspace ID
+
+>>> databricks auth docker configure docker-test --region us-west-2
+Flag --region has been deprecated, --region will be fully removed in the next release
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+
+>>> print_requests.py --get //api
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me",
+  "q": {
+    "excludedAttributes": "entitlements"
+  }
+}

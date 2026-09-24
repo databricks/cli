@@ -1,6 +1,10 @@
 setup_docker_auth
 export DOCKER_CONFIG="$HOME/docker"
 
+configure_with_whitespace_region() {
+    musterr "$CLI" auth docker configure docker-test --region='   '
+}
+
 cat >> "$HOME/.databrickscfg" <<ENDCFG
 
 [unsupported-host]
@@ -11,17 +15,44 @@ auth_type = databricks-cli
 host = $DATABRICKS_HOST_ORIG
 auth_type = databricks-cli
 workspace_id = 900800700600
+
+[pat]
+host = $DATABRICKS_HOST_ORIG
+auth_type = pat
+workspace_id = 111222333
+
+[m2m]
+host = $DATABRICKS_HOST_ORIG
+client_id = client-id
+client_secret = client-secret
+workspace_id = 222333444
+
+[blank-auth]
+host = $DATABRICKS_HOST_ORIG
+workspace_id = 333444555
 ENDCFG
 cp "$HOME/.databrickscfg" "$HOME/databrickscfg.before"
 
-title "Unsupported flag\n"
+title "Unsupported inherited flags\n"
+trace musterr $CLI auth docker configure docker-test --host https://other.cloud.databricks.test
+trace musterr $CLI auth docker configure docker-test --account-id 00000000-0000-0000-0000-000000000000
 trace musterr $CLI auth docker configure docker-test --workspace-id 900800700600
 
 title "Profile argument and flag\n"
 trace musterr $CLI auth docker configure docker-test --profile docker-test
 
+title "Invalid explicit region\n"
+trace musterr $CLI auth docker configure docker-test --region=
+trace configure_with_whitespace_region
+trace musterr $CLI auth docker configure docker-test --region=invalid_region
+
 title "Unsupported workspace host\n"
 trace musterr $CLI auth docker configure unsupported-host
+
+title "Unsupported authentication profiles\n"
+trace musterr $CLI auth docker configure pat
+trace musterr $CLI auth docker configure m2m
+trace musterr $CLI auth docker configure blank-auth
 
 title "Another profile already maps to the workspace\n"
 trace musterr $CLI auth docker configure docker-test
