@@ -24,6 +24,12 @@ json.plan.resources.instance_pools.pool.new_state.value.idle_instance_autotermin
 json.plan.resources.instance_pools.pool.new_state.value.instance_pool_name = "My Pool";
 json.plan.resources.instance_pools.pool.new_state.value.node_type_id = "Standard_DS3_v2";
 
+=== Plan does not commit state change, terraform stays
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
 === Deploy commits the migration and creates the direct-only resource
 >>> [CLI] bundle deploy
 Migrated 1 resource to direct deployment engine.

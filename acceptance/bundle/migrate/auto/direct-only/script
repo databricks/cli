@@ -11,6 +11,9 @@ trace update_file.py databricks.yml "name: test-bundle" $'name: test-bundle\n  e
 title "Plan runs on the direct engine (state migrated in memory), so the direct-only resource is planned"
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | gron.py | grep instance_pools
+title "Plan does not commit state change, terraform stays"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
 
 title "Deploy commits the migration and creates the direct-only resource"
 trace $CLI bundle deploy
