@@ -5,8 +5,27 @@
 === Update: adding a library does not restart the running cluster
 >>> print_requests.py //clusters/restart
 
-=== Delete: removing all libraries does not restart the running cluster
->>> print_requests.py //clusters/restart
+=== Delete: emptying the libraries list uninstalls them without restarting the running cluster
+>>> print_requests.py //libraries/uninstall //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[UUID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      },
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

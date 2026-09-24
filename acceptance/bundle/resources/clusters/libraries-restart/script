@@ -24,14 +24,16 @@ $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.update
 cat LOG.update | contains.py "Updated clusters.mycluster" > /dev/null
 trace print_requests.py //clusters/restart
 
-title "Delete: removing all libraries does not restart the running cluster"
+# An empty list keeps the libraries managed, so it uninstalls them; dropping the section would leave them unmanaged.
+title "Delete: emptying the libraries list uninstalls them without restarting the running cluster"
 update_file.py databricks.yml "      libraries:
         - pypi:
             package: requests
         - pypi:
             package: six
-" ""
+" "      libraries: []
+"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.remove
 cat LOG.remove | contains.py "Updated clusters.mycluster" > /dev/null
-trace print_requests.py //clusters/restart
+trace print_requests.py //libraries/uninstall //clusters/restart
