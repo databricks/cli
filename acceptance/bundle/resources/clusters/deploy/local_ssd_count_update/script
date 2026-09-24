@@ -1,0 +1,14 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Adding local_ssd_count: 0 to an existing cluster is detected as an update\n"
+update_file.py databricks.yml "zone_id: auto" $'zone_id: auto\n        local_ssd_count: 0'
+trace $CLI bundle plan
+trace $CLI bundle deploy
+
+trace print_requests.py //clusters/edit

@@ -484,7 +484,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
+		} else if allEmptyChange(ch) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmpty
 		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
@@ -830,6 +830,29 @@ func allEmpty(values ...any) bool {
 
 	}
 	return true
+}
+
+// allEmptyChange reports whether a change is a no-op. ch.Old and ch.Remote are checked with the
+// permissive allEmpty (a zero-ish backend echo for a field nobody asked to change is still empty),
+// but ch.New is checked more strictly: a concrete scalar zero there already survived the
+// ForceSendFields-aware nil substitution in structdiff, so it is a real, explicitly force-sent
+// value (e.g. gcp_attributes.local_ssd_count: 0), not an unset field, and must not be skipped.
+func allEmptyChange(ch *deployplan.ChangeDesc) bool {
+	if !allEmpty(ch.Old, ch.Remote) {
+		return false
+	}
+	if ch.New == nil {
+		return true
+	}
+	rv := reflect.ValueOf(ch.New)
+	switch rv.Kind() {
+	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+		reflect.Float32, reflect.Float64:
+		return false
+	default:
+		return isEmpty(rv)
+	}
 }
 
 func isEmpty(rv reflect.Value) bool {

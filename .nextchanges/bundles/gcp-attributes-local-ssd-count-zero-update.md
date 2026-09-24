@@ -1,0 +1,1 @@
+* Direct engine no longer silently drops an update that sets an explicit zero on a scalar field left unset by a previous deploy (e.g. `gcp_attributes.local_ssd_count`), when the remote API doesn't echo a value back for it ([#6825](https://github.com/databricks/cli/pull/6825)).

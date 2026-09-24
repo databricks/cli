@@ -1,0 +1,46 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-local-ssd-count-update/default/files...
+Created clusters.test_cluster
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Adding local_ssd_count: 0 to an existing cluster is detected as an update
+
+>>> [CLI] bundle plan
+update clusters.test_cluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-local-ssd-count-update/default/files...
+Updated clusters.test_cluster
+Files: 1 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //clusters/edit
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/edit",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_id": "[UUID]",
+    "cluster_name": "test-cluster-1",
+    "gcp_attributes": {
+      "availability": "PREEMPTIBLE_GCP",
+      "local_ssd_count": 0,
+      "zone_id": "auto"
+    },
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 1,
+    "spark_version": "13.3.x-scala2.12"
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-deploy-cluster-local-ssd-count-update/default
+
+Destroy: 1 deleted
