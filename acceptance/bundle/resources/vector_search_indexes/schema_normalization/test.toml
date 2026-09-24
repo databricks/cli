@@ -1,3 +1,4 @@
+RecordRequests = false
 # The assertion here is that the *backend* rewrites schema_json into Spark type names, which
 # the test server only mimics, so the cloud run is the one that matters -- see #6352, which
 # removed the superfluous Cloud = false. Inheriting CloudSlow = true left it nightly-only at
