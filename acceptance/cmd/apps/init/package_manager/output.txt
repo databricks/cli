@@ -5,7 +5,7 @@
 ✔ Project created successfully!
 
   Location: [TEST_TMP_DIR]/test-app-pnpm
-  Files: 2
+  Files: 4
 
   Next steps:
 
@@ -19,6 +19,16 @@ command:
   - "pnpm"
   - "run"
   - "start"
+=== test-app-pnpm/package.json ===
+{
+  "build": "pnpm run build",
+  "dev": "vite dev",
+  "lint": "eslint ."
+}
+"pnpm@11.0.8"
+{
+  "lodash": "4.17.21"
+}
 
 >>> [CLI] apps init --name test-app-npm --package-manager npm --skip-install
 ✔ Creating project
@@ -26,7 +36,7 @@ command:
 ✔ Project created successfully!
 
   Location: [TEST_TMP_DIR]/test-app-npm
-  Files: 2
+  Files: 4
 
   Next steps:
 
@@ -40,3 +50,13 @@ command:
   - "npm"
   - "run"
   - "start"
+=== test-app-npm/package.json ===
+{
+  "build": "npm run build",
+  "dev": "vite dev",
+  "lint": "eslint ."
+}
+"npm@10.9.2"
+{
+  "lodash": "4.17.21"
+}

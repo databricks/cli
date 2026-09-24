@@ -6,8 +6,14 @@ trace $CLI apps init --name test-app-pnpm --skip-install
 echo "=== test-app-pnpm/app.yaml ==="
 cat test-app-pnpm/app.yaml
 
+echo "=== test-app-pnpm/package.json ==="
+jq '.scripts, .packageManager, .overrides' test-app-pnpm/package.json
+
 # Test explicit npm package manager
 trace $CLI apps init --name test-app-npm --package-manager npm --skip-install
 
 echo "=== test-app-npm/app.yaml ==="
 cat test-app-npm/app.yaml
+
+echo "=== test-app-npm/package.json ==="
+jq '.scripts, .packageManager, .overrides' test-app-npm/package.json
