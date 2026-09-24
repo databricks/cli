@@ -838,22 +838,22 @@ func findProjectSrcDir(templateDir string) string {
 	return templateDir
 }
 
-// startBackgroundNpmInstall copies the package files from the template into
-// destDir and launches `npm ci` in the background. The caller should await
+// startBackgroundInstall copies the package files from the template into
+// destDir and launches the package manager install in the background. The caller should await
 // the returned channel BEFORE writing other files to destDir to prevent
 // concurrent writes. Returns nil if the template is not a Node.js project
-// or npm is not available.
+// or the package manager is not available.
 //
 // IMPORTANT: All reads from srcProjectDir happen synchronously before the
 // goroutine launches. The template directory may be cleaned up after this
 // function returns, so file reads must not be deferred to the goroutine.
-func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, projectName string) <-chan error {
-	lockFile := filepath.Join(srcProjectDir, "package-lock.json")
+func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, projectName string, m pkgmanager.Manager) <-chan error {
+	lockFile := filepath.Join(srcProjectDir, m.LockfileName)
 	if _, err := os.Stat(lockFile); err != nil {
 		return nil
 	}
 
-	if _, err := exec.LookPath("npm"); err != nil {
+	if _, err := exec.LookPath(m.Name); err != nil {
 		return nil
 	}
 
@@ -903,27 +903,27 @@ func startBackgroundNpmInstall(ctx context.Context, srcProjectDir, destDir, proj
 		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
 	}
 
-	// Copy package-lock.json raw (never has template vars).
+	// Copy lockfile raw (never has template vars).
 	lockData, err := os.ReadFile(lockFile)
 	if err != nil {
-		log.Warnf(ctx, "Failed to read package-lock.json: %v, skipping background npm install", err)
+		log.Warnf(ctx, "Failed to read %s: %v, skipping background install", m.LockfileName, err)
 		return nil
 	}
-	if err := os.WriteFile(filepath.Join(destDir, "package-lock.json"), lockData, 0o644); err != nil {
-		log.Warnf(ctx, "Failed to write package-lock.json: %v, skipping background npm install", err)
+	if err := os.WriteFile(filepath.Join(destDir, m.LockfileName), lockData, 0o644); err != nil {
+		log.Warnf(ctx, "Failed to write %s: %v, skipping background install", m.LockfileName, err)
 		return nil
 	}
 
 	ch := make(chan error, 1)
 	go func() {
-		cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
+		cmd := exec.CommandContext(ctx, m.Name, m.InstallArgs...)
 		cmd.Dir = destDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
 		ch <- cmd.Run()
 	}()
 
-	log.Debugf(ctx, "Started background npm install in %s", destDir)
+	log.Debugf(ctx, "Started background install in %s", destDir)
 	return ch
 }
 
@@ -962,9 +962,9 @@ func copyFileDeps(ctx context.Context, pkgJSON []byte, srcDir, destDir string) {
 	}
 }
 
-// awaitBackgroundNpmInstall waits for the background npm install to complete.
+// awaitBackgroundInstall waits for the background install to complete.
 // Shows an instant checkmark if already done, or a spinner for the remainder.
-func awaitBackgroundNpmInstall(ctx context.Context, ch <-chan error) error {
+func awaitBackgroundInstall(ctx context.Context, ch <-chan error) error {
 	select {
 	case err := <-ch:
 		if err == nil {
@@ -1194,13 +1194,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		cmdio.LogString(ctx, "Note: agentic mode active — resource validation skipped.")
 	}
 
-	// Start npm install in the background so it runs while the user answers prompts.
+	// Start install in the background so it runs while the user answers prompts.
 	// This is a Node.js-only optimisation — non-Node templates skip this.
 	// Honour --skip-install by not kicking off the background install at all.
 	srcProjectDir := findProjectSrcDir(templateDir)
 	var npmInstallCh <-chan error
 	if !opts.skipInstall {
-		npmInstallCh = startBackgroundNpmInstall(ctx, srcProjectDir, destDir, opts.name)
+		npmInstallCh = startBackgroundInstall(ctx, srcProjectDir, destDir, opts.name, selectedManager)
 	}
 
 	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
@@ -1437,13 +1437,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		Plugins:        plugins,
 	}
 
-	// Await background npm install BEFORE copying the template so there are
-	// no concurrent writes to destDir. npm ci ran with the raw lock file; the
-	// dependency tree is determined entirely by package-lock.json which has no
+	// Await background install BEFORE copying the template so there are
+	// no concurrent writes to destDir. The install ran with the raw lock file; the
+	// dependency tree is determined entirely by the lockfile which has no
 	// template variables, so the installed node_modules is valid.
 	if npmInstallCh != nil {
-		if err := awaitBackgroundNpmInstall(ctx, npmInstallCh); err != nil {
-			log.Warnf(ctx, "Background npm install failed: %v, will retry during project initialization", err)
+		if err := awaitBackgroundInstall(ctx, npmInstallCh); err != nil {
+			log.Warnf(ctx, "Background install failed: %v, will retry during project initialization", err)
 			os.RemoveAll(filepath.Join(destDir, "node_modules"))
 		}
 	}
@@ -1485,7 +1485,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// With --skip-install we bypass Initialize entirely and instead prepend
 	// the install command to NextSteps so the user knows to install first.
 	var nextStepsCmd string
-	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
+	projectInitializer := initializer.GetProjectInitializer(absOutputDir, selectedManager)
 	if projectInitializer != nil {
 		if opts.skipInstall {
 			nextStepsCmd = prependInstall(projectInitializer.InstallCommand(), projectInitializer.NextSteps())

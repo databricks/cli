@@ -24,11 +24,12 @@ const (
 
 // Manager represents a package manager with its properties.
 type Manager struct {
-	Name                string // e.g., "npm", "pnpm"
-	InstallCommand      string // e.g., "npm ci", "pnpm install --frozen-lockfile"
-	LockfileName        string // e.g., "package-lock.json", "pnpm-lock.yaml"
-	WorkspaceConfigName string // pnpm-workspace.yaml for pnpm, unused for npm
-	Pin                 string // pinned version written to package.json's "packageManager", format "name@version"
+	Name                string   // e.g., "npm", "pnpm"
+	InstallCommand      string   // e.g., "npm ci", "pnpm install --frozen-lockfile"
+	InstallArgs         []string // exec args after the binary name (e.g., ["ci", "--no-audit", ...])
+	LockfileName        string   // e.g., "package-lock.json", "pnpm-lock.yaml"
+	WorkspaceConfigName string   // pnpm-workspace.yaml for pnpm, unused for npm
+	Pin                 string   // pinned version written to package.json's "packageManager", format "name@version"
 }
 
 // managers is the internal registry of supported package managers.
@@ -36,6 +37,7 @@ var managers = map[string]Manager{
 	"pnpm": {
 		Name:                "pnpm",
 		InstallCommand:      "pnpm install --frozen-lockfile",
+		InstallArgs:         []string{"install", "--frozen-lockfile"},
 		LockfileName:        "pnpm-lock.yaml",
 		WorkspaceConfigName: "pnpm-workspace.yaml",
 		Pin:                 pnpmPin,
@@ -43,6 +45,7 @@ var managers = map[string]Manager{
 	"npm": {
 		Name:                "npm",
 		InstallCommand:      "npm ci",
+		InstallArgs:         []string{"ci", "--no-audit", "--no-fund", "--prefer-offline"},
 		LockfileName:        "package-lock.json",
 		WorkspaceConfigName: "",
 		Pin:                 npmPin,

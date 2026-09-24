@@ -10,7 +10,7 @@
   Next steps:
 
     cd test-app-pnpm
-    npm ci && npm run dev
+    pnpm install --frozen-lockfile && pnpm run dev
 
 === test-app-pnpm/app.yaml ===
 display_name: "test-app-pnpm"
