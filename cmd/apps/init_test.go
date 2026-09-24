@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/apps/pkgmanager"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -91,8 +92,9 @@ func testVars() templateVars {
 			Content: "WH_ID=abc123",
 			Example: "WH_ID=your_sql_warehouse_id",
 		},
-		AppEnv:  "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
-		Plugins: map[string]*pluginVar{"analytics": {}},
+		AppEnv:         "- name: SQL_WAREHOUSE_ID\n  valueFrom: sql_warehouse",
+		PackageManager: "pnpm",
+		Plugins:        map[string]*pluginVar{"analytics": {}},
 	}
 }
 
@@ -242,6 +244,29 @@ func TestExecuteTemplateNewKeys(t *testing.T) {
 			result, err := executeTemplate(ctx, "test.txt", []byte(tt.input), vars)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, string(result))
+		})
+	}
+}
+
+func TestPackageManagerTemplateVariable(t *testing.T) {
+	ctx := t.Context()
+	tests := []struct {
+		name           string
+		packageManager string
+	}{
+		{"pnpm", "pnpm"},
+		{"npm", "npm"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vars := testVars()
+			vars.PackageManager = tt.packageManager
+			input := "['{{.packageManager}}', 'run', 'start']"
+			result, err := executeTemplate(ctx, "test.yaml", []byte(input), vars)
+			require.NoError(t, err)
+			expected := "['" + tt.packageManager + "', 'run', 'start']"
+			assert.Equal(t, expected, string(result))
 		})
 	}
 }
@@ -1143,9 +1168,10 @@ func TestRunCreate_NameDotAndOutputDirAreMutuallyExclusive(t *testing.T) {
 
 	ctx := cmdio.MockDiscard(t.Context())
 	err := runCreate(ctx, createOptions{
-		name:         prompt.InPlaceName,
-		nameProvided: true,
-		outputDir:    "elsewhere",
+		name:           prompt.InPlaceName,
+		nameProvided:   true,
+		outputDir:      "elsewhere",
+		packageManager: "pnpm",
 	})
 	require.Error(t, err)
 	assert.ErrorIs(t, err, prompt.ErrNameDotWithOutputDir)
@@ -1156,10 +1182,11 @@ func TestRunCreate_SkipInstallRejectsRun(t *testing.T) {
 	for _, runMode := range []string{"dev", "dev-remote"} {
 		t.Run(runMode, func(t *testing.T) {
 			err := runCreate(ctx, createOptions{
-				name:         "my-app",
-				nameProvided: true,
-				skipInstall:  true,
-				run:          runMode,
+				name:           "my-app",
+				nameProvided:   true,
+				skipInstall:    true,
+				run:            runMode,
+				packageManager: "pnpm",
 			})
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "--skip-install cannot be combined with --run")
@@ -1456,4 +1483,31 @@ func TestSetFirstAppNameNoResources(t *testing.T) {
 	bundleName := yamlMapLookup(yamlMapLookup(doc.Content[0], "bundle"), "name")
 	require.NotNil(t, bundleName)
 	assert.Equal(t, "myapp", bundleName.Value)
+}
+
+func TestPackageManagerValidation(t *testing.T) {
+	tests := []struct {
+		name           string
+		packageManager string
+		shouldError    bool
+		errorMsg       string
+	}{
+		{"pnpm valid", "pnpm", false, ""},
+		{"npm valid", "npm", false, ""},
+		{"unknown invalid", "unknown", true, "unknown package manager"},
+		{"empty invalid", "", true, "unknown package manager"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test the package manager resolver directly
+			_, err := pkgmanager.Resolve(tt.packageManager)
+			if tt.shouldError {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errorMsg)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

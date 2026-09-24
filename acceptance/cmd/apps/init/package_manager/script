@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Test default package manager (pnpm)
+trace $CLI apps init --name test-app-pnpm --skip-install
+
+echo "=== test-app-pnpm/app.yaml ==="
+cat test-app-pnpm/app.yaml
+
+# Test explicit npm package manager
+trace $CLI apps init --name test-app-npm --package-manager npm --skip-install
+
+echo "=== test-app-npm/app.yaml ==="
+cat test-app-npm/app.yaml

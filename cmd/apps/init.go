@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/cli/libs/apps/pkgmanager"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/clicompat"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -79,19 +80,20 @@ func normalizeVersion(version string) string {
 
 func newInitCmd() *cobra.Command {
 	var (
-		templatePath string
-		branch       string
-		version      string
-		name         string
-		warehouseID  string
-		description  string
-		outputDir    string
-		pluginsFlag  []string
-		deploy       bool
-		run          string
-		setValues    []string
-		autoApprove  bool
-		skipInstall  bool
+		templatePath   string
+		branch         string
+		version        string
+		name           string
+		warehouseID    string
+		description    string
+		outputDir      string
+		pluginsFlag    []string
+		deploy         bool
+		run            string
+		setValues      []string
+		autoApprove    bool
+		skipInstall    bool
+		packageManager string
 	)
 
 	cmd := &cobra.Command{
@@ -177,6 +179,7 @@ Environment variables:
 				setValues:      setValues,
 				autoApprove:    autoApprove,
 				skipInstall:    skipInstall,
+				packageManager: packageManager,
 			})
 		},
 	}
@@ -197,6 +200,7 @@ Environment variables:
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
 	cmd.Flags().BoolVar(&skipInstall, "skip-install", false, "Skip installing project dependencies (e.g. npm install / uv sync). Cannot be combined with --run.")
+	cmd.Flags().StringVar(&packageManager, "package-manager", pkgmanager.Default().Name, "Package manager to use (pnpm, npm)")
 
 	return cmd
 }
@@ -219,6 +223,7 @@ type createOptions struct {
 	setValues      []string // --set plugin.resourceKey.field=value pairs
 	autoApprove    bool
 	skipInstall    bool
+	packageManager string
 }
 
 // parseSetValues parses --set key=value pairs into the resourceValues map.
@@ -353,6 +358,7 @@ type templateVars struct {
 	Bundle         tmplBundle
 	DotEnv         dotEnvVars
 	AppEnv         string
+	PackageManager string
 	// Plugins maps plugin name to its metadata
 	// Missing keys return nil, enabling {{if .plugins.analytics}} conditionals.
 	Plugins map[string]*pluginVar
@@ -974,6 +980,12 @@ func awaitBackgroundNpmInstall(ctx context.Context, ch <-chan error) error {
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
+	// Validate package manager early to provide clear feedback.
+	_, err := pkgmanager.Resolve(opts.packageManager)
+	if err != nil {
+		return err
+	}
+
 	// --skip-install leaves the project without installed dependencies, so
 	// downstream `--run dev` / `--run dev-remote` would immediately fail.
 	// Reject the combination up front rather than after the scaffold runs.
@@ -1418,8 +1430,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			Content: generator.GenerateDotEnv(selectedPluginList, genConfig),
 			Example: generator.GenerateDotEnvExample(selectedPluginList),
 		},
-		AppEnv:  generator.GenerateAppEnv(selectedPluginList, genConfig),
-		Plugins: plugins,
+		AppEnv:         generator.GenerateAppEnv(selectedPluginList, genConfig),
+		PackageManager: opts.packageManager,
+		Plugins:        plugins,
 	}
 
 	// Await background npm install BEFORE copying the template so there are
@@ -1869,6 +1882,7 @@ func templateData(vars templateVars) map[string]any {
 		"projectName":    vars.ProjectName,
 		"appDescription": vars.AppDescription,
 		"workspaceHost":  vars.WorkspaceHost,
+		"packageManager": vars.PackageManager,
 		"bundle": map[string]any{
 			"variables":       vars.Bundle.Variables,
 			"resources":       vars.Bundle.Resources,
