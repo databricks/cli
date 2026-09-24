@@ -77,7 +77,7 @@ if not "%%~1"=="get" goto unsupported
 if not "%%~2"=="" goto unsupported
 set DATABRICKS_LOG_FILE=stderr
 "%s" auth docker token
-exit /b
+exit /b %%errorlevel%%
 
 :unsupported
 echo docker-credential-databricks only supports get 1>&2

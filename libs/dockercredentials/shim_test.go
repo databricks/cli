@@ -171,6 +171,41 @@ func TestWindowsShimDisablesInheritedDelayedExpansion(t *testing.T) {
 	assert.JSONEq(t, `{"Username":"oauthtoken","Secret":"secret"}`, string(out))
 }
 
+func TestWindowsShimPropagatesTokenFailure(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows command shim test")
+	}
+
+	dir := t.TempDir()
+	fakeDatabricks := filepath.Join(dir, "databricks.cmd")
+	require.NoError(t, os.WriteFile(fakeDatabricks, []byte("@echo off\r\nexit /b 42\r\n"), 0o644))
+
+	shim := filepath.Join(dir, "docker-credential-databricks.cmd")
+	require.NoError(t, os.WriteFile(shim, []byte(cmdShimScript(fakeDatabricks)), 0o644))
+
+	err := exec.Command(shim, "get").Run()
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, 42, exitErr.ExitCode())
+}
+
+func TestWindowsShimReturnsSuccessWhenTokenSucceeds(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows command shim test")
+	}
+
+	dir := t.TempDir()
+	fakeDatabricks := filepath.Join(dir, "databricks.cmd")
+	require.NoError(t, os.WriteFile(fakeDatabricks, []byte("@echo off\r\nexit /b 0\r\n"), 0o644))
+
+	shim := filepath.Join(dir, "docker-credential-databricks.cmd")
+	require.NoError(t, os.WriteFile(shim, []byte(cmdShimScript(fakeDatabricks)), 0o644))
+
+	cmd := exec.Command(shim, "get")
+	require.NoError(t, cmd.Run())
+	assert.Equal(t, 0, cmd.ProcessState.ExitCode())
+}
+
 func TestInstallShimReportsPathStatus(t *testing.T) {
 	dir := t.TempDir()
 	databricksPath := writeTestDatabricksExecutable(t, dir)
