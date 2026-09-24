@@ -58,6 +58,12 @@ type IResource interface {
 	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error)
 	DoRead(ctx context.Context, id string) (remoteState any, e error)
 
+	// [Optional] DoReadWithState is DoRead that also gets the node's local state. Planning uses it when
+	// implemented, so a resource can skip reading parts the config does not manage. Reads without a local
+	// state (deletes, the post-apply refresh for remote references) still use DoRead.
+	// Example: func (r *ResourceCluster) DoReadWithState(ctx context.Context, id string, state *ClusterState) (*ClusterRemote, error)
+	DoReadWithState(ctx context.Context, id string, state any) (remoteState any, e error)
+
 	// [Optional] DoDelete deletes the resource. The state argument is the last-persisted
 	// state for the resource; resources that don't need it should accept it as
 	// _ to satisfy the interface.
@@ -131,6 +137,7 @@ type Adapter struct {
 
 	// Optional:
 	doDelete           *calladapt.BoundCaller
+	doReadWithState    *calladapt.BoundCaller
 	prepareInputConfig *calladapt.BoundCaller
 	isEmptyState       *calladapt.BoundCaller
 	doUpdate           *calladapt.BoundCaller
@@ -171,6 +178,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		remapState:              nil,
 		doRefresh:               nil,
 		doDelete:                nil,
+		doReadWithState:         nil,
 		doCreate:                nil,
 		prepareInputConfig:      nil,
 		isEmptyState:            nil,
@@ -245,6 +253,11 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.doCreate, err = prepareCallRequired(resource, "DoCreate")
+	if err != nil {
+		return err
+	}
+
+	a.doReadWithState, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "DoReadWithState")
 	if err != nil {
 		return err
 	}
@@ -380,6 +393,13 @@ func (a *Adapter) validate() error {
 		return fmt.Errorf("DoCreate must return (string, remoteType, error), got %d return values", len(a.doCreate.OutTypes))
 	}
 	validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
+
+	if a.doReadWithState != nil {
+		validations = append(validations,
+			"DoReadWithState state", a.doReadWithState.InTypes[2], stateType,
+			"DoReadWithState remoteState return", a.doReadWithState.OutTypes[0], remoteType,
+		)
+	}
 
 	if a.isEmptyState != nil {
 		validations = append(validations, "IsEmptyState newState", a.isEmptyState.InTypes[0], stateType)
@@ -530,6 +550,19 @@ func (a *Adapter) RemapState(remoteState any) (any, error) {
 
 func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
 	outs, err := a.doRefresh.Call(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return outs[0], nil
+}
+
+// DoReadWithState reads remote state for planning, passing the local state to resources that
+// implement DoReadWithState and falling back to DoRead otherwise.
+func (a *Adapter) DoReadWithState(ctx context.Context, id string, state any) (any, error) {
+	if a.doReadWithState == nil {
+		return a.DoRead(ctx, id)
+	}
+	outs, err := a.doReadWithState.Call(ctx, id, state)
 	if err != nil {
 		return nil, err
 	}

@@ -315,7 +315,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		remoteState, err := retryOnTransient(ctx, func() (any, error) {
-			return adapter.DoRead(ctx, dbentry.ID)
+			return adapter.DoReadWithState(ctx, dbentry.ID, sv.Value)
 		})
 		if err != nil {
 			if apierr.IsMissing(err) {

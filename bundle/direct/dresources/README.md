@@ -103,6 +103,10 @@ So when a field comes back under a different path than `StateType` uses:
 This makes the field present in `InputType`, `StateType`, and `RemoteType`, so it participates
 in normal drift detection and is no longer subject to the `missing_in_remote` suppression.
 
+## Reading only what the config manages: DoReadWithState
+
+If whether to read part of the remote depends on the config, implement `DoReadWithState(ctx, id, state)` next to `DoRead`. Planning calls it with the node's local state; reads without one (deletes, the post-apply refresh for remote references) still call `DoRead`. Clusters use it to read installed libraries only when the config declares a `libraries` section, so a cluster without one makes no library calls and libraries installed by job runs are not drift.
+
 ## OverrideChangeDesc
 
 Use `OverrideChangeDesc` only as a last resort when the `<resource_type>.yml` settings cannot express the needed logic. Skipping an action with `change.Action = deployplan.Skip` in `OverrideChangeDesc` creates a silent no-op: the plan shows no change even if the user's config differs from remote. Document the skip reason clearly in both the comment and `change.Reason`.
