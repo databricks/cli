@@ -2,11 +2,23 @@ package metricviews
 
 import "go.yaml.in/yaml/v3"
 
-// ColumnV10 is a v1.0 column; name is required and there is no metadata.
+// ColumnV10 is a v1.0 column; name and expr are required.
 type ColumnV10 struct {
-	Name   string       `yaml:"name" json:"name"`
-	Expr   string       `yaml:"expr" json:"expr"`
-	Window []WindowSpec `yaml:"window,omitempty" json:"window,omitempty"`
+	Name        string        `yaml:"name" json:"name"`
+	Expr        string        `yaml:"expr" json:"expr"`
+	Window      []WindowSpec  `yaml:"window,omitempty" json:"window,omitempty"`
+	Comment     *string       `yaml:"comment,omitempty" json:"comment,omitempty"`
+	DisplayName *string       `yaml:"display_name,omitempty" json:"display_name,omitempty"`
+	Format      *ColumnFormat `yaml:"format,omitempty" json:"format,omitempty"`
+	Synonyms    []string      `yaml:"synonyms,omitempty" json:"synonyms,omitempty"`
+}
+
+func (c *ColumnV10) UnmarshalYAML(node *yaml.Node) error {
+	if err := requireYAMLFields(node, "name", "expr"); err != nil {
+		return err
+	}
+	type alias ColumnV10
+	return node.Decode((*alias)(c))
 }
 
 // MetricViewV10 is the v0.1 / v1.0 single-source metric view shape.
@@ -23,6 +35,12 @@ type MetricViewV10 struct {
 
 // UnmarshalYAML accepts "fields" as an alias for "dimensions".
 func (v *MetricViewV10) UnmarshalYAML(node *yaml.Node) error {
+	if err := requireYAMLFields(node, "version", "source"); err != nil {
+		return err
+	}
+	if err := rejectDimensionFieldConflict(node); err != nil {
+		return err
+	}
 	// The local alias type strips this UnmarshalYAML method, so decoding the
 	// inlined struct does not recurse. The sibling Fields field carries the
 	// "fields" alias alongside the inlined "dimensions".

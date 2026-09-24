@@ -10,6 +10,14 @@ type WindowSpec struct {
 	Offset       string `yaml:"offset,omitempty" json:"offset,omitempty"`
 }
 
+func (w *WindowSpec) UnmarshalYAML(node *yaml.Node) error {
+	if err := requireYAMLFields(node, "order", "semiadditive", "range"); err != nil {
+		return err
+	}
+	type alias WindowSpec
+	return node.Decode((*alias)(w))
+}
+
 // RelyOptions captures reliability hints on a join.
 type RelyOptions struct {
 	AtMostOneMatch *bool `yaml:"at_most_one_match,omitempty" json:"at_most_one_match,omitempty"`
@@ -26,6 +34,14 @@ type Join struct {
 	Cardinality *string      `yaml:"cardinality,omitempty" json:"cardinality,omitempty"`
 }
 
+func (j *Join) UnmarshalYAML(node *yaml.Node) error {
+	if err := requireYAMLFields(node, "name", "source"); err != nil {
+		return err
+	}
+	type alias Join
+	return node.Decode((*alias)(j))
+}
+
 // MaterializedView is one entry in a Materialization.
 type MaterializedView struct {
 	Name       string   `yaml:"name" json:"name"`
@@ -36,6 +52,12 @@ type MaterializedView struct {
 
 // UnmarshalYAML accepts "fields" as an alias for "dimensions".
 func (m *MaterializedView) UnmarshalYAML(node *yaml.Node) error {
+	if err := requireYAMLFields(node, "name", "type"); err != nil {
+		return err
+	}
+	if err := rejectDimensionFieldConflict(node); err != nil {
+		return err
+	}
 	type alias MaterializedView
 	aux := struct {
 		alias  `yaml:",inline"`
@@ -56,4 +78,12 @@ type Materialization struct {
 	Schedule          string             `yaml:"schedule" json:"schedule"`
 	Mode              string             `yaml:"mode" json:"mode"`
 	MaterializedViews []MaterializedView `yaml:"materialized_views" json:"materialized_views"`
+}
+
+func (m *Materialization) UnmarshalYAML(node *yaml.Node) error {
+	if err := requireYAMLFields(node, "schedule", "mode", "materialized_views"); err != nil {
+		return err
+	}
+	type alias Materialization
+	return node.Decode((*alias)(m))
 }

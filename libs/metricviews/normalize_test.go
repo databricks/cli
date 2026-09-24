@@ -22,7 +22,7 @@ dimensions:
   - name: d
     expr: o_orderpriority
     format:
-      type: NUMBER
+      type: number
       decimal_places:
         type: MAX
         places: 2

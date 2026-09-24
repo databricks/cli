@@ -26,8 +26,8 @@ type ParameterV11 struct {
 // UnmarshalYAML distinguishes missing/null/value for the default key by walking
 // the mapping node, because a *string would collapse missing and null.
 func (p *ParameterV11) UnmarshalYAML(node *yaml.Node) error {
-	if node.Kind != yaml.MappingNode {
-		return fmt.Errorf("parameter must be a mapping, got kind %d", node.Kind)
+	if err := requireYAMLFields(node, "name", "data_type"); err != nil {
+		return err
 	}
 	*p = ParameterV11{}
 	for i := 0; i+1 < len(node.Content); i += 2 {
@@ -81,4 +81,12 @@ type ParameterV10 struct {
 	Name     string  `yaml:"name" json:"name"`
 	DataType string  `yaml:"data_type" json:"data_type"`
 	Default  *string `yaml:"default,omitempty" json:"default,omitempty"`
+}
+
+func (p *ParameterV10) UnmarshalYAML(node *yaml.Node) error {
+	if err := requireYAMLFields(node, "name", "data_type"); err != nil {
+		return err
+	}
+	type alias ParameterV10
+	return node.Decode((*alias)(p))
 }

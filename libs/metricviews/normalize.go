@@ -81,6 +81,7 @@ func (v *MetricViewV10) Normalize() {
 // Normalize canonicalizes a v1.1 single-source metric view in place.
 func (v *SingleSourceMetricView) Normalize() {
 	v.Version = trimTrailing(v.Version)
+	v.ViewType = trimTrailing(v.ViewType)
 	v.Source = trimTrailing(v.Source)
 	trimTrailingPtr(v.Filter)
 	trimTrailingPtr(v.Comment)
@@ -126,6 +127,14 @@ func (c *ColumnV10) normalize() {
 	c.Expr = trimTrailing(c.Expr)
 	for i := range c.Window {
 		c.Window[i].normalize()
+	}
+	trimTrailingPtr(c.Comment)
+	trimTrailingPtr(c.DisplayName)
+	if c.Format != nil {
+		c.Format.normalize()
+	}
+	for i := range c.Synonyms {
+		c.Synonyms[i] = trimTrailing(c.Synonyms[i])
 	}
 }
 
