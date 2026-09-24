@@ -6,6 +6,17 @@ Created jobs.job_a
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
+=== Destroy without approval: stays on terraform
+>>> musterr [CLI] bundle destroy
+Error: this command will destroy all resources deployed by this bundle, including workspace files in the deployment directory.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve.
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
 === Destroy on direct: migrate then destroy
 >>> [CLI] bundle destroy --auto-approve
 Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
