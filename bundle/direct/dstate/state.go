@@ -893,6 +893,16 @@ func (db *DeploymentState) DiscardWrite(ctx context.Context) {
 	db.reset()
 }
 
+// Persist writes the current in-memory state to its file immediately, without a WAL cycle.
+// Used to materialize a freshly opened state that produces no WAL entries - e.g. an empty
+// migrated state - as a base file on disk, so a later write has a base and Finalize's
+// header-only WAL leaves it intact.
+func (db *DeploymentState) Persist() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	return db.unlockedSave()
+}
+
 // IsOpen reports whether the state has been opened (for read or write). It lets
 // callers probe the state without risking the panic in AssertOpenedForReadOrWrite,
 // e.g. code paths shared with the terraform engine where the state DB is never opened.

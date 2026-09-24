@@ -1,0 +1,18 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# Seed an empty terraform state (no databricks_* resources) as the existing state.
+mkdir -p .databricks/bundle/default/terraform
+cat > .databricks/bundle/default/terraform/terraform.tfstate <<'EOF'
+{"version": 4, "serial": 1, "lineage": "test-lineage", "resources": []}
+EOF
+
+title "deploy --plan with a missing plan file fails after the empty migration prepared the direct state"
+# The empty-state migration is deferred like any other: it prepares the local direct state but does
+# not back up the terraform state until the command commits. A missing --plan file fails
+# post-migration and unapproved, so the run discards the prepared migration and stays on terraform -
+# proving the empty sweep is gated by commit, not done unconditionally up front.
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy --plan does-not-exist.json
+
+title "Terraform state is untouched - the empty migration was discarded, not committed or swept"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f

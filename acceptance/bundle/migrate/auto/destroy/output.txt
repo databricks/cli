@@ -17,8 +17,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
-=== resources.json removed by destroy; terraform state backed up
+=== Destroy removes both local state files (direct and the superseded terraform state)
 >>> find .databricks/bundle -name resources.json -type f
 
 >>> find .databricks/bundle -name terraform.tfstate* -type f
-.databricks/bundle/default/terraform/terraform.tfstate.backup
