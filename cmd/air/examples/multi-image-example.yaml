@@ -1,0 +1,35 @@
+# Replace both Unity Catalog image paths with images available in your workspace,
+# then run:
+#   databricks air run --file cmd/air/examples/multi-image-example.yaml --watch
+experiment_name: multi_image_example
+
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 2
+
+# The ranks across all containers must partition every node rank exactly once.
+# This compute creates two nodes, so the available ranks are 0 and 1.
+containers:
+  - name: inference
+    command: |
+      echo "role=$ROLE node_rank=$NODE_RANK"
+      env | sort
+    ranks: [0]
+    unity_catalog_image: main.default.inference:latest
+    environment_variables:
+      variables:
+        ROLE: inference
+        MODEL_NAME: llama
+        # Secret references are resolved at run time:
+        # HF_TOKEN: "{{secrets/research/hf_token}}"
+
+  - name: dataproc
+    command: |
+      echo "role=$ROLE node_rank=$NODE_RANK"
+      env | sort
+    ranks: [1]
+    unity_catalog_image: main.default.dataproc:latest
+    environment_variables:
+      variables:
+        ROLE: dataproc
+        SHARD_COUNT: "8"

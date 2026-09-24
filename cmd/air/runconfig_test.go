@@ -134,6 +134,13 @@ containers:
 	assert.Equal(t, "llama", cfg.Containers[0].EnvironmentVariables.Variables["MODEL_NAME"])
 }
 
+func TestMultiImageExample(t *testing.T) {
+	cfg, err := loadRunConfig("examples/multi-image-example.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, "multi_image_example", cfg.ExperimentName)
+	assert.Len(t, cfg.Containers, 2)
+}
+
 func TestLoadRunConfigContainerValidation(t *testing.T) {
 	base := `
 experiment_name: roles
