@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.yaml.in/yaml/v3"
 )
 
 func TestParseDispatch(t *testing.T) {
@@ -42,6 +43,22 @@ func TestParseRejectsUnsupportedViewType(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "view_type")
 	assert.ErrorContains(t, err, "OTHER")
+}
+
+func TestParseExplicitSingleSourceViewTypeRoundTrip(t *testing.T) {
+	in := []byte("version: \"1.1\"\nview_type: SINGLE_SOURCE\nsource: main.sales.orders\ndimensions:\n  - name: id\n    expr: id\n")
+	m, err := Parse(in)
+	require.NoError(t, err)
+	require.NotNil(t, m.SingleSource)
+
+	out, err := yaml.Marshal(m)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), "view_type: SINGLE_SOURCE\n")
+
+	reparsed, err := Parse(out)
+	require.NoError(t, err)
+	require.NotNil(t, reparsed.SingleSource)
+	assert.Equal(t, m.SingleSource.Source, reparsed.SingleSource.Source)
 }
 
 func TestParseRejectsMultiSourceWithoutViewType(t *testing.T) {

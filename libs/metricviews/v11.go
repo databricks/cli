@@ -32,6 +32,7 @@ type SourceNode struct {
 // SingleSourceMetricView is the v1.1 single-source metric view shape.
 type SingleSourceMetricView struct {
 	Version         string           `yaml:"version" json:"version"`
+	ViewType        string           `yaml:"view_type,omitempty" json:"view_type,omitempty"`
 	Source          string           `yaml:"source" json:"source"`
 	Joins           []Join           `yaml:"joins,omitempty" json:"joins,omitempty"`
 	Filter          *string          `yaml:"filter,omitempty" json:"filter,omitempty"`

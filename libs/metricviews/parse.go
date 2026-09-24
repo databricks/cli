@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	version01           = "0.1"
-	version10           = "1.0"
-	version11           = "1.1"
-	viewTypeMultiSource = "MULTI_SOURCE"
+	version01            = "0.1"
+	version10            = "1.0"
+	version11            = "1.1"
+	viewTypeSingleSource = "SINGLE_SOURCE"
+	viewTypeMultiSource  = "MULTI_SOURCE"
 )
 
 // validVersions are the YAML versions the backend accepts. "2.0" is reserved
@@ -98,7 +99,7 @@ func Parse(data []byte) (*MetricView, error) {
 		}
 		return &MetricView{V10: &v}, nil
 	default: // version11
-		if hasViewType && viewType != viewTypeMultiSource {
+		if hasViewType && viewType != viewTypeSingleSource && viewType != viewTypeMultiSource {
 			return nil, fmt.Errorf("metricviews: unsupported v1.1 view_type %q", viewType)
 		}
 		if viewType == viewTypeMultiSource {
