@@ -49,15 +49,16 @@ func (b *BackendDefaultRule) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
-// RemoteAdditionRule marks a sub-object whose contents the backend co-owns whenever the
-// object's WhenSet field is set. Inside such an object, a field the config never declared
-// coming back set from the remote is an addition by the backend, not drift.
+// RemoteAdditionRule marks a sub-object whose contents the backend co-owns. Inside such an
+// object, a field the config never declared coming back set from the remote is an addition
+// by the backend, not drift.
 //
-// Field is a prefix pattern selecting the object (omitted = the resource root); WhenSet is a
-// path within that object, relative to it, whose value gates the rule.
+// Field is a prefix pattern selecting the object (omitted = the resource root). WhenSet is a
+// path within that object, relative to it, whose value gates the rule; when omitted the rule
+// always applies to a declared object.
 type RemoteAdditionRule struct {
 	Field   *structpath.PatternNode `yaml:"field"`
-	WhenSet *structpath.PathNode    `yaml:"when_set"`
+	WhenSet *structpath.PathNode    `yaml:"when_set,omitempty"`
 }
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.
