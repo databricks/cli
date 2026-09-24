@@ -169,6 +169,24 @@ func TestGetSelectablePlugins(t *testing.T) {
 	assert.Equal(t, "optional-plugin", selectable[1].Name)
 }
 
+func TestGetSelectablePluginsExcludesDeprecated(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"analytics": {
+				Name: "analytics",
+			},
+			"legacy": {
+				Name:       "legacy",
+				Deprecated: true,
+			},
+		},
+	}
+
+	selectable := m.GetSelectablePlugins()
+	require.Len(t, selectable, 1)
+	assert.Equal(t, "analytics", selectable[0].Name)
+}
+
 func TestGetMandatoryPlugins(t *testing.T) {
 	m := &manifest.Manifest{
 		Plugins: map[string]manifest.Plugin{
