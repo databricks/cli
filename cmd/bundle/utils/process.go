@@ -339,7 +339,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		defer func() {
 			if b.MigrationDeferred {
 				statemgmt.DiscardDeferredMigration(ctx, b)
-				log.Warnf(ctx, "Migration not committed, staying on terraform state")
+				log.Warnf(ctx, "Migration not committed, keeping Terraform state")
 			}
 		}()
 

@@ -11,7 +11,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Migrated 1 resource to direct deployment engine.
 Error: reading plan file: open does-not-exist.json: no such file or directory
 
-Warn: Migration not committed, staying on terraform state
+Warn: Migration not committed, keeping Terraform state
 
 Exit code: 1
 

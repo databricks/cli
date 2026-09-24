@@ -329,7 +329,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// engine, so a declined deploy changes nothing.
 		if b.MigrationDeferred {
 			statemgmt.DiscardDeferredMigration(ctx, b)
-			log.Warnf(ctx, "Migration not committed, staying on terraform state")
+			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
 		}
 		if err != nil {
 			logdiag.LogError(ctx, err)

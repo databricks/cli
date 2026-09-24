@@ -412,7 +412,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		// so a declined destroy changes nothing.
 		if b.MigrationDeferred {
 			statemgmt.DiscardDeferredMigration(ctx, b)
-			log.Warnf(ctx, "Migration not committed, staying on terraform state")
+			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
 		}
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
