@@ -1,0 +1,42 @@
+
+>>> [CLI] apps init --name test-app-pnpm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/test-app-pnpm
+  Files: 2
+
+  Next steps:
+
+    cd test-app-pnpm
+    npm ci && npm run dev
+
+=== test-app-pnpm/app.yaml ===
+display_name: "test-app-pnpm"
+description: "A Databricks App powered by AppKit"
+command:
+  - "pnpm"
+  - "run"
+  - "start"
+
+>>> [CLI] apps init --name test-app-npm --package-manager npm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/test-app-npm
+  Files: 2
+
+  Next steps:
+
+    cd test-app-npm
+    npm ci && npm run dev
+
+=== test-app-npm/app.yaml ===
+display_name: "test-app-npm"
+description: "A Databricks App powered by AppKit"
+command:
+  - "npm"
+  - "run"
+  - "start"
