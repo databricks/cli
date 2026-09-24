@@ -17,7 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultLimit = 10
+const defaultLimit = 5
 
 func showCommand() *cobra.Command {
 	var warehouseID string
@@ -64,7 +64,16 @@ schema.table (legacy Hive metastore).`,
 				return err
 			}
 
-			return render(ctx, cmd, result.Columns, result.Rows)
+			if root.OutputType(cmd) == flags.OutputText {
+				fmt.Fprintf(cmd.OutOrStdout(), "Table: %s\n", args[0])
+			}
+			if err := render(ctx, cmd, result.Columns, result.Rows); err != nil {
+				return err
+			}
+			if root.OutputType(cmd) == flags.OutputText && !cmd.Flags().Changed("limit") && len(result.Rows) == limit {
+				fmt.Fprintln(cmd.OutOrStdout(), "Use --limit <n> to preview more rows.")
+			}
+			return nil
 		},
 	}
 

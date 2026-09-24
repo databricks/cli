@@ -14,6 +14,6 @@ Response.Body = '''
   "statement_id": "s1",
   "status": {"state": "SUCCEEDED"},
   "manifest": {"schema": {"columns": [{"name": "id"}, {"name": "name"}]}, "total_chunk_count": 1},
-  "result": {"data_array": [["1", "alice"], ["2", "bob"]]}
+  "result": {"data_array": [["1", "alice"], ["2", "bob"], ["3", "carol"], ["4", "dave"], ["5", "eve"]]}
 }
 '''
