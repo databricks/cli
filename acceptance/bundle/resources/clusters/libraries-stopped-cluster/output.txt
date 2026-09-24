@@ -2,7 +2,7 @@
 === Deploy libraries on a started=false cluster: no restart
 OK: created on stopped cluster, no restart
 
-=== Change the libraries and redeploy: cluster is stopped, so no restart is issued
+=== Change the libraries and redeploy the stopped cluster: no restart
 OK: libraries changed on stopped cluster, no restart
 
 >>> [CLI] bundle destroy --auto-approve

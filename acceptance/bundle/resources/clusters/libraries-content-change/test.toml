@@ -1,4 +1,4 @@
-Badness = "A local wheel whose contents change but whose version (and thus workspace path) does not is not detected in non-dev mode, so redeploy neither reinstalls it nor restarts the cluster; the stale wheel keeps running. See the TODO in bundle/direct/dresources/cluster.go DoUpdate."
+Badness = "A local wheel whose contents change but whose version (and thus workspace path) does not is not detected in non-dev mode, so redeploy does not reinstall it; the stale wheel keeps running. See the TODO in bundle/direct/dresources/cluster.go DoUpdate."
 
 Cloud = true
 CloudSlow = true

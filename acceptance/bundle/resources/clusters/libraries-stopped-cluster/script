@@ -13,7 +13,7 @@ $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Created clusters.mycluster" "!Restarting cluster" > /dev/null
 printf '\n%s\n' "OK: created on stopped cluster, no restart"
 
-title "Change the libraries and redeploy: cluster is stopped, so no restart is issued"
+title "Change the libraries and redeploy the stopped cluster: no restart"
 update_file.py databricks.yml "        - pypi:
             package: requests" "        - pypi:
             package: requests

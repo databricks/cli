@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
@@ -267,18 +266,17 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 	}
 
 	// TODO: a local whl/jar whose workspace path is unchanged but whose contents
-	// changed (same name+version, non-dev mode) is not detected here, so no restart fires.
+	// changed (same name+version, non-dev mode) is not detected here, so it is not reinstalled.
 	// Dev mode handles this via patchwheel (a source-derived version bump).
 	if entry.Changes.HasChange(librariesPath) {
 		if err := r.reconcileLibraries(ctx, id, config.Libraries, entry); err != nil {
 			return nil, err
 		}
-		// A cluster edit restarts the cluster on its own, which applies the library change.
-		// Without an edit we restart so the change takes effect on a running cluster.
+		// We never restart the cluster for a library change: that would kill attached sessions
+		// and running work. Installs apply live on a running cluster; uninstalls are marked
+		// UNINSTALL_ON_RESTART and take effect at the cluster's next restart.
+		// A cluster edit restarts the cluster on its own, so only wait when there was no edit.
 		if !edited {
-			if err := r.restartIfRunning(ctx, id); err != nil {
-				return nil, err
-			}
 			if err := r.waitForInstall(ctx, id, config.Libraries); err != nil {
 				return nil, err
 			}
@@ -569,27 +567,6 @@ func removedLibraries(desired []compute.Library, entry *PlanEntry) []compute.Lib
 		}
 	}
 	return result
-}
-
-// restartIfRunning restarts the cluster so a library change takes effect, but only when it is
-// running: a stopped cluster applies pending install/uninstall on its next start. It waits for
-// the cluster to return to RUNNING before returning.
-func (r *ResourceCluster) restartIfRunning(ctx context.Context, id string) error {
-	details, err := r.client.Clusters.GetByClusterId(ctx, id)
-	if err != nil {
-		return err
-	}
-	if details.State != compute.StateRunning {
-		log.Debugf(ctx, "cluster %s is not running (%s); skipping restart for library change", id, details.State)
-		return nil
-	}
-	cmdio.LogString(ctx, fmt.Sprintf("Restarting cluster %s because its libraries changed", id))
-	wait, err := r.client.Clusters.Restart(ctx, compute.RestartCluster{ClusterId: id, RestartUser: "", ForceSendFields: nil})
-	if err != nil {
-		return err
-	}
-	_, err = wait.GetWithTimeout(clusterWaitTimeout)
-	return err
 }
 
 // waitForInstall polls until every desired library reaches a terminal installed state. It returns
