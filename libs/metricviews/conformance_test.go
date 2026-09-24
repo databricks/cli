@@ -13,7 +13,7 @@ import (
 
 func fixturePaths(t *testing.T) []string {
 	t.Helper()
-	paths, err := filepath.Glob("testdata/fixtures/*.yaml")
+	paths, err := filepath.Glob("testdata/fixtures/*.yml")
 	require.NoError(t, err)
 	require.Len(t, paths, 47, "expected 47 fixtures")
 	return paths
