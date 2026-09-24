@@ -1,5 +1,5 @@
 Cloud = false # This currently fails on Cloud due to incorrect API behaviour.
-RecordRequests = true
+RecordRequests = false
 
 Ignore = [".databricks", "databricks.yml"]
 

@@ -1,2 +1,3 @@
+RecordRequests = false
 # Local only: fault.py registers its rule on the fake server.
 Cloud = false

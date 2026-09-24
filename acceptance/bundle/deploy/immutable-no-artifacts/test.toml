@@ -1,5 +1,4 @@
 Cloud = false # Temporary disable cloud tests until the API is fully available
-RecordRequests = true
 EnvMatrix.READPLAN = ["", "1"]
 
 # immutable_folder only works with the direct engine.
