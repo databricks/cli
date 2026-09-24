@@ -1,0 +1,18 @@
+bundle:
+  name: cluster-libraries-repo-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  clusters:
+    mycluster:
+      cluster_name: mycluster-$UNIQUE_NAME
+      spark_version: $DEFAULT_SPARK_VERSION
+      node_type_id: $NODE_TYPE_ID
+      instance_pool_id: $TEST_INSTANCE_POOL_ID
+      num_workers: 1
+      libraries:
+        - pypi:
+            package: requests
+            repo: https://pypi.org/simple

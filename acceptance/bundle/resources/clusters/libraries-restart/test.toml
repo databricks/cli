@@ -1,0 +1,14 @@
+Cloud = true
+CloudSlow = true
+# This test runs three full cluster lifecycles (create, add-library restart, remove-library
+# restart); on slower clouds that exceeds the default 25m cloud timeout, so give it 50m.
+TimeoutCloud = '50m'
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = [".databricks", "databricks.yml", "tmp.plan.json"]
+
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
+New = "[UUID]"

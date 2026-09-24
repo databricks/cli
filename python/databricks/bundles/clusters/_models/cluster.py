@@ -44,6 +44,7 @@ from databricks.bundles.clusters._models.init_script_info import (
     InitScriptInfoParam,
 )
 from databricks.bundles.clusters._models.kind import Kind, KindParam
+from databricks.bundles.clusters._models.library import Library, LibraryParam
 from databricks.bundles.clusters._models.lifecycle_with_started import (
     LifecycleWithStarted,
     LifecycleWithStartedParam,
@@ -240,6 +241,11 @@ class Cluster(Resource):
     * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
     
     By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
+    """
+
+    libraries: VariableOrList[Library] = field(default_factory=list)
+    """
+    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
     """
 
     lifecycle: VariableOrOptional[LifecycleWithStarted] = None
@@ -528,6 +534,11 @@ class ClusterDict(TypedDict, total=False):
     * [use_ml_runtime](/api/workspace/clusters/create#use_ml_runtime)
     
     By using the [simple form](https://docs.databricks.com/compute/simple-form.html), your clusters are automatically using `kind = CLASSIC_PREVIEW`.
+    """
+
+    libraries: VariableOrList[LibraryParam]
+    """
+    A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.
     """
 
     lifecycle: VariableOrOptional[LifecycleWithStartedParam]
