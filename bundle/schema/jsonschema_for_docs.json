@@ -169,9 +169,9 @@
                     "x-since-version": "v0.283.0"
                   },
                   "git_source": {
-                    "description": "[Beta] Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)\nto use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.\nThe source_code_path within git_source specifies the relative path to the app code within the repository.",
+                    "description": "Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)\nto use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.\nThe source_code_path within git_source specifies the relative path to the app code within the repository.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource",
-                    "x-databricks-launch-stage": "PUBLIC_BETA",
+                    "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.290.0"
                   },
                   "lifecycle": {
@@ -198,9 +198,8 @@
                     "x-since-version": "v0.239.0"
                   },
                   "source_code_path": {
-                    "description": "[Beta]",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PUBLIC_BETA",
+                    "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.239.0"
                   },
                   "space": {
@@ -211,9 +210,8 @@
                     "x-since-version": "v0.290.0"
                   },
                   "telemetry_export_destinations": {
-                    "description": "[Public Preview]",
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.TelemetryExportDestination",
-                    "x-databricks-launch-stage": "PUBLIC_PREVIEW",
+                    "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.294.0"
                   },
                   "usage_policy_id": {
@@ -1238,7 +1236,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "environments": {
-                    "description": "A list of task execution environment specifications that can be referenced by serverless tasks of this job.\nFor serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.\nFor other serverless tasks, the task environment is required to be specified using environment_key in the task settings.",
+                    "description": "A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.\n\nFor notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.\nFor other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.",
                     "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.229.0"
@@ -1298,7 +1296,7 @@
                     "x-since-version": "v1.7.0"
                   },
                   "performance_target": {
-                    "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
+                    "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v0.241.0"
@@ -1457,7 +1455,7 @@
                     "x-since-version": "v1.7.0"
                   },
                   "performance_target": {
-                    "description": "The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
+                    "description": "The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.\n\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.",
                     "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget",
                     "x-databricks-launch-stage": "GA",
                     "x-since-version": "v1.7.0"
@@ -2274,10 +2272,9 @@
                     "x-since-version": "v0.287.0"
                   },
                   "source_snapshot": {
-                    "description": "[Private Preview] The snapshot this branch was created from. When set, the branch's data\ncomes from the snapshot rather than a source branch, so source_branch,\nsource_branch_lsn, and source_branch_time must be empty. The snapshot must\nbe AVAILABLE and belong to this branch's project.\nFormat: projects/{project_id}/snapshots/{snapshot_id}",
+                    "description": "[Beta] The snapshot this branch was created from. When set, the branch's data\ncomes from the snapshot rather than a source branch, so source_branch,\nsource_branch_lsn, and source_branch_time must be empty. The snapshot must\nbe AVAILABLE and belong to this branch's project.\nFormat: projects/{project_id}/snapshots/{snapshot_id}",
                     "$ref": "#/$defs/string",
-                    "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                    "doNotSuggest": true,
+                    "x-databricks-launch-stage": "PUBLIC_BETA",
                     "x-since-version": "v1.16.0"
                   },
                   "ttl": {
@@ -4909,15 +4906,15 @@
               "description": "Git repository configuration specifying the location of the repository.",
               "properties": {
                 "auto_deploy": {
-                  "description": "[Beta] When true, automatically deploys the app on push events to the branch configured in\nthe app's deployment_source.git_source.",
+                  "description": "When true, automatically deploys the app on push events to the branch configured in\nthe app's deployment_source.git_source.",
                   "$ref": "#/$defs/bool",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.14.0"
                 },
                 "caller_credential_id": {
-                  "description": "[Beta] ID of a personal access token Git credential owned by the caller, used to\ngrant the app's service principal access to this repository.",
+                  "description": "ID of a personal access token Git credential owned by the caller, used to\ngrant the app's service principal access to this repository.",
                   "$ref": "#/$defs/int64",
-                  "x-databricks-launch-stage": "PUBLIC_BETA",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.14.0"
                 },
                 "provider": {
@@ -4975,9 +4972,9 @@
               "description": "A single telemetry export destination with its configuration and status.",
               "properties": {
                 "unity_catalog": {
-                  "description": "[Public Preview] Unity Catalog Destinations for OTEL telemetry export.",
+                  "description": "Unity Catalog Destinations for OTEL telemetry export.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.UnityCatalog",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.294.0"
                 }
               },
@@ -4988,21 +4985,21 @@
               "description": "Unity Catalog Destinations for OTEL telemetry export.",
               "properties": {
                 "logs_table": {
-                  "description": "[Public Preview] Unity Catalog table for OTEL logs.",
+                  "description": "Unity Catalog table for OTEL logs.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.294.0"
                 },
                 "metrics_table": {
-                  "description": "[Public Preview] Unity Catalog table for OTEL metrics.",
+                  "description": "Unity Catalog table for OTEL metrics.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.294.0"
                 },
                 "traces_table": {
-                  "description": "[Public Preview] Unity Catalog table for OTEL traces (spans).",
+                  "description": "Unity Catalog table for OTEL traces (spans).",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.294.0"
                 }
               },
@@ -5457,6 +5454,27 @@
               },
               "additionalProperties": false
             },
+            "catalog.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth": {
+              "type": "object",
+              "description": "Header-based API-key authentication for a custom provider: the secret is\nforwarded on outbound requests under a caller-chosen HTTP header, as\n`\u003capi_key_name\u003e: \u003capi_key_value\u003e`.",
+              "properties": {
+                "api_key_name": {
+                  "description": "[Private Preview] HTTP header name that carries the API key on outbound requests (e.g.,\n`Ocp-Apim-Subscription-Key`). The value forwarded under this header is\nsupplied via `api_key_value`.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "api_key_value": {
+                  "description": "[Private Preview] Secret value forwarded under the `api_key_name` header on outbound\nrequests. Supplied as inline plaintext via `ProviderSecret.plaintext`.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigProviderSecret",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                }
+              },
+              "additionalProperties": false
+            },
             "catalog.ModelProviderServiceConfigCustomProviderConfig": {
               "type": "object",
               "description": "Custom OpenAI-compatible provider configuration with bearer-token\nauthentication.",
@@ -5472,7 +5490,7 @@
             },
             "catalog.ModelProviderServiceConfigCustomProviderDirectConfig": {
               "type": "object",
-              "description": "Direct form of a custom provider configuration. Set `api_key` to the bearer\ntoken sent in the `Authorization` header.",
+              "description": "Direct form of a custom provider configuration. Set `api_key` to send the\nsecret as an `Authorization` bearer token, or `header_auth` to forward it\nunder a caller-chosen HTTP header.",
               "properties": {
                 "api_key": {
                   "description": "Bearer token forwarded in the `Authorization` header. Supply the value\nin `api_key.plaintext`.",
@@ -5485,6 +5503,13 @@
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v1.17.0"
+                },
+                "header_auth": {
+                  "description": "[Private Preview] Header-based API-key auth: the secret is forwarded on outbound requests\nunder a caller-chosen HTTP header rather than as an `Authorization`\nbearer token. Set this instead of `api_key` for header auth.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
                 }
               },
               "additionalProperties": false
@@ -7063,7 +7088,7 @@
                   "deprecated": true
                 },
                 "zone_id": {
-                  "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a Databricks deployment region [default].\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from\nhttps://cloud.google.com/compute/docs/regions-zones.",
+                  "description": "Identifier for the availability zone in which the cluster resides.\nThis can be one of the following:\n- \"HA\" =\u003e High availability, spread nodes across availability zones for a\nDatabricks deployment region [default].\n- \"AUTO\" =\u003e Databricks picks an availability zone to schedule the cluster on.\n- A GCP availability zone =\u003e Pick One of the available zones for (machine type + region) from\nhttps://cloud.google.com/compute/docs/regions-zones.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.229.0"
@@ -7991,12 +8016,40 @@
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v1.6.0"
+                },
+                "priority_class": {
+                  "description": "[Private Preview] Scheduling priority class for the workload. May only be set together with\na pre-provisioned capacity reservation (a deployment's\n`compute.provisioned_capacity_id`); it is rejected on a workload that runs\non on-demand capacity.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.AiRuntimeTaskPriorityClass",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "unity_catalog_image_path": {
+                  "description": "[Private Preview] Optional Unity Catalog path for a custom container image. When set,\nthe task runs on the specified container image instead of the default\nDatabricks client image. Format:\n`{catalog}.{schema}.{image_name}:{tag}`",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
                 }
               },
               "additionalProperties": false,
               "required": [
                 "deployments",
                 "experiment"
+              ]
+            },
+            "jobs.AiRuntimeTaskPriorityClass": {
+              "type": "string",
+              "description": "Scheduling priority class for a workload — its priority and preemptability\nwhen the scheduler ranks pending work.",
+              "enum": [
+                "BEST_EFFORT",
+                "NORMAL",
+                "CRITICAL"
+              ],
+              "enumDescriptions": [
+                "[Private Preview]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "jobs.AlertTask": {
@@ -8179,9 +8232,11 @@
               "enum": [
                 "GPU_1xA10",
                 "GPU_1xH100",
-                "GPU_8xH100"
+                "GPU_8xH100",
+                "GPU_8xB300"
               ],
               "enumDescriptions": [
+                "[Public Preview]",
                 "[Public Preview]",
                 "[Public Preview]",
                 "[Public Preview]"
@@ -8349,10 +8404,9 @@
                   "x-since-version": "v0.248.0"
                 },
                 "filters": {
-                  "description": "[Private Preview] Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.\nThe parameter value format is dependent on the filter type:\n- For text and single-select filters, provide a single value (e.g. `\"value\"`)\n- For date and datetime filters, provide the value in ISO 8601 format (e.g. `\"2000-01-01T00:00:00\"`)\n- For multi-select filters, provide a JSON array of values (e.g. `\"[\\\"value1\\\",\\\"value2\\\"]\"`)\n- For range and date range filters, provide a JSON object with `start` and `end` (e.g. `\"{\\\"start\\\":\\\"1\\\",\\\"end\\\":\\\"10\\\"}\"`)",
+                  "description": "Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.\nThe parameter value format is dependent on the filter type:\n- For text and single-select filters, provide a single value (e.g. `\"value\"`)\n- For date and datetime filters, provide the value in ISO 8601 format (e.g. `\"2000-01-01T00:00:00\"`)\n- For multi-select filters, provide a JSON array of values (e.g. `\"[\\\"value1\\\",\\\"value2\\\"]\"`)\n- For range and date range filters, provide a JSON object with `start` and `end` (e.g. `\"{\\\"start\\\":\\\"1\\\",\\\"end\\\":\\\"10\\\"}\"`)",
                   "$ref": "#/$defs/map/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.289.0"
                 },
                 "subscription": {
@@ -8903,13 +8957,12 @@
             },
             "jobs.JobRunAs": {
               "type": "object",
-              "description": "Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.\n\nEither `user_name` or `service_principal_name` should be specified. If not, an error is thrown.",
+              "description": "Write-only setting. Specifies the user, service principal, or group that the job runs as. If not specified, the job runs as the user who created the job.\n\nOne of `user_name`, `service_principal_name`, or `group_name` should be specified. If not, an error is thrown.",
               "properties": {
                 "group_name": {
-                  "description": "[Private Preview] Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.",
+                  "description": "Group name of an account group assigned to the workspace. When set, all tasks run as the group and the group's permissions are used for data access. Setting this field requires being a member of the group, or having the `Assume` permission on the group.",
                   "$ref": "#/$defs/string",
-                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
-                  "doNotSuggest": true,
+                  "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.283.0"
                 },
                 "service_principal_name": {
@@ -10073,7 +10126,7 @@
                   "x-since-version": "v0.229.0"
                 },
                 "environment_key": {
-                  "description": "The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute.",
+                  "description": "The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.",
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.229.0"
@@ -10639,6 +10692,40 @@
                 "enabled"
               ]
             },
+            "pipelines.AvroTransformerOptions": {
+              "type": "object",
+              "properties": {
+                "parse_mode": {
+                  "description": "[Private Preview] (Optional) Parse mode for Avro data.\nValid values: FAILFAST, PERMISSIVE. Defaults to FAILFAST.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ParseMode",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "schema": {
+                  "description": "[Private Preview] Inline Avro JSON schema string.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "schema_file_path": {
+                  "description": "[Private Preview] Path to a schema file (.avsc).",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "schema_registry": {
+                  "description": "[Private Preview] (Optional) Schema registry to resolve the Avro schema at runtime instead of\nproviding it inline or via a file path.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaRegistryConfig",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                }
+              },
+              "additionalProperties": false
+            },
             "pipelines.ConfluenceConnectorOptions": {
               "type": "object",
               "description": "Confluence specific options for ingestion",
@@ -10648,6 +10735,19 @@
                   "$ref": "#/$defs/slice/string",
                   "x-databricks-launch-stage": "PUBLIC_PREVIEW",
                   "x-since-version": "v0.299.2"
+                }
+              },
+              "additionalProperties": false
+            },
+            "pipelines.ConfluentSchemaRegistryOptions": {
+              "type": "object",
+              "properties": {
+                "subject": {
+                  "description": "[Private Preview] Required: subject name to resolve in the registry.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
                 }
               },
               "additionalProperties": false
@@ -11461,7 +11561,9 @@
                 "JIRA",
                 "CONFLUENCE",
                 "META_MARKETING",
+                "TIKTOK_ADS",
                 "ZENDESK",
+                "SMARTSHEET",
                 "RABBITMQ",
                 "FOREIGN_CATALOG"
               ],
@@ -11484,7 +11586,9 @@
                 "[Beta]",
                 "[Public Preview]",
                 "[Beta]",
+                "[Private Preview]",
                 "[Public Preview]",
+                "[Private Preview]",
                 "[Beta]",
                 "[Private Preview]"
               ]
@@ -12008,6 +12112,18 @@
               },
               "additionalProperties": false
             },
+            "pipelines.ParseMode": {
+              "type": "string",
+              "description": "Determines how errors encountered while deserializing records are handled.",
+              "enum": [
+                "FAILFAST",
+                "PERMISSIVE"
+              ],
+              "enumDescriptions": [
+                "[Private Preview]",
+                "[Private Preview]"
+              ]
+            },
             "pipelines.PathPattern": {
               "type": "object",
               "properties": {
@@ -12320,6 +12436,47 @@
               },
               "additionalProperties": false
             },
+            "pipelines.ProtobufTransformerOptions": {
+              "type": "object",
+              "properties": {
+                "desc_file_path": {
+                  "description": "[Private Preview] Required: path to the .desc file (dbfs:/... or /Volumes/...).",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "message_name": {
+                  "description": "[Private Preview] Required: fully-qualified message type name.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "parse_mode": {
+                  "description": "[Private Preview] (Optional) Parse mode for Protobuf data.\nValid values: FAILFAST, PERMISSIVE. Defaults to FAILFAST.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ParseMode",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "recursive_fields_max_depth": {
+                  "description": "[Private Preview] (Optional) Maximum expansion depth for recursive protobuf fields.\nSpark SQL does not natively support recursive types, so recursive\nfields are expanded up to this depth and truncated beyond it.\nValid values: -1 (disallow recursive fields), 0 (drop), 1-10.",
+                  "$ref": "#/$defs/int",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "schema_registry": {
+                  "description": "[Private Preview] (Optional) Schema registry to resolve the Protobuf schema at runtime instead\nof providing it via desc_file_path.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SchemaRegistryConfig",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                }
+              },
+              "additionalProperties": false
+            },
             "pipelines.RabbitmqOptions": {
               "type": "object",
               "description": "RabbitMQ specific options for ingestion.\nPerformance tuning options (consumers_per_task, max_messages_per_fetch, etc.)\nare intentionally not exposed in the public API. The managed connector uses\nsensible defaults internally. These can be added later if user demand arises.",
@@ -12460,6 +12617,13 @@
               "type": "object",
               "description": "Write-only setting, available only in Create/Update calls. Specifies the user or service principal that the pipeline runs as. If not specified, the pipeline runs as the user who created the pipeline.\n\nOnly `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.",
               "properties": {
+                "group_name": {
+                  "description": "[Private Preview] Group name of an account group assigned to the workspace. When set, the pipeline runs as the group and the group's permissions are used for data access. Setting this field requires being a member of the group, or having the `Assume` permission on the group.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
                 "service_principal_name": {
                   "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
                   "$ref": "#/$defs/string",
@@ -12471,6 +12635,33 @@
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.241.0"
+                }
+              },
+              "additionalProperties": false
+            },
+            "pipelines.SchemaRegistryConfig": {
+              "type": "object",
+              "properties": {
+                "confluent_options": {
+                  "description": "[Private Preview] Required: Confluent-compatible schema registry options.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConfluentSchemaRegistryOptions",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "connection_name": {
+                  "description": "[Private Preview] (Optional) UC connection for registry authentication.\nSpecify if different from the top-level source connection.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
+                "protobuf_message_name": {
+                  "description": "[Private Preview] (Optional, Protobuf only) Selects a specific message from a schema that\ndefines multiple Protobuf messages. Simple (\"Location\") or fully-qualified\n(\"com.example.protos.Location\"). Defaults to the first message.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
                 }
               },
               "additionalProperties": false
@@ -12947,6 +13138,13 @@
               "type": "object",
               "description": "Specifies how to transform binary data into structured data.",
               "properties": {
+                "avro_options": {
+                  "description": "[Private Preview]",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.AvroTransformerOptions",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
+                },
                 "format": {
                   "description": "[Beta] Required: the wire format of the data.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TransformerFormat",
@@ -12972,6 +13170,13 @@
                   "x-databricks-launch-stage": "PRIVATE_PREVIEW",
                   "doNotSuggest": true,
                   "x-since-version": "v1.13.0"
+                },
+                "protobuf_options": {
+                  "description": "[Private Preview]",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ProtobufTransformerOptions",
+                  "x-databricks-launch-stage": "PRIVATE_PREVIEW",
+                  "doNotSuggest": true,
+                  "x-since-version": "v1.18.0"
                 }
               },
               "additionalProperties": false
@@ -12980,11 +13185,15 @@
               "type": "string",
               "enum": [
                 "STRING",
-                "JSON"
+                "JSON",
+                "AVRO",
+                "PROTOBUF"
               ],
               "enumDescriptions": [
                 "[Beta]",
-                "[Beta]"
+                "[Beta]",
+                "[Private Preview]",
+                "[Private Preview]"
               ]
             },
             "pipelines.ZendeskSupportOptions": {
@@ -13695,6 +13904,12 @@
                   "$ref": "#/$defs/string",
                   "x-databricks-launch-stage": "GA",
                   "x-since-version": "v0.243.0"
+                },
+                "uc_service_credential_name": {
+                  "description": "[Public Preview] The name of the Unity Catalog service credential that the external model uses to access AWS\nresources.",
+                  "$ref": "#/$defs/string",
+                  "x-databricks-launch-stage": "PUBLIC_PREVIEW",
+                  "x-since-version": "v1.18.0"
                 }
               },
               "additionalProperties": false,
