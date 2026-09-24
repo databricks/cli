@@ -1124,7 +1124,7 @@ func TestChallenge(t *testing.T) {
 	}()
 
 	state := <-browserOpened
-	resp, err := http.Get("http://localhost:8020?code=__THIS__&state=" + state)
+	resp, err := http.Get("http://" + p.redirectAddr + "?code=__THIS__&state=" + state)
 	if err != nil {
 		t.Fatalf("http.Get(): want no error, got %v", err)
 	}
@@ -1183,7 +1183,7 @@ func TestChallenge_ReturnsErrorOnFailure(t *testing.T) {
 	}()
 
 	<-browserOpened
-	resp, err := http.Get("http://localhost:8020?error=access_denied&error_description=Policy%20evaluation%20failed%20for%20this%20request")
+	resp, err := http.Get("http://" + p.redirectAddr + "?error=access_denied&error_description=Policy%20evaluation%20failed%20for%20this%20request")
 	if err != nil {
 		t.Fatalf("http.Get(): want no error, got %v", err)
 	}
@@ -1315,7 +1315,6 @@ func TestU2M_ScopesAndOfflineAccess(t *testing.T) {
 	const (
 		testWorkspaceHost = "https://workspace.cloud.databricks.test"
 		testTokenEndpoint = "/oidc/v1/token"
-		testCallbackURL   = "http://localhost:8020"
 	)
 
 	tests := []struct {
@@ -1443,7 +1442,7 @@ func TestU2M_ScopesAndOfflineAccess(t *testing.T) {
 				t.Errorf("scope: want %q, got %q", tt.want, scopeReceived)
 			}
 
-			resp, err := http.Get(fmt.Sprintf("%s?code=__CODE__&state=%s", testCallbackURL, stateReceived))
+			resp, err := http.Get(fmt.Sprintf("http://%s?code=__CODE__&state=%s", p.redirectAddr, stateReceived))
 			if err != nil {
 				t.Fatalf("http.Get(): want no error, got %v", err)
 			}
