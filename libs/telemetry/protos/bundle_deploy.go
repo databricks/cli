@@ -38,7 +38,32 @@ type BundleDeployEvent struct {
 	// Per-resource-type metadata (counts and state-size statistics).
 	ResourcesMetadata *BundleResourcesMetadata `json:"resources_metadata,omitempty"`
 
+	// Git metadata of the source the bundle was deployed from. Nil when the
+	// bundle root is not inside a git repository.
+	Git *BundleGitInfo `json:"git,omitempty"`
+
+	// True when the bundle was deployed from a workspace folder: the CLI ran on a
+	// Databricks cluster with the bundle source under /Workspace/, rather than
+	// from a local checkout. A deployment attribute, not git metadata, so it sits
+	// beside Git rather than inside it.
+	FromWorkspaceFolder bool `json:"from_workspace_folder,omitempty"`
+
 	Experimental *BundleDeployExperimental `json:"experimental,omitempty"`
+}
+
+// BundleGitInfo mirrors the universe proto. Git provenance the CLI resolves during
+// deploy: from `.git` locally, or from the workspace API when deploying from a
+// Databricks Git folder. Values set under `bundle.git` in the configuration take
+// precedence. Mirrors the git_info sent to the Deployment Metadata Service.
+type BundleGitInfo struct {
+	// URL of the "origin" remote, with any userinfo (credentials) stripped.
+	OriginURL string `json:"origin_url,omitempty"`
+
+	// Branch deployed from.
+	Branch string `json:"branch,omitempty"`
+
+	// Full SHA of the HEAD commit deployed.
+	Commit string `json:"commit,omitempty"`
 }
 
 // These metrics are experimental and are often added in an adhoc manner. There
