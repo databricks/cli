@@ -1,5 +1,5 @@
 
->>> musterr databricks auth docker configure docker-test
+>>> musterr [CLI] auth docker configure docker-test
 Error: resolve workspace region for profile "docker-test": metastore summary did not include a region
 
 === Profile and Docker state unchanged

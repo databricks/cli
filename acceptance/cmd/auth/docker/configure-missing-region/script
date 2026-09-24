@@ -4,7 +4,7 @@ install_databricks_cli
 export DOCKER_CONFIG="$HOME/docker"
 cp "$HOME/.databrickscfg" "$HOME/databrickscfg.before"
 
-trace musterr databricks auth docker configure docker-test
+trace musterr $CLI auth docker configure docker-test
 
 title "Profile and Docker state unchanged\n"
 cmp "$HOME/databrickscfg.before" "$HOME/.databrickscfg"
