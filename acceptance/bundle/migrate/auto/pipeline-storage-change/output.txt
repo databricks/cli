@@ -28,6 +28,11 @@ Exit code: 1
 >>> print_migration_telemetry
 direct_migrate_recreate_planned true
 
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name *tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
 === With --auto-approve the recreate is applied on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
 Migrated 1 resource to direct deployment engine.
