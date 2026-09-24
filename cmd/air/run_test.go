@@ -83,6 +83,17 @@ func TestRunSubmitTextOutput(t *testing.T) {
 	assert.Zero(t, counts.runGetOutput.Load(), "bare submission must not poll runs/get-output")
 }
 
+func TestWarnExperimentalContainers(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, nil, &stdout, &stderr, "", ""))
+
+	warnExperimentalContainers(ctx, &runConfig{})
+	assert.Empty(t, stderr.String())
+
+	warnExperimentalContainers(ctx, &runConfig{Containers: []containerConfig{{Name: "inference"}}})
+	assert.Equal(t, experimentalContainersWarning+"\n", stderr.String())
+}
+
 func TestRunSubmitTextOutputIncludesProfileInLogsCommand(t *testing.T) {
 	var buf bytes.Buffer
 	srv, _ := submitServer(t)
