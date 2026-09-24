@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"path"
 	"slices"
 	"strings"
 
@@ -62,7 +63,9 @@ func buildArtifacts(cfg *runConfig) ([]uploadItem, error) {
 
 	items := []uploadItem{
 		{trainingConfigName, configData},
-		{commandScriptName, []byte(*cfg.Command)},
+	}
+	if cfg.Command != nil {
+		items = append(items, uploadItem{commandScriptName, []byte(*cfg.Command)})
 	}
 
 	if len(cfg.Parameters) > 0 {
@@ -90,7 +93,52 @@ func buildArtifacts(cfg *runConfig) ([]uploadItem, error) {
 		items = append(items, uploadItem{secretEnvVarsName, data})
 	}
 
+	for _, container := range cfg.Containers {
+		dir := path.Join("containers", container.Name)
+		items = append(items, uploadItem{path.Join(dir, commandScriptName), []byte(*container.Command)})
+		plain, secrets := containerEnvironmentEntries(cfg, container)
+		if len(plain) > 0 {
+			data, err := json.Marshal(envVarEntries(plain))
+			if err != nil {
+				return nil, fmt.Errorf("failed to serialize environment variables for container %q: %w", container.Name, err)
+			}
+			items = append(items, uploadItem{path.Join(dir, envVarsName), data})
+		}
+		if len(secrets) > 0 {
+			data, err := json.Marshal(secretEnvVarEntries(secrets))
+			if err != nil {
+				return nil, fmt.Errorf("failed to serialize secret environment variables for container %q: %w", container.Name, err)
+			}
+			items = append(items, uploadItem{path.Join(dir, secretEnvVarsName), data})
+		}
+	}
+
 	return items, nil
+}
+
+func containerEnvironmentEntries(cfg *runConfig, container containerConfig) (map[string]string, map[string]string) {
+	plain := maps.Clone(cfg.EnvVariables)
+	secrets := maps.Clone(cfg.Secrets)
+	if plain == nil {
+		plain = map[string]string{}
+	}
+	if secrets == nil {
+		secrets = map[string]string{}
+	}
+	if container.EnvironmentVariables == nil {
+		return plain, secrets
+	}
+	for name, value := range container.EnvironmentVariables.Variables {
+		delete(plain, name)
+		delete(secrets, name)
+		match := secretTemplateRe.FindStringSubmatch(value)
+		if match != nil {
+			secrets[name] = match[1] + "/" + match[2]
+		} else {
+			plain[name] = value
+		}
+	}
+	return plain, secrets
 }
 
 // envVarEntry is one entry in env_vars.json.
@@ -135,6 +183,17 @@ func secretEnvVarEntries(secrets map[string]string) []secretEnvVarEntry {
 func uploadArtifacts(ctx context.Context, w fileWriter, items []uploadItem) error {
 	if err := w.Mkdir(ctx, "."); err != nil {
 		return fmt.Errorf("failed to create launch directory: %w", err)
+	}
+	directories := map[string]struct{}{}
+	for _, item := range items {
+		if dir := path.Dir(item.name); dir != "." {
+			directories[dir] = struct{}{}
+		}
+	}
+	for _, dir := range slices.Sorted(maps.Keys(directories)) {
+		if err := w.Mkdir(ctx, dir); err != nil {
+			return fmt.Errorf("failed to create launch directory %s: %w", dir, err)
+		}
 	}
 
 	group, groupCtx := errgroup.WithContext(ctx)

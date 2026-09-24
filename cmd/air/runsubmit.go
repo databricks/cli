@@ -119,12 +119,19 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	}
 }
 
-func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string) (int64, error) {
+type submittedContainer struct {
+	Name                  string
+	CommandPath           string
+	Ranks                 []int
+	UnityCatalogImagePath string
+}
+
+func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string, containers []submittedContainer) (int64, error) {
 	// None of these fields are modeled by the SDK's AiRuntimeTask, so a run that
 	// sets any of them has to go through the raw /api/2.2 body. priority_class only
 	// ever appears alongside a pool (validation enforces it), but route on
 	// all of them so none can be silently dropped.
-	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" {
+	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" && len(containers) == 0 {
 		wait, err := w.Jobs.Submit(ctx, payload)
 		if err != nil {
 			return 0, err
@@ -152,6 +159,11 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 		}
 		aiRuntimeTask["unity_catalog_image_path"] = unityCatalogImagePath
 	}
+	if len(containers) > 0 {
+		if err := injectContainers(body, containers); err != nil {
+			return 0, err
+		}
+	}
 
 	apiClient, err := client.New(w.Config)
 	if err != nil {
@@ -163,6 +175,37 @@ func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.
 		return 0, err
 	}
 	return response.RunId, nil
+}
+
+func injectContainers(body map[string]any, containers []submittedContainer) error {
+	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
+	if err != nil {
+		return err
+	}
+	deployments, ok := aiRuntimeTask["deployments"].([]any)
+	if !ok || len(deployments) != 1 {
+		return errors.New("AIR submit payload must contain exactly one deployment")
+	}
+	deployment, ok := deployments[0].(map[string]any)
+	if !ok {
+		return errors.New("AIR submit payload deployment has an invalid shape")
+	}
+	delete(deployment, "command_path")
+	raw := make([]any, 0, len(containers))
+	for _, container := range containers {
+		ranks := make([]any, len(container.Ranks))
+		for i, rank := range container.Ranks {
+			ranks[i] = rank
+		}
+		raw = append(raw, map[string]any{
+			"name":                     container.Name,
+			"command_path":             container.CommandPath,
+			"ranks":                    ranks,
+			"unity_catalog_image_path": container.UnityCatalogImagePath,
+		})
+	}
+	deployment["containers"] = raw
+	return nil
 }
 
 // injectPoolFields sets the pool-only fields the SDK does not model onto the
@@ -288,10 +331,11 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	}
 	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
 	commandPath := path.Join(funcDir, commandScriptName)
+	containers := submittedContainers(cfg, funcDir)
 
 	// Pre-flight the config server-side before any upload, so a bad config fails with the
 	// backend's field-level errors and no orphaned artifacts.
-	if err := preflightValidate(ctx, w, cfg, commandPath); err != nil {
+	if err := preflightValidate(ctx, w, cfg, commandPath, containers); err != nil {
 		return 0, "", err
 	}
 
@@ -375,7 +419,7 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		priorityClass = *cfg.Compute.PriorityClass
 	}
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
-	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath())
+	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath(), containers)
 	if err != nil {
 		return 0, "", err
 	}
@@ -383,4 +427,17 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil
+}
+
+func submittedContainers(cfg *runConfig, funcDir string) []submittedContainer {
+	containers := make([]submittedContainer, 0, len(cfg.Containers))
+	for _, container := range cfg.Containers {
+		containers = append(containers, submittedContainer{
+			Name:                  container.Name,
+			CommandPath:           path.Join(funcDir, "containers", container.Name, commandScriptName),
+			Ranks:                 container.Ranks,
+			UnityCatalogImagePath: container.UnityCatalogImage,
+		})
+	}
+	return containers
 }
