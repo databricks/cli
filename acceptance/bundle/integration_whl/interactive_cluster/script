@@ -11,5 +11,7 @@ trace $CLI bundle run some_other_job
 
 title "Make a change to code without version change and run the job again"
 update_file.py my_test_code/__main__.py 'Hello from my func' 'UPDATED MY FUNC'
-trace $CLI bundle deploy
+# Direct reads the wheel the job run installed on the cluster as drift and uninstalls it
+# (deferred until the next restart); terraform does not manage cluster libraries.
+trace $CLI bundle deploy &> out.deploy2.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle run some_other_job
