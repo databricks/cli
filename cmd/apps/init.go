@@ -687,11 +687,11 @@ func shouldSkipPluginSelection(ctx context.Context, templateDir string) bool {
 }
 
 // replaceProjectName updates the project name in key files after copying a
-// pre-rendered template.  It sets bundle.name and the first
-// resources.apps.*.name in databricks.yml, and the name field in
-// package.json.
-func replaceProjectName(destDir, newName string) error {
-	// Update package.json name field via JSON round-trip.
+// pre-rendered template. It sets bundle.name and the first resources.apps.*.name
+// in databricks.yml, the name field in package.json, and applies package-manager-specific
+// transformations (packageManager field and script normalization).
+func replaceProjectName(destDir, newName string, selectedManager pkgmanager.Manager) error {
+	// Update package.json via single JSON round-trip: set name, packageManager, and normalize scripts.
 	pkgPath := filepath.Join(destDir, "package.json")
 	data, err := os.ReadFile(pkgPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -703,6 +703,8 @@ func replaceProjectName(destDir, newName string) error {
 			return fmt.Errorf("parse package.json: %w", err)
 		}
 		pkg["name"] = newName
+		// Apply package-manager-specific transformations.
+		pkgmanager.Rewrite(pkg, selectedManager)
 		out, err := json.MarshalIndent(pkg, "", "  ")
 		if err != nil {
 			return fmt.Errorf("encode package.json: %w", err)
@@ -1466,7 +1468,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// For pre-rendered templates, update package.json name (not a .tmpl file)
 	// and serve as a safety net for the agentic flow.
 	if skipPluginSelection {
-		if err := replaceProjectName(destDir, opts.name); err != nil {
+		if err := replaceProjectName(destDir, opts.name, selectedManager); err != nil {
 			return fmt.Errorf("update project name: %w", err)
 		}
 	}

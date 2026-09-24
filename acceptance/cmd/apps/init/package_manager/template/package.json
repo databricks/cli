@@ -1,5 +1,16 @@
 {
   "name": "{{.projectName}}",
   "version": "0.1.0",
-  "description": "{{.appDescription}}"
+  "description": "{{.appDescription}}",
+  "scripts": {
+    "build": "npm run build",
+    "dev": "vite dev",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "react": "^18.0.0"
+  },
+  "overrides": {
+    "lodash": "4.17.21"
+  }
 }

@@ -1334,7 +1334,7 @@ func TestReplaceProjectName(t *testing.T) {
 				require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte(tt.pkgJSON), 0o644))
 			}
 
-			err := replaceProjectName(dir, tt.newName)
+			err := replaceProjectName(dir, tt.newName, pkgmanager.Default())
 			if tt.wantErr {
 				require.Error(t, err)
 				return
@@ -1376,14 +1376,14 @@ func TestReplaceProjectName(t *testing.T) {
 
 func TestReplaceProjectNameNoDatabricksYml(t *testing.T) {
 	dir := t.TempDir()
-	err := replaceProjectName(dir, "new-app")
+	err := replaceProjectName(dir, "new-app", pkgmanager.Default())
 	require.Error(t, err)
 }
 
 func TestReplaceProjectNameMalformedYAML(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("{{invalid yaml"), 0o644))
-	err := replaceProjectName(dir, "new-app")
+	err := replaceProjectName(dir, "new-app", pkgmanager.Default())
 	assert.ErrorContains(t, err, "parse")
 }
 
@@ -1391,7 +1391,7 @@ func TestReplaceProjectNameMalformedPackageJSON(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, bundleConfigFile), []byte("bundle:\n  name: old\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "package.json"), []byte("{invalid json}"), 0o644))
-	err := replaceProjectName(dir, "new-app")
+	err := replaceProjectName(dir, "new-app", pkgmanager.Default())
 	assert.ErrorContains(t, err, "parse package.json")
 }
 
@@ -1403,7 +1403,7 @@ func TestReplaceProjectNameSymlinkRefused(t *testing.T) {
 	require.NoError(t, os.WriteFile(realFile, []byte("bundle:\n  name: old\n"), 0o644))
 	require.NoError(t, os.Symlink(realFile, filepath.Join(dir, bundleConfigFile)))
 
-	err := replaceProjectName(dir, "new-app")
+	err := replaceProjectName(dir, "new-app", pkgmanager.Default())
 	assert.ErrorContains(t, err, "symlink")
 }
 
