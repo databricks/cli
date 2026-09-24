@@ -1,0 +1,37 @@
+setup_docker_auth
+export DOCKER_CONFIG="$HOME/docker"
+
+title "Profile required\n"
+trace musterr $CLI auth docker host
+
+cat >> "$HOME/.databrickscfg" <<'ENDCFG'
+
+[account]
+host = https://accounts.cloud.databricks.test
+account_id = 00000000-0000-0000-0000-000000000000
+auth_type = databricks-cli
+
+[unsupported-host]
+host = https://workspace.example.test
+auth_type = databricks-cli
+ENDCFG
+cp "$HOME/.databrickscfg" "$HOME/databrickscfg.before"
+
+title "Workspace profile required\n"
+trace musterr $CLI auth docker host --profile account
+
+title "Unsupported workspace host\n"
+trace musterr $CLI auth docker host --profile unsupported-host
+
+title "Credential helper not configured\n"
+trace $CLI auth docker host --profile docker-test
+assert_not_exists.py "$DOCKER_CONFIG/config.json"
+
+title "Credential helper configured as the default store\n"
+mkdir -p "$DOCKER_CONFIG"
+cp docker-config.json "$DOCKER_CONFIG/config.json"
+trace $CLI auth docker host --profile docker-test --output json
+
+title "Profiles unchanged\n"
+cmp "$HOME/databrickscfg.before" "$HOME/.databrickscfg"
+printf 'Workspace ID not saved\n'

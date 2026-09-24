@@ -1,4 +1,49 @@
 
+>>> databricks auth docker host --profile docker-test
+Registry host: [NUMID].container.us-west-2.localhost
+Credential helper configured: NO
+
+>>> print_requests.py --get //api
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me",
+  "q": {
+    "excludedAttributes": "entitlements"
+  }
+}
+{
+  "headers": {
+    "X-Databricks-Workspace-Id": [
+      "[NUMID]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/metastore_summary"
+}
+
+>>> databricks auth docker configure docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+
+>>> print_requests.py --get //api
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me",
+  "q": {
+    "excludedAttributes": "entitlements"
+  }
+}
+{
+  "headers": {
+    "X-Databricks-Workspace-Id": [
+      "[NUMID]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/metastore_summary"
+}
+
 === Docker config
 {
   "auths": {
@@ -7,17 +52,64 @@
     }
   },
   "credHelpers": {
-    "[NUMID].container.us-west-2.cloud.databricks.com": "databricks"
+    "[NUMID].container.us-west-2.localhost": "databricks"
   }
 }
 
-=== Installed shim
-Platform shim verified
+=== Profile with resolved workspace ID
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
 
-=== Credential from shim
+[docker-test]
+host         = [DATABRICKS_URL]
+auth_type    = databricks-cli
+workspace_id = [NUMID]
+
+>>> databricks auth docker host --profile docker-test --output json
+{
+  "host": "[NUMID].container.us-west-2.localhost",
+  "configured": true
+}
+
+>>> print_requests.py --get //api
+{
+  "headers": {
+    "X-Databricks-Workspace-Id": [
+      "[NUMID]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/metastore_summary"
+}
 
 >>> docker-credential-databricks get
 {
   "Secret": "oauth-token",
   "Username": "oauthtoken"
 }
+
+>>> musterr docker-credential-databricks erase
+docker-credential-databricks only supports get
+
+=== Configure again
+Docker config unchanged
+
+>>> print_requests.py --get //api
+{
+  "headers": {
+    "X-Databricks-Workspace-Id": [
+      "[NUMID]"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/metastore_summary"
+}
+
+=== Deprecated --region flag skips workspace lookups
+
+>>> databricks auth docker configure docker-test --region us-west-2
+Flag --region has been deprecated, --region will be fully removed in the next release
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+No requests sent

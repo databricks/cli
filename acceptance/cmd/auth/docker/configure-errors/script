@@ -1,0 +1,32 @@
+setup_docker_auth
+export DOCKER_CONFIG="$HOME/docker"
+
+cat >> "$HOME/.databrickscfg" <<ENDCFG
+
+[unsupported-host]
+host = https://workspace.example.test
+auth_type = databricks-cli
+
+[duplicate]
+host = $DATABRICKS_HOST_ORIG
+auth_type = databricks-cli
+workspace_id = 900800700600
+ENDCFG
+cp "$HOME/.databrickscfg" "$HOME/databrickscfg.before"
+
+title "Unsupported flag\n"
+trace musterr $CLI auth docker configure docker-test --workspace-id 900800700600
+
+title "Profile argument and flag\n"
+trace musterr $CLI auth docker configure docker-test --profile docker-test
+
+title "Unsupported workspace host\n"
+trace musterr $CLI auth docker configure unsupported-host
+
+title "Another profile already maps to the workspace\n"
+trace musterr $CLI auth docker configure docker-test
+
+title "Nothing changed\n"
+assert_not_exists.py "$DOCKER_CONFIG/config.json"
+cmp "$HOME/databrickscfg.before" "$HOME/.databrickscfg"
+printf 'Docker config not created; profiles unchanged\n'

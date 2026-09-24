@@ -1,0 +1,15 @@
+
+>>> musterr [CLI] auth docker host --profile docker-test
+Error: A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --profile docker-test
+
+>>> musterr [CLI] auth docker configure docker-test
+Error: A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --profile docker-test
+
+>>> musterr [CLI] auth docker token
+Error: A new access token could not be retrieved because the refresh token is invalid. To reauthenticate, run the following command:
+  $ databricks auth login --profile docker-test
+
+=== Docker config not created
+OK

@@ -275,6 +275,13 @@ func AddDefaultHandlers(server *Server) {
 		return TestMetastore
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(req Request) any {
+		return catalog.GetMetastoreSummaryResponse{
+			MetastoreId: TestMetastore.MetastoreId,
+			Region:      "us-west-2",
+		}
+	})
+
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
 		return req.Workspace.JobsCreate(req)
 	})

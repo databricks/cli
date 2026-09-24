@@ -12,6 +12,30 @@ import (
 // HelperName is the suffix Docker uses to resolve docker-credential-databricks.
 const HelperName = "databricks"
 
+// CredentialHelperConfigured reports whether Docker selects docker-credential-databricks for registryHost.
+func CredentialHelperConfigured(path, registryHost string) (bool, error) {
+	config, err := readDockerConfig(path)
+	if err != nil {
+		return false, err
+	}
+
+	helpers, err := credentialHelpers(path, config)
+	if err != nil {
+		return false, err
+	}
+	if helper, ok := helpers[registryHost]; ok {
+		return helper == HelperName, nil
+	}
+
+	var store string
+	if raw, ok := config["credsStore"]; ok {
+		if err := json.Unmarshal(raw, &store); err != nil {
+			return false, fmt.Errorf("read Docker config %s: %w", path, err)
+		}
+	}
+	return store == HelperName, nil
+}
+
 // SetCredentialHelper assigns docker-credential-databricks to registryHost without changing other Docker configuration.
 // See https://docs.docker.com/reference/cli/docker/login/#credential-helpers.
 func SetCredentialHelper(path, registryHost string) error {
@@ -24,11 +48,9 @@ func SetCredentialHelper(path, registryHost string) error {
 		return err
 	}
 
-	helpers := map[string]string{}
-	if raw, ok := config["credHelpers"]; ok {
-		if err := json.Unmarshal(raw, &helpers); err != nil {
-			return fmt.Errorf("read Docker config %s: %w", path, err)
-		}
+	helpers, err := credentialHelpers(path, config)
+	if err != nil {
+		return err
 	}
 	if helpers == nil {
 		helpers = map[string]string{}
@@ -46,6 +68,19 @@ func SetCredentialHelper(path, registryHost string) error {
 	config["credHelpers"] = rawHelpers
 
 	return writeDockerConfig(path, config)
+}
+
+// credentialHelpers decodes an optional credHelpers object while preserving an absent or null value as nil.
+func credentialHelpers(path string, config map[string]json.RawMessage) (map[string]string, error) {
+	var helpers map[string]string
+	raw, ok := config["credHelpers"]
+	if !ok {
+		return helpers, nil
+	}
+	if err := json.Unmarshal(raw, &helpers); err != nil {
+		return nil, fmt.Errorf("read Docker config %s: %w", path, err)
+	}
+	return helpers, nil
 }
 
 // resolveDockerConfigPath follows a config symlink so replacement does not remove the link itself.
@@ -68,6 +103,7 @@ func resolveDockerConfigPath(path string) (string, error) {
 	return resolved, nil
 }
 
+// readDockerConfig returns an empty writable object when the config file is absent or contains JSON null.
 func readDockerConfig(path string) (map[string]json.RawMessage, error) {
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, fs.ErrNotExist) {

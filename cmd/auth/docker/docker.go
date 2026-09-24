@@ -17,6 +17,7 @@ func New(load TokenLoader) *cobra.Command {
 	}
 	cmd.AddCommand(newDockerTokenCommand(load))
 	cmd.AddCommand(newDockerConfigureCommand())
+	cmd.AddCommand(newDockerHostCommand())
 	return cmd
 }
 

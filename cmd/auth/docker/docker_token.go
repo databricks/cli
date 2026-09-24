@@ -81,7 +81,7 @@ func validateDockerTokenRequest(cmd *cobra.Command, args []string) error {
 
 func dockerTokenProfile(ctx context.Context, registry dockercredentials.Registry, profiler profile.Profiler) (profile.Profile, error) {
 	workspaceProfiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
-		return p.WorkspaceID == registry.WorkspaceID
+		return p.WorkspaceID == registry.WorkspaceID && registry.ServesWorkspaceHost(p.Host)
 	})
 	if err != nil {
 		return profile.Profile{}, err
