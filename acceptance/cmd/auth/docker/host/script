@@ -23,12 +23,21 @@ trace musterr $CLI auth docker host --profile account
 title "Unsupported workspace host\n"
 trace musterr $CLI auth docker host --profile unsupported-host
 
+title "Other authentication flags not supported\n"
+trace musterr $CLI auth docker host --profile docker-test --host https://other.cloud.databricks.test
+trace musterr $CLI auth docker host --profile docker-test --account-id 00000000-0000-0000-0000-000000000000
+trace musterr $CLI auth docker host --profile docker-test --workspace-id 111222333
+
 title "Credential helper not configured\n"
 trace $CLI auth docker host --profile docker-test
 assert_not_exists.py "$DOCKER_CONFIG/config.json"
 
-title "Credential helper configured as the default store\n"
+title "Invalid Docker config\n"
 mkdir -p "$DOCKER_CONFIG"
+cp invalid-docker-config.json "$DOCKER_CONFIG/config.json"
+trace musterr $CLI auth docker host --profile docker-test
+
+title "Credential helper configured as the default store\n"
 cp docker-config.json "$DOCKER_CONFIG/config.json"
 trace $CLI auth docker host --profile docker-test --output json
 

@@ -30,7 +30,7 @@ func CredentialHelperConfigured(path, registryHost string) (bool, error) {
 	var store string
 	if raw, ok := config["credsStore"]; ok {
 		if err := json.Unmarshal(raw, &store); err != nil {
-			return false, fmt.Errorf("read Docker config %s: %w", path, err)
+			return false, fmt.Errorf("read Docker config %s: %w", filepath.ToSlash(path), err)
 		}
 	}
 	return store == HelperName, nil
@@ -78,7 +78,7 @@ func credentialHelpers(path string, config map[string]json.RawMessage) (map[stri
 		return helpers, nil
 	}
 	if err := json.Unmarshal(raw, &helpers); err != nil {
-		return nil, fmt.Errorf("read Docker config %s: %w", path, err)
+		return nil, fmt.Errorf("read Docker config %s: %w", filepath.ToSlash(path), err)
 	}
 	return helpers, nil
 }
@@ -110,12 +110,12 @@ func readDockerConfig(path string) (map[string]json.RawMessage, error) {
 		return map[string]json.RawMessage{}, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("read Docker config %s: %w", path, err)
+		return nil, fmt.Errorf("read Docker config %s: %w", filepath.ToSlash(path), err)
 	}
 
 	var config map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &config); err != nil {
-		return nil, fmt.Errorf("read Docker config %s: %w", path, err)
+		return nil, fmt.Errorf("read Docker config %s: %w", filepath.ToSlash(path), err)
 	}
 	if config == nil {
 		config = map[string]json.RawMessage{}

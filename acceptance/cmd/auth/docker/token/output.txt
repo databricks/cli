@@ -30,6 +30,22 @@ Error: "registry.example.test" is not a Databricks Artifact Registry host
 >>> musterr [CLI] auth docker token --profile docker-test
 Error: auth docker token does not support --profile
 
+=== Positional argument not supported
+
+>>> musterr [CLI] auth docker token docker-test
+Error: auth docker token does not accept positional arguments
+
+=== Other authentication flags not supported
+
+>>> musterr [CLI] auth docker token --host https://other.cloud.databricks.test
+Error: auth docker token does not support --host
+
+>>> musterr [CLI] auth docker token --account-id [UUID]
+Error: auth docker token does not support --account-id
+
+>>> musterr [CLI] auth docker token --workspace-id [NUMID]
+Error: auth docker token does not support --workspace-id
+
 === Test-server registry never matches a remote workspace
 
 >>> musterr [CLI] auth docker token

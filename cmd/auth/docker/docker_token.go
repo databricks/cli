@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/databrickscfg/profile"
@@ -25,45 +24,54 @@ type TokenRequest struct {
 // TokenLoader acquires an OAuth token for a Docker credential request.
 type TokenLoader func(context.Context, TokenRequest) (*oauth2.Token, error)
 
-type tokenOptions struct {
-	tokenTimeout time.Duration
-	forceRefresh bool
-	profiler     profile.Profiler
-}
-
 type dockerGetResponse struct {
 	Username string `json:"Username"`
 	Secret   string `json:"Secret"`
 }
 
-func runDockerToken(ctx context.Context, cmd *cobra.Command, opts tokenOptions, load TokenLoader) error {
-	rawServer, err := io.ReadAll(cmd.InOrStdin())
-	if err != nil {
-		return fmt.Errorf("read Docker credential request: %w", err)
+func newDockerTokenCommand(load TokenLoader) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "token",
+		Short:   "(Experimental) Generate a Docker credential",
+		PreRunE: validateDockerTokenRequest,
 	}
-	registry, err := dockercredentials.ParseRegistryHost(string(rawServer))
-	if err != nil {
-		return err
-	}
+	var tokenTimeout time.Duration
+	cmd.Flags().DurationVar(&tokenTimeout, "timeout", defaultTokenTimeout, "Timeout for acquiring a token.")
+	var noForceRefresh bool
+	cmd.Flags().BoolVar(&noForceRefresh, "no-force-refresh", false, "Use a valid cached token instead of forcing a refresh.")
 
-	selectedProfile, err := dockerTokenProfile(ctx, registry, opts.profiler)
-	if err != nil {
-		return err
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		p, err := dockerTokenProfile(cmd.Context(), cmd.InOrStdin())
+		if err != nil {
+			return err
+		}
+		token, err := load(cmd.Context(), TokenRequest{
+			Profile: p,
+			Timeout: tokenTimeout,
+			// Docker may reuse one credential for a long upload, so maximize its lifetime.
+			ForceRefresh: !noForceRefresh,
+		})
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(dockerGetResponse{
+			Username: dockercredentials.OAuthTokenUsername,
+			Secret:   token.AccessToken,
+		})
 	}
+	return cmd
+}
 
-	t, err := load(ctx, TokenRequest{
-		Profile:      selectedProfile,
-		Timeout:      opts.tokenTimeout,
-		ForceRefresh: opts.forceRefresh,
-	})
+func dockerTokenProfile(ctx context.Context, input io.Reader) (profile.Profile, error) {
+	raw, err := io.ReadAll(input)
 	if err != nil {
-		return err
+		return profile.Profile{}, fmt.Errorf("read Docker credential request: %w", err)
 	}
-
-	return json.NewEncoder(cmd.OutOrStdout()).Encode(dockerGetResponse{
-		Username: dockercredentials.OAuthTokenUsername,
-		Secret:   t.AccessToken,
-	})
+	registry, err := dockercredentials.ParseRegistryHost(string(raw))
+	if err != nil {
+		return profile.Profile{}, err
+	}
+	return dockercredentials.ProfileForRegistry(ctx, profile.DefaultProfiler, registry)
 }
 
 func validateDockerTokenRequest(cmd *cobra.Command, args []string) error {
@@ -77,31 +85,4 @@ func validateDockerTokenRequest(cmd *cobra.Command, args []string) error {
 		}
 	}
 	return nil
-}
-
-func dockerTokenProfile(ctx context.Context, registry dockercredentials.Registry, profiler profile.Profiler) (profile.Profile, error) {
-	workspaceProfiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
-		return p.WorkspaceID == registry.WorkspaceID && registry.ServesWorkspaceHost(p.Host)
-	})
-	if err != nil {
-		return profile.Profile{}, err
-	}
-	if len(workspaceProfiles) == 0 {
-		return profile.Profile{}, fmt.Errorf("no Databricks profile found for workspace ID %s from registry host %s. Run databricks auth login --host <workspace-url> and set workspace_id for that profile", registry.WorkspaceID, registry.Host)
-	}
-
-	var matchingProfiles profile.Profiles
-	for _, p := range workspaceProfiles {
-		if validateDockerCredentialProfile(p) == nil {
-			matchingProfiles = append(matchingProfiles, p)
-		}
-	}
-	switch len(matchingProfiles) {
-	case 0:
-		return profile.Profile{}, validateDockerCredentialProfile(workspaceProfiles[0])
-	case 1:
-		return matchingProfiles[0], nil
-	default:
-		return profile.Profile{}, fmt.Errorf("multiple Databricks profiles match workspace ID %s: %s. Remove duplicate workspace_id entries before using Docker credential helper", registry.WorkspaceID, strings.Join(matchingProfiles.Names(), " and "))
-	}
 }
