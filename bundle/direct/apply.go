@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/retries"
 )
 
 func (d *DeploymentUnit) withResourceKey(ctx context.Context) context.Context {
@@ -46,7 +49,7 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 
 	switch actionType {
 	case deployplan.Recreate:
-		return d.Recreate(ctx, db, oldID, newState)
+		return d.Recreate(ctx, db, oldID, newState, planEntry)
 	case deployplan.Update:
 		return d.Update(ctx, db, oldID, newState, planEntry)
 	case deployplan.UpdateWithID:
@@ -106,7 +109,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
+func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any, planEntry *deployplan.PlanEntry) error {
 	oldState, err := d.loadPersistedState(db)
 	if err != nil {
 		return err
@@ -146,8 +149,78 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("waiting after deleting id=%s: %w", oldID, err)
 	}
 
-	return d.Create(ctx, db, newState)
+	// The delete-wait above only observes the resource's own read (e.g. the synced-table
+	// record). A delete can leave *backing* objects behind that it can't see — a synced
+	// table's destination Postgres table is dropped on a slower schedule — so the create
+	// of the same id can still conflict. Retry the create until that teardown finishes,
+	// then surface the result. We match the whole conflict class (ErrResourceConflict)
+	// rather than a single error code: the same lingering-teardown race can surface as
+	// ALREADY_EXISTS or RESOURCE_ALREADY_EXISTS depending on the resource, and both mean
+	// the same thing here.
+	//
+	// Only when the recreate re-creates the *same* id, though. If it changed a
+	// provided-id field (e.g. renamed an app, or pointed a synced table at a new
+	// synced_table_id), the create targets a *different* id that a separate,
+	// pre-existing resource already owns — waiting cannot free that name, so surface
+	// the conflict immediately instead of retrying for minutes. Any non-conflict error
+	// is returned immediately too.
+	idChanged := d.recreateChangedID(planEntry)
+	var createErr error
+	_, _ = retries.Poll[struct{}](ctx, recreateConflictRetryTimeout, func() (*struct{}, *retries.Err) {
+		createErr = d.Create(ctx, db, newState)
+		switch {
+		case createErr == nil:
+			return &struct{}{}, nil
+		case !idChanged && errors.Is(createErr, apierr.ErrResourceConflict):
+			log.Warnf(ctx, "Create still conflicts; the previous delete is likely still finishing, retrying: %s", createErr)
+			return nil, retries.Continues("create still conflicts with the deleting resource")
+		default:
+			return nil, retries.Halt(createErr)
+		}
+	})
+	return createErr
 }
+
+// recreateChangedID reports whether this recreate edits a field that composes the
+// resource's id (a provided_id_field, e.g. an app's name or a synced table's
+// synced_table_id). When it does, the create targets a different id than the one
+// just deleted, so an ALREADY_EXISTS can only mean a separate, pre-existing resource
+// owns that id — waiting never frees it. When it does not, the recreate re-creates
+// the same id, so ALREADY_EXISTS can only be the just-deleted resource still tearing
+// down.
+func (d *DeploymentUnit) recreateChangedID(planEntry *deployplan.PlanEntry) bool {
+	if planEntry == nil {
+		return false
+	}
+	for field, ch := range planEntry.Changes {
+		if ch.Action == deployplan.Skip {
+			continue
+		}
+		path, err := structpath.ParsePath(field)
+		if err != nil {
+			continue
+		}
+		if changesProvidedID(d.Adapter.ResourceConfig(), path) || changesProvidedID(d.Adapter.GeneratedResourceConfig(), path) {
+			return true
+		}
+	}
+	return false
+}
+
+func changesProvidedID(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) bool {
+	if cfg == nil {
+		return false
+	}
+	_, ok := findMatchingRule(path, cfg.ProvidedIDFields)
+	return ok
+}
+
+// recreateConflictRetryTimeout caps how long recreate retries a create that keeps
+// failing with ALREADY_EXISTS because the just-deleted resource (or its backing
+// objects) is still being torn down. No measured teardown latency to derive this
+// from, so it matches deleteIndexTimeout (15m); if it's exceeded the recreate fails
+// and the next deploy re-creates (state was already dropped).
+const recreateConflictRetryTimeout = 15 * time.Minute
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
 	if !d.Adapter.HasDoUpdate() {

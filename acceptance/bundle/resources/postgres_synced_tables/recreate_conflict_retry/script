@@ -1,0 +1,13 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "The create races the still-finishing delete (409 ALREADY_EXISTS); recreate retries and succeeds"
+# Toggle a recreate-on-change field (timeseries_key) to force a recreate. The synced-table
+# record is gone from GET so the delete-wait completes, but the first create conflicts
+# because the destination table is still being dropped; the recreate retries and succeeds.
+trace update_file.py databricks.yml "timeseries_key: tpep_pickup_datetime" "timeseries_key: tpep_dropoff_datetime"
+trace $CLI bundle deploy
