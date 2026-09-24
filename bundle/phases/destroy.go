@@ -141,7 +141,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, migrating bool) {
 	if engine.IsDirect() {
 		// Not reported per resource: destroy names them up front for consent and then
 		// reports only a count, so there is no per-resource output to report into.
@@ -207,11 +207,13 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	// A direct destroy that migrated from terraform left the superseded local terraform state
-	// behind (files.Delete already removed the remote one). Remove it before the direct state
-	// below: a crash between the two must never leave a live local terraform.tfstate with no
-	// direct state, which the next deploy would pick up. No-op when this destroy did not migrate.
-	if engine.IsDirect() {
+	// A destroy that migrated from terraform left the superseded local terraform state behind
+	// (files.Delete already removed the remote one). Remove it before the direct state below: a
+	// crash between the two must never leave a live local terraform.tfstate with no direct state,
+	// which the next deploy would pick up. Gated on migrating, not just engine.IsDirect(): a
+	// non-migrating direct destroy may run alongside a separate, still-valid terraform state that
+	// a later deploy is meant to migrate, and must not delete it.
+	if migrating {
 		_, localTerraformPath := b.StateFilenameTerraform(ctx)
 		if err := os.Remove(localTerraformPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			logdiag.LogError(ctx, err)
@@ -378,7 +380,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		// Approved: the destroy is committing (destroyCore runs on the direct state), so a
 		// prepared migration is no longer "not committed". Clear the flag so ProcessBundleRet's
 		// cleanup does not discard it, and a post-approval failure keeps the direct state rather
-		// than reverting to terraform. destroyCore retires the superseded terraform state itself.
+		// than reverting to terraform. Keep migrating so destroyCore retires the superseded
+		// terraform state only when this destroy actually migrated.
+		migrating := b.MigrationDeferred
 		b.MigrationDeferred = false
 
 		if engine.IsDirect() {
@@ -401,7 +405,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
-		destroyCore(ctx, b, plan, engine)
+		destroyCore(ctx, b, plan, engine, migrating)
 	} else {
 		// A deferred terraform→direct migration wrote the local direct state but has not
 		// committed it (destroyCore never ran): discard it and stay on the terraform engine,
