@@ -169,6 +169,14 @@ reference code from this repository by providing only the git reference (branch,
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.apps.App.git_source">
+<span class="sig-name descname"><span class="pre">git_source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.GitSource" title="databricks.bundles.apps._models.git_source.GitSource"><span class="pre">GitSource</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.git_source" title="Link to this definition">¶</a></dt>
+<dd><p>Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
+The source_code_path within git_source specifies the relative path to the app code within the repository.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.lifecycle">
 <span class="sig-name descname"><span class="pre">lifecycle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.LifecycleWithStarted" title="databricks.bundles.apps._models.lifecycle_with_started.LifecycleWithStarted"><span class="pre">LifecycleWithStarted</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.lifecycle" title="Link to this definition">¶</a></dt>
 <dd><p>Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.</p>
@@ -187,10 +195,14 @@ reference code from this repository by providing only the git reference (branch,
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.apps.App.source_code_path">
+<span class="sig-name descname"><span class="pre">source_code_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.App.source_code_path" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.telemetry_export_destinations">
 <span class="sig-name descname"><span class="pre">telemetry_export_destinations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.apps.TelemetryExportDestination" title="databricks.bundles.apps._models.telemetry_export_destination.TelemetryExportDestination"><span class="pre">TelemetryExportDestination</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.apps.App.telemetry_export_destinations" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview]</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.App.usage_policy_id">
@@ -1125,6 +1137,20 @@ bitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCo
 <dd><p>URL of the Git repository.</p>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.apps.GitRepository.auto_deploy">
+<span class="sig-name descname"><span class="pre">auto_deploy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.GitRepository.auto_deploy" title="Link to this definition">¶</a></dt>
+<dd><p>When true, automatically deploys the app on push events to the branch configured in
+the app’s deployment_source.git_source.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.apps.GitRepository.caller_credential_id">
+<span class="sig-name descname"><span class="pre">caller_credential_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.GitRepository.caller_credential_id" title="Link to this definition">¶</a></dt>
+<dd><p>ID of a personal access token Git credential owned by the caller, used to
+grant the app’s service principal access to this repository.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="databricks.bundles.apps.GitRepository.from_dict">
 <em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
@@ -1248,7 +1274,7 @@ of the repository is used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.TelemetryExportDestination.unity_catalog">
 <span class="sig-name descname"><span class="pre">unity_catalog</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.apps.UnityCatalog" title="databricks.bundles.apps._models.unity_catalog.UnityCatalog"><span class="pre">UnityCatalog</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.apps.TelemetryExportDestination.unity_catalog" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Unity Catalog Destinations for OTEL telemetry export.</p>
+<dd><p>Unity Catalog Destinations for OTEL telemetry export.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1282,19 +1308,19 @@ of the repository is used.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.UnityCatalog.logs_table">
 <span class="sig-name descname"><span class="pre">logs_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.UnityCatalog.logs_table" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Unity Catalog table for OTEL logs.</p>
+<dd><p>Unity Catalog table for OTEL logs.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.UnityCatalog.metrics_table">
 <span class="sig-name descname"><span class="pre">metrics_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.UnityCatalog.metrics_table" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Unity Catalog table for OTEL metrics.</p>
+<dd><p>Unity Catalog table for OTEL metrics.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.apps.UnityCatalog.traces_table">
 <span class="sig-name descname"><span class="pre">traces_table</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.apps.UnityCatalog.traces_table" title="Link to this definition">¶</a></dt>
-<dd><p>[Public Preview] Unity Catalog table for OTEL traces (spans).</p>
+<dd><p>Unity Catalog table for OTEL traces (spans).</p>
 </dd></dl>
 
 <dl class="py method">

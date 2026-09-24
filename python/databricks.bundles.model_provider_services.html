@@ -806,8 +806,9 @@ authentication.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderDirectConfig">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ModelProviderServiceConfigCustomProviderDirectConfig</span></span><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderDirectConfig" title="Link to this definition">¶</a></dt>
-<dd><p>Direct form of a custom provider configuration. Set <cite>api_key</cite> to the bearer
-token sent in the <cite>Authorization</cite> header.</p>
+<dd><p>Direct form of a custom provider configuration. Set <cite>api_key</cite> to send the
+secret as an <cite>Authorization</cite> bearer token, or <cite>header_auth</cite> to forward it
+under a caller-chosen HTTP header.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderDirectConfig.api_key">
 <span class="sig-name descname"><span class="pre">api_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigProviderSecret" title="databricks.bundles.model_provider_services._models.model_provider_service_config_provider_secret.ModelProviderServiceConfigProviderSecret"><span class="pre">ModelProviderServiceConfigProviderSecret</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.model_provider_services.ModelProviderServiceConfigCustomProviderDirectConfig.api_key" title="Link to this definition">¶</a></dt>

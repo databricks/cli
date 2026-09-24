@@ -1185,6 +1185,11 @@ accelerator count is encoded in the value name (e.g. <cite>GPU_8xH100</cite> mea
 <span class="sig-name descname"><span class="pre">GPU_8X_H100</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_8xH100'</span></em><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_8X_H100" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_8X_B300">
+<span class="sig-name descname"><span class="pre">GPU_8X_B300</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GPU_8xB300'</span></em><a class="headerlink" href="#databricks.bundles.jobs.ComputeSpecAcceleratorType.GPU_8X_B300" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1441,6 +1446,17 @@ by the enclosing <cite>TriggerConfiguration</cite> and intentionally omitted her
 <dt class="sig sig-object py" id="databricks.bundles.jobs.DashboardTask.dashboard_id">
 <span class="sig-name descname"><span class="pre">dashboard_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.DashboardTask.dashboard_id" title="Link to this definition">¶</a></dt>
 <dd><p>The identifier of the dashboard to refresh.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.DashboardTask.filters">
+<span class="sig-name descname"><span class="pre">filters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.DashboardTask.filters" title="Link to this definition">¶</a></dt>
+<dd><p>Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.
+The parameter value format is dependent on the filter type:
+- For text and single-select filters, provide a single value (e.g. <cite>“value”</cite>)
+- For date and datetime filters, provide the value in ISO 8601 format (e.g. <cite>“2000-01-01T00:00:00”</cite>)
+- For multi-select filters, provide a JSON array of values (e.g. <cite>“[“value1”,”value2”]”</cite>)
+- For range and date range filters, provide a JSON object with <cite>start</cite> and <cite>end</cite> (e.g. <cite>“{“start”:”1”,”end”:”10”}”</cite>)</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2074,7 +2090,8 @@ Note: Soon to be deprecated, use the ‘availability’ field instead.</p>
 <span class="sig-name descname"><span class="pre">zone_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.GcpAttributes.zone_id" title="Link to this definition">¶</a></dt>
 <dd><p>Identifier for the availability zone in which the cluster resides.
 This can be one of the following:
-- “HA” =&gt; High availability, spread nodes across availability zones for a Databricks deployment region [default].
+- “HA” =&gt; High availability, spread nodes across availability zones for a
+Databricks deployment region [default].
 - “AUTO” =&gt; Databricks picks an availability zone to schedule the cluster on.
 - A GCP availability zone =&gt; Pick One of the available zones for (machine type + region) from
 <a class="reference external" href="https://cloud.google.com/compute/docs/regions-zones">https://cloud.google.com/compute/docs/regions-zones</a>.</p>
@@ -2409,9 +2426,9 @@ See <cite>effective_budget_policy_id</cite> for the budget policy used by this w
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Job.environments">
 <span class="sig-name descname"><span class="pre">environments</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.jobs.JobEnvironment" title="databricks.bundles.jobs._models.job_environment.JobEnvironment"><span class="pre">JobEnvironment</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.jobs.Job.environments" title="Link to this definition">¶</a></dt>
-<dd><p>A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
-For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.</p>
+<dd><p>A list of task execution environment specifications that can be referenced by tasks that use serverless compute or a compute resource that uses Environments mode.</p>
+<p>For notebook tasks that use serverless compute or a compute resource that uses Environments mode, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
+For other tasks that use serverless compute or a compute resource that uses Environments mode, the task environment is required to be specified using environment_key in the task settings.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -2475,8 +2492,9 @@ This value cannot exceed 1000. Setting this value to <cite>0</cite> causes all n
 <dd><p>The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
 The performance target does not apply to tasks that run on Serverless GPU compute.</p>
 <ul class="simple">
-<li><p><cite>STANDARD</cite>: Enables cost-efficient execution of serverless workloads.</p></li>
 <li><p><cite>PERFORMANCE_OPTIMIZED</cite>: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.</p></li>
+<li><p><cite>STANDARD</cite>: Enables cost-efficient execution of serverless workloads.</p></li>
+<li><p><cite>COST_OPTIMIZED</cite>: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.</p></li>
 </ul>
 </dd></dl>
 
@@ -2866,8 +2884,14 @@ In this minimal environment spec, only pip and java dependencies are supported.<
 <dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobRunAs">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">JobRunAs</span></span><a class="headerlink" href="#databricks.bundles.jobs.JobRunAs" title="Link to this definition">¶</a></dt>
-<dd><p>Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.</p>
-<p>Either <cite>user_name</cite> or <cite>service_principal_name</cite> should be specified. If not, an error is thrown.</p>
+<dd><p>Write-only setting. Specifies the user, service principal, or group that the job runs as. If not specified, the job runs as the user who created the job.</p>
+<p>One of <cite>user_name</cite>, <cite>service_principal_name</cite>, or <cite>group_name</cite> should be specified. If not, an error is thrown.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.jobs.JobRunAs.group_name">
+<span class="sig-name descname"><span class="pre">group_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobRunAs.group_name" title="Link to this definition">¶</a></dt>
+<dd><p>Group name of an account group assigned to the workspace. When set, all tasks run as the group and the group’s permissions are used for data access. Setting this field requires being a member of the group, or having the <cite>Assume</cite> permission on the group.</p>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.JobRunAs.service_principal_name">
 <span class="sig-name descname"><span class="pre">service_principal_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.JobRunAs.service_principal_name" title="Link to this definition">¶</a></dt>
@@ -4795,7 +4819,7 @@ The key is <cite>task_key</cite>, and the value is the name assigned to the depe
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.jobs.Task.environment_key">
 <span class="sig-name descname"><span class="pre">environment_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.jobs.Task.environment_key" title="Link to this definition">¶</a></dt>
-<dd><p>The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute.</p>
+<dd><p>The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.</p>
 </dd></dl>
 
 <dl class="py attribute">

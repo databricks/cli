@@ -950,7 +950,8 @@ Note: Soon to be deprecated, use the ‘availability’ field instead.</p>
 <span class="sig-name descname"><span class="pre">zone_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.pipelines.GcpAttributes.zone_id" title="Link to this definition">¶</a></dt>
 <dd><p>Identifier for the availability zone in which the cluster resides.
 This can be one of the following:
-- “HA” =&gt; High availability, spread nodes across availability zones for a Databricks deployment region [default].
+- “HA” =&gt; High availability, spread nodes across availability zones for a
+Databricks deployment region [default].
 - “AUTO” =&gt; Databricks picks an availability zone to schedule the cluster on.
 - A GCP availability zone =&gt; Pick One of the available zones for (machine type + region) from
 <a class="reference external" href="https://cloud.google.com/compute/docs/regions-zones">https://cloud.google.com/compute/docs/regions-zones</a>.</p>
@@ -3039,6 +3040,16 @@ It must be in DBSQL format.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.pipelines.TransformerFormat.JSON">
 <span class="sig-name descname"><span class="pre">JSON</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'JSON'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TransformerFormat.JSON" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TransformerFormat.AVRO">
+<span class="sig-name descname"><span class="pre">AVRO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AVRO'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TransformerFormat.AVRO" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="databricks.bundles.pipelines.TransformerFormat.PROTOBUF">
+<span class="sig-name descname"><span class="pre">PROTOBUF</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'PROTOBUF'</span></em><a class="headerlink" href="#databricks.bundles.pipelines.TransformerFormat.PROTOBUF" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>

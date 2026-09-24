@@ -164,8 +164,9 @@ downstream of it, and <cite>+my_task+</cite> runs both. A task key with no <cite
 <span class="sig-name descname"><span class="pre">performance_target</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.job_runs.PerformanceTarget" title="databricks.bundles.job_runs._models.performance_target.PerformanceTarget"><span class="pre">PerformanceTarget</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.job_runs.JobRun.performance_target" title="Link to this definition">¶</a></dt>
 <dd><p>The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.</p>
 <ul class="simple">
-<li><p><cite>STANDARD</cite>: Enables cost-efficient execution of serverless workloads.</p></li>
 <li><p><cite>PERFORMANCE_OPTIMIZED</cite>: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.</p></li>
+<li><p><cite>STANDARD</cite>: Enables cost-efficient execution of serverless workloads.</p></li>
+<li><p><cite>COST_OPTIMIZED</cite>: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.</p></li>
 </ul>
 </dd></dl>
 

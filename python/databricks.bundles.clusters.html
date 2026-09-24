@@ -670,12 +670,6 @@ If <cite>cluster_log_conf</cite> is specified, init script logs are sent to <cit
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Cluster.libraries">
-<span class="sig-name descname"><span class="pre">libraries</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#databricks.bundles.clusters.Library" title="databricks.bundles.clusters._models.library.Library"><span class="pre">Library</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.clusters.Cluster.libraries" title="Link to this definition">¶</a></dt>
-<dd><p>A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.</p>
-</dd></dl>
-
-<dl class="py attribute">
 <dt class="sig sig-object py" id="databricks.bundles.clusters.Cluster.lifecycle">
 <span class="sig-name descname"><span class="pre">lifecycle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.clusters.LifecycleWithStarted" title="databricks.bundles.clusters._models.lifecycle_with_started.LifecycleWithStarted"><span class="pre">LifecycleWithStarted</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.Cluster.lifecycle" title="Link to this definition">¶</a></dt>
 <dd><p>Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.</p>
@@ -1236,7 +1230,8 @@ Note: Soon to be deprecated, use the ‘availability’ field instead.</p>
 <span class="sig-name descname"><span class="pre">zone_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.GcpAttributes.zone_id" title="Link to this definition">¶</a></dt>
 <dd><p>Identifier for the availability zone in which the cluster resides.
 This can be one of the following:
-- “HA” =&gt; High availability, spread nodes across availability zones for a Databricks deployment region [default].
+- “HA” =&gt; High availability, spread nodes across availability zones for a
+Databricks deployment region [default].
 - “AUTO” =&gt; Databricks picks an availability zone to schedule the cluster on.
 - A GCP availability zone =&gt; Pick One of the available zones for (machine type + region) from
 <a class="reference external" href="https://cloud.google.com/compute/docs/regions-zones">https://cloud.google.com/compute/docs/regions-zones</a>.</p>
@@ -1417,86 +1412,6 @@ Cluster iam role is used to access s3, please make sure the cluster iam role in
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Library</span></span><a class="headerlink" href="#databricks.bundles.clusters.Library" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.cran">
-<span class="sig-name descname"><span class="pre">cran</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.clusters.RCranLibrary" title="databricks.bundles.clusters._models.r_cran_library.RCranLibrary"><span class="pre">RCranLibrary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.Library.cran" title="Link to this definition">¶</a></dt>
-<dd><p>Specification of a CRAN library to be installed as part of the library</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.egg">
-<span class="sig-name descname"><span class="pre">egg</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.Library.egg" title="Link to this definition">¶</a></dt>
-<dd><p>[DEPRECATED] Deprecated. URI of the egg library to install. Installing Python egg files is deprecated and is not supported in Databricks Runtime 14.0 and above.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.jar">
-<span class="sig-name descname"><span class="pre">jar</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.Library.jar" title="Link to this definition">¶</a></dt>
-<dd><p>URI of the JAR library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.
-For example: <cite>{ “jar”: “/Workspace/path/to/library.jar” }</cite>, <cite>{ “jar” : “/Volumes/path/to/library.jar” }</cite> or
-<cite>{ “jar”: “s3://my-bucket/library.jar” }</cite>.
-If S3 is used, please make sure the cluster has read access on the library. You may need to
-launch the cluster with an IAM role to access the S3 URI.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.maven">
-<span class="sig-name descname"><span class="pre">maven</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.clusters.MavenLibrary" title="databricks.bundles.clusters._models.maven_library.MavenLibrary"><span class="pre">MavenLibrary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.Library.maven" title="Link to this definition">¶</a></dt>
-<dd><p>Specification of a maven library to be installed. For example:
-<cite>{ “coordinates”: “org.jsoup:jsoup:1.7.2” }</cite></p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.pypi">
-<span class="sig-name descname"><span class="pre">pypi</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#databricks.bundles.clusters.PythonPyPiLibrary" title="databricks.bundles.clusters._models.python_py_pi_library.PythonPyPiLibrary"><span class="pre">PythonPyPiLibrary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.Library.pypi" title="Link to this definition">¶</a></dt>
-<dd><p>Specification of a PyPi library to be installed. For example:
-<cite>{ “package”: “simplejson” }</cite></p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.requirements">
-<span class="sig-name descname"><span class="pre">requirements</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.Library.requirements" title="Link to this definition">¶</a></dt>
-<dd><p>URI of the requirements.txt file to install. Only Workspace paths and Unity Catalog Volumes paths are supported.
-For example: <cite>{ “requirements”: “/Workspace/path/to/requirements.txt” }</cite> or <cite>{ “requirements” : “/Volumes/path/to/requirements.txt” }</cite></p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.whl">
-<span class="sig-name descname"><span class="pre">whl</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.Library.whl" title="Link to this definition">¶</a></dt>
-<dd><p>URI of the wheel library to install. Supported URIs include Workspace paths, Unity Catalog Volumes paths, and S3 URIs.
-For example: <cite>{ “whl”: “/Workspace/path/to/library.whl” }</cite>, <cite>{ “whl” : “/Volumes/path/to/library.whl” }</cite> or
-<cite>{ “whl”: “s3://my-bucket/library.whl” }</cite>.
-If S3 is used, please make sure the cluster has read access on the library. You may need to
-launch the cluster with an IAM role to access the S3 URI.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.from_dict">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.clusters.Library.from_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.Library.as_dict">
-<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.clusters.Library.as_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.clusters.LifecycleWithStarted">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LifecycleWithStarted</span></span><a class="headerlink" href="#databricks.bundles.clusters.LifecycleWithStarted" title="Link to this definition">¶</a></dt>
 <dd><dl class="py attribute">
@@ -1608,54 +1523,6 @@ launch the cluster with an IAM role to access the S3 URI.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.MavenLibrary">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MavenLibrary</span></span><a class="headerlink" href="#databricks.bundles.clusters.MavenLibrary" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.MavenLibrary.coordinates">
-<span class="sig-name descname"><span class="pre">coordinates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.clusters.MavenLibrary.coordinates" title="Link to this definition">¶</a></dt>
-<dd><p>Gradle-style maven coordinates. For example: “org.jsoup:jsoup:1.7.2”.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.MavenLibrary.exclusions">
-<span class="sig-name descname"><span class="pre">exclusions</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#databricks.bundles.clusters.MavenLibrary.exclusions" title="Link to this definition">¶</a></dt>
-<dd><p>List of dependences to exclude. For example: <cite>[“slf4j:slf4j”, “*:hadoop-client”]</cite>.</p>
-<p>Maven dependency exclusions:
-<a class="reference external" href="https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html">https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html</a>.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.MavenLibrary.repo">
-<span class="sig-name descname"><span class="pre">repo</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.MavenLibrary.repo" title="Link to this definition">¶</a></dt>
-<dd><p>Maven repo to install the Maven package from. If omitted, both Maven Central Repository
-and Spark Packages are searched.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.MavenLibrary.from_dict">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.clusters.MavenLibrary.from_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.MavenLibrary.as_dict">
-<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.clusters.MavenLibrary.as_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="databricks.bundles.clusters.NodeTypeFlexibility">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NodeTypeFlexibility</span></span><a class="headerlink" href="#databricks.bundles.clusters.NodeTypeFlexibility" title="Link to this definition">¶</a></dt>
 <dd><p>Configuration for flexible node types, allowing fallback to alternate node types during cluster launch and upscale.</p>
@@ -1692,86 +1559,6 @@ When set (non-empty), the value is passed to AWS CreateFleet API to create the E
 </dl>
 
 <span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.clusters.NodeTypeFlexibility.as_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.PythonPyPiLibrary">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PythonPyPiLibrary</span></span><a class="headerlink" href="#databricks.bundles.clusters.PythonPyPiLibrary" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.PythonPyPiLibrary.package">
-<span class="sig-name descname"><span class="pre">package</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.clusters.PythonPyPiLibrary.package" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the pypi package to install. An optional exact version specification is also
-supported. Examples: “simplejson” and “simplejson==3.8.0”.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.PythonPyPiLibrary.repo">
-<span class="sig-name descname"><span class="pre">repo</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.PythonPyPiLibrary.repo" title="Link to this definition">¶</a></dt>
-<dd><p>The repository where the package can be found. If not specified, the default pip index is
-used.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.PythonPyPiLibrary.from_dict">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.clusters.PythonPyPiLibrary.from_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.PythonPyPiLibrary.as_dict">
-<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.clusters.PythonPyPiLibrary.as_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.RCranLibrary">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RCranLibrary</span></span><a class="headerlink" href="#databricks.bundles.clusters.RCranLibrary" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.RCranLibrary.package">
-<span class="sig-name descname"><span class="pre">package</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#databricks.bundles.clusters.RCranLibrary.package" title="Link to this definition">¶</a></dt>
-<dd><p>The name of the CRAN package to install.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.RCranLibrary.repo">
-<span class="sig-name descname"><span class="pre">repo</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3.10/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#databricks.bundles.clusters.RCranLibrary.repo" title="Link to this definition">¶</a></dt>
-<dd><p>The repository where the package can be found. If not specified, the default CRAN repo is used.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.RCranLibrary.from_dict">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Self</span></span></span><a class="headerlink" href="#databricks.bundles.clusters.RCranLibrary.from_dict" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="databricks.bundles.clusters.RCranLibrary.as_dict">
-<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span>
-
-<dl>
-<dd><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>,</dd>
-</dl>
-
-<span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3.10/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a></span></span><a class="headerlink" href="#databricks.bundles.clusters.RCranLibrary.as_dict" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
