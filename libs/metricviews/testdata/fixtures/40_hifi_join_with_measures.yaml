@@ -1,0 +1,17 @@
+version: 1.1
+source: my_table
+comment: Updated metric view with join
+joins:
+  - name: join_table
+    source: my_join_table
+    on: source.region_id = join_table.region_id
+dimensions:
+  - name: region
+    expr: region_id
+measures:
+  - name: total_value
+    expr: sum(value)
+  - name: avg_value
+    expr: avg(value)
+  - name: total_bonus
+    expr: sum(bonus)
