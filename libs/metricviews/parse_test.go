@@ -36,6 +36,21 @@ func TestParseRejectsBadVersions(t *testing.T) {
 	}
 }
 
+func TestParseRejectsUnsupportedViewType(t *testing.T) {
+	in := []byte("version: 1.1\nview_type: OTHER\nsource: main.default.t\n")
+	_, err := Parse(in)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "view_type")
+	assert.ErrorContains(t, err, "OTHER")
+}
+
+func TestParseRejectsMultiSourceWithoutViewType(t *testing.T) {
+	in := []byte("version: 1.1\nsources:\n  - name: o\n    from: main.default.o\n")
+	_, err := Parse(in)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "view_type")
+}
+
 func TestMetricViewMarshalRoundTrips(t *testing.T) {
 	in := []byte("version: 1.1\nsource: main.default.t\nmeasures:\n    - name: c\n      expr: COUNT(*)\n")
 	m, err := Parse(in)

@@ -33,6 +33,9 @@ func (p *ParameterV11) UnmarshalYAML(node *yaml.Node) error {
 	for i := 0; i+1 < len(node.Content); i += 2 {
 		key := node.Content[i].Value
 		val := node.Content[i+1]
+		for val.Kind == yaml.AliasNode {
+			val = val.Alias
+		}
 		switch key {
 		case "name":
 			p.Name = val.Value
@@ -67,9 +70,8 @@ func (p ParameterV11) MarshalYAML() (any, error) {
 	case p.Default.IsNull:
 		add("default", &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!null", Value: "null"})
 	default:
-		// An empty Expr would render as a bare `default:` and re-parse as null;
-		// SQL default expressions are never empty, so this case does not arise.
-		add("default", &yaml.Node{Kind: yaml.ScalarNode, Value: p.Default.Expr})
+		// Keep YAML keywords such as "null" as string expressions.
+		add("default", &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!str", Value: p.Default.Expr})
 	}
 	return m, nil
 }

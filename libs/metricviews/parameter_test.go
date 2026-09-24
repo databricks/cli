@@ -20,6 +20,7 @@ func TestParameterV11TriState(t *testing.T) {
 		{"null", "name: p\ndata_type: STRING\ndefault: null\n", true, true, ""},
 		{"tilde", "name: p\ndata_type: STRING\ndefault: ~\n", true, true, ""},
 		{"expr", "name: p\ndata_type: STRING\ndefault: EMEA\n", true, false, "EMEA"},
+		{"quoted null", "name: p\ndata_type: STRING\ndefault: \"null\"\n", true, false, "null"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -34,6 +35,29 @@ func TestParameterV11TriState(t *testing.T) {
 			var p2 ParameterV11
 			require.NoError(t, yaml.Unmarshal(out, &p2))
 			assert.Equal(t, p, p2)
+		})
+	}
+}
+
+func TestParameterV11ResolvesAliases(t *testing.T) {
+	cases := []struct {
+		name     string
+		in       string
+		wantName string
+		wantType string
+		wantExpr string
+	}{
+		{"name", "data_type: &type STRING\nname: *type\ndefault: value\n", "STRING", "STRING", "value"},
+		{"data_type", "name: &n p\ndata_type: *n\ndefault: value\n", "p", "p", "value"},
+		{"default", "name: &n p\ndata_type: STRING\ndefault: *n\n", "p", "STRING", "p"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var p ParameterV11
+			require.NoError(t, yaml.Unmarshal([]byte(tc.in), &p))
+			assert.Equal(t, tc.wantName, p.Name)
+			assert.Equal(t, tc.wantType, p.DataType)
+			assert.Equal(t, ParamDefault{Present: true, Expr: tc.wantExpr}, p.Default)
 		})
 	}
 }

@@ -53,15 +53,16 @@ func (m *MetricView) MarshalYAML() (any, error) {
 	}
 }
 
-// peek reads the top-level "version" and "view_type" scalars from a document
-// node without type-coercing them (version may be an unquoted float).
-func peek(root *yaml.Node) (version, viewType string) {
+// peek reads the top-level "version" and "view_type" scalars, plus the
+// presence of "sources", without type-coercing scalars (version may be an
+// unquoted float).
+func peek(root *yaml.Node) (version, viewType string, hasViewType, hasSources bool) {
 	doc := root
 	if doc.Kind == yaml.DocumentNode && len(doc.Content) > 0 {
 		doc = doc.Content[0]
 	}
 	if doc.Kind != yaml.MappingNode {
-		return "", ""
+		return "", "", false, false
 	}
 	for i := 0; i+1 < len(doc.Content); i += 2 {
 		switch doc.Content[i].Value {
@@ -69,9 +70,12 @@ func peek(root *yaml.Node) (version, viewType string) {
 			version = doc.Content[i+1].Value
 		case "view_type":
 			viewType = doc.Content[i+1].Value
+			hasViewType = true
+		case "sources":
+			hasSources = true
 		}
 	}
-	return version, viewType
+	return version, viewType, hasViewType, hasSources
 }
 
 // Parse parses metric-view YAML, dispatching on version and (for 1.1) view_type.
@@ -80,7 +84,7 @@ func Parse(data []byte) (*MetricView, error) {
 	if err := yaml.Unmarshal(data, &root); err != nil {
 		return nil, fmt.Errorf("metricviews: parsing YAML: %w", err)
 	}
-	version, viewType := peek(&root)
+	version, viewType, hasViewType, hasSources := peek(&root)
 	if !validVersions[version] {
 		return nil, fmt.Errorf("metricviews: invalid YAML version: %q", version)
 	}
@@ -93,12 +97,18 @@ func Parse(data []byte) (*MetricView, error) {
 		}
 		return &MetricView{V10: &v}, nil
 	default: // version11
+		if hasViewType && viewType != viewTypeMultiSource {
+			return nil, fmt.Errorf("metricviews: unsupported v1.1 view_type %q", viewType)
+		}
 		if viewType == viewTypeMultiSource {
 			var v MultiSourceMetricView
 			if err := root.Decode(&v); err != nil {
 				return nil, fmt.Errorf("metricviews: decoding v1.1 multi-source: %w", err)
 			}
 			return &MetricView{MultiSource: &v}, nil
+		}
+		if hasSources {
+			return nil, errors.New("metricviews: v1.1 sources requires view_type: MULTI_SOURCE")
 		}
 		var v SingleSourceMetricView
 		if err := root.Decode(&v); err != nil {
