@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 	"unicode"
+
+	"golang.org/x/mod/semver"
 )
 
 // Pinned package manager versions written to package.json's "packageManager" field.
@@ -20,6 +22,13 @@ const (
 	// npmPin is the pinned npm version written to package.json's "packageManager".
 	// TODO(VERIFY): confirm the canonical npm pin with the AppKit template owners; placeholder for now.
 	npmPin = "npm@10.9.2"
+
+	// pnpmDualPMThreshold is the first AppKit template version that supports dual package manager
+	// (pnpm and npm). Template versions below this threshold only support npm.
+	// TODO(VERIFY): Confirm this version with the AppKit template owners. This is a placeholder pending AppKit
+	// release notes or the implementing PR in the AppKit repository. Once confirmed, replace with the actual
+	// version (e.g., "0.24.0" if that's when dual-PM support was introduced).
+	pnpmDualPMThreshold = "0.25.0"
 )
 
 // Manager represents a package manager with its properties.
@@ -70,6 +79,62 @@ func Resolve(name string) (Manager, error) {
 // Default returns the default package manager (pnpm).
 func Default() Manager {
 	return managers["pnpm"]
+}
+
+// EffectiveManager applies version-based constraints to determine the actual package manager to use.
+// For pnpm requests against template versions below the dual-PM support threshold, it downgrades to npm.
+// For npm requests, no downgrade occurs (npm is always supported).
+// Returns the effective Manager and a downgraded bool (true only when a pnpm request becomes npm).
+// Non-concrete versions (main, latest, empty, or branch names) are treated as >= threshold (no downgrade).
+func EffectiveManager(selected Manager, resolvedVersion string) (Manager, bool) {
+	// If the selected manager is already npm, no downgrade possible.
+	if selected.Name != "pnpm" {
+		return selected, false
+	}
+
+	// Non-concrete versions (main, latest, empty, or branch names) are treated as supporting dual-PM.
+	// Only concrete semantic versions are subject to the threshold check.
+	if !isSemverVersion(resolvedVersion) {
+		return selected, false
+	}
+
+	// Extract the semantic version from template-v prefix if present.
+	version := resolvedVersion
+	const prefix = "template-v"
+	version = strings.TrimPrefix(version, prefix)
+	if !strings.HasPrefix(version, "v") {
+		version = "v" + version
+	}
+
+	// Compare the version against the threshold.
+	// If version < threshold, downgrade to npm; otherwise honor the selection.
+	threshold := "v" + pnpmDualPMThreshold
+	if semver.Compare(version, threshold) < 0 {
+		return managers["npm"], true
+	}
+
+	return selected, false
+}
+
+// isSemverVersion checks if a version string appears to be a semantic version.
+// Returns false for non-concrete refs like "main", "latest", empty, or branch names.
+func isSemverVersion(version string) bool {
+	if version == "" || version == "main" {
+		return false
+	}
+
+	// Strip template-v prefix if present to check the core version.
+	const prefix = "template-v"
+	core := strings.TrimPrefix(version, prefix)
+
+	// Check if it looks like a semver: starts with v or a digit, and contains dots.
+	// This rejects branch names like "feature-x" or "release-0.24" while accepting "0.25.0" and "v0.25.0".
+	if (core != "" && (core[0] == 'v' || (core[0] >= '0' && core[0] <= '9'))) &&
+		strings.Contains(core, ".") {
+		return true
+	}
+
+	return false
 }
 
 // Prune removes non-selected package manager artifacts from the given directory.

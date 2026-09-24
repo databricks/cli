@@ -305,3 +305,109 @@ func TestRewrite(t *testing.T) {
 		})
 	}
 }
+
+func TestEffectiveManager(t *testing.T) {
+	pnpm, err := pkgmanager.Resolve("pnpm")
+	require.NoError(t, err)
+	npm, err := pkgmanager.Resolve("npm")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name            string
+		selectedManager pkgmanager.Manager
+		version         string
+		expectManager   string
+		expectDowngrade bool
+	}{
+		// Explicit pnpm requests with concrete versions
+		{
+			name:            "pnpm with version below threshold",
+			selectedManager: pnpm,
+			version:         "template-v0.24.0",
+			expectManager:   "npm",
+			expectDowngrade: true,
+		},
+		{
+			name:            "pnpm with version at threshold",
+			selectedManager: pnpm,
+			version:         "template-v0.25.0",
+			expectManager:   "pnpm",
+			expectDowngrade: false,
+		},
+		{
+			name:            "pnpm with version above threshold",
+			selectedManager: pnpm,
+			version:         "template-v0.26.0",
+			expectManager:   "pnpm",
+			expectDowngrade: false,
+		},
+		{
+			name:            "pnpm with v-prefixed version below threshold",
+			selectedManager: pnpm,
+			version:         "v0.24.0",
+			expectManager:   "npm",
+			expectDowngrade: true,
+		},
+		{
+			name:            "pnpm with unprefixed version below threshold",
+			selectedManager: pnpm,
+			version:         "0.24.0",
+			expectManager:   "npm",
+			expectDowngrade: true,
+		},
+
+		// Explicit pnpm requests with non-concrete versions
+		{
+			name:            "pnpm with main branch",
+			selectedManager: pnpm,
+			version:         "main",
+			expectManager:   "pnpm",
+			expectDowngrade: false,
+		},
+		{
+			name:            "pnpm with empty version",
+			selectedManager: pnpm,
+			version:         "",
+			expectManager:   "pnpm",
+			expectDowngrade: false,
+		},
+		{
+			name:            "pnpm with branch name",
+			selectedManager: pnpm,
+			version:         "feature-x",
+			expectManager:   "pnpm",
+			expectDowngrade: false,
+		},
+
+		// Explicit npm requests
+		{
+			name:            "npm with version below threshold",
+			selectedManager: npm,
+			version:         "template-v0.24.0",
+			expectManager:   "npm",
+			expectDowngrade: false,
+		},
+		{
+			name:            "npm with version above threshold",
+			selectedManager: npm,
+			version:         "template-v0.26.0",
+			expectManager:   "npm",
+			expectDowngrade: false,
+		},
+		{
+			name:            "npm with main branch",
+			selectedManager: npm,
+			version:         "main",
+			expectManager:   "npm",
+			expectDowngrade: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			effective, downgraded := pkgmanager.EffectiveManager(tt.selectedManager, tt.version)
+			assert.Equal(t, tt.expectManager, effective.Name, "manager name mismatch")
+			assert.Equal(t, tt.expectDowngrade, downgraded, "downgrade bool mismatch")
+		})
+	}
+}
