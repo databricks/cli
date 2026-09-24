@@ -85,6 +85,10 @@ type Plugin struct {
 	// Stored as a plain string so unknown future values round-trip unchanged.
 	// See https://github.com/databricks/appkit/pull/264.
 	Stability string `json:"stability,omitempty"`
+
+	// Deprecated plugins are hidden from the init picker.
+	// See https://github.com/databricks/appkit/pull/596.
+	Deprecated bool `json:"deprecated,omitempty"`
 }
 
 // StabilityLabel returns a user-facing tier label for non-GA plugins.
@@ -153,7 +157,7 @@ func (m *Manifest) GetPlugins() []Plugin {
 func (m *Manifest) GetSelectablePlugins() []Plugin {
 	var selectable []Plugin
 	for _, p := range m.GetPlugins() {
-		if !p.RequiredByTemplate {
+		if !p.RequiredByTemplate && !p.Deprecated {
 			selectable = append(selectable, p)
 		}
 	}
