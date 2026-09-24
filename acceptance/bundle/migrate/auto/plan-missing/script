@@ -1,0 +1,17 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "deploy --plan with a missing plan file fails after the migration prepared the direct state"
+# The migration runs (writing the local direct state) before the saved plan is loaded, so a
+# missing plan file fails post-migration and unapproved. A failed, unapproved command must
+# change nothing: the run discards the prepared migration and stays on terraform.
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy --plan does-not-exist.json
+
+title "State is still terraform - the migration was discarded, not committed"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+title "A plain deploy still runs on terraform (the engine was not silently switched)"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy

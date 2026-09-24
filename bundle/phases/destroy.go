@@ -207,6 +207,17 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
+	// A direct destroy that migrated from terraform left the superseded local terraform state
+	// behind (files.Delete already removed the remote one). Remove it before the direct state
+	// below: a crash between the two must never leave a live local terraform.tfstate with no
+	// direct state, which the next deploy would pick up. No-op when this destroy did not migrate.
+	if engine.IsDirect() {
+		_, localTerraformPath := b.StateFilenameTerraform(ctx)
+		if err := os.Remove(localTerraformPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			logdiag.LogError(ctx, err)
+		}
+	}
+
 	// Remove the local state file now that the deployment is gone. Destroy only
 	// deletes the remote state; leaving the local file behind keeps its lineage
 	// around, so a later fresh deploy of the same bundle (e.g. from another
@@ -364,6 +375,12 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if hasApproval {
+		// Approved: the destroy is committing (destroyCore runs on the direct state), so a
+		// prepared migration is no longer "not committed". Clear the flag so ProcessBundleRet's
+		// cleanup does not discard it, and a post-approval failure keeps the direct state rather
+		// than reverting to terraform. destroyCore retires the superseded terraform state itself.
+		b.MigrationDeferred = false
+
 		if engine.IsDirect() {
 			// Upgrade from read (opened by process.go) to write mode
 			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
@@ -385,15 +402,6 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			}
 		}
 		destroyCore(ctx, b, plan, engine)
-
-		// A deferred terraform→direct migration is committed by destroyCore (it ran the
-		// destroy on the direct state). Back up the now-superseded terraform state so a later
-		// deploy does not pick up the stale local terraform.tfstate - destroy removed the local
-		// resources.json, so it would otherwise win. Skipped on failure so a partial destroy
-		// keeps the terraform state as a fallback.
-		if b.MigrationDeferred && !logdiag.HasError(ctx) {
-			statemgmt.CleanupTerraformStateAfterMigration(ctx, b)
-		}
 	} else {
 		// A deferred terraform→direct migration wrote the local direct state but has not
 		// committed it (destroyCore never ran): discard it and stay on the terraform engine,

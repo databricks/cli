@@ -1,24 +1,25 @@
 
-=== Deploy with bundle.engine: direct and an empty terraform state — sweep, don't migrate
+=== Deploy with bundle.engine: direct and an empty terraform state — migrate (0 resources)
 >>> [CLI] bundle deploy
-Removing empty terraform state; the direct engine will be used from now on...
+Migrated 0 resources to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Local terraform state is renamed to .backup; no resources.json (empty state, nothing to persist)
+=== Empty state migrated: resources.json written, local terraform state backed up
 
 >>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
 
 >>> find .databricks/bundle -name terraform.tfstate* -type f
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
-=== Sweep is recorded in telemetry as via-config
+=== Migration is recorded in telemetry as via-config
 
 >>> print_migration_telemetry
 direct_migrated_via_config true
 
-=== The remote had no terraform state, so nothing terraform-related is swept remotely
+=== The remote had no terraform state, so nothing terraform-related is backed up remotely
 
 >>> print_requests.py //workspace-files/import-file //workspace/delete --sort
 "POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
@@ -27,15 +28,17 @@ direct_migrated_via_config true
 "POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
 "POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
 "POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+"POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json"
 "POST /api/2.0/workspace/delete"
 "POST /api/2.0/workspace/delete"
 
 === debug states confirms no terraform.tfstate anywhere; only the local .backup remains
 
 >>> [CLI] bundle debug states --force-pull
+resources.json: remote direct state serial=2 lineage="test-lineage"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="test-lineage"
 
-
-=== Next deploy uses direct engine by default (no more mismatch warning)
+=== Next deploy uses direct engine by default (no more mismatch warning, no re-migration)
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Files: 0 uploaded, 0 deleted

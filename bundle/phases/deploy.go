@@ -339,6 +339,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// Approved: the deploy is committing (deployCore below writes and pushes the state), so a
+	// prepared migration is no longer "not committed". Clear the flag before deployCore so
+	// ProcessBundleRet's cleanup does not discard it and a post-approval failure retries on
+	// direct rather than reverting to terraform; keep migrating for the finalize below.
+	migrating := b.MigrationDeferred
+	b.MigrationDeferred = false
+
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
 	// then - so stamp the one just created into the plan the apply reads.
@@ -381,7 +388,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// A deferred terraform→direct migration is committed by deployCore above, which wrote and
 	// pushed the converted direct state. Now that the deploy succeeded, finalize the migration
 	// by cleaning up the superseded terraform state and recording the migration source.
-	if b.MigrationDeferred {
+	if migrating {
 		statemgmt.FinalizeDeferredMigration(ctx, b, requestedEngine)
 	}
 

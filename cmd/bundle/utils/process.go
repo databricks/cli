@@ -331,6 +331,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// MigrateTerraformState leaves the Terraform state intact and the run falls back to
 		// the terraform engine. Read-only commands set none of these options and keep
 		// reading the Terraform state as-is.
+		// A deploy/destroy that prepares the migration but never commits it - declined, or any
+		// error before it applies (a missing --plan file, a validation error, prevent_destroy)
+		// - must not leave the bundle silently migrated. The commit paths clear
+		// b.MigrationDeferred; this discards whatever a not-committed run left, so it stays on
+		// terraform. Registered before the migration so a failure inside it is covered too.
+		defer func() {
+			if b.MigrationDeferred {
+				statemgmt.DiscardDeferredMigration(ctx, b)
+				log.Warnf(ctx, "Migration not committed, staying on terraform state")
+			}
+		}()
+
 		if b.MigratingToDirect && needsState {
 			// deploy and destroy defer the commit to their phase (after approval); other
 			// state-reading commands (plan, run) migrate in memory only.
