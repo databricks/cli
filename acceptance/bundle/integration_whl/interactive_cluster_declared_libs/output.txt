@@ -1,0 +1,94 @@
+
+=== Deploy the cluster (declares requests and urllib3) and the wheel job that targets it
+OK: deployed
+
+=== Run the job: its task installs the wheel and pypi 'six' on the shared cluster, out of band
+OK: job ran
+
+=== Plan: the job's out-of-band 'six' shows as a removal, the declared libraries are unchanged
+>>> plan_pypi_libs
+{
+  "libraries[pypi='six;']": {
+    "action": "update",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  }
+}
+
+=== Remove the declared 'urllib3' and redeploy: uninstalls urllib3 and the job's libraries, keeps requests, no restart
+>>> plan_pypi_libs
+{
+  "libraries[pypi='six;']": {
+    "action": "update",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  },
+  "libraries[pypi='urllib3;']": {
+    "action": "update",
+    "old": {
+      "pypi": {
+        "package": "urllib3"
+      }
+    },
+    "remote": {
+      "pypi": {
+        "package": "urllib3"
+      }
+    }
+  }
+}
+
+OK: redeployed
+
+>>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[TEST_CLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "urllib3"
+        }
+      },
+      {
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/artifacts/.internal/my_test_code-0.0.1-py3-none-any.whl"
+      },
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[TEST_CLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
+  delete resources.jobs.some_other_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 2 deleted
