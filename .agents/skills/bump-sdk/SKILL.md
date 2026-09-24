@@ -27,9 +27,8 @@ Write the new SHA with `echo ${SHA} > .codegen/_openapi_sha`; `generate` reforma
 Run `go mod tidy` and confirm the `go.mod`/`go.sum` diff is the SDK line only.
 
 **3. Regenerate cli.json via genkit.**
-Run `./task generate-clijson`, which needs a clean universe checkout at `$UNIVERSE_DIR` (default `$HOME/universe`) and builds genkit from its HEAD.
-This task authenticates to fetch the spec by SHA, so an SSO/S3 fallback prompt during the run is normal.
-The task also syncs `internal/genkit/tagging.py`, its two `.lock` files, and `.github/workflows/tagging.yml` from the producer HEAD; this is drift unrelated to the SDK bump.
+Run `./task generate-clijson`, which clones `$UNIVERSE_DIR` (default `$HOME/universe`) into a temporary directory and builds genkit and the OpenAPI spec at `.codegen/_openapi_sha`. If that commit is absent locally, the task fetches `master` from the Universe checkout's `origin` remote into the temporary clone.
+The task also syncs `internal/genkit/tagging.py`, its two `.lock` files, and `.github/workflows/tagging.yml` from that Universe commit; this is drift unrelated to the SDK bump.
 Decide with the user whether to keep the tagging-producer drift or restore those files to `origin/main`.
 
 **4. Regenerate everything downstream.**
