@@ -20,7 +20,15 @@ func (d *DecimalPlaces) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 	type alias DecimalPlaces
-	return node.Decode((*alias)(d))
+	if err := node.Decode((*alias)(d)); err != nil {
+		return err
+	}
+	switch d.Type {
+	case "max", "exact", "all":
+		return nil
+	default:
+		return fmt.Errorf("unsupported decimal_places.type %q", d.Type)
+	}
 }
 
 // ColumnFormat is the internally-tagged column format union. Only the fields

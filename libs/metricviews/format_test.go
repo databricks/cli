@@ -30,3 +30,14 @@ func TestColumnFormatVariants(t *testing.T) {
 		})
 	}
 }
+
+func TestDecimalPlacesRejectsInvalidType(t *testing.T) {
+	for _, typ := range []string{"MAX", "bogus"} {
+		t.Run(typ, func(t *testing.T) {
+			in := []byte("type: number\ndecimal_places:\n  type: " + typ + "\n  places: 2\n")
+			var format ColumnFormat
+			err := yaml.Unmarshal(in, &format)
+			require.ErrorContains(t, err, typ)
+		})
+	}
+}

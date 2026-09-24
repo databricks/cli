@@ -30,6 +30,7 @@ func (p *ParameterV11) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 	*p = ParameterV11{}
+	var seenName, seenDataType, seenDefault bool
 	for i := 0; i+1 < len(node.Content); i += 2 {
 		key := node.Content[i].Value
 		val := node.Content[i+1]
@@ -38,10 +39,22 @@ func (p *ParameterV11) UnmarshalYAML(node *yaml.Node) error {
 		}
 		switch key {
 		case "name":
+			if seenName {
+				return fmt.Errorf("duplicate parameter field %q", key)
+			}
+			seenName = true
 			p.Name = val.Value
 		case "data_type":
+			if seenDataType {
+				return fmt.Errorf("duplicate parameter field %q", key)
+			}
+			seenDataType = true
 			p.DataType = val.Value
 		case "default":
+			if seenDefault {
+				return fmt.Errorf("duplicate parameter field %q", key)
+			}
+			seenDefault = true
 			p.Default.Present = true
 			// An explicit null scalar has tag "!!null" (covers `null` and `~`).
 			if val.Tag == "!!null" {

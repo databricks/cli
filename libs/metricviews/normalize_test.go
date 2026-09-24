@@ -24,7 +24,7 @@ dimensions:
     format:
       type: number
       decimal_places:
-        type: MAX
+        type: max
         places: 2
 measures:
   - name: m

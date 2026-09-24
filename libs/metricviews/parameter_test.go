@@ -62,6 +62,23 @@ func TestParameterV11ResolvesAliases(t *testing.T) {
 	}
 }
 
+func TestParameterV11RejectsDuplicateFields(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		in   string
+	}{
+		{"name", "name: first\nname: second\ndata_type: STRING\n"},
+		{"data_type", "name: p\ndata_type: STRING\ndata_type: INT\n"},
+		{"default", "name: p\ndata_type: STRING\ndefault: null\ndefault: value\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var p ParameterV11
+			err := yaml.Unmarshal([]byte(tc.in), &p)
+			require.ErrorContains(t, err, tc.name)
+		})
+	}
+}
+
 func TestParameterV10CollapsesNull(t *testing.T) {
 	var p ParameterV10
 	require.NoError(t, yaml.Unmarshal([]byte("name: p\ndata_type: STRING\ndefault: null\n"), &p))
