@@ -1,0 +1,17 @@
+export CLAUDECODE=1
+unset CLAUDE_CODE_SESSION_ID
+
+sethome ./empty-home
+title "Plugin installed only in the custom config directory\n"
+trace CLAUDE_CONFIG_DIR=custom $CLI version
+
+sethome ./installed-home
+title "Custom directory takes precedence over the default installation\n"
+trace CLAUDE_CONFIG_DIR=missing $CLI version
+
+title "Empty override uses the default installation\n"
+trace CLAUDE_CONFIG_DIR= $CLI version
+
+title "Unset override uses the default installation\n"
+unset CLAUDE_CONFIG_DIR
+trace $CLI version

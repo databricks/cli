@@ -173,7 +173,7 @@ var Registry = []*Agent{
 	{
 		Name:                 NameClaudeCode,
 		DisplayName:          "Claude Code",
-		ConfigDir:            homeSubdir(".claude"),
+		ConfigDir:            claudeConfigDir,
 		SupportsProjectScope: true,
 		ProjectConfigDir:     ".claude",
 		Binary:               "claude",
@@ -254,6 +254,15 @@ var Registry = []*Agent{
 		// Goose reads agent skills (SKILL.md) but has no databricks plugin, so it is
 		// skills-only (Plugin nil).
 	},
+}
+
+// claudeConfigDir follows Claude Code's configuration directory override.
+// See https://code.claude.com/docs/en/env-vars for CLAUDE_CONFIG_DIR.
+func claudeConfigDir(ctx context.Context) (string, error) {
+	if dir := env.Get(ctx, "CLAUDE_CONFIG_DIR"); dir != "" {
+		return dir, nil
+	}
+	return homeSubdir(".claude")(ctx)
 }
 
 // piConfigDir returns Pi's agent config directory: PI_CODING_AGENT_DIR when set,
