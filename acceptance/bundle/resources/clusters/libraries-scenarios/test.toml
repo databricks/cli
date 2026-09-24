@@ -1,0 +1,9 @@
+# The cluster manages every library on it: an out-of-band library (job task lib or API install) is drift and gets uninstalled, declared libs install/uninstall, and drift is corrected. No change restarts the cluster.
+# Local only: the out-of-band library is injected via the Libraries API, deterministic locally but racy on cloud (the job-installed variant runs on cloud in interactive_cluster_declared_libs).
+RecordRequests = true
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# READPLAN=1 feeds the serialized plan to `bundle deploy --plan`.
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = [".databricks", "databricks.yml", "tmp.plan.json"]
