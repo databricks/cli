@@ -28,9 +28,20 @@ func assertFieldsCovered(t *testing.T, sdkType, remoteType reflect.Type, skip ma
 	}
 }
 
+// attrsBlock is a stand-in block type for expandUpdatePaths tests: a message the plan
+// records as a single block-level change whose changed leaves must be recovered for the
+// update mask.
+type attrsBlock struct {
+	Createdb  bool `json:"createdb,omitempty"`
+	Superuser bool `json:"superuser,omitempty"`
+}
+
 func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 	upd := func() *deployplan.ChangeDesc { return &deployplan.ChangeDesc{Action: deployplan.Update} }
 	skip := func() *deployplan.ChangeDesc { return &deployplan.ChangeDesc{Action: deployplan.Skip} }
+	block := func(old, new any) *deployplan.ChangeDesc {
+		return &deployplan.ChangeDesc{Action: deployplan.Update, Old: old, New: new}
+	}
 
 	tests := []struct {
 		name        string
@@ -39,13 +50,17 @@ func TestCollectUpdatePathsWithPrefix(t *testing.T) {
 		want        []string
 	}{
 		{
-			name:    "drops parent when a child is also updated",
-			changes: Changes{"attributes": upd(), "attributes.createdb": upd()},
+			// The plan collapses an edited block to one entry; the mask must name the leaf
+			// that actually changed, not the enclosing message.
+			name:    "expands an edited block to its changed leaf",
+			changes: Changes{"attributes": block(attrsBlock{Createdb: false}, attrsBlock{Createdb: true})},
 			want:    []string{"spec.attributes.createdb"},
 		},
 		{
-			name:    "keeps parent when its only child is not updated",
-			changes: Changes{"attributes": upd(), "attributes.createdb": skip()},
+			// A whole block added or removed on one side does not descend, so it masks as
+			// the block itself.
+			name:    "masks a whole added block as the block",
+			changes: Changes{"attributes": block(nil, attrsBlock{Createdb: true})},
 			want:    []string{"spec.attributes"},
 		},
 		{
