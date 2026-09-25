@@ -18,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -31,6 +32,10 @@ type upgradeHintStore struct{}
 
 func (upgradeHintStore) Put(string, storage.Entry) error { return nil }
 func (upgradeHintStore) Delete(string) error             { return nil }
+func (upgradeHintStore) Lock(context.Context) (func(), error) {
+	return func() {}, nil
+}
+
 func (upgradeHintStore) Lookup(string) (storage.Entry, error) {
 	return storage.Entry{}, storage.NewNotFoundHint(
 		"stored credentials from older CLI versions are no longer used; run `databricks auth login` to sign in again, or set DATABRICKS_AUTH_STORAGE=plaintext to keep using the file cache",
@@ -964,4 +969,45 @@ func TestWriteTokenErrorOutput(t *testing.T) {
 	assert.NoError(t, json.Unmarshal(buf.Bytes(), &got))
 	assert.Equal(t, unauthenticatedErrorCode, got.ErrorCode)
 	assert.Equal(t, "refresh token is invalid", got.Message)
+}
+
+// TestToken_loadTokenRefreshWaitsForStoreLock exercises the production store
+// wiring: a refresh must not start while another process holds the token
+// store lock.
+func TestToken_loadTokenRefreshWaitsForStoreLock(t *testing.T) {
+	ctx := env.WithUserHomeDir(t.Context(), t.TempDir())
+	store, err := storage.NewFileStore(ctx)
+	require.NoError(t, err)
+	err = store.Put("expired", storage.Entry{Token: &oauth2.Token{
+		AccessToken:  "expired-access",
+		RefreshToken: "expired-refresh",
+		Expiry:       time.Now().Add(-time.Hour),
+	}})
+	require.NoError(t, err)
+
+	holder, err := storage.NewFileStore(ctx)
+	require.NoError(t, err)
+	unlock, err := holder.Lock(ctx)
+	require.NoError(t, err)
+	defer unlock()
+
+	_, err = loadToken(ctx, loadTokenArgs{
+		authArguments: &auth.AuthArguments{},
+		profileName:   "expired",
+		args:          []string{},
+		tokenTimeout:  200 * time.Millisecond,
+		profiler: profile.InMemoryProfiler{Profiles: profile.Profiles{{
+			Name:      "expired",
+			Host:      "https://accounts.cloud.databricks.test",
+			AccountID: "expired",
+		}}},
+		tokenStore: store,
+		mode:       storage.StorageModePlaintext,
+		persistentAuthOpts: []u2m.PersistentAuthOption{
+			u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
+			u2m.WithHttpClient(&http.Client{Transport: failOnCallTransport{}}),
+		},
+	})
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.ErrorContains(t, err, "token store lock")
 }

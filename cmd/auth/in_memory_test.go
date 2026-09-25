@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"context"
+
 	"github.com/databricks/cli/libs/auth/storage"
 	"golang.org/x/oauth2"
 )
@@ -28,6 +30,11 @@ func (i *inMemoryStore) Put(key string, e storage.Entry) error {
 	cp := *e.Token
 	i.Tokens[key] = &cp
 	return nil
+}
+
+// Lock is a no-op: the store is not shared with other processes.
+func (i *inMemoryStore) Lock(context.Context) (func(), error) {
+	return func() {}, nil
 }
 
 // Delete deletes the entry under key. Deleting a missing entry is not
