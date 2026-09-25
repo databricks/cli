@@ -180,20 +180,22 @@ func TestEnsureBinary(t *testing.T) {
 		spec       archiveSpec
 		wantBinDir string
 	}{
-		{spec: archiveSpec{
-			archiveURL: srv.URL + "/node.tar.gz",
-			binaryName: "npm",
-			checksum:   hex.EncodeToString(nodeSum[:]),
-			dirName:    "node",
-			binDirName: "bin",
-		}, wantBinDir: filepath.Join(home, agentDepsDir, "node", "bin"),
+		{
+			spec: archiveSpec{
+				archiveURL: srv.URL + "/node.tar.gz",
+				binaryName: "npm",
+				checksum:   hex.EncodeToString(nodeSum[:]),
+				dirName:    "node",
+				binDirName: "bin",
+			}, wantBinDir: filepath.Join(home, agentDepsDir, "node", "bin"),
 		},
-		{spec: archiveSpec{
-			archiveURL: srv.URL + "/uv.tar.gz",
-			binaryName: "uv",
-			checksum:   hex.EncodeToString(uvSum[:]),
-			dirName:    "uv",
-		}, wantBinDir: filepath.Join(home, agentDepsDir, "uv"),
+		{
+			spec: archiveSpec{
+				archiveURL: srv.URL + "/uv.tar.gz",
+				binaryName: "uv",
+				checksum:   hex.EncodeToString(uvSum[:]),
+				dirName:    "uv",
+			}, wantBinDir: filepath.Join(home, agentDepsDir, "uv"),
 		},
 	} {
 		t.Run("downloads, extracts, and returns the bin dir ("+c.spec.binaryName+")", func(t *testing.T) {
@@ -214,7 +216,6 @@ func TestEnsureBinary(t *testing.T) {
 			assert.Equal(t, beforeDownloads, downloads, "an existing install must not re-download")
 		})
 	}
-
 }
 
 func TestSupportedAgents(t *testing.T) {
