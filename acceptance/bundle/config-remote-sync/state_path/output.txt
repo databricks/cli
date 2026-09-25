@@ -1,0 +1,69 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Files: 7 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/other-bundle-[UNIQUE_NAME]/default/files...
+Created jobs.my_job
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Modify the job remotely
+
+=== --state-path at this deployment's own state folder detects the drift
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  max_concurrent_runs: replace
+
+
+
+=== The same folder without a /Workspace prefix resolves identically
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  max_concurrent_runs: replace
+
+
+
+=== Reading another deployment's state reports no change of its own making
+No changes detected.
+
+
+=== Reading another deployment's state does not poison this bundle's own cache
+sync against the other deployment's state failed as expected (its state has no jobs:[MY_JOB_ID])
+this bundle still reads its own state:
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  max_concurrent_runs: replace
+
+
+
+=== A dev-mode target is not blocked from reading a state folder it does not own
+neither foreign path was rejected by the dev-mode uniqueness check
+
+=== Rejected values
+>>> [CLI] bundle config-remote-sync --state-path relative/state
+Error: --state-path must be an absolute workspace path, got "relative/state"
+
+>>> [CLI] bundle config-remote-sync --state-path ~/.bundle/test/default/state
+Error: --state-path must be an absolute workspace path, got "~/.bundle/test/default/state": pass the path of the deployment to sync, not one relative to the current user's home
+
+>>> [CLI] bundle config-remote-sync --state-path /Volumes/main/default/vol/state
+Error: --state-path does not support Volumes paths, got "/Volumes/main/default/vol/state"
+
+>>> withdir other [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/other-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted
