@@ -16,6 +16,17 @@ func yamlField(node *yaml.Node, field string) *yaml.Node {
 	return nil
 }
 
+func resolveYAMLAlias(node *yaml.Node) *yaml.Node {
+	for node.Kind == yaml.AliasNode {
+		node = node.Alias
+	}
+	return node
+}
+
+func yamlScalar(node *yaml.Node) string {
+	return resolveYAMLAlias(node).Value
+}
+
 func requireYAMLFields(node *yaml.Node, fields ...string) error {
 	if node.Kind != yaml.MappingNode {
 		return fmt.Errorf("expected a mapping, got kind %d", node.Kind)
@@ -25,9 +36,7 @@ func requireYAMLFields(node *yaml.Node, fields ...string) error {
 		if value == nil {
 			return fmt.Errorf("missing required field %q", field)
 		}
-		for value.Kind == yaml.AliasNode {
-			value = value.Alias
-		}
+		value = resolveYAMLAlias(value)
 		if value.Tag == "!!null" {
 			return fmt.Errorf("required field %q cannot be null", field)
 		}

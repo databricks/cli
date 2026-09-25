@@ -1,6 +1,7 @@
 package metricviews
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,7 +63,7 @@ func TestParameterV11ResolvesAliases(t *testing.T) {
 	}
 }
 
-func TestParameterV11RejectsDuplicateFields(t *testing.T) {
+func TestValidateRejectsDuplicateParameterFields(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		in   string
@@ -72,11 +73,19 @@ func TestParameterV11RejectsDuplicateFields(t *testing.T) {
 		{"default", "name: p\ndata_type: STRING\ndefault: null\ndefault: value\n"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var p ParameterV11
-			err := yaml.Unmarshal([]byte(tc.in), &p)
+			in := "version: '1.1'\nsource: main.sales.orders\nparameters:\n  - " + strings.ReplaceAll(strings.TrimSuffix(tc.in, "\n"), "\n", "\n    ") + "\n"
+			err := Validate([]byte(in))
 			require.ErrorContains(t, err, tc.name)
 		})
 	}
+}
+
+func TestParameterV11UnmarshalAllowsDuplicateFields(t *testing.T) {
+	var p ParameterV11
+	require.NoError(t, yaml.Unmarshal([]byte("name: first\nname: second\ndata_type: STRING\n"), &p))
+	assert.Equal(t, "second", p.Name)
+	require.NoError(t, yaml.Unmarshal([]byte("name: p\ndata_type: STRING\ndefault: null\ndefault: value\n"), &p))
+	assert.Equal(t, ParamDefault{Present: true, Expr: "value"}, p.Default)
 }
 
 func TestParameterV10CollapsesNull(t *testing.T) {

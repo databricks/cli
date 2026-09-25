@@ -31,13 +31,20 @@ func TestColumnFormatVariants(t *testing.T) {
 	}
 }
 
-func TestDecimalPlacesRejectsInvalidType(t *testing.T) {
+func TestValidateRejectsInvalidDecimalPlacesType(t *testing.T) {
 	for _, typ := range []string{"MAX", "bogus"} {
 		t.Run(typ, func(t *testing.T) {
-			in := []byte("type: number\ndecimal_places:\n  type: " + typ + "\n  places: 2\n")
-			var format ColumnFormat
-			err := yaml.Unmarshal(in, &format)
+			in := []byte("version: '1.1'\nsource: main.sales.orders\ndimensions:\n  - name: amount\n    expr: amount\n    format:\n      type: number\n      decimal_places:\n        type: " + typ + "\n        places: 2\n")
+			err := Validate(in)
 			require.ErrorContains(t, err, typ)
 		})
 	}
+}
+
+func TestFormatUnmarshalAllowsInvalidEnumValues(t *testing.T) {
+	var format ColumnFormat
+	require.NoError(t, yaml.Unmarshal([]byte("type: NUMBER\ndecimal_places: {type: MAX}\n"), &format))
+	assert.Equal(t, "NUMBER", format.Type)
+	require.NotNil(t, format.DecimalPlaces)
+	assert.Equal(t, DecimalPlacesType("MAX"), format.DecimalPlaces.Type)
 }

@@ -13,14 +13,6 @@ type ColumnV10 struct {
 	Synonyms    []string      `yaml:"synonyms,omitempty" json:"synonyms,omitempty"`
 }
 
-func (c *ColumnV10) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "expr"); err != nil {
-		return err
-	}
-	type alias ColumnV10
-	return node.Decode((*alias)(c))
-}
-
 // MetricViewV10 is the v0.1 / v1.0 single-source metric view shape.
 type MetricViewV10 struct {
 	Version         string           `yaml:"version" json:"version"`
@@ -35,12 +27,6 @@ type MetricViewV10 struct {
 
 // UnmarshalYAML accepts "fields" as an alias for "dimensions".
 func (v *MetricViewV10) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "version", "source"); err != nil {
-		return err
-	}
-	if err := rejectDimensionFieldConflict(node); err != nil {
-		return err
-	}
 	// The local alias type strips this UnmarshalYAML method, so decoding the
 	// inlined struct does not recurse. The sibling Fields field carries the
 	// "fields" alias alongside the inlined "dimensions".

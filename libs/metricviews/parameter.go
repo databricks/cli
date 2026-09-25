@@ -1,10 +1,6 @@
 package metricviews
 
-import (
-	"fmt"
-
-	"go.yaml.in/yaml/v3"
-)
+import "go.yaml.in/yaml/v3"
 
 // ParamDefault is the tri-state default of a v1.1 parameter:
 //   - Present=false                  -> the "default" key was absent
@@ -26,11 +22,7 @@ type ParameterV11 struct {
 // UnmarshalYAML distinguishes missing/null/value for the default key by walking
 // the mapping node, because a *string would collapse missing and null.
 func (p *ParameterV11) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "data_type"); err != nil {
-		return err
-	}
 	*p = ParameterV11{}
-	var seenName, seenDataType, seenDefault bool
 	for i := 0; i+1 < len(node.Content); i += 2 {
 		key := node.Content[i].Value
 		val := node.Content[i+1]
@@ -39,31 +31,17 @@ func (p *ParameterV11) UnmarshalYAML(node *yaml.Node) error {
 		}
 		switch key {
 		case "name":
-			if seenName {
-				return fmt.Errorf("duplicate parameter field %q", key)
-			}
-			seenName = true
 			p.Name = val.Value
 		case "data_type":
-			if seenDataType {
-				return fmt.Errorf("duplicate parameter field %q", key)
-			}
-			seenDataType = true
 			p.DataType = val.Value
 		case "default":
-			if seenDefault {
-				return fmt.Errorf("duplicate parameter field %q", key)
-			}
-			seenDefault = true
-			p.Default.Present = true
+			p.Default = ParamDefault{Present: true}
 			// An explicit null scalar has tag "!!null" (covers `null` and `~`).
 			if val.Tag == "!!null" {
 				p.Default.IsNull = true
 			} else {
 				p.Default.Expr = val.Value
 			}
-		default:
-			return fmt.Errorf("unknown parameter field %q", key)
 		}
 	}
 	return nil
@@ -94,12 +72,4 @@ type ParameterV10 struct {
 	Name     string  `yaml:"name" json:"name"`
 	DataType string  `yaml:"data_type" json:"data_type"`
 	Default  *string `yaml:"default,omitempty" json:"default,omitempty"`
-}
-
-func (p *ParameterV10) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "data_type"); err != nil {
-		return err
-	}
-	type alias ParameterV10
-	return node.Decode((*alias)(p))
 }

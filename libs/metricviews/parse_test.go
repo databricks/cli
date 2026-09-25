@@ -27,19 +27,71 @@ func TestParseDispatch(t *testing.T) {
 	require.NotNil(t, m.MultiSource)
 }
 
-func TestParseRejectsBadVersions(t *testing.T) {
+func TestValidateRejectsBadVersions(t *testing.T) {
 	for _, in := range []string{
 		"version: 2.0\nsource: main.default.t\n",
 		"version: 9.9\nsource: main.default.t\n",
 	} {
-		_, err := Parse([]byte(in))
+		err := Validate([]byte(in))
 		assert.Error(t, err)
 	}
 }
 
-func TestParseRejectsUnsupportedViewType(t *testing.T) {
+func TestParseAllowsStructurallyInvalidYAML(t *testing.T) {
+	for name, in := range map[string]string{
+		"missing source":        "version: '1.1'\ndimensions: [{name: id, expr: id}]\n",
+		"unknown view type":     "version: '1.1'\nview_type: OTHER\nsource: main.sales.orders\n",
+		"unknown version":       "version: '2.0'\nsource: main.sales.orders\n",
+		"missing column expr":   "version: '1.1'\nsource: main.sales.orders\ndimensions: [{name: id}]\n",
+		"invalid format":        "version: '1.1'\nsource: main.sales.orders\ndimensions: [{name: id, expr: id, format: {type: NUMBER}}]\n",
+		"conflicting aliases":   "version: '1.1'\nsource: main.sales.orders\ndimensions: []\nfields: [{name: id, expr: id}]\n",
+		"missing discriminator": "version: '1.1'\nsources: [{name: orders, from: main.sales.orders}]\n",
+		"duplicate parameter":   "version: '1.1'\nsource: main.sales.orders\nparameters: [{name: first, name: second, data_type: STRING}]\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			m, err := Parse([]byte(in))
+			require.NoError(t, err)
+			require.NotNil(t, m)
+		})
+	}
+}
+
+func TestParseRejectsDuplicateYAMLMappingKeys(t *testing.T) {
+	_, err := Parse([]byte("version: '1.1'\nsource: first\nsource: second\n"))
+	require.ErrorContains(t, err, "mapping key")
+}
+
+func TestParseAndValidateChecksInput(t *testing.T) {
+	valid := []byte("version: '1.1'\nsource: main.sales.orders\ndimensions: [{name: id, expr: id}]\n")
+	m, err := ParseAndValidate(valid)
+	require.NoError(t, err)
+	require.NotNil(t, m.SingleSource)
+
+	invalid := []byte("version: '1.1'\ndimensions: [{name: id, expr: id}]\n")
+	m, err = ParseAndValidate(invalid)
+	require.ErrorContains(t, err, "source")
+	assert.Nil(t, m)
+}
+
+func TestParseAndValidateResolvesDiscriminatorAliases(t *testing.T) {
+	in := []byte("schema: &schema '1.1'\nversion: *schema\nkind: &kind MULTI_SOURCE\nview_type: *kind\nsources: [{name: orders, from: main.sales.orders}]\n")
+	m, err := ParseAndValidate(in)
+	require.NoError(t, err)
+	require.NotNil(t, m.MultiSource)
+	assert.Equal(t, "1.1", m.Version())
+}
+
+func TestParseAndValidateResolvesColumnAliases(t *testing.T) {
+	in := []byte("column: &column {name: id, expr: id}\nversion: '1.1'\nsource: main.sales.orders\ndimensions: [*column]\n")
+	m, err := ParseAndValidate(in)
+	require.NoError(t, err)
+	require.Len(t, m.SingleSource.Dimensions, 1)
+	assert.Equal(t, "id", *m.SingleSource.Dimensions[0].Name)
+}
+
+func TestValidateRejectsUnsupportedViewType(t *testing.T) {
 	in := []byte("version: 1.1\nview_type: OTHER\nsource: main.default.t\n")
-	_, err := Parse(in)
+	err := Validate(in)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "view_type")
 	assert.ErrorContains(t, err, "OTHER")
@@ -61,9 +113,9 @@ func TestParseExplicitSingleSourceViewTypeRoundTrip(t *testing.T) {
 	assert.Equal(t, m.SingleSource.Source, reparsed.SingleSource.Source)
 }
 
-func TestParseRejectsMultiSourceWithoutViewType(t *testing.T) {
+func TestValidateRejectsMultiSourceWithoutViewType(t *testing.T) {
 	in := []byte("version: 1.1\nsources:\n  - name: o\n    from: main.default.o\n")
-	_, err := Parse(in)
+	err := Validate(in)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "view_type")
 }

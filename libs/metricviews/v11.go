@@ -14,27 +14,11 @@ type ColumnV11 struct {
 	Synonyms    []string      `yaml:"synonyms,omitempty" json:"synonyms,omitempty"`
 }
 
-func (c *ColumnV11) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "expr"); err != nil {
-		return err
-	}
-	type alias ColumnV11
-	return node.Decode((*alias)(c))
-}
-
 // Relationship links a source to another source in a multi-source view.
 type Relationship struct {
 	RefSource  string   `yaml:"ref" json:"ref"`
 	ForeignKey []string `yaml:"foreign_key,omitempty" json:"foreign_key,omitempty"`
 	On         *string  `yaml:"on,omitempty" json:"on,omitempty"`
-}
-
-func (r *Relationship) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "ref"); err != nil {
-		return err
-	}
-	type alias Relationship
-	return node.Decode((*alias)(r))
 }
 
 // SourceNode is one source in a multi-source view.
@@ -43,14 +27,6 @@ type SourceNode struct {
 	From          string         `yaml:"from" json:"from"`
 	PrimaryKey    []string       `yaml:"primary_key,omitempty" json:"primary_key,omitempty"`
 	Relationships []Relationship `yaml:"relationships,omitempty" json:"relationships,omitempty"`
-}
-
-func (s *SourceNode) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "from"); err != nil {
-		return err
-	}
-	type alias SourceNode
-	return node.Decode((*alias)(s))
 }
 
 // SingleSourceMetricView is the v1.1 single-source metric view shape.
@@ -69,12 +45,6 @@ type SingleSourceMetricView struct {
 
 // UnmarshalYAML accepts "fields" as an alias for "dimensions".
 func (v *SingleSourceMetricView) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "version", "source"); err != nil {
-		return err
-	}
-	if err := rejectDimensionFieldConflict(node); err != nil {
-		return err
-	}
 	// The local alias type strips this UnmarshalYAML method, so decoding the
 	// inlined struct does not recurse. The sibling Fields field carries the
 	// "fields" alias alongside the inlined "dimensions".
@@ -96,7 +66,7 @@ func (v *SingleSourceMetricView) UnmarshalYAML(node *yaml.Node) error {
 // MultiSourceMetricView is the v1.1 multi-source metric view shape.
 type MultiSourceMetricView struct {
 	Version    string         `yaml:"version" json:"version"`
-	ViewType   string         `yaml:"view_type" json:"view_type"`
+	ViewType   string         `yaml:"view_type,omitempty" json:"view_type,omitempty"`
 	Sources    []SourceNode   `yaml:"sources" json:"sources"`
 	Comment    *string        `yaml:"comment,omitempty" json:"comment,omitempty"`
 	Parameters []ParameterV11 `yaml:"parameters,omitempty" json:"parameters,omitempty"`
@@ -104,15 +74,8 @@ type MultiSourceMetricView struct {
 	Measures   []ColumnV11    `yaml:"measures,omitempty" json:"measures,omitempty"`
 }
 
-// UnmarshalYAML defaults view_type to MULTI_SOURCE and accepts "fields" as an
-// alias for "dimensions".
+// UnmarshalYAML accepts "fields" as an alias for "dimensions".
 func (v *MultiSourceMetricView) UnmarshalYAML(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "version", "sources"); err != nil {
-		return err
-	}
-	if err := rejectDimensionFieldConflict(node); err != nil {
-		return err
-	}
 	type alias MultiSourceMetricView
 	aux := struct {
 		alias  `yaml:",inline"`
@@ -122,9 +85,6 @@ func (v *MultiSourceMetricView) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 	*v = MultiSourceMetricView(aux.alias)
-	if v.ViewType == "" {
-		v.ViewType = viewTypeMultiSource
-	}
 	if len(v.Dimensions) == 0 {
 		v.Dimensions = aux.Fields
 	}

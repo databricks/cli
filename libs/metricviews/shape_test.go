@@ -1,6 +1,7 @@
 package metricviews
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-func TestParseRejectsMissingRequiredKeys(t *testing.T) {
+func TestValidateRejectsMissingRequiredKeys(t *testing.T) {
 	cases := map[string]string{
 		"v1.0 source":              "version: '1.0'\ndimensions: [{name: id, expr: id}]\n",
 		"v1.0 column name":         "version: '1.0'\nsource: main.sales.orders\ndimensions: [{expr: id}]\n",
@@ -37,31 +38,31 @@ func TestParseRejectsMissingRequiredKeys(t *testing.T) {
 	}
 	for name, in := range cases {
 		t.Run(name, func(t *testing.T) {
-			_, err := Parse([]byte(in))
+			err := Validate([]byte(in))
 			require.Error(t, err)
 		})
 	}
 }
 
-func TestParseAllowsV11WildcardWithoutName(t *testing.T) {
-	_, err := Parse([]byte("version: '1.1'\nsource: main.sales.orders\ndimensions: [{expr: 'source.*'}]\n"))
+func TestValidateAllowsV11WildcardWithoutName(t *testing.T) {
+	err := Validate([]byte("version: '1.1'\nsource: main.sales.orders\ndimensions: [{expr: 'source.*'}]\n"))
 	require.NoError(t, err)
 }
 
-func TestParseRejectsConflictingDimensionKeys(t *testing.T) {
+func TestValidateRejectsConflictingDimensionKeys(t *testing.T) {
 	for _, in := range []string{
 		"version: '1.0'\nsource: main.sales.orders\ndimensions: []\nfields: [{name: id, expr: id}]\n",
 		"version: '1.1'\nsource: main.sales.orders\ndimensions: [{name: id, expr: id}]\nfields: []\n",
 		"version: '1.1'\nview_type: MULTI_SOURCE\nsources: [{name: orders, from: main.sales.orders}]\ndimensions: []\nfields: [{name: id, expr: id}]\n",
 		"version: '1.1'\nsource: main.sales.orders\nmaterialization:\n  schedule: EVERY 1 HOUR\n  mode: fresh\n  materialized_views:\n    - name: mv\n      type: aggregated\n      dimensions: []\n      fields: [id]\n",
 	} {
-		_, err := Parse([]byte(in))
+		err := Validate([]byte(in))
 		require.ErrorContains(t, err, "dimensions")
 		require.ErrorContains(t, err, "fields")
 	}
 }
 
-func TestColumnFormatRejectsInvalidVariants(t *testing.T) {
+func TestValidateRejectsInvalidFormatVariants(t *testing.T) {
 	for _, in := range []string{
 		"type: NUMBER\n",
 		"type: other\n",
@@ -73,15 +74,18 @@ func TestColumnFormatRejectsInvalidVariants(t *testing.T) {
 		"type: number\ncurrency_code: USD\n",
 		"type: number\ndecimal_places: {places: 2}\n",
 	} {
-		var format ColumnFormat
-		err := yaml.Unmarshal([]byte(in), &format)
+		spec := "version: '1.1'\nsource: main.sales.orders\ndimensions:\n  - name: amount\n    expr: amount\n    format:\n"
+		for _, line := range strings.Split(strings.TrimSuffix(in, "\n"), "\n") {
+			spec += "      " + line + "\n"
+		}
+		err := Validate([]byte(spec))
 		require.Error(t, err, "input: %s", in)
 	}
 }
 
-func TestParseRejectsIncompleteFormat(t *testing.T) {
+func TestValidateRejectsIncompleteFormat(t *testing.T) {
 	in := []byte("version: '1.1'\nsource: main.sales.orders\ndimensions:\n  - name: amount\n    expr: amount\n    format: {type: currency}\n")
-	_, err := Parse(in)
+	err := Validate(in)
 	require.ErrorContains(t, err, "currency_code")
 }
 
