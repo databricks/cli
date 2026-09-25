@@ -1,0 +1,55 @@
+
+=== Target with short-form empty override (targets.X.variables.user_prefix: "")
+>>> [CLI] bundle validate -o json -t short_form_override
+[
+  "--a",
+  "",
+  "--b",
+  "",
+  "--c",
+  ""
+]
+
+=== Target with long-form empty override (default: "")
+>>> [CLI] bundle validate -o json -t long_form_override
+[
+  "--a",
+  "",
+  "--b",
+  "",
+  "--c",
+  ""
+]
+
+=== Target with null override (targets.X.variables.user_prefix:)
+>>> errcode [CLI] bundle validate -o json -t null_override
+[
+  "--a",
+  "",
+  "--b",
+  "",
+  "--c",
+  ""
+]
+
+=== Empty value via BUNDLE_VAR env var
+>>> env BUNDLE_VAR_user_prefix= [CLI] bundle validate -o json -t short_form_override
+[
+  "--a",
+  "",
+  "--b",
+  "",
+  "--c",
+  ""
+]
+
+=== Empty value via --var flag
+>>> [CLI] bundle validate -o json -t short_form_override --var=user_prefix=
+[
+  "--a",
+  "",
+  "--b",
+  "",
+  "--c",
+  ""
+]

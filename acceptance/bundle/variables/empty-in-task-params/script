@@ -1,0 +1,16 @@
+title "Validate"
+trace errcode $CLI bundle validate > out.validate.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+
+title "Deploy"
+trace errcode $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+
+title "Parameters sent to jobs/create"
+trace jq -s '[.[] | select(.path | test("jobs/create")) | .body.tasks[0].spark_python_task.parameters]' out.requests.txt > out.jobs-create-params.$DATABRICKS_BUNDLE_ENGINE.json
+
+# The terraform engine also records the parameters as rendered into bundle.tf.json,
+# to show the generated configuration is well formed (the empty string is "").
+if [ -f .databricks/bundle/default/terraform/bundle.tf.json ]; then
+  jq '.resource.databricks_job.demo_job.task[0].spark_python_task.parameters' .databricks/bundle/default/terraform/bundle.tf.json > out.tf-params.terraform.json
+fi
+
+rm out.requests.txt

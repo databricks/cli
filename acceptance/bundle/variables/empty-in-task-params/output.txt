@@ -1,0 +1,5 @@
+
+=== Validate
+=== Deploy
+=== Parameters sent to jobs/create
+>>> jq -s [.[] | select(.path | test("jobs/create")) | .body.tasks[0].spark_python_task.parameters] out.requests.txt
