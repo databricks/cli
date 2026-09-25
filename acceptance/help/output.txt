@@ -177,13 +177,15 @@ Environments
 Domains
   domains                                *Beta* Manage domains for organizing and discovering data assets.
 
+AI Runtime
+  air                                    *Public Preview* Run and manage AI Runtime training workloads
+
 Developer Tools
   bundle                                 Declarative Automation Bundles let you express data/AI/analytics projects as code.
   sync                                   Synchronize a local directory to a workspace directory
 
 Additional Commands:
   account                                Databricks Account Commands
-  air                                    Run and manage AI Runtime training workloads
   aitools                                Databricks skills and plugins for coding agents
   api                                    Perform Databricks API call
   auth                                   Authentication related commands

@@ -23,6 +23,13 @@ func TestNewRegistersAllSubcommands(t *testing.T) {
 	assert.Len(t, registered, len(want), "unexpected number of subcommands")
 }
 
+func TestNewHelpMetadata(t *testing.T) {
+	cmd := New()
+
+	assert.Equal(t, "air", cmd.GroupID)
+	assert.Contains(t, cmd.Short, "*Public Preview*")
+}
+
 func TestRunErrorIncludesDebugTip(t *testing.T) {
 	originalErr := errors.New("failed")
 	runCommand := &cobra.Command{

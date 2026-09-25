@@ -126,10 +126,16 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(ssh.New())
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
-	configureGroups(cli, append(workspace.Groups(), cobra.Group{
-		ID:    "development",
-		Title: "Developer Tools",
-	}))
+	configureGroups(cli, append(workspace.Groups(),
+		cobra.Group{
+			ID:    "air",
+			Title: "AI Runtime",
+		},
+		cobra.Group{
+			ID:    "development",
+			Title: "Developer Tools",
+		},
+	))
 
 	return cli
 }
