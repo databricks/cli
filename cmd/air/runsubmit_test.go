@@ -131,7 +131,7 @@ func TestSubmitRunInjectsPoolID(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "", "")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "", "", nil)
 	require.NoError(t, err)
 	assert.Equal(t, int64(42), runID)
 }
@@ -162,7 +162,7 @@ func TestSubmitRunInjectsPriorityClass(t *testing.T) {
 		Compute:        &computeConfig{AcceleratorType: "GPU_1xH100", NumAccelerators: 1},
 	}, "/command.sh", "4", "", snapshotResult{}, nil)
 
-	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL", "")
+	runID, err := submitRun(t.Context(), w, payload, "capacity-1", "CRITICAL", "", nil)
 	require.NoError(t, err)
 	assert.Equal(t, int64(7), runID)
 }
@@ -473,6 +473,33 @@ environment:
 	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
 	require.True(t, ok)
 	assert.Equal(t, "main.air.training:prod", aiRuntimeTask["unity_catalog_image_path"])
+}
+
+func TestInjectContainers(t *testing.T) {
+	payload := buildSubmitPayload(baseRunConfig(), "/Workspace/run/command.sh", "6", "", snapshotResult{}, nil)
+	raw, err := json.Marshal(payload)
+	require.NoError(t, err)
+	var body map[string]any
+	require.NoError(t, json.Unmarshal(raw, &body))
+
+	err = injectContainers(body, []submittedContainer{
+		{Name: "inference", CommandPath: "/Workspace/run/containers/inference/command.sh", Ranks: []int{0, 1}, UnityCatalogImagePath: "main.ml.inference:v1"},
+		{Name: "dataproc", CommandPath: "/Workspace/run/containers/dataproc/command.sh", Ranks: []int{2}, UnityCatalogImagePath: "main.ml.dataproc:v1"},
+	})
+	require.NoError(t, err)
+
+	task, err := aiRuntimeTaskFromSubmitBody(body)
+	require.NoError(t, err)
+	deployment := task["deployments"].([]any)[0].(map[string]any)
+	assert.NotContains(t, deployment, "command_path")
+	containers := deployment["containers"].([]any)
+	require.Len(t, containers, 2)
+	first := containers[0].(map[string]any)
+	assert.Equal(t, "inference", first["name"])
+	assert.Equal(t, "/Workspace/run/containers/inference/command.sh", first["command_path"])
+	assert.Equal(t, "main.ml.inference:v1", first["unity_catalog_image_path"])
+	assert.Equal(t, []any{0, 1}, first["ranks"])
+	assert.NotContains(t, first, "environment_variables")
 }
 
 // A working-tree code_source is packaged into a tarball, uploaded via libs/filer,

@@ -38,14 +38,18 @@ type validateConfigResponse struct {
 // proceed (where the config is validated again, authoritatively). A 5xx is a
 // backend problem, not the user's config, so it fails open too. Only a 4xx (the
 // server rejected the config) or a populated error list blocks.
-func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string) error {
+func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containerSets ...[]submittedContainer) error {
+	var containers []submittedContainer
+	if len(containerSets) > 0 {
+		containers = containerSets[0]
+	}
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
 	}
 
 	var resp validateConfigResponse
-	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(w.Config), nil, validateConfigRequest(cfg, commandPath), &resp)
+	err = apiClient.Do(ctx, http.MethodPost, validateConfigPath, auth.WorkspaceIDHeaders(w.Config), nil, validateConfigRequest(cfg, commandPath, containers), &resp)
 	if err != nil {
 		if endpointUnavailable(err) || serverError(err) {
 			return nil
@@ -62,7 +66,11 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 // the workspace path where the command script will be uploaded; the caller computes it before this
 // call so the server can validate the real path. `parameters` is intentionally omitted: it is
 // free-form nested hyperparameters uploaded as a YAML file at submit, not the proto's string map.
-func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
+func validateConfigRequest(cfg *runConfig, commandPath string, containerSets ...[]submittedContainer) map[string]any {
+	var containers []submittedContainer
+	if len(containerSets) > 0 {
+		containers = containerSets[0]
+	}
 	compute := map[string]any{}
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
@@ -71,9 +79,24 @@ func validateConfigRequest(cfg *runConfig, commandPath string) map[string]any {
 		// field is pool_id.
 		putOpt(compute, "provisioned_capacity_id", cfg.Compute.PoolID)
 	}
+	deployment := map[string]any{"compute": compute}
+	if len(containers) == 0 {
+		deployment["command_path"] = commandPath
+	} else {
+		raw := make([]any, 0, len(containers))
+		for _, container := range containers {
+			raw = append(raw, map[string]any{
+				"name":                     container.Name,
+				"command_path":             container.CommandPath,
+				"ranks":                    container.Ranks,
+				"unity_catalog_image_path": container.UnityCatalogImagePath,
+			})
+		}
+		deployment["containers"] = raw
+	}
 	task := map[string]any{
 		"experiment":  cfg.ExperimentName,
-		"deployments": []any{map[string]any{"command_path": commandPath, "compute": compute}},
+		"deployments": []any{deployment},
 	}
 	if cfg.Compute != nil {
 		// priority_class rides on the ai_runtime_task (task-level), not the deployment

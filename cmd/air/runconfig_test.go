@@ -1,6 +1,7 @@
 package aircmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -104,6 +105,74 @@ environment:
 	require.NoError(t, err)
 	require.NotNil(t, cfg.Environment)
 	assert.Equal(t, "main.air.training:prod", cfg.Environment.UnityCatalogImage)
+}
+
+func TestLoadRunConfigContainers(t *testing.T) {
+	cfg, err := loadRunConfig(writeConfig(t, `
+experiment_name: roles
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 4
+containers:
+  - name: inference
+    command: python infer.py
+    ranks: [0, 1]
+    unity_catalog_image: main.ml.inference:v1
+    environment_variables:
+      variables:
+        MODEL_NAME: llama
+        HF_TOKEN: '{{secrets/research/hf_token}}'
+  - name: dataproc
+    command: python dataproc.py
+    ranks: [2, 3]
+    unity_catalog_image: main.ml.dataproc:v2
+`))
+	require.NoError(t, err)
+	require.Nil(t, cfg.Command)
+	require.Len(t, cfg.Containers, 2)
+	assert.Equal(t, []int{0, 1}, cfg.Containers[0].Ranks)
+	assert.Equal(t, "llama", cfg.Containers[0].EnvironmentVariables.Variables["MODEL_NAME"])
+}
+
+func TestMultiImageExample(t *testing.T) {
+	cfg, err := loadRunConfig("examples/multi-image-example.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, "qwen_grpo_multi_image", cfg.ExperimentName)
+	assert.Len(t, cfg.Containers, 2)
+}
+
+func TestLoadRunConfigContainerValidation(t *testing.T) {
+	base := `
+experiment_name: roles
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 2
+containers:
+  - name: first
+    command: echo first
+    ranks: [0]
+    unity_catalog_image: main.ml.first:v1
+  - name: second
+    command: echo second
+    ranks: [%s]
+    unity_catalog_image: main.ml.second:v1
+`
+	for _, tc := range []struct {
+		name    string
+		rank    string
+		wantErr string
+	}{
+		{"overlap", "0", "rank 0 is assigned to both"},
+		{"out of range", "2", "valid ranks for this compute are 0 through 1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := loadRunConfig(writeConfig(t, fmt.Sprintf(base, tc.rank)))
+			require.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+
+	_, err := loadRunConfig(writeConfig(t, strings.Replace(base, "ranks: [%s]", "ranks: []", 1)))
+	require.ErrorContains(t, err, "ranks must contain at least one rank")
 }
 
 // TestLoadRunConfig_PolymorphicFields exercises the str|int and bool|str unions

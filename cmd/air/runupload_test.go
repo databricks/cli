@@ -150,6 +150,45 @@ secrets:
 	assert.JSONEq(t, `[{"name":"HF_TOKEN","secret_scope":"myscope","secret_key":"hf"}]`, string(byName[secretEnvVarsName]))
 }
 
+func TestBuildArtifacts_ContainerSidecars(t *testing.T) {
+	cfg, err := loadRunConfig(writeConfigFile(t, "run.yaml", `
+experiment_name: roles
+compute:
+  accelerator_type: GPU_1xH100
+  num_accelerators: 2
+env_variables:
+  SHARED: top
+  OVERRIDE: top
+secrets:
+  SHARED_SECRET: scope/shared
+containers:
+  - name: inference
+    command: python infer.py
+    ranks: [0]
+    unity_catalog_image: main.ml.inference:v1
+    environment_variables:
+      variables:
+        OVERRIDE: inference
+        TOKEN: '{{secrets/research/hf_token}}'
+  - name: dataproc
+    command: python dataproc.py
+    ranks: [1]
+    unity_catalog_image: main.ml.dataproc:v1
+`))
+	require.NoError(t, err)
+
+	items, err := buildArtifacts(cfg)
+	require.NoError(t, err)
+	assert.Equal(t, "python infer.py", string(itemData(t, items, "containers/inference/command.sh")))
+	assert.JSONEq(t, `[{"name":"OVERRIDE","value":"inference"},{"name":"SHARED","value":"top"}]`, string(itemData(t, items, "containers/inference/env_vars.json")))
+	assert.JSONEq(t, `[{"name":"SHARED_SECRET","secret_scope":"scope","secret_key":"shared"},{"name":"TOKEN","secret_scope":"research","secret_key":"hf_token"}]`, string(itemData(t, items, "containers/inference/secret_env_vars.json")))
+	assert.JSONEq(t, `[{"name":"OVERRIDE","value":"top"},{"name":"SHARED","value":"top"}]`, string(itemData(t, items, "containers/dataproc/env_vars.json")))
+
+	w := &fakeWriter{}
+	require.NoError(t, uploadArtifacts(t.Context(), w, items))
+	assert.Equal(t, []string{".", "containers/dataproc", "containers/inference"}, w.mkdirPaths)
+}
+
 func TestBuildArtifacts_SourceOrderedConfigWithNestedOverrides(t *testing.T) {
 	path := writeConfigFile(t, "run.yaml", `
 # This comment is intentionally not retained.
