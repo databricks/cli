@@ -1,6 +1,7 @@
 export CLAUDECODE=1
 unset CLAUDE_CODE_SESSION_ID
 
+# aitools commands skip the install hint; version exercises it without auth or network.
 sethome ./empty-home
 title "Plugin installed only in the custom config directory\n"
 trace CLAUDE_CONFIG_DIR=custom $CLI version
