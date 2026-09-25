@@ -1,7 +1,6 @@
 package pipelines
 
 import (
-	"regexp"
 	"slices"
 
 	pipelinesCli "github.com/databricks/cli/cmd/pipelines"
@@ -47,7 +46,7 @@ func init() {
 		originalRunE := cmd.RunE
 		cmd.RunE = func(cmd *cobra.Command, args []string) error {
 			// For compatibility, if argument looks like pipeline ID, use API
-			if len(args) > 0 && looksLikeUUID(args[0]) {
+			if len(args) > 0 && pipelinesCli.LooksLikeUUID(args[0]) {
 				return originalRunE(cmd, args)
 			}
 			// Looks like a bundle key or no args - use Lakeflow stop
@@ -69,11 +68,4 @@ If there is only one pipeline in the bundle, KEY is optional.
 
 With a PIPELINE_ID: Stops the pipeline identified by the UUID using the API.`
 	})
-}
-
-var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
-
-// looksLikeUUID checks if a string matches the UUID format with lowercase hex digits
-func looksLikeUUID(s string) bool {
-	return uuidRegex.MatchString(s)
 }

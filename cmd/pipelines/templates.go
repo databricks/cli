@@ -72,6 +72,62 @@ Pipeline configurations for this update:
 {{- end }}
 `
 
+// pipelineDescribeTemplate renders the `pipelines describe` summary: pipeline
+// configuration and state, followed by the most recent update (if any).
+const pipelineDescribeTemplate = `Pipeline: {{if .Pipeline.Name}}{{.Pipeline.Name}}{{else}}{{.Pipeline.PipelineId}}{{end}}
+{{- if .Key}}
+Key: {{.Key}}
+{{- end}}
+ID: {{.Pipeline.PipelineId}}
+{{- if .Pipeline.State}}
+State: {{.Pipeline.State}}
+{{- end}}
+{{- if .Pipeline.Health}}
+Health: {{.Pipeline.Health}}
+{{- end}}
+{{- if .Pipeline.CreatorUserName}}
+Creator: {{.Pipeline.CreatorUserName}}
+{{- end}}
+{{- if .Pipeline.RunAsUserName}}
+Run as: {{.Pipeline.RunAsUserName}}
+{{- end}}
+{{- with .Pipeline.Spec}}
+{{- if .Catalog}}
+Target: {{.Catalog}}{{if .Schema}}.{{.Schema}}{{end}}
+{{- end}}
+Mode: {{if .Continuous}}Continuous{{else}}Triggered{{end}}, {{if .Development}}Development{{else}}Production{{end}}
+Compute: {{if .Serverless}}Serverless{{else if $.Pipeline.ClusterId}}Classic ({{$.Pipeline.ClusterId}}){{else}}Classic{{end}}
+{{- if .Channel}}
+Channel: {{.Channel}}
+{{- end}}
+{{- end}}
+
+Last run:
+{{- if .LastUpdate}}
+  Update ID: {{.LastUpdate.UpdateId}}
+{{- if .LastUpdate.State}}
+  State: {{.LastUpdate.State}}
+{{- end}}
+{{- if .LastUpdate.CreationTime}}
+  Started: {{.LastUpdate.CreationTime | pretty_UTC_date_from_millis}}
+{{- end}}
+{{- if .LastUpdate.FullRefresh}}
+  Full refresh: all tables
+{{- end}}
+{{- if .LastUpdate.RefreshSelection}}
+  Refreshed: [{{join .LastUpdate.RefreshSelection ", "}}]
+{{- end}}
+{{- if .LastUpdate.FullRefreshSelection}}
+  Full refreshed: [{{join .LastUpdate.FullRefreshSelection ", "}}]
+{{- end}}
+{{- if .LastUpdate.Cause}}
+  Cause: {{.LastUpdate.Cause}}
+{{- end}}
+{{- else}}
+  No runs yet.
+{{- end}}
+`
+
 // progressEventsTemplate is the template for displaying progress events
 const progressEventsTemplate = `{{- if .ProgressEvents }}
 {{ printf "%-25s %s\n" "Run Phase" "Duration" }}
