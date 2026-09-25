@@ -8,8 +8,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.unrelated_add_job
-  tasks[task_key='brand_new']: add
-  tasks[task_key='shared']: remove
+  tasks[='brand_new']: add
+  tasks[='shared']: remove
 
 
 

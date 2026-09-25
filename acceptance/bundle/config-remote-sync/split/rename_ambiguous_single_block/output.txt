@@ -8,14 +8,14 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.ambiguous_single_block_job
-  tasks[task_key='aaa']: add
-  tasks[task_key='alpha']: remove
-  tasks[task_key='beta']: remove
-  tasks[task_key='gamma'].depends_on[task_key='aaa']: add
-  tasks[task_key='gamma'].depends_on[task_key='alpha']: remove
-  tasks[task_key='gamma'].depends_on[task_key='beta']: remove
-  tasks[task_key='gamma'].depends_on[task_key='zzz']: add
-  tasks[task_key='zzz']: add
+  tasks[='aaa']: add
+  tasks[='alpha']: remove
+  tasks[='beta']: remove
+  tasks[='gamma'].depends_on[='aaa']: add
+  tasks[='gamma'].depends_on[='alpha']: remove
+  tasks[='gamma'].depends_on[='beta']: remove
+  tasks[='gamma'].depends_on[='zzz']: add
+  tasks[='zzz']: add
 
 
 

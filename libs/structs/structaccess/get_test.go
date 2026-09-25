@@ -862,3 +862,35 @@ func TestGetKeyValue_NestedMultiple(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "item3", name)
 }
+
+type keElem struct {
+	UserName string `json:"user_name,omitempty"`
+	SpName   string `json:"service_principal_name,omitempty"`
+	Level    string `json:"level,omitempty"`
+}
+
+func TestElementKeyValue(t *testing.T) {
+	keys := []string{"user_name", "service_principal_name"}
+
+	// First non-empty key field wins.
+	v, ok := ElementKeyValue(reflect.ValueOf(keElem{SpName: "sp"}), keys)
+	require.True(t, ok)
+	require.Equal(t, "sp", v)
+
+	v, ok = ElementKeyValue(reflect.ValueOf(keElem{UserName: "u", SpName: "sp"}), keys)
+	require.True(t, ok)
+	require.Equal(t, "u", v)
+
+	// No key field set: addressable by the empty key (ok true, value "").
+	v, ok = ElementKeyValue(reflect.ValueOf(keElem{Level: "CAN_MANAGE"}), keys)
+	require.True(t, ok)
+	require.Empty(t, v)
+
+	// Pointer element is dereferenced; nil pointer is not ok.
+	v, ok = ElementKeyValue(reflect.ValueOf(&keElem{UserName: "u"}), keys)
+	require.True(t, ok)
+	require.Equal(t, "u", v)
+
+	_, ok = ElementKeyValue(reflect.ValueOf((*keElem)(nil)), keys)
+	require.False(t, ok)
+}

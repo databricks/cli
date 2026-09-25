@@ -108,10 +108,6 @@ type IResource interface {
 	// timeout here leaves the bundle consistent (resource was requested deleted, retry on next plan).
 	WaitAfterDelete(ctx context.Context, id string) error
 
-	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
-	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
-	KeyedSlices() map[string]any
-
 	// [Optional] IsGone reports whether a remote resource should be treated as
 	// already-deleted when planning a delete. Use for backends whose DELETE is
 	// asynchronous and leaves the resource in a transient terminal-teardown state
@@ -144,7 +140,6 @@ type Adapter struct {
 
 	resourceConfig          *ResourceLifecycleConfig
 	generatedResourceConfig *ResourceLifecycleConfig
-	keyedSlices             map[string]any
 }
 
 func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -184,7 +179,6 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		isGone:                  nil,
 		resourceConfig:          GetResourceConfig(resourceType),
 		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
-		keyedSlices:             nil,
 	}
 
 	err = adapter.initMethods(impl)
@@ -211,16 +205,6 @@ func configureImpl(impl any, resourceType string) error {
 	}
 	_, err = call.Call(resourceType)
 	return err
-}
-
-// loadKeyedSlices validates and calls KeyedSlices method, returning the resulting map.
-func loadKeyedSlices(call *calladapt.BoundCaller) (map[string]any, error) {
-	outs, err := call.Call()
-	if err != nil {
-		return nil, fmt.Errorf("failed to call KeyedSlices: %w", err)
-	}
-	result := outs[0].(map[string]any)
-	return result, nil
 }
 
 func (a *Adapter) initMethods(resource any) error {
@@ -306,17 +290,6 @@ func (a *Adapter) initMethods(resource any) error {
 	a.isGone, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "IsGone")
 	if err != nil {
 		return err
-	}
-
-	keyedSlicesCall, err := calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "KeyedSlices")
-	if err != nil {
-		return err
-	}
-	if keyedSlicesCall != nil {
-		a.keyedSlices, err = loadKeyedSlices(keyedSlicesCall)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -692,12 +665,6 @@ func (a *Adapter) HasOverrideChangeDesc() bool {
 func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, remoteState any) error {
 	_, err := a.overrideChangeDesc.Call(ctx, path, change, remoteState)
 	return err
-}
-
-// KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key.
-// If the resource doesn't implement KeyedSlices, returns nil.
-func (a *Adapter) KeyedSlices() map[string]any {
-	return a.keyedSlices
 }
 
 // IsGone reports whether the remote state represents an already-deleted resource

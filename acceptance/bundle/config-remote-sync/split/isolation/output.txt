@@ -9,8 +9,8 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_a
-  tasks[task_key='shared']: remove
-  tasks[task_key='shared_renamed']: add
+  tasks[='shared']: remove
+  tasks[='shared_renamed']: add
 
 Resource: resources.jobs.job_b
   max_concurrent_runs: replace

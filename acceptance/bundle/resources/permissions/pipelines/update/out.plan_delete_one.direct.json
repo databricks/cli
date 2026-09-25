@@ -72,7 +72,7 @@
         ]
       },
       "changes": {
-        "[group_name='data-team']": {
+        "[='data-team']": {
           "action": "update",
           "old": {
             "level": "CAN_MANAGE",

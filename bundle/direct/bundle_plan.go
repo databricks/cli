@@ -308,7 +308,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			logdiag.LogError(ctx, fmt.Errorf("%s: compacting local state: %w", errorPrefix, err))
 			return false
 		}
-		localDiff, err := structdiff.GetStructDiff(compactedSavedState, localState, adapter.KeyedSlices())
+		localDiff, err := structdiff.GetStructDiff(compactedSavedState, localState)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -349,7 +349,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState, adapter.KeyedSlices())
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, localState)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false

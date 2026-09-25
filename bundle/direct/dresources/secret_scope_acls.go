@@ -7,11 +7,16 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/structs/registry"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
+
+func init() {
+	registry.Register[workspace.AclItem]("principal")
+}
 
 type ResourceSecretScopeAcls struct {
 	client *databricks.WorkspaceClient
@@ -61,16 +66,6 @@ func (*ResourceSecretScopeAcls) PrepareInputConfig(inputConfig *[]resources.Secr
 			"scope_name": "${" + baseNode + ".name}",
 		},
 	}, nil
-}
-
-func aclItemKey(x workspace.AclItem) (string, string) {
-	return "principal", x.Principal
-}
-
-func (*ResourceSecretScopeAcls) KeyedSlices() map[string]any {
-	return map[string]any{
-		"acls": aclItemKey,
-	}
 }
 
 func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*SecretScopeAclsState, error) {

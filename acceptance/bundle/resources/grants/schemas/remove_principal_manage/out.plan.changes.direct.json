@@ -1,5 +1,5 @@
 {
-  "[principal='deco-test-user@databricks.com']": {
+  "[='deco-test-user@databricks.com']": {
     "action": "update",
     "old": {
       "principal": "deco-test-user@databricks.com",

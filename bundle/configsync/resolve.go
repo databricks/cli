@@ -105,13 +105,31 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 			seq, _ := currentValue.AsSequence()
 			foundIndex := -1
 
+			// key is empty for the field-agnostic form [='value']: resolve the element by
+			// its registered key fields, looked up from the sequence's Go type. A named key
+			// (legacy form) matches that field directly.
+			var keyFields []string
+			if key == "" {
+				keyFields = keyFieldsAtPath(b, n.Parent())
+			}
+
 			for i, elem := range seq {
-				keyValue, err := dyn.GetByPath(elem, dyn.Path{dyn.Key(key)})
-				if err != nil {
-					continue
+				var elemKey string
+				if key == "" {
+					ek, ok := dynElementKey(elem, keyFields)
+					if !ok {
+						continue
+					}
+					elemKey = ek
+				} else {
+					keyValue, err := dyn.GetByPath(elem, dyn.Path{dyn.Key(key)})
+					if err != nil || keyValue.Kind() != dyn.KindString {
+						continue
+					}
+					elemKey = keyValue.MustString()
 				}
 
-				if keyValue.Kind() == dyn.KindString && keyValue.MustString() == value {
+				if elemKey == value {
 					foundIndex = i
 					break
 				}

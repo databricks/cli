@@ -19,17 +19,17 @@ Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle plan -o json
 {
-  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['CostCenter']": {
+  "job_clusters[='main'].new_cluster.custom_tags['CostCenter']": {
     "action": "skip",
     "reason": "remote_addition",
     "remote": "from-policy"
   },
-  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['Mine']": {
+  "job_clusters[='main'].new_cluster.custom_tags['Mine']": {
     "action": "update",
     "old": "mine",
     "remote": "changed-out-of-band"
   },
-  "job_clusters[job_cluster_key='main'].new_cluster.custom_tags['Other']": {
+  "job_clusters[='main'].new_cluster.custom_tags['Other']": {
     "action": "update",
     "new": "other"
   }

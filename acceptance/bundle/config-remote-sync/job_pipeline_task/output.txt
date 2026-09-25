@@ -10,7 +10,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
+  tasks[='run_pipeline'].pipeline_task.full_refresh: replace
 
 Resource: resources.pipelines.my_pipeline
   continuous: add

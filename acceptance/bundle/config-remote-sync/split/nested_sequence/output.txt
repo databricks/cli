@@ -8,7 +8,7 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.nested_job
-  tasks[task_key='second'].libraries: replace
+  tasks[='second'].libraries: replace
 
 
 

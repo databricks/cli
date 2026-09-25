@@ -13,18 +13,18 @@ Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_one
   max_concurrent_runs: replace
-  tasks[task_key='a_task'].depends_on[task_key='c_task']: remove
-  tasks[task_key='a_task'].depends_on[task_key='c_task_renamed']: add
-  tasks[task_key='c_task']: remove
-  tasks[task_key='c_task_renamed']: add
-  tasks[task_key='synced_task']: add
+  tasks[='a_task'].depends_on[='c_task']: remove
+  tasks[='a_task'].depends_on[='c_task_renamed']: add
+  tasks[='c_task']: remove
+  tasks[='c_task_renamed']: add
+  tasks[='synced_task']: add
 
 Resource: resources.jobs.job_two
   max_concurrent_runs: replace
-  tasks[task_key='extra_task']: replace
-  tasks[task_key='extra_task'].new_cluster: add
-  tasks[task_key='run_pipeline']: remove
-  tasks[task_key='run_pipeline_renamed']: add
+  tasks[='extra_task']: replace
+  tasks[='extra_task'].new_cluster: add
+  tasks[='run_pipeline']: remove
+  tasks[='run_pipeline_renamed']: add
 
 
 

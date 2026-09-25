@@ -12,13 +12,13 @@ Detected changes in 1 resource(s):
 Resource: resources.jobs.my_job
   email_notifications.no_alert_for_skipped_runs: add
   email_notifications.on_failure: add
-  job_clusters[job_cluster_key='test_cluster']: remove
-  job_clusters[job_cluster_key='test_cluster_renamed']: add
+  job_clusters[='test_cluster']: remove
+  job_clusters[='test_cluster_renamed']: add
   name: replace
-  parameters[name='region']: add
+  parameters[='region']: add
   tags['team']: add
-  tasks[task_key='inline_cluster_task'].new_cluster.num_workers: replace
-  tasks[task_key='main'].job_cluster_key: replace
+  tasks[='inline_cluster_task'].new_cluster.num_workers: replace
+  tasks[='main'].job_cluster_key: replace
   trigger.pause_status: add
   trigger.periodic: remove
   trigger.table_update: add

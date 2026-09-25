@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/databricks/cli/libs/structs/registry"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
 )
@@ -204,6 +205,21 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 			return reflect.Value{}, fmt.Errorf("%s: key-value syntax requires slice elements to be structs, got %s", path.String(), elemDeref.Kind())
 		}
 
+		if key == "" {
+			// Field-agnostic key ([='value']): the key field is not encoded in the path,
+			// so identify the element from its type via the registry. Its key value is the
+			// same identity the diff used, so the same principal under a different field
+			// (e.g. user_name vs service_principal_name) resolves consistently.
+			keyFields := registry.KeyFields(elemDeref.Type())
+			if keyFields == nil {
+				return reflect.Value{}, fmt.Errorf("%s: field-agnostic key on unregistered element type %s", path.String(), elemDeref.Type())
+			}
+			if elemKey, ok := ElementKeyValue(elemDeref, keyFields); ok && elemKey == value {
+				return elem, nil
+			}
+			continue
+		}
+
 		// Try to get the field value
 		fieldVal, err := accessKey(elemDeref, key, path)
 		if err != nil {
@@ -226,6 +242,24 @@ func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNod
 	}
 
 	return reflect.Value{}, &NotFoundError{fmt.Sprintf("%s: no element found with %s=%q", path.String(), key, value)}
+}
+
+// ElementKeyValue returns the identity of a keyed-slice element: the value of its
+// first non-empty key field (keyFields in priority order), or "" when no key field is
+// set. Fields resolve the same way as elsewhere in structaccess, so the result matches
+// encoding/json. ok is false only if elem is a nil pointer or not a struct; an element
+// with no key set is still addressable, by the empty key ("").
+func ElementKeyValue(elem reflect.Value, keyFields []string) (string, bool) {
+	elem, ok := deref(elem)
+	if !ok || elem.Kind() != reflect.Struct {
+		return "", false
+	}
+	for _, field := range keyFields {
+		if fv, _, _, found := findStructFieldByKey(elem, field); found && fv.Kind() == reflect.String && fv.String() != "" {
+			return fv.String(), true
+		}
+	}
+	return "", true
 }
 
 // findFieldInStruct searches for a field by JSON key in a single struct (no embedding).

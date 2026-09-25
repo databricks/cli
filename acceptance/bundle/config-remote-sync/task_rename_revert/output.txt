@@ -9,8 +9,8 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.sample_job
-  tasks[task_key='new_task']: remove
-  tasks[task_key='new_task_2']: add
+  tasks[='new_task']: remove
+  tasks[='new_task_2']: add
 
 
 
@@ -31,8 +31,8 @@ Resource: resources.jobs.sample_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.sample_job
-  tasks[task_key='new_task']: add
-  tasks[task_key='new_task_2']: remove
+  tasks[='new_task']: add
+  tasks[='new_task_2']: remove
 
 
 

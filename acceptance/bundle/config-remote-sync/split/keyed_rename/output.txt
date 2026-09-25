@@ -9,10 +9,10 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.rename_job
-  tasks[task_key='a_shared']: add
-  tasks[task_key='shared']: remove
-  tasks[task_key='solo']: remove
-  tasks[task_key='z_solo']: add
+  tasks[='a_shared']: add
+  tasks[='shared']: remove
+  tasks[='solo']: remove
+  tasks[='z_solo']: add
 
 
 
@@ -50,9 +50,9 @@ Resource: resources.jobs.rename_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.shift_job
-  tasks[task_key='aaa']: remove
-  tasks[task_key='mmm']: remove
-  tasks[task_key='mmm2']: add
+  tasks[='aaa']: remove
+  tasks[='mmm']: remove
+  tasks[='mmm2']: add
 
 
 
@@ -79,9 +79,9 @@ Resource: resources.jobs.shift_job
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.rename_job
-  tasks[task_key='a_shared']: remove
-  tasks[task_key='b_shared']: add
-  tasks[task_key='z_solo']: replace
+  tasks[='a_shared']: remove
+  tasks[='b_shared']: add
+  tasks[='z_solo']: replace
 
 
 
