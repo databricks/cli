@@ -1,0 +1,16 @@
+
+=== setup image
+>>> databricks air image setup -p docker-test -s nvidia/cuda:13.4.1 --catalog prod --schema nvidia --image cuda:13.4.1-cudnn-devel-ubuntu26.04 --region us-west-2
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Configured Docker credential helper for [NUMID].container.us-west-2.cloud.databricks.com
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Tagging image as [NUMID].container.us-west-2.cloud.databricks.com/prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04
+Pushing image to [NUMID].container.us-west-2.cloud.databricks.com/prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04
+Pushed image.
+Now you can set `environment.unity_catalog_image = prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04` in your YAML config and create a workload with `databricks air run -f config.yaml`.
+
+=== docker commands
+image inspect nvidia/cuda:13.4.1
+tag nvidia/cuda:13.4.1 [NUMID].container.us-west-2.cloud.databricks.com/prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04
+push [NUMID].container.us-west-2.cloud.databricks.com/prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04

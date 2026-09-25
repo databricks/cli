@@ -1,0 +1,9 @@
+Ignore = ["home"]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Timeout = "15s"
+
+# The Docker credential-helper installation path is covered separately on
+# Windows; this test focuses on the complete air image setup workflow.
+GOOS.windows = false
