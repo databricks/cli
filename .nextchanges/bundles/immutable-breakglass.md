@@ -1,1 +1,1 @@
-* Immutable-folder deploys now detect a break-glassed snapshot and refuse to redeploy over it; `bundle deploy --force` recovers by creating a new snapshot at a suffixed path. ([#6774](https://github.com/databricks/cli/pull/6774))
+* Immutable-folder deploys now refuse to deploy onto a snapshot that was modified outside the bundle (break glass); `bundle deploy --force` moves the deployment to a fresh snapshot. ([#6774](https://github.com/databricks/cli/pull/6774))

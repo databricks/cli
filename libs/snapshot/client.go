@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -36,19 +37,18 @@ type ACLEntry struct {
 	PermissionLevel      string `json:"permission_level"`
 }
 
-// ManagePrincipal is one element of can_manage_principals: a principal allowed to
-// "break the glass" and modify an otherwise-immutable snapshot out of band.
+// ManagePrincipal is one element of can_manage_principals: a principal allowed to break the
+// glass on a snapshot, i.e. to modify otherwise-immutable content.
 type ManagePrincipal struct {
 	UserName             string `json:"user_name,omitempty"`
 	GroupName            string `json:"group_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 }
 
-// SnapshotStatus is the break-glass status of a snapshot's content path, as reported by
-// InspectSnapshot. Dirty is true when the immutable content was modified out of band.
+// SnapshotStatus is the status of a snapshot's content path, as reported by InspectSnapshot.
+// Dirty is true when the immutable content was modified out of band.
 type SnapshotStatus struct {
-	Dirty       bool
-	Permissions []string
+	Dirty bool
 }
 
 // SnapshotClient implements the /api/2.0/snapshots endpoint.
@@ -69,50 +69,22 @@ type snapshotRootPathResponse struct {
 	Path string `json:"path"`
 }
 
-// graphqlRequest is the standard GraphQL POST envelope.
-type graphqlRequest struct {
-	Query     string         `json:"query"`
-	Variables map[string]any `json:"variables"`
+// inspectSnapshotPath reports whether a snapshot's content was modified out of band.
+const inspectSnapshotPath = "/api/2.0/snapshots:inspect"
+
+// inspectSnapshotRequest is the body of an inspect call.
+type inspectSnapshotRequest struct {
+	SnapshotContentPath string `json:"snapshot_content_path"`
 }
 
-// inspectSnapshotResponse mirrors the projectsInspectSnapshot GraphQL response.
+// inspectSnapshotResponse mirrors the /api/2.0/snapshots:inspect response body. The
+// permissions the status also carries are not used.
 type inspectSnapshotResponse struct {
-	Data struct {
-		ProjectsInspectSnapshot struct {
-			Status *struct {
-				SnapshotContentPath string   `json:"snapshotContentPath"`
-				Dirty               bool     `json:"dirty"`
-				Permissions         []string `json:"permissions"`
-			} `json:"status"`
-			APIError *struct {
-				Code    string `json:"code"`
-				Message string `json:"message"`
-			} `json:"apiError"`
-		} `json:"projectsInspectSnapshot"`
-	} `json:"data"`
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
+	Status *struct {
+		SnapshotContentPath string `json:"snapshot_content_path"`
+		Dirty               bool   `json:"dirty"`
+	} `json:"status"`
 }
-
-// inspectSnapshotQuery reads the break-glass status of a snapshot content path.
-const inspectSnapshotQuery = `query InspectSnapshot($path: String!) {
-  projectsInspectSnapshot(input: {snapshotContentPath: $path}) {
-    status {
-      snapshotContentPath
-      dirty
-      permissions
-    }
-    apiError {
-      code
-      message
-    }
-  }
-}`
-
-// graphqlPath is the workspace GraphQL gateway. InspectSnapshot is exposed there today; the
-// same RPC also has a REST binding (GET /api/2.0/snapshots:inspect) it can be moved to later.
-const graphqlPath = "/api/2.0/graphql"
 
 // NewSnapshotClient creates a SnapshotClient backed by /api/2.0/snapshots.
 func NewSnapshotClient(w *databricks.WorkspaceClient) (*SnapshotClient, error) {
@@ -187,10 +159,8 @@ func (c *SnapshotClient) Upload(ctx context.Context, relativePath string, acl []
 	return &SnapshotInfo{Path: resp.Snapshot.Path}, nil
 }
 
-// InspectSnapshot reports the break-glass status of the snapshot content at contentPath.
-// It is implemented today as a GraphQL projectsInspectSnapshot query; the method boundary
-// hides that so it can later be swapped to the REST binding GET /api/2.0/snapshots:inspect
-// without touching callers.
+// InspectSnapshot reports the status of the snapshot content at contentPath, which tells the
+// caller whether the immutable content was modified out of band.
 func (c *SnapshotClient) InspectSnapshot(ctx context.Context, contentPath string) (*SnapshotStatus, error) {
 	headers := auth.WorkspaceIDHeaders(c.client.Config)
 	if headers == nil {
@@ -198,32 +168,37 @@ func (c *SnapshotClient) InspectSnapshot(ctx context.Context, contentPath string
 	}
 	headers["Content-Type"] = "application/json"
 
-	req := graphqlRequest{
-		Query:     inspectSnapshotQuery,
-		Variables: map[string]any{"path": contentPath},
+	payload, err := json.Marshal(inspectSnapshotRequest{SnapshotContentPath: contentPath})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal inspect request: %w", err)
 	}
 
 	var resp inspectSnapshotResponse
-	err := c.client.Do(ctx, http.MethodPost, graphqlPath, headers, nil, req, &resp)
+	err = c.client.Do(ctx, http.MethodGet, inspectSnapshotPath, headers, nil, nil, &resp, withJSONBody(payload))
 	if err != nil {
 		return nil, fmt.Errorf("snapshot inspect: %w", err)
 	}
-	if len(resp.Errors) > 0 {
-		return nil, fmt.Errorf("snapshot inspect: %s", resp.Errors[0].Message)
-	}
-
-	result := resp.Data.ProjectsInspectSnapshot
-	if result.APIError != nil {
-		return nil, fmt.Errorf("snapshot inspect: %s", result.APIError.Message)
-	}
-	if result.Status == nil {
+	// A 200 without a status would otherwise read as "not modified", silently disabling the
+	// check, so treat it as an error instead.
+	if resp.Status == nil {
 		return nil, errors.New("snapshot inspect: response contained no status")
 	}
 
-	return &SnapshotStatus{
-		Dirty:       result.Status.Dirty,
-		Permissions: result.Status.Permissions,
-	}, nil
+	return &SnapshotStatus{Dirty: resp.Status.Dirty}, nil
+}
+
+// withJSONBody returns a request visitor that sends payload as the request body.
+//
+// The inspect RPC is a GET that carries its arguments in a JSON body, which the SDK cannot
+// express: for GET it serializes the request value into the query string and sends an empty
+// body (see makeRequestBody in databricks-sdk-go/httpclient/request.go). Visitors run against
+// a freshly built request on every attempt, so installing the body here is retry-safe.
+func withJSONBody(payload []byte) func(*http.Request) error {
+	return func(r *http.Request) error {
+		r.Body = io.NopCloser(bytes.NewReader(payload))
+		r.ContentLength = int64(len(payload))
+		return nil
+	}
 }
 
 func (c *SnapshotClient) Get(ctx context.Context, snapshotRelativePath string) (*SnapshotInfo, error) {

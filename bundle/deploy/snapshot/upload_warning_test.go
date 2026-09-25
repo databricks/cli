@@ -104,7 +104,7 @@ func TestBuildCanManage(t *testing.T) {
 		},
 	}
 
-	// Only CAN_MANAGE principals become break-glass managers.
+	// Only CAN_MANAGE principals may break the glass on the snapshot.
 	assert.Equal(t, []snapshot.ManagePrincipal{
 		{UserName: "manager@example.test"},
 		{GroupName: "admins"},

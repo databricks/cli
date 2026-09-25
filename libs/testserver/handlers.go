@@ -764,28 +764,20 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
-	// GraphQL gateway. The only query modeled is projectsInspectSnapshot, which reports the
-	// break-glass status (dirty) of a snapshot content path.
-	server.Handle("POST", "/api/2.0/graphql", func(req Request) any {
+	// Reports whether a snapshot's content was modified out of band. This is a GET that takes
+	// its argument in a JSON body, matching the real API.
+	server.Handle("GET", "/api/2.0/snapshots:inspect", func(req Request) any {
 		var body struct {
-			Variables struct {
-				Path string `json:"path"`
-			} `json:"variables"`
+			SnapshotContentPath string `json:"snapshot_content_path"`
 		}
 		if err := json.Unmarshal(req.Body, &body); err != nil {
 			return Response{StatusCode: http.StatusBadRequest}
 		}
-		contentPath := body.Variables.Path
 		return map[string]any{
-			"data": map[string]any{
-				"projectsInspectSnapshot": map[string]any{
-					"status": map[string]any{
-						"snapshotContentPath": contentPath,
-						"dirty":               req.Workspace.SnapshotDirty(contentPath),
-						"permissions":         []string{},
-					},
-					"apiError": nil,
-				},
+			"status": map[string]any{
+				"snapshot_content_path": body.SnapshotContentPath,
+				"dirty":                 req.Workspace.SnapshotDirty(body.SnapshotContentPath),
+				"permissions":           []string{"SNAPSHOT_PERMISSION_CAN_BREAK_GLASS"},
 			},
 		}
 	})

@@ -30,8 +30,8 @@ type SnapshotState struct {
 	// restores it directly (no re-injection needed). The file name is the content
 	// hash, which is also the last component of RelativePath.
 	ZipPath string `json:"zip_path"`
-	// Generation is the break-glass generation folded into RelativePath (see
-	// resources.Snapshot.Generation). Carried forward in state; bumped on --force recovery.
+	// Generation is folded into RelativePath (see resources.Snapshot.Generation). Carried
+	// forward in state; bumped when --force moves off a snapshot modified outside the bundle.
 	Generation int `json:"generation,omitempty"`
 }
 

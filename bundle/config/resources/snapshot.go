@@ -63,11 +63,11 @@ type Snapshot struct {
 	// Example: "/Workspace/Users/<user>/.snapshots".
 	RemoteRoot string `json:"remote_root"`
 
-	// Generation is the break-glass generation. It is 0 for the initial snapshot and
-	// incremented each time "deploy --force" recovers from a broken (break-glassed)
-	// snapshot, appending a "-<generation>" suffix to the content hash so the recovered
-	// snapshot gets a distinct path. It is carried forward in state across deploys, so a
-	// recovered path keeps being reused until it too is broken.
+	// Generation is 0 for the initial snapshot and incremented each time "deploy --force"
+	// moves off a snapshot that was modified outside the bundle, appending a "-<generation>"
+	// suffix to the content hash so the new snapshot gets a distinct path. It is carried
+	// forward in state across deploys, so that path keeps being reused until it is modified
+	// in turn.
 	Generation int `json:"generation,omitempty"`
 
 	Lifecycle Lifecycle `json:"-"`
@@ -76,8 +76,8 @@ type Snapshot struct {
 // RelativePath is the snapshot's location under RemoteRoot: "<bundle_id>/<zip_hash>".
 // It is the resource ID; the last component is the zip content hash (the ZipPath base
 // name), which makes the pre-computed path match the uploaded content. A non-zero
-// Generation appends a "-<generation>" suffix to the hash so a break-glass recovery
-// uploads to a distinct path (e.g. "1a2b3c4d-.../e3b0c4...-1").
+// Generation appends a "-<generation>" suffix to the hash so a snapshot replacing one that was
+// modified outside the bundle uploads to a distinct path (e.g. "1a2b3c4d-.../e3b0c4...-1").
 func (s *Snapshot) RelativePath() string {
 	hash := strings.TrimSuffix(path.Base(s.ZipPath), ".zip")
 	if s.Generation > 0 {

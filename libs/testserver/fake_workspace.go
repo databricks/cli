@@ -189,7 +189,7 @@ type FakeWorkspace struct {
 	repoIdByPath map[string]int64
 
 	// snapshots records immutable-snapshot content paths and whether each was modified out
-	// of band ("break-glassed"). A workspace write into a recorded path flips it dirty;
+	// of band. A workspace write into a recorded path flips it dirty;
 	// RecordSnapshot resets it when the snapshot is (re)created by the snapshot API.
 	snapshots map[string]bool
 

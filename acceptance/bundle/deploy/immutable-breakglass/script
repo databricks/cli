@@ -13,30 +13,30 @@ SNAPSHOT_PATH_1=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_pyth
 echo "First snapshot path: $SNAPSHOT_PATH_1"
 
 title "Break the glass out of band"
-# The snapshot content path holds files/ and artifacts/; writing into it out of band
-# marks the immutable snapshot as broken.
+# The snapshot content path holds files/ and artifacts/; writing into it out of band is what
+# the backend reports as a modified (dirty) snapshot.
 CONTENT_PATH="${SNAPSHOT_PATH_1%/files/src/main.py}"
 trace $CLI workspace mkdirs "$CONTENT_PATH/tampered"
 
-title "Deploy without --force fails\n"
-musterr $CLI bundle deploy
+title "Deploy without --force fails"
+trace musterr $CLI bundle deploy
 
-title "Deploy with --force recovers to a new snapshot"
+title "Deploy with --force moves to a new snapshot"
 trace $CLI bundle deploy --force
 SNAPSHOT_PATH_2=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
 echo "Second snapshot path: $SNAPSHOT_PATH_2"
 if [ "$SNAPSHOT_PATH_1" = "$SNAPSHOT_PATH_2" ]; then
-    echo "ERROR: snapshot path did not change after break-glass recovery"
+    echo "ERROR: snapshot path did not change after --force"
     exit 1
 fi
-echo "OK: recovery created a new snapshot path"
+echo "OK: --force created a new snapshot path"
 
-title "Redeploy reuses the recovered snapshot"
+title "Redeploy reuses the new snapshot"
 trace $CLI bundle deploy
 SNAPSHOT_PATH_3=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
 echo "Third snapshot path: $SNAPSHOT_PATH_3"
 if [ "$SNAPSHOT_PATH_2" != "$SNAPSHOT_PATH_3" ]; then
-    echo "ERROR: recovered snapshot path was not reused on redeploy"
+    echo "ERROR: new snapshot path was not reused on redeploy"
     exit 1
 fi
-echo "OK: recovered snapshot reused on redeploy"
+echo "OK: new snapshot reused on redeploy"
