@@ -1,0 +1,14 @@
+Cloud = false
+RecordRequests = true
+
+# Terraform never sends local_ssd_count at all (databricks/terraform-provider-databricks#4089),
+# so the update-detection fix under test is direct-engine only.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+]
+
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
+New = "[CLUSTER-ID]"

@@ -664,3 +664,59 @@ func TestLadderBackendDefaultBeforeRemoteAddition(t *testing.T) {
 	assert.Equal(t, deployplan.Skip, changes["enable_elastic_disk"].Action)
 	assert.Equal(t, deployplan.ReasonBackendDefault, changes["enable_elastic_disk"].Reason)
 }
+
+// TestScalarZeroIsNotEmpty guards against allEmpty/isEmpty treating an explicitly
+// force-sent scalar zero the same as an unset field: the field was never set before
+// (Old=nil), config now force-sends an explicit 0 (New=0), and the backend doesn't
+// echo a value back on GET (Remote=nil, e.g. gcp_attributes.local_ssd_count's
+// "default N local SSDs" behavior isn't reflected in the cluster spec response).
+func TestScalarZeroIsNotEmpty(t *testing.T) {
+	adapter, err := dresources.NewAdapter(dresources.SupportedResources["clusters"], "clusters", nil)
+	require.NoError(t, err)
+
+	changes := deployplan.Changes{
+		"gcp_attributes.local_ssd_count": &deployplan.ChangeDesc{Old: nil, New: 0, Remote: nil},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+	assert.Equal(t, deployplan.Update, changes["gcp_attributes.local_ssd_count"].Action)
+}
+
+// TestUnsetScalarWithBackendEchoIsStillEmpty guards the other direction of the
+// TestScalarZeroIsNotEmpty fix: a field the config never sets (Old=New=nil) whose
+// remote echo happens to be a scalar zero/false (no backend_defaults entry needed)
+// must stay a no-op, not turn into a spurious update just because Remote is scalar.
+func TestUnsetScalarWithBackendEchoIsStillEmpty(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	adapter, ok := adapters["jobs"]
+	require.True(t, ok)
+
+	changes := deployplan.Changes{
+		"timeout_seconds": &deployplan.ChangeDesc{Old: nil, New: nil, Remote: 0},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+	assert.Equal(t, deployplan.Skip, changes["timeout_seconds"].Action)
+	assert.Equal(t, deployplan.ReasonEmpty, changes["timeout_seconds"].Reason)
+}
+
+// TestRemovingManagedOverrideMatchingRemoteIsEmpty pins intentional behavior for a
+// "managed" field (gcp_attributes: ignore_remote_changes) when the config drops an
+// override that matches what's already on the backend: Old=0 (last explicit value,
+// still in state), New=nil (removed from config), Remote=0 (backend echoes the same
+// value). This is a no-op, not a bug: the tool doesn't try to actively reset a
+// managed cloud attribute just because the user stopped specifying it, the same way
+// it never actively sets one on create either.
+func TestRemovingManagedOverrideMatchingRemoteIsEmpty(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+	adapter, ok := adapters["jobs"]
+	require.True(t, ok)
+
+	changes := deployplan.Changes{
+		"tasks[task_key='t'].new_cluster.gcp_attributes.local_ssd_count": &deployplan.ChangeDesc{Old: 0, New: nil, Remote: 0},
+	}
+	require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+	ch := changes["tasks[task_key='t'].new_cluster.gcp_attributes.local_ssd_count"]
+	assert.Equal(t, deployplan.Skip, ch.Action)
+	assert.Equal(t, deployplan.ReasonEmpty, ch.Reason)
+}
