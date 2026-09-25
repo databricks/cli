@@ -191,6 +191,46 @@ func TestInitializeURLsApplyNonNumericConfigPassedThrough(t *testing.T) {
 	)
 }
 
+// TestInitializeURLsApplyNoneSentinelResolvesViaAPI verifies that the "none"
+// sentinel (persisted to .databrickscfg when a user explicitly skips
+// workspace selection) is treated as unset rather than as a literal value: it
+// must not end up as ?w=none, and it must not be compared against the API
+// result (both would be wrong; the sentinel means "no preference").
+func TestInitializeURLsApplyNoneSentinelResolvesViaAPI(t *testing.T) {
+	server := testserver.New(t)
+	testserver.AddDefaultHandlers(server)
+	// /Me returns X-Databricks-Org-Id: 900800700600.
+
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:        server.URL,
+		Token:       "testtoken",
+		WorkspaceID: "none",
+	})
+	require.NoError(t, err)
+
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						ID:          "1",
+						JobSettings: jobs.JobSettings{Name: "job1"},
+					},
+				},
+			},
+		},
+	}
+	b.SetWorkpaceClient(w)
+
+	diags := InitializeURLs().Apply(t.Context(), b)
+	require.NoError(t, diags.Error())
+
+	require.Equal(t,
+		server.URL+"/jobs/1?w=900800700600",
+		b.Config.Resources.Jobs["job1"].URL,
+	)
+}
+
 // TestInitializeURLsApplyErrorsOnNumericWorkspaceIDMismatch verifies that Apply
 // returns an error when Config.WorkspaceID is a numeric value that differs from
 // the workspace org ID returned by the API. This prevents silently embedding a

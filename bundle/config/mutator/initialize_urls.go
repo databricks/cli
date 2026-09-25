@@ -26,39 +26,44 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	// ResolveWorkspaceID returns Config.WorkspaceID when set (fast-path),
-	// falling back to CurrentWorkspaceID when not. UUID/connection-style IDs
-	// flow through unchanged so they are preserved in the ?w= parameter.
-	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
-	if err != nil {
-		return diag.FromErr(err)
-	}
+	client := b.WorkspaceClient(ctx)
+	host := client.Config.CanonicalHostName()
 
-	// Validate numeric workspace IDs against the connected workspace. If
-	// Config.WorkspaceID is a numeric value that disagrees with the actual org
-	// ID, the config is stale or mis-scoped and would silently embed the wrong
-	// ?w= in every resource URL. Non-numeric IDs (UUID connection-style IDs,
-	// the "none" sentinel) are skipped — they can't be compared with the
-	// integer org ID returned by the API.
-	if cfgID := b.WorkspaceClient(ctx).Config.WorkspaceID; cfgID != "" {
-		if cfgNumeric, parseErr := strconv.ParseInt(cfgID, 10, 64); parseErr == nil {
-			apiID, apiErr := b.WorkspaceClient(ctx).CurrentWorkspaceID(ctx)
-			if apiErr != nil {
-				return diag.FromErr(apiErr)
+	// A configured, non-numeric workspace ID (a UUID connection-style
+	// identifier) can't be validated against CurrentWorkspaceID, which
+	// strictly parses the org ID header as an integer and would error on a
+	// UUID. Skip the API call entirely and pass it through unchanged.
+	cfgID := client.Config.WorkspaceID
+	if cfgID != "" && cfgID != auth.WorkspaceIDNone {
+		if _, err := strconv.ParseInt(cfgID, 10, 64); err != nil {
+			if err := initializeForWorkspace(b, cfgID, host); err != nil {
+				return diag.FromErr(err)
 			}
-			if cfgNumeric != apiID {
-				return diag.Errorf(
-					"workspace_id %s in your configuration does not match the connected workspace (ID: %s); "+
-						"remove or correct workspace_id in your profile or bundle config to disambiguate",
-					cfgID, strconv.FormatInt(apiID, 10),
-				)
-			}
+			return nil
 		}
 	}
 
-	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
-	err = initializeForWorkspace(b, workspaceID, host)
+	// Otherwise, always resolve the workspace ID from the API. This is the
+	// only way to detect a numeric workspace ID that is stale or mis-scoped
+	// (e.g. a leftover value from a different profile or an old pasted SPOG
+	// URL): if the configured value disagrees with the org ID the workspace
+	// actually reports, embedding it in ?w= would silently navigate to the
+	// wrong workspace, so we error out instead.
+	apiID, err := client.CurrentWorkspaceID(ctx)
 	if err != nil {
+		return diag.FromErr(err)
+	}
+	orgID := strconv.FormatInt(apiID, 10)
+
+	if cfgID != "" && cfgID != auth.WorkspaceIDNone && cfgID != orgID {
+		return diag.Errorf(
+			"workspace_id %s in your configuration does not match the connected workspace (ID: %s); "+
+				"remove or correct workspace_id in your profile or bundle config to disambiguate",
+			cfgID, orgID,
+		)
+	}
+
+	if err := initializeForWorkspace(b, orgID, host); err != nil {
 		return diag.FromErr(err)
 	}
 	return nil
