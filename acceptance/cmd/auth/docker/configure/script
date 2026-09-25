@@ -12,6 +12,16 @@ trace print_requests.py --get //api
 trace databricks auth docker configure docker-test
 trace print_requests.py --get //api
 
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    # Git Bash cannot execute a .cmd path containing the matrix suffix's '='.
+    helper_dir=$(mktemp -d)
+    cp "$HOME/bin/docker-credential-databricks.cmd" "$helper_dir/"
+    trap 'rm -rf "$helper_dir"' EXIT
+    docker-credential-databricks() {
+        "$helper_dir/docker-credential-databricks.cmd" "$@"
+    }
+fi
+
 title "Docker config\n"
 jq -S . "$DOCKER_CONFIG/config.json"
 
@@ -23,6 +33,9 @@ trace print_requests.py --get //api
 
 registry_host=$(jq -r .host "$HOME/host.json")
 printf '%s\n' "$registry_host" | trace docker-credential-databricks get | jq -S .
+
+title "Invalid registry host\n"
+printf '%s\n' registry.example.test | trace musterr docker-credential-databricks get
 
 trace musterr docker-credential-databricks erase
 
