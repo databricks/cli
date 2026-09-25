@@ -31,22 +31,41 @@ import (
 
 const (
 	// home-relative directory to hold files/dependencies for the shim.
-	agentDir = ".agent-shim"
+	agentRootDir = ".agent-shim"
 
 	// directory which holds the per-agent wrappers; must match remoteShimDir in client.go.
-	binDir = agentDir + "/bin"
+	agentBinDir = agentRootDir + "/bin"
+
+	// directory which holds toolchain deps (npm, uv) fetched when the image ships none.
+	agentDepsDir = agentRootDir + "/deps"
 
 	// the GitHub repo the shim installs the Unity Gateway CLI from.
 	ugRepo = "databricks/unity-gateway"
 
-	// pins the Unity Gateway CLI release tag the shim installs.
-	ugVersion = "v0.1.0"
+	// pins the Unity Gateway CLI commit the shim installs.
+	ugCommit = "7f408803f9c0fe4958e6d264fd94595283a49a19" // v0.1.0
+
+	// pins the version of uv downloaded
+	uvBaseURL = "https://github.com/astral-sh/uv/releases/download/0.12.18/"
+
+	// SHA-256 of each pinned uv release tarball
+	uvX64LinuxChecksum   = "89eadd7c76fc063887959510d5ba0ab1264dfd5f1143b925ddb73021a40acf16"
+	uvArm64LinuxChecksum = "afb6291f3f0a6b4521fc67b947822506c41dde5b60d2189dd8f3695b2ac8c9e7"
+
+	// overrides for uv tool installs so they are isolated to a directory we control
+	uvToolDir    = agentDepsDir + "/uv_tools"
+	uvToolBinDir = agentDepsDir + "/uv_tools_bin"
+
+	// pins the version of node/npm downloaded
+	nodeVersion = "v24.21.0"
+	nodeBaseURL = "https://nodejs.org/dist/" + nodeVersion + "/"
+
+	// SHA-256 of each pinned node release tarball
+	nodeX64LinuxChecksum   = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6"
+	nodeArm64LinuxChecksum = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2"
 
 	// environment variable used to pass the user's workspace home to the shim for the agent context.
 	workspaceHomeEnv = "DATABRICKS_WORKSPACE_HOME"
-
-	// directory which holds toolchain deps (Node/npm) fetched when the image ships none.
-	depsDir = agentDir + "/deps"
 
 	// the file holding the Databricks session context.
 	contextFile = "agent-system-context.md"
@@ -120,8 +139,6 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 const (
 	legacyEndpointsPath       = "/api/ai-gateway/v2/endpoints"
 	modelServiceProbePageSize = 50
-	modelServiceProbeMaxPages = 20
-	modelServiceProbeMaxItems = modelServiceProbePageSize * modelServiceProbeMaxPages
 	aiGatewayDocsURL          = "https://docs.databricks.com/aws/en/ai-gateway/overview-beta"
 )
 
@@ -302,29 +319,21 @@ func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace str
 	// Reconstruct the PATH tooling runs under on every launch rather than caching
 	// it: every entry is a known location, so deriving it can't restore a stale
 	// path (e.g. a versioned CLI dir from an older session). Drop the shim dir so
-	// Unity Gateway CLI execs the real agent rather than this wrapper, then prepend
-	// uv/ug's bin, this databricks CLI's own dir (so it's used by ug/the spawned agent),
-	// and the Node bin ensureNode installs into.
-	removePath(ctx, filepath.Join(home, binDir))
-	prependPath(ctx, filepath.Join(home, ".local", "bin")) // uv
+	// Unity Gateway CLI execs the real agent rather than this wrapper
+	removePath(ctx, filepath.Join(home, agentBinDir))
+	// add this CLI to PATH so agents can use it
 	if self, err := os.Executable(); err == nil {
 		prependPath(ctx, filepath.Dir(self))
 	}
-	prependPath(ctx, filepath.Join(home, depsDir, "node", "bin"))
 
-	if err := ensureToolchain(ctx, home); err != nil {
+	err = ensureToolchain(ctx, home)
+	if err != nil {
 		return err
 	}
 
 	// npm is on PATH now (shipped or just installed); silence its update-notifier
 	// box so it doesn't clutter the agent session.
 	disableNpmUpdateNotifier(ctx)
-
-	// Put npm's global bin on PATH so an npm-installed agent binary resolves after
-	// Unity Gateway CLI installs it.
-	if prefix := npmGlobalPrefix(ctx); prefix != "" {
-		prependPath(ctx, filepath.Join(prefix, "bin"))
-	}
 
 	return launchAgent(ctx, home, agent, workspace, agentArgs)
 }
@@ -341,7 +350,7 @@ func ensureToolchain(ctx context.Context, home string) error {
 	}
 	unlock, err := acquireSetupLock(ctx, home)
 	if err != nil {
-		return err
+		return nil
 	}
 	defer unlock()
 	// Another client may have finished the install while we waited for the lock.
@@ -349,38 +358,116 @@ func ensureToolchain(ctx context.Context, home string) error {
 		return nil
 	}
 
-	// 1. uv (installs into ~/.local/bin).
+	uvToolDirAbsolute := filepath.Join(home, uvToolDir)
+	uvToolBinDirAbsolute := filepath.Join(home, uvToolBinDir)
+
 	if _, err := exec.LookPath("uv"); err != nil {
 		cmdio.LogString(ctx, "Installing uv...")
-		if err := runShell(ctx, "curl -LsSf https://astral.sh/uv/install.sh | sh"); err != nil {
+		uvPath, err := ensureBinary(ctx, home, uvArchiveSpec(runtime.GOARCH))
+		if err != nil {
 			return fmt.Errorf("failed to install uv: %w", err)
 		}
+		prependPath(ctx, uvPath, uvToolBinDirAbsolute)
 	}
 
-	// 2. Unity Gateway CLI (pinned stock upstream release).
 	if _, err := exec.LookPath("ucode"); err != nil {
 		cmdio.LogString(ctx, "Installing Unity Gateway CLI...")
-		if err := runCommand(ctx, "uv", "tool", "install", "git+https://github.com/"+ugRepo+"@"+ugVersion); err != nil {
+		env := os.Environ()
+		env = append(env, "UV_TOOL_DIR="+uvToolDirAbsolute, "UV_TOOL_BIN_DIR="+uvToolBinDirAbsolute)
+		if err := runCommand(ctx, env, "uv", "tool", "install", "git+https://github.com/"+ugRepo+"@"+ugCommit); err != nil {
 			return fmt.Errorf("failed to install Unity Gateway CLI: %w", err)
 		}
 	}
 
-	// 3. Node/npm (installs into depsDir/node/bin)
 	if _, err := exec.LookPath("npm"); err != nil {
 		cmdio.LogString(ctx, "Installing npm...")
-		if _, err := ensureNode(ctx, home); err != nil {
+		nodePath, err := ensureBinary(ctx, home, nodeArchiveSpec(runtime.GOARCH))
+		if err != nil {
 			return err
 		}
+		prependPath(ctx, nodePath)
 	}
 
 	return nil
+}
+
+type archiveSpec struct {
+	// "" if this is an unsupported architecture
+	archiveURL string
+	binaryName string
+	dirName    string
+	// sub-directory inside dirName where the binary is located, "" if it's the same as dirName
+	binDirName string
+	checksum   string
+}
+
+// ensure the specified binary is installed, installing it if it's not already
+// present. Returns the path to the directory containing the installed binary
+func ensureBinary(ctx context.Context, home string, spec archiveSpec) (string, error) {
+	if spec.archiveURL == "" {
+		return "", fmt.Errorf("unsupported architecture for %s download: %s", spec.binaryName, runtime.GOARCH)
+	}
+
+	depsRoot := filepath.Join(home, agentDepsDir)
+	depsDir := filepath.Join(depsRoot, spec.dirName)
+	binDir := depsDir
+	if spec.binDirName != "" {
+		binDir = filepath.Join(depsDir, spec.binDirName)
+	}
+	if _, err := os.Stat(filepath.Join(binDir, spec.binaryName)); err == nil {
+		return binDir, nil
+	}
+
+	if err := os.MkdirAll(depsRoot, 0o755); err != nil {
+		return "", fmt.Errorf("failed to create %s: %w", depsRoot, err)
+	}
+
+	tarball, err := downloadVerified(ctx, spec)
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(tarball)
+	// Extract into a sibling temp dir and atomically rename it into place, so an
+	// interrupted extraction never leaves a half-populated dir that the os.Stat
+	// check above would then wrongly accept as a finished install.
+	tmpDir, err := os.MkdirTemp(depsRoot, spec.binaryName+"-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir) // no-op once renamed; cleans up a failed extraction
+	// extract with tar for brevity
+	if err := runCommand(ctx, nil, "tar", "-xf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
+		return "", fmt.Errorf("failed to extract %s: %w", spec.binaryName, err)
+	}
+	// Clear any partial leftover from a previously-interrupted run, then publish
+	// atomically (same-filesystem rename, since tmpDir is a sibling of nodeDir).
+	if err := os.RemoveAll(depsDir); err != nil {
+		return "", fmt.Errorf("failed to remove %s: %w", depsDir, err)
+	}
+	if err := os.Rename(tmpDir, depsDir); err != nil {
+		return "", fmt.Errorf("failed to install %s: %w", spec.binaryName, err)
+	}
+	return binDir, nil
+}
+
+func uvArchiveSpec(goarch string) archiveSpec {
+	spec := archiveSpec{dirName: "uv", binaryName: "uv"}
+	switch goarch {
+	case "amd64":
+		spec.archiveURL = uvBaseURL + "uv-x86_64-unknown-linux-gnu.tar.gz"
+		spec.checksum = uvX64LinuxChecksum
+	case "arm64":
+		spec.archiveURL = uvBaseURL + "uv-aarch64-unknown-linux-gnu.tar.gz"
+		spec.checksum = uvArm64LinuxChecksum
+	}
+	return spec
 }
 
 // take a machine-local lock (an O_EXCL sentinel file) serializing first-run setup
 // across SSH clients. It blocks until the lock is free, reclaiming one left behind
 // by a dead process after setupLockStaleAfter. The returned func releases the lock.
 func acquireSetupLock(ctx context.Context, home string) (func(), error) {
-	lockPath := filepath.Join(home, agentDir, setupLockName)
+	lockPath := filepath.Join(home, agentRootDir, setupLockName)
 	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create %s: %w", filepath.Dir(lockPath), err)
 	}
@@ -440,7 +527,7 @@ func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]st
 	case agent.contextFlag != "":
 		// Keep the scratch context file under the shim's own directory so it never
 		// clobbers an unrelated file the user happens to have in their home.
-		dir := filepath.Join(home, agentDir)
+		dir := filepath.Join(home, agentRootDir)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return nil, fmt.Errorf("failed to create %s: %w", dir, err)
 		}
@@ -468,75 +555,25 @@ func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]st
 	}
 }
 
-// download the latest Krypton LTS Node into deps/node once, returning its bin.
-// Linux-only by design: the shim runs on the serverless driver, so the tarball
-// name is hardcoded to linux while nodeDownloadArch guards the arch.
-func ensureNode(ctx context.Context, home string) (string, error) {
-	depsRoot := filepath.Join(home, depsDir)
-	nodeDir := filepath.Join(depsRoot, "node")
-	nodeBin := filepath.Join(nodeDir, "bin")
-	if _, err := os.Stat(filepath.Join(nodeBin, "npm")); err == nil {
-		return nodeBin, nil
-	}
-
-	arch := nodeDownloadArch(runtime.GOARCH)
-	if arch == "" {
-		return "", fmt.Errorf("unsupported architecture for Node download: %s", runtime.GOARCH)
-	}
-	const base = "https://nodejs.org/dist/latest-krypton"
-	tarName, wantSum, err := latestNodeTarball(ctx, base+"/SHASUMS256.txt", arch)
-	if err != nil {
-		return "", err
-	}
-	if err := os.MkdirAll(depsRoot, 0o755); err != nil {
-		return "", fmt.Errorf("failed to create %s: %w", depsRoot, err)
-	}
-	// Download to a temp file, verifying its SHA256 from SHASUMS256.txt before use.
-	tarball, err := downloadVerified(ctx, base+"/"+tarName, wantSum)
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(tarball)
-	// Extract into a sibling temp dir and atomically rename it into place, so an
-	// interrupted extraction never leaves a half-populated node dir that the
-	// os.Stat(npm) check above would then wrongly accept as a finished install.
-	tmpDir, err := os.MkdirTemp(depsRoot, "node-*")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %w", err)
-	}
-	defer os.RemoveAll(tmpDir) // no-op once renamed; cleans up a failed extraction
-	// Node's .tar.xz is the smallest download; extract it with the system tar.
-	if err := runCommand(ctx, "tar", "-xJf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
-		return "", fmt.Errorf("failed to extract Node.js: %w", err)
-	}
-	// Clear any partial leftover from a previously-interrupted run, then publish
-	// atomically (same-filesystem rename, since tmpDir is a sibling of nodeDir).
-	if err := os.RemoveAll(nodeDir); err != nil {
-		return "", fmt.Errorf("failed to remove %s: %w", nodeDir, err)
-	}
-	if err := os.Rename(tmpDir, nodeDir); err != nil {
-		return "", fmt.Errorf("failed to install Node.js: %w", err)
-	}
-	return nodeBin, nil
-}
-
-// fetch url to a temp file, failing unless its SHA256 matches wantSum. The caller
-// is responsible for removing the returned file.
-func downloadVerified(ctx context.Context, url, wantSum string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+// fetch url to a temp file, failing unless its SHA256 matches the expected checksum.
+// The caller is responsible for removing the returned file.
+func downloadVerified(ctx context.Context, spec archiveSpec) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, spec.archiveURL, nil)
 	if err != nil {
 		return "", err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to download %s: %w", url, err)
+		return "", fmt.Errorf("failed to download %s: %w", spec.archiveURL, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to download %s: HTTP %d", url, resp.StatusCode)
+		return "", fmt.Errorf("failed to download %s: HTTP %d", spec.archiveURL, resp.StatusCode)
 	}
 
-	f, err := os.CreateTemp("", "node-*.tar.xz")
+	// either .tar.gz or .tar.xz
+	fileExt := spec.archiveURL[len(spec.archiveURL)-7:]
+	f, err := os.CreateTemp("", spec.binaryName+"-*."+fileExt)
 	if err != nil {
 		return "", err
 	}
@@ -544,51 +581,30 @@ func downloadVerified(ctx context.Context, url, wantSum string) (string, error) 
 	if _, err := io.Copy(io.MultiWriter(f, sum), resp.Body); err != nil {
 		f.Close()
 		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to download %s: %w", url, err)
+		return "", fmt.Errorf("failed to download %s: %w", spec.archiveURL, err)
 	}
 	if err := f.Close(); err != nil {
 		os.Remove(f.Name())
 		return "", err
 	}
-	if got := hex.EncodeToString(sum.Sum(nil)); !strings.EqualFold(got, wantSum) {
+	if got := hex.EncodeToString(sum.Sum(nil)); !strings.EqualFold(got, spec.checksum) {
 		os.Remove(f.Name())
-		return "", fmt.Errorf("checksum mismatch for %s: got %s, want %s", url, got, wantSum)
+		return "", fmt.Errorf("checksum mismatch for %s: got %s, want %s", spec.archiveURL, got, spec.checksum)
 	}
 	return f.Name(), nil
 }
 
-func nodeDownloadArch(goarch string) string {
+func nodeArchiveSpec(goarch string) archiveSpec {
+	spec := archiveSpec{binDirName: "bin", dirName: "node", binaryName: "npm"}
 	switch goarch {
 	case "amd64":
-		return "x64"
+		spec.archiveURL = nodeBaseURL + "node-" + nodeVersion + "-linux-x64.tar.xz"
+		spec.checksum = nodeX64LinuxChecksum
 	case "arm64":
-		return "arm64"
-	default:
-		return ""
+		spec.archiveURL = nodeBaseURL + "node-" + nodeVersion + "-linux-arm64.tar.xz"
+		spec.checksum = nodeArm64LinuxChecksum
 	}
-}
-
-func latestNodeTarball(ctx context.Context, shasumsURL, arch string) (name, sum string, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, shasumsURL, nil)
-	if err != nil {
-		return "", "", err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to fetch Node checksums: %w", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return "", "", fmt.Errorf("failed to read Node checksums: %w", err)
-	}
-	re := regexp.MustCompile(`^([0-9a-f]{64})\s+(node-v[0-9.]+-linux-` + regexp.QuoteMeta(arch) + `\.tar\.xz)$`)
-	for line := range strings.SplitSeq(string(body), "\n") {
-		if m := re.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
-			return m[2], m[1], nil
-		}
-	}
-	return "", "", fmt.Errorf("no linux-%s Node tarball found in %s", arch, shasumsURL)
+	return spec
 }
 
 // turn off npm's "new version available" box so it doesn't clutter the installation
@@ -600,34 +616,24 @@ func disableNpmUpdateNotifier(ctx context.Context) {
 	}
 }
 
-func npmGlobalPrefix(ctx context.Context) string {
-	out, err := exec.CommandContext(ctx, "npm", "prefix", "-g").Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
-}
-
-func runCommand(ctx context.Context, name string, args ...string) error {
+func runCommand(ctx context.Context, env []string, name string, args ...string) error {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if len(env) > 0 {
+		cmd.Env = env
+	}
 	return cmd.Run()
 }
 
-func runShell(ctx context.Context, script string) error {
-	cmd := exec.CommandContext(ctx, "sh", "-c", script)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func prependPath(ctx context.Context, dir string) {
-	dirs := []string{dir}
+func prependPath(ctx context.Context, dirs ...string) {
 	for _, d := range filepath.SplitList(env.Get(ctx, "PATH")) {
-		if d != dir {
+		match := false
+		for _, toAdd := range dirs {
+			match = match || d == toAdd
+		}
+		if !match {
 			dirs = append(dirs, d)
 		}
 	}
