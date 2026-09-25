@@ -67,9 +67,8 @@ type ClusterRemote struct {
 	ApplyPolicyDefaultValues bool            `json:"apply_policy_default_values,omitempty"`
 	Lifecycle                *StateLifecycle `json:"lifecycle,omitempty"`
 
-	// Libraries is populated by DoReadWithState from the Libraries cluster-status API (the cluster
-	// GET does not return installed libraries), so it participates in drift detection. It is only
-	// read when the config declares libraries.
+	// Libraries is populated by DoRead from the Libraries cluster-status API (the cluster
+	// GET does not return installed libraries), so it participates in drift detection.
 	Libraries []compute.Library `json:"libraries,omitempty"`
 }
 
@@ -151,21 +150,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 	return spec
 }
 
-// DoRead reads the cluster without its libraries. It serves reads that have no local state
-// (deletes, the post-apply refresh for remote references), which don't need them.
 func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*ClusterRemote, error) {
-	return r.read(ctx, id, false)
-}
-
-// DoReadWithState also reads the cluster's libraries, but only when the config declares a
-// libraries section. Without one the bundle does not manage libraries at all, matching the
-// behaviour before the field existed: no library calls, and libraries installed by job runs
-// or out of band are not drift.
-func (r *ResourceCluster) DoReadWithState(ctx context.Context, id string, state *ClusterState) (*ClusterRemote, error) {
-	return r.read(ctx, id, state.Libraries != nil)
-}
-
-func (r *ResourceCluster) read(ctx context.Context, id string, withLibraries bool) (*ClusterRemote, error) {
 	var details *compute.ClusterDetails
 	var libraries []compute.Library
 
@@ -176,13 +161,11 @@ func (r *ResourceCluster) read(ctx context.Context, id string, withLibraries boo
 		details, err = r.client.Clusters.GetByClusterId(ctx, id)
 		return err
 	})
-	if withLibraries {
-		g.Go(func() error {
-			var err error
-			libraries, err = r.readLibraries(ctx, id)
-			return err
-		})
-	}
+	g.Go(func() error {
+		var err error
+		libraries, err = r.readLibraries(ctx, id)
+		return err
+	})
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
@@ -425,6 +408,16 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 	case "num_workers", "autoscale":
 		if remoteState != nil && remoteState.State == compute.StateRunning {
 			change.Action = deployplan.Resize
+		}
+
+	case "libraries":
+		// Without a libraries section the bundle does not manage the cluster's libraries, matching
+		// the behaviour before the field existed: job runs install their task libraries cluster-wide,
+		// so what the cluster reports is not drift. With no section, New is nil and the difference
+		// arrives as a single whole-field change; `libraries: []` keeps New non-nil and stays managed.
+		if p.String() == "libraries" && change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = deployplan.ReasonUnmanaged
 		}
 	}
 	return nil
