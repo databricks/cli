@@ -1,0 +1,4 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[MY_ID_2]"
+}

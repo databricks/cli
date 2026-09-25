@@ -1,0 +1,10 @@
+{
+  "regular": {
+    "edition": "ADVANCED",
+    "channel": "CURRENT"
+  },
+  "ingestion": {
+    "edition": null,
+    "channel": null
+  }
+}

@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve 2>/dev/null || true
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy the ingestion pipeline. Verifies that:
+#   1. Deployment succeeds without "cluster settings" errors
+#   2. edition and channel are absent from the created pipeline's spec
+trace $CLI bundle deploy
+
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines" and .method=="POST") | .body | {name, edition, channel}' out.requests.txt
+rm -f out.requests.txt
