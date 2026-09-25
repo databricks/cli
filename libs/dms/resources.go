@@ -20,8 +20,8 @@ type Resource struct {
 }
 
 // ListResources returns every resource DMS holds for the deployment.
-func (c *Client) ListResources(ctx context.Context, deploymentID string) ([]Resource, error) {
-	it := c.Service.ListResources(ctx, bundledeployments.ListResourcesRequest{
+func ListResources(ctx context.Context, service bundledeployments.BundleDeploymentsInterface, deploymentID string) ([]Resource, error) {
+	it := service.ListResources(ctx, bundledeployments.ListResourcesRequest{
 		Parent: DeploymentName(deploymentID),
 	})
 
@@ -32,7 +32,7 @@ func (c *Client) ListResources(ctx context.Context, deploymentID string) ([]Reso
 			return nil, fmt.Errorf("listing resources from the deployment history service: %w", err)
 		}
 		out = append(out, Resource{
-			Key:   statePrefix + res.ResourceKey,
+			Key:   StatePrefix + res.ResourceKey,
 			ID:    res.ResourceId,
 			State: res.State,
 		})

@@ -3,11 +3,16 @@ package dms
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"unicode/utf8"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
+
+// StatePrefix is the "resources." that bundle keys carry but DMS keys don't
+// ("resources.jobs.foo" vs "jobs.foo"). Strip it when sending, add it back when reading.
+const StatePrefix = "resources."
 
 // maxStateSize is the largest serialized state DMS accepts per operation. More than this
 // and the resource cannot be recorded at all, so the deploy fails rather than leaving the
@@ -139,4 +144,34 @@ func (u OperationUpdate) Merge(newer OperationUpdate) OperationUpdate {
 	}
 
 	return merged
+}
+
+// newOperationUpdate builds the operation from the masked fields, plus the sequence_id check.
+// Force-send them (empty = clear, and 0 is a real sequence_id); never force state, since a missing state means the resource is gone.
+func newOperationUpdate(update OperationUpdate, sequenceID string) (bundledeployments.Operation, error) {
+	sequence, err := strconv.ParseInt(sequenceID, 10, 64)
+	if err != nil {
+		return bundledeployments.Operation{}, fmt.Errorf("invalid sequence id %q: %w", sequenceID, err)
+	}
+
+	operation := bundledeployments.Operation{
+		SequenceId:      sequence,
+		ForceSendFields: []string{"SequenceId"},
+	}
+	if update.Fields.Has(FieldState) && update.State != nil {
+		operation.State = string(update.State)
+	}
+	if update.Fields.Has(FieldErrorMessage) {
+		operation.ErrorMessage = update.ErrorMessage
+		operation.ForceSendFields = append(operation.ForceSendFields, "ErrorMessage")
+	}
+	if update.Fields.Has(FieldResourceID) {
+		operation.ResourceId = update.ResourceID
+		operation.ForceSendFields = append(operation.ForceSendFields, "ResourceId")
+	}
+	if update.Fields.Has(FieldStatus) {
+		operation.Status = update.Status
+		operation.ForceSendFields = append(operation.ForceSendFields, "Status")
+	}
+	return operation, nil
 }
