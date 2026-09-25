@@ -2,7 +2,6 @@ package metricviews
 
 import (
 	"errors"
-	"fmt"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -25,23 +24,6 @@ func resolveYAMLAlias(node *yaml.Node) *yaml.Node {
 
 func yamlScalar(node *yaml.Node) string {
 	return resolveYAMLAlias(node).Value
-}
-
-func requireYAMLFields(node *yaml.Node, fields ...string) error {
-	if node.Kind != yaml.MappingNode {
-		return fmt.Errorf("expected a mapping, got kind %d", node.Kind)
-	}
-	for _, field := range fields {
-		value := yamlField(node, field)
-		if value == nil {
-			return fmt.Errorf("missing required field %q", field)
-		}
-		value = resolveYAMLAlias(value)
-		if value.Tag == "!!null" {
-			return fmt.Errorf("required field %q cannot be null", field)
-		}
-	}
-	return nil
 }
 
 func rejectDimensionFieldConflict(node *yaml.Node) error {

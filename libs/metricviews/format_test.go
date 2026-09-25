@@ -35,7 +35,7 @@ func TestValidateRejectsInvalidDecimalPlacesType(t *testing.T) {
 	for _, typ := range []string{"MAX", "bogus"} {
 		t.Run(typ, func(t *testing.T) {
 			in := []byte("version: '1.1'\nsource: main.sales.orders\ndimensions:\n  - name: amount\n    expr: amount\n    format:\n      type: number\n      decimal_places:\n        type: " + typ + "\n        places: 2\n")
-			err := validateYAML(t, in)
+			err := validateInput(t, in)
 			require.ErrorContains(t, err, typ)
 		})
 	}

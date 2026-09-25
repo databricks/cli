@@ -5,7 +5,7 @@ It mirrors the YAML shapes accepted by the backend.
 
 ## Scope
 
-`Parse` decodes YAML without applying structural rules, so persisted definitions remain readable when those rules change. Use `ParseAndValidate` for user input, or pass a parsed `yaml.Node` to `Validate` when only the structural checks are needed. `ParseAndValidate` validates and decodes the same YAML tree. Semantic validation (such as uniqueness, trailing defaults, or wildcard rules) is outside this package. Exported types carry `yaml` and `json` tags so callers can diff parsed values with `libs/structs/structdiff`.
+`Parse` decodes YAML without applying structural rules, so persisted definitions remain readable when those rules change. Use `Validate` on a decoded `MetricView` from bundle input. Use `ParseAndValidate` for YAML input; it checks raw YAML key conflicts, decodes the view, and applies the same model validation. Semantic validation (such as uniqueness, trailing defaults, or wildcard rules) is outside this package. Exported types carry `yaml` and `json` tags so callers can diff parsed values with `libs/structs/structdiff`.
 
 ## Fixtures
 

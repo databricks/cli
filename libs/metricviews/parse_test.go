@@ -32,7 +32,7 @@ func TestValidateRejectsBadVersions(t *testing.T) {
 		"version: 2.0\nsource: main.default.t\n",
 		"version: 9.9\nsource: main.default.t\n",
 	} {
-		err := validateYAML(t, []byte(in))
+		err := validateInput(t, []byte(in))
 		assert.Error(t, err)
 	}
 }
@@ -91,7 +91,7 @@ func TestParseAndValidateResolvesColumnAliases(t *testing.T) {
 
 func TestValidateRejectsUnsupportedViewType(t *testing.T) {
 	in := []byte("version: 1.1\nview_type: OTHER\nsource: main.default.t\n")
-	err := validateYAML(t, in)
+	err := validateInput(t, in)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "view_type")
 	assert.ErrorContains(t, err, "OTHER")
@@ -115,7 +115,7 @@ func TestParseExplicitSingleSourceViewTypeRoundTrip(t *testing.T) {
 
 func TestValidateRejectsMultiSourceWithoutViewType(t *testing.T) {
 	in := []byte("version: 1.1\nsources:\n  - name: o\n    from: main.default.o\n")
-	err := validateYAML(t, in)
+	err := validateInput(t, in)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "view_type")
 }
@@ -129,9 +129,29 @@ func TestMetricViewMarshalRoundTrips(t *testing.T) {
 	assert.NotNil(t, out)
 }
 
-func validateYAML(t *testing.T, data []byte) error {
+func validateInput(t *testing.T, data []byte) error {
 	t.Helper()
-	var node yaml.Node
-	require.NoError(t, yaml.Unmarshal(data, &node))
-	return Validate(&node)
+	_, err := ParseAndValidate(data)
+	return err
+}
+
+func TestValidateYAMLChecksOnlyRawKeyConflicts(t *testing.T) {
+	for _, tc := range []struct {
+		in      string
+		wantErr string
+	}{
+		{"version: '1.1'\ndimensions: [{expr: id}]\n", ""},
+		{"version: '1.1'\nsource: main.sales.orders\ndimensions: []\nfields: []\n", "dimensions"},
+		{"version: '1.1'\nsource: main.sales.orders\nparameters: [{name: a, name: b, data_type: STRING}]\n", "duplicate"},
+		{"version: '1.1'\nsource: main.sales.orders\nparameters: [{name: a, data_type: STRING, unknown_option: value}]\n", "unknown parameter field"},
+	} {
+		var node yaml.Node
+		require.NoError(t, yaml.Unmarshal([]byte(tc.in), &node))
+		err := ValidateYAML(&node)
+		if tc.wantErr == "" {
+			require.NoError(t, err)
+		} else {
+			require.ErrorContains(t, err, tc.wantErr)
+		}
+	}
 }

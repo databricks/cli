@@ -24,7 +24,7 @@ func TestFixturesCanonicalizeIdempotent(t *testing.T) {
 		t.Run(filepath.Base(p), func(t *testing.T) {
 			data, err := os.ReadFile(p)
 			require.NoError(t, err, "fixture must parse")
-			require.NoError(t, validateYAML(t, data))
+			require.NoError(t, validateInput(t, data))
 
 			// Exercise the full canonicalization cycle the resource relies on for
 			// drift detection (Parse -> Normalize -> Marshal). Re-parsing the result

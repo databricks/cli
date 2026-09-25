@@ -7,9 +7,8 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// Validate checks the structural rules in a parsed YAML document or mapping.
-// It uses YAML nodes so missing and duplicate keys remain observable.
-func Validate(node *yaml.Node) error {
+// ValidateYAML checks input rules whose evidence is lost when YAML is decoded.
+func ValidateYAML(node *yaml.Node) error {
 	root := node
 	if node.Kind == yaml.DocumentNode {
 		if len(node.Content) == 0 {
@@ -17,26 +16,24 @@ func Validate(node *yaml.Node) error {
 		}
 		root = node.Content[0]
 	}
-	if err := requireYAMLFields(root, "version"); err != nil {
-		return fmt.Errorf("metricviews: %w", err)
-	}
 	version, viewType, hasSources := peek(root)
 	switch version {
 	case version01, version10:
-		return validateV10(root)
-	case version11:
-		if yamlField(root, "view_type") != nil && viewType != viewTypeSingleSource && viewType != viewTypeMultiSource {
-			return fmt.Errorf("metricviews: unsupported v1.1 view_type %q", viewType)
+		if err := validateYAMLColumns(root); err != nil {
+			return err
 		}
-		if viewType == viewTypeMultiSource {
-			return validateMultiSource(root)
-		}
-		if hasSources {
-			return errors.New("metricviews: v1.1 sources requires view_type: MULTI_SOURCE")
-		}
-		return validateSingleSource(root)
+		return visitYAMLField(root, "materialization", validateYAMLMaterialization)
 	default:
-		return fmt.Errorf("metricviews: invalid YAML version: %q", version)
+		if err := validateYAMLColumns(root); err != nil {
+			return err
+		}
+		if err := visitYAMLSequence(root, "parameters", validateYAMLParameter); err != nil {
+			return err
+		}
+		if viewType == viewTypeMultiSource || hasSources {
+			return nil
+		}
+		return visitYAMLField(root, "materialization", validateYAMLMaterialization)
 	}
 }
 
@@ -46,65 +43,20 @@ func ParseAndValidate(data []byte) (*MetricView, error) {
 	if err := yaml.Unmarshal(data, &root); err != nil {
 		return nil, fmt.Errorf("metricviews: parsing YAML: %w", err)
 	}
-	if err := Validate(&root); err != nil {
+	if err := ValidateYAML(&root); err != nil {
 		return nil, err
 	}
-	return decodeMetricView(&root)
+	m, err := decodeMetricView(&root)
+	if err != nil {
+		return nil, err
+	}
+	if err := Validate(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
-func validateV10(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "version", "source"); err != nil {
-		return err
-	}
-	if err := validateDimensionColumns(node, validateColumnV10); err != nil {
-		return err
-	}
-	if err := visitYAMLSequence(node, "measures", validateColumnV10); err != nil {
-		return err
-	}
-	return validateSingleSourceDetails(node, validateParameterV10)
-}
-
-func validateSingleSource(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "version", "source"); err != nil {
-		return err
-	}
-	if err := validateDimensionColumns(node, validateColumnV11); err != nil {
-		return err
-	}
-	if err := visitYAMLSequence(node, "measures", validateColumnV11); err != nil {
-		return err
-	}
-	return validateSingleSourceDetails(node, validateParameterV11)
-}
-
-func validateSingleSourceDetails(node *yaml.Node, parameter func(*yaml.Node) error) error {
-	if err := visitYAMLSequence(node, "joins", validateJoin); err != nil {
-		return err
-	}
-	if err := visitYAMLSequence(node, "parameters", parameter); err != nil {
-		return err
-	}
-	return visitYAMLField(node, "materialization", validateMaterialization)
-}
-
-func validateMultiSource(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "version", "sources"); err != nil {
-		return err
-	}
-	if err := visitYAMLSequence(node, "sources", validateSourceNode); err != nil {
-		return err
-	}
-	if err := validateDimensionColumns(node, validateColumnV11); err != nil {
-		return err
-	}
-	if err := visitYAMLSequence(node, "measures", validateColumnV11); err != nil {
-		return err
-	}
-	return visitYAMLSequence(node, "parameters", validateParameterV11)
-}
-
-func validateDimensionColumns(node *yaml.Node, column func(*yaml.Node) error) error {
+func validateYAMLColumns(node *yaml.Node) error {
 	if err := rejectDimensionFieldConflict(node); err != nil {
 		return err
 	}
@@ -112,63 +64,21 @@ func validateDimensionColumns(node *yaml.Node, column func(*yaml.Node) error) er
 	if yamlField(node, "fields") != nil {
 		field = "fields"
 	}
-	return visitYAMLSequence(node, field, column)
-}
-
-func validateColumnV10(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "expr"); err != nil {
+	if err := visitYAMLSequence(node, field, validateYAMLColumn); err != nil {
 		return err
 	}
-	return validateColumnDetails(node)
+	return visitYAMLSequence(node, "measures", validateYAMLColumn)
 }
 
-func validateColumnV11(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "expr"); err != nil {
-		return err
-	}
-	return validateColumnDetails(node)
+func validateYAMLColumn(node *yaml.Node) error {
+	return visitYAMLField(node, "format", validateYAMLFormat)
 }
 
-func validateColumnDetails(node *yaml.Node) error {
-	if err := visitYAMLSequence(node, "window", validateWindow); err != nil {
-		return err
-	}
-	return visitYAMLField(node, "format", validateFormat)
+func validateYAMLMaterialization(node *yaml.Node) error {
+	return visitYAMLSequence(node, "materialized_views", rejectDimensionFieldConflict)
 }
 
-func validateWindow(node *yaml.Node) error {
-	return requireYAMLFields(node, "order", "semiadditive", "range")
-}
-
-func validateJoin(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "source"); err != nil {
-		return err
-	}
-	return visitYAMLSequence(node, "joins", validateJoin)
-}
-
-func validateMaterialization(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "schedule", "mode", "materialized_views"); err != nil {
-		return err
-	}
-	return visitYAMLSequence(node, "materialized_views", validateMaterializedView)
-}
-
-func validateMaterializedView(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "type"); err != nil {
-		return err
-	}
-	return rejectDimensionFieldConflict(node)
-}
-
-func validateParameterV10(node *yaml.Node) error {
-	return requireYAMLFields(node, "name", "data_type")
-}
-
-func validateParameterV11(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "data_type"); err != nil {
-		return err
-	}
+func validateYAMLParameter(node *yaml.Node) error {
 	seen := make(map[string]bool)
 	for i := 0; i+1 < len(node.Content); i += 2 {
 		key := node.Content[i].Value
@@ -185,43 +95,15 @@ func validateParameterV11(node *yaml.Node) error {
 	return nil
 }
 
-func validateSourceNode(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "name", "from"); err != nil {
-		return err
+func validateYAMLFormat(node *yaml.Node) error {
+	typeNode := yamlField(node, "type")
+	if typeNode == nil {
+		return nil
 	}
-	return visitYAMLSequence(node, "relationships", validateRelationship)
-}
-
-func validateRelationship(node *yaml.Node) error {
-	return requireYAMLFields(node, "ref")
-}
-
-func validateFormat(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "type"); err != nil {
-		return err
-	}
-	typ := yamlScalar(yamlField(node, "type"))
-	allowed := map[string]bool{"type": true}
-	var required []string
-	switch typ {
-	case "number":
-		allowed["decimal_places"], allowed["hide_group_separator"], allowed["abbreviation"] = true, true, true
-	case "currency":
-		allowed["decimal_places"], allowed["hide_group_separator"], allowed["abbreviation"], allowed["currency_code"] = true, true, true, true
-		required = []string{"currency_code"}
-	case "percentage", "byte":
-		allowed["decimal_places"], allowed["hide_group_separator"] = true, true
-	case "date":
-		allowed["date_format"], allowed["leading_zeros"] = true, true
-		required = []string{"date_format"}
-	case "date_time":
-		allowed["date_format"], allowed["time_format"], allowed["leading_zeros"] = true, true, true
-		required = []string{"date_format", "time_format"}
-	default:
-		return fmt.Errorf("unsupported format type %q", typ)
-	}
-	if err := requireYAMLFields(node, required...); err != nil {
-		return err
+	typ := yamlScalar(typeNode)
+	allowed, _ := formatAllowedFields(typ)
+	if allowed == nil {
+		return nil // The model validator reports unsupported types.
 	}
 	for i := 0; i+1 < len(node.Content); i += 2 {
 		field := node.Content[i].Value
@@ -229,20 +111,7 @@ func validateFormat(node *yaml.Node) error {
 			return fmt.Errorf("field %q is not valid for format type %q", field, typ)
 		}
 	}
-	return visitYAMLField(node, "decimal_places", validateDecimalPlaces)
-}
-
-func validateDecimalPlaces(node *yaml.Node) error {
-	if err := requireYAMLFields(node, "type"); err != nil {
-		return err
-	}
-	typ := yamlScalar(yamlField(node, "type"))
-	switch typ {
-	case "max", "exact", "all":
-		return nil
-	default:
-		return fmt.Errorf("unsupported decimal_places.type %q", typ)
-	}
+	return nil
 }
 
 func visitYAMLField(node *yaml.Node, field string, visit func(*yaml.Node) error) error {
