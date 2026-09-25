@@ -181,6 +181,18 @@ func NewKeyValue(prev *PathNode, key, value string) *PathNode {
 //		"resources.jobs.foo.tags['cost-center']": {}
 //	}
 func (p *PathNode) String() string {
+	return p.render(false)
+}
+
+// KeyValueAgnosticString renders the path like String, except key-value segments
+// [field='value'] are rendered as [='value'] (the key field is omitted). Two paths
+// that address the same keyed element under different key fields therefore render
+// identically, which lets callers treat them as the same element.
+func (p *PathNode) KeyValueAgnosticString() string {
+	return p.render(true)
+}
+
+func (p *PathNode) render(omitKeyField bool) string {
 	if p == nil {
 		return ""
 	}
@@ -206,7 +218,9 @@ func (p *PathNode) String() string {
 			result.WriteString("[*]")
 		} else if node.index == tagKeyValue {
 			result.WriteString("[")
-			result.WriteString(node.key)
+			if !omitKeyField {
+				result.WriteString(node.key)
+			}
 			result.WriteString("=")
 			result.WriteString(EncodeMapKey(node.value))
 			result.WriteString("]")
