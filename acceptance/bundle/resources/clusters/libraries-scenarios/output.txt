@@ -19,11 +19,21 @@ OK: cluster created
   }
 }
 
-=== No libraries section: plan does not read the cluster's libraries, so six is not drift
+=== No libraries section: six is skipped as unmanaged, not drift
 >>> plan_libs
-{}
-
->>> print_requests.py --get //libraries
+{
+  "libraries": {
+    "action": "skip",
+    "reason": "unmanaged",
+    "remote": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
 
 === Declare 'requests': plan installs it and uninstalls the out-of-band six, no restart
 >>> plan_libs
@@ -147,13 +157,20 @@ OK: cluster created
   }
 }
 
-=== Remove the libraries section: libraries become unmanaged, requests stays installed, no library calls
+=== Remove the libraries section: libraries become unmanaged, requests stays installed, no install or uninstall
 >>> plan_libs
 {
   "libraries": {
     "action": "skip",
-    "reason": "remote_already_set",
+    "reason": "unmanaged",
     "old": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ],
+    "remote": [
       {
         "pypi": {
           "package": "requests"
@@ -170,8 +187,15 @@ OK: cluster created
 {
   "libraries": {
     "action": "skip",
-    "reason": "remote_already_set",
+    "reason": "unmanaged",
     "old": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ],
+    "remote": [
       {
         "pypi": {
           "package": "requests"

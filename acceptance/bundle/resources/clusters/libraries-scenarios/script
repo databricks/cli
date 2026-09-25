@@ -25,10 +25,9 @@ title "Out of band: a job run (or the UI) installs 'six' on the shared cluster"
 MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/libraries/install --json "{\"cluster_id\": \"$CLUSTER_ID\", \"libraries\": [{\"pypi\": {\"package\": \"six\"}}]}" > /dev/null
 trace print_requests.py //libraries/install
 
-title "No libraries section: plan does not read the cluster's libraries, so six is not drift"
+title "No libraries section: six is skipped as unmanaged, not drift"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 trace plan_libs
-trace print_requests.py --get //libraries
 
 title "Declare 'requests': plan installs it and uninstalls the out-of-band six, no restart"
 update_file.py databricks.yml "      num_workers: 1" "      num_workers: 1
@@ -50,7 +49,7 @@ $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
 trace print_requests.py //libraries/install //libraries/uninstall //clusters/restart
 
-title "Remove the libraries section: libraries become unmanaged, requests stays installed, no library calls"
+title "Remove the libraries section: libraries become unmanaged, requests stays installed, no install or uninstall"
 update_file.py databricks.yml "      num_workers: 1
       libraries:
         - pypi:
