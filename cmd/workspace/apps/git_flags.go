@@ -240,5 +240,4 @@ func gitDeployOverride(deployCmd *cobra.Command, deployReq *apps.CreateAppDeploy
 func init() {
 	createOverrides = append(createOverrides, gitCreateOverride)
 	updateOverrides = append(updateOverrides, gitUpdateOverride)
-	deployOverrides = append(deployOverrides, gitDeployOverride)
 }
