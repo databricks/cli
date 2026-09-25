@@ -37,6 +37,12 @@ type Root struct { //nolint:recvcheck // value receivers for read-only accessors
 	value dyn.Value
 	depth int
 
+	// nullInTargets records the categories of null values found anywhere under
+	// the "targets" section of this file (or any file merged into it). Computed
+	// before normalization so scalar-typed nulls (which normalization drops) are
+	// also detected. Surfaced as telemetry by CollectNullTelemetry.
+	nullInTargets NullInTargetsInfo
+
 	// Contains user defined variables
 	Variables map[string]*variable.Variable `json:"variables,omitempty"`
 
@@ -130,8 +136,15 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 		return nil, diag.Errorf("failed to rewrite %s: %v", path, err)
 	}
 
+	// Collect null categories before normalization (raw tree) and after (norm
+	// tree) so we can distinguish scalar nulls (dropped by normalization) from
+	// complex nulls (struct/map/seq typed fields that survive).
+	rawTargets := v.Get("targets")
+
 	// Normalize dynamic configuration tree according to configuration type.
 	v, diags := convert.Normalize(r, v)
+
+	r.nullInTargets = collectNullsInTargets(rawTargets, v.Get("targets"))
 
 	// Convert normalized configuration tree to typed configuration.
 	err = r.updateWithDynamicValue(v)
@@ -140,6 +153,131 @@ func LoadFromBytes(path string, raw []byte) (*Root, diag.Diagnostics) {
 		return nil, diags
 	}
 	return &r, diags
+}
+
+// NullInTargetsInfo categorises null values found under the "targets" section
+// of a bundle config as authored (before normalization and target override merge).
+//
+// Each field is a "has at least one" flag. The categories are:
+//   - Scalar: null on a scalar-typed field (string/int/bool); normalization drops it
+//     and emits a warning — it never reaches the merge.
+//   - Complex: null on a struct-typed field (e.g. run_as:) at the top level of a
+//     target override (depth ≤ 2 inside the target); survives normalization.
+//   - MapKey: null as a value in a map[string]X typed field (e.g. variables.foo:
+//     or resources.jobs.foo.description:) at depth > 2; survives normalization.
+//   - ArrayIndex: null at a sequence index (e.g. a null item in a list).
+//   - Resource: null at exactly resources.<type>.<name> inside a target — the
+//     entire resource entry is nulled out.
+type NullInTargetsInfo struct {
+	Scalar      bool
+	Complex     bool
+	MapKey      bool
+	ArrayIndex  bool
+	Resource    bool
+}
+
+// Any reports whether any null category was detected.
+func (n NullInTargetsInfo) Any() bool {
+	return n.Scalar || n.Complex || n.MapKey || n.ArrayIndex || n.Resource
+}
+
+// Merge combines two NullInTargetsInfo values with OR, used when merging
+// included files into the root config.
+func (n NullInTargetsInfo) Merge(other NullInTargetsInfo) NullInTargetsInfo {
+	return NullInTargetsInfo{
+		Scalar:     n.Scalar || other.Scalar,
+		Complex:    n.Complex || other.Complex,
+		MapKey:     n.MapKey || other.MapKey,
+		ArrayIndex: n.ArrayIndex || other.ArrayIndex,
+		Resource:   n.Resource || other.Resource,
+	}
+}
+
+// collectNullsInTargets walks the raw (pre-normalization) and normalized targets
+// sections and classifies each null value into one of the NullInTargetsInfo
+// categories.
+//
+// rawTargets is the targets value from the raw YAML tree (before normalization).
+// normTargets is the targets value after normalization (nulls on scalar-typed
+// fields have been removed; nulls on complex-typed fields survive).
+func collectNullsInTargets(rawTargets, normTargets dyn.Value) NullInTargetsInfo {
+	if rawTargets.Kind() != dyn.KindMap {
+		return NullInTargetsInfo{}
+	}
+
+	// Collect paths of nulls that survived normalization (complex-typed fields).
+	normNullPaths := make(map[string]bool)
+	if normTargets.Kind() == dyn.KindMap {
+		_ = dyn.WalkReadOnly(normTargets, func(p dyn.Path, v dyn.Value) error {
+			if v.Kind() == dyn.KindNil {
+				normNullPaths[p.String()] = true
+				return dyn.ErrSkip
+			}
+			return nil
+		})
+	}
+
+	var info NullInTargetsInfo
+
+	// Walk the raw tree and classify each null by path context.
+	// p is relative to the targets value, so:
+	//   p[0] = target name (e.g. "dev")
+	//   p[1] = first field inside target (e.g. "run_as", "resources", "variables")
+	//   p[2] = second field (e.g. resource type "jobs", or variable name "foo")
+	//   p[3] = third field (e.g. resource name "my_job")
+	_ = dyn.WalkReadOnly(rawTargets, func(p dyn.Path, v dyn.Value) error {
+		if v.Kind() != dyn.KindNil {
+			return nil
+		}
+
+		// Array index: last path component is a sequence index (Key() is empty for indices).
+		if len(p) > 0 && p[len(p)-1].Key() == "" {
+			info.ArrayIndex = true
+			return dyn.ErrSkip
+		}
+
+		// Paths relative to the target name component (p[0]).
+		// len(p) == 1 means the entire target is null; handled as Complex below.
+		field1 := ""
+		if len(p) >= 2 {
+			field1 = p[1].Key()
+		}
+
+		switch {
+		// Resource null: exactly <T>.resources.<type>.<name>.
+		case field1 == "resources" && len(p) == 4:
+			info.Resource = true
+
+		// Map-key null: a value in a user-keyed map field (variables or inside
+		// a resource entry). variables.<name> is depth 2; inside-resource fields
+		// are depth > 3.
+		case field1 == "variables" && len(p) == 3,
+			field1 == "resources" && len(p) > 4:
+			if normNullPaths[p.String()] {
+				info.MapKey = true
+			} else {
+				info.Scalar = true
+			}
+
+		// Everything else: distinguish scalar vs complex by normalization survival.
+		default:
+			if normNullPaths[p.String()] {
+				info.Complex = true
+			} else {
+				info.Scalar = true
+			}
+		}
+
+		return dyn.ErrSkip
+	})
+
+	return info
+}
+
+// NullInTargets returns categorised information about null values found under
+// the "targets" section of this config as authored.
+func (r *Root) NullInTargets() NullInTargetsInfo {
+	return r.nullInTargets
 }
 
 func (r *Root) initializeDynamicValue() error {
@@ -162,9 +300,11 @@ func (r *Root) updateWithDynamicValue(nv dyn.Value) error {
 	// Hack: restore state; it may be cleared by [ToTyped] if
 	// the configuration equals nil (happens in tests).
 	depth := r.depth
+	nullInTargets := r.nullInTargets
 
 	defer func() {
 		r.depth = depth
+		r.nullInTargets = nullInTargets
 	}()
 
 	// Convert normalized configuration tree to typed configuration.
@@ -295,6 +435,9 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
+	// Carry over the null-in-targets signal from included files.
+	r.nullInTargets = r.nullInTargets.Merge(other.nullInTargets)
+
 	// Merge dynamic configuration values.
 	return r.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		return merge.Merge(root, other.value)

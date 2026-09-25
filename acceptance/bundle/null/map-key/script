@@ -1,0 +1,9 @@
+trace $CLI bundle validate -o json -t dev-run-as | jq '{run_as: .run_as}'
+trace $CLI bundle validate -o json -t dev-job-field | jq '{description: .resources.jobs.my_job.description}'
+trace $CLI bundle validate -o json -t dev-variable | jq '{variables: {foo: .variables.foo}}'
+trace $CLI bundle validate -o json -t dev-resource | jq '{resources: {jobs: .resources.jobs}}'
+
+trace $CLI bundle deploy -t dev-run-as
+trace print_telemetry_bool_values | grep null-in-targets
+
+rm -f out.requests.txt

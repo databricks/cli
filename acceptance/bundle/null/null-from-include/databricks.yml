@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+include:
+  - override.yml
+
+workspace:
+  root_path: /Workspace/Users/base-root
+
+targets:
+  dev:
+    default: true
+
+resources:
+  jobs:
+    my_job:
+      name: my job

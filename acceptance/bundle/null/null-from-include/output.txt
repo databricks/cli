@@ -1,0 +1,25 @@
+
+>>> [CLI] bundle validate -o json -t dev
+Warning: expected a string value, found null
+  at targets.dev.workspace.root_path
+  in override.yml:6:17
+
+{
+  "workspace": {
+    "root_path": "/Workspace/Users/base-root"
+  }
+}
+
+>>> [CLI] bundle deploy -t dev
+Warning: expected a string value, found null
+  at targets.dev.workspace.root_path
+  in override.yml:6:17
+
+Uploading bundle files to /Workspace/Users/base-root/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+null-in-targets true
+null-in-targets-scalar true
