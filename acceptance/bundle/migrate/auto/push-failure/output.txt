@@ -1,0 +1,52 @@
+
+=== Initial deploy on terraform
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.test_job
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+direct_drymigrate_success true
+direct_drymigrate_warnings false
+
+=== Opt in via env var; inject 403 on the resources.json push so the deploy fails
+>>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
+Migrated 1 resource to direct deployment engine.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Error: access denied: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json (403 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/workspace-files/import-file/Workspace%2FUsers%2F[USERNAME]%2F.bundle%2Ftest-bundle%2Fdefault%2Fstate%2Fresources.json?overwrite=true
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Files: 0 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_migration_telemetry
+
+=== Local state is direct (the migration wrote it) though the remote push did not land
+
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
+=== Retry: the local direct state is used (no re-migration) and the push completes
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_migration_telemetry
+
+=== Retry recovered: local state is direct (the outranked local terraform.tfstate lingers)
+
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate

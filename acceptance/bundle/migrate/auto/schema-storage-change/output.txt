@@ -1,0 +1,57 @@
+
+=== Initial deploy on terraform with storage_root s3://mybucket/init
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created schemas.my_schema
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+direct_drymigrate_success true
+direct_drymigrate_warnings false
+
+=== Change immutable storage_root; without --auto-approve the recreate is refused
+>>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
+Migrated 1 resource to direct deployment engine.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.my_schema
+Warn: Migration not committed, keeping Terraform state
+Error: the deployment requires destructive actions, but the current console does not support prompting.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve after reviewing the plan above.
+
+Files: 1 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_migration_telemetry
+direct_migrate_recreate_planned true
+
+=== The migration was not committed: the state is still terraform
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
+=== With --auto-approve the migration commits and the recreate is applied on direct
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy --auto-approve
+Migrated 1 resource to direct deployment engine.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
+  recreate resources.schemas.my_schema
+Recreated schemas.my_schema
+Files: 0 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+direct_migrate_recreate_planned true
+direct_migrated_via_env true
+
+=== Redeploy on direct: the schema now matches config, so the plan is a clean no-op
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged

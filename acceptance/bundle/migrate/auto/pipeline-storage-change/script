@@ -1,0 +1,35 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy the pipeline on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Change immutable storage. Without --auto-approve the recreate is refused"
+# storage is a recreate_on_changes field on pipelines (not an id field). The migration's plan
+# compares the new config value against the deployed remote and plans a recreate. Pipelines are
+# in the destructive-approval group, so without --auto-approve the deploy refuses it (exit 1)
+# and the migration is not committed.
+update_file.py databricks.yml "$UNIQUE_NAME-init" "$UNIQUE_NAME-changed"
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace print_migration_telemetry
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "*tfstate*" -type f
+
+title "With --auto-approve the recreate is applied on direct"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
+
+# No clean-redeploy assertion here: on a real workspace a direct-engine pipeline recreate
+# leaves a field the next plan re-updates ("1 changed"), while the testserver converges
+# ("1 unchanged"). That post-recreate convergence is a direct-engine pipeline concern
+# orthogonal to migration, and a single golden can't match both engines, so the test stops
+# after applying the recreate. The schema / registered-model recreate tests cover the
+# clean-redeploy path on cloud.
+
+title "Local state is now direct"
+trace find .databricks/bundle -name "resources.json" -type f | sort

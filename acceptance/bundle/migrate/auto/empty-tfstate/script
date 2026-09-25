@@ -1,0 +1,32 @@
+# A terraform.tfstate with no databricks_* resources goes through the same migration path as a
+# populated one: the converter writes an empty direct base state, the approved deploy commits it,
+# and the superseded terraform state is backed up. (There is no special "sweep" branch - empty and
+# populated states share one code path.) The empty terraform state here exists only locally (never
+# pushed), so nothing terraform-related is backed up remotely; the populated tests cover that.
+
+mkdir -p .databricks/bundle/default/terraform
+cat > .databricks/bundle/default/terraform/terraform.tfstate <<'EOF'
+{"version": 4, "serial": 1, "lineage": "test-lineage", "resources": []}
+EOF
+
+title "Deploy with bundle.engine: direct and an empty terraform state — migrate (0 resources)"
+trace $CLI bundle deploy 2>&1 | contains.py 'Migrated 0 resources to direct deployment engine.'
+
+title "Empty state migrated: resources.json written, local terraform state backed up\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+title "Migration is recorded in telemetry as via-config\n"
+trace print_migration_telemetry
+
+title "The remote had no terraform state, so nothing terraform-related is backed up remotely\n"
+trace print_requests.py //workspace-files/import-file //workspace/delete --sort | jq '.method + " " + .path' | contains.py '!terraform.tfstate'
+
+title "debug states confirms no terraform.tfstate anywhere; only the local .backup remains\n"
+trace $CLI bundle debug states --force-pull
+
+title "Next deploy uses direct engine by default (no more mismatch warning, no re-migration)"
+trace $CLI bundle deploy 2>&1 | contains.py '!does not match the existing state'
+trace print_migration_telemetry
+
+rm -f "$OUT_REQUESTS"

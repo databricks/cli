@@ -1,0 +1,19 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# Testserver-only: changing volume_type to EXTERNAL needs a storage_location backed by a
+# registered external location on a real workspace, so this is not Cloud-enabled. The
+# recreate class it covers is verified on cloud by schema-rename / registered-model-rename.
+
+# volume_type is both a provided id field and a recreate_on_changes field. reconcileIDFields
+# records the deployed value, so the migration's plan sees a real change and recreates. Volumes
+# are in the destructive-approval group, so without --auto-approve the deploy refuses the
+# recreate (exit 1) and the migration is not committed.
+
+title "Deploy on terraform with volume_type MANAGED"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Change volume_type (immutable); without --auto-approve the recreate is refused"
+update_file.py databricks.yml "volume_type: MANAGED" "volume_type: EXTERNAL"
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace print_migration_telemetry

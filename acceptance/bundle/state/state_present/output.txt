@@ -11,10 +11,11 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 "databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> print_requests.py --get //api/2.1/unity-catalog/schemas
-"databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
 
 === Adding resources.json with lower serial does not change anything
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
@@ -24,6 +25,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Adding resources.json with higher serial, env var mismatch warns but uses state engine
@@ -44,6 +46,9 @@ Created schemas.foo
 Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
+>>> print_requests.py //api/2.1/unity-catalog/schemas
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
+
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.schemas.foo
@@ -56,19 +61,17 @@ All files and directories at the following location will be deleted: /Workspace/
 Destroy: 1 deleted
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Warn: Direct engine selected via DATABRICKS_BUNDLE_ENGINE environment variable but the existing state uses "terraform". Deploying on "terraform"; will attempt to migrate the state to the direct engine after this deploy.
+Migrated 1 resource to direct deployment engine.
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created schemas.foo
 Files: 3 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-Migrating state to direct deployment engine (selected via DATABRICKS_BUNDLE_ENGINE environment variable)...
-Migrated 1 resource to direct deployment engine.
 
 >>> print_requests.py //api/2.1/unity-catalog/schemas
-"databricks-tf-provider/[TF_PROVIDER_VERSION] databricks-sdk-go/[SDK_VERSION] go/1.25.8 os/[OS] cli/[CLI_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+"cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
 
 >>> print_state.py
-7
+6
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -85,11 +88,11 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] interactive/none engine/direct auth/pat"
 
 >>> print_state.py
-7
+6
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=7 lineage="test-lineage"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=6 lineage="test-lineage"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-resources.json: remote direct state serial=7 lineage="test-lineage"
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=7 lineage="test-lineage"
+resources.json: remote direct state serial=6 lineage="test-lineage"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=6 lineage="test-lineage"

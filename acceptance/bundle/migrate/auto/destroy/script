@@ -1,0 +1,21 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Destroy without approval: stays on terraform"
+trace musterr $CLI bundle destroy
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+# Destroy behaves like deploy: it migrates the terraform state to direct (writing the local
+# direct state), plan-checks it, and - once approved - destroys on the direct engine. destroyCore
+# then removes the local state files: the superseded terraform state first, then the direct state,
+# so a crash between the two never leaves a live terraform.tfstate with no direct state. A declined
+# destroy would discard the migration and stay on terraform.
+title "Destroy on direct: migrate then destroy"
+trace $CLI bundle destroy --auto-approve
+
+title "Destroy removes both local state files (direct and the superseded terraform state)"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f

@@ -1,0 +1,24 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy uses terraform engine"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_migration_telemetry
+rm -f "$OUT_REQUESTS"
+
+title "Opt in via env var only (no bundle.engine in config): auto-migration triggers"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+# The migrated deploy runs on the direct engine, so its requests carry engine/direct only.
+# A stale engine/terraform here would mean the user-agent engine tag was appended rather
+# than resolved once (the SDK user agent cannot replace an existing dimension).
+trace print_requests.py | grep -o 'engine/[a-z]*' | sort -u
+rm -f "$OUT_REQUESTS"
+
+title "Direct-engine state is now in place; terraform state is backed up\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+title "Remote state also reflects the migration (force-pull surfaces workspace state)\n"
+trace $CLI bundle debug states --force-pull
+
+rm -f "$OUT_REQUESTS"

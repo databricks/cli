@@ -1,0 +1,28 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy the schema and registered model on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Rename the model (an immutable id field) and deploy on direct"
+# name is a provided id field on registered models, so a rename recreates. reconcileIDFields
+# seeds the deployed name into the converted state, so the migration's plan sees a real
+# recreate. Unlike schemas/volumes, registered models are not in the destructive-approval
+# group (a model recreate loses no data), so the deploy is approved without --auto-approve:
+# the migration commits and the recreate applies on direct.
+update_file.py databricks.yml "themodel-$UNIQUE_NAME" "themodel-$UNIQUE_NAME-renamed"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+
+title "Redeploy on direct: the model now matches config, so the plan is a clean no-op"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "The model exists under the new name and the local state is direct"
+trace $CLI registered-models get "main.mschema-$UNIQUE_NAME.themodel-$UNIQUE_NAME-renamed" | jq "{full_name}"
+trace find .databricks/bundle -name "resources.json" -type f | sort

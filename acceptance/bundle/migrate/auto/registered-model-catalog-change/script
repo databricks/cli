@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# catalog_name is an immutable provided id field on registered models; moving the model to
+# another catalog recreates it. Create the destination catalog out of band (it auto-provisions
+# a "default" schema, which the moved model reuses).
+TARGET_CATALOG="othercat_$UNIQUE_NAME"
+trace $CLI catalogs create "$TARGET_CATALOG" -o json | jq '{name: (.name // .full_name)}'
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+  trace errcode $CLI catalogs delete "$TARGET_CATALOG" --force
+}
+trap cleanup EXIT
+
+title "Deploy the model on terraform in catalog 'main'"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Move the model to another catalog and deploy on direct"
+# reconcileIDFields records the deployed catalog, so the migration's plan sees a real change
+# and the model recreates. Registered models are not in the destructive-approval group, so the
+# deploy is approved without --auto-approve: the migration commits and the recreate moves the
+# model to the new catalog.
+update_file.py databricks.yml "catalog_name: main" "catalog_name: $TARGET_CATALOG"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+
+title "Redeploy on direct: the model now matches config, so the plan is a clean no-op"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "The model exists in the new catalog and the local state is direct"
+trace $CLI registered-models get "$TARGET_CATALOG.default.mymodel-$UNIQUE_NAME" | jq "{full_name}"
+trace find .databricks/bundle -name "resources.json" -type f | sort

@@ -1,0 +1,36 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+# catalog_name is an immutable provided id field. Moving the schema to another catalog
+# recreates it. Create the destination catalog out of band (a catalog cannot be a bundle
+# resource here: catalogs are direct-only and this bundle deploys on terraform first).
+TARGET_CATALOG="othercat_$UNIQUE_NAME"
+trace $CLI catalogs create "$TARGET_CATALOG" -o json | jq '{name: (.name // .full_name)}'
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+  trace errcode $CLI catalogs delete "$TARGET_CATALOG" --force
+}
+trap cleanup EXIT
+
+title "Deploy the schema on terraform in catalog 'main'"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+rm -f "$OUT_REQUESTS"
+
+title "Move the schema to another catalog. Without --auto-approve the recreate is refused"
+# reconcileIDFields records the deployed catalog, so the migration's plan sees a real change;
+# schemas recreate on it. Schemas are in the destructive-approval group, so without
+# --auto-approve the deploy refuses the recreate (exit 1) and the migration is not committed.
+update_file.py databricks.yml "catalog_name: main" "catalog_name: $TARGET_CATALOG"
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace print_migration_telemetry
+
+title "With --auto-approve the recreate moves the schema to the new catalog on direct"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
+
+title "Redeploy on direct: the schema now matches config, so the plan is a clean no-op"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "The schema exists in the new catalog and the local state is direct"
+trace $CLI schemas get "$TARGET_CATALOG.myschema-$UNIQUE_NAME" | jq "{full_name}"
+trace find .databricks/bundle -name "resources.json" -type f | sort

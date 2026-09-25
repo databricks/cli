@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
@@ -140,7 +141,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, migrating bool) {
 	if engine.IsDirect() {
 		// Not reported per resource: destroy names them up front for consent and then
 		// reports only a count, so there is no per-resource output to report into.
@@ -204,6 +205,19 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	if logdiag.HasError(ctx) {
 		return
+	}
+
+	// A destroy that migrated from terraform left the superseded local terraform state behind
+	// (files.Delete already removed the remote one). Remove it before the direct state below: a
+	// crash between the two must never leave a live local terraform.tfstate with no direct state,
+	// which the next deploy would pick up. Gated on migrating, not just engine.IsDirect(): a
+	// non-migrating direct destroy may run alongside a separate, still-valid terraform state that
+	// a later deploy is meant to migrate, and must not delete it.
+	if migrating {
+		_, localTerraformPath := b.StateFilenameTerraform(ctx)
+		if err := os.Remove(localTerraformPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			logdiag.LogError(ctx, err)
+		}
 	}
 
 	// Remove the local state file now that the deployment is gone. Destroy only
@@ -363,6 +377,14 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if hasApproval {
+		// Approved: the destroy is committing (destroyCore runs on the direct state), so a
+		// prepared migration is no longer "not committed". Clear the flag so ProcessBundleRet's
+		// cleanup does not discard it, and a post-approval failure keeps the direct state rather
+		// than reverting to terraform. Keep migrating so destroyCore retires the superseded
+		// terraform state only when this destroy actually migrated.
+		migrating := b.MigrationDeferred
+		b.MigrationDeferred = false
+
 		if engine.IsDirect() {
 			// Upgrade from read (opened by process.go) to write mode
 			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
@@ -383,8 +405,15 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
-		destroyCore(ctx, b, plan, engine)
+		destroyCore(ctx, b, plan, engine, migrating)
 	} else {
+		// A deferred terraform→direct migration wrote the local direct state but has not
+		// committed it (destroyCore never ran): discard it and stay on the terraform engine,
+		// so a declined destroy changes nothing.
+		if b.MigrationDeferred {
+			statemgmt.DiscardDeferredMigration(ctx, b)
+			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
+		}
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
 }

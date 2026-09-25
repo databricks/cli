@@ -1,0 +1,34 @@
+
+=== Initial deploy on terraform
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.job_a
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Destroy without approval: stays on terraform
+>>> musterr [CLI] bundle destroy
+Error: this command will destroy all resources deployed by this bundle, including workspace files in the deployment directory.
+Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
+To proceed, use --auto-approve.
+
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
+=== Destroy on direct: migrate then destroy
+>>> [CLI] bundle destroy --auto-approve
+Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Migrated 1 resource to direct deployment engine.
+The following resources will be deleted:
+  delete resources.jobs.job_a
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+=== Destroy removes both local state files (direct and the superseded terraform state)
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f

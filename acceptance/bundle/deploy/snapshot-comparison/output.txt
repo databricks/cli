@@ -54,6 +54,8 @@ Destroy: 2 deleted
 
 === Cleanup bundle 2
 >>> [CLI] bundle destroy --auto-approve
+Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Migrated 2 resources to direct deployment engine.
 The following resources will be deleted:
   delete resources.jobs.test_job
   delete resources.pipelines.test_pipeline

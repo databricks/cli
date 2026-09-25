@@ -1,0 +1,17 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy on terraform (expands the whl glob and uploads the wheel)"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Redeploy with direct default: auto-migration runs after the build, so library refs are resolved"
+trace $CLI bundle deploy
+
+title "Local state is now direct\n"
+trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "terraform.tfstate*" -type f
+
+title "Migrated state's library path (should be the resolved remote path, not the local glob)"
+trace print_state.py | jq '.. | .libraries? | select(.)'
+
+title "Subsequent deploy is a no-op on direct"
+trace $CLI bundle deploy

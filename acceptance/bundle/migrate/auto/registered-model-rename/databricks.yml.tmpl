@@ -1,0 +1,16 @@
+bundle:
+  name: uc-migrmodel-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  schemas:
+    parent:
+      name: mschema-$UNIQUE_NAME
+      catalog_name: main
+  registered_models:
+    my_model:
+      name: themodel-$UNIQUE_NAME
+      catalog_name: main
+      schema_name: mschema-$UNIQUE_NAME

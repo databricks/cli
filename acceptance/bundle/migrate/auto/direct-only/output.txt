@@ -1,0 +1,57 @@
+
+=== Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.job_a
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Add a direct-only resource and opt in to the direct engine via config
+>>> update_file.py databricks.yml #instance_pools instance_pools
+
+>>> update_file.py databricks.yml name: test-bundle name: test-bundle
+  engine: direct
+
+=== Plan runs on the direct engine (state migrated in memory), so the direct-only resource is planned
+>>> [CLI] bundle plan
+create instance_pools.pool
+
+Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+json.plan.resources.instance_pools.pool.action = "create";
+json.plan.resources.instance_pools.pool.new_state.value.idle_instance_autotermination_minutes = 60;
+json.plan.resources.instance_pools.pool.new_state.value.instance_pool_name = "My Pool";
+json.plan.resources.instance_pools.pool.new_state.value.node_type_id = "Standard_DS3_v2";
+
+=== Plan does not commit state change, terraform stays
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
+=== Deploy commits the migration and creates the direct-only resource
+>>> [CLI] bundle deploy
+Migrated 1 resource to direct deployment engine.
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created instance_pools.pool
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_migration_telemetry
+direct_migrated_via_config true
+
+=== Redeploy is a no-op: state is already on the direct engine
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> print_requests.py //instance-pools/create
+
+=== No further actions planned
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

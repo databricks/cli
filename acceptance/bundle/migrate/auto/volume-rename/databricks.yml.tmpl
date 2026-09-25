@@ -1,0 +1,17 @@
+bundle:
+  name: uc-migrvol-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  schemas:
+    parent:
+      name: pschema-$UNIQUE_NAME
+      catalog_name: main
+  volumes:
+    my_volume:
+      name: thevolume-$UNIQUE_NAME
+      catalog_name: main
+      schema_name: pschema-$UNIQUE_NAME
+      volume_type: MANAGED

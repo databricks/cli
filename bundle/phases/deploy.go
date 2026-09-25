@@ -323,6 +323,14 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		// No version was created, so the deferred CompleteVersion is a no-op and the version
 		// number is left for the next deploy. Both the user declining and a console that
 		// cannot prompt land here.
+		//
+		// A deferred terraform→direct migration wrote the local direct state but has not
+		// committed it (deployCore below never ran): discard it and stay on the terraform
+		// engine, so a declined deploy changes nothing.
+		if b.MigrationDeferred {
+			statemgmt.DiscardDeferredMigration(ctx, b)
+			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
+		}
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -330,6 +338,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return
 	}
+
+	// Approved: the deploy is committing (deployCore below writes and pushes the state), so a
+	// prepared migration is no longer "not committed". Clear the flag before deployCore so
+	// ProcessBundleRet's cleanup does not discard it and a post-approval failure retries on
+	// direct rather than reverting to terraform; keep migrating for the finalize below.
+	migrating := b.MigrationDeferred
+	b.MigrationDeferred = false
 
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
@@ -370,6 +385,13 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	// A deferred terraform→direct migration is committed by deployCore above, which wrote and
+	// pushed the converted direct state. Now that the deploy succeeded, finalize the migration
+	// by cleaning up the superseded terraform state and recording the migration source.
+	if migrating {
+		statemgmt.FinalizeDeferredMigration(ctx, b, requestedEngine)
+	}
+
 	// Report what was deployed, mirroring "bundle plan". Printed before the
 	// postdeploy script so the deploy's own report is not interleaved with
 	// post-deploy output: the script's lines and the migration's below both follow
@@ -381,24 +403,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	logDeploySummary(ctx, b, plan, stateEngine)
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
-
-	// Migrate the state to the direct engine, if the user opted in (via
-	// bundle.engine or DATABRICKS_BUNDLE_ENGINE) and a dry-run of the migration
-	// comes back clean. Without the opt-in, or when the dry-run reports problems,
-	// nothing is written: only the outcome is recorded in telemetry, and the
-	// deploy is unaffected.
-	//
-	// Last, after the deploy has reported what it did: this is post-deploy work,
-	// and its warnings read as belonging to the deploy if they precede the
-	// summary.
-	//
-	// Gated on the deploy alone, which the early return above already guarantees
-	// — not on the postdeploy script. The resources were applied before that
-	// script ran, so the state is worth migrating even if it failed, the same
-	// reasoning that prints the summary ahead of it.
-	if !stateEngine.IsDirect() {
-		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
-	}
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {

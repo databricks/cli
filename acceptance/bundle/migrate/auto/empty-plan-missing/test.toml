@@ -1,0 +1,5 @@
+# Normalize the Windows os.Open error so this migration-discard test runs on all platforms
+# (the discard file operations it exercises are worth covering on Windows too).
+[[Repls]]
+Old = "open does-not-exist.json: The system cannot find the file specified."
+New = "open does-not-exist.json: no such file or directory"
