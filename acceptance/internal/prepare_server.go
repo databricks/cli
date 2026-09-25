@@ -28,6 +28,7 @@ import (
 func StartDefaultServer(t *testing.T, logRequests bool) {
 	s := testserver.New(t)
 	testserver.AddDefaultHandlers(s)
+	configureDMSLitebox(t, s)
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {
@@ -270,6 +271,7 @@ func startLocalServer(t *testing.T,
 	// The first handler registered for a given pattern wins, so default
 	// handlers registered last serve as fallbacks.
 	testserver.AddDefaultHandlers(s)
+	configureDMSLitebox(t, s)
 	return s.URL
 }
 
