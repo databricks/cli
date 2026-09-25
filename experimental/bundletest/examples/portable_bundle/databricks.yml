@@ -1,0 +1,21 @@
+# Minimal bundle whose one SQL job runs UNCHANGED on both backends: the local (DuckDB)
+# backend runs its real sql_task artifact; the cloud backend deploys and runs it on a real
+# workspace. The single test file under tests/ is exercised on whichever tier
+# BUNDLETEST_BACKEND selects — the same assertions, no per-backend branching.
+bundle:
+  name: portable
+
+resources:
+  jobs:
+    count_active:
+      name: count_active
+      tasks:
+        - task_key: count
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: src/count_active.sql
+
+variables:
+  warehouse_id:
+    description: SQL warehouse the job runs on (cloud backend only; ignored locally)
