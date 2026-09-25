@@ -1,4 +1,5 @@
 setup_docker_auth
+path_without_cli="$PATH"
 install_databricks_cli
 
 export DOCKER_CONFIG="$HOME/docker"
@@ -49,3 +50,16 @@ title "Deprecated --region flag skips workspace lookups\n"
 trace databricks auth docker configure docker-test --region us-west-2
 assert_not_exists.py "$OUT_REQUESTS"
 printf 'No requests sent\n'
+
+title "Explicit --region resolves a missing workspace ID\n"
+cat > "$HOME/.databrickscfg" <<ENDCFG
+[docker-test]
+host = $DATABRICKS_HOST_ORIG
+auth_type = databricks-cli
+ENDCFG
+trace databricks auth docker configure docker-test --region us-west-2
+trace print_requests.py --get //api
+
+title "Configure with the installation directory absent from PATH\n"
+PATH="$path_without_cli" trace command "$HOME/bin/databricks" auth docker configure docker-test
+trace print_requests.py --get //api

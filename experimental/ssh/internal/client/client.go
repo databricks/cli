@@ -53,6 +53,9 @@ const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
 	minEnvironmentVersion    = 4
+
+	serverMetadataTimeout      = 5 * time.Minute
+	serverMetadataPollInterval = 2 * time.Second
 )
 
 // acceleratorProvisioningNotice maps a GPU accelerator type to the upfront notice
@@ -1350,7 +1353,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 		sp := cmdio.NewSpinner(ctx, cmdio.WithElapsedTime())
 		defer sp.Close()
 		sp.Update("Waiting for the SSH server to start...")
-		maxRetries := 30
+		maxRetries := int(serverMetadataTimeout / serverMetadataPollInterval)
 		for retries := range maxRetries {
 			if ctx.Err() != nil {
 				return "", 0, "", ctx.Err()
@@ -1376,7 +1379,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 				return "", 0, "", fmt.Errorf("ssh server bootstrap job failed:\n%s", failure)
 			}
 			if retries < maxRetries-1 {
-				time.Sleep(2 * time.Second)
+				time.Sleep(serverMetadataPollInterval)
 			} else {
 				return "", 0, "", fmt.Errorf("failed to start the ssh server: %w\n%s", err, describeRunFailure(ctx, client, runID))
 			}

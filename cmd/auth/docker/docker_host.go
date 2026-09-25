@@ -2,7 +2,6 @@ package docker
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -10,29 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type dockerHostDeps struct {
-	dockerProfileDeps
-	credentialHelperConfigured func(string, string) (bool, error)
-}
-
-type dockerHostOutput struct {
-	Host       string `json:"host"`
-	Configured bool   `json:"configured"`
-}
-
-func defaultDockerHostDeps() dockerHostDeps {
-	return dockerHostDeps{
-		dockerProfileDeps:          defaultDockerProfileDeps(),
-		credentialHelperConfigured: dockercredentials.CredentialHelperConfigured,
-	}
-}
-
 func newDockerHostCommand() *cobra.Command {
-	return newDockerHostCommandWithDeps(defaultDockerHostDeps())
-}
-
-// newDockerHostCommandWithDeps reports derived state without modifying the selected profile or Docker configuration.
-func newDockerHostCommandWithDeps(deps dockerHostDeps) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "host",
 		Short: "(Experimental) Show the registry host and credential helper status for a profile",
@@ -44,75 +21,32 @@ The --profile flag is required.`,
 		Annotations: map[string]string{
 			"template": "Registry host: {{.Host}}\nCredential helper configured: {{bool .Configured}}\n",
 		},
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
+			return errorOnUnsupportedDockerFlags(cmd, "--profile")
+		},
 	}
 	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
-		ctx := cmd.Context()
-		if err := errorOnUnsupportedDockerHostFlags(cmd); err != nil {
-			return err
-		}
-
-		profileName := strings.TrimSpace(cmd.Flag("profile").Value.String())
-		if profileName == "" {
-			return errors.New("--profile is required for auth docker host")
-		}
-
-		p, err := loadAndValidateDockerProfile(ctx, profileName, deps.profiler)
+		target, err := dockerHostTarget(cmd)
 		if err != nil {
 			return err
 		}
-		if err := validateDockerWorkspaceHost(p, deps.validateWorkspaceHost); err != nil {
-			return err
-		}
-
-		executable, err := deps.executable()
-		if err != nil {
-			return fmt.Errorf("locate databricks executable: %w", err)
-		}
-		w, err := newDockerWorkspaceClient(ctx, p, executable, deps.dockerProfileDeps)
+		status, err := dockercredentials.Inspect(cmd.Context(), target.registryHost)
 		if err != nil {
 			return err
 		}
-		workspaceID, err := resolveDockerWorkspaceID(ctx, p, w, deps.dockerProfileDeps)
-		if err != nil {
-			return err
-		}
-
-		w.Config.WorkspaceID = workspaceID
-		region, err := deps.resolveWorkspaceRegion(ctx, w)
-		if err != nil {
-			return rewriteDockerProfileError(ctx, p, fmt.Errorf("resolve workspace region for profile %q: %w", p.Name, err))
-		}
-		region = strings.TrimSpace(region)
-		if region == "" {
-			return fmt.Errorf("resolve workspace region for profile %q: metastore summary did not include a region", p.Name)
-		}
-
-		registryHost, err := deps.registryHost(workspaceID, region, p.Host)
-		if err != nil {
-			return err
-		}
-		dockerConfigPath, err := dockerConfigPath(ctx)
-		if err != nil {
-			return err
-		}
-		configured, err := deps.credentialHelperConfigured(dockerConfigPath, registryHost)
-		if err != nil {
-			return err
-		}
-
-		return cmdio.Render(ctx, dockerHostOutput{
-			Host:       registryHost,
-			Configured: configured,
-		})
+		return cmdio.Render(cmd.Context(), status)
 	}
 	return cmd
 }
 
-func errorOnUnsupportedDockerHostFlags(cmd *cobra.Command) error {
-	for _, name := range []string{"host", "account-id", "workspace-id"} {
-		if cmd.Flag(name).Changed {
-			return fmt.Errorf("--%s is not supported for auth docker host. Select the workspace with --profile instead", name)
-		}
+func dockerHostTarget(cmd *cobra.Command) (*dockerTarget, error) {
+	name := strings.TrimSpace(cmd.Flag("profile").Value.String())
+	if name == "" {
+		return nil, errors.New("--profile is required for auth docker host")
 	}
-	return nil
+	w, err := loadDockerWorkspace(cmd.Context(), name, nil)
+	if err != nil {
+		return nil, err
+	}
+	return w.target(cmd.Context(), nil)
 }

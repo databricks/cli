@@ -34,19 +34,11 @@ Confirm the archive carries your change before uploading, e.g.:
 unzip -p ./dist/databricks_cli_linux_amd64.zip databricks | strings | grep <a-string-your-change-adds>
 ```
 
-**RULE: Dev/snapshot uploads are skipped when the versioned workspace directory already exists.**
-`uploadReleases` (`internal/client/releases.go`) skips the upload when the binary
-is already present at the versioned workspace path. Dev builds keep the same
-version string (`0.0.0-dev+<commit>`) across rebuilds, so a rebuilt server binary
-is silently **not** re-uploaded and the cluster runs the stale one. Before
-re-verifying a rebuilt binary, delete the versioned directory and connect with a
-fresh `--name`:
-
-```sh
-VER=$(./cli version | grep -o '0.0.0-dev+[a-f0-9]*')
-databricks workspace delete --recursive \
-  "/Workspace/Users/<you>/.databricks/ssh-tunnel/$VER"
-```
+**RULE: Start a fresh server after rebuilding.** `uploadReleases`
+(`internal/client/releases.go`) always re-uploads dev and snapshot builds, but
+`connect` reuses a server that is already running for the same version, and that
+server still runs the previous binary. Connect with a fresh `--name` on serverless,
+or a fresh cluster on dedicated.
 
 ## Server vs. session
 

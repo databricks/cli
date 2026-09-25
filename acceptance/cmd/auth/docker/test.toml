@@ -4,4 +4,4 @@ Ignore = [
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
-Timeout = "15s"
+Timeout = "30s"

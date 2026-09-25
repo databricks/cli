@@ -1,14 +1,18 @@
 setup_docker_auth
 cp token-cache.json "$HOME/.databricks/token-cache.json"
+export DOCKER_CONFIG="$HOME/docker"
+
+title "Unresolved workspace ID\n"
+trace musterr $CLI auth docker host --profile docker-test
+trace musterr $CLI auth docker configure docker-test
+
 cat >> "$HOME/.databrickscfg" <<'ENDCFG'
 workspace_id = 900800700600
 ENDCFG
-export DOCKER_CONFIG="$HOME/docker"
 
+title "Stored workspace ID\n"
 trace musterr $CLI auth docker host --profile docker-test
-
 trace musterr $CLI auth docker configure docker-test
-
 printf '%s\n' "900800700600.container.us-west-2.localhost" | trace musterr $CLI auth docker token
 
 title "Docker config not created\n"

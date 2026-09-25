@@ -1,5 +1,11 @@
 
-=== Unsupported flag
+=== Unsupported inherited flags
+
+>>> musterr [CLI] auth docker configure docker-test --host https://other.cloud.databricks.test
+Error: --host is not supported for auth docker configure. Select the workspace with [PROFILE] or --profile instead
+
+>>> musterr [CLI] auth docker configure docker-test --account-id [UUID]
+Error: --account-id is not supported for auth docker configure. Select the workspace with [PROFILE] or --profile instead
 
 >>> musterr [CLI] auth docker configure docker-test --workspace-id [NUMID]
 Error: --workspace-id is not supported for auth docker configure. Select the workspace with [PROFILE] or --profile instead
@@ -9,10 +15,35 @@ Error: --workspace-id is not supported for auth docker configure. Select the wor
 >>> musterr [CLI] auth docker configure docker-test --profile docker-test
 Error: argument "docker-test" cannot be combined with --profile. Use --profile instead
 
+=== Invalid explicit region
+
+>>> musterr [CLI] auth docker configure docker-test --region=
+Flag --region has been deprecated, --region will be fully removed in the next release
+Error: region is required
+
+>>> configure_with_whitespace_region
+Flag --region has been deprecated, --region will be fully removed in the next release
+Error: region is required
+
+>>> musterr [CLI] auth docker configure docker-test --region=invalid_region
+Flag --region has been deprecated, --region will be fully removed in the next release
+Error: invalid region "invalid_region"
+
 === Unsupported workspace host
 
 >>> musterr [CLI] auth docker configure unsupported-host
 Error: profile "unsupported-host" does not target a supported Databricks workspace host. Select a workspace profile, or create one with databricks auth login --host <workspace-url> --profile <name>
+
+=== Unsupported authentication profiles
+
+>>> musterr [CLI] auth docker configure pat
+Error: profile "pat" uses auth_type "pat". Docker credential helper requires a profile created by databricks auth login
+
+>>> musterr [CLI] auth docker configure m2m
+Error: profile "m2m" uses client credentials. Docker credential helper requires a profile created by databricks auth login
+
+>>> musterr [CLI] auth docker configure blank-auth
+Error: profile "blank-auth" uses auth_type "". Docker credential helper requires a profile created by databricks auth login
 
 === Another profile already maps to the workspace
 

@@ -1,3 +1,4 @@
+RecordRequests = false
 # Inherits Cloud = true from the parent. On a real workspace this validates that the
 # API still rejects a message-level update_mask exactly as the testserver models it
 # (libs/testserver/postgres.go, probed 2026-08-31): the direct deploy is expected to
