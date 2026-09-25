@@ -74,6 +74,13 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The local backend resolves bundle config by running the in-repo Go helper
+      # experimental/bundletest/cmd/offline-resolve, so the suite needs the Go toolchain.
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
