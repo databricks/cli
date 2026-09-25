@@ -1,0 +1,4 @@
+Error: linked: symbolic links to directories are not supported in templates
+
+>>> find.py linked|shared
+template/shared/file.txt

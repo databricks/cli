@@ -419,6 +419,57 @@ func TestRendererWalk(t *testing.T) {
 	assert.Equal(t, "file four", getContent(r, "dir2/file4"))
 }
 
+func TestRendererWalkSymlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation needs privilege on Windows")
+	}
+
+	tests := []struct {
+		name        string
+		target      string
+		expectedErr string
+	}{
+		{
+			name:   "symlink to file",
+			target: "shared/file.txt",
+		},
+		{
+			name:        "symlink to directory",
+			target:      "shared",
+			expectedErr: "linked: symbolic links to directories are not supported in templates",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+			ctx = cmdctx.SetWorkspaceClient(ctx, nil)
+
+			templateDir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(templateDir, "template", "shared"), 0o755))
+			require.NoError(t, os.MkdirAll(filepath.Join(templateDir, "library"), 0o755))
+			testutil.WriteFile(t, filepath.Join(templateDir, "template", "shared", "file.txt"), "hello")
+			require.NoError(t, os.Symlink(tt.target, filepath.Join(templateDir, "template", "linked")))
+
+			r, err := newRenderer(ctx, nil, nil, os.DirFS(templateDir), "template", "library")
+			require.NoError(t, err)
+
+			err = r.walk()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
+				return
+			}
+
+			require.NoError(t, err)
+			paths := make([]string, 0, len(r.files))
+			for _, f := range r.files {
+				paths = append(paths, f.RelPath())
+			}
+			assert.Equal(t, []string{"linked", "shared/file.txt"}, paths)
+		})
+	}
+}
+
 func TestRendererFailFunction(t *testing.T) {
 	ctx := t.Context()
 	ctx = cmdctx.SetWorkspaceClient(ctx, nil)
