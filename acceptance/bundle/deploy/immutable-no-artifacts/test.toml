@@ -8,7 +8,6 @@ Ignore = [
     "databricks.yml",
     ".databricks",
     ".venv",
-    "script",
     "*.pyc",
 ]
 
