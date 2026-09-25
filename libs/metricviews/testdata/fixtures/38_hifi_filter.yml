@@ -1,0 +1,9 @@
+version: 1.1
+source: my_table
+filter: key < 2
+dimensions:
+  - name: key
+    expr: key
+measures:
+  - name: total
+    expr: sum(value)
