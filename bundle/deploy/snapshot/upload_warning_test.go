@@ -11,9 +11,11 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go"
@@ -88,6 +90,37 @@ func TestUploadNoWarningBelowFileLimit(t *testing.T) {
 	diags := m.Apply(testContext(t), b)
 
 	assert.True(t, diags.HasError() == false && len(diags) == 0, "expected no diagnostics")
+}
+
+func TestBuildCanManage(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Permissions: []resources.Permission{
+				{Level: "CAN_MANAGE", UserName: "manager@example.test"},
+				{Level: "CAN_VIEW", UserName: "viewer@example.test"},
+				{Level: "CAN_MANAGE", GroupName: "admins"},
+				{Level: "CAN_MANAGE", ServicePrincipalName: "sp-1"},
+			},
+		},
+	}
+
+	// Only CAN_MANAGE principals may break the glass on the snapshot.
+	assert.Equal(t, []snapshot.ManagePrincipal{
+		{UserName: "manager@example.test"},
+		{GroupName: "admins"},
+		{ServicePrincipalName: "sp-1"},
+	}, BuildCanManage(b))
+}
+
+func TestBuildCanManageWithoutManagers(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Permissions: []resources.Permission{
+				{Level: "CAN_VIEW", UserName: "viewer@example.test"},
+			},
+		},
+	}
+	assert.Empty(t, BuildCanManage(b))
 }
 
 func TestUploadReusesStagedZipWhenNotClean(t *testing.T) {

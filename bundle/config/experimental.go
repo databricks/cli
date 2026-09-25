@@ -5,8 +5,8 @@ type Experimental struct {
 
 	// ImmutableFolder specifies that bundle files and artifacts are uploaded as a
 	// single immutable snapshot rather than being synced individually. When true,
-	// the deployment calls /api/2.0/repos/snapshots with a zip of all files and sets
-	// workspace.file_path and workspace.artifact_path to the returned content-addressed
+	// the deployment calls /api/2.0/snapshots with a zip of all files and sets
+	// workspace.file_path and workspace.artifact_path to the returned snapshot content
 	// path. Only supported with the direct deployment engine.
 	ImmutableFolder bool `json:"immutable_folder,omitempty"`
 

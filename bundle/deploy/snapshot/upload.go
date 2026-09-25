@@ -4,12 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/snapshot"
 )
@@ -69,6 +71,13 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return nil
 	}
 
+	// Check the previous snapshot before doing any work, so a deploy onto a snapshot that was
+	// modified outside the bundle fails before building a zip.
+	generation, err := resolveGeneration(ctx, b, uploader)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	zipContent, fileCount, err := BundleZip(ctx, b)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to build snapshot zip: %w", err))
@@ -91,8 +100,10 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	b.Config.Resources.Snapshots[resources.SnapshotResourceKey] = &resources.Snapshot{
 		BundleID:   BundleID(b),
 		ACL:        BuildACL(b),
+		CanManage:  BuildCanManage(b),
 		RemoteRoot: remoteRoot,
 		ZipPath:    filepath.ToSlash(zipPath),
+		Generation: generation,
 	}
 
 	var diags diag.Diagnostics
@@ -133,4 +144,71 @@ func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
 		})
 	}
 	return acl
+}
+
+// BuildCanManage constructs can_manage_principals for the snapshot upload: every principal
+// granted CAN_MANAGE in the top-level permissions section may break the glass on the snapshot.
+func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
+	var canManage []snapshot.ManagePrincipal
+	for _, p := range b.Config.Permissions {
+		if p.Level != "CAN_MANAGE" {
+			continue
+		}
+		canManage = append(canManage, snapshot.ManagePrincipal{
+			UserName:             p.UserName,
+			GroupName:            p.GroupName,
+			ServicePrincipalName: p.ServicePrincipalName,
+		})
+	}
+	return canManage
+}
+
+// resolveGeneration asks the backend whether the snapshot deployed last time was modified
+// outside of the bundle, and returns the generation the new snapshot should use:
+//   - the previous generation while the snapshot is untouched, so a path reached by an earlier
+//     recovery keeps being reused;
+//   - the previous generation + 1 when it was modified and --force was given, which moves the
+//     deployment to a fresh path;
+//   - an error when it was modified and --force was not given.
+//
+// The check has to happen here rather than in the resource's DoRead: the generation decides
+// the snapshot's path, and resources referencing ${...full_path} resolve it from the desired
+// state computed before any resource is read (see LookupReferencePreDeploy). Erroring unless
+// --force also has no equivalent in the resource layer. CheckDashboardsModifiedRemotely is the
+// same shape: read state, ask the API, refuse unless forced.
+//
+// On the first deploy (no snapshot in state) the generation is 0.
+func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient) (int, error) {
+	// The deploy/plan pipeline opens the state DB for read before this runs, but callers that
+	// exercise PlanUpload in isolation (unit tests) may not. No open state means no previous
+	// snapshot to check, which is the first-deploy case.
+	if !b.DeploymentBundle.StateDB.IsOpen() {
+		return 0, nil
+	}
+
+	entry, ok := b.DeploymentBundle.StateDB.GetResourceEntry(resources.SnapshotKey)
+	if !ok || len(entry.State) == 0 {
+		return 0, nil
+	}
+
+	// Decode into the state type the engine persists, so the field names cannot drift apart.
+	var prev dresources.SnapshotState
+	if err := json.Unmarshal(entry.State, &prev); err != nil {
+		return 0, fmt.Errorf("reading previous snapshot state: %w", err)
+	}
+	if prev.FullPath == "" {
+		return 0, nil
+	}
+
+	status, err := uploader.InspectSnapshot(ctx, prev.FullPath)
+	if err != nil {
+		return 0, err
+	}
+	if !status.Dirty {
+		return prev.Generation, nil
+	}
+	if !b.Config.Bundle.Force {
+		return 0, fmt.Errorf("the immutable snapshot of the last deployment was modified outside of the bundle (break glass):\n  %s\nTo deploy a new snapshot and point resources at it, use --force", prev.FullPath)
+	}
+	return prev.Generation + 1, nil
 }

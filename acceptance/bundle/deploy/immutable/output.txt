@@ -15,7 +15,7 @@ Building python_artifact...
 [
   {
     "notebook_task": {
-      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/notebook"
+      "notebook_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/notebook"
     },
     "task_key": "notebook_task"
   },
@@ -30,7 +30,7 @@ Building python_artifact...
   {
     "environment_key": "env",
     "spark_python_task": {
-      "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py"
+      "python_file": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py"
     },
     "task_key": "spark_python_task"
   }
@@ -42,7 +42,7 @@ Building python_artifact...
     "environment_key": "env",
     "spec": {
       "dependencies": [
-        "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+        "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
       ],
       "environment_version": "4"
     }
@@ -55,7 +55,7 @@ Building python_artifact...
   "new_state": {
     "value": {
       "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot",
       "bundle_id": "[SNAPSHOT_HASH]",
       "acl": [
         {
@@ -76,14 +76,14 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/main.py"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/main.py"
 
 >>> jq .settings.tasks job.json
-"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/files/src/notebook"
+"/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/files/src/notebook"
 
 >>> jq .settings.environments[0].spec.dependencies job.json
 [
-  "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
+  "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot/artifacts/.internal/immutable-0.0.1-py3-none-any.whl"
 ]
 
 >>> title Check snapshot plan after deploy
@@ -98,7 +98,7 @@ Building python_artifact...
   "new_state": {
     "value": {
       "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
+      "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot",
       "bundle_id": "[SNAPSHOT_HASH]",
       "acl": [
         {
@@ -111,7 +111,7 @@ Building python_artifact...
   },
   "remote_state": {
     "relative_path": "[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-    "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]"
+    "full_path": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot"
   },
   "changes": {
     "acl": {
@@ -141,9 +141,9 @@ Building python_artifact...
     "full_path": {
       "action": "recreate",
       "reason": "immutable",
-      "old": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-      "new": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]",
-      "remote": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]"
+      "old": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot",
+      "new": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot",
+      "remote": "/Workspace/Users/[UUID]/.snapshots/[SNAPSHOT_HASH]/[SNAPSHOT_HASH]/snapshot"
     },
     "relative_path": {
       "action": "recreate",

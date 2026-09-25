@@ -188,6 +188,11 @@ type FakeWorkspace struct {
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
+	// snapshots records immutable-snapshot content paths and whether each was modified out
+	// of band. A workspace write into a recorded path flips it dirty;
+	// RecordSnapshot resets it when the snapshot is (re)created by the snapshot API.
+	snapshots map[string]bool
+
 	Jobs                  map[int64]jobs.Job
 	JobRuns               map[int64]jobs.Run
 	JobRunOutputs         map[int64]jobs.RunOutput
@@ -479,6 +484,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
+		snapshots:    make(map[string]bool),
 
 		Jobs:                  map[int64]jobs.Job{},
 		JobRuns:               map[int64]jobs.Run{},
@@ -804,6 +810,31 @@ func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
 	return Response{}
 }
 
+// RecordSnapshot marks contentPath as a known, clean immutable snapshot. The snapshot create
+// handler calls it after materializing the content directory, so the snapshot's own creation
+// write does not count as tampering.
+func (s *FakeWorkspace) RecordSnapshot(contentPath string) {
+	defer s.LockUnlock()()
+	s.snapshots[contentPath] = false
+}
+
+// SnapshotDirty reports whether the immutable snapshot at contentPath was modified out of
+// band. An unknown path is reported clean.
+func (s *FakeWorkspace) SnapshotDirty(contentPath string) bool {
+	defer s.LockUnlock()()
+	return s.snapshots[contentPath]
+}
+
+// markSnapshotDirty flips any recorded snapshot dirty when targetPath writes at or under its
+// content path. The caller must already hold the lock.
+func (s *FakeWorkspace) markSnapshotDirty(targetPath string) {
+	for contentPath := range s.snapshots {
+		if targetPath == contentPath || strings.HasPrefix(targetPath, contentPath+"/") {
+			s.snapshots[contentPath] = true
+		}
+	}
+}
+
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
 	// The real mkdirs API creates all intermediate directories ("mkdir -p"),
@@ -817,6 +848,7 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 			}
 		}
 	}
+	s.markSnapshotDirty(request.Path)
 }
 
 func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
@@ -853,6 +885,7 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) Response {
 			}
 		}
 	}
+	s.markSnapshotDirty(path)
 	return Response{}
 }
 
@@ -925,6 +958,7 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 		}
 	}
 
+	s.markSnapshotDirty(workspacePath)
 	return Response{}
 }
 
@@ -982,6 +1016,7 @@ func (s *FakeWorkspace) WorkspaceImportNotebook(filePath string, body []byte, la
 		Data: body,
 	}
 
+	s.markSnapshotDirty(filePath)
 	return Response{}
 }
 
