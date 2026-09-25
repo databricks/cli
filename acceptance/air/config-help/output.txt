@@ -39,8 +39,9 @@ config
   Fields:
     experiment_name              (required) Name of the experiment.
     compute                      (required) Which accelerators to run on and how many.
-    environment                  Python dependencies, or a custom Docker image, for the run's runtime.
-    command                      (required) Shell command that starts the workload.
+    environment                  Python dependencies, runtime version, or a Unity Catalog image for a single-command run.
+    command                      Shell command that starts the workload.
+    containers                   Rank-partitioned containers for heterogeneous workloads.
     env_variables                Plain environment variables, as NAME: value.
     secrets                      Environment variables sourced from secrets, as NAME: scope/key.
     code_source                  Local code to upload and make available to the run.
