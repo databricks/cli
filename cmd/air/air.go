@@ -10,8 +10,9 @@ import (
 // New returns the root command for the AI Runtime CLI.
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "air",
-		Short: "Run and manage AI Runtime training workloads",
+		Use:     "air",
+		Short:   "*Public Preview* Run and manage AI Runtime training workloads",
+		GroupID: "air",
 		Long: `Run and manage AI Runtime training workloads on Databricks serverless GPU compute.
 
 These commands are under active development.`,
