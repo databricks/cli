@@ -81,7 +81,11 @@ func Parse(data []byte) (*MetricView, error) {
 	if err := yaml.Unmarshal(data, &root); err != nil {
 		return nil, fmt.Errorf("metricviews: parsing YAML: %w", err)
 	}
-	version, viewType, hasSources := peek(&root)
+	return decodeMetricView(&root)
+}
+
+func decodeMetricView(root *yaml.Node) (*MetricView, error) {
+	version, viewType, hasSources := peek(root)
 
 	switch version {
 	case version01, version10:

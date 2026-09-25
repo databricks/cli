@@ -32,7 +32,7 @@ func TestValidateRejectsBadVersions(t *testing.T) {
 		"version: 2.0\nsource: main.default.t\n",
 		"version: 9.9\nsource: main.default.t\n",
 	} {
-		err := Validate([]byte(in))
+		err := validateYAML(t, []byte(in))
 		assert.Error(t, err)
 	}
 }
@@ -91,7 +91,7 @@ func TestParseAndValidateResolvesColumnAliases(t *testing.T) {
 
 func TestValidateRejectsUnsupportedViewType(t *testing.T) {
 	in := []byte("version: 1.1\nview_type: OTHER\nsource: main.default.t\n")
-	err := Validate(in)
+	err := validateYAML(t, in)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "view_type")
 	assert.ErrorContains(t, err, "OTHER")
@@ -115,7 +115,7 @@ func TestParseExplicitSingleSourceViewTypeRoundTrip(t *testing.T) {
 
 func TestValidateRejectsMultiSourceWithoutViewType(t *testing.T) {
 	in := []byte("version: 1.1\nsources:\n  - name: o\n    from: main.default.o\n")
-	err := Validate(in)
+	err := validateYAML(t, in)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "view_type")
 }
@@ -127,4 +127,11 @@ func TestMetricViewMarshalRoundTrips(t *testing.T) {
 	out, err := m.MarshalYAML()
 	require.NoError(t, err)
 	assert.NotNil(t, out)
+}
+
+func validateYAML(t *testing.T, data []byte) error {
+	t.Helper()
+	var node yaml.Node
+	require.NoError(t, yaml.Unmarshal(data, &node))
+	return Validate(&node)
 }

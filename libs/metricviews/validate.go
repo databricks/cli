@@ -7,22 +7,20 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// Validate checks the structural rules for a metric view YAML definition.
-// It inspects the YAML nodes so missing and duplicate keys remain observable.
-// Call this for user input; Parse alone only decodes the document.
-func Validate(data []byte) error {
-	var doc yaml.Node
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("metricviews: parsing YAML: %w", err)
+// Validate checks the structural rules in a parsed YAML document or mapping.
+// It uses YAML nodes so missing and duplicate keys remain observable.
+func Validate(node *yaml.Node) error {
+	root := node
+	if node.Kind == yaml.DocumentNode {
+		if len(node.Content) == 0 {
+			return errors.New("metricviews: missing YAML document")
+		}
+		root = node.Content[0]
 	}
-	if len(doc.Content) == 0 {
-		return errors.New("metricviews: missing YAML document")
-	}
-	root := doc.Content[0]
 	if err := requireYAMLFields(root, "version"); err != nil {
 		return fmt.Errorf("metricviews: %w", err)
 	}
-	version, viewType, hasSources := peek(&doc)
+	version, viewType, hasSources := peek(root)
 	switch version {
 	case version01, version10:
 		return validateV10(root)
@@ -44,10 +42,14 @@ func Validate(data []byte) error {
 
 // ParseAndValidate decodes a user-supplied definition after checking its shape.
 func ParseAndValidate(data []byte) (*MetricView, error) {
-	if err := Validate(data); err != nil {
+	var root yaml.Node
+	if err := yaml.Unmarshal(data, &root); err != nil {
+		return nil, fmt.Errorf("metricviews: parsing YAML: %w", err)
+	}
+	if err := Validate(&root); err != nil {
 		return nil, err
 	}
-	return Parse(data)
+	return decodeMetricView(&root)
 }
 
 func validateV10(node *yaml.Node) error {

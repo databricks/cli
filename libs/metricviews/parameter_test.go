@@ -74,7 +74,7 @@ func TestValidateRejectsDuplicateParameterFields(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			in := "version: '1.1'\nsource: main.sales.orders\nparameters:\n  - " + strings.ReplaceAll(strings.TrimSuffix(tc.in, "\n"), "\n", "\n    ") + "\n"
-			err := Validate([]byte(in))
+			err := validateYAML(t, []byte(in))
 			require.ErrorContains(t, err, tc.name)
 		})
 	}

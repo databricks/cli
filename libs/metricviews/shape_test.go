@@ -38,14 +38,14 @@ func TestValidateRejectsMissingRequiredKeys(t *testing.T) {
 	}
 	for name, in := range cases {
 		t.Run(name, func(t *testing.T) {
-			err := Validate([]byte(in))
+			err := validateYAML(t, []byte(in))
 			require.Error(t, err)
 		})
 	}
 }
 
 func TestValidateAllowsV11WildcardWithoutName(t *testing.T) {
-	err := Validate([]byte("version: '1.1'\nsource: main.sales.orders\ndimensions: [{expr: 'source.*'}]\n"))
+	err := validateYAML(t, []byte("version: '1.1'\nsource: main.sales.orders\ndimensions: [{expr: 'source.*'}]\n"))
 	require.NoError(t, err)
 }
 
@@ -56,7 +56,7 @@ func TestValidateRejectsConflictingDimensionKeys(t *testing.T) {
 		"version: '1.1'\nview_type: MULTI_SOURCE\nsources: [{name: orders, from: main.sales.orders}]\ndimensions: []\nfields: [{name: id, expr: id}]\n",
 		"version: '1.1'\nsource: main.sales.orders\nmaterialization:\n  schedule: EVERY 1 HOUR\n  mode: fresh\n  materialized_views:\n    - name: mv\n      type: aggregated\n      dimensions: []\n      fields: [id]\n",
 	} {
-		err := Validate([]byte(in))
+		err := validateYAML(t, []byte(in))
 		require.ErrorContains(t, err, "dimensions")
 		require.ErrorContains(t, err, "fields")
 	}
@@ -74,18 +74,15 @@ func TestValidateRejectsInvalidFormatVariants(t *testing.T) {
 		"type: number\ncurrency_code: USD\n",
 		"type: number\ndecimal_places: {places: 2}\n",
 	} {
-		spec := "version: '1.1'\nsource: main.sales.orders\ndimensions:\n  - name: amount\n    expr: amount\n    format:\n"
-		for _, line := range strings.Split(strings.TrimSuffix(in, "\n"), "\n") {
-			spec += "      " + line + "\n"
-		}
-		err := Validate([]byte(spec))
+		spec := "version: '1.1'\nsource: main.sales.orders\ndimensions:\n  - name: amount\n    expr: amount\n    format:\n      " + strings.ReplaceAll(strings.TrimSuffix(in, "\n"), "\n", "\n      ") + "\n"
+		err := validateYAML(t, []byte(spec))
 		require.Error(t, err, "input: %s", in)
 	}
 }
 
 func TestValidateRejectsIncompleteFormat(t *testing.T) {
 	in := []byte("version: '1.1'\nsource: main.sales.orders\ndimensions:\n  - name: amount\n    expr: amount\n    format: {type: currency}\n")
-	err := Validate(in)
+	err := validateYAML(t, in)
 	require.ErrorContains(t, err, "currency_code")
 }
 
