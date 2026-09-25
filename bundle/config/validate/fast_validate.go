@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/diag"
 )
 
@@ -14,10 +15,13 @@ import (
 // 2. The validation is blocking for bundle deployments.
 //
 // The full suite of validation mutators is available in the [Validate] mutator.
-type fastValidate struct{ bundle.RO }
+type fastValidate struct {
+	bundle.RO
+	engine engine.EngineType
+}
 
-func FastValidate() bundle.ReadOnlyMutator {
-	return &fastValidate{}
+func FastValidate(e engine.EngineType) bundle.ReadOnlyMutator {
+	return &fastValidate{engine: e}
 }
 
 func (f *fastValidate) Name() string {
@@ -29,6 +33,7 @@ func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagno
 		// Fast mutators with only in-memory checks
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),
+		ValidateStateSize(f.engine),
 
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
