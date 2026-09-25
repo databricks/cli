@@ -590,6 +590,64 @@ func TestShouldSkipRemoteAddition(t *testing.T) {
 	}
 }
 
+func TestShouldSkipRemoteAdditionNoGate(t *testing.T) {
+	// A rule with when_set omitted always applies to a declared object.
+	jobCluster, err := structpath.ParsePattern("job_clusters[*].new_cluster")
+	require.NoError(t, err)
+	cfg := &dresources.ResourceLifecycleConfig{
+		IgnoreRemoteAdditions: []dresources.RemoteAdditionRule{
+			{Field: jobCluster},
+		},
+	}
+
+	state := &jobs.JobSettings{JobClusters: []jobs.JobCluster{{
+		JobClusterKey: "small",
+		NewCluster:    &compute.ClusterSpec{},
+	}}}
+
+	tests := []struct {
+		name     string
+		path     string
+		change   deployplan.ChangeDesc
+		expected bool
+	}{
+		{
+			name:     "no gate: any addition inside a declared object is skipped",
+			path:     "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']",
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: true,
+		},
+		{
+			name:     "config disagrees with remote: still an update",
+			path:     "job_clusters[job_cluster_key='small'].new_cluster.custom_tags['CostCenter']",
+			change:   deployplan.ChangeDesc{New: "mine", Remote: "dev-1234"},
+			expected: false,
+		},
+		{
+			// The object itself is absent from config, so the addition is real drift
+			// even without a gate.
+			name:     "gated object absent from config: still drift",
+			path:     "job_clusters[job_cluster_key='other'].new_cluster.custom_tags['CostCenter']",
+			change:   deployplan.ChangeDesc{Remote: "dev-1234"},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := structpath.ParsePath(tt.path)
+			require.NoError(t, err)
+
+			change := tt.change
+			reason, ok := shouldSkipRemoteAddition(cfg, path, &change, state)
+			assert.Equal(t, tt.expected, ok)
+			if tt.expected {
+				assert.Equal(t, deployplan.ReasonRemoteAddition, reason)
+			}
+		})
+	}
+}
+
 // Types for TestPrepareChangesWholeBlockOverlap: two levels of nesting under an
 // optional pointer.
 type threeWayInner struct {
