@@ -70,6 +70,13 @@ func validateYAMLColumns(node *yaml.Node) error {
 	return visitYAMLSequence(node, "measures", validateYAMLColumn)
 }
 
+func rejectDimensionFieldConflict(node *yaml.Node) error {
+	if yamlField(node, "dimensions") != nil && yamlField(node, "fields") != nil {
+		return errors.New("cannot specify both dimensions and fields")
+	}
+	return nil
+}
+
 func validateYAMLColumn(node *yaml.Node) error {
 	return visitYAMLField(node, "format", validateYAMLFormat)
 }

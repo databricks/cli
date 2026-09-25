@@ -74,8 +74,9 @@ func peek(root *yaml.Node) (version, viewType string, hasSources bool) {
 	return version, viewType, hasSources
 }
 
-// Parse decodes YAML definitions without checking structural rules. Use
-// ParseAndValidate for user input that must satisfy those rules.
+// Parse decodes YAML and fails only when YAML parsing or decoding fails. It
+// drops unknown keys and ignores unsupported content that the selected Go
+// shape cannot represent. Use ParseAndValidate to check input structure.
 func Parse(data []byte) (*MetricView, error) {
 	var root yaml.Node
 	if err := yaml.Unmarshal(data, &root); err != nil {
