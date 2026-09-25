@@ -7,7 +7,7 @@ Output from job_runs.my_run: id=[MY_RUN_ID]: Run URL: [RUN_URL]
 Output from job_runs.my_run: id=[MY_RUN_ID]: SUCCESS
 Created job_runs.my_run
 Created jobs.downstream_job
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> read_id.py my_run
