@@ -70,7 +70,8 @@ type IResource interface {
 	DoDelete(ctx context.Context, id string, state any) error
 
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
-	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
+	// newState is the desired (config) state and remoteState is the value read from the backend.
+	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, newState, remoteState any) error
 
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
@@ -689,8 +690,8 @@ func (a *Adapter) HasOverrideChangeDesc() bool {
 }
 
 // OverrideChangeDesc allows custom logic to override change classification.
-func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, remoteState any) error {
-	_, err := a.overrideChangeDesc.Call(ctx, path, change, remoteState)
+func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, newState, remoteState any) error {
+	_, err := a.overrideChangeDesc.Call(ctx, path, change, newState, remoteState)
 	return err
 }
 

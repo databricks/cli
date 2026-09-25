@@ -284,7 +284,7 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string, _ *ClusterSta
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *ClusterRemote) error {
+func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, _ *ClusterState, remoteState *ClusterRemote) error {
 	path := p.Prefix(1).String()
 
 	// Remaining overrides only apply to Update actions.
