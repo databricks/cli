@@ -31,3 +31,16 @@
   },
   "spark_version": "15.2.x-scala2.12"
 }
+
+>>> [CLI] bundle validate -o json -t no_autoscale
+{
+  "autoscale": null,
+  "autotermination_minutes": 60,
+  "cluster_name": "foo",
+  "node_type_id": "[NODE_TYPE_ID]",
+  "num_workers": 2,
+  "spark_conf": {
+    "spark.executor.memory": "2g"
+  },
+  "spark_version": "13.3.x-scala2.12"
+}
