@@ -290,6 +290,16 @@ func TestJobRunPrepareStateCopiesResolvedTriggers(t *testing.T) {
 	assert.Empty(t, triggers.OnBundleDeploy)
 }
 
+func TestJobRunPrepareStateCopiesDependencies(t *testing.T) {
+	input := &resources.JobRun{DependsOn: []string{"${resources.job_runs.prepare.id}"}}
+
+	state := (&ResourceJobRun{}).PrepareState(input)
+
+	assert.Equal(t, input.DependsOn, state.DependsOn)
+	state.DependsOn[0] = "123"
+	assert.Equal(t, "${resources.job_runs.prepare.id}", input.DependsOn[0])
+}
+
 // The planner diffs RemapState(remote) against PrepareState(config), so a run
 // that did not end in SUCCESS has to surface as a difference on result_state.
 func TestJobRunRemapStateCarriesTheOutcome(t *testing.T) {
@@ -358,17 +368,39 @@ func TestJobRunWaitPollsUntilTerminal(t *testing.T) {
 	assert.Equal(t, int32(3), gets.Load(), "expected the wait to poll past both RUNNING reads")
 }
 
+func TestJobRunWaitAfterSkipKeepsSettledRun(t *testing.T) {
+	remote := &JobRunRemote{
+		ResultState: jobs.RunResultStateSuccess,
+		State: &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		},
+	}
+
+	got, err := (&ResourceJobRun{}).WaitAfterSkip(t.Context(), "123", remote)
+
+	require.NoError(t, err)
+	assert.Same(t, remote, got)
+}
+
 func TestJobRunCreateSendsAFreshIdempotencyToken(t *testing.T) {
 	var tokens []string
 	server := testserver.New(t)
 	server.Handle("POST", "/api/2.2/jobs/run-now", func(req testserver.Request) any {
+		var raw map[string]any
+		require.NoError(t, json.Unmarshal(req.Body, &raw))
+		assert.NotContains(t, raw, "depends_on")
+
 		var body jobs.RunNow
 		require.NoError(t, json.Unmarshal(req.Body, &body))
 		tokens = append(tokens, body.IdempotencyToken)
 		return jobs.RunNowResponse{RunId: int64(123 + len(tokens))}
 	})
 	r := (&ResourceJobRun{}).New(jobRunClientFor(t, server))
-	config := &JobRunState{RunNow: jobs.RunNow{JobId: 456}}
+	config := &JobRunState{
+		RunNow:    jobs.RunNow{JobId: 456},
+		DependsOn: []string{"123"},
+	}
 
 	for range 2 {
 		_, _, err := r.DoCreate(t.Context(), config)

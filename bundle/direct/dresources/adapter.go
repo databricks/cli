@@ -99,6 +99,10 @@ type IResource interface {
 	// TODO: wait status should be persisted in the state.
 	WaitAfterCreate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
+	// [Optional] WaitAfterSkip waits for an unchanged resource to become ready when it has blocking dependents.
+	// This resumes waits abandoned by an earlier interrupted deployment.
+	WaitAfterSkip(ctx context.Context, id string, remoteState any) (updatedRemoteState any, e error)
+
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
 	WaitAfterUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
 
@@ -136,6 +140,7 @@ type Adapter struct {
 	doUpdate           *calladapt.BoundCaller
 	doUpdateWithID     *calladapt.BoundCaller
 	waitAfterCreate    *calladapt.BoundCaller
+	waitAfterSkip      *calladapt.BoundCaller
 	waitAfterUpdate    *calladapt.BoundCaller
 	waitAfterDelete    *calladapt.BoundCaller
 	overrideChangeDesc *calladapt.BoundCaller
@@ -178,6 +183,7 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 		doUpdateWithID:          nil,
 		doResize:                nil,
 		waitAfterCreate:         nil,
+		waitAfterSkip:           nil,
 		waitAfterUpdate:         nil,
 		waitAfterDelete:         nil,
 		overrideChangeDesc:      nil,
@@ -279,6 +285,11 @@ func (a *Adapter) initMethods(resource any) error {
 	}
 
 	a.waitAfterCreate, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterCreate")
+	if err != nil {
+		return err
+	}
+
+	a.waitAfterSkip, err = calladapt.PrepareCall(resource, reflect.TypeFor[IResource](), "WaitAfterSkip")
 	if err != nil {
 		return err
 	}
@@ -418,6 +429,14 @@ func (a *Adapter) validate() error {
 			return fmt.Errorf("WaitAfterCreate must return (remoteType, error), got %d return values", len(a.waitAfterCreate.OutTypes))
 		}
 		validations = append(validations, "WaitAfterCreate remoteState return", a.waitAfterCreate.OutTypes[0], remoteType)
+	}
+
+	if a.waitAfterSkip != nil {
+		if len(a.waitAfterSkip.OutTypes) != 2 {
+			return fmt.Errorf("WaitAfterSkip must return (remoteType, error), got %d return values", len(a.waitAfterSkip.OutTypes))
+		}
+		validations = append(validations, "WaitAfterSkip remoteState", a.waitAfterSkip.InTypes[2], remoteType)
+		validations = append(validations, "WaitAfterSkip remoteState return", a.waitAfterSkip.OutTypes[0], remoteType)
 	}
 
 	if a.waitAfterUpdate != nil {
@@ -654,6 +673,22 @@ func (a *Adapter) WaitAfterCreate(ctx context.Context, id string, newState any) 
 
 	remoteState := normalizeNilPointer(outs[0])
 	return remoteState, nil
+}
+
+// WaitAfterSkip waits for an unchanged resource to become ready when another
+// resource depends on it. If the resource doesn't implement this method, this is a no-op.
+func (a *Adapter) WaitAfterSkip(ctx context.Context, id string, remoteState any) (any, error) {
+	if a.waitAfterSkip == nil {
+		return nil, nil
+	}
+
+	outs, err := a.waitAfterSkip.Call(ctx, id, remoteState)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedRemoteState := normalizeNilPointer(outs[0])
+	return updatedRemoteState, nil
 }
 
 // WaitAfterUpdate waits for the resource to become ready after update.

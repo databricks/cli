@@ -80,6 +80,31 @@ resources:
 	}, refs)
 }
 
+func TestExtractReferences_JobRunDependsOn(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	const yml = `
+resources:
+  job_runs:
+    prepare:
+      job_id: 1
+    publish:
+      job_id: 2
+      depends_on:
+        - ${resources.job_runs.prepare.id}
+`
+	root, err := yamlloader.LoadYAML("test", bytes.NewBufferString(yml))
+	require.NoError(t, err)
+
+	refs, err := extractReferences(root, "resources.job_runs.publish", adapters["job_runs"].StateType())
+	require.NoError(t, err)
+
+	assert.Equal(t, map[string]string{
+		"depends_on[0]": "${resources.job_runs.prepare.id}",
+	}, refs)
+}
+
 func TestShouldSkipBackendDefault_ManagedPropertiesOnly(t *testing.T) {
 	// Rules mirror the schemas backend_defaults in schemas.yml, but the test is
 	// deliberately self-contained so that edits to schemas.yml don't break it.
@@ -417,7 +442,8 @@ func TestJobRunFinishedWithoutSuccessIsRecreate(t *testing.T) {
 }
 
 // A run that has not stopped yet may still succeed, so the plan leaves it
-// alone rather than recreating it. Skip does not resume an abandoned wait.
+// alone rather than recreating it. Apply resumes the wait when it has a
+// blocking dependent.
 func TestJobRunInProgressIsSkip(t *testing.T) {
 	for _, lifeCycleState := range []jobs.RunLifeCycleState{
 		jobs.RunLifeCycleStatePending,

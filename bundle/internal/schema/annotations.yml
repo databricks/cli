@@ -1022,6 +1022,9 @@ resources:
 
         The deployment waits for the run to finish and fails if it does not succeed, so other resources can reference the run's outcome, for example `${resources.job_runs.<name>.state.result_state}`. A run that did not succeed is run again on the next deployment.
       "$fields":
+        "depends_on":
+          "description": |-
+            Job runs that must finish successfully before this run starts. Each entry must reference a job run ID, for example `${resources.job_runs.prepare.id}`. When a dependency re-runs, this run re-runs after it succeeds.
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed and when the run re-fires.

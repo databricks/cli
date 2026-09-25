@@ -17,15 +17,16 @@ trace read_id.py my_job
 trace read_id.py my_run
 trace print_requests.py //jobs/run-now
 
-title "a run that is still going is skipped"
+title "a run that is still going is skipped and blocks its dependent"
 $CLI bundle plan -o json > tmp.plan.json
-trace jq '.plan["resources.job_runs.my_run"]' tmp.plan.json
+trace jq '{upstream: .plan["resources.job_runs.my_run"], downstream: .plan["resources.job_runs.downstream_run"]}' tmp.plan.json
 
 # Replay the plan captured while the run was still going: a fresh plan would
 # re-read it, and the testserver would settle it on that GET.
-title "Badness: the next deploy does not wait for that run"
+title "the next deploy resumes waiting before starting the dependent run"
 trace $CLI bundle deploy --plan tmp.plan.json
 
-title "the same run is still tracked, and nothing was cancelled, deleted or triggered"
+title "both successful runs are tracked"
 trace read_state.py job_runs my_run id result_state
-trace print_requests.py //jobs
+trace read_state.py job_runs downstream_run id depends_on result_state
+trace print_requests.py //jobs/run-now
