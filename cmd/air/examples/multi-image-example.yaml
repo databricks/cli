@@ -85,7 +85,7 @@ containers:
       variables:
         MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
         HF_HOME: /local_disk0/huggingface
-    command: |
+    command: |-
       set -euo pipefail
 
       cleanup() {
