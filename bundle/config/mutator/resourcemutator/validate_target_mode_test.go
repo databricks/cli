@@ -139,6 +139,58 @@ func TestProcessTargetModeProductionOkWithRootPath(t *testing.T) {
 	require.NoError(t, diags.Error())
 }
 
+func TestFindNonUserPath(t *testing.T) {
+	// No paths set at all.
+	b := mockBundle(config.Development)
+	b.Config.Workspace.StatePath = ""
+	b.Config.Workspace.ArtifactPath = ""
+	b.Config.Workspace.FilePath = ""
+	assert.Empty(t, findNonUserPath(b))
+
+	// All paths contain the username or short name: no non-user path found.
+	b = mockBundle(config.Development)
+	b.Config.Workspace.RootPath = "/Users/lennart@company.com/.bundle/x/y/state"
+	b.Config.Workspace.ResourcePath = "/Users/lennart/.bundle/x/y/resources"
+	assert.Empty(t, findNonUserPath(b))
+
+	// root_path is checked first.
+	b = mockBundle(config.Development)
+	b.Config.Workspace.RootPath = "/Shared/.bundle/x/y"
+	assert.Equal(t, "root_path", findNonUserPath(b))
+
+	// file_path is checked next.
+	b = mockBundle(config.Development)
+	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
+	assert.Equal(t, "file_path", findNonUserPath(b))
+
+	// file_path is skipped when the workspace uses an immutable folder.
+	b = mockBundle(config.Development)
+	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
+	b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+	assert.Empty(t, findNonUserPath(b))
+
+	// resource_path is checked next.
+	b = mockBundle(config.Development)
+	b.Config.Workspace.ResourcePath = "/Shared/.bundle/x/y/resources"
+	assert.Equal(t, "resource_path", findNonUserPath(b))
+
+	// artifact_path is checked next.
+	b = mockBundle(config.Development)
+	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
+	assert.Equal(t, "artifact_path", findNonUserPath(b))
+
+	// artifact_path is skipped when the workspace uses an immutable folder.
+	b = mockBundle(config.Development)
+	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
+	b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+	assert.Empty(t, findNonUserPath(b))
+
+	// state_path is checked last.
+	b = mockBundle(config.Development)
+	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
+	assert.Equal(t, "state_path", findNonUserPath(b))
+}
+
 func TestTriggerPauseStatusWhenUnpaused(t *testing.T) {
 	b := mockBundle(config.Development)
 	b.Config.Presets.TriggerPauseStatus = config.Unpaused
