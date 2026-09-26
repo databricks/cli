@@ -51,11 +51,57 @@ func (s VectorSearchIndexState) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(s)
 }
 
-// VectorSearchIndexRemote is remote state. endpoint_uuid is looked up from the
-// endpoint service since the index API itself doesn't return it.
+// VectorSearchIndexRemote is remote state. It embeds CreateVectorIndexRequest (the state's
+// shape, so RemapState is a plain copy and the auto-copier can take over) and, alongside it,
+// retains the API's output-only VectorIndex fields (creator, endpoint_id, status) so remote
+// information is not discarded. endpoint_uuid is looked up from the endpoint service since the
+// index API itself doesn't return it.
 type VectorSearchIndexRemote struct {
-	vectorsearch.VectorIndex
+	vectorsearch.CreateVectorIndexRequest
+
+	// Output-only fields carried through from the VectorIndex response for visibility. They are
+	// not part of the state, so RemapState and the copier don't copy them into it.
+	Creator    string                          `json:"creator,omitempty"`
+	EndpointId string                          `json:"endpoint_id,omitempty"`
+	Status     *vectorsearch.VectorIndexStatus `json:"status,omitempty"`
+
 	EndpointUuid string `json:"endpoint_uuid,omitempty"`
+}
+
+// newVectorSearchIndexRemote builds the remote state from a raw index and the resolved
+// endpoint UUID. The API returns delta_sync_index_spec as *DeltaSyncVectorIndexSpecResponse
+// (which carries the output-only pipeline_id); map it to the *Request shape the state uses so
+// RemapState (and the auto-copier) can copy it directly. The other output-only VectorIndex
+// fields (creator, endpoint_id, status) are carried through on the remote.
+func newVectorSearchIndexRemote(index *vectorsearch.VectorIndex, endpointUuid string) *VectorSearchIndexRemote {
+	remote := &VectorSearchIndexRemote{
+		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
+			DeltaSyncIndexSpec:    nil,
+			DirectAccessIndexSpec: index.DirectAccessIndexSpec,
+			IndexSubtype:          index.IndexSubtype,
+			Name:                  index.Name,
+			EndpointName:          index.EndpointName,
+			IndexType:             index.IndexType,
+			PrimaryKey:            index.PrimaryKey,
+		},
+		Creator:      index.Creator,
+		EndpointId:   index.EndpointId,
+		Status:       index.Status,
+		EndpointUuid: endpointUuid,
+	}
+	if index.DeltaSyncIndexSpec != nil {
+		remote.DeltaSyncIndexSpec = &vectorsearch.DeltaSyncVectorIndexSpecRequest{
+			ColumnsToIndex:          index.DeltaSyncIndexSpec.ColumnsToIndex,
+			ColumnsToSync:           index.DeltaSyncIndexSpec.ColumnsToSync,
+			EmbeddingSourceColumns:  index.DeltaSyncIndexSpec.EmbeddingSourceColumns,
+			EmbeddingVectorColumns:  index.DeltaSyncIndexSpec.EmbeddingVectorColumns,
+			EmbeddingWritebackTable: index.DeltaSyncIndexSpec.EmbeddingWritebackTable,
+			PipelineType:            index.DeltaSyncIndexSpec.PipelineType,
+			SourceTable:             index.DeltaSyncIndexSpec.SourceTable,
+			ForceSendFields:         nil,
+		}
+	}
+	return remote
 }
 
 func (s *VectorSearchIndexRemote) UnmarshalJSON(b []byte) error {
@@ -82,35 +128,12 @@ func (*ResourceVectorSearchIndex) PrepareState(input *resources.VectorSearchInde
 }
 
 func (*ResourceVectorSearchIndex) RemapState(remote *VectorSearchIndexRemote) *VectorSearchIndexState {
-	state := &VectorSearchIndexState{
-		CreateVectorIndexRequest: vectorsearch.CreateVectorIndexRequest{
-			DeltaSyncIndexSpec:    nil, // need to remap below
-			DirectAccessIndexSpec: remote.DirectAccessIndexSpec,
-			IndexSubtype:          remote.IndexSubtype,
-			Name:                  remote.Name,
-			EndpointName:          remote.EndpointName,
-			IndexType:             remote.IndexType,
-			PrimaryKey:            remote.PrimaryKey,
-		},
-		EndpointUuid: remote.EndpointUuid,
+	// A plain copy: newVectorSearchIndexRemote already mapped the remote into the state's
+	// shape (delta_sync_index_spec as *Request), so this just moves the embedded struct across.
+	return &VectorSearchIndexState{
+		CreateVectorIndexRequest: remote.CreateVectorIndexRequest,
+		EndpointUuid:             remote.EndpointUuid,
 	}
-	if remote.DeltaSyncIndexSpec != nil {
-		state.DeltaSyncIndexSpec = &vectorsearch.DeltaSyncVectorIndexSpecRequest{
-			ColumnsToIndex:          remote.DeltaSyncIndexSpec.ColumnsToIndex,
-			ColumnsToSync:           remote.DeltaSyncIndexSpec.ColumnsToSync,
-			EmbeddingSourceColumns:  remote.DeltaSyncIndexSpec.EmbeddingSourceColumns,
-			EmbeddingVectorColumns:  remote.DeltaSyncIndexSpec.EmbeddingVectorColumns,
-			EmbeddingWritebackTable: remote.DeltaSyncIndexSpec.EmbeddingWritebackTable,
-			PipelineType:            remote.DeltaSyncIndexSpec.PipelineType,
-			SourceTable:             remote.DeltaSyncIndexSpec.SourceTable,
-			// ForceSendFields is an SDK marshaling concern (which zero-valued
-			// fields to wire-serialize) that has no meaning on the read path.
-			// Local config doesn't carry one either, so leave it nil rather
-			// than copy whatever the response struct happened to use.
-			ForceSendFields: nil,
-		}
-	}
-	return state
 }
 
 func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*VectorSearchIndexRemote, error) {
@@ -122,10 +145,7 @@ func (r *ResourceVectorSearchIndex) DoRead(ctx context.Context, id string) (*Vec
 	if err != nil {
 		return nil, err
 	}
-	return &VectorSearchIndexRemote{
-		VectorIndex:  *index,
-		EndpointUuid: endpointUuid,
-	}, nil
+	return newVectorSearchIndexRemote(index, endpointUuid), nil
 }
 
 func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *VectorSearchIndexState) (string, *VectorSearchIndexRemote, error) {
@@ -142,7 +162,7 @@ func (r *ResourceVectorSearchIndex) DoCreate(ctx context.Context, config *Vector
 		return "", nil, err
 	}
 	config.EndpointUuid = endpointUuid
-	return config.Name, &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: endpointUuid}, nil
+	return config.Name, newVectorSearchIndexRemote(index, endpointUuid), nil
 }
 
 // createIndex calls CreateIndex, retrying while the backend still reports the
@@ -213,7 +233,7 @@ func (r *ResourceVectorSearchIndex) WaitAfterCreate(ctx context.Context, id stri
 	if err != nil {
 		return nil, err
 	}
-	return &VectorSearchIndexRemote{VectorIndex: *index, EndpointUuid: config.EndpointUuid}, nil
+	return newVectorSearchIndexRemote(index, config.EndpointUuid), nil
 }
 
 // WaitAfterDelete polls GetIndex until the index is gone. The DELETE call is
