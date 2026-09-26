@@ -54,6 +54,11 @@ EnvMatrixExclude.no_pydabs_1000_tasks = ["INPUT_CONFIG=job_pydabs_1000_tasks.yml
 # volume schema_name ("inconsistent final plan"). Covered by no_drift on direct.
 EnvMatrixExclude.no_volume_uppercase = ["INPUT_CONFIG=volume_uppercase_name.yml.tmpl"]
 
+# migrate deploys via Terraform first, and for a continuous pipeline the TF provider blocks
+# until the pipeline's update reaches RUNNING, which the local mock never reports (it stays
+# IDLE), so the deploy hangs until the test times out. Covered by no_drift on direct.
+EnvMatrixExclude.no_pipeline_normalize_case = ["INPUT_CONFIG=pipeline_normalize_case.yml.tmpl"]
+
 EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]
 
 # Terraform types sampling_fraction as an integer and truncates 0.5; covered by no_drift.

@@ -91,6 +91,11 @@ type ResourceLifecycleConfig struct {
 	// A change is skipped when local and remote differ only by trailing slashes.
 	NormalizeSlash []FieldRule `yaml:"normalize_slash,omitempty"`
 
+	// NormalizeCase: string field patterns the backend stores in a canonical case
+	// (e.g. upper-case enums like a pipeline's channel/edition). A change is skipped
+	// when local and remote differ only by case.
+	NormalizeCase []FieldRule `yaml:"normalize_case,omitempty"`
+
 	// IgnoreRemoteAdditions: objects whose fields the backend may add to when a gate field
 	// is set. A field that is absent from both old and new state but present in the remote
 	// is skipped; a disagreement between config and remote is still an update.
@@ -138,6 +143,7 @@ var empty = ResourceLifecycleConfig{
 	ProvidedIDFields:      nil,
 	UpdatableIDFields:     nil,
 	NormalizeSlash:        nil,
+	NormalizeCase:         nil,
 	IgnoreRemoteAdditions: nil,
 	BackendDefaults:       nil,
 	HashedFields:          nil,
