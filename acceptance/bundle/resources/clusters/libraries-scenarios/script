@@ -1,0 +1,68 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt tmp.plan.json
+}
+trap cleanup EXIT
+
+# Show the cluster's libraries plan entries; reading the saved plan keeps output identical across READPLAN.
+plan_libs() {
+    jq '.plan["resources.clusters.mycluster"].changes | with_entries(select(.key | startswith("libraries")))' tmp.plan.json
+}
+
+# Deploy output is verbose and differs plan/no-plan; send it to LOG and assert the key line.
+title "Deploy a cluster that declares no libraries"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "Created clusters.mycluster" > /dev/null
+printf '\n%s\n' "OK: cluster created"
+
+# Server-generated cluster id, read from state to target the out-of-band calls.
+CLUSTER_ID=$(read_id.py mycluster)
+
+title "Out of band: a job run (or the UI) installs 'six' on the shared cluster"
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/libraries/install --json "{\"cluster_id\": \"$CLUSTER_ID\", \"libraries\": [{\"pypi\": {\"package\": \"six\"}}]}" > /dev/null
+trace print_requests.py //libraries/install
+
+title "No libraries section: six is skipped as unmanaged, not drift"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+trace plan_libs
+
+title "Declare 'requests': plan installs it and uninstalls the out-of-band six, no restart"
+update_file.py databricks.yml "      num_workers: 1" "      num_workers: 1
+      libraries:
+        - pypi:
+            package: requests"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+trace plan_libs
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
+trace print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+
+title "Drift: 'requests' is uninstalled out of band; plan reinstalls the declared library"
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/libraries/uninstall --json "{\"cluster_id\": \"$CLUSTER_ID\", \"libraries\": [{\"pypi\": {\"package\": \"requests\"}}]}" > /dev/null
+trace print_requests.py //libraries/uninstall
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+trace plan_libs
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
+trace print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+
+title "Remove the libraries section: libraries become unmanaged, requests stays installed, no install or uninstall"
+update_file.py databricks.yml "      num_workers: 1
+      libraries:
+        - pypi:
+            package: requests" "      num_workers: 1"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+trace plan_libs
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "1 unchanged" > /dev/null
+trace print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+
+title "No-op redeploy: libraries are unmanaged and nothing changes"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+trace plan_libs
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
+cat LOG.deploy | contains.py "1 unchanged" > /dev/null
+trace print_requests.py //libraries/uninstall //libraries/install //clusters/restart

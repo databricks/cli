@@ -1,0 +1,39 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Deploy output goes to LOG (differs fake vs cloud); the empty restart requests are the proof.
+title "Install (create): libraries install on the fresh cluster with no restart"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.create
+cat LOG.create | contains.py "Created clusters.mycluster" > /dev/null
+trace print_requests.py //clusters/restart
+
+title "Update: adding a library does not restart the running cluster"
+update_file.py databricks.yml "        - pypi:
+            package: requests" "        - pypi:
+            package: requests
+        - pypi:
+            package: six"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.update
+cat LOG.update | contains.py "Updated clusters.mycluster" > /dev/null
+trace print_requests.py //clusters/restart
+
+# An empty list keeps the libraries managed, so it uninstalls them; dropping the section would leave them unmanaged.
+title "Delete: emptying the libraries list uninstalls them without restarting the running cluster"
+update_file.py databricks.yml "      libraries:
+        - pypi:
+            package: requests
+        - pypi:
+            package: six
+" "      libraries: []
+"
+$CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
+$CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.remove
+cat LOG.remove | contains.py "Updated clusters.mycluster" > /dev/null
+trace print_requests.py //libraries/uninstall //clusters/restart

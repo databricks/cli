@@ -1,0 +1,8 @@
+# The cluster declares `requests` and `urllib3`; the wheel job's task targets the same cluster via
+# existing_cluster_id and installs the wheel and pypi `six` on it. So the cluster reads back
+# libraries it never declared and treats them as drift: removing `urllib3` uninstalls it and the
+# job's libraries (marked UNINSTALL_ON_RESTART on cloud) without restarting the cluster. Cloud + CloudSlow and the venv/wheel harness are inherited from the parent.
+# Direct engine only (cluster libraries are a direct-engine feature).
+RecordRequests = true
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

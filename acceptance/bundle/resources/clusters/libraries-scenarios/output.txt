@@ -1,0 +1,216 @@
+
+=== Deploy a cluster that declares no libraries
+OK: cluster created
+
+=== Out of band: a job run (or the UI) installs 'six' on the shared cluster
+>>> print_requests.py //libraries/install
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+
+=== No libraries section: six is skipped as unmanaged, not drift
+>>> plan_libs
+{
+  "libraries": {
+    "action": "skip",
+    "reason": "unmanaged",
+    "remote": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+
+=== Declare 'requests': plan installs it and uninstalls the out-of-band six, no restart
+>>> plan_libs
+{
+  "libraries": {
+    "action": "update",
+    "new": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ],
+    "remote": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  },
+  "libraries[pypi='requests;']": {
+    "action": "update",
+    "new": {
+      "pypi": {
+        "package": "requests"
+      }
+    }
+  },
+  "libraries[pypi='six;']": {
+    "action": "update",
+    "remote": {
+      "pypi": {
+        "package": "six"
+      }
+    }
+  }
+}
+
+>>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "six"
+        }
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+=== Drift: 'requests' is uninstalled out of band; plan reinstalls the declared library
+>>> print_requests.py //libraries/uninstall
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/uninstall",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+>>> plan_libs
+{
+  "libraries": {
+    "action": "update",
+    "old": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ],
+    "new": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+>>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+{
+  "method": "POST",
+  "path": "/api/2.0/libraries/install",
+  "body": {
+    "cluster_id": "[MYCLUSTER_ID]",
+    "libraries": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+=== Remove the libraries section: libraries become unmanaged, requests stays installed, no install or uninstall
+>>> plan_libs
+{
+  "libraries": {
+    "action": "skip",
+    "reason": "unmanaged",
+    "old": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ],
+    "remote": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+>>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+
+=== No-op redeploy: libraries are unmanaged and nothing changes
+>>> plan_libs
+{
+  "libraries": {
+    "action": "skip",
+    "reason": "unmanaged",
+    "old": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ],
+    "remote": [
+      {
+        "pypi": {
+          "package": "requests"
+        }
+      }
+    ]
+  }
+}
+
+>>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.mycluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Destroy: 1 deleted
