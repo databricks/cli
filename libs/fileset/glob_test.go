@@ -2,7 +2,9 @@ package fileset
 
 import (
 	"io/fs"
+	"os"
 	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -131,4 +133,33 @@ func TestGlobFilesetDoubleQuotesWithFilePatterns(t *testing.T) {
 	files, err := g.Files()
 	require.NoError(t, err)
 	require.ElementsMatch(t, entries, collectRelativePaths(files))
+}
+
+// A pattern with a leading slash is anchored to the fileset root, the same way
+// git treats it in .gitignore. Without the slash the pattern matches a directory
+// of that name at any depth. sync.include relies on this to select, say, a
+// top-level "resources" directory without also picking up "vendor/resources".
+func TestGlobFilesetLeadingSlashAnchorsToRoot(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "dir"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "nested", "dir"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "dir", "a.txt"), []byte("a"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "nested", "dir", "b.txt"), []byte("b"), 0o644))
+
+	root := vfs.MustNew(tmpDir)
+
+	g, err := NewGlobSet(root, []string{"/dir/"})
+	require.NoError(t, err)
+	files, err := g.Files()
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{filepath.Join("dir", "a.txt")}, collectRelativePaths(files))
+
+	g, err = NewGlobSet(root, []string{"dir/"})
+	require.NoError(t, err)
+	files, err = g.Files()
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{
+		filepath.Join("dir", "a.txt"),
+		filepath.Join("nested", "dir", "b.txt"),
+	}, collectRelativePaths(files))
 }
