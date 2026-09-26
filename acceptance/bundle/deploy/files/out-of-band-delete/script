@@ -11,11 +11,16 @@ trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{objec
 title "Delete the remote bundle directory out-of-band (simulates deleting it in the UI)"
 trace $CLI workspace delete --recursive "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/out-of-band-delete"
 
-title "Redeploy reuses the stale snapshot, so the python_file is NOT re-uploaded"
+title "Redeploy restores the python_file without removing the local sync snapshot"
 trace $CLI bundle deploy
-trace musterr $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py"
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
 
-title "Removing the sync snapshot forces a full re-upload, restoring the python_file"
-trace rm -rf .databricks/bundle/default/sync-snapshots
+title "An unchanged redeploy does not upload files again"
+trace $CLI bundle deploy
+trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
+
+title "Recreating only the files directory also invalidates the old snapshot"
+trace $CLI workspace delete --recursive "$BUNDLE_PATH/files"
+trace $CLI workspace mkdirs "$BUNDLE_PATH/files"
 trace $CLI bundle deploy
 trace $CLI workspace get-status "$BUNDLE_PATH/files/hello_world.py" | jq '{object_type,path}'
