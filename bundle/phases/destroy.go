@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dms"
@@ -377,13 +376,20 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if hasApproval {
-		// Approved: the destroy is committing (destroyCore runs on the direct state), so a
-		// prepared migration is no longer "not committed". Clear the flag so ProcessBundleRet's
-		// cleanup does not discard it, and a post-approval failure keeps the direct state rather
-		// than reverting to terraform. Keep migrating so destroyCore retires the superseded
-		// terraform state only when this destroy actually migrated.
-		migrating := b.MigrationDeferred
-		b.MigrationDeferred = false
+		// Approved. A destroy that migrated from terraform commits the migration as part of its
+		// teardown: it runs on the in-memory migrated (direct) state, destroyCore retires the
+		// local terraform state (gated on migrating), and files.Delete removes the remote one.
+		// There is no separate remote push as in deploy's CommitMigration - the resources are
+		// about to be deleted - and a destroy-only migration is not adoption worth recording.
+		migrating := b.MigratingToDirect
+		if migrating {
+			count := len(b.DeploymentBundle.StateDB.ExportState(ctx))
+			suffix := "s"
+			if count == 1 {
+				suffix = ""
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("Migrated %d resource%s to direct deployment engine.", count, suffix))
+		}
 
 		if engine.IsDirect() {
 			// Upgrade from read (opened by process.go) to write mode
@@ -407,11 +413,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 		destroyCore(ctx, b, plan, engine, migrating)
 	} else {
-		// A deferred terraform→direct migration wrote the local direct state but has not
-		// committed it (destroyCore never ran): discard it and stay on the terraform engine,
-		// so a declined destroy changes nothing.
-		if b.MigrationDeferred {
-			statemgmt.DiscardDeferredMigration(ctx, b)
+		// A prepared terraform→direct migration lives only in memory (nothing durable was
+		// written), so a declined destroy just drops it and stays on the terraform engine.
+		if b.MigratingToDirect {
 			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
 		}
 		cmdio.LogString(ctx, "Destroy cancelled!")

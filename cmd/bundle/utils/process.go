@@ -73,12 +73,6 @@ type ProcessOptions struct {
 	// Implies ReadState
 	ErrorOnEmptyState bool
 
-	// If true, an auto-migration from the terraform engine to the direct engine is
-	// committed (resources.json written and pushed, terraform.tfstate backed up) rather
-	// than kept in memory. Set by the commands that apply changes to remote resources
-	// (deploy, destroy); plan and read-only commands migrate in memory only.
-	CommitStateMigration bool
-
 	// If true, configure outputHandler for phases.Deploy
 	Verbose bool
 
@@ -322,35 +316,16 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// the direct state.
 		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
 
-		// Migrate a Terraform state to the direct engine: when the direct engine is
-		// requested (the default) and the existing state still uses Terraform, convert it so
-		// the run proceeds on the direct engine. deploy/destroy commit the migration
-		// (resources.json written and pushed, terraform.tfstate backed up); plan and summary
-		// keep it in memory. Deriving commit from opts.Deploy keeps every deploy entry point
-		// (bundle, pipelines, apps) consistent. If the migration's plan check fails,
-		// MigrateTerraformState leaves the Terraform state intact and the run falls back to
-		// the terraform engine. Read-only commands set none of these options and keep
-		// reading the Terraform state as-is.
-		// A deploy/destroy that prepares the migration but never commits it - declined, or any
-		// error before it applies (a missing --plan file, a validation error, prevent_destroy)
-		// - must not leave the bundle silently migrated. The commit paths clear
-		// b.MigrationDeferred; this discards whatever a not-committed run left, so it stays on
-		// terraform. Registered before the migration so a failure inside it is covered too.
-		defer func() {
-			if b.MigrationDeferred {
-				statemgmt.DiscardDeferredMigration(ctx, b)
-				log.Warnf(ctx, "Migration not committed, keeping Terraform state")
-			}
-		}()
-
+		// Migrate a Terraform state to the direct engine: when the direct engine is requested
+		// (the default) and the existing state still uses Terraform, convert it so the run
+		// proceeds on the direct engine. Migrate is in-memory and reversible - nothing is written
+		// or pushed - so plan, run, and a declined deploy just drop it and stay on terraform;
+		// deploy makes it durable by calling CommitMigration after approval, destroy as part of
+		// its teardown. If the migration's plan check fails, Migrate leaves the Terraform state
+		// intact and the run falls back to the terraform engine. Read-only commands that do not
+		// need state keep reading the Terraform state as-is.
 		if b.MigratingToDirect && needsState {
-			// deploy and destroy defer the commit to their phase (after approval); other
-			// state-reading commands (plan, run) migrate in memory only.
-			mode := statemgmt.MigratePlan
-			if opts.Deploy || opts.CommitStateMigration {
-				mode = statemgmt.MigrateDeferred
-			}
-			if err := migrateTerraformToDirect(ctx, b, stateDesc, requiredEngine, mode); err != nil {
+			if err := migrateTerraformToDirect(ctx, b, stateDesc, requiredEngine); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -583,21 +558,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 	return b, stateDesc, nil
 }
 
-// migrateTerraformToDirect converts the bundle's Terraform state to the direct engine.
-// On success it advances stateDesc and metrics to the direct engine. Any failure before
-// the migration commits (parse, conversion, plan check, or push) leaves the Terraform
-// state intact (migrated=false) so the caller proceeds on the terraform engine and the
-// deploy still runs; only a failure after the commit returns an error. The caller tags the
-// user agent with the resolved stateDesc.Engine afterwards.
-//
-// mode selects how the converted state is committed: MigrateDeferred (deploy, destroy) writes
-// the local state and lets the approved command commit it, and MigratePlan (plan, run) keeps
-// it in memory only. See MigrateTerraformState.
-func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requiredEngine engine.EngineSetting, mode statemgmt.MigrateMode) error {
-	if requiredEngine.IsDefault {
-		cmdio.LogString(ctx, "Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).")
-	}
-	migrated, err := statemgmt.MigrateTerraformState(ctx, b, requiredEngine, mode)
+// migrateTerraformToDirect converts the bundle's Terraform state to the direct engine in memory.
+// On success it advances stateDesc and metrics to the direct engine. Any failure that leaves the
+// migration unviable (parse, conversion, plan check) leaves the Terraform state intact
+// (migrated=false) so the caller proceeds on the terraform engine and the command still runs;
+// only an internal error returns. Nothing is committed here - deploy calls statemgmt.CommitMigration
+// after approval, destroy commits as part of its teardown. The caller tags the user agent with the
+// resolved stateDesc.Engine afterwards.
+func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requiredEngine engine.EngineSetting) error {
+	migrated, err := statemgmt.Migrate(ctx, b, requiredEngine)
 	if err != nil {
 		return fmt.Errorf("migrating Terraform state to the direct engine: %w", err)
 	}

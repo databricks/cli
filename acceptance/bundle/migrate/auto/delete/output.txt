@@ -9,9 +9,9 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Drop one job from config, then deploy on direct: migrate two, delete the dropped one
 >>> [CLI] bundle deploy
-Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
-Migrated 2 resources to direct deployment engine.
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Migrated 2 resources to direct deployment engine.
 Deleted jobs.job_drop
 Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 1 deleted, 1 unchanged

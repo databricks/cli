@@ -19,13 +19,13 @@ To proceed, use --auto-approve.
 
 === Destroy on direct: migrate then destroy
 >>> [CLI] bundle destroy --auto-approve
-Notice: automatically migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
-Migrated 1 resource to direct deployment engine.
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 The following resources will be deleted:
   delete resources.jobs.job_a
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Migrated 1 resource to direct deployment engine.
 Destroy: 1 deleted
 
 === Destroy removes both local state files (direct and the superseded terraform state)

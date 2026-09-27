@@ -67,13 +67,12 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
 				}
 			},
-			Verbose:              verbose,
-			AlwaysPull:           true,
-			FastValidate:         true,
-			Build:                true,
-			Deploy:               true,
-			CommitStateMigration: true,
-			ReadPlanPath:         readPlanPath,
+			Verbose:      verbose,
+			AlwaysPull:   true,
+			FastValidate: true,
+			Build:        true,
+			Deploy:       true,
+			ReadPlanPath: readPlanPath,
 		})
 
 		return err

@@ -294,8 +294,43 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	haveApproval, err := approvalForDeploy(ctx, b, plan)
+	if !haveApproval {
+		// No version was created, so the deferred CompleteVersion is a no-op and the version
+		// number is left for the next deploy. Both the user declining and a console that
+		// cannot prompt land here.
+		//
+		// A prepared terraform→direct migration lives only in memory (Migrate wrote nothing
+		// durable and CommitMigration below never ran), so a declined deploy just drops it and
+		// stays on the terraform engine - nothing changes.
+		if b.MigratingToDirect {
+			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
+		}
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
+	}
+
+	// Approved. Commit a prepared terraform→direct migration now, before the deploy applies
+	// anything: this is the migration's point of no return - it pushes the converted state at
+	// serial tf+1 and retires the terraform state, so from here the bundle is on direct. The
+	// deploy below then advances the state to tf+2. Committing here rather than after the deploy
+	// keeps the model clean (once approved, we are on direct) at the cost of one window: a deploy
+	// that then fails has still migrated, where staying on terraform might have been possible.
+	if b.MigratingToDirect {
+		statemgmt.CommitMigration(ctx, b, requestedEngine)
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	if stateEngine.IsDirect() {
-		// Upgrade from read (opened by process.go) to write mode
+		// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
+		// and the migration commit above, so a declined deploy never opens a WAL it must discard,
+		// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -311,40 +346,11 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
-	// InitForApply receives ctx and could log a diagnostic without returning an
-	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
-	// thus cannot log, so the earlier check is enough to guard the WAL open.)
+	// InitForApply receives ctx and could log a diagnostic without returning an error, so
+	// re-check before deploying.
 	if logdiag.HasError(ctx) {
 		return
 	}
-
-	haveApproval, err := approvalForDeploy(ctx, b, plan)
-	if !haveApproval {
-		// No version was created, so the deferred CompleteVersion is a no-op and the version
-		// number is left for the next deploy. Both the user declining and a console that
-		// cannot prompt land here.
-		//
-		// A deferred terraform→direct migration wrote the local direct state but has not
-		// committed it (deployCore below never ran): discard it and stay on the terraform
-		// engine, so a declined deploy changes nothing.
-		if b.MigrationDeferred {
-			statemgmt.DiscardDeferredMigration(ctx, b)
-			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
-		}
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		cmdio.LogString(ctx, "Deployment cancelled!")
-		return
-	}
-
-	// Approved: the deploy is committing (deployCore below writes and pushes the state), so a
-	// prepared migration is no longer "not committed". Clear the flag before deployCore so
-	// ProcessBundleRet's cleanup does not discard it and a post-approval failure retries on
-	// direct rather than reverting to terraform; keep migrating for the finalize below.
-	migrating := b.MigrationDeferred
-	b.MigrationDeferred = false
 
 	// Create the deployment now that the plan is approved, so a declined deploy leaves none behind.
 	// A first deploy's id did not exist at plan time - the version and any existing id were stamped
@@ -383,13 +389,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 
 	if logdiag.HasError(ctx) {
 		return
-	}
-
-	// A deferred terraform→direct migration is committed by deployCore above, which wrote and
-	// pushed the converted direct state. Now that the deploy succeeded, finalize the migration
-	// by cleaning up the superseded terraform state and recording the migration source.
-	if migrating {
-		statemgmt.FinalizeDeferredMigration(ctx, b, requestedEngine)
 	}
 
 	// Report what was deployed, mirroring "bundle plan". Printed before the

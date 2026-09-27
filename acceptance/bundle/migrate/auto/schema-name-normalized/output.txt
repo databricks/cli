@@ -8,8 +8,9 @@ Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 === Migrate to direct with the same config (mixed-case name unchanged)
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
-Migrated 1 resource to direct deployment engine.
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Migrated 1 resource to direct deployment engine.
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
