@@ -1,0 +1,18 @@
+bundle:
+  name: "for_each_task_validation"
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Job"
+      tasks:
+        - task_key: "parent_task"
+          for_each_task:
+            inputs: "[1, 2, 3]"
+            task:
+              task_key: "child_task"
+              notebook_task:
+                notebook_path: "test.py"
+          max_retries: 3
+          min_retry_interval_millis: 1000
+          retry_on_timeout: true

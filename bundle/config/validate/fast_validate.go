@@ -29,6 +29,7 @@ func (f *fastValidate) Apply(ctx context.Context, rb *bundle.Bundle) diag.Diagno
 		// Fast mutators with only in-memory checks
 		JobClusterKeyDefined(),
 		JobTaskClusterSpec(),
+		ForEachTask(),
 
 		// Blocking mutators. Deployments will fail if these checks fail.
 		ValidateArtifactPath(),
