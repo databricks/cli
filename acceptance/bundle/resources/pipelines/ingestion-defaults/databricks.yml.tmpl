@@ -1,0 +1,16 @@
+bundle:
+  name: test-ingestion-defaults-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    ingestion:
+      name: test-ingestion-$UNIQUE_NAME
+      catalog: main
+      target: default
+      ingestion_definition:
+        connection_name: $INGESTION_CONNECTION_NAME
+        objects: []
+
+targets:
+  dev:
+    default: true

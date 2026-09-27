@@ -1,0 +1,2 @@
+# edition and channel defaults should be set for regular pipelines but not for ingestion pipelines
+$CLI bundle validate -o json | jq '{regular: .resources.pipelines.regular | {edition, channel}, ingestion: .resources.pipelines.ingestion | {edition, channel}}'

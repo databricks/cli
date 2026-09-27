@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    regular:
+      name: regular-pipeline
+
+    ingestion:
+      name: ingestion-pipeline
+      ingestion_definition:
+        connection_name: myconn
+        objects: [{}]

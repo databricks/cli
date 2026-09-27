@@ -81,11 +81,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
 
-		// Pipelines (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
-		{"resources.pipelines.*.edition", "ADVANCED"},
-		{"resources.pipelines.*.channel", "CURRENT"},
-
 		// SqlWarehouses (same as terraform)
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
 		{"resources.sql_warehouses.*.auto_stop_mins", 120},
@@ -105,6 +100,25 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 
 	for _, defaultDef := range defaults {
 		bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value)
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
+	// Apply edition and channel defaults only to non-ingestion pipelines.
+	// Ingestion pipelines use serverless compute by default; the API rejects
+	// these fields as incompatible cluster settings in that mode.
+	// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
+	for name, p := range b.Config.Resources.Pipelines {
+		if p == nil || p.IngestionDefinition != nil {
+			continue
+		}
+		pattern := dyn.NewPattern(dyn.Key("resources"), dyn.Key("pipelines"), dyn.Key(name))
+		bundle.ApplyContext(ctx, b, bundle.SetDefaultMutator(pattern, "edition", "ADVANCED"))
+		if logdiag.HasError(ctx) {
+			return
+		}
+		bundle.ApplyContext(ctx, b, bundle.SetDefaultMutator(pattern, "channel", "CURRENT"))
 		if logdiag.HasError(ctx) {
 			return
 		}

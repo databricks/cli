@@ -1,0 +1,16 @@
+Local = false
+Cloud = true
+RecordRequests = true
+
+# The Terraform engine still injects edition/channel at provider level (SetDefault in
+# resource_pipeline.go:253); companion fix: terraform-provider-databricks#5783.
+# Only test with direct engine here so we cleanly validate the DABs-side fix.
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[Env]
+# MySQL connection present in the azure test workspace.
+INGESTION_CONNECTION_NAME = "name-sbggefbaaidkb"
+
+[CloudEnvs]
+azure = true
