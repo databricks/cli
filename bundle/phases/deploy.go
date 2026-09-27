@@ -302,8 +302,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		//
 		// A prepared terraform→direct migration lives only in memory (Migrate wrote nothing
 		// durable and CommitMigration below never ran), so a declined deploy just drops it and
-		// stays on the terraform engine - nothing changes.
-		if b.MigratingToDirect {
+		// stays on the terraform engine - nothing changes. Gated on the resolved engine being
+		// direct: if the migration fell back to terraform (e.g. its plan check failed), there is
+		// no prepared migration to keep and the deploy declining is just a terraform decline.
+		if b.MigratingToDirect && stateEngine.IsDirect() {
 			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
 		}
 		if err != nil {
@@ -320,7 +322,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// deploy below then advances the state to tf+2. Committing here rather than after the deploy
 	// keeps the model clean (once approved, we are on direct) at the cost of one window: a deploy
 	// that then fails has still migrated, where staying on terraform might have been possible.
-	if b.MigratingToDirect {
+	// Gated on the resolved engine being direct: a migration that fell back to terraform (e.g. a
+	// failed plan check) left the state on terraform and opened nothing, so there is nothing to
+	// commit and the deploy proceeds on terraform.
+	if b.MigratingToDirect && stateEngine.IsDirect() {
 		statemgmt.CommitMigration(ctx, b, requestedEngine)
 		if logdiag.HasError(ctx) {
 			return

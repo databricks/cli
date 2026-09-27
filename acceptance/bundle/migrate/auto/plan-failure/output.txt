@@ -18,8 +18,32 @@ API error_code: INJECTED
 API message: Fault injected by test.
 Warn: migration to the direct engine failed its plan check; deploying on terraform this time: planning failed
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: persisting migrated direct state: failed to save resources state to "": rename ./...[NUMID].tmp to : rename ./...[NUMID].tmp : no such file or directory
-
 Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
-Exit code: 1
+>>> print_migration_telemetry
+direct_migrate_plan_error true
+
+=== Local state was NOT rewritten (still terraform)
+>>> find .databricks/bundle -name resources.json -type f
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate
+
+=== Retry: plan check passes this time, migration succeeds
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Migrated 1 resource to direct deployment engine.
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_migration_telemetry
+direct_migrated_via_env true
+
+=== Local state is now direct
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup

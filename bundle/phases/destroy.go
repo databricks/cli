@@ -381,7 +381,10 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		// local terraform state (gated on migrating), and files.Delete removes the remote one.
 		// There is no separate remote push as in deploy's CommitMigration - the resources are
 		// about to be deleted - and a destroy-only migration is not adoption worth recording.
-		migrating := b.MigratingToDirect
+		// Gated on the resolved engine being direct: a migration that fell back to terraform (e.g.
+		// a failed plan check) left the state on terraform and opened nothing, so this destroy
+		// just runs on terraform.
+		migrating := b.MigratingToDirect && engine.IsDirect()
 		if migrating {
 			count := len(b.DeploymentBundle.StateDB.ExportState(ctx))
 			suffix := "s"
@@ -414,8 +417,9 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		destroyCore(ctx, b, plan, engine, migrating)
 	} else {
 		// A prepared terraform→direct migration lives only in memory (nothing durable was
-		// written), so a declined destroy just drops it and stays on the terraform engine.
-		if b.MigratingToDirect {
+		// written), so a declined destroy just drops it and stays on the terraform engine. Gated
+		// on the resolved engine being direct: a migration that fell back leaves nothing to keep.
+		if b.MigratingToDirect && engine.IsDirect() {
 			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
 		}
 		cmdio.LogString(ctx, "Destroy cancelled!")
