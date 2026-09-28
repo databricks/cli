@@ -163,9 +163,12 @@ func TestFindNonUserPath(t *testing.T) {
 	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 	assert.Equal(t, "file_path", findNonUserPath(b))
 
-	// file_path is skipped when the workspace uses an immutable folder.
+	// file_path is skipped when the workspace uses an immutable folder. TranslatePaths
+	// already rejects an explicit workspace.file_path in immutable mode, so by the time
+	// ValidateTargetMode runs, the value is always the auto-generated snapshot path,
+	// which never contains the username.
 	b = mockBundle(config.Development)
-	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
+	b.Config.Workspace.FilePath = resources.SnapshotFullPathRef + "/files"
 	b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
 	assert.Empty(t, findNonUserPath(b))
 
@@ -179,9 +182,12 @@ func TestFindNonUserPath(t *testing.T) {
 	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
 	assert.Equal(t, "artifact_path", findNonUserPath(b))
 
-	// artifact_path is skipped when the workspace uses an immutable folder.
+	// artifact_path is skipped when the workspace uses an immutable folder. TranslatePaths
+	// already rejects an explicit workspace.artifact_path in immutable mode, so by the time
+	// ValidateTargetMode runs, the value is always the auto-generated snapshot path,
+	// which never contains the username.
 	b = mockBundle(config.Development)
-	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
+	b.Config.Workspace.ArtifactPath = resources.SnapshotFullPathRef + "/artifacts"
 	b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
 	assert.Empty(t, findNonUserPath(b))
 

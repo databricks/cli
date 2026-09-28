@@ -1,0 +1,8 @@
+bundle:
+  name: my-bundle
+
+experimental:
+  immutable_folder: true
+
+workspace:
+  artifact_path: /Workspace/Shared/libs
