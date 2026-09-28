@@ -1286,6 +1286,11 @@ func TestResourceConfig(t *testing.T) {
 
 		t.Run(resourceType, func(t *testing.T) {
 			validateResourceConfig(t, adapter.StateType(), cfg)
+			for _, alias := range cfg.IDAliases {
+				fieldPath, err := structpath.ParsePath(alias)
+				require.NoError(t, err)
+				assert.NoError(t, structaccess.ValidatePath(adapter.RemoteType(), fieldPath), "IDAlias: %s", alias)
+			}
 		})
 	}
 }

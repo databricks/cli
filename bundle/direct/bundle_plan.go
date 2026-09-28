@@ -938,7 +938,8 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return nil, fmt.Errorf("internal error: %s: missing action in the plan", targetResourceKey)
 	}
 
-	if fieldPathS == "id" {
+	// Output aliases of the ID stay known during in-place updates too.
+	if fieldPathS == "id" || slices.Contains(dresources.GetResourceConfig(targetGroup).IDAliases, fieldPathS) {
 		if targetAction.KeepsID() {
 			id := b.StateDB.GetResourceID(targetResourceKey)
 			if id == "" {

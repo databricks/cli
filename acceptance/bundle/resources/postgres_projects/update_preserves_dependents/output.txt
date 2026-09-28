@@ -1,0 +1,22 @@
+
+=== An in-place project update keeps the catalog and role
+>>> jq .plan | map_values(.action) LOG.plan
+{
+  "resources.postgres_catalogs.catalog": "skip",
+  "resources.postgres_projects.project": "update",
+  "resources.postgres_roles.reader": "skip"
+}
+
+>>> print_requests.py //api/2.0/postgres --del-field body --oneline
+{"method": "PATCH", "path": "/api/2.0/postgres/[PROJECT_ID]", "q": {"update_mask": "spec.display_name"}}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+=== Changing the project identity still recreates dependents
+>>> jq .plan | map_values(.action) LOG.recreate
+{
+  "resources.postgres_catalogs.catalog": "recreate",
+  "resources.postgres_projects.project": "recreate",
+  "resources.postgres_roles.reader": "recreate"
+}
