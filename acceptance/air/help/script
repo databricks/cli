@@ -13,6 +13,12 @@ trace $CLI air get --help
 title "pools help"
 trace $CLI air pools --help
 
+title "images help"
+trace $CLI air images --help
+
+title "images push help"
+trace $CLI air images push --help
+
 title "logs help"
 trace $CLI air logs --help
 
