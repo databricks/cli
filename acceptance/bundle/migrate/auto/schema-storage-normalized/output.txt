@@ -1,10 +1,6 @@
 
-=== Deploy on terraform; UC strips the trailing slash from storage_root
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created schemas.my_schema
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== A prior terraform deployment stored storage_root with the trailing slash stripped (seed the fixture)
+>>> seed_tfstate.py terraform.tfstate
 
 === Migrate to direct with the same config (storage_root still has the trailing slash)
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy

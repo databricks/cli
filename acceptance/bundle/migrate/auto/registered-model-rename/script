@@ -1,4 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < terraform.tfstate.tmpl > terraform.tfstate && rm terraform.tfstate.tmpl
 
 cleanup() {
   title "Cleanup"
@@ -6,8 +7,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploy the schema and registered model on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "A prior terraform deployment created the schema and model (seed the fixture)"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Rename the model (an immutable id field) and deploy on direct"

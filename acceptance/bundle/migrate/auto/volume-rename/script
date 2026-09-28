@@ -1,4 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < terraform.tfstate.tmpl > terraform.tfstate && rm terraform.tfstate.tmpl
 
 cleanup() {
   title "Cleanup"
@@ -6,8 +7,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploy the schema and volume on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "A prior terraform deployment created the schema and volume (seed the fixture)"
+trace seed_tfstate.py terraform.tfstate
 
 title "Rename the volume (an updatable id field) and deploy on direct"
 # Unlike a schema (whose name recreates), a volume name is an updatable id field: it is

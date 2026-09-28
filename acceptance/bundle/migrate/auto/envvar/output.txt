@@ -1,14 +1,6 @@
 
-=== Initial deploy uses terraform engine
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.test_job
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_migration_telemetry
-direct_drymigrate_success true
-direct_drymigrate_warnings false
+=== Seed a terraform-state fixture from a prior terraform deployment
+>>> seed_tfstate.py terraform.tfstate
 
 === Opt in via env var only (no bundle.engine in config): auto-migration triggers
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy

@@ -1,8 +1,11 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Initial deploy opts out of direct, so it uses the terraform engine"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-trace print_migration_telemetry
+# A prior terraform deployment left this bundle on the terraform engine. The terraform engine was
+# removed in v1.19.0, so seed its state from a fixture (seed_tfstate.py deploys on direct to create
+# matching backend resources, threads their ids into the checked-in terraform.tfstate, and drops
+# the direct state so the bundle resolves to terraform again) instead of a real terraform deploy.
+title "Seed a terraform-state fixture from a prior terraform deployment"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Redeploy with nothing set: direct is the default, so auto-migration triggers"

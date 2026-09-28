@@ -3,24 +3,24 @@ if [ -z "${TEST_SP_APPLICATION_ID+x}" ]; then
 fi
 
 envsubst < databricks.yml.tmpl > databricks.yml
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
+export DATABRICKS_BUNDLE_ENGINE=
 
 cleanup() {
-    trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle destroy --auto-approve
+    trace $CLI bundle destroy --auto-approve
     rm -f "$OUT_REQUESTS"
 }
 
 trap cleanup EXIT
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# Seed a prior terraform deployment of the run-as pipeline.
+trace seed_tfstate.py terraform.tfstate
 trace print_requests.py //pipelines > out.create_requests.json
 trace print_state.py > out.old_state.json
 
-pipeline_id=$(DATABRICKS_BUNDLE_ENGINE= $CLI bundle summary --output json | jq -r '.resources.pipelines.foo.id')
+pipeline_id=$($CLI bundle summary --output json | jq -r '.resources.pipelines.foo.id')
 trace $CLI pipelines get $pipeline_id > out.pipelines_get.json
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deployment migrate
+trace $CLI bundle deployment migrate
 trace print_state.py > out.new_state.json
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json | nostamp > out.plan.json
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | nostamp > out.plan.json

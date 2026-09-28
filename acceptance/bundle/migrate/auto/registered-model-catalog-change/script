@@ -13,8 +13,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploy the model on terraform in catalog 'main'"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "A prior terraform deployment left the model in catalog 'main' (seed the fixture)"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Move the model to another catalog and deploy on direct"

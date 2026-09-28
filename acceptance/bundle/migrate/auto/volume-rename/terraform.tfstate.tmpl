@@ -1,0 +1,37 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.5",
+  "serial": 1,
+  "lineage": "b790c2ff-8b6d-4f7c-9a5e-0e6c1f0a2b34",
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "databricks_schema",
+      "name": "parent",
+      "instances": [
+        {
+          "attributes": {
+            "id": "__ID_resources.schemas.parent__",
+            "catalog_name": "main"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_volume",
+      "name": "my_volume",
+      "instances": [
+        {
+          "attributes": {
+            "id": "__ID_resources.volumes.my_volume__",
+            "name": "thevolume-$UNIQUE_NAME",
+            "catalog_name": "main",
+            "schema_name": "pschema-$UNIQUE_NAME",
+            "volume_type": "MANAGED"
+          }
+        }
+      ]
+    }
+  ]
+}

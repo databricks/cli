@@ -4,9 +4,8 @@ export DATABRICKS_BUNDLE_ENGINE=
 # workspace, so this is not Cloud-enabled. The recreate/refusal class it covers is verified
 # on cloud by schema-rename and pipeline-storage-change.
 
-title "Initial deploy on terraform with storage_root s3://mybucket/init"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-trace print_migration_telemetry
+title "A prior terraform deployment left the schema with storage_root s3://mybucket/init (seed the fixture)"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Change immutable storage_root; without --auto-approve the recreate is refused"

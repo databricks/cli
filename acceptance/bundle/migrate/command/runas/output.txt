@@ -1,40 +1,5 @@
 
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - user_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:5:3
-
-create pipelines.foo
-create pipelines.foo.permissions
-
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
-
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - user_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:5:3
-
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files...
-Created pipelines.foo
-Created pipelines.foo.permissions
-Files: 3 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+>>> seed_tfstate.py terraform.tfstate
 
 >>> print_requests.py //pipelines
 
@@ -55,22 +20,7 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
 
 >>> [CLI] pipelines get [UUID]
 
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
-Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
-If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
-
-Consider using a adding a top-level permissions section such as the following:
-
-  permissions:
-    - user_name: [USERNAME]
-      level: CAN_MANAGE
-
-See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:5:3
-
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deployment migrate
+>>> [CLI] bundle deployment migrate
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -94,7 +44,7 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/production/resou
 
 >>> print_state.py
 
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+>>> [CLI] bundle plan
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -109,7 +59,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
 
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json
+>>> [CLI] bundle plan -o json
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 
@@ -123,7 +73,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:5:3
 
 
->>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle destroy --auto-approve
+>>> [CLI] bundle destroy --auto-approve
 Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
 If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
 

@@ -1,7 +1,7 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Initial deploy on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Seed a terraform-state fixture from a prior terraform deployment"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 # Change the job so the migrating deploy must update it (jobs/reset), giving us a resource apply

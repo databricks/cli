@@ -1,11 +1,6 @@
 
-=== Deploy the schema and volume on terraform
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Created schemas.parent
-Created volumes.my_volume
-Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+=== A prior terraform deployment created the schema and volume (seed the fixture)
+>>> seed_tfstate.py terraform.tfstate
 
 === Rename the volume (an updatable id field) and deploy on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy

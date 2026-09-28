@@ -1,13 +1,17 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# Each call to print_migration_telemetry inspects "$OUT_REQUESTS"; clear
-# it after each call so the next deploy's telemetry stands alone.
-title "Initial deploy uses terraform engine (no bundle.engine set, override via env var)"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-trace print_migration_telemetry
+# A prior terraform deployment left this bundle on the terraform engine. The terraform engine
+# was removed in v1.19.0, so instead of a real terraform deploy, seed the state from a fixture:
+# seed_tfstate.py deploys on direct to create matching backend resources, threads their ids into
+# the checked-in terraform.tfstate, and drops the direct state so the bundle looks like a
+# terraform deployment again.
+title "Seed a terraform-state fixture from a prior terraform deployment"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
-title "Opt in to direct engine via config and redeploy: dry-run is clean, auto-migration triggers"
+# Each call to print_migration_telemetry inspects "$OUT_REQUESTS"; clear
+# it after each call so the next deploy's telemetry stands alone.
+title "Opt in to direct engine via config and redeploy: auto-migration triggers"
 trace update_file.py databricks.yml "name: test-bundle" $'name: test-bundle\n  engine: direct'
 trace $CLI bundle deploy
 trace print_migration_telemetry
@@ -30,10 +34,10 @@ rm -f "$OUT_REQUESTS"
 title "Modify the config — plan shows the pending update"
 trace update_file.py databricks.yml "Test Auto-Migrate Job" "Test Auto-Migrate Job (renamed)"
 trace $CLI bundle plan
-$CLI bundle plan -o json > out.plan_update.direct.json
+$CLI bundle plan -o json > out.plan_update.json
 
 title "Deploy picks up the update (with and without --plan)\n"
-$CLI bundle deploy $(readplanarg out.plan_update.direct.json)
+$CLI bundle deploy $(readplanarg out.plan_update.json)
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 

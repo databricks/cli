@@ -1,10 +1,6 @@
 
-=== Deploy on terraform; UC lowercases the schema name
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Created schemas.my_schema
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== A prior terraform deployment stored the lowercased schema name (seed the fixture)
+>>> seed_tfstate.py terraform.tfstate
 
 === Migrate to direct with the same config (mixed-case name unchanged)
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy

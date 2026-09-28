@@ -1,4 +1,5 @@
 envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < terraform.tfstate.tmpl > terraform.tfstate && rm terraform.tfstate.tmpl
 
 cleanup() {
   title "Cleanup"
@@ -9,10 +10,11 @@ trap cleanup EXIT
 # name is an immutable provided id field. UC lowercases it, so the deployed id differs from
 # config by case only, without the user changing anything. reconcileIDFields treats the
 # case-only difference as backend normalization and keeps the config value, so the migration
-# proceeds with no warning and the plan converges.
+# proceeds with no warning and the plan converges. The fixture holds the lowercased (deployed)
+# name to mirror what a terraform deployment would have recorded.
 
-title "Deploy on terraform; UC lowercases the volume name"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "A prior terraform deployment stored the lowercased volume name (seed the fixture)"
+trace seed_tfstate.py terraform.tfstate
 
 title "Migrate to direct with the same config (mixed-case name unchanged)"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy

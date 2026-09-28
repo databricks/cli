@@ -1,22 +1,9 @@
 
-=== Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.job_a
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== Seed a terraform deployment of job_a only
+>>> seed_tfstate.py terraform.tfstate
 
-=== Add a direct-only resource to the config without deploying it
+=== Add a direct-only resource to the config
 >>> update_file.py databricks.yml #instance_pools instance_pools
-
-=== Deploying on terraform rejects it, which is what sends the user to migrate
->>> musterr [CLI] bundle deploy
-Error: Instance Pool resources are only supported with direct deployment mode
-  in databricks.yml:5:19
-
-Instance Pool resources require direct deployment mode. Please set the DATABRICKS_BUNDLE_ENGINE environment variable to 'direct' or set 'bundle.engine: direct' in your databricks.yml to use instance_pool resources.
-Learn more at https://docs.databricks.com/dev-tools/bundles/direct
-
 
 === Migration ignores the direct-only resource; it will be created on the next deploy
 >>> [CLI] bundle deployment migrate
@@ -30,13 +17,13 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resource
 
 
 === After migration: plan shows the direct-only resource as "to add"
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+>>> [CLI] bundle plan
 create instance_pools.pool
 
 Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Deploy creates it; verify via recorded requests
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+>>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created instance_pools.pool
 Files: 1 uploaded, 0 deleted
@@ -59,5 +46,5 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
 }
 
 === No further actions planned
->>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+>>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged

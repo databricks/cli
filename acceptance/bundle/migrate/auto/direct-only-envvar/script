@@ -1,7 +1,10 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# The terraform engine was removed in v1.19.0, so seed the state from a fixture instead of a real
+# terraform deploy. instance_pools is commented out at seed time (terraform could not deploy it),
+# so seed_tfstate.py's direct deploy creates only job_a, and the fixture holds only job_a.
+title "Seed a terraform-state fixture (only job_a; instance_pools is commented out)"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Add a direct-only resource to the config"

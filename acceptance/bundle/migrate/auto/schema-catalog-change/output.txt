@@ -4,12 +4,8 @@
   "name": "othercat_[UNIQUE_NAME]"
 }
 
-=== Deploy the schema on terraform in catalog 'main'
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Created schemas.my_schema
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== A prior terraform deployment left the schema in catalog 'main' (seed the fixture)
+>>> seed_tfstate.py terraform.tfstate
 
 === Move the schema to another catalog. Without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy

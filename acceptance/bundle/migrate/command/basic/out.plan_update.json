@@ -2,7 +2,7 @@
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
   "lineage": "[UUID]",
-  "serial": 6,
+  "serial": 7,
   "plan": {
     "resources.jobs.test_job": {
       "action": "update",

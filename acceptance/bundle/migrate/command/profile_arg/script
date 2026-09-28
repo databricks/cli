@@ -1,7 +1,11 @@
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+export DATABRICKS_BUNDLE_ENGINE=
+
+# Seed a terraform deployment of the dev target, then migrate with a bogus profile.
+trace seed_tfstate.py terraform.tfstate
 
 # only interested in output here; for some reason in test env -p is not validated
 trace $CLI bundle deployment migrate -p non_existent321
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t prod
+# Same for the prod target (a schema).
+trace seed_tfstate.py terraform-prod.tfstate -t prod
 trace $CLI bundle deployment migrate -p non_existent321 -t prod

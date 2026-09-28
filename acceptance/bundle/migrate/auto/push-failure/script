@@ -1,13 +1,12 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Initial deploy on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-trace print_migration_telemetry
+title "Seed a terraform-state fixture from a prior terraform deployment"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Opt in via env var; inject 403 on the resources.json push so the deploy fails"
 # The migration prepares the direct state in memory and in the local state file; the approved
-# deploy (deployCore) pushes resources.json to the workspace. A 403 (non-retryable) on that
+# deploy (CommitMigration) pushes resources.json to the workspace. A 403 (non-retryable) on that
 # push fails the deploy - unlike a declined deploy, the migration is not discarded, so the
 # local direct state remains and a retry finishes the push. (A push failure is a hard error on
 # any direct deploy, not just a migrating one.)

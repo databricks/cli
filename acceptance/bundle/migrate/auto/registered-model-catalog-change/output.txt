@@ -4,12 +4,8 @@
   "name": "othercat_[UNIQUE_NAME]"
 }
 
-=== Deploy the model on terraform in catalog 'main'
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Created registered_models.my_model
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== A prior terraform deployment left the model in catalog 'main' (seed the fixture)
+>>> seed_tfstate.py terraform.tfstate
 
 === Move the model to another catalog and deploy on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy

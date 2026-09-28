@@ -1,7 +1,10 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Initial deploy on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# The terraform engine was removed in v1.19.0, so seed the state from a fixture (a prior terraform
+# deployment) instead of a real terraform deploy. seed_tfstate.py deploys on direct to create the
+# job, threads its id into the fixture, and drops the direct state so the bundle is on terraform.
+title "Seed a terraform-state fixture from a prior terraform deployment"
+trace seed_tfstate.py terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "bundle run on direct migrates the terraform state IN MEMORY (no commit) to resolve the job"

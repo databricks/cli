@@ -1,14 +1,6 @@
 
-=== Initial deploy on terraform
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.test_job
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
-
->>> print_migration_telemetry
-direct_drymigrate_success true
-direct_drymigrate_warnings false
+=== Seed a terraform-state fixture from a prior terraform deployment
+>>> seed_tfstate.py terraform.tfstate
 
 === Inject GET failure so the plan check blocks the migration
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
@@ -18,8 +10,9 @@ API error_code: INJECTED
 API message: Fault injected by test.
 Warn: migration to the direct engine failed its plan check; deploying on terraform this time: planning failed
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated jobs.test_job
 Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> print_migration_telemetry
 direct_migrate_plan_error true
@@ -27,6 +20,7 @@ direct_migrate_plan_error true
 === Local state was NOT rewritten (still terraform)
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/terraform/terraform.tfstate
+.databricks/bundle/default/terraform/terraform.tfstate.backup
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path

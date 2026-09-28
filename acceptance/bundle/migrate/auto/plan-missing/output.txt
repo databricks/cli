@@ -1,13 +1,9 @@
 
-=== Initial deploy on terraform
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created jobs.test_job
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== Seed a terraform-state fixture from a prior terraform deployment
+>>> seed_tfstate.py terraform.tfstate
 
 === deploy --plan with a missing plan file fails after the migration prepared the direct state
->>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy --plan does-not-exist.json
+>>> errcode [CLI] bundle deploy --plan does-not-exist.json
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Error: reading plan file: open does-not-exist.json: no such file or directory
 
@@ -22,10 +18,18 @@ Exit code: 1
 ID                   Type  Language  Path
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
 
-=== A plain deploy still runs on terraform (the engine was not silently switched)
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+=== A plain deploy migrates the still-terraform state (nothing was silently switched before)
+>>> [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Migrated 1 resource to direct deployment engine.
 Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
+
+>>> print_migration_telemetry
+direct_migrated_via_default true
+
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
+.databricks/bundle/default/resources.json
+.databricks/bundle/default/terraform/terraform.tfstate.backup

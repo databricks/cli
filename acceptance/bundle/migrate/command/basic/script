@@ -2,7 +2,14 @@ export DATABRICKS_BUNDLE_ENGINE=
 # Migrating without state, should print a message about missing state.
 trace musterr $CLI bundle deployment migrate
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace seed_tfstate.py terraform.tfstate
+
+# The pipeline tags reference the volume's remote-computed storage_location, which the direct
+# state does not persist; read it from the backend and inject it into the seeded terraform state,
+# as a real terraform state would carry it, so the migration resolves the tag to the deployed value.
+VOL_SL=$($CLI volumes read mycat.myschema.myvol | jq -r .storage_location)
+update_file.py .databricks/bundle/dev/terraform/terraform.tfstate __VOLUME_SL__ "$VOL_SL"
+
 print_state.py -t dev > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 3 resources'
@@ -14,41 +21,36 @@ rm out.backup_state.json
 # check that this is stored as resolved value, not as reference:
 trace jq '.state."resources.pipelines.test_pipeline".state.tags.volume_storage_location' out.new_state.json | contains.py 's3://'
 
-# this is expected to warn because state does not match env var, but still succeed using state engine
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate
 
 rm "$OUT_REQUESTS"
-# Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "3 unchanged"
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "3 unchanged"
+# The migrated deploy runs on the direct engine whether or not DATABRICKS_BUNDLE_ENGINE is set.
+trace $CLI bundle plan | contains.py "3 unchanged"
 trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
 
-trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
+trace $CLI bundle deploy
 trace print_requests.py --get //jobs/get | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct'
 
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
+trace $CLI bundle debug states
+trace $CLI bundle debug states --force-pull
 
 title "Extra plan: should have no drift"
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "3 unchanged"
+trace $CLI bundle plan | contains.py "3 unchanged"
 
 rm "$OUT_REQUESTS"
 
 title "Update databricks.yml, run plan & update"
 trace update_file.py databricks.yml Migration Migrated
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json | nostamp > out.plan_update.json
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | nostamp > out.plan_update.json
+trace $CLI bundle deploy
 
-title "Different target, still on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t prod
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod --force-pull
+title "Different target: seed prod (a schema) as its own terraform deployment"
+trace seed_tfstate.py terraform-prod.tfstate -t prod
+trace $CLI bundle debug states -t prod
+trace $CLI bundle debug states -t prod --force-pull
 
 rm "$OUT_REQUESTS"
