@@ -359,10 +359,13 @@ a new profile is created.
 
 		// Look up the account's primary provisioned URL (its SPOG host) by
 		// account ID and switch the profile to it, so the saved profile targets
-		// the unified host. The token cache key is the profile name (see
-		// authArguments.Profile above), so replacing the host here does not
-		// orphan the token stored below. Best-effort: failures never block login.
-		if authArguments.AccountID != "" {
+		// the unified host. Gated on a classic account host: an account_id can
+		// also be set on a concrete workspace host (via --account-id or ?a=), and
+		// rewriting that to the account SPOG host would discard the user's
+		// targeted workspace. The token cache key is the profile name (see
+		// authArguments.Profile above), so replacing the host here does not orphan
+		// the token stored below. Best-effort: failures never block login.
+		if shouldResolveProvisionedURL(authArguments.Host, authArguments.AccountID) {
 			authArguments.Host = resolvePrimaryProvisionedURL(ctx, authArguments.Host, authArguments.AccountID, token.AccessToken, nil)
 		}
 
@@ -671,6 +674,16 @@ func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
 	return nil
 }
 
+// shouldResolveProvisionedURL reports whether to look up the account's primary
+// provisioned (SPOG) URL for the given host and account. It is true only for a
+// classic account host with an account ID: an account ID can also be present on
+// a concrete workspace host (via --account-id, ?a=, or token introspection),
+// and rewriting that host to the account SPOG URL would discard the user's
+// targeted workspace.
+func shouldResolveProvisionedURL(host, accountID string) bool {
+	return accountID != "" && auth.IsClassicAccountHost((&config.Config{Host: host}).CanonicalHostName())
+}
+
 // resolvePrimaryProvisionedURL returns the account's primary provisioned URL
 // (its SPOG host) for the given account, or host unchanged when the account has
 // no provisioned URL or the lookup fails. The lookup is bounded by
@@ -799,7 +812,7 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	// account host means an account was selected; a workspace selection yields a
 	// workspace host that introspection still backfills accountID for, so gate on
 	// the host type to avoid rewriting a concrete workspace host.
-	if accountID != "" && auth.IsClassicAccountHost((&config.Config{Host: discoveredHost}).CanonicalHostName()) {
+	if shouldResolveProvisionedURL(discoveredHost, accountID) {
 		discoveredHost = resolvePrimaryProvisionedURL(ctx, discoveredHost, accountID, tok.AccessToken, in.httpClient)
 	}
 

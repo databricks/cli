@@ -1207,6 +1207,27 @@ func TestDiscoveryLogin_SPOGHostPopulatesAccountIDFromDiscovery(t *testing.T) {
 	assert.Equal(t, "discovered-ws", savedProfile.WorkspaceID, "workspace_id should come from host discovery")
 }
 
+func TestShouldResolveProvisionedURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		host     string
+		account  string
+		expected bool
+	}{
+		{"classic account host with account id", "https://accounts.cloud.databricks.com", "abc-123", true},
+		{"account host without scheme", "accounts.cloud.databricks.com", "abc-123", true},
+		{"classic account host without account id", "https://accounts.cloud.databricks.com", "", false},
+		{"workspace host with account id", "https://dbc-abc.cloud.databricks.com", "abc-123", false},
+		{"unified host with account id", "https://mycompany.databricks.com", "abc-123", false},
+		{"empty host with account id", "", "abc-123", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, shouldResolveProvisionedURL(tt.host, tt.account))
+		})
+	}
+}
+
 // rewriteHostTransport routes every request to target (a test server), keeping
 // the request's path and query, so a lookup addressed to a classic account host
 // can be served locally.
