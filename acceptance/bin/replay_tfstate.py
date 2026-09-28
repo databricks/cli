@@ -22,6 +22,8 @@ import subprocess
 import sys
 
 CLI = os.environ["CLI"]
+HOST = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
+UNIQUE_NAME = os.environ.get("UNIQUE_NAME", "")
 
 # Per resource: which response field carries the new id. Terraform's tfstate stores the same value
 # as the resource's `id`, keyed here by the create path so we can match a create to its tfstate entry.
@@ -51,8 +53,19 @@ def main():
     parser.add_argument("-t", "--target", default="default")
     args = parser.parse_args()
 
-    requests = json.loads(open(args.requests).read())
+    requests_raw = open(args.requests).read()
     tfstate_raw = open(args.tfstate).read()
+
+    # Restore this run's values into the frozen fixtures. UNIQUE_NAME goes into both (resource
+    # names must match the current config); the host goes into the requests we issue, but the
+    # tfstate keeps [DATABRICKS_URL] so print_state's output matches the goldens.
+    if UNIQUE_NAME:
+        requests_raw = requests_raw.replace("[UNIQUE_NAME]", UNIQUE_NAME)
+        tfstate_raw = tfstate_raw.replace("[UNIQUE_NAME]", UNIQUE_NAME)
+    if HOST:
+        requests_raw = requests_raw.replace("[DATABRICKS_URL]", HOST)
+
+    requests = json.loads(requests_raw)
     tfstate = json.loads(tfstate_raw)
 
     # Drop the fixtures from the bundle root so a later deploy does not sync them as bundle files.
