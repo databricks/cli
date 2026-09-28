@@ -1,0 +1,53 @@
+
+=== Initial deploy on terraform
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.test_job
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml Test Auto-Migrate Apply Failure Test Auto-Migrate Apply Failure (updated)
+
+=== Migrating deploy: migration commits (point of no return), then the job apply fails
+>>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Migrated 1 resource to direct deployment engine.
+Error: cannot update resources.jobs.test_job: updating id=[NUMID]: Fault injected by test. (403 INJECTED)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/reset
+HTTP Status: 403 Forbidden
+API error_code: INJECTED
+API message: Fault injected by test.
+
+Files: 1 uploaded, 0 deleted
+
+Exit code: 1
+
+>>> print_migration_telemetry
+direct_migrated_via_env true
+
+=== On direct despite the failed apply: resources.json present, terraform state retired
+
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup
+
+=== Retry finishes the apply on the already-migrated direct state (no re-migration)
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated jobs.test_job
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+>>> print_migration_telemetry
+
+=== Local state remains direct
+
+>>> find .databricks/bundle -name resources.json -type f
+.databricks/bundle/default/resources.json
+
+>>> find .databricks/bundle -name terraform.tfstate* -type f
+.databricks/bundle/default/terraform/terraform.tfstate.backup
