@@ -1,0 +1,24 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# A migration committed by deploy retires the terraform state by renaming the local one to
+# terraform.tfstate.backup and backing up the remote one. A later destroy must not leave either
+# behind. find.py lists matching state files sorted with forward slashes (cross-platform); the regex
+# matches tfstate/.backup, resources*.json and WAL, excluding the terraform provider cache under
+# .terraform/. Paired with a remote listing of the state directory.
+
+title "Initial deploy on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Deploy on direct: migrates and commits (local terraform.tfstate renamed to .backup, remote backed up)"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "After the migrating deploy: direct state present, superseded terraform state kept as .backup"
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+
+title "Destroy the migrated bundle"
+trace $CLI bundle destroy --auto-approve
+
+title "Destroy leaves no state behind: no terraform.tfstate.backup or direct state, remote removed"
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 errcode $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"

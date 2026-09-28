@@ -237,6 +237,20 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		logdiag.LogError(ctx, err)
 	}
 
+	// A migration committed by deploy retires the terraform state by renaming the local one to
+	// terraform.tfstate.backup (see CleanupTerraformStateAfterMigration). On a direct destroy the
+	// deployment is gone, so that relic must not linger. Removing it is unconditional on direct
+	// (unlike the live terraform.tfstate above): a .backup is never read as live state (the resolver
+	// reads terraform.tfstate, not .backup), so it is never the "still-valid terraform state a later
+	// deploy migrates" that gates the removal above - deleting it is always safe here. Pruning it also
+	// lets the now-empty terraform/ dir be removed below.
+	if engine.IsDirect() {
+		_, localTerraformPath := b.StateFilenameTerraform(ctx)
+		if err := os.Remove(localTerraformPath + ".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			logdiag.LogError(ctx, err)
+		}
+	}
+
 	// Destroy leaves empty scaffolding directories behind once their contents are
 	// gone (e.g. .internal/ and sync-snapshots/ after the state and sync files are
 	// removed), so prune them rather than littering empty directories. Pruning stays
