@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
@@ -72,9 +71,11 @@ type snapshotRootPathResponse struct {
 // inspectSnapshotPath reports whether a snapshot's content was modified out of band.
 const inspectSnapshotPath = "/api/2.0/snapshots:inspect"
 
-// inspectSnapshotRequest is the body of an inspect call.
+// inspectSnapshotRequest carries the arguments of an inspect call. They travel in the query
+// string: the endpoint is a GET, and the SDK builds a GET's query string from the request
+// value's `url` tags.
 type inspectSnapshotRequest struct {
-	SnapshotContentPath string `json:"snapshot_content_path"`
+	SnapshotContentPath string `url:"snapshot_content_path"`
 }
 
 // inspectSnapshotResponse mirrors the /api/2.0/snapshots:inspect response body. The
@@ -98,7 +99,7 @@ func NewSnapshotClient(w *databricks.WorkspaceClient) (*SnapshotClient, error) {
 // Upload uploads zipContent as an immutable snapshot at relativePath. The server stores the
 // content under "<root>/<relativePath>/snapshot" and returns that content path. acl grants
 // CAN_READ to each listed principal; canManage lists the principals allowed to break the
-// glass on the snapshot.
+// glass on the snapshot and must hold at least one, which the API requires.
 func (c *SnapshotClient) Upload(ctx context.Context, relativePath string, acl []ACLEntry, canManage []ManagePrincipal, zipContent []byte) (*SnapshotInfo, error) {
 	var body bytes.Buffer
 	mw := multipart.NewWriter(&body)
@@ -115,10 +116,6 @@ func (c *SnapshotClient) Upload(ctx context.Context, relativePath string, acl []
 		return nil, fmt.Errorf("failed to write access_control_list: %w", err)
 	}
 
-	// Always send an array, never null, so "no break-glass managers" is unambiguous.
-	if canManage == nil {
-		canManage = []ManagePrincipal{}
-	}
 	canManageJSON, err := json.Marshal(canManage)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal can_manage_principals: %w", err)
@@ -162,19 +159,10 @@ func (c *SnapshotClient) Upload(ctx context.Context, relativePath string, acl []
 // InspectSnapshot reports the status of the snapshot content at contentPath, which tells the
 // caller whether the immutable content was modified out of band.
 func (c *SnapshotClient) InspectSnapshot(ctx context.Context, contentPath string) (*SnapshotStatus, error) {
-	headers := auth.WorkspaceIDHeaders(c.client.Config)
-	if headers == nil {
-		headers = make(map[string]string)
-	}
-	headers["Content-Type"] = "application/json"
-
-	payload, err := json.Marshal(inspectSnapshotRequest{SnapshotContentPath: contentPath})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal inspect request: %w", err)
-	}
+	req := inspectSnapshotRequest{SnapshotContentPath: contentPath}
 
 	var resp inspectSnapshotResponse
-	err = c.client.Do(ctx, http.MethodGet, inspectSnapshotPath, headers, nil, nil, &resp, withJSONBody(payload))
+	err := c.client.Do(ctx, http.MethodGet, inspectSnapshotPath, auth.WorkspaceIDHeaders(c.client.Config), nil, req, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("snapshot inspect: %w", err)
 	}
@@ -185,20 +173,6 @@ func (c *SnapshotClient) InspectSnapshot(ctx context.Context, contentPath string
 	}
 
 	return &SnapshotStatus{Dirty: resp.Status.Dirty}, nil
-}
-
-// withJSONBody returns a request visitor that sends payload as the request body.
-//
-// The inspect RPC is a GET that carries its arguments in a JSON body, which the SDK cannot
-// express: for GET it serializes the request value into the query string and sends an empty
-// body (see makeRequestBody in databricks-sdk-go/httpclient/request.go). Visitors run against
-// a freshly built request on every attempt, so installing the body here is retry-safe.
-func withJSONBody(payload []byte) func(*http.Request) error {
-	return func(r *http.Request) error {
-		r.Body = io.NopCloser(bytes.NewReader(payload))
-		r.ContentLength = int64(len(payload))
-		return nil
-	}
 }
 
 func (c *SnapshotClient) Get(ctx context.Context, snapshotRelativePath string) (*SnapshotInfo, error) {

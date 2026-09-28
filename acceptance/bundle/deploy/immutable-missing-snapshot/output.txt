@@ -1,0 +1,21 @@
+
+=== Deploy an immutable snapshot
+>>> [CLI] bundle deploy
+Created internal_immutable_snapshots.immutable
+Created jobs.my_job
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Point the state at a snapshot that is not there
+=== Deploying still works instead of failing on the snapshot that is not there
+>>> [CLI] bundle deploy
+Files: 0 uploaded, 0 deleted
+Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-immutable-missing-[UNIQUE_NAME]/default
+
+Destroy: 1 deleted

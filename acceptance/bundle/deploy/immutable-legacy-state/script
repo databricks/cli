@@ -1,0 +1,30 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy an immutable snapshot"
+trace $CLI bundle deploy
+
+title "Rewrite the state the way a CLI without this feature wrote it"
+# Back then full_path had no trailing "/snapshot" segment. It is the only value ending in it, so
+# stripping the segment together with the closing quote leaves the rest of the state untouched.
+trace update_file.py .databricks/bundle/default/resources.json '/snapshot"' '"'
+
+title "Deploying on top of that state succeeds and moves to the current layout"
+trace $CLI bundle deploy
+
+JOB_ID=$($CLI bundle summary -o json | jq -r '.resources.jobs.my_job.id')
+SNAPSHOT_PATH=$($CLI jobs get "$JOB_ID" | jq -r '.settings.tasks[0].spark_python_task.python_file')
+echo "Snapshot path: $SNAPSHOT_PATH"
+case "$SNAPSHOT_PATH" in
+    */snapshot/files/src/main.py) echo "OK: deployed to the current snapshot layout" ;;
+    *) echo "ERROR: unexpected snapshot path"; exit 1 ;;
+esac
+
+title "The check still applies to a deployment carried over from the older layout"
+CONTENT_PATH="${SNAPSHOT_PATH%/files/src/main.py}"
+trace $CLI workspace mkdirs "$CONTENT_PATH/tampered"
+trace musterr $CLI bundle deploy

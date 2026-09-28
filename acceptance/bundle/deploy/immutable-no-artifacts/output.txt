@@ -44,6 +44,11 @@ Validation OK!
           "permission_level": "CAN_READ"
         }
       ],
+      "can_manage": [
+        {
+          "user_name": "[USERNAME]"
+        }
+      ],
       "zip_path": "[TEST_TMP_DIR]/.databricks/bundle/default/snapshots/[SNAPSHOT_HASH].zip"
     }
   }
@@ -100,6 +105,20 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       "old": "[SNAPSHOT_HASH]",
       "new": "[SNAPSHOT_HASH]",
       "remote": ""
+    },
+    "can_manage": {
+      "action": "skip",
+      "reason": "missing_in_remote",
+      "old": [
+        {
+          "user_name": "[USERNAME]"
+        }
+      ],
+      "new": [
+        {
+          "user_name": "[USERNAME]"
+        }
+      ]
     },
     "zip_path": {
       "action": "skip",

@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -14,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/snapshot"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 // fileLimitWarning is the file count above which immutable folder deployments may fail.
@@ -73,7 +76,7 @@ func (m *snapshotUpload) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	// Check the previous snapshot before doing any work, so a deploy onto a snapshot that was
 	// modified outside the bundle fails before building a zip.
-	generation, err := resolveGeneration(ctx, b, uploader)
+	generation, err := resolveGeneration(ctx, b, uploader, remoteRoot)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -146,12 +149,17 @@ func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
 	return acl
 }
 
-// BuildCanManage constructs can_manage_principals for the snapshot upload: every principal
-// granted CAN_MANAGE in the top-level permissions section may break the glass on the snapshot.
+// BuildCanManage constructs can_manage_principals for the snapshot upload: the principals that
+// may break the glass on the snapshot. Those are the deploying identity plus everyone granted
+// CAN_MANAGE in the top-level permissions section. The deploying identity is always included
+// because the API rejects an empty list, and it is the one principal always available. The
+// recommended permissions section names it with CAN_MANAGE as well, so skip it in the loop
+// rather than sending it twice.
 func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
-	var canManage []snapshot.ManagePrincipal
+	currentUser := b.Config.Workspace.CurrentUser.UserName
+	canManage := []snapshot.ManagePrincipal{{UserName: currentUser}}
 	for _, p := range b.Config.Permissions {
-		if p.Level != "CAN_MANAGE" {
+		if p.Level != "CAN_MANAGE" || p.UserName == currentUser {
 			continue
 		}
 		canManage = append(canManage, snapshot.ManagePrincipal{
@@ -178,7 +186,7 @@ func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
 // same shape: read state, ask the API, refuse unless forced.
 //
 // On the first deploy (no snapshot in state) the generation is 0.
-func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient) (int, error) {
+func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot.SnapshotClient, remoteRoot string) (int, error) {
 	// The deploy/plan pipeline opens the state DB for read before this runs, but callers that
 	// exercise PlanUpload in isolation (unit tests) may not. No open state means no previous
 	// snapshot to check, which is the first-deploy case.
@@ -196,11 +204,23 @@ func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot
 	if err := json.Unmarshal(entry.State, &prev); err != nil {
 		return 0, fmt.Errorf("reading previous snapshot state: %w", err)
 	}
-	if prev.FullPath == "" {
+	if prev.RelativePath == "" {
 		return 0, nil
 	}
 
-	status, err := uploader.InspectSnapshot(ctx, prev.FullPath)
+	// Compose the content path from relative_path rather than reading full_path: relative_path
+	// already encodes the previous generation and means the same thing in every CLI version,
+	// while full_path from a CLI that predates the content subfolder points one level too high.
+	contentPath := path.Join(remoteRoot, prev.RelativePath, snapshot.ContentSubdir)
+
+	status, err := uploader.InspectSnapshot(ctx, contentPath)
+	// Nothing to protect when no snapshot is there: the deployment predates the content
+	// subfolder, or the snapshot was deleted out of band, or an earlier deploy never created it.
+	// Failing here would also be a dead end, since this runs before the --force check and so
+	// could not be forced past.
+	if errors.Is(err, apierr.ErrNotFound) {
+		return prev.Generation, nil
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -208,7 +228,7 @@ func resolveGeneration(ctx context.Context, b *bundle.Bundle, uploader *snapshot
 		return prev.Generation, nil
 	}
 	if !b.Config.Bundle.Force {
-		return 0, fmt.Errorf("the immutable snapshot of the last deployment was modified outside of the bundle (break glass):\n  %s\nTo deploy a new snapshot and point resources at it, use --force", prev.FullPath)
+		return 0, fmt.Errorf("the immutable snapshot of the last deployment was modified outside of the bundle (break glass):\n  %s\nTo deploy a new snapshot and point resources at it, use --force", contentPath)
 	}
 	return prev.Generation + 1, nil
 }

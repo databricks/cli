@@ -764,19 +764,25 @@ func AddDefaultHandlers(server *Server) {
 		}
 	})
 
-	// Reports whether a snapshot's content was modified out of band. This is a GET that takes
-	// its argument in a JSON body, matching the real API.
+	// Reports whether a snapshot's content was modified out of band.
 	server.Handle("GET", "/api/2.0/snapshots:inspect", func(req Request) any {
-		var body struct {
-			SnapshotContentPath string `json:"snapshot_content_path"`
-		}
-		if err := json.Unmarshal(req.Body, &body); err != nil {
-			return Response{StatusCode: http.StatusBadRequest}
+		contentPath := req.URL.Query().Get("snapshot_content_path")
+		dirty, ok := req.Workspace.SnapshotDirty(contentPath)
+		// A path that holds no snapshot is not inspectable, so the API reports NOT_FOUND
+		// rather than calling it clean.
+		if !ok {
+			return Response{
+				StatusCode: http.StatusNotFound,
+				Body: map[string]string{
+					"error_code": "RESOURCE_DOES_NOT_EXIST",
+					"message":    "Snapshot not found: " + contentPath,
+				},
+			}
 		}
 		return map[string]any{
 			"status": map[string]any{
-				"snapshot_content_path": body.SnapshotContentPath,
-				"dirty":                 req.Workspace.SnapshotDirty(body.SnapshotContentPath),
+				"snapshot_content_path": contentPath,
+				"dirty":                 dirty,
 				"permissions":           []string{"SNAPSHOT_PERMISSION_CAN_BREAK_GLASS"},
 			},
 		}

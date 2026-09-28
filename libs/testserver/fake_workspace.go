@@ -818,11 +818,12 @@ func (s *FakeWorkspace) RecordSnapshot(contentPath string) {
 	s.snapshots[contentPath] = false
 }
 
-// SnapshotDirty reports whether the immutable snapshot at contentPath was modified out of
-// band. An unknown path is reported clean.
-func (s *FakeWorkspace) SnapshotDirty(contentPath string) bool {
+// SnapshotDirty reports whether the immutable snapshot at contentPath was modified out of band,
+// and whether a snapshot is recorded there at all.
+func (s *FakeWorkspace) SnapshotDirty(contentPath string) (dirty, ok bool) {
 	defer s.LockUnlock()()
-	return s.snapshots[contentPath]
+	dirty, ok = s.snapshots[contentPath]
+	return dirty, ok
 }
 
 // markSnapshotDirty flips any recorded snapshot dirty when targetPath writes at or under its
