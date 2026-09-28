@@ -103,8 +103,9 @@ type ResourceLifecycleConfig struct {
 	// StableOutputFields: output-only fields the backend assigns at creation and
 	// never changes on update — typically an AIP resource name derived from the
 	// immutable ID (e.g. a postgres project's "name" = "projects/{project_id}").
-	// They are absent from StateType (the user never sets them) and present in
-	// RemoteType, so they are validated against RemoteType, not StateType.
+	// The backend owns the value, so it is validated against RemoteType (from
+	// which the resolver reads it); the field may or may not also appear in
+	// StateType.
 	//
 	// A cross-resource reference to such a field (${resources.X.name}) resolves
 	// from the remote cache during a keeps-ID update instead of being delayed

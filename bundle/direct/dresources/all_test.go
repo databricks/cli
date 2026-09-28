@@ -1324,12 +1324,12 @@ func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cf
 	for _, p := range cfg.BackendDefaults {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
 	}
-	// stable_output_fields must be output-only: present in RemoteType and absent
-	// from StateType. A settable field (present in StateType) resolves from local
-	// config, so it neither needs nor should use this category.
+	// stable_output_fields must be valid paths in RemoteType: the reference
+	// resolver reads their value from the remote cache. The backend owns the
+	// value, but the field may or may not also appear in StateType, so we only
+	// require presence in RemoteType.
 	for _, p := range cfg.StableOutputFields {
 		assert.NoError(t, structaccess.ValidatePattern(remoteType, p.Field), "StableOutputFields %s: must be a valid RemoteType path", p.Field)
-		assert.Error(t, structaccess.ValidatePattern(stateType, p.Field), "StableOutputFields %s: must be absent from StateType (output-only)", p.Field)
 	}
 }
 
@@ -1413,9 +1413,8 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 // the name genuinely is not a stable identity (e.g. the backend recomputes it on
 // update). This is the escape hatch for TestOutputOnlyNameIsStable.
 //
-// A settable `name` (present in StateType, e.g. jobs) is not a candidate and does
-// not belong here: it resolves from local config, so the guard skips it and it is
-// never subject to the bug.
+// A `name` present in StateType is outside this guard's scope (the resolver reads
+// local config before the remote cache), so it never belongs here.
 var stableNameOptOut = map[string]string{}
 
 // TestOutputOnlyNameIsStable guards against silently reintroducing ES-2202624. A
@@ -1428,8 +1427,11 @@ var stableNameOptOut = map[string]string{}
 // opts out only with a documented entry in stableNameOptOut.
 //
 // Two cases are exempt:
-//   - A `name` that is also settable (present in StateType) resolves from local
-//     config, not the remote cache, so it is not subject to the bug.
+//   - A `name` present in StateType: the resolver reads local config before the
+//     remote cache, so a user-settable name (e.g. jobs) resolves from config and
+//     must NOT be declared stable, since a rename must change the reference. The
+//     guard therefore scopes itself to output-only names absent from StateType,
+//     the case that provably delays.
 //   - A resource with no DoUpdate never has an in-place-update (keeps-ID with
 //     changes) action; it only Skips (which already reads the remote cache) or
 //     Recreates, so its name reference is never wrongly delayed.
