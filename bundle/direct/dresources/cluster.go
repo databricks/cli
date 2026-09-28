@@ -243,8 +243,7 @@ func hasClusterSpecChanges(entry *PlanEntry) bool {
 }
 
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
-	edited := hasClusterSpecChanges(entry)
-	if edited {
+	if hasClusterSpecChanges(entry) {
 		// Same retry as in TF provider logic
 		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 		_, err := retries.Poll(ctx, clusterWaitTimeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
@@ -272,14 +271,10 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 		if err := r.reconcileLibraries(ctx, id, config.Libraries, entry); err != nil {
 			return nil, err
 		}
-		// We never restart the cluster for a library change: that would kill attached sessions
-		// and running work. Installs apply live on a running cluster; uninstalls are marked
-		// UNINSTALL_ON_RESTART and take effect at the cluster's next restart.
-		// A cluster edit restarts the cluster on its own, so only wait when there was no edit.
-		if !edited {
-			if err := r.waitForInstall(ctx, id, config.Libraries); err != nil {
-				return nil, err
-			}
+		// Installs apply live on a running cluster. Uninstalls are marked UNINSTALL_ON_RESTART
+		// by the backend and take effect at the cluster's next restart; the bundle never restarts it.
+		if err := r.waitForInstall(ctx, id, config.Libraries); err != nil {
+			return nil, err
 		}
 	}
 
@@ -327,8 +322,7 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 		return nil, err
 	}
 
-	// Install libraries once the cluster is running. A freshly-created cluster has no
-	// attached sessions, so the install applies live without a restart.
+	// Install libraries once the cluster is running: installs only progress on a running cluster.
 	// TODO: Wait is supposed to be side effect free, but in this case moving it to
 	// the create will cause a wait for libraries to be installed befor the cluster is installed.
 	// this increases the risk of losing the cluster. This is a limitation
