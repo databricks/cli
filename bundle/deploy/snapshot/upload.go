@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/libs/diag"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/snapshot"
 	"github.com/databricks/databricks-sdk-go/apierr"
 )
@@ -156,10 +157,19 @@ func BuildACL(b *bundle.Bundle) []snapshot.ACLEntry {
 // recommended permissions section names it with CAN_MANAGE as well, so skip it in the loop
 // rather than sending it twice.
 func BuildCanManage(b *bundle.Bundle) []snapshot.ManagePrincipal {
-	currentUser := b.Config.Workspace.CurrentUser.UserName
-	canManage := []snapshot.ManagePrincipal{{UserName: currentUser}}
+	currentUser := b.Config.Workspace.CurrentUser.User
+	var canManage []snapshot.ManagePrincipal
+	if iamutil.IsServicePrincipal(currentUser) {
+		canManage = append(canManage, snapshot.ManagePrincipal{
+			ServicePrincipalName: currentUser.UserName,
+		})
+	} else {
+		canManage = append(canManage, snapshot.ManagePrincipal{
+			UserName: currentUser.UserName,
+		})
+	}
 	for _, p := range b.Config.Permissions {
-		if p.Level != "CAN_MANAGE" || p.UserName == currentUser {
+		if p.Level != "CAN_MANAGE" {
 			continue
 		}
 		canManage = append(canManage, snapshot.ManagePrincipal{

@@ -171,6 +171,16 @@ type fakeDashboard struct {
 	InputSerializedDashboard string `json:"-"`
 }
 
+// snapshotRecord holds the create-request fields and the out-of-band modification flag for one
+// immutable snapshot. Its JSON tags match what the accept test's info endpoint returns so the
+// test script can call the endpoint and assert the fields with jq.
+type snapshotRecord struct {
+	Dirty     bool             `json:"dirty"`
+	RelPath   string           `json:"relative_path"`
+	ACL       []map[string]any `json:"access_control_list"`
+	CanManage []map[string]any `json:"can_manage_principals"`
+}
+
 // FakeWorkspace holds a state of a workspace for acceptance tests.
 type FakeWorkspace struct {
 	mu                 sync.Mutex
@@ -188,10 +198,10 @@ type FakeWorkspace struct {
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
-	// snapshots records immutable-snapshot content paths and whether each was modified out
-	// of band. A workspace write into a recorded path flips it dirty;
-	// RecordSnapshot resets it when the snapshot is (re)created by the snapshot API.
-	snapshots map[string]bool
+	// snapshots records immutable-snapshot content paths. A workspace write into a
+	// recorded path flips it dirty; RecordSnapshot resets it when the snapshot is
+	// (re)created by the snapshot API.
+	snapshots map[string]*snapshotRecord
 
 	Jobs                  map[int64]jobs.Job
 	JobRuns               map[int64]jobs.Run
@@ -484,7 +494,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
-		snapshots:    make(map[string]bool),
+		snapshots:    make(map[string]*snapshotRecord),
 
 		Jobs:                  map[int64]jobs.Job{},
 		JobRuns:               map[int64]jobs.Run{},
@@ -810,28 +820,44 @@ func (s *FakeWorkspace) FsDeleteFile(filePath string) Response {
 	return Response{}
 }
 
-// RecordSnapshot marks contentPath as a known, clean immutable snapshot. The snapshot create
-// handler calls it after materializing the content directory, so the snapshot's own creation
-// write does not count as tampering.
-func (s *FakeWorkspace) RecordSnapshot(contentPath string) {
+// RecordSnapshot stores a create-request record for the snapshot at contentPath. It is called
+// after the content directory is materialized, so the snapshot's own creation write is not
+// counted as tampering.
+func (s *FakeWorkspace) RecordSnapshot(contentPath, relPath string, acl, canManage []map[string]any) {
 	defer s.LockUnlock()()
-	s.snapshots[contentPath] = false
+	s.snapshots[contentPath] = &snapshotRecord{
+		Dirty:     false,
+		RelPath:   relPath,
+		ACL:       acl,
+		CanManage: canManage,
+	}
 }
 
 // SnapshotDirty reports whether the immutable snapshot at contentPath was modified out of band,
 // and whether a snapshot is recorded there at all.
 func (s *FakeWorkspace) SnapshotDirty(contentPath string) (dirty, ok bool) {
 	defer s.LockUnlock()()
-	dirty, ok = s.snapshots[contentPath]
-	return dirty, ok
+	rec, ok := s.snapshots[contentPath]
+	if !ok {
+		return false, false
+	}
+	return rec.Dirty, true
+}
+
+// SnapshotInfo returns the stored create-request record for the snapshot at contentPath.
+// ok is false when no snapshot is recorded there.
+func (s *FakeWorkspace) SnapshotInfo(contentPath string) (*snapshotRecord, bool) {
+	defer s.LockUnlock()()
+	rec, ok := s.snapshots[contentPath]
+	return rec, ok
 }
 
 // markSnapshotDirty flips any recorded snapshot dirty when targetPath writes at or under its
 // content path. The caller must already hold the lock.
 func (s *FakeWorkspace) markSnapshotDirty(targetPath string) {
-	for contentPath := range s.snapshots {
+	for contentPath, rec := range s.snapshots {
 		if targetPath == contentPath || strings.HasPrefix(targetPath, contentPath+"/") {
-			s.snapshots[contentPath] = true
+			rec.Dirty = true
 		}
 	}
 }

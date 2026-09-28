@@ -733,6 +733,7 @@ func AddDefaultHandlers(server *Server) {
 
 		mr := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
 		var relativePath string
+		var acl, canManage []map[string]any
 		for {
 			p, err := mr.NextPart()
 			if err == io.EOF {
@@ -745,8 +746,13 @@ func AddDefaultHandlers(server *Server) {
 			if err != nil {
 				return Response{StatusCode: http.StatusInternalServerError}
 			}
-			if p.FormName() == "relative_path" {
+			switch p.FormName() {
+			case "relative_path":
 				relativePath = string(data)
+			case "access_control_list":
+				_ = json.Unmarshal(data, &acl)
+			case "can_manage_principals":
+				_ = json.Unmarshal(data, &canManage)
 			}
 		}
 
@@ -756,12 +762,31 @@ func AddDefaultHandlers(server *Server) {
 		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", TestUserSP.UserName, relativePath)
 		req.Workspace.WorkspaceMkdirs(workspace.Mkdirs{Path: contentPath})
 		// Record after mkdirs so the snapshot's own creation write is not counted as tampering.
-		req.Workspace.RecordSnapshot(contentPath)
+		req.Workspace.RecordSnapshot(contentPath, relativePath, acl, canManage)
 		return map[string]any{
 			"name":     "workspaces/snapshotOperations/" + relativePath,
 			"done":     true,
 			"snapshot": map[string]any{"path": contentPath},
 		}
+	})
+
+	// Returns the create-request fields (ACL, can_manage_principals) stored for the snapshot
+	// at the given relative_path. Intended for acceptance test assertions.
+	server.Handle("GET", "/api/2.0/snapshots/info", func(req Request) any {
+		relPath := req.URL.Query().Get("relative_path")
+		// Build the content path the same way the create handler does.
+		contentPath := fmt.Sprintf("/Workspace/Users/%s/.snapshots/%s/snapshot", TestUserSP.UserName, relPath)
+		rec, ok := req.Workspace.SnapshotInfo(contentPath)
+		if !ok {
+			return Response{
+				StatusCode: http.StatusNotFound,
+				Body: map[string]string{
+					"error_code": "RESOURCE_DOES_NOT_EXIST",
+					"message":    "Snapshot not found: " + relPath,
+				},
+			}
+		}
+		return rec
 	})
 
 	// Reports whether a snapshot's content was modified out of band.
