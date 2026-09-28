@@ -100,6 +100,8 @@ func experimentAccessControl(p permission) (ml.ExperimentAccessControlRequest, b
 // ctx expires. The AI Runtime backend creates the experiment around submit time,
 // so a brief wait covers the window where it isn't visible yet.
 func resolveExperimentID(ctx context.Context, w *databricks.WorkspaceClient, experimentName string) (string, error) {
+	ticker := time.NewTicker(mlflowPermissionPollInterval)
+	defer ticker.Stop()
 	for {
 		resp, err := w.Experiments.GetByName(ctx, ml.GetByNameRequest{ExperimentName: experimentName})
 		if err == nil && resp.Experiment != nil {
@@ -112,7 +114,7 @@ func resolveExperimentID(ctx context.Context, w *databricks.WorkspaceClient, exp
 				return "", fmt.Errorf("failed to resolve experiment %q: %w", experimentName, err)
 			}
 			return "", fmt.Errorf("experiment %q not found", experimentName)
-		case <-time.After(mlflowPermissionPollInterval):
+		case <-ticker.C:
 		}
 	}
 }
