@@ -348,11 +348,9 @@ func ensureToolchain(ctx context.Context, home string) error {
 		return nil
 	}
 
-	ui := newProgressUI(ctx)
-
 	// 1. uv (installs into ~/.local/bin).
 	if _, err := exec.LookPath("uv"); err != nil {
-		if err := ui.runStep(ctx, "Installing dependencies", func(out io.Writer) error {
+		if err := runStep(ctx, "Installing uv", func(out io.Writer) error {
 			if err := runShell(ctx, out, "curl -LsSf https://astral.sh/uv/install.sh | sh"); err != nil {
 				return fmt.Errorf("failed to install uv: %w", err)
 			}
@@ -364,7 +362,7 @@ func ensureToolchain(ctx context.Context, home string) error {
 
 	// 2. Unity Gateway CLI (pinned stock upstream release).
 	if _, err := exec.LookPath("ucode"); err != nil {
-		if err := ui.runStep(ctx, "Installing Unity Gateway CLI", func(out io.Writer) error {
+		if err := runStep(ctx, "Installing Unity Gateway CLI", func(out io.Writer) error {
 			if err := runCommand(ctx, out, "uv", "tool", "install", "git+https://github.com/"+ugRepo+"@"+ugVersion); err != nil {
 				return fmt.Errorf("failed to install Unity Gateway CLI: %w", err)
 			}
@@ -376,7 +374,7 @@ func ensureToolchain(ctx context.Context, home string) error {
 
 	// 3. Node/npm (installs into depsDir/node/bin)
 	if _, err := exec.LookPath("npm"); err != nil {
-		if err := ui.runStep(ctx, "Installing Node.js", func(out io.Writer) error {
+		if err := runStep(ctx, "Installing Node.js", func(out io.Writer) error {
 			_, err := ensureNode(ctx, home, out)
 			return err
 		}); err != nil {
@@ -630,8 +628,7 @@ func runCommand(ctx context.Context, out io.Writer, name string, args ...string)
 	return cmd.Run()
 }
 
-// runShell runs a shell snippet — for the curl|sh / curl|tar pipelines — writing
-// combined stdout+stderr to out.
+// runShell runs a shell snippet, writing combined stdout+stderr to out.
 func runShell(ctx context.Context, out io.Writer, script string) error {
 	cmd := exec.CommandContext(ctx, "sh", "-c", script)
 	cmd.Stdout = out

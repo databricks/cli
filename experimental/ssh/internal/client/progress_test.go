@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -11,19 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestProgressUI returns a progressUI writing to w with sentinel check/cross
-// markers so the emitted outcome line is assertable. runStep is driven with a
-// non-interactive cmdio context (the mode tests run in), where the spinner
-// degrades to no output, exercising the capture-and-dump logic directly.
-func newTestProgressUI(w io.Writer) *progressUI {
-	return &progressUI{w: w, check: "OK", cross: "FAIL"}
-}
-
 func TestRunStepHidesOutputOnSuccess(t *testing.T) {
 	var w bytes.Buffer
-	ui := newTestProgressUI(&w)
+	mockCmdio := cmdio.NewIO(t.Context(), "text", io.NopCloser(strings.NewReader("")), &w, &w, "", "")
 
-	err := ui.runStep(cmdio.MockDiscard(t.Context()), "Installing dependencies", func(out io.Writer) error {
+	err := runStep(cmdio.InContext(t.Context(), mockCmdio), "Installing dependencies", func(out io.Writer) error {
 		_, _ = io.WriteString(out, "verbose installer chatter\n")
 		return nil
 	})
@@ -32,15 +25,15 @@ func TestRunStepHidesOutputOnSuccess(t *testing.T) {
 	// The step's subprocess output must not surface on success, but the checkmark
 	// line for the step is still emitted.
 	assert.NotContains(t, w.String(), "verbose installer chatter")
-	assert.Contains(t, w.String(), "OK Installing dependencies")
+	assert.Contains(t, w.String(), "✓ Installing dependencies")
 }
 
 func TestRunStepShowsOutputOnFailure(t *testing.T) {
 	var w bytes.Buffer
-	ui := newTestProgressUI(&w)
+	mockCmdio := cmdio.NewIO(t.Context(), "text", io.NopCloser(strings.NewReader("")), &w, &w, "", "")
 
 	sentinel := errors.New("install failed")
-	err := ui.runStep(cmdio.MockDiscard(t.Context()), "Installing ucode", func(out io.Writer) error {
+	err := runStep(cmdio.InContext(t.Context(), mockCmdio), "Installing ucode", func(out io.Writer) error {
 		_, _ = io.WriteString(out, "line to stdout\nline to stderr")
 		return sentinel
 	})
@@ -48,6 +41,6 @@ func TestRunStepShowsOutputOnFailure(t *testing.T) {
 
 	// On failure the cross line and the full captured output are printed, with a
 	// trailing newline added.
-	assert.Contains(t, w.String(), "FAIL Installing ucode")
+	assert.Contains(t, w.String(), "✗ Installing ucode")
 	assert.Contains(t, w.String(), "line to stdout\nline to stderr\n")
 }
