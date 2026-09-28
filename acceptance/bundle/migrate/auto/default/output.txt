@@ -42,3 +42,19 @@ Files: 0 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 >>> print_migration_telemetry
+
+=== Destroy the migrated bundle leaves no state behind, local or remote
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted
+
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
+
+>>> MSYS_NO_PATHCONV=1 errcode [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state) doesn't exist.
+
+Exit code: 1

@@ -22,3 +22,14 @@ trace $CLI bundle deploy
 trace print_migration_telemetry
 
 rm -f "$OUT_REQUESTS"
+
+title "Destroy the migrated bundle leaves no state behind, local or remote"
+# The migrating deploy above renamed the local terraform.tfstate to terraform.tfstate.backup and
+# backed up the remote one; this direct destroy must not leave either (nor the direct state) behind.
+# find.py lists matching state files sorted with forward slashes (cross-platform), excluding the
+# terraform provider cache under .terraform/; the remote state dir is gone once the destroy completes.
+trace $CLI bundle destroy --auto-approve
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 errcode $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+
+rm -f "$OUT_REQUESTS"
