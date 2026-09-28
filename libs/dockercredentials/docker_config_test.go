@@ -143,3 +143,73 @@ func TestConfigureDockerCredentialHelperRejectsInvalidJSON(t *testing.T) {
 	err := SetCredentialHelper(path, testRegistryHost)
 	assert.ErrorContains(t, err, "read Docker config")
 }
+
+func TestCredentialHelperConfigured(t *testing.T) {
+	t.Parallel()
+
+	path := filepath.Join(t.TempDir(), "config.json")
+	require.NoError(t, os.WriteFile(path, []byte(`{
+  "credHelpers": {
+    "999.container.us-east-1.cloud.databricks.test": "databricks",
+    "registry.example.test": "desktop",
+    "123.container.us-west-2.cloud.databricks.test": "databricks"
+  }
+}`), 0o600))
+
+	tests := []struct {
+		name string
+		host string
+		want bool
+	}{
+		{name: "configured", host: "123.container.us-west-2.cloud.databricks.test", want: true},
+		{name: "other helper", host: "registry.example.test", want: false},
+		{name: "absent", host: "456.container.us-west-2.cloud.databricks.test", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := CredentialHelperConfigured(path, tt.host)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestCredentialHelperConfiguredUsesGlobalStore(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		config string
+		want   bool
+	}{
+		{
+			name:   "global store",
+			config: `{"credsStore":"databricks"}`,
+			want:   true,
+		},
+		{
+			name:   "registry override",
+			config: `{"credsStore":"databricks","credHelpers":{"123.container.us-west-2.cloud.databricks.test":"desktop"}}`,
+			want:   false,
+		},
+		{
+			name:   "empty registry override",
+			config: `{"credsStore":"databricks","credHelpers":{"123.container.us-west-2.cloud.databricks.test":""}}`,
+			want:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			path := filepath.Join(t.TempDir(), "config.json")
+			require.NoError(t, os.WriteFile(path, []byte(tt.config), 0o600))
+
+			got, err := CredentialHelperConfigured(path, testRegistryHost)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

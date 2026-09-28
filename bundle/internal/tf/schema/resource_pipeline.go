@@ -280,6 +280,23 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsJiraOptions
 	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerAvroOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerAvroOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                               `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                               `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerAvroOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerAvroOptions struct {
+	ParseMode      string                                                                                                               `json:"parse_mode,omitempty"`
+	Schema         string                                                                                                               `json:"schema,omitempty"`
+	SchemaFilePath string                                                                                                               `json:"schema_file_path,omitempty"`
+	SchemaRegistry *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerAvroOptionsSchemaRegistry `json:"schema_registry,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions struct {
 	AsVariant           bool   `json:"as_variant,omitempty"`
 	Schema              string `json:"schema,omitempty"`
@@ -288,11 +305,48 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOption
 	SchemaHints         string `json:"schema_hints,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerProtobufOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerProtobufOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                                   `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                                   `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerProtobufOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerProtobufOptions struct {
+	DescFilePath            string                                                                                                                   `json:"desc_file_path,omitempty"`
+	MessageName             string                                                                                                                   `json:"message_name,omitempty"`
+	ParseMode               string                                                                                                                   `json:"parse_mode,omitempty"`
+	RecursiveFieldsMaxDepth int                                                                                                                      `json:"recursive_fields_max_depth,omitempty"`
+	SchemaRegistry          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerProtobufOptionsSchemaRegistry `json:"schema_registry,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformer struct {
-	Format       string                                                                                                 `json:"format,omitempty"`
-	InputColumn  string                                                                                                 `json:"input_column,omitempty"`
-	OutputColumn string                                                                                                 `json:"output_column,omitempty"`
-	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+	Format          string                                                                                                     `json:"format,omitempty"`
+	InputColumn     string                                                                                                     `json:"input_column,omitempty"`
+	OutputColumn    string                                                                                                     `json:"output_column,omitempty"`
+	AvroOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerAvroOptions     `json:"avro_options,omitempty"`
+	JsonOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerJsonOptions     `json:"json_options,omitempty"`
+	ProtobufOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsKeyTransformerProtobufOptions `json:"protobuf_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerAvroOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerAvroOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                                 `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                                 `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerAvroOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerAvroOptions struct {
+	ParseMode      string                                                                                                                 `json:"parse_mode,omitempty"`
+	Schema         string                                                                                                                 `json:"schema,omitempty"`
+	SchemaFilePath string                                                                                                                 `json:"schema_file_path,omitempty"`
+	SchemaRegistry *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerAvroOptionsSchemaRegistry `json:"schema_registry,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
@@ -303,11 +357,31 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOption
 	SchemaHints         string `json:"schema_hints,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerProtobufOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerProtobufOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                                     `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                                     `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerProtobufOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerProtobufOptions struct {
+	DescFilePath            string                                                                                                                     `json:"desc_file_path,omitempty"`
+	MessageName             string                                                                                                                     `json:"message_name,omitempty"`
+	ParseMode               string                                                                                                                     `json:"parse_mode,omitempty"`
+	RecursiveFieldsMaxDepth int                                                                                                                        `json:"recursive_fields_max_depth,omitempty"`
+	SchemaRegistry          *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerProtobufOptionsSchemaRegistry `json:"schema_registry,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformer struct {
-	Format       string                                                                                                   `json:"format,omitempty"`
-	InputColumn  string                                                                                                   `json:"input_column,omitempty"`
-	OutputColumn string                                                                                                   `json:"output_column,omitempty"`
-	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+	Format          string                                                                                                       `json:"format,omitempty"`
+	InputColumn     string                                                                                                       `json:"input_column,omitempty"`
+	OutputColumn    string                                                                                                       `json:"output_column,omitempty"`
+	AvroOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerAvroOptions     `json:"avro_options,omitempty"`
+	JsonOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerJsonOptions     `json:"json_options,omitempty"`
+	ProtobufOptions *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptionsValueTransformerProtobufOptions `json:"protobuf_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsKafkaOptions struct {
@@ -458,6 +532,23 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptions struct {
 	ZendeskSupportOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaConnectorOptionsZendeskSupportOptions     `json:"zendesk_support_options,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsAvroOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsAvroOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                            `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                            `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsAvroOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsAvroOptions struct {
+	ParseMode      string                                                                                            `json:"parse_mode,omitempty"`
+	Schema         string                                                                                            `json:"schema,omitempty"`
+	SchemaFilePath string                                                                                            `json:"schema_file_path,omitempty"`
+	SchemaRegistry *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsAvroOptionsSchemaRegistry `json:"schema_registry,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJsonOptions struct {
 	AsVariant           bool   `json:"as_variant,omitempty"`
 	Schema              string `json:"schema,omitempty"`
@@ -466,11 +557,31 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJson
 	SchemaHints         string `json:"schema_hints,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsProtobufOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsProtobufOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsProtobufOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsProtobufOptions struct {
+	DescFilePath            string                                                                                                `json:"desc_file_path,omitempty"`
+	MessageName             string                                                                                                `json:"message_name,omitempty"`
+	ParseMode               string                                                                                                `json:"parse_mode,omitempty"`
+	RecursiveFieldsMaxDepth int                                                                                                   `json:"recursive_fields_max_depth,omitempty"`
+	SchemaRegistry          *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsProtobufOptionsSchemaRegistry `json:"schema_registry,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransforms struct {
-	Format       string                                                                              `json:"format,omitempty"`
-	InputColumn  string                                                                              `json:"input_column,omitempty"`
-	OutputColumn string                                                                              `json:"output_column,omitempty"`
-	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJsonOptions `json:"json_options,omitempty"`
+	Format          string                                                                                  `json:"format,omitempty"`
+	InputColumn     string                                                                                  `json:"input_column,omitempty"`
+	OutputColumn    string                                                                                  `json:"output_column,omitempty"`
+	AvroOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsAvroOptions     `json:"avro_options,omitempty"`
+	JsonOptions     *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsJsonOptions     `json:"json_options,omitempty"`
+	ProtobufOptions *ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptionsTransformsProtobufOptions `json:"protobuf_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsSchemaFanoutOptions struct {
@@ -579,6 +690,23 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsJiraOptions 
 	IncludeJiraSpaces []string `json:"include_jira_spaces,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerAvroOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerAvroOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                              `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                              `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerAvroOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerAvroOptions struct {
+	ParseMode      string                                                                                                              `json:"parse_mode,omitempty"`
+	Schema         string                                                                                                              `json:"schema,omitempty"`
+	SchemaFilePath string                                                                                                              `json:"schema_file_path,omitempty"`
+	SchemaRegistry *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerAvroOptionsSchemaRegistry `json:"schema_registry,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions struct {
 	AsVariant           bool   `json:"as_variant,omitempty"`
 	Schema              string `json:"schema,omitempty"`
@@ -587,11 +715,48 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions
 	SchemaHints         string `json:"schema_hints,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerProtobufOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerProtobufOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                                  `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                                  `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerProtobufOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerProtobufOptions struct {
+	DescFilePath            string                                                                                                                  `json:"desc_file_path,omitempty"`
+	MessageName             string                                                                                                                  `json:"message_name,omitempty"`
+	ParseMode               string                                                                                                                  `json:"parse_mode,omitempty"`
+	RecursiveFieldsMaxDepth int                                                                                                                     `json:"recursive_fields_max_depth,omitempty"`
+	SchemaRegistry          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerProtobufOptionsSchemaRegistry `json:"schema_registry,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformer struct {
-	Format       string                                                                                                `json:"format,omitempty"`
-	InputColumn  string                                                                                                `json:"input_column,omitempty"`
-	OutputColumn string                                                                                                `json:"output_column,omitempty"`
-	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions `json:"json_options,omitempty"`
+	Format          string                                                                                                    `json:"format,omitempty"`
+	InputColumn     string                                                                                                    `json:"input_column,omitempty"`
+	OutputColumn    string                                                                                                    `json:"output_column,omitempty"`
+	AvroOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerAvroOptions     `json:"avro_options,omitempty"`
+	JsonOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerJsonOptions     `json:"json_options,omitempty"`
+	ProtobufOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsKeyTransformerProtobufOptions `json:"protobuf_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerAvroOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerAvroOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                                `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                                `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerAvroOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerAvroOptions struct {
+	ParseMode      string                                                                                                                `json:"parse_mode,omitempty"`
+	Schema         string                                                                                                                `json:"schema,omitempty"`
+	SchemaFilePath string                                                                                                                `json:"schema_file_path,omitempty"`
+	SchemaRegistry *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerAvroOptionsSchemaRegistry `json:"schema_registry,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions struct {
@@ -602,11 +767,31 @@ type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions
 	SchemaHints         string `json:"schema_hints,omitempty"`
 }
 
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerProtobufOptionsSchemaRegistryConfluentOptions struct {
+	Subject string `json:"subject,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerProtobufOptionsSchemaRegistry struct {
+	ConnectionName      string                                                                                                                                    `json:"connection_name,omitempty"`
+	ProtobufMessageName string                                                                                                                                    `json:"protobuf_message_name,omitempty"`
+	ConfluentOptions    *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerProtobufOptionsSchemaRegistryConfluentOptions `json:"confluent_options,omitempty"`
+}
+
+type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerProtobufOptions struct {
+	DescFilePath            string                                                                                                                    `json:"desc_file_path,omitempty"`
+	MessageName             string                                                                                                                    `json:"message_name,omitempty"`
+	ParseMode               string                                                                                                                    `json:"parse_mode,omitempty"`
+	RecursiveFieldsMaxDepth int                                                                                                                       `json:"recursive_fields_max_depth,omitempty"`
+	SchemaRegistry          *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerProtobufOptionsSchemaRegistry `json:"schema_registry,omitempty"`
+}
+
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformer struct {
-	Format       string                                                                                                  `json:"format,omitempty"`
-	InputColumn  string                                                                                                  `json:"input_column,omitempty"`
-	OutputColumn string                                                                                                  `json:"output_column,omitempty"`
-	JsonOptions  *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions `json:"json_options,omitempty"`
+	Format          string                                                                                                      `json:"format,omitempty"`
+	InputColumn     string                                                                                                      `json:"input_column,omitempty"`
+	OutputColumn    string                                                                                                      `json:"output_column,omitempty"`
+	AvroOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerAvroOptions     `json:"avro_options,omitempty"`
+	JsonOptions     *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerJsonOptions     `json:"json_options,omitempty"`
+	ProtobufOptions *ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptionsValueTransformerProtobufOptions `json:"protobuf_options,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsTableConnectorOptionsKafkaOptions struct {
@@ -943,6 +1128,7 @@ type ResourcePipelineRestartWindow struct {
 }
 
 type ResourcePipelineRunAs struct {
+	GroupName            string `json:"group_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	UserName             string `json:"user_name,omitempty"`
 }

@@ -9,7 +9,7 @@ HTTP Status: 500 Internal Server Error
 API error_code: INTERNAL_ERROR
 API message: Internal error
 
-Files: 3 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 
 >>> [CLI] bundle plan -o json
 {

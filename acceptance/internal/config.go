@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const configFilename = "test.toml"
+const ConfigFilename = "test.toml"
 
 type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
@@ -171,7 +171,7 @@ type ServerStub struct {
 func FindConfigs(t *testing.T, dir string) []string {
 	var configs []string
 	for {
-		path := filepath.Join(dir, configFilename)
+		path := filepath.Join(dir, ConfigFilename)
 		_, err := os.Stat(path)
 
 		if err == nil {
@@ -204,7 +204,7 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	}
 
 	result := DoLoadConfig(t, configs[0])
-	leafConfigPath := filepath.Join(dir, configFilename)
+	leafConfigPath := filepath.Join(dir, ConfigFilename)
 	leafConfig := TestConfig{}
 	hasLeafConfig := configs[0] == leafConfigPath
 	if hasLeafConfig {

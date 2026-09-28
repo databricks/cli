@@ -65,8 +65,9 @@ class JobRun(Resource):
     """
     The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.
     
-    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
+    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+    * `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.
     """
 
     pipeline_params: VariableOrOptional[PipelineParams] = None
@@ -118,8 +119,9 @@ class JobRunDict(TypedDict, total=False):
     """
     The performance mode on a serverless job. The performance target determines the level of compute performance or cost-efficiency for the run. This field overrides the performance target defined on the job level.
     
-    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
+    * `STANDARD`: Enables cost-efficient execution of serverless workloads.
+    * `COST_OPTIMIZED`: Enables lower job costs by optimizing compute for your selected target duration time. Must provide a duration target.
     """
 
     pipeline_params: VariableOrOptional[PipelineParamsParam]

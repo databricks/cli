@@ -871,10 +871,9 @@ func runTest(t *testing.T,
 		tmpDir = t.TempDir()
 	}
 
-	// Harness-written output files (output.txt, out.requests.txt) live outside the
-	// test dir so the bundle sync doesn't upload them as bundle sources. They are
-	// written here during the run and copied into tmpDir afterwards for comparison.
-	// Otherwise these continuously-rewritten files perturb the deploy "Files: N" count.
+	// Harness-owned files (the merged entry-point script, output.txt, out.requests.txt)
+	// live outside the test dir so the bundle sync doesn't upload them as bundle sources.
+	// Otherwise they land in the deploy and skew the synced "Files: N" set.
 	// Register this repl before [TEST_TMP_DIR] so it wins: outputDir is a sibling of
 	// tmpDir, so the [TEST_TMP_DIR]_PARENT repl would otherwise match it first.
 	outputDir := t.TempDir()
@@ -882,8 +881,11 @@ func runTest(t *testing.T,
 
 	repls.SetPathWithParents(tmpDir, "[TEST_TMP_DIR]")
 
-	scriptContents := readMergedScriptContents(t, dir)
-	testutil.WriteFile(t, filepath.Join(tmpDir, EntryPointScript), scriptContents)
+	// The merged script lives in outputDir (see above), and is run from there (cmd.Dir
+	// below). It cd's into the bundle dir first so relative paths inside the script
+	// resolve there, while $0 stays "script" (no temp path leaks into error output).
+	scriptContents := "cd \"$TEST_TMP_DIR\"\n" + readMergedScriptContents(t, dir)
+	testutil.WriteFile(t, filepath.Join(outputDir, EntryPointScript), scriptContents)
 
 	// Generate materialized config for this test
 	inputs := make(map[string]bool, 2)
@@ -1046,7 +1048,9 @@ func runTest(t *testing.T,
 		// blocking proxy and fail every terraform-engine test.
 		cmd.Env = append(cmd.Env, "CHECKPOINT_DISABLE=1")
 	}
-	cmd.Dir = tmpDir
+	// Run from outputDir so the entry-point script isn't a bundle source; the script
+	// cd's into tmpDir (the bundle dir) as its first line.
+	cmd.Dir = outputDir
 
 	outputPath := filepath.Join(outputDir, "output.txt")
 	out, err := os.Create(outputPath)
@@ -1689,6 +1693,12 @@ func CopyDir(src, dst string, inputs, outputs map[string]bool) error {
 		}
 
 		if _, ok := Scripts[name]; ok {
+			return nil
+		}
+
+		// test.toml is harness config, not a bundle source; copying it into the test
+		// dir would upload it during "bundle deploy" and skew the synced file set.
+		if name == internal.ConfigFilename {
 			return nil
 		}
 

@@ -1,7 +1,6 @@
 mkdir "project-folder"
 touch "project-folder/app.py" "project-folder/query.sql"
 cat > .gitignore << EOF
-script
 output.txt
 EOF
 

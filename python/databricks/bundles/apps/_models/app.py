@@ -92,9 +92,7 @@ class App(Resource):
 
     git_source: VariableOrOptional[GitSource] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+    Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
     to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
     The source_code_path within git_source specifies the relative path to the app code within the repository.
     """
@@ -115,11 +113,6 @@ class App(Resource):
     """
 
     source_code_path: VariableOrOptional[str] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta]
-    """
 
     space: VariableOrOptional[str] = None
     """
@@ -131,9 +124,6 @@ class App(Resource):
     telemetry_export_destinations: VariableOrList[TelemetryExportDestination] = field(
         default_factory=list
     )
-    """
-    [Public Preview]
-    """
 
     usage_policy_id: VariableOrOptional[str] = None
     """
@@ -205,9 +195,7 @@ class AppDict(TypedDict, total=False):
 
     git_source: VariableOrOptional[GitSourceParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
+    Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)
     to use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.
     The source_code_path within git_source specifies the relative path to the app code within the repository.
     """
@@ -228,11 +216,6 @@ class AppDict(TypedDict, total=False):
     """
 
     source_code_path: VariableOrOptional[str]
-    """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta]
-    """
 
     space: VariableOrOptional[str]
     """
@@ -242,9 +225,6 @@ class AppDict(TypedDict, total=False):
     """
 
     telemetry_export_destinations: VariableOrList[TelemetryExportDestinationParam]
-    """
-    [Public Preview]
-    """
 
     usage_policy_id: VariableOrOptional[str]
     """

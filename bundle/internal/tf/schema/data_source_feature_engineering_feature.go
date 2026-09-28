@@ -189,6 +189,14 @@ type DataSourceFeatureEngineeringFeatureSourceDeltaTableSource struct {
 	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
+type DataSourceFeatureEngineeringFeatureSourceFeatureViewSourceFeatureReferences struct {
+	Feature string `json:"feature"`
+}
+
+type DataSourceFeatureEngineeringFeatureSourceFeatureViewSource struct {
+	FeatureReferences []DataSourceFeatureEngineeringFeatureSourceFeatureViewSourceFeatureReferences `json:"feature_references,omitempty"`
+}
+
 type DataSourceFeatureEngineeringFeatureSourceKafkaSourceEntityColumnIdentifiers struct {
 	VariantExprPath string `json:"variant_expr_path"`
 }
@@ -229,11 +237,12 @@ type DataSourceFeatureEngineeringFeatureSourceStreamSource struct {
 }
 
 type DataSourceFeatureEngineeringFeatureSource struct {
-	DeltaTableSource *DataSourceFeatureEngineeringFeatureSourceDeltaTableSource `json:"delta_table_source,omitempty"`
-	KafkaSource      *DataSourceFeatureEngineeringFeatureSourceKafkaSource      `json:"kafka_source,omitempty"`
-	Lateness         *DataSourceFeatureEngineeringFeatureSourceLateness         `json:"lateness,omitempty"`
-	RequestSource    *DataSourceFeatureEngineeringFeatureSourceRequestSource    `json:"request_source,omitempty"`
-	StreamSource     *DataSourceFeatureEngineeringFeatureSourceStreamSource     `json:"stream_source,omitempty"`
+	DeltaTableSource  *DataSourceFeatureEngineeringFeatureSourceDeltaTableSource  `json:"delta_table_source,omitempty"`
+	FeatureViewSource *DataSourceFeatureEngineeringFeatureSourceFeatureViewSource `json:"feature_view_source,omitempty"`
+	KafkaSource       *DataSourceFeatureEngineeringFeatureSourceKafkaSource       `json:"kafka_source,omitempty"`
+	Lateness          *DataSourceFeatureEngineeringFeatureSourceLateness          `json:"lateness,omitempty"`
+	RequestSource     *DataSourceFeatureEngineeringFeatureSourceRequestSource     `json:"request_source,omitempty"`
+	StreamSource      *DataSourceFeatureEngineeringFeatureSourceStreamSource      `json:"stream_source,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeatureTimeWindowContinuous struct {

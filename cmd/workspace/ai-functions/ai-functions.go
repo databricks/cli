@@ -66,7 +66,9 @@ func newAiClassify() *cobra.Command {
 	cmd.Short = `Classify text into labels.`
 	cmd.Long = `Classify text into labels.
 
-  Classifies content according to a set of provided labels.`
+  Classifies content according to a set of provided labels. For REST API
+  requests, the default rate limit is 1,200 requests per minute per workspace.
+  Contact your Databricks account team to request a higher limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"
@@ -136,7 +138,9 @@ func newAiExtract() *cobra.Command {
 	cmd.Long = `Extract structured data from text.
 
   Extracts structured data from text and documents according to a provided
-  schema.`
+  schema. For REST API requests, the default rate limit is 120 requests per
+  minute per workspace. Contact your Databricks account team to request a higher
+  limit.`
 
 	cmd.Annotations = make(map[string]string)
 	cmd.Annotations["launch_stage"] = "GA"

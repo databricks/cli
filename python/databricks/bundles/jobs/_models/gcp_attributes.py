@@ -83,7 +83,8 @@ class GcpAttributes:
     """
     Identifier for the availability zone in which the cluster resides.
     This can be one of the following:
-    - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default].
+    - "HA" => High availability, spread nodes across availability zones for a
+    Databricks deployment region [default].
     - "AUTO" => Databricks picks an availability zone to schedule the cluster on.
     - A GCP availability zone => Pick One of the available zones for (machine type + region) from
     https://cloud.google.com/compute/docs/regions-zones.
@@ -158,7 +159,8 @@ class GcpAttributesDict(TypedDict, total=False):
     """
     Identifier for the availability zone in which the cluster resides.
     This can be one of the following:
-    - "HA" => High availability, spread nodes across availability zones for a Databricks deployment region [default].
+    - "HA" => High availability, spread nodes across availability zones for a
+    Databricks deployment region [default].
     - "AUTO" => Databricks picks an availability zone to schedule the cluster on.
     - A GCP availability zone => Pick One of the available zones for (machine type + region) from
     https://cloud.google.com/compute/docs/regions-zones.

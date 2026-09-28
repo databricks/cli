@@ -30,17 +30,13 @@ class GitRepository:
 
     auto_deploy: VariableOrOptional[bool] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] When true, automatically deploys the app on push events to the branch configured in
+    When true, automatically deploys the app on push events to the branch configured in
     the app's deployment_source.git_source.
     """
 
     caller_credential_id: VariableOrOptional[int] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] ID of a personal access token Git credential owned by the caller, used to
+    ID of a personal access token Git credential owned by the caller, used to
     grant the app's service principal access to this repository.
     """
 
@@ -68,17 +64,13 @@ class GitRepositoryDict(TypedDict, total=False):
 
     auto_deploy: VariableOrOptional[bool]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] When true, automatically deploys the app on push events to the branch configured in
+    When true, automatically deploys the app on push events to the branch configured in
     the app's deployment_source.git_source.
     """
 
     caller_credential_id: VariableOrOptional[int]
     """
-    :meta private: [EXPERIMENTAL]
-    
-    [Beta] ID of a personal access token Git credential owned by the caller, used to
+    ID of a personal access token Git credential owned by the caller, used to
     grant the app's service principal access to this repository.
     """
 

@@ -17,8 +17,6 @@ var patterns = []dyn.Pattern{
 	taskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
 	forEachTaskLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
-	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("whl")),
-	clusterLibrariesPattern.Append(dyn.AnyIndex(), dyn.Key("jar")),
 	envDepsPattern.Append(dyn.AnyIndex()),
 	pipelineEnvDepsPattern.Append(dyn.AnyIndex()),
 }

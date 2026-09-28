@@ -121,6 +121,11 @@ type ResourceAccountSettingV2EffectiveStringVal struct {
 	Value string `json:"value,omitempty"`
 }
 
+type ResourceAccountSettingV2EffectiveWorkspaceLabel struct {
+	Color string `json:"color,omitempty"`
+	Label string `json:"label,omitempty"`
+}
+
 type ResourceAccountSettingV2IntegerVal struct {
 	Value int `json:"value,omitempty"`
 }
@@ -142,6 +147,11 @@ type ResourceAccountSettingV2StringVal struct {
 	Value string `json:"value,omitempty"`
 }
 
+type ResourceAccountSettingV2WorkspaceLabel struct {
+	Color string `json:"color,omitempty"`
+	Label string `json:"label,omitempty"`
+}
+
 type ResourceAccountSettingV2 struct {
 	AibiDashboardEmbeddingAccessPolicy             *ResourceAccountSettingV2AibiDashboardEmbeddingAccessPolicy             `json:"aibi_dashboard_embedding_access_policy,omitempty"`
 	AibiDashboardEmbeddingApprovedDomains          *ResourceAccountSettingV2AibiDashboardEmbeddingApprovedDomains          `json:"aibi_dashboard_embedding_approved_domains,omitempty"`
@@ -160,10 +170,12 @@ type ResourceAccountSettingV2 struct {
 	EffectivePersonalCompute                       *ResourceAccountSettingV2EffectivePersonalCompute                       `json:"effective_personal_compute,omitempty"`
 	EffectiveRestrictWorkspaceAdmins               *ResourceAccountSettingV2EffectiveRestrictWorkspaceAdmins               `json:"effective_restrict_workspace_admins,omitempty"`
 	EffectiveStringVal                             *ResourceAccountSettingV2EffectiveStringVal                             `json:"effective_string_val,omitempty"`
+	EffectiveWorkspaceLabel                        *ResourceAccountSettingV2EffectiveWorkspaceLabel                        `json:"effective_workspace_label,omitempty"`
 	IntegerVal                                     *ResourceAccountSettingV2IntegerVal                                     `json:"integer_val,omitempty"`
 	Name                                           string                                                                  `json:"name,omitempty"`
 	OperationalEmailCustomRecipient                *ResourceAccountSettingV2OperationalEmailCustomRecipient                `json:"operational_email_custom_recipient,omitempty"`
 	PersonalCompute                                *ResourceAccountSettingV2PersonalCompute                                `json:"personal_compute,omitempty"`
 	RestrictWorkspaceAdmins                        *ResourceAccountSettingV2RestrictWorkspaceAdmins                        `json:"restrict_workspace_admins,omitempty"`
 	StringVal                                      *ResourceAccountSettingV2StringVal                                      `json:"string_val,omitempty"`
+	WorkspaceLabel                                 *ResourceAccountSettingV2WorkspaceLabel                                 `json:"workspace_label,omitempty"`
 }

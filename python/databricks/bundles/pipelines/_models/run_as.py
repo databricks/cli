@@ -19,6 +19,13 @@ class RunAs:
     Only `user_name` or `service_principal_name` can be specified. If both are specified, an error is thrown.
     """
 
+    group_name: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Group name of an account group assigned to the workspace. When set, the pipeline runs as the group and the group's permissions are used for data access. Setting this field requires being a member of the group, or having the `Assume` permission on the group.
+    """
+
     service_principal_name: VariableOrOptional[str] = None
     """
     Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
@@ -39,6 +46,13 @@ class RunAs:
 
 class RunAsDict(TypedDict, total=False):
     """"""
+
+    group_name: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Group name of an account group assigned to the workspace. When set, the pipeline runs as the group and the group's permissions are used for data access. Setting this field requires being a member of the group, or having the `Assume` permission on the group.
+    """
 
     service_principal_name: VariableOrOptional[str]
     """

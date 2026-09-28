@@ -13,7 +13,7 @@ require (
 	github.com/charmbracelet/huh v1.0.0 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
 	github.com/charmbracelet/x/ansi v0.11.8 // MIT
-	github.com/databricks/databricks-sdk-go v0.178.0 // Apache-2.0
+	github.com/databricks/databricks-sdk-go v0.182.0 // Apache-2.0
 	github.com/google/jsonschema-go v0.4.3 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/websocket v1.5.3 // BSD-2-Clause
@@ -22,7 +22,7 @@ require (
 	github.com/hashicorp/terraform-exec v0.25.3 // MPL-2.0
 	github.com/hashicorp/terraform-json v0.28.0 // MPL-2.0
 	github.com/hexops/gotextdiff v1.0.3 // BSD-3-Clause
-	github.com/jackc/pgx/v5 v5.10.0 // MIT
+	github.com/jackc/pgx/v5 v5.11.0 // MIT
 	github.com/klauspost/pgzip v1.2.6 // MIT
 	github.com/mattn/go-isatty v0.0.24 // MIT
 	github.com/muesli/termenv v0.16.0 // MIT
@@ -43,7 +43,7 @@ require (
 	golang.org/x/sync v0.23.0 // BSD-3-Clause
 	golang.org/x/sys v0.48.0 // BSD-3-Clause
 	golang.org/x/term v0.45.0 // BSD-3-Clause
-	golang.org/x/text v0.41.0 // BSD-3-Clause
+	golang.org/x/text v0.42.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.3 // Apache-2.0
 )
 
