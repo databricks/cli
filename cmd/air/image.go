@@ -30,7 +30,7 @@ var (
 	imageTagPattern      = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$`)
 )
 
-type imageSetupOptions struct {
+type imagePushOptions struct {
 	source  string
 	catalog string
 	schema  string
@@ -39,7 +39,7 @@ type imageSetupOptions struct {
 	pull    bool
 }
 
-type resolvedImageSetupOptions struct {
+type resolvedImagePushOptions struct {
 	source   string
 	catalog  string
 	schema   string
@@ -48,15 +48,15 @@ type resolvedImageSetupOptions struct {
 	region   string
 }
 
-type imageSetupDeps struct {
+type imagePushDeps struct {
 	configureDocker func(context.Context, string, string) (string, error)
 	lookPath        func(string) (string, error)
 	resolveRegion   func(context.Context, *databricks.WorkspaceClient) (string, error)
 	runCommand      func(context.Context, io.Reader, io.Writer, io.Writer, string, ...string) error
 }
 
-func defaultImageSetupDeps() imageSetupDeps {
-	return imageSetupDeps{
+func defaultImagePushDeps() imagePushDeps {
+	return imagePushDeps{
 		configureDocker: configureImageDocker,
 		lookPath:        exec.LookPath,
 		resolveRegion:   resolveImageRegion,
@@ -107,20 +107,20 @@ func newImagesCommand() *cobra.Command {
 		Short: "Manage container images for AI Runtime",
 		RunE:  root.ReportUnknownSubcommand,
 	}
-	cmd.AddCommand(newImageSetupCommand())
+	cmd.AddCommand(newImagePushCommand())
 	return cmd
 }
 
-func newImageSetupCommand() *cobra.Command {
-	return newImageSetupCommandWithDeps(defaultImageSetupDeps())
+func newImagePushCommand() *cobra.Command {
+	return newImagePushCommandWithDeps(defaultImagePushDeps())
 }
 
-func newImageSetupCommandWithDeps(deps imageSetupDeps) *cobra.Command {
-	var opts imageSetupOptions
+func newImagePushCommandWithDeps(deps imagePushDeps) *cobra.Command {
+	var opts imagePushOptions
 	cmd := &cobra.Command{
-		Use:   "setup",
-		Short: "Configure Docker authentication and push an image to Databricks Artifact Registry",
-		Long: `Configure Docker authentication and push a container image to Databricks Artifact Registry.
+		Use:   "push",
+		Short: "Push a container image to Databricks Artifact Registry",
+		Long: `Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
 
 The command detects the workspace region, configures Docker's Databricks credential
 helper, and pushes the source image to catalog.schema.artifact:tag. Omitted image
@@ -138,7 +138,7 @@ details are prompted for when the terminal is interactive.`,
 			return root.MustWorkspaceClient(cmd, args)
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runImageSetup(cmd, &opts, deps)
+			return runImagePush(cmd, &opts, deps)
 		},
 	}
 
@@ -151,17 +151,17 @@ details are prompted for when the terminal is interactive.`,
 	return cmd
 }
 
-func runImageSetup(cmd *cobra.Command, opts *imageSetupOptions, deps imageSetupDeps) error {
+func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps) error {
 	ctx := cmd.Context()
 	cmdio.LogString(ctx, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.")
 	w := cmdctx.WorkspaceClient(ctx)
 
-	resolved, err := resolveImageSetupOptions(ctx, w, opts, deps.resolveRegion)
+	resolved, err := resolveImagePushOptions(ctx, w, opts, deps.resolveRegion)
 	if err != nil {
 		return err
 	}
 	if w.Config.Profile == "" {
-		return errors.New("air images setup requires a workspace profile so Docker can refresh credentials; authenticate with 'databricks auth login' and pass --profile")
+		return errors.New("air images push requires a workspace profile so Docker can refresh credentials; authenticate with 'databricks auth login' and pass --profile")
 	}
 	dockerPath, err := deps.lookPath("docker")
 	if err != nil {
@@ -200,42 +200,42 @@ func runImageSetup(cmd *cobra.Command, opts *imageSetupOptions, deps imageSetupD
 	return err
 }
 
-func resolveImageSetupOptions(
+func resolveImagePushOptions(
 	ctx context.Context,
 	w *databricks.WorkspaceClient,
-	opts *imageSetupOptions,
+	opts *imagePushOptions,
 	resolveRegion func(context.Context, *databricks.WorkspaceClient) (string, error),
-) (resolvedImageSetupOptions, error) {
-	source, err := promptImageSetupValue(ctx, opts.source, "Source image", "", "--source")
+) (resolvedImagePushOptions, error) {
+	source, err := promptImagePushValue(ctx, opts.source, "Source image", "", "--source")
 	if err != nil {
-		return resolvedImageSetupOptions{}, err
+		return resolvedImagePushOptions{}, err
 	}
-	catalog, err := promptImageSetupValue(ctx, opts.catalog, "Unity Catalog catalog", "", "--catalog")
+	catalog, err := promptImagePushValue(ctx, opts.catalog, "Unity Catalog catalog", "", "--catalog")
 	if err != nil {
-		return resolvedImageSetupOptions{}, err
+		return resolvedImagePushOptions{}, err
 	}
 	if !catalogSchemaPattern.MatchString(catalog) {
-		return resolvedImageSetupOptions{}, fmt.Errorf("invalid catalog %q: use only lowercase letters, digits, and underscores", catalog)
+		return resolvedImagePushOptions{}, fmt.Errorf("invalid catalog %q: use only lowercase letters, digits, and underscores", catalog)
 	}
-	schema, err := promptImageSetupValue(ctx, opts.schema, "Unity Catalog schema", "", "--schema")
+	schema, err := promptImagePushValue(ctx, opts.schema, "Unity Catalog schema", "", "--schema")
 	if err != nil {
-		return resolvedImageSetupOptions{}, err
+		return resolvedImagePushOptions{}, err
 	}
 	if !catalogSchemaPattern.MatchString(schema) {
-		return resolvedImageSetupOptions{}, fmt.Errorf("invalid schema %q: use only lowercase letters, digits, and underscores", schema)
+		return resolvedImagePushOptions{}, fmt.Errorf("invalid schema %q: use only lowercase letters, digits, and underscores", schema)
 	}
 
 	defaultArtifact, defaultTag := sourceImageDefaults(source)
 	artifact, tag, err := resolveArtifactAndTag(ctx, opts.image, defaultArtifact, defaultTag)
 	if err != nil {
-		return resolvedImageSetupOptions{}, err
+		return resolvedImagePushOptions{}, err
 	}
-	region, err := resolveImageSetupRegion(ctx, w, opts.region, resolveRegion)
+	region, err := resolveImagePushRegion(ctx, w, opts.region, resolveRegion)
 	if err != nil {
-		return resolvedImageSetupOptions{}, err
+		return resolvedImagePushOptions{}, err
 	}
 
-	return resolvedImageSetupOptions{
+	return resolvedImagePushOptions{
 		source:   source,
 		catalog:  catalog,
 		schema:   schema,
@@ -245,7 +245,7 @@ func resolveImageSetupOptions(
 	}, nil
 }
 
-func promptImageSetupValue(ctx context.Context, value, label, defaultValue, flag string) (string, error) {
+func promptImagePushValue(ctx context.Context, value, label, defaultValue, flag string) (string, error) {
 	if value != "" {
 		return value, nil
 	}
@@ -270,7 +270,7 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 	tag := defaultTag
 	if image == "" {
 		var err error
-		artifact, err = promptImageSetupValue(ctx, "", "Artifact name", defaultArtifact, "--image")
+		artifact, err = promptImagePushValue(ctx, "", "Artifact name", defaultArtifact, "--image")
 		if err != nil {
 			return "", "", err
 		}
@@ -318,7 +318,7 @@ func sourceImageDefaults(source string) (string, string) {
 	return artifact, tag
 }
 
-func resolveImageSetupRegion(
+func resolveImagePushRegion(
 	ctx context.Context,
 	w *databricks.WorkspaceClient,
 	region string,
@@ -337,7 +337,7 @@ func resolveImageSetupRegion(
 		}
 		return "", fmt.Errorf("could not detect the workspace region; pass --region: %w", err)
 	}
-	return promptImageSetupValue(ctx, "", "Workspace region", "", "--region")
+	return promptImagePushValue(ctx, "", "Workspace region", "", "--region")
 }
 
 func resolveImageRegion(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {

@@ -23,13 +23,13 @@ type recordedImageCommand struct {
 	args       []string
 }
 
-func newImageSetupTestCommand(t *testing.T, profile string) (*cobra.Command, *bytes.Buffer, *bytes.Buffer) {
+func newImagePushTestCommand(t *testing.T, profile string) (*cobra.Command, *bytes.Buffer, *bytes.Buffer) {
 	t.Helper()
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}
 	ctx := cmdio.InContext(t.Context(), cmdio.NewIO(t.Context(), flags.OutputText, strings.NewReader(""), stdout, stderr, "", ""))
 	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{Config: &config.Config{Profile: profile}})
-	cmd := &cobra.Command{Use: "setup"}
+	cmd := &cobra.Command{Use: "push"}
 	cmd.SetContext(ctx)
 	cmd.SetIn(strings.NewReader(""))
 	cmd.SetOut(stdout)
@@ -37,10 +37,10 @@ func newImageSetupTestCommand(t *testing.T, profile string) (*cobra.Command, *by
 	return cmd, stdout, stderr
 }
 
-func TestRunImageSetupTagsAndPushesLocalImage(t *testing.T) {
-	cmd, stdout, stderr := newImageSetupTestCommand(t, "workspace")
+func TestRunImagePushTagsAndPushesLocalImage(t *testing.T) {
+	cmd, stdout, stderr := newImagePushTestCommand(t, "workspace")
 	var commands []recordedImageCommand
-	deps := imageSetupDeps{
+	deps := imagePushDeps{
 		configureDocker: func(_ context.Context, profile, region string) (string, error) {
 			assert.Equal(t, "workspace", profile)
 			assert.Equal(t, "us-west-2", region)
@@ -59,7 +59,7 @@ func TestRunImageSetupTagsAndPushesLocalImage(t *testing.T) {
 		},
 	}
 
-	err := runImageSetup(cmd, &imageSetupOptions{
+	err := runImagePush(cmd, &imagePushOptions{
 		source:  "nvidia/cuda:13.4.1",
 		catalog: "main",
 		schema:  "training",
@@ -95,10 +95,10 @@ Installed Docker credential helper: /tmp/bin/docker-credential-databricks`
 	assert.ErrorContains(t, err, "did not report an Artifact Registry host")
 }
 
-func TestRunImageSetupPullsMissingImage(t *testing.T) {
-	cmd, _, _ := newImageSetupTestCommand(t, "workspace")
+func TestRunImagePushPullsMissingImage(t *testing.T) {
+	cmd, _, _ := newImagePushTestCommand(t, "workspace")
 	var commands []recordedImageCommand
-	deps := imageSetupDeps{
+	deps := imagePushDeps{
 		configureDocker: func(context.Context, string, string) (string, error) {
 			return "123.container.us-west-2.cloud.databricks.test", nil
 		},
@@ -115,7 +115,7 @@ func TestRunImageSetupPullsMissingImage(t *testing.T) {
 		},
 	}
 
-	err := runImageSetup(cmd, &imageSetupOptions{
+	err := runImagePush(cmd, &imagePushOptions{
 		source:  "example/image:v1",
 		catalog: "main",
 		schema:  "training",
@@ -127,33 +127,33 @@ func TestRunImageSetupPullsMissingImage(t *testing.T) {
 	assert.Equal(t, []string{"pull", "example/image:v1"}, commands[1].args)
 }
 
-func TestRunImageSetupRequiresWorkspaceProfile(t *testing.T) {
-	cmd, _, _ := newImageSetupTestCommand(t, "")
-	deps := imageSetupDeps{
+func TestRunImagePushRequiresWorkspaceProfile(t *testing.T) {
+	cmd, _, _ := newImagePushTestCommand(t, "")
+	deps := imagePushDeps{
 		resolveRegion: func(context.Context, *databricks.WorkspaceClient) (string, error) {
 			return "us-west-2", nil
 		},
 	}
 
-	err := runImageSetup(cmd, &imageSetupOptions{
+	err := runImagePush(cmd, &imagePushOptions{
 		source:  "example/image:v1",
 		catalog: "main",
 		schema:  "training",
 		image:   "artifact:v1",
 	}, deps)
-	assert.ErrorContains(t, err, "requires a workspace profile")
+	assert.ErrorContains(t, err, "air images push requires a workspace profile")
 }
 
-func TestResolveImageSetupOptionsRequiresFlagsWithoutPrompt(t *testing.T) {
+func TestResolveImagePushOptionsRequiresFlagsWithoutPrompt(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	w := &databricks.WorkspaceClient{Config: &config.Config{}}
-	_, err := resolveImageSetupOptions(ctx, w, &imageSetupOptions{}, func(context.Context, *databricks.WorkspaceClient) (string, error) {
+	_, err := resolveImagePushOptions(ctx, w, &imagePushOptions{}, func(context.Context, *databricks.WorkspaceClient) (string, error) {
 		return "us-west-2", nil
 	})
 	assert.ErrorContains(t, err, "--source is required when prompting is unavailable")
 }
 
-func TestResolveImageSetupOptionsValidatesCatalogAndSchema(t *testing.T) {
+func TestResolveImagePushOptionsValidatesCatalogAndSchema(t *testing.T) {
 	ctx := cmdio.MockDiscard(t.Context())
 	w := &databricks.WorkspaceClient{Config: &config.Config{}}
 	tests := []struct {
@@ -169,7 +169,7 @@ func TestResolveImageSetupOptionsValidatesCatalogAndSchema(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := resolveImageSetupOptions(ctx, w, &imageSetupOptions{
+			_, err := resolveImagePushOptions(ctx, w, &imagePushOptions{
 				source:  "example/image:v1",
 				catalog: tt.catalog,
 				schema:  tt.schema,

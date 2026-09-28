@@ -12,8 +12,8 @@ cp "$TESTDIR/docker" "$HOME/bin/docker"
 chmod +x "$cli_path" "$HOME/bin/docker"
 export PATH="$HOME/bin:$PATH"
 
-title "setup image"
-trace databricks air images setup \
+title "push image"
+trace databricks air images push \
   -p docker-test \
   -s nvidia/cuda:13.4.1 \
   --catalog prod \

@@ -115,7 +115,7 @@ Usage:
   databricks air images [command]
 
 Available Commands:
-  setup       Configure Docker authentication and push an image to Databricks Artifact Registry
+  push        Push a container image to Databricks Artifact Registry
 
 Flags:
   -h, --help   help for images
@@ -128,20 +128,20 @@ Global Flags:
 
 Use "databricks air images [command] --help" for more information about a command.
 
-=== images setup help
->>> [CLI] air images setup --help
-Configure Docker authentication and push a container image to Databricks Artifact Registry.
+=== images push help
+>>> [CLI] air images push --help
+Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
 
 The command detects the workspace region, configures Docker's Databricks credential
 helper, and pushes the source image to catalog.schema.artifact:tag. Omitted image
 details are prompted for when the terminal is interactive.
 
 Usage:
-  databricks air images setup [flags]
+  databricks air images push [flags]
 
 Flags:
       --catalog string   Unity Catalog catalog for the image; use lowercase letters, digits, and underscores
-  -h, --help             help for setup
+  -h, --help             help for push
       --image string     Artifact name and optional tag in Databricks Artifact Registry; artifact names must be 255 characters or less and tags must be 128 characters or less
       --pull             Pull the source image even when it is already available locally
       --region string    Workspace region; detected automatically when omitted

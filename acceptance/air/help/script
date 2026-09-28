@@ -16,8 +16,8 @@ trace $CLI air pools --help
 title "images help"
 trace $CLI air images --help
 
-title "images setup help"
-trace $CLI air images setup --help
+title "images push help"
+trace $CLI air images push --help
 
 title "logs help"
 trace $CLI air logs --help
