@@ -1,0 +1,49 @@
+
+=== Deploy 1: create the cluster with gcp_attributes but no local_ssd_count
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created clusters.test_cluster
+Files: 3 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== gcp_attributes sent on create (local_ssd_count absent):
+{
+  "availability": "PREEMPTIBLE_GCP",
+  "zone_id": "auto"
+}
+
+=== Now the user adds an explicit local_ssd_count: 0 to the config
+
+=== Deploy 2: bundle should detect and apply the local_ssd_count change
+
+>>> [CLI] bundle plan
+update clusters.test_cluster
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Updated clusters.test_cluster
+Files: 2 uploaded, 0 deleted
+Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
+
+=== gcp_attributes sent on update (empty means the change was NOT applied):
+{
+  "availability": "PREEMPTIBLE_GCP",
+  "local_ssd_count": 0,
+  "zone_id": "auto"
+}
+
+=== Deploy 3: no config change, should converge to a no-op
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.clusters.test_cluster
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Destroy: 1 deleted

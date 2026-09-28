@@ -484,7 +484,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
+		} else if allEmptyChange(ch) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmpty
 		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
@@ -830,6 +830,40 @@ func allEmpty(values ...any) bool {
 
 	}
 	return true
+}
+
+// allEmptyChange reports whether a change is an empty no-op that should be skipped.
+// All of Old/New/Remote must be empty-ish under isEmpty (nil, a zero int, "", empty map).
+//
+// The one exception is a genuine local change: when New is an integer the config
+// force-sent that differs from Old, it is a real value to apply, not an unset field.
+// This is what setting gcp_attributes.local_ssd_count: 0 on a cluster first deployed
+// without the field looks like (Old nil, New 0). A zero the backend merely echoes for a
+// field nobody set (New empty) or a value the config did not actually change (Old == New,
+// e.g. an unchanged num_workers: 0) stays a no-op.
+func allEmptyChange(ch *deployplan.ChangeDesc) bool {
+	if !allEmpty(ch.Old, ch.New, ch.Remote) {
+		return false
+	}
+	if isZeroInt(ch.New) && !structdiff.IsEqual(ch.Old, ch.New) {
+		return false
+	}
+	return true
+}
+
+// isZeroInt reports whether v is an integer whose value is zero.
+func isZeroInt(v any) bool {
+	if v == nil {
+		return false
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return rv.IsZero()
+	default:
+		return false
+	}
 }
 
 func isEmpty(rv reflect.Value) bool {

@@ -1,0 +1,78 @@
+{
+  "plan_version": [PLAN_VERSION],
+  "cli_version": "[CLI_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster",
+          "gcp_attributes": {
+            "availability": "PREEMPTIBLE_GCP",
+            "local_ssd_count": 0,
+            "zone_id": "auto"
+          },
+          "node_type_id": "n2-highmem-4",
+          "num_workers": 1,
+          "spark_version": "13.3.x-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autotermination_minutes": 60,
+        "cluster_id": "[UUID]",
+        "cluster_name": "test-cluster",
+        "driver_node_type_id": "n2-highmem-4",
+        "enable_elastic_disk": false,
+        "gcp_attributes": {
+          "availability": "PREEMPTIBLE_GCP",
+          "first_on_demand": 1,
+          "use_preemptible_executors": false,
+          "zone_id": "auto"
+        },
+        "lifecycle": {
+          "started": true
+        },
+        "node_type_id": "n2-highmem-4",
+        "num_workers": 1,
+        "spark_version": "13.3.x-scala2.12",
+        "state": "RUNNING"
+      },
+      "changes": {
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": "n2-highmem-4"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "gcp_attributes.first_on_demand": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": 1
+        },
+        "gcp_attributes.local_ssd_count": {
+          "action": "update",
+          "new": 0
+        },
+        "gcp_attributes.use_preemptible_executors": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
+        "lifecycle": {
+          "action": "skip",
+          "reason": "backend_default",
+          "remote": {
+            "started": true
+          }
+        }
+      }
+    }
+  }
+}
