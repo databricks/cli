@@ -1,0 +1,1 @@
+* Direct engine now detects and applies an explicitly configured integer zero (e.g. `gcp_attributes.local_ssd_count: 0`) added to a resource first deployed without the field. ([#6867](https://github.com/databricks/cli/pull/6867))
