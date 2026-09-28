@@ -15,13 +15,14 @@ import (
 
 const (
 	// mlflowPermissionTimeout bounds the best-effort experiment permission grant.
-	// The AI Runtime backend creates the MLflow experiment around submit time, so
-	// we give it a brief window to become resolvable; capping the wait keeps a
-	// not-yet-created experiment from noticeably delaying submit.
-	mlflowPermissionTimeout = 5 * time.Second
+	// The AI Runtime backend creates the MLflow experiment at submit time, so
+	// get-by-name normally resolves on the first try; this only caps a brief
+	// read-after-write consistency race and keeps submit from stalling.
+	mlflowPermissionTimeout = 2 * time.Second
 	// mlflowPermissionPollInterval is how often get-by-name is retried while
-	// waiting for the experiment to appear.
-	mlflowPermissionPollInterval = 500 * time.Millisecond
+	// waiting for the experiment to become visible. Kept short since the
+	// experiment already exists.
+	mlflowPermissionPollInterval = 100 * time.Millisecond
 )
 
 // permissionAccessControl builds an ACL entry for a validated permission grant.
