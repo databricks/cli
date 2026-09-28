@@ -12,10 +12,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -28,8 +30,8 @@ func TestPrependPath(t *testing.T) {
 	assert.Equal(t, []string{"/b", "/a"}, filepath.SplitList(os.Getenv("PATH")))
 	prependPath(t.Context(), "/new")
 	assert.Equal(t, []string{"/new", "/b", "/a"}, filepath.SplitList(os.Getenv("PATH")))
-	prependPath(t.Context(), "/c", "/d", "/a")
-	assert.Equal(t, []string{"/c", "/d", "/a", "/new", "/b"}, filepath.SplitList(os.Getenv("PATH")))
+	prependPath(t.Context(), "/a") // a deeper existing entry also moves to the front (deduped)
+	assert.Equal(t, []string{"/a", "/new", "/b"}, filepath.SplitList(os.Getenv("PATH")))
 }
 
 func TestRemovePath(t *testing.T) {
@@ -150,6 +152,12 @@ func tarGz(t *testing.T, name string, content []byte) []byte {
 }
 
 func TestEnsureBinary(t *testing.T) {
+	// ensureBinary uses unix specific tooling, and agent-shim is only intended for Linux,
+	// so skip tests for Windows
+	if runtime.GOOS == "windows" {
+		return
+	}
+
 	t.Run("unsupported architecture errors", func(t *testing.T) {
 		_, err := ensureBinary(t.Context(), t.TempDir(), nodeArchiveSpec("riscv"))
 		require.Error(t, err)
@@ -216,6 +224,102 @@ func TestEnsureBinary(t *testing.T) {
 			assert.Equal(t, beforeDownloads, downloads, "an existing install must not re-download")
 		})
 	}
+}
+
+// writeFakeExec drops an executable POSIX shell script named name into dir.
+func writeFakeExec(t *testing.T, dir, name, body string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\n"+body), 0o755))
+}
+
+// fakeUvRecorder is the body of a stand-in `uv` that records how ensureToolchain
+// invoked it (args, the UV_TOOL_* overrides, and whether the setup lock was held)
+// to $FAKE_UV_LOG. It uses only shell builtins so it needs nothing on PATH.
+const fakeUvRecorder = `{
+  echo "args: $*"
+  echo "UV_TOOL_DIR=$UV_TOOL_DIR"
+  echo "UV_TOOL_BIN_DIR=$UV_TOOL_BIN_DIR"
+  [ -f "$FAKE_LOCK_PATH" ] && echo "lock-held"
+} > "$FAKE_UV_LOG"`
+
+func TestEnsureToolchain(t *testing.T) {
+	// ensureToolchain shells out to POSIX tools and installs a Linux-only toolchain,
+	// so the fake executables below only make sense off Windows.
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	lockPath := func(home string) string { return filepath.Join(home, agentRootDir, setupLockName) }
+
+	t.Run("no-op when the toolchain is already present", func(t *testing.T) {
+		home := t.TempDir()
+		binDir := t.TempDir()
+		writeFakeExec(t, binDir, "ucode", ":")
+		writeFakeExec(t, binDir, "npm", ":")
+		// A uv that records if it ever runs: a ready toolchain must install nothing.
+		writeFakeExec(t, binDir, "uv", fakeUvRecorder)
+		marker := filepath.Join(t.TempDir(), "uv.log")
+		t.Setenv("FAKE_UV_LOG", marker)
+		t.Setenv("PATH", binDir)
+
+		require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
+		assert.NoFileExists(t, marker, "uv must not run when the toolchain is already present")
+	})
+
+	t.Run("installs the Unity Gateway CLI via uv when uv is already present", func(t *testing.T) {
+		home := t.TempDir()
+		binDir := t.TempDir()
+		// uv and npm are present; ucode is not, so only ucode gets installed and no
+		// download happens (which keeps the test hermetic).
+		writeFakeExec(t, binDir, "uv", fakeUvRecorder)
+		writeFakeExec(t, binDir, "npm", ":")
+		marker := filepath.Join(t.TempDir(), "uv.log")
+		t.Setenv("FAKE_UV_LOG", marker)
+		t.Setenv("FAKE_LOCK_PATH", lockPath(home))
+		t.Setenv("PATH", binDir)
+
+		require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
+
+		out, err := os.ReadFile(marker)
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "tool install git+https://github.com/"+ugRepo+"@"+ugCommit)
+		assert.Contains(t, string(out), "UV_TOOL_DIR="+filepath.Join(home, uvToolDir))
+		assert.Contains(t, string(out), "UV_TOOL_BIN_DIR="+filepath.Join(home, uvToolBinDir))
+		assert.Contains(t, string(out), "lock-held", "the install must run while holding the setup lock")
+		// The tool bin dir is prepended to PATH so the freshly installed ucode is found.
+		assert.Contains(t, filepath.SplitList(os.Getenv("PATH")), filepath.Join(home, uvToolBinDir))
+		assert.NoFileExists(t, lockPath(home), "the setup lock is released once setup finishes")
+	})
+
+	t.Run("recheck after acquiring the lock skips a redundant install", func(t *testing.T) {
+		home := t.TempDir()
+		binDir := t.TempDir()
+		// uv is present and records if it ever installs; it must not be called once a
+		// concurrent client finishes the toolchain while we wait for the lock.
+		writeFakeExec(t, binDir, "uv", fakeUvRecorder)
+		marker := filepath.Join(t.TempDir(), "uv.log")
+		t.Setenv("FAKE_UV_LOG", marker)
+		t.Setenv("FAKE_LOCK_PATH", lockPath(home))
+		t.Setenv("PATH", binDir) // ucode+npm absent → not ready yet
+
+		// Hold the setup lock to stand in for another client mid-install.
+		unlock, err := acquireSetupLock(t.Context(), home)
+		require.NoError(t, err)
+
+		ctx := cmdio.MockDiscard(t.Context())
+		done := make(chan error, 1)
+		go func() { done <- ensureToolchain(ctx, home, "amd64") }()
+
+		// The other client finishes: publish ucode+npm into the PATH dir, then release
+		// the lock so the waiting ensureToolchain can proceed.
+		writeFakeExec(t, binDir, "ucode", ":")
+		writeFakeExec(t, binDir, "npm", ":")
+		unlock()
+
+		require.NoError(t, <-done)
+		assert.NoFileExists(t, marker, "the post-lock readiness recheck must skip installing")
+	})
 }
 
 func TestSupportedAgents(t *testing.T) {

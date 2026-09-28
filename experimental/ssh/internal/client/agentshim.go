@@ -326,7 +326,7 @@ func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace str
 		prependPath(ctx, filepath.Dir(self))
 	}
 
-	err = ensureToolchain(ctx, home)
+	err = ensureToolchain(ctx, home, runtime.GOARCH)
 	if err != nil {
 		return err
 	}
@@ -344,13 +344,13 @@ func toolchainReady() bool {
 	return ugErr == nil && npmErr == nil
 }
 
-func ensureToolchain(ctx context.Context, home string) error {
+func ensureToolchain(ctx context.Context, home, arch string) error {
 	if toolchainReady() {
 		return nil
 	}
 	unlock, err := acquireSetupLock(ctx, home)
 	if err != nil {
-		return nil
+		return err
 	}
 	defer unlock()
 	// Another client may have finished the install while we waited for the lock.
@@ -363,12 +363,14 @@ func ensureToolchain(ctx context.Context, home string) error {
 
 	if _, err := exec.LookPath("uv"); err != nil {
 		cmdio.LogString(ctx, "Installing uv...")
-		uvPath, err := ensureBinary(ctx, home, uvArchiveSpec(runtime.GOARCH))
+		uvPath, err := ensureBinary(ctx, home, uvArchiveSpec(arch))
 		if err != nil {
 			return fmt.Errorf("failed to install uv: %w", err)
 		}
-		prependPath(ctx, uvPath, uvToolBinDirAbsolute)
+		prependPath(ctx, uvPath)
 	}
+
+	prependPath(ctx, uvToolBinDirAbsolute)
 
 	if _, err := exec.LookPath("ucode"); err != nil {
 		cmdio.LogString(ctx, "Installing Unity Gateway CLI...")
@@ -381,7 +383,7 @@ func ensureToolchain(ctx context.Context, home string) error {
 
 	if _, err := exec.LookPath("npm"); err != nil {
 		cmdio.LogString(ctx, "Installing npm...")
-		nodePath, err := ensureBinary(ctx, home, nodeArchiveSpec(runtime.GOARCH))
+		nodePath, err := ensureBinary(ctx, home, nodeArchiveSpec(arch))
 		if err != nil {
 			return err
 		}
@@ -627,13 +629,10 @@ func runCommand(ctx context.Context, env []string, name string, args ...string) 
 	return cmd.Run()
 }
 
-func prependPath(ctx context.Context, dirs ...string) {
+func prependPath(ctx context.Context, dir string) {
+	dirs := []string{dir}
 	for _, d := range filepath.SplitList(env.Get(ctx, "PATH")) {
-		match := false
-		for _, toAdd := range dirs {
-			match = match || d == toAdd
-		}
-		if !match {
+		if d != dir {
 			dirs = append(dirs, d)
 		}
 	}
