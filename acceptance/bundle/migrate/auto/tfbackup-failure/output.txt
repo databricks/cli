@@ -24,10 +24,8 @@ direct_migrated_via_env true
 
 === Local state is now direct (migration succeeded with warning)
 
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
-
->>> find .databricks/bundle -name terraform.tfstate* -type f
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
@@ -48,8 +46,6 @@ Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Local state remains direct
 
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
-
->>> find .databricks/bundle -name terraform.tfstate* -type f
 .databricks/bundle/default/terraform/terraform.tfstate.backup

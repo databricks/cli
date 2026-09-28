@@ -9,10 +9,8 @@ Resources: 0 created, 0 changed, 0 deleted, 0 unchanged
 
 === Empty state migrated: resources.json written, local terraform state backed up
 
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
-
->>> find .databricks/bundle -name terraform.tfstate* -type f
 .databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Migration is recorded in telemetry as via-config

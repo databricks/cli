@@ -18,8 +18,8 @@ trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 
 title "On direct despite the failed apply: resources.json present, terraform state retired\n"
-trace find .databricks/bundle -name "resources.json" -type f
-trace find .databricks/bundle -name "terraform.tfstate*" -type f
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
 
 title "Retry finishes the apply on the already-migrated direct state (no re-migration)"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
@@ -27,5 +27,5 @@ trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 
 title "Local state remains direct\n"
-trace find .databricks/bundle -name "resources.json" -type f
-trace find .databricks/bundle -name "terraform.tfstate*" -type f
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"

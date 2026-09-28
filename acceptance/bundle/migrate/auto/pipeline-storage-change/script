@@ -18,8 +18,7 @@ title "Change immutable storage. Without --auto-approve the recreate is refused"
 update_file.py databricks.yml "$UNIQUE_NAME-init" "$UNIQUE_NAME-changed"
 trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
 trace print_migration_telemetry
-trace find .databricks/bundle -name "resources.json" -type f
-trace find .databricks/bundle -name "*tfstate*" -type f
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 
 title "With --auto-approve the recreate is applied on direct"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
@@ -32,4 +31,4 @@ trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy --auto-approve
 # clean-redeploy path on cloud.
 
 title "Local state is now direct"
-trace find .databricks/bundle -name "resources.json" -type f | sort
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'

@@ -29,8 +29,9 @@ Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
   "full_name": "main.pschema-[UNIQUE_NAME].thevolume-[UNIQUE_NAME]-renamed"
 }
 
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
+.databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Cleanup
 >>> [CLI] bundle destroy --auto-approve

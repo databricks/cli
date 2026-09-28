@@ -27,4 +27,4 @@ trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "The schema exists under the new name and the local state is direct"
 trace $CLI schemas get "main.myschema-$UNIQUE_NAME-renamed" | jq "{full_name}"
-trace find .databricks/bundle -name "resources.json" -type f | sort
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'

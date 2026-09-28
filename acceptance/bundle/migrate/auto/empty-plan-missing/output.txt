@@ -8,7 +8,5 @@ Error: reading plan file: open does-not-exist.json: no such file or directory
 Exit code: 1
 
 === Terraform state is untouched - the empty migration was never committed or swept
->>> find .databricks/bundle -name resources.json -type f
-
->>> find .databricks/bundle -name terraform.tfstate* -type f
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/terraform/terraform.tfstate

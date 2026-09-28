@@ -28,9 +28,7 @@ Exit code: 1
 >>> print_migration_telemetry
 direct_migrate_recreate_planned true
 
->>> find .databricks/bundle -name resources.json -type f
-
->>> find .databricks/bundle -name *tfstate* -type f
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/terraform/terraform.tfstate
 
 === With --auto-approve the recreate is applied on direct
@@ -49,8 +47,9 @@ Files: 0 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 === Local state is now direct
->>> find .databricks/bundle -name resources.json -type f
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 .databricks/bundle/default/resources.json
+.databricks/bundle/default/terraform/terraform.tfstate.backup
 
 === Cleanup
 >>> [CLI] bundle destroy --auto-approve

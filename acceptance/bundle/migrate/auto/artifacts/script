@@ -7,8 +7,8 @@ title "Redeploy with direct default: auto-migration runs after the build, so lib
 trace $CLI bundle deploy
 
 title "Local state is now direct\n"
-trace find .databricks/bundle -name "resources.json" -type f
-trace find .databricks/bundle -name "terraform.tfstate*" -type f
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
 
 title "Migrated state's library path (should be the resolved remote path, not the local glob)"
 trace print_state.py | jq '.. | .libraries? | select(.)'

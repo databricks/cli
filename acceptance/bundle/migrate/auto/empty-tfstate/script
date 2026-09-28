@@ -13,8 +13,7 @@ title "Deploy with bundle.engine: direct and an empty terraform state — migrat
 trace $CLI bundle deploy 2>&1 | contains.py 'Migrated 0 resources to direct deployment engine.'
 
 title "Empty state migrated: resources.json written, local terraform state backed up\n"
-trace find .databricks/bundle -name "resources.json" -type f
-trace find .databricks/bundle -name "terraform.tfstate*" -type f
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 
 title "Migration is recorded in telemetry as via-config\n"
 trace print_migration_telemetry

@@ -23,4 +23,4 @@ trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 
 title "The volume exists under the new name and the local state is direct"
 trace $CLI volumes read "main.pschema-$UNIQUE_NAME.thevolume-$UNIQUE_NAME-renamed" | jq "{full_name}"
-trace find .databricks/bundle -name "resources.json" -type f | sort
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
