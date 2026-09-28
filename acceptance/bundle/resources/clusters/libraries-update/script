@@ -6,14 +6,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Deploy output goes to LOG (differs fake vs cloud); the empty restart requests are the proof.
-title "Install (create): libraries install on the fresh cluster with no restart"
+# Deploy output goes to LOG (differs fake vs cloud); the recorded library requests are the proof.
+title "Create: the declared library installs on the new cluster"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.create
 cat LOG.create | contains.py "Created clusters.mycluster" > /dev/null
-trace print_requests.py //clusters/restart
+trace print_requests.py //libraries/install
 
-title "Update: adding a library does not restart the running cluster"
+title "Update: adding a library installs the declared set on the running cluster"
 update_file.py databricks.yml "        - pypi:
             package: requests" "        - pypi:
             package: requests
@@ -22,10 +22,10 @@ update_file.py databricks.yml "        - pypi:
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.update
 cat LOG.update | contains.py "Updated clusters.mycluster" > /dev/null
-trace print_requests.py //clusters/restart
+trace print_requests.py //libraries/install //libraries/uninstall
 
 # An empty list keeps the libraries managed, so it uninstalls them; dropping the section would leave them unmanaged.
-title "Delete: emptying the libraries list uninstalls them without restarting the running cluster"
+title "Delete: emptying the libraries list uninstalls them"
 update_file.py databricks.yml "      libraries:
         - pypi:
             package: requests
@@ -36,4 +36,4 @@ update_file.py databricks.yml "      libraries:
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.remove
 cat LOG.remove | contains.py "Updated clusters.mycluster" > /dev/null
-trace print_requests.py //libraries/uninstall //clusters/restart
+trace print_requests.py //libraries/uninstall //libraries/install

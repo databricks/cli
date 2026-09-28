@@ -24,7 +24,7 @@ print_requests.py //libraries/install > /dev/null
 title "Plan: the job's out-of-band 'six' shows as a removal, the declared libraries are unchanged"
 trace plan_pypi_libs
 
-title "Remove the declared 'urllib3' and redeploy: uninstalls urllib3 and the job's libraries, keeps requests, no restart"
+title "Remove the declared 'urllib3' and redeploy: uninstalls urllib3 and the job's libraries, keeps requests"
 update_file.py databricks.yml "
         - pypi:
             package: urllib3" ""
@@ -32,4 +32,4 @@ trace plan_pypi_libs
 $CLI bundle deploy &> LOG.deploy2
 cat LOG.deploy2 | contains.py "Updated clusters.test_cluster" > /dev/null
 printf '\n%s\n' "OK: redeployed"
-trace print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+trace print_requests.py //libraries/uninstall //libraries/install

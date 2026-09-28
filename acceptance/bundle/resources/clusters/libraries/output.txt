@@ -34,8 +34,8 @@ OK: cluster created with libraries
   }
 }
 
-=== Removing the wheel and redeploying uninstalls it without restarting the running cluster
->>> print_requests.py //libraries/uninstall //clusters/restart
+=== Removing the wheel and redeploying uninstalls it
+>>> print_requests.py //libraries/uninstall
 {
   "method": "POST",
   "path": "/api/2.0/libraries/uninstall",

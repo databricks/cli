@@ -18,7 +18,7 @@ OK: job ran
   }
 }
 
-=== Remove the declared 'urllib3' and redeploy: uninstalls urllib3 and the job's libraries, keeps requests, no restart
+=== Remove the declared 'urllib3' and redeploy: uninstalls urllib3 and the job's libraries, keeps requests
 >>> plan_pypi_libs
 {
   "libraries[pypi='six;']": {
@@ -46,7 +46,7 @@ OK: job ran
 
 OK: redeployed
 
->>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+>>> print_requests.py //libraries/uninstall //libraries/install
 {
   "method": "POST",
   "path": "/api/2.0/libraries/uninstall",

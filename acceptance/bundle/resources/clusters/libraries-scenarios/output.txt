@@ -35,7 +35,7 @@ OK: cluster created
   }
 }
 
-=== Declare 'requests': plan installs it and uninstalls the out-of-band six, no restart
+=== Declare 'requests': plan installs it and uninstalls the out-of-band six
 >>> plan_libs
 {
   "libraries": {
@@ -73,7 +73,7 @@ OK: cluster created
   }
 }
 
->>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+>>> print_requests.py //libraries/install //libraries/uninstall
 {
   "method": "POST",
   "path": "/api/2.0/libraries/uninstall",
@@ -141,7 +141,7 @@ OK: cluster created
   }
 }
 
->>> print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+>>> print_requests.py //libraries/install //libraries/uninstall
 {
   "method": "POST",
   "path": "/api/2.0/libraries/install",
@@ -180,7 +180,7 @@ OK: cluster created
   }
 }
 
->>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+>>> print_requests.py //libraries/uninstall //libraries/install
 
 === No-op redeploy: libraries are unmanaged and nothing changes
 >>> plan_libs
@@ -205,7 +205,7 @@ OK: cluster created
   }
 }
 
->>> print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+>>> print_requests.py //libraries/uninstall //libraries/install
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

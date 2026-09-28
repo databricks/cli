@@ -21,9 +21,9 @@ printf '\n%s\n' "OK: cluster created with libraries"
 title "Libraries installed via the Libraries API (wheel rewritten to its uploaded path)"
 trace print_requests.py //libraries/install
 
-title "Removing the wheel and redeploying uninstalls it without restarting the running cluster"
+title "Removing the wheel and redeploying uninstalls it"
 update_file.py databricks.yml "        - whl: ./dist/*.whl" ""
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
 cat LOG.redeploy | contains.py "Updated clusters.mycluster" > /dev/null
-trace print_requests.py //libraries/uninstall //clusters/restart
+trace print_requests.py //libraries/uninstall

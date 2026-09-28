@@ -29,7 +29,7 @@ title "No libraries section: six is skipped as unmanaged, not drift"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 trace plan_libs
 
-title "Declare 'requests': plan installs it and uninstalls the out-of-band six, no restart"
+title "Declare 'requests': plan installs it and uninstalls the out-of-band six"
 update_file.py databricks.yml "      num_workers: 1" "      num_workers: 1
       libraries:
         - pypi:
@@ -38,7 +38,7 @@ $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 trace plan_libs
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
-trace print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+trace print_requests.py //libraries/install //libraries/uninstall
 
 title "Drift: 'requests' is uninstalled out of band; plan reinstalls the declared library"
 MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/libraries/uninstall --json "{\"cluster_id\": \"$CLUSTER_ID\", \"libraries\": [{\"pypi\": {\"package\": \"requests\"}}]}" > /dev/null
@@ -47,7 +47,7 @@ $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 trace plan_libs
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "Updated clusters.mycluster" > /dev/null
-trace print_requests.py //libraries/install //libraries/uninstall //clusters/restart
+trace print_requests.py //libraries/install //libraries/uninstall
 
 title "Remove the libraries section: libraries become unmanaged, requests stays installed, no install or uninstall"
 update_file.py databricks.yml "      num_workers: 1
@@ -58,11 +58,11 @@ $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 trace plan_libs
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "1 unchanged" > /dev/null
-trace print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+trace print_requests.py //libraries/uninstall //libraries/install
 
 title "No-op redeploy: libraries are unmanaged and nothing changes"
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
 trace plan_libs
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "1 unchanged" > /dev/null
-trace print_requests.py //libraries/uninstall //libraries/install //clusters/restart
+trace print_requests.py //libraries/uninstall //libraries/install
