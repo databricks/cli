@@ -429,7 +429,7 @@
                 "version_id": ""
               }
             ],
-            "development": true,
+            "development": false,
             "edition": "ADVANCED",
             "environment": [
               {

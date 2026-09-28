@@ -1,0 +1,11 @@
+title "Production target: update is force-sent development: false"
+trace $CLI bundle deploy -t prod
+rm "$OUT_REQUESTS"
+trace $CLI bundle run my_pipeline -t prod
+trace print_requests.py //pipelines
+
+title "Development target: update is force-sent development: true"
+trace $CLI bundle deploy -t dev
+rm "$OUT_REQUESTS"
+trace $CLI bundle run my_pipeline -t dev
+trace print_requests.py //pipelines

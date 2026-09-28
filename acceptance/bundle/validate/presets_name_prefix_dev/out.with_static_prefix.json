@@ -16,7 +16,6 @@
   "presets": {
     "jobs_max_concurrent_runs": 4,
     "name_prefix": "prefix",
-    "pipelines_development": true,
     "tags": {
       "dev": "[USERNAME]"
     },

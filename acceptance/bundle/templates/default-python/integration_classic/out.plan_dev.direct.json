@@ -121,7 +121,6 @@
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
           },
-          "development": true,
           "edition": "ADVANCED",
           "environment": {
             "dependencies": [

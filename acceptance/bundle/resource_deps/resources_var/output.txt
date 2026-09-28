@@ -8,7 +8,6 @@
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"
       },
-      "development": true,
       "edition": "ADVANCED",
       "name": "[dev [USERNAME]] pipeline for ${resources.volumes.foo.catalog_name}.${resources.volumes.foo.schema_name}.${resources.volumes.foo.name}",
       "tags": {
