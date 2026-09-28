@@ -26,4 +26,4 @@ trace $CLI bundle destroy --auto-approve
 
 title "Destroy leaves no state behind: no local state files, remote deployment removed"
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
-trace MSYS_NO_PATHCONV=1 errcode $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+trace MSYS_NO_PATHCONV=1 musterr $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"

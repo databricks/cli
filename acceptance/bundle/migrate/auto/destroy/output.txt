@@ -35,7 +35,5 @@ Destroy: 1 deleted
 === Destroy leaves no state behind: no local state files, remote deployment removed
 >>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
 
->>> MSYS_NO_PATHCONV=1 errcode [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+>>> MSYS_NO_PATHCONV=1 musterr [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state) doesn't exist.
-
-Exit code: 1

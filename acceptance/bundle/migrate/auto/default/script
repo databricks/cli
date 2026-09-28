@@ -30,6 +30,6 @@ title "Destroy the migrated bundle leaves no state behind, local or remote"
 # terraform provider cache under .terraform/; the remote state dir is gone once the destroy completes.
 trace $CLI bundle destroy --auto-approve
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
-trace MSYS_NO_PATHCONV=1 errcode $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+trace MSYS_NO_PATHCONV=1 musterr $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
 
 rm -f "$OUT_REQUESTS"
