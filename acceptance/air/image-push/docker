@@ -3,8 +3,37 @@
 printf '%s\n' "$*" >> "$DOCKER_LOG"
 
 case "$1 $2" in
-  "image inspect"|tag\ *|push\ *)
+  "image ls")
+    if [ "$DOCKER_TEST_MODE" = daemon-error ]; then
+      printf 'Cannot connect to the Docker daemon\n' >&2
+      exit 1
+    fi
+    if [ "$DOCKER_TEST_MODE" != missing ]; then
+      printf 'image-id\n'
+    fi
+    ;;
+  "image inspect")
+    case "$DOCKER_TEST_MODE" in
+      inspect-error)
+        printf 'Docker inspect failed\n' >&2
+        exit 1
+        ;;
+      arm64) printf 'linux/arm64\n' ;;
+      *) printf 'linux/amd64\n' ;;
+    esac
+    ;;
+  pull\ *)
+    if [ "$DOCKER_TEST_MODE" = pull-error ]; then
+      printf 'Docker pull failed\n' >&2
+      exit 1
+    fi
+    printf 'Docker pull progress\n'
+    ;;
+  tag\ *)
     exit 0
+    ;;
+  push\ *)
+    printf 'Docker push progress\n'
     ;;
   *)
     printf 'unexpected docker command: %s\n' "$*" >&2

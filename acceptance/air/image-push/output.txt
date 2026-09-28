@@ -1,17 +1,200 @@
 
 === push image
->>> databricks air images push -p docker-test -s nvidia/cuda:13.4.1 --catalog prod --schema nvidia --image cuda:13.4.1-cudnn-devel-ubuntu26.04 --region us-west-2
+>>> databricks air images push -p docker-test -s nvidia/cuda:13.4.1 --catalog my-catalog --schema my-schema --artifact cuda:13.4.1-cudnn-devel-ubuntu26.04
 Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
-Flag --region has been deprecated, --region will be fully removed in the next release
-Configured Docker credential helper for [NUMID].container.us-west-2.cloud.databricks.com
+Pushing nvidia/cuda:13.4.1 as my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04 using profile docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
 Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
 Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
-Tagging image as [NUMID].container.us-west-2.cloud.databricks.com/prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04
-Pushing image to [NUMID].container.us-west-2.cloud.databricks.com/prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04
+Using local source image nvidia/cuda:13.4.1
+Tagging image as [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+Pushing image to [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+Docker push progress
 Pushed image.
-Now you can set `environment.unity_catalog_image = prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04` in your YAML config and create a workload with `databricks air run -f config.yaml`.
+Now you can set `environment.unity_catalog_image = my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04` in your YAML config and create a workload with `databricks air run -f config.yaml`.
+
+=== inferred region and workspace ID requests
+
+>>> print_requests.py --get //api
+{
+  "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me",
+  "q": {
+    "excludedAttributes": "entitlements"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/metastore_summary"
+}
 
 === docker commands
-image inspect nvidia/cuda:13.4.1
-tag nvidia/cuda:13.4.1 [NUMID].container.us-west-2.cloud.databricks.com/prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04
-push [NUMID].container.us-west-2.cloud.databricks.com/prod.nvidia.cuda:13.4.1-cudnn-devel-ubuntu26.04
+image ls --quiet nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}} nvidia/cuda:13.4.1
+tag nvidia/cuda:13.4.1 [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+push [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+
+=== missing image is pulled for AIR; destination defaults to source
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Pulling source image example/image:v1 for linux/amd64
+Docker pull progress
+Tagging image as [NUMID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [NUMID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+Now you can set `environment.unity_catalog_image = main.training.image:v1` in your YAML config and create a workload with `databricks air run -f config.yaml`.
+
+=== forced pull and JSON output
+>>> databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull -o json
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Pulling source image example/image:v1 for linux/amd64
+Docker pull progress
+Tagging image as [NUMID].container.us-west-2.localhost/main.training.image:v1
+Pushing image to [NUMID].container.us-west-2.localhost/main.training.image:v1
+Docker push progress
+Pushed image.
+
+>>> jq -e {v, data} [TEST_TMP_DIR]/home/result.json
+{
+  "v": 1,
+  "data": {
+    "unity_catalog_image": "main.training.image:v1",
+    "registry_image": "[NUMID].container.us-west-2.localhost/main.training.image:v1"
+  }
+}
+
+=== daemon failure must not pull
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Cannot connect to the Docker daemon
+Error: check local source image example/image:v1 (ensure Docker is running and accessible): exit status 1
+
+=== inspect failure must not pull
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Docker inspect failed
+Error: inspect source image example/image:v1: exit status 1
+
+=== incompatible local image must not be pushed
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Using local source image example/image:v1
+Error: source image example/image:v1 has platform "linux/arm64"; AIR requires linux/amd64: use --pull to fetch a compatible image, or rebuild the source for linux/amd64
+
+=== incompatible pulled image must not be pushed
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Pulling source image example/image:v1 for linux/amd64
+Docker pull progress
+Error: source image example/image:v1 has platform "linux/arm64"; AIR requires linux/amd64: use --pull to fetch a compatible image, or rebuild the source for linux/amd64
+
+=== pull failure must not be pushed
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --pull
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Pushing example/image:v1 as main.training.image:v1 using profile docker-test
+Configured Docker credential helper for [NUMID].container.us-west-2.localhost
+Updated Docker config: [TEST_TMP_DIR]/home/docker/config.json
+Installed Docker credential helper: [TEST_TMP_DIR]/home/bin/docker-credential-databricks
+Pulling source image example/image:v1 for linux/amd64
+Docker pull failed
+Error: pull source image example/image:v1: exit status 1
+
+=== invalid destination and removed flags
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --artifact invalid.name
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Error: invalid artifact name "invalid.name": use lowercase letters and digits separated by one or two underscores or one or more hyphens
+
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema team_-training
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Error: invalid schema "team_-training": use lowercase letters and digits separated by one or two underscores or one or more hyphens
+
+>>> musterr databricks air images push --region us-west-2
+Error: unknown flag: --region
+
+Usage:
+  databricks air images push [flags]
+
+Flags:
+      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for the artifact and 128 for the tag
+      --catalog string    Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -h, --help              help for push
+      --pull              Pull the source image even when it is already available locally
+      --schema string     Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -s, --source string     Source container image to push (NAME[:TAG] or NAME@DIGEST)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+>>> musterr databricks air images push --image artifact
+Error: unknown flag: --image
+
+Usage:
+  databricks air images push [flags]
+
+Flags:
+      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for the artifact and 128 for the tag
+      --catalog string    Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -h, --help              help for push
+      --pull              Pull the source image even when it is already available locally
+      --schema string     Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -s, --source string     Source container image to push (NAME[:TAG] or NAME@DIGEST)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+
+=== all docker commands
+image ls --quiet nvidia/cuda:13.4.1
+image inspect --format {{.Os}}/{{.Architecture}} nvidia/cuda:13.4.1
+tag nvidia/cuda:13.4.1 [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+push [NUMID].container.us-west-2.localhost/my-catalog.my-schema.cuda:13.4.1-cudnn-devel-ubuntu26.04
+image ls --quiet example/image:v1
+pull --platform linux/amd64 example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+tag example/image:v1 [NUMID].container.us-west-2.localhost/main.training.image:v1
+push [NUMID].container.us-west-2.localhost/main.training.image:v1
+pull --platform linux/amd64 example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+tag example/image:v1 [NUMID].container.us-west-2.localhost/main.training.image:v1
+push [NUMID].container.us-west-2.localhost/main.training.image:v1
+image ls --quiet example/image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+image ls --quiet example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+pull --platform linux/amd64 example/image:v1
+image inspect --format {{.Os}}/{{.Architecture}} example/image:v1
+pull --platform linux/amd64 example/image:v1

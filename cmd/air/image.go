@@ -14,29 +14,27 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
 const (
 	maxArtifactNameLength = 255
 	maxImageTagLength     = 128
+	airImagePlatform      = "linux/amd64"
 )
 
 var (
-	catalogSchemaPattern = regexp.MustCompile(`^[a-z0-9_]+$`)
-	artifactNamePattern  = regexp.MustCompile(`^[a-z0-9]+((_|__|-+)[a-z0-9]+)*$`)
-	imageTagPattern      = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$`)
+	artifactNamePattern = regexp.MustCompile(`^[a-z0-9]+((_|__|-+)[a-z0-9]+)*$`)
+	imageTagPattern     = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$`)
 )
 
 type imagePushOptions struct {
-	source  string
-	catalog string
-	schema  string
-	image   string
-	region  string
-	pull    bool
+	source   string
+	catalog  string
+	schema   string
+	artifact string
+	pull     bool
 }
 
 type resolvedImagePushOptions struct {
@@ -45,13 +43,11 @@ type resolvedImagePushOptions struct {
 	schema   string
 	artifact string
 	tag      string
-	region   string
 }
 
 type imagePushDeps struct {
-	configureDocker func(context.Context, string, string) (string, error)
+	configureDocker func(context.Context, string) (string, error)
 	lookPath        func(string) (string, error)
-	resolveRegion   func(context.Context, *databricks.WorkspaceClient) (string, error)
 	runCommand      func(context.Context, io.Reader, io.Writer, io.Writer, string, ...string) error
 }
 
@@ -59,19 +55,18 @@ func defaultImagePushDeps() imagePushDeps {
 	return imagePushDeps{
 		configureDocker: configureImageDocker,
 		lookPath:        exec.LookPath,
-		resolveRegion:   resolveImageRegion,
 		runCommand:      runImageCommand,
 	}
 }
 
-func configureImageDocker(ctx context.Context, profile, region string) (string, error) {
+func configureImageDocker(ctx context.Context, profile string) (string, error) {
 	executable, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("locate databricks executable: %w", err)
 	}
 
 	var output bytes.Buffer
-	cmd := exec.CommandContext(ctx, executable, "auth", "docker", "configure", profile, "--region", region)
+	cmd := exec.CommandContext(ctx, executable, "auth", "docker", "configure", profile)
 	cmd.Stdout = &output
 	cmd.Stderr = &output
 	if err := cmd.Run(); err != nil {
@@ -122,31 +117,24 @@ func newImagePushCommandWithDeps(deps imagePushDeps) *cobra.Command {
 		Short: "Push a container image to Databricks Artifact Registry",
 		Long: `Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
 
-The command detects the workspace region, configures Docker's Databricks credential
-helper, and pushes the source image to catalog.schema.artifact:tag. Omitted image
-details are prompted for when the terminal is interactive.`,
-		Args: root.NoArgs,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if opts.region != "" {
-				profileFlag := cmd.Flag("profile")
-				if profileFlag != nil && profileFlag.Value.String() != "" {
-					w := &databricks.WorkspaceClient{Config: &config.Config{Profile: profileFlag.Value.String()}}
-					cmd.SetContext(cmdctx.SetWorkspaceClient(cmd.Context(), w))
-					return nil
-				}
-			}
-			return root.MustWorkspaceClient(cmd, args)
-		},
+The command configures Docker's Databricks credential helper, automatically detects
+the registry region, and pushes the source image to catalog.schema.artifact:tag.
+Omitted image details are prompted for when the terminal is interactive.
+
+AIR requires linux/amd64 images. A compatible local image is reused; missing images
+are pulled for linux/amd64. Use --pull to refresh an existing local image.
+The destination --artifact ARTIFACT[:TAG] defaults to the source image name and tag.`,
+		Args:    root.NoArgs,
+		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runImagePush(cmd, &opts, deps)
 		},
 	}
 
-	cmd.Flags().StringVarP(&opts.source, "source", "s", "", "Source container image to push")
-	cmd.Flags().StringVar(&opts.catalog, "catalog", "", "Unity Catalog catalog for the image; use lowercase letters, digits, and underscores")
-	cmd.Flags().StringVar(&opts.schema, "schema", "", "Unity Catalog schema for the image; use lowercase letters, digits, and underscores")
-	cmd.Flags().StringVar(&opts.image, "image", "", "Artifact name and optional tag in Databricks Artifact Registry; artifact names must be 255 characters or less and tags must be 128 characters or less")
-	cmd.Flags().StringVar(&opts.region, "region", "", "Workspace region; detected automatically when omitted")
+	cmd.Flags().StringVarP(&opts.source, "source", "s", "", "Source container image to push (NAME[:TAG] or NAME@DIGEST)")
+	cmd.Flags().StringVar(&opts.catalog, "catalog", "", "Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens")
+	cmd.Flags().StringVar(&opts.schema, "schema", "", "Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens")
+	cmd.Flags().StringVar(&opts.artifact, "artifact", "", "Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for the artifact and 128 for the tag")
 	cmd.Flags().BoolVar(&opts.pull, "pull", false, "Pull the source image even when it is already available locally")
 	return cmd
 }
@@ -156,7 +144,7 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	cmdio.LogString(ctx, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.")
 	w := cmdctx.WorkspaceClient(ctx)
 
-	resolved, err := resolveImagePushOptions(ctx, w, opts, deps.resolveRegion)
+	resolved, err := resolveImagePushOptions(ctx, opts)
 	if err != nil {
 		return err
 	}
@@ -168,30 +156,56 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 		return fmt.Errorf("find Docker on PATH: %w", err)
 	}
 
-	registryHost, err := deps.configureDocker(ctx, w.Config.Profile, resolved.region)
+	unityCatalogReference := fmt.Sprintf("%s.%s.%s:%s", resolved.catalog, resolved.schema, resolved.artifact, resolved.tag)
+	cmdio.LogString(ctx, fmt.Sprintf("Pushing %s as %s using profile %s", resolved.source, unityCatalogReference, w.Config.Profile))
+
+	registryHost, err := deps.configureDocker(ctx, w.Config.Profile)
 	if err != nil {
 		return fmt.Errorf("configure Docker authentication: %w", err)
 	}
+	target := fmt.Sprintf("%s/%s", registryHost, unityCatalogReference)
 
-	target := fmt.Sprintf("%s/%s.%s.%s:%s", registryHost, resolved.catalog, resolved.schema, resolved.artifact, resolved.tag)
-	if opts.pull || !imageExistsLocally(ctx, deps.runCommand, dockerPath, resolved.source) {
-		cmdio.LogProgress(ctx, "Pulling source image "+resolved.source)
-		if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), dockerPath, "pull", resolved.source); err != nil {
+	pull := opts.pull
+	if !pull {
+		exists, err := imageExistsLocally(ctx, deps.runCommand, dockerPath, resolved.source, cmd.ErrOrStderr())
+		if err != nil {
+			return err
+		}
+		pull = !exists
+	}
+	if pull {
+		cmdio.LogProgress(ctx, "Pulling source image "+resolved.source+" for "+airImagePlatform)
+		if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "pull", "--platform", airImagePlatform, resolved.source); err != nil {
 			return fmt.Errorf("pull source image %s: %w", resolved.source, err)
 		}
+	} else {
+		cmdio.LogString(ctx, "Using local source image "+resolved.source)
+	}
+
+	var platform bytes.Buffer
+	if err := deps.runCommand(ctx, nil, &platform, cmd.ErrOrStderr(), dockerPath, "image", "inspect", "--format", "{{.Os}}/{{.Architecture}}", resolved.source); err != nil {
+		return fmt.Errorf("inspect source image %s: %w", resolved.source, err)
+	}
+	if got := strings.TrimSpace(platform.String()); got != airImagePlatform {
+		return fmt.Errorf("source image %s has platform %q; AIR requires %s: use --pull to fetch a compatible image, or rebuild the source for %s", resolved.source, got, airImagePlatform, airImagePlatform)
 	}
 
 	cmdio.LogProgress(ctx, "Tagging image as "+target)
-	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), dockerPath, "tag", resolved.source, target); err != nil {
+	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "tag", resolved.source, target); err != nil {
 		return fmt.Errorf("tag source image %s: %w", resolved.source, err)
 	}
 	cmdio.LogProgress(ctx, "Pushing image to "+target)
-	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), dockerPath, "push", target); err != nil {
+	if err := deps.runCommand(ctx, cmd.InOrStdin(), cmd.ErrOrStderr(), cmd.ErrOrStderr(), dockerPath, "push", target); err != nil {
 		return fmt.Errorf("push image %s: %w", target, err)
 	}
 
-	unityCatalogReference := fmt.Sprintf("%s.%s.%s:%s", resolved.catalog, resolved.schema, resolved.artifact, resolved.tag)
 	cmdio.LogString(ctx, "Pushed image.")
+	if root.OutputType(cmd) == flags.OutputJSON {
+		return renderEnvelope(ctx, struct {
+			UnityCatalogImage string `json:"unity_catalog_image"`
+			RegistryImage     string `json:"registry_image"`
+		}{UnityCatalogImage: unityCatalogReference, RegistryImage: target})
+	}
 	_, err = fmt.Fprintf(
 		cmd.OutOrStdout(),
 		"Now you can set `environment.unity_catalog_image = %s` in your YAML config and create a workload with `databricks air run -f config.yaml`.\n",
@@ -202,9 +216,7 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 
 func resolveImagePushOptions(
 	ctx context.Context,
-	w *databricks.WorkspaceClient,
 	opts *imagePushOptions,
-	resolveRegion func(context.Context, *databricks.WorkspaceClient) (string, error),
 ) (resolvedImagePushOptions, error) {
 	source, err := promptImagePushValue(ctx, opts.source, "Source image", "", "--source")
 	if err != nil {
@@ -214,23 +226,19 @@ func resolveImagePushOptions(
 	if err != nil {
 		return resolvedImagePushOptions{}, err
 	}
-	if !catalogSchemaPattern.MatchString(catalog) {
-		return resolvedImagePushOptions{}, fmt.Errorf("invalid catalog %q: use only lowercase letters, digits, and underscores", catalog)
+	if !artifactNamePattern.MatchString(catalog) {
+		return resolvedImagePushOptions{}, fmt.Errorf("invalid catalog %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", catalog)
 	}
 	schema, err := promptImagePushValue(ctx, opts.schema, "Unity Catalog schema", "", "--schema")
 	if err != nil {
 		return resolvedImagePushOptions{}, err
 	}
-	if !catalogSchemaPattern.MatchString(schema) {
-		return resolvedImagePushOptions{}, fmt.Errorf("invalid schema %q: use only lowercase letters, digits, and underscores", schema)
+	if !artifactNamePattern.MatchString(schema) {
+		return resolvedImagePushOptions{}, fmt.Errorf("invalid schema %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", schema)
 	}
 
 	defaultArtifact, defaultTag := sourceImageDefaults(source)
-	artifact, tag, err := resolveArtifactAndTag(ctx, opts.image, defaultArtifact, defaultTag)
-	if err != nil {
-		return resolvedImagePushOptions{}, err
-	}
-	region, err := resolveImagePushRegion(ctx, w, opts.region, resolveRegion)
+	artifact, tag, err := resolveArtifactAndTag(ctx, opts.artifact, defaultArtifact, defaultTag)
 	if err != nil {
 		return resolvedImagePushOptions{}, err
 	}
@@ -241,7 +249,6 @@ func resolveImagePushOptions(
 		schema:   schema,
 		artifact: artifact,
 		tag:      tag,
-		region:   region,
 	}, nil
 }
 
@@ -270,7 +277,7 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 	tag := defaultTag
 	if image == "" {
 		var err error
-		artifact, err = promptImagePushValue(ctx, "", "Artifact name", defaultArtifact, "--image")
+		artifact, err = promptImagePushValue(ctx, "", "Artifact name", defaultArtifact, "--artifact")
 		if err != nil {
 			return "", "", err
 		}
@@ -304,6 +311,7 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 }
 
 func sourceImageDefaults(source string) (string, string) {
+	source, _, _ = strings.Cut(source, "@")
 	repository := source
 	tag := "latest"
 	lastSlash := strings.LastIndex(source, "/")
@@ -318,45 +326,23 @@ func sourceImageDefaults(source string) (string, string) {
 	return artifact, tag
 }
 
-func resolveImagePushRegion(
-	ctx context.Context,
-	w *databricks.WorkspaceClient,
-	region string,
-	resolveRegion func(context.Context, *databricks.WorkspaceClient) (string, error),
-) (string, error) {
-	if region != "" {
-		return region, nil
-	}
-	region, err := resolveRegion(ctx, w)
-	if err == nil && region != "" {
-		return region, nil
-	}
-	if !cmdio.IsPromptSupported(ctx) {
-		if err == nil {
-			err = errors.New("metastore summary did not include a region")
-		}
-		return "", fmt.Errorf("could not detect the workspace region; pass --region: %w", err)
-	}
-	return promptImagePushValue(ctx, "", "Workspace region", "", "--region")
-}
-
-func resolveImageRegion(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
-	summary, err := w.Metastores.Summary(ctx)
-	if err != nil {
-		return "", fmt.Errorf("get metastore summary: %w", err)
-	}
-	if summary.Region == "" {
-		return "", errors.New("metastore summary did not include a region")
-	}
-	return summary.Region, nil
-}
-
 func imageExistsLocally(
 	ctx context.Context,
 	runCommand func(context.Context, io.Reader, io.Writer, io.Writer, string, ...string) error,
 	dockerPath, source string,
-) bool {
-	return runCommand(ctx, nil, io.Discard, io.Discard, dockerPath, "image", "inspect", source) == nil
+	errOut io.Writer,
+) (bool, error) {
+	// Listing succeeds with empty output for a missing image, but fails for
+	// operational errors such as an unavailable daemon. Inspect cannot distinguish them.
+	// Match Docker's implicit latest tag rather than listing every tag of a repository.
+	if !strings.Contains(source, "@") && !strings.Contains(source[strings.LastIndex(source, "/")+1:], ":") {
+		source += ":latest"
+	}
+	var output bytes.Buffer
+	if err := runCommand(ctx, nil, &output, errOut, dockerPath, "image", "ls", "--quiet", source); err != nil {
+		return false, fmt.Errorf("check local source image %s (ensure Docker is running and accessible): %w", source, err)
+	}
+	return strings.TrimSpace(output.String()) != "", nil
 }
 
 func runImageCommand(ctx context.Context, in io.Reader, out, errOut io.Writer, executable string, args ...string) error {
