@@ -23,8 +23,7 @@ auth_type = databricks-cli
 ENDCFG
 
     mkdir -p "$HOME/.databricks"
-    # Callers outside this subtree can pass the shared token-cache fixture path.
-    cp "${1:-$TESTDIR/../token-cache.json}" "$HOME/.databricks/token-cache.json"
+    cp "$TESTDIR/../token-cache.json" "$HOME/.databricks/token-cache.json"
 }
 
 # configure installs docker-credential-databricks next to the running CLI, so run a copy outside the shared build directory.
