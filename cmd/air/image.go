@@ -101,9 +101,9 @@ func registryHostFromDockerConfigureOutput(output string) (string, error) {
 	return "", errors.New("auth docker configure did not report an Artifact Registry host")
 }
 
-func newImageCommand() *cobra.Command {
+func newImagesCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "image",
+		Use:   "images",
 		Short: "Manage container images for AI Runtime",
 		RunE:  root.ReportUnknownSubcommand,
 	}
@@ -161,7 +161,7 @@ func runImageSetup(cmd *cobra.Command, opts *imageSetupOptions, deps imageSetupD
 		return err
 	}
 	if w.Config.Profile == "" {
-		return errors.New("air image setup requires a workspace profile so Docker can refresh credentials; authenticate with 'databricks auth login' and pass --profile")
+		return errors.New("air images setup requires a workspace profile so Docker can refresh credentials; authenticate with 'databricks auth login' and pass --profile")
 	}
 	dockerPath, err := deps.lookPath("docker")
 	if err != nil {

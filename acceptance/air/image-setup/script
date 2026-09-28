@@ -13,7 +13,7 @@ chmod +x "$cli_path" "$HOME/bin/docker"
 export PATH="$HOME/bin:$PATH"
 
 title "setup image"
-trace databricks air image setup \
+trace databricks air images setup \
   -p docker-test \
   -s nvidia/cuda:13.4.1 \
   --catalog prod \

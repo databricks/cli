@@ -12,7 +12,7 @@ Available Commands:
   cancel          Cancel one or more runs
   convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
   get             Show status, configuration, and timing details for a specified run
-  image           Manage container images for AI Runtime
+  images          Manage container images for AI Runtime
   list            List active runs for the current user
   logs            Stream or fetch logs for a run
   pools           View provisioned GPU pools
@@ -106,19 +106,19 @@ Global Flags:
 
 Use "databricks air pools [command] --help" for more information about a command.
 
-=== image help
->>> [CLI] air image --help
+=== images help
+>>> [CLI] air images --help
 Manage container images for AI Runtime
 
 Usage:
-  databricks air image [flags]
-  databricks air image [command]
+  databricks air images [flags]
+  databricks air images [command]
 
 Available Commands:
   setup       Configure Docker authentication and push an image to Databricks Artifact Registry
 
 Flags:
-  -h, --help   help for image
+  -h, --help   help for images
 
 Global Flags:
       --debug            enable debug logging
@@ -126,10 +126,10 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
 
-Use "databricks air image [command] --help" for more information about a command.
+Use "databricks air images [command] --help" for more information about a command.
 
-=== image setup help
->>> [CLI] air image setup --help
+=== images setup help
+>>> [CLI] air images setup --help
 Configure Docker authentication and push a container image to Databricks Artifact Registry.
 
 The command detects the workspace region, configures Docker's Databricks credential
@@ -137,7 +137,7 @@ helper, and pushes the source image to catalog.schema.artifact:tag. Omitted imag
 details are prompted for when the terminal is interactive.
 
 Usage:
-  databricks air image setup [flags]
+  databricks air images setup [flags]
 
 Flags:
       --catalog string   Unity Catalog catalog for the image; use lowercase letters, digits, and underscores
