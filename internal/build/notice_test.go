@@ -30,9 +30,7 @@ var noticeExclude = map[string]bool{
 
 // Additional entries required in the NOTICE file that are not direct go.mod
 // dependencies (e.g. bundled binaries).
-var noticeExtra = map[string][]string{
-	"hashicorp/terraform": {"MPL-2.0"},
-}
+var noticeExtra = map[string][]string{}
 
 // Expected order of license sections in the NOTICE file.
 var expectedSectionOrder = []string{

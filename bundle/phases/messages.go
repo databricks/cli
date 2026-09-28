@@ -1,5 +1,13 @@
 package phases
 
+// TerraformStateRemovedMessage is the error text shown when a command that does not
+// migrate on its own (bind, unbind) finds an existing Terraform state. The Terraform
+// deployment engine was removed in v1.19.0; "bundle deploy" migrates the state to the
+// direct engine automatically, so point the user there.
+const TerraformStateRemovedMessage = `this deployment's state uses the Terraform engine, which has been removed in Databricks CLI v1.19.0
+
+Run "databricks bundle deploy" to migrate the state to the direct engine, or install Databricks CLI v1.18.x`
+
 // Messages for bundle deploy.
 const (
 	deleteOrRecreateSchemaMessage = `

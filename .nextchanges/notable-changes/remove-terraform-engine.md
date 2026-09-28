@@ -1,0 +1,1 @@
+* Remove the Terraform deployment engine. Bundles pinning `engine: terraform` (or `DATABRICKS_BUNDLE_ENGINE=terraform`) now error and should either move to the direct engine or install CLI v1.18.x. An existing Terraform state is migrated to the direct engine automatically on the next deploy.

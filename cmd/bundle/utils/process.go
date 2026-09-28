@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -428,17 +427,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 			if opts.ErrorOnEmptyState {
 				modes = append(modes, statemgmt.ErrorOnEmptyState)
 			}
-			var state statemgmt.ExportedResourcesMap
-			if stateDesc.Engine.IsDirect() {
-				state = b.DeploymentBundle.ExportState(ctx)
-			} else {
-				var err error
-				state, err = terraform.ParseResourcesState(ctx, b)
-				if err != nil {
-					logdiag.LogError(ctx, err)
-					return b, stateDesc, root.ErrAlreadyPrinted
-				}
-			}
+			// The state is always the direct engine here: a terraform state was migrated to
+			// direct above (or the migration errored and returned), so the state DB is open.
+			state := b.DeploymentBundle.ExportState(ctx)
 			mutators := []bundle.Mutator{
 				statemgmt.Load(state, modes...),
 			}
@@ -538,15 +529,6 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
-
-		// The user opted out of the direct engine (engine: terraform), so no migration ran.
-		// Do a throwaway conversion of the just-deployed terraform state to record
-		// direct_drymigrate_* telemetry — the fleet-wide "could this bundle migrate?"
-		// signal. Runs after the deploy so mutating b.Config during the conversion is
-		// harmless, and only when the deploy succeeded on a terraform state.
-		if stateDesc != nil && requiredEngine.Type == engine.EngineTerraform && !stateDesc.Engine.IsDirect() {
-			statemgmt.DryRunMigrationTelemetry(ctx, b)
-		}
 	}
 
 	if opts.PostStateFunc != nil {
@@ -559,11 +541,12 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 }
 
 // migrateTerraformToDirect converts the bundle's Terraform state to the direct engine in memory.
-// On success it advances stateDesc and metrics to the direct engine. Any failure that leaves the
-// migration unviable (parse, conversion, plan check) leaves the Terraform state intact
-// (migrated=false) so the caller proceeds on the terraform engine and the command still runs;
-// only an internal error returns. Nothing is committed here - deploy calls statemgmt.CommitMigration
-// after approval, destroy commits as part of its teardown. The caller tags the user agent with the
+// On success it advances stateDesc and metrics to the direct engine. The Terraform engine was
+// removed in v1.19.0, so a state that cannot be migrated (parse, conversion, or plan-check failure)
+// is a hard error - there is no terraform engine left to fall back to. migrated is false only when
+// there is no terraform state at all (a fresh or already-direct bundle), and the caller opens the
+// direct state normally. Nothing is committed here - deploy calls statemgmt.CommitMigration after
+// approval, destroy commits as part of its teardown. The caller tags the user agent with the
 // resolved stateDesc.Engine afterwards.
 func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
 	migrated, err := statemgmt.Migrate(ctx, b)
@@ -583,18 +566,28 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	configEngine := b.Config.Bundle.Engine
 
 	if configEngine != engine.EngineNotSet {
+		parsed, ok := engine.Parse(string(configEngine))
+		if !ok {
+			return engine.EngineSetting{}, fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
+		}
+		if parsed == engine.EngineTerraform {
+			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
+		}
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
 			loc := locs[0]
 			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
 		}
-		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}, nil
+		return engine.EngineSetting{Type: parsed, Source: source, ConfigType: parsed}, nil
 	}
 
 	envEngine, err := engine.FromEnv(ctx)
 	if err != nil {
 		return engine.EngineSetting{}, err
+	}
+	if envEngine == engine.EngineTerraform {
+		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
 	}
 	if envEngine != engine.EngineNotSet {
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil

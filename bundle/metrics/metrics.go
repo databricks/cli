@@ -12,19 +12,9 @@ const (
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
 
-	// Outcome of the dry-run migration to the direct engine attempted after a
-	// successful terraform deploy WHEN THE USER OPTED OUT of direct (direct is
-	// the default, so this means engine: terraform). Only recorded when the state
-	// conversion is truly a dry run (no auto-migrate).
-	// DirectDryMigrateSuccess is false when the state could not be converted;
-	// DirectDryMigrateWarnings is true when the conversion emitted warnings
-	// (e.g. resources the direct engine can't represent).
-	DirectDryMigrateSuccess  = "direct_drymigrate_success"
-	DirectDryMigrateWarnings = "direct_drymigrate_warnings"
-
-	// Outcome of an automatic post-deploy migration to the direct engine, which
-	// runs unless the user opted out with engine: terraform. These replace the
-	// direct_drymigrate_* keys on migrating deploys.
+	// Outcome of the automatic migration of an existing terraform state to the direct
+	// engine, which runs before a deploy/destroy when the state still uses terraform
+	// (the terraform engine itself was removed in v1.19.0).
 	//   - migrate_error:        state conversion itself errored.
 	//   - migrate_commit_error: the state was converted, but committing it
 	//                           (renaming files / pushing to workspace) failed.

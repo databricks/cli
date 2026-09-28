@@ -12,10 +12,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
-	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -140,25 +138,18 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, migrating bool) {
-	if engine.IsDirect() {
-		// Not reported per resource: destroy names them up front for consent and then
-		// reports only a count, so there is no per-resource output to report into.
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
-	} else {
-		// Core destructive mutators for destroy. These require informed user consent.
-		bundle.ApplyContext(ctx, b, terraform.Apply())
-	}
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, migrating bool) {
+	// Not reported per resource: destroy names them up front for consent and then
+	// reports only a count, so there is no per-resource output to report into.
+	b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
 
 	// Flush WAL to local state file before deleting remote files.
 	// Warn instead of hard-error: resources are already deleted, so proceed
 	// with file cleanup regardless of whether state flush succeeds.
-	if engine.IsDirect() {
-		if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
-			diags := diag.WarningFromErr(err)
-			if len(diags) > 0 {
-				logdiag.LogDiag(ctx, diags[0])
-			}
+	if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+		diags := diag.WarningFromErr(err)
+		if len(diags) > 0 {
+			logdiag.LogDiag(ctx, diags[0])
 		}
 	}
 
@@ -166,7 +157,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+	if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 		// Complete version before deleting remote files; the deployment node is under statePath.
 		completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, true)
 		if err != nil {
@@ -224,31 +215,23 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	// around, so a later fresh deploy of the same bundle (e.g. from another
 	// machine that has no local state) mints a new lineage that no longer matches
 	// this lingering one, and every subsequent command fails with a lineage
-	// mismatch. Destroy runs on a single engine, so remove only that engine's
-	// state file. Log a removal failure but keep going; the destroy already
+	// mismatch. Log a removal failure but keep going; the destroy already
 	// succeeded and its summary is printed above.
-	var localStatePath string
-	if engine.IsDirect() {
-		_, localStatePath = b.StateFilenameDirect(ctx)
-	} else {
-		_, localStatePath = b.StateFilenameTerraform(ctx)
-	}
+	_, localStatePath := b.StateFilenameDirect(ctx)
 	if err := os.Remove(localStatePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		logdiag.LogError(ctx, err)
 	}
 
 	// A migration committed by deploy retires the terraform state by renaming the local one to
-	// terraform.tfstate.backup (see CleanupTerraformStateAfterMigration). On a direct destroy the
-	// deployment is gone, so that relic must not linger. Removing it is unconditional on direct
-	// (unlike the live terraform.tfstate above): a .backup is never read as live state (the resolver
-	// reads terraform.tfstate, not .backup), so it is never the "still-valid terraform state a later
-	// deploy migrates" that gates the removal above - deleting it is always safe here. Pruning it also
-	// lets the now-empty terraform/ dir be removed below.
-	if engine.IsDirect() {
-		_, localTerraformPath := b.StateFilenameTerraform(ctx)
-		if err := os.Remove(localTerraformPath + ".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			logdiag.LogError(ctx, err)
-		}
+	// terraform.tfstate.backup (see CleanupTerraformStateAfterMigration). On destroy the
+	// deployment is gone, so that relic must not linger. Removing it is unconditional (unlike the
+	// live terraform.tfstate above): a .backup is never read as live state (the resolver reads
+	// terraform.tfstate, not .backup), so it is never the "still-valid terraform state a later
+	// deploy migrates" that gates the removal above - deleting it is always safe here. Pruning it
+	// also lets the now-empty terraform/ dir be removed below.
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	if err := os.Remove(localTerraformPath + ".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logdiag.LogError(ctx, err)
 	}
 
 	// Destroy leaves empty scaffolding directories behind once their contents are
@@ -329,7 +312,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	// destroy records nothing. Deferred before lock.Release to hold the lock; a no-op once
 	// destroyCore has completed the version.
 	defer func() {
-		if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 			completed, err := b.DeploymentBundle.StateDB.CompleteVersion(ctx, !logdiag.HasError(ctx))
 			if err != nil {
 				logdiag.LogError(ctx, err)
@@ -343,44 +326,10 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	if !engine.IsDirect() {
-		bundle.ApplySeqContext(
-			ctx, b,
-			// We need to resolve artifact variable (how we do it in build phase)
-			// because some of the to-be-destroyed resource might use this variable.
-			// Not resolving might lead to terraform "Reference to undeclared resource" error
-			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
-			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
-
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("destroy")),
-		)
-	}
-
-	if logdiag.HasError(ctx) {
+	plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
+	if err != nil {
+		logdiag.LogError(ctx, err)
 		return
-	}
-
-	var plan *deployplan.Plan
-	if engine.IsDirect() {
-		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(ctx), nil)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	} else {
-		tf := b.Terraform
-		if tf == nil {
-			logdiag.LogError(ctx, errors.New("terraform not initialized"))
-			return
-		}
-
-		plan, err = terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
 	}
 
 	hasApproval, err := approvalForDestroy(ctx, b, plan, engine)
@@ -395,10 +344,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		// local terraform state (gated on migrating), and files.Delete removes the remote one.
 		// There is no separate remote push as in deploy's CommitMigration - the resources are
 		// about to be deleted - and a destroy-only migration is not adoption worth recording.
-		// Gated on the resolved engine being direct: a migration that fell back to terraform (e.g.
-		// a failed plan check) left the state on terraform and opened nothing, so this destroy
-		// just runs on terraform.
-		migrating := b.MigratingToDirect && engine.IsDirect()
+		migrating := b.MigratingToDirect
 		if migrating {
 			count := len(b.DeploymentBundle.StateDB.ExportState(ctx))
 			suffix := "s"
@@ -418,16 +364,14 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			}
 		}
 
-		if engine.IsDirect() {
-			// Upgrade from read (opened by process.go) to write mode
-			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
-				logdiag.LogError(ctx, err)
-				return
-			}
+		// Upgrade from read (opened by process.go) to write mode
+		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
+			logdiag.LogError(ctx, err)
+			return
 		}
 		// Start the version for this destroy, now that it is approved. Everything else recording
 		// does follows from the buffer this opens.
-		if engine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
+		if b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
 			staged, err := stagedOperations(plan)
 			if err != nil {
 				logdiag.LogError(ctx, err)
@@ -438,12 +382,12 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
-		destroyCore(ctx, b, plan, engine, migrating)
+		destroyCore(ctx, b, plan, migrating)
 	} else {
 		// A prepared terraform→direct migration lives only in memory (nothing durable was
-		// written), so a declined destroy just drops it and stays on the terraform engine. Gated
-		// on the resolved engine being direct: a migration that fell back leaves nothing to keep.
-		if b.MigratingToDirect && engine.IsDirect() {
+		// written), so a declined destroy just drops it and leaves the terraform state on disk
+		// untouched; the next destroy migrates again.
+		if b.MigratingToDirect {
 			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
 		}
 		cmdio.LogString(ctx, "Destroy cancelled!")
