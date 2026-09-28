@@ -1,11 +1,18 @@
-export DATABRICKS_BUNDLE_ENGINE=
-trace seed_tfstate.py terraform.tfstate
+# Replay the terraform deploy's resource requests (captured once from a real terraform run) so the
+# backend holds the same terraform-shaped resources, and drop in the captured terraform.tfstate;
+# this stands in for `DATABRICKS_BUNDLE_ENGINE=terraform bundle deploy` now that migrate tests must
+# not deploy with terraform.
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 print_state.py > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 4 resources'
 print_state.py > out.new_state.json
 
+export DATABRICKS_BUNDLE_ENGINE=
+
 rm "$OUT_REQUESTS"
+# Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "4 unchanged"
 trace $CLI bundle plan | contains.py "4 unchanged"
 trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
 
