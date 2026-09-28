@@ -1,0 +1,21 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  title "Cleanup"
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+# The config uses a mixed-case schema name; UC lowercases the stored name, so the deployed id
+# differs from config by case only, without the user changing anything. reconcileIDFields
+# treats a case-only difference as backend normalization and keeps the config value, so the
+# migration proceeds with no warning and the plan converges.
+
+title "Deploy on terraform; UC lowercases the schema name"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Migrate to direct with the same config (mixed-case name unchanged)"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Follow-up plan on direct converges (the case-only difference is not a change)"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan

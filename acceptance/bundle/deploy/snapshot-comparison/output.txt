@@ -54,6 +54,7 @@ Destroy: 2 deleted
 
 === Cleanup bundle 2
 >>> [CLI] bundle destroy --auto-approve
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 The following resources will be deleted:
   delete resources.jobs.test_job
   delete resources.pipelines.test_pipeline
@@ -64,4 +65,5 @@ Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascad
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/snapshot-test-2-[UNIQUE_NAME]/default
 
+Migrated 2 resources to direct deployment engine.
 Destroy: 2 deleted

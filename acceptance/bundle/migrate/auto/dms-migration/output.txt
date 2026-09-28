@@ -1,0 +1,26 @@
+
+=== Initial deploy on terraform
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Created jobs.test_job
+Files: 1 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Direct + deployment-history requested against a terraform state is rejected before commit
+>>> DATABRICKS_BUNDLE_ENGINE=direct DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY=true errcode [CLI] bundle deploy
+Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
+Error: deployment history setting (true) does not match the existing state (false)
+
+Update experimental.deployment_history to match the existing deployment, or run "databricks bundle destroy" to start over
+
+
+Exit code: 1
+
+>>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
+.databricks/bundle/default/terraform/terraform.tfstate
+
+>>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
+ID                   Type  Language  Path
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate

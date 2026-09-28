@@ -1,0 +1,17 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy on terraform"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "deploy --plan with a missing plan file fails after the migration prepared the direct state"
+# The migration runs in memory (nothing is written) before the saved plan is loaded, so a missing
+# plan file fails before approval, and before CommitMigration would make it durable. A failed
+# command changes nothing: the in-memory migration is dropped and the bundle stays on terraform.
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy --plan does-not-exist.json
+
+title "State is still terraform - the migration was never committed"
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+
+title "A plain deploy still runs on terraform (the engine was not silently switched)"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
