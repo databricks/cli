@@ -1,6 +1,8 @@
 
-=== Seed a terraform-state fixture from a prior terraform deployment
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
+
+>>> push_remote_tfstate.py
 
 === Opt in via env var; inject 403 on the resources.json push so the deploy fails
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
@@ -13,7 +15,7 @@ HTTP Status: 403 Forbidden
 API error_code: INJECTED
 API message: Fault injected by test.
 
-Files: 0 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 
 Exit code: 1
 
@@ -28,7 +30,7 @@ Exit code: 1
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
 
 === Retry: the local direct state is used (no re-migration) and the push completes
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
@@ -49,3 +51,4 @@ ID                   Type  Language  Path
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate.backup

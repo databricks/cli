@@ -1,19 +1,20 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Seed a terraform-state fixture from a prior terraform deployment"
-trace seed_tfstate.py terraform.tfstate
-# A real terraform deployment also pushes its state to the workspace; the seed writes only the
-# local copy, so push a remote terraform.tfstate too, giving CommitMigration a remote state to
-# back up and delete (the delete is what we fault below).
-MSYS_NO_PATHCONV=1 $CLI workspace import "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state/terraform.tfstate" --file .databricks/bundle/default/terraform/terraform.tfstate --format AUTO
+title "Replay a prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+# The migration backs up + deletes the REMOTE terraform.tfstate; replay only wrote the local one,
+# so push it to the workspace state path (as the terraform deploy used to) to give the faulted
+# DELETE a target.
+trace push_remote_tfstate.py
 rm -f "$OUT_REQUESTS"
 
 title "Opt in via env var; inject 403 on the DELETE of remote terraform.tfstate"
-# CommitMigration pushes resources.json, then best-effort backs up and deletes the remote
-# terraform.tfstate. That delete is the SECOND workspace/delete of the run - the first is the
-# artifacts/.internal cleanup - so OFFSET=1 faults it. The delete failure is best-effort
-# (resources.json already outranks the terraform state by serial), so the migration succeeds with
-# a warning and the remote terraform.tfstate and its .backup both remain.
+# The approved deploy commits the migration (CommitMigration): it pushes resources.json, then
+# best-effort backs up and deletes the remote terraform.tfstate. That delete is the SECOND
+# workspace/delete of the run - the first is the artifacts/.internal cleanup - so OFFSET=1 faults
+# it. The delete failure is best-effort (resources.json already outranks the terraform state by
+# serial), so the migration succeeds with a warning and the remote terraform.tfstate and its
+# .backup both remain.
 fault.py "POST /api/2.0/workspace/delete" 403 1 1
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_migration_telemetry
