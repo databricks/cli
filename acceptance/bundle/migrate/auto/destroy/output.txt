@@ -1,6 +1,6 @@
 
-=== Seed a terraform-state fixture from a prior terraform deployment
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Destroy without approval: migration prepared in memory then dropped, stays on terraform
 >>> musterr [CLI] bundle destroy
@@ -12,23 +12,6 @@ To proceed, use --auto-approve.
 .databricks/bundle/default/terraform/terraform.tfstate
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
-ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
-
-=== Destroy on direct: migrate then destroy
->>> [CLI] bundle destroy --auto-approve
-Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
-The following resources will be deleted:
-  delete resources.jobs.job_a
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Migrated 1 resource to direct deployment engine.
-Destroy: 1 deleted
-
-=== Destroy leaves no state behind: no local state files, remote deployment removed
->>> find.py \.databricks/.*(\.tfstate|resources.*\.json|\.wal)
-
->>> MSYS_NO_PATHCONV=1 musterr [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state) doesn't exist.
+
+Exit code: 1

@@ -1,6 +1,6 @@
 
-=== Seed a terraform-state fixture from a prior terraform deployment
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Remove all resources, then deploy on direct: migrate and delete
 >>> [CLI] bundle deploy

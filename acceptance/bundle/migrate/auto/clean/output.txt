@@ -1,6 +1,6 @@
 
-=== Seed a terraform-state fixture from a prior terraform deployment
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Opt in to direct engine via config and redeploy: auto-migration triggers
 >>> update_file.py databricks.yml name: test-bundle name: test-bundle

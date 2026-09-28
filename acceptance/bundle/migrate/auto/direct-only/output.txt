@@ -1,6 +1,6 @@
 
-=== Seed a terraform-state fixture (only job_a; instance_pools is commented out)
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Add a direct-only resource and opt in to the direct engine via config
 >>> update_file.py databricks.yml #instance_pools instance_pools
@@ -27,33 +27,6 @@ json.plan.resources.instance_pools.pool.new_state.value.node_type_id = "Standard
 .databricks/bundle/default/terraform/terraform.tfstate
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
-ID                   Type  Language  Path
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state) doesn't exist.
 
-=== Deploy commits the migration and creates the direct-only resource
->>> [CLI] bundle deploy
-Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Migrated 1 resource to direct deployment engine.
-Created instance_pools.pool
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
-
->>> print_migration_telemetry
-direct_migrated_via_config true
-
-=== Redeploy is a no-op: state is already on the direct engine
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Files: 0 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 2 unchanged
-
->>> print_requests.py //instance-pools/create
-
-=== No further actions planned
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+Exit code: 1

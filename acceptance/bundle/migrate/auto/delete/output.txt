@@ -1,6 +1,6 @@
 
-=== Seed a terraform-state fixture with two jobs
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Drop one job from config, then deploy on direct: migrate two, delete the dropped one
 >>> [CLI] bundle deploy

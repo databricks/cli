@@ -1,6 +1,6 @@
 
-=== Seed a terraform-state fixture (only job_a; instance_pools is commented out)
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Add a direct-only resource to the config
 >>> update_file.py databricks.yml #instance_pools instance_pools

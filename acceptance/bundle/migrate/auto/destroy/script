@@ -5,11 +5,8 @@ export DATABRICKS_BUNDLE_ENGINE=
 # .terraform/. Paired with a remote listing of the state directory, this shows exactly which state
 # is present locally and remotely and proves nothing is left behind.
 
-# The terraform engine was removed in v1.19.0, so seed the state from a fixture (a prior terraform
-# deployment) instead of a real terraform deploy.
-title "Seed a terraform-state fixture from a prior terraform deployment"
-trace seed_tfstate.py terraform.tfstate
-rm -f "$OUT_REQUESTS"
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
 title "Destroy without approval: migration prepared in memory then dropped, stays on terraform"
 # The migration is prepared in memory (in process.go) before the destroy phase asks for approval,

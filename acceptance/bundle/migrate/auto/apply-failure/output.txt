@@ -1,6 +1,6 @@
 
-=== Seed a terraform-state fixture from a prior terraform deployment
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 >>> update_file.py databricks.yml Test Auto-Migrate Apply Failure Test Auto-Migrate Apply Failure (updated)
 
@@ -32,7 +32,6 @@ direct_migrated_via_env true
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json
 
 === Retry finishes the apply on the already-migrated direct state (no re-migration)

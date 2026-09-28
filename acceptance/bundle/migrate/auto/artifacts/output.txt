@@ -1,6 +1,6 @@
 
-=== Seed a terraform-state fixture from a prior terraform deployment
->>> seed_tfstate.py terraform.tfstate
+=== Replay a prior terraform deployment
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Redeploy with direct default: auto-migration runs after the build, so library refs are resolved
 >>> [CLI] bundle deploy
@@ -9,7 +9,7 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
 Uploading dist/my_test_code-0.0.1-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Migrated 1 resource to direct deployment engine.
-Files: 0 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Local state is now direct
