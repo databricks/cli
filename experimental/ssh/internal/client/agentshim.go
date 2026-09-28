@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -370,26 +369,33 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 	}
 
 	if _, err := exec.LookPath("uv"); err != nil {
-		cmdio.LogString(ctx, "Installing uv...")
-		err := ensureBinary(ctx, home, uvSpec)
-		if err != nil {
-			return fmt.Errorf("failed to install uv: %w", err)
+		if err := runStep(ctx, "Installing uv", func(out io.Writer) error {
+			if err := ensureBinary(ctx, home, out, uvSpec); err != nil {
+				return fmt.Errorf("failed to install uv: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
 	if _, err := exec.LookPath("ucode"); err != nil {
-		cmdio.LogString(ctx, "Installing Unity Gateway CLI...")
-		env := os.Environ()
-		env = append(env, "UV_TOOL_DIR="+uvToolDirAbsolute, "UV_TOOL_BIN_DIR="+uvToolBinDirAbsolute)
-		if err := runCommand(ctx, env, "uv", "tool", "install", "git+https://github.com/"+ugRepo+"@"+ugCommit); err != nil {
-			return fmt.Errorf("failed to install Unity Gateway CLI: %w", err)
+		if err := runStep(ctx, "Installing Unity Gateway CLI", func(out io.Writer) error {
+			env := os.Environ()
+			env = append(env, "UV_TOOL_DIR="+uvToolDirAbsolute, "UV_TOOL_BIN_DIR="+uvToolBinDirAbsolute)
+			if err := runCommand(ctx, out, env, "uv", "tool", "install", "git+https://github.com/"+ugRepo+"@"+ugCommit); err != nil {
+				return fmt.Errorf("failed to install Unity Gateway CLI: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
 	if _, err := exec.LookPath("npm"); err != nil {
-		cmdio.LogString(ctx, "Installing npm...")
-		err := ensureBinary(ctx, home, nodeSpec)
-		if err != nil {
+		if err := runStep(ctx, "Installing Node.js", func(out io.Writer) error {
+			return ensureBinary(ctx, home, out, nodeSpec)
+		}); err != nil {
 			return err
 		}
 	}
@@ -408,8 +414,9 @@ type archiveSpec struct {
 }
 
 // ensure the specified binary is installed, installing it if it's not already
-// present. Returns the path to the directory containing the installed binary
-func ensureBinary(ctx context.Context, home string, spec archiveSpec) error {
+// present. Extraction output is written to out. Returns the path to the directory
+// containing the installed binary
+func ensureBinary(ctx context.Context, home string, out io.Writer, spec archiveSpec) error {
 	if spec.archiveURL == "" {
 		return fmt.Errorf("unsupported architecture for %s download: %s", spec.binaryName, runtime.GOARCH)
 	}
@@ -439,7 +446,7 @@ func ensureBinary(ctx context.Context, home string, spec archiveSpec) error {
 	}
 	defer os.RemoveAll(tmpDir) // no-op once renamed; cleans up a failed extraction
 	// extract with tar for brevity
-	if err := runCommand(ctx, nil, "tar", "-xf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
+	if err := runCommand(ctx, out, nil, "tar", "-xf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
 		return fmt.Errorf("failed to extract %s: %w", spec.binaryName, err)
 	}
 	// Clear any partial leftover from a previously-interrupted run, then publish
@@ -619,11 +626,14 @@ func disableNpmUpdateNotifier(ctx context.Context) {
 	}
 }
 
-func runCommand(ctx context.Context, env []string, name string, args ...string) error {
+// runCommand runs name with the given args, writing combined stdout+stderr to out
+// (captured so it surfaces only on failure). When env is non-nil it replaces the
+// process environment. Stdin is left closed: the shim's install steps are
+// non-interactive.
+func runCommand(ctx context.Context, out io.Writer, env []string, name string, args ...string) error {
 	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = out
+	cmd.Stderr = out
 	if len(env) > 0 {
 		cmd.Env = env
 	}

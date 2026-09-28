@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -160,7 +161,7 @@ func TestEnsureBinary(t *testing.T) {
 	}
 
 	t.Run("unsupported architecture errors", func(t *testing.T) {
-		err := ensureBinary(t.Context(), t.TempDir(), nodeArchiveSpec("riscv"))
+		err := ensureBinary(t.Context(), t.TempDir(), io.Discard, nodeArchiveSpec("riscv"))
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "unsupported architecture")
 	})
@@ -209,7 +210,7 @@ func TestEnsureBinary(t *testing.T) {
 	} {
 		t.Run("downloads, extracts, and returns the bin dir ("+c.spec.binaryName+")", func(t *testing.T) {
 			beforeDownloads := downloads
-			err := ensureBinary(t.Context(), home, c.spec)
+			err := ensureBinary(t.Context(), home, io.Discard, c.spec)
 			require.NoError(t, err)
 			_, err = os.Stat(filepath.Join(c.wantBinDir, c.spec.binaryName))
 			require.NoError(t, err)
@@ -218,7 +219,7 @@ func TestEnsureBinary(t *testing.T) {
 
 		t.Run("no-op when the binary is already installed ("+c.spec.binaryName+")", func(t *testing.T) {
 			beforeDownloads := downloads
-			err := ensureBinary(t.Context(), home, c.spec)
+			err := ensureBinary(t.Context(), home, io.Discard, c.spec)
 			require.NoError(t, err)
 			assert.Equal(t, beforeDownloads, downloads, "an existing install must not re-download")
 		})
