@@ -43,6 +43,9 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 const (
 	minimalDbConnectVersion = "13.1"
 	defaultTimeout          = 1 * time.Hour
+	// provisionedURLTimeout bounds the best-effort SPOG host lookup so a
+	// hung endpoint can't stall login for the full login timeout.
+	provisionedURLTimeout = 30 * time.Second
 	authTypeDatabricksCLI   = "databricks-cli"
 	discoveryFallbackTip    = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
 	// discoveryHostEnvVar overrides the default https://login.databricks.com
@@ -359,7 +362,9 @@ a new profile is created.
 		// authArguments.Profile above), so replacing the host here does not
 		// orphan the token stored below. Best-effort: failures never block login.
 		if authArguments.AccountID != "" {
-			spogURL, err := auth.LookupPrimaryProvisionedURL(ctx, authArguments.Host, authArguments.AccountID, token.AccessToken, nil)
+			lookupCtx, cancel := context.WithTimeout(ctx, provisionedURLTimeout)
+			spogURL, err := auth.LookupPrimaryProvisionedURL(lookupCtx, authArguments.Host, authArguments.AccountID, token.AccessToken, nil)
+			cancel()
 			if err != nil {
 				log.Warnf(ctx, "Primary provisioned URL lookup failed: %v", err)
 			} else if spogURL != "" {
