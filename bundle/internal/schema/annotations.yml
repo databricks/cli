@@ -1149,21 +1149,6 @@ resources:
                 The email of an active workspace user. Non-admin users can only set this field to their own email.
         "tasks":
           "$fields":
-            "ai_runtime_task":
-              "$fields":
-                "deployments":
-                  "$fields":
-                    "compute":
-                      "$fields":
-                        "provisioned_capacity_id":
-                          "description": |-
-                            PLACEHOLDER
-                "priority_class":
-                  "description": |-
-                    PLACEHOLDER
-                "unity_catalog_image_path":
-                  "description": |-
-                    PLACEHOLDER
             "alert_task":
               "$fields":
                 "subscribers":
@@ -1313,13 +1298,6 @@ resources:
                 "entity_version":
                   "description": |-
                     PLACEHOLDER
-                "external_model":
-                  "$fields":
-                    "amazon_bedrock_config":
-                      "$fields":
-                        "uc_service_credential_name":
-                          "description": |-
-                            PLACEHOLDER
             "served_models":
               "$fields":
                 "model_name":

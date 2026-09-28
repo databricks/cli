@@ -3902,10 +3902,6 @@
                       "description": "The prefix for job runs of the bundle.",
                       "$ref": "#/$defs/string"
                     },
-                    "pipelines_development": {
-                      "description": "Whether pipeline deployments should be locked in development mode.",
-                      "$ref": "#/$defs/bool"
-                    },
                     "source_linked_deployment": {
                       "description": "Whether to link the deployment to the bundle source.",
                       "$ref": "#/$defs/bool"
