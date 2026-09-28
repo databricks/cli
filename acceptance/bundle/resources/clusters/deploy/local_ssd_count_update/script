@@ -5,7 +5,7 @@ cleanup() {
 trap cleanup EXIT
 
 title "Deploy 1: create the cluster with gcp_attributes but no local_ssd_count\n"
-trace $CLI bundle deploy
+trace $CLI bundle deploy -qq
 title "gcp_attributes sent on create (local_ssd_count absent):\n"
 print_requests.py //clusters/create | jq '.body.gcp_attributes'
 
@@ -16,7 +16,7 @@ update_file.py databricks.yml "zone_id: auto" "zone_id: auto
 title "Deploy 2: bundle should detect and apply the local_ssd_count change\n"
 trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
-trace $CLI bundle deploy
+trace $CLI bundle deploy -qq
 
 title "gcp_attributes sent on update (empty means the change was NOT applied):\n"
 print_requests.py //clusters/edit | jq '.body.gcp_attributes'
