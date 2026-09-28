@@ -1,0 +1,13 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Initial deploy on terraform with two jobs"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+# The migration seeds every terraform-state resource into the direct state, so the
+# first direct plan can delete the ones the config no longer declares.
+title "Drop one job from config, then deploy on direct: migrate two, delete the dropped one"
+grep -v 'TO_REMOVE' databricks.yml > updated.yml && mv updated.yml databricks.yml
+trace $CLI bundle deploy
+
+title "Follow-up plan is a clean no-op"
+trace $CLI bundle plan | contains.py "1 unchanged"

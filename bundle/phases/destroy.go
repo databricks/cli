@@ -206,22 +206,22 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	// Remove the local state file now that the deployment is gone. Destroy only
-	// deletes the remote state; leaving the local file behind keeps its lineage
-	// around, so a later fresh deploy of the same bundle (e.g. from another
-	// machine that has no local state) mints a new lineage that no longer matches
-	// this lingering one, and every subsequent command fails with a lineage
-	// mismatch. Destroy runs on a single engine, so remove only that engine's
-	// state file. Log a removal failure but keep going; the destroy already
+	// The deployment is gone, so remove all local state for this target: both engines' state files
+	// and any terraform.tfstate.backup left by a committed migration. A destroy tears everything
+	// down, so nothing here is worth keeping - in particular a coexisting terraform.tfstate is
+	// always superseded (a direct state only wins engine resolution by a higher serial, i.e. it is
+	// the newer, migrated-from version), so a later deploy has no reason to resurrect it. Remove the
+	// terraform state (and its backup) before the direct state so a crash between them never leaves a
+	// live terraform.tfstate with no direct state that the next deploy would pick up. Leaving any
+	// local state behind would also let a later fresh deploy (e.g. from another machine with no local
+	// state) mint a mismatched lineage. Log a removal failure but keep going; the destroy already
 	// succeeded and its summary is printed above.
-	var localStatePath string
-	if engine.IsDirect() {
-		_, localStatePath = b.StateFilenameDirect(ctx)
-	} else {
-		_, localStatePath = b.StateFilenameTerraform(ctx)
-	}
-	if err := os.Remove(localStatePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		logdiag.LogError(ctx, err)
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	_, localDirectPath := b.StateFilenameDirect(ctx)
+	for _, path := range []string{localTerraformPath, localTerraformPath + ".backup", localDirectPath} {
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			logdiag.LogError(ctx, err)
+		}
 	}
 
 	// Destroy leaves empty scaffolding directories behind once their contents are
@@ -363,6 +363,34 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if hasApproval {
+		// Approved. A destroy that migrated from terraform commits the migration as part of its
+		// teardown: it runs on the in-memory migrated (direct) state, destroyCore removes the local
+		// state files (both engines'), and files.Delete removes the remote one. There is no separate
+		// remote push as in deploy's CommitMigration - the resources are about to be deleted - and a
+		// destroy-only migration is not adoption worth recording.
+		// Gated on the resolved engine being direct: a migration that fell back to terraform (e.g.
+		// a failed plan check) left the state on terraform and opened nothing, so this destroy
+		// just runs on terraform.
+		migrating := b.MigratingToDirect && engine.IsDirect()
+		if migrating {
+			count := len(b.DeploymentBundle.StateDB.ExportState(ctx))
+			suffix := "s"
+			if count == 1 {
+				suffix = ""
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("Migrated %d resource%s to direct deployment engine.", count, suffix))
+
+			// Persist the migrated base before UpgradeToWrite opens the WAL, mirroring deploy's
+			// CommitMigration. Otherwise a destroy interrupted between UpgradeToWrite and Finalize
+			// leaves an orphan WAL with no state file: the next run re-migrates (in memory) and
+			// trips UpgradeToWrite's O_EXCL on that WAL. With the base on disk the next run instead
+			// resolves to this committed direct state and its file-backed Open recovers the WAL.
+			if err := b.DeploymentBundle.StateDB.Persist(); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("persisting migrated direct state: %w", err))
+				return
+			}
+		}
+
 		if engine.IsDirect() {
 			// Upgrade from read (opened by process.go) to write mode
 			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
@@ -385,6 +413,12 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 		destroyCore(ctx, b, plan, engine)
 	} else {
+		// A prepared terraform→direct migration lives only in memory (nothing durable was
+		// written), so a declined destroy just drops it and stays on the terraform engine. Gated
+		// on the resolved engine being direct: a migration that fell back leaves nothing to keep.
+		if b.MigratingToDirect && engine.IsDirect() {
+			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
+		}
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
 }
