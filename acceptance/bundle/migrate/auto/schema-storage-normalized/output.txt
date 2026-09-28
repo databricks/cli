@@ -1,13 +1,13 @@
 
-=== A prior terraform deployment stored storage_root with the trailing slash stripped (seed the fixture)
->>> seed_tfstate.py terraform.tfstate
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Migrate to direct with the same config (storage_root still has the trailing slash)
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Migrated 1 resource to direct deployment engine.
-Files: 0 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 1 unchanged
 
 === Follow-up plan on direct: does it converge or keep seeing a diff?

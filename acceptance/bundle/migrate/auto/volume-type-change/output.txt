@@ -1,6 +1,6 @@
 
-=== A prior terraform deployment left the volume with volume_type MANAGED (seed the fixture)
->>> seed_tfstate.py terraform.tfstate
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Change volume_type (immutable); without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy

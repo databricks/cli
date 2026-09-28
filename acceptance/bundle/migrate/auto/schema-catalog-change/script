@@ -13,8 +13,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "A prior terraform deployment left the schema in catalog 'main' (seed the fixture)"
-trace seed_tfstate.py terraform.tfstate
+title "Replay the prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Move the schema to another catalog. Without --auto-approve the recreate is refused"

@@ -9,8 +9,8 @@ export DATABRICKS_BUNDLE_ENGINE=
 # ("s3://bucket/path"), a difference the user did not make. normalize_slash absorbs it, so the
 # migration proceeds with no warning or recreate and the plan converges.
 
-title "A prior terraform deployment stored storage_root with the trailing slash stripped (seed the fixture)"
-trace seed_tfstate.py terraform.tfstate
+title "Replay the prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
 title "Migrate to direct with the same config (storage_root still has the trailing slash)"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy

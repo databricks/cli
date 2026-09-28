@@ -1,6 +1,6 @@
 
-=== A prior terraform deployment created the schema and volume (seed the fixture)
->>> seed_tfstate.py terraform.tfstate
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Rename the volume (an updatable id field) and deploy on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
@@ -9,7 +9,7 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Migrated 2 resources to direct deployment engine.
 Updated volumes.my_volume
-Files: 1 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 === Retry on direct: state now matches the backend, so the migration succeeds

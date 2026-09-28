@@ -13,8 +13,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "A prior terraform deployment left the model in catalog 'main' (seed the fixture)"
-trace seed_tfstate.py terraform.tfstate
+title "Replay the prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Move the model to another catalog and deploy on direct"

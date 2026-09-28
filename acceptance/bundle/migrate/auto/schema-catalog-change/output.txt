@@ -4,8 +4,8 @@
   "name": "othercat_[UNIQUE_NAME]"
 }
 
-=== A prior terraform deployment left the schema in catalog 'main' (seed the fixture)
->>> seed_tfstate.py terraform.tfstate
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Move the schema to another catalog. Without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
@@ -20,7 +20,7 @@ Error: the deployment requires destructive actions, but the current console does
 Deleting data assets such as schemas, pipelines, or volumes may cause permanent data loss and should be carefully reviewed.
 To proceed, use --auto-approve after reviewing the plan above.
 
-Files: 1 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 
 Exit code: 1
 
