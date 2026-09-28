@@ -1324,9 +1324,12 @@ func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cf
 	for _, p := range cfg.BackendDefaults {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
 	}
-	// stable_output_fields are output-only: absent from StateType, present in RemoteType.
+	// stable_output_fields must be output-only: present in RemoteType and absent
+	// from StateType. A settable field (present in StateType) resolves from local
+	// config, so it neither needs nor should use this category.
 	for _, p := range cfg.StableOutputFields {
-		assert.NoError(t, structaccess.ValidatePattern(remoteType, p.Field), "StableOutputFields: %s", p.Field)
+		assert.NoError(t, structaccess.ValidatePattern(remoteType, p.Field), "StableOutputFields %s: must be a valid RemoteType path", p.Field)
+		assert.Error(t, structaccess.ValidatePattern(stateType, p.Field), "StableOutputFields %s: must be absent from StateType (output-only)", p.Field)
 	}
 }
 
@@ -1409,6 +1412,10 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 // declared under stable_output_fields, with the reason. Add an entry only when
 // the name genuinely is not a stable identity (e.g. the backend recomputes it on
 // update). This is the escape hatch for TestOutputOnlyNameIsStable.
+//
+// A settable `name` (present in StateType, e.g. jobs) is not a candidate and does
+// not belong here: it resolves from local config, so the guard skips it and it is
+// never subject to the bug.
 var stableNameOptOut = map[string]string{}
 
 // TestOutputOnlyNameIsStable guards against silently reintroducing ES-2202624. A
