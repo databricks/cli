@@ -9,3 +9,7 @@ trace $CLI bundle deploy -t dev
 rm "$OUT_REQUESTS"
 trace $CLI bundle run my_pipeline -t dev
 trace print_requests.py //pipelines
+
+title "Development target via pipelines run: update is force-sent development: true"
+trace $CLI pipelines run my_pipeline -t dev
+trace print_requests.py //pipelines

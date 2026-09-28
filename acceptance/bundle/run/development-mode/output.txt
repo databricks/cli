@@ -40,3 +40,27 @@ Update ID: [UUID]
     "development": true
   }
 }
+
+=== Development target via pipelines run: update is force-sent development: true
+>>> [CLI] pipelines run my_pipeline -t dev
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
+
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+Update for pipeline completed successfully.
+
+Pipeline configurations for this update:
+• All tables are refreshed
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true
+  }
+}

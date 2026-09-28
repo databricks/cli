@@ -1,0 +1,28 @@
+
+=== Deploy passes the explicit pipeline-level development: true through
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-override/default/files...
+Created pipelines.my_pipeline
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //pipelines
+{
+  "path": "/api/2.0/pipelines",
+  "development": true
+}
+
+=== Run on a non-development target force-sends development: false, overriding it
+>>> [CLI] bundle run my_pipeline
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": false
+  }
+}

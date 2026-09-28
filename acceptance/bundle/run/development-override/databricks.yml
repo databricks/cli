@@ -1,0 +1,11 @@
+bundle:
+  name: test-pipeline-dev-override
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline-dev-override
+      development: true
+      libraries:
+        - file:
+            path: pipeline_file.py

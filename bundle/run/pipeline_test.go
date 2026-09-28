@@ -113,58 +113,72 @@ func TestPipelineRunnerRestart(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestPipelineRunnerRunInDevelopmentMode(t *testing.T) {
-	pipeline := &resources.Pipeline{
-		ID: "123",
+func TestPipelineRunnerRunSetsDevelopmentFromMode(t *testing.T) {
+	tests := []struct {
+		name            string
+		mode            config.Mode
+		wantDevelopment bool
+	}{
+		{name: "no mode", mode: "", wantDevelopment: false},
+		{name: "development", mode: config.Development, wantDevelopment: true},
+		{name: "production", mode: config.Production, wantDevelopment: false},
 	}
 
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Bundle: config.Bundle{
-				Mode: config.Development,
-			},
-			Resources: config.Resources{
-				Pipelines: map[string]*resources.Pipeline{
-					"test_pipeline": pipeline,
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			pipeline := &resources.Pipeline{
+				ID: "123",
+			}
+
+			b := &bundle.Bundle{
+				Config: config.Root{
+					Bundle: config.Bundle{
+						Mode: tc.mode,
+					},
+					Resources: config.Resources{
+						Pipelines: map[string]*resources.Pipeline{
+							"test_pipeline": pipeline,
+						},
+					},
 				},
-			},
-		},
+			}
+
+			runner := pipelineRunner{key: "test", bundle: b, pipeline: pipeline}
+
+			m := mocks.NewMockWorkspaceClient(t)
+			m.WorkspaceClient.Config = &sdk_config.Config{
+				Host: "https://test.test",
+			}
+			b.SetWorkpaceClient(m.WorkspaceClient)
+
+			ctx := cmdio.MockDiscard(t.Context())
+
+			pipelineApi := m.GetMockPipelinesAPI()
+
+			// Development is force-sent so that false is not dropped by omitempty.
+			pipelineApi.EXPECT().StartUpdate(mock.Anything, pipelines.StartUpdate{
+				PipelineId:      "123",
+				Development:     tc.wantDevelopment,
+				ForceSendFields: []string{"Development"},
+			}).Return(&pipelines.StartUpdateResponse{
+				UpdateId: "456",
+			}, nil)
+
+			pipelineApi.EXPECT().ListPipelineEventsAll(mock.Anything, pipelines.ListPipelineEventsRequest{
+				Filter:     `update_id = '456'`,
+				MaxResults: 100,
+				PipelineId: "123",
+			}).Return([]pipelines.PipelineEvent{}, nil)
+
+			pipelineApi.EXPECT().GetUpdateByPipelineIdAndUpdateId(mock.Anything, "123", "456").
+				Return(&pipelines.GetUpdateResponse{
+					Update: &pipelines.UpdateInfo{
+						State: pipelines.UpdateInfoStateCompleted,
+					},
+				}, nil)
+
+			_, err := runner.Run(ctx, &Options{})
+			require.NoError(t, err)
+		})
 	}
-
-	runner := pipelineRunner{key: "test", bundle: b, pipeline: pipeline}
-
-	m := mocks.NewMockWorkspaceClient(t)
-	m.WorkspaceClient.Config = &sdk_config.Config{
-		Host: "https://test.test",
-	}
-	b.SetWorkpaceClient(m.WorkspaceClient)
-
-	ctx := cmdio.MockDiscard(t.Context())
-
-	pipelineApi := m.GetMockPipelinesAPI()
-
-	// A development-mode target must run the update in development mode.
-	pipelineApi.EXPECT().StartUpdate(mock.Anything, pipelines.StartUpdate{
-		PipelineId:      "123",
-		Development:     true,
-		ForceSendFields: []string{"Development"},
-	}).Return(&pipelines.StartUpdateResponse{
-		UpdateId: "456",
-	}, nil)
-
-	pipelineApi.EXPECT().ListPipelineEventsAll(mock.Anything, pipelines.ListPipelineEventsRequest{
-		Filter:     `update_id = '456'`,
-		MaxResults: 100,
-		PipelineId: "123",
-	}).Return([]pipelines.PipelineEvent{}, nil)
-
-	pipelineApi.EXPECT().GetUpdateByPipelineIdAndUpdateId(mock.Anything, "123", "456").
-		Return(&pipelines.GetUpdateResponse{
-			Update: &pipelines.UpdateInfo{
-				State: pipelines.UpdateInfoStateCompleted,
-			},
-		}, nil)
-
-	_, err := runner.Run(ctx, &Options{})
-	require.NoError(t, err)
 }

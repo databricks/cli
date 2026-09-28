@@ -1,0 +1,7 @@
+title "Deploy passes the explicit pipeline-level development: true through"
+trace $CLI bundle deploy
+trace print_requests.py //pipelines | jq '{path, development: .body.development}'
+
+title "Run on a non-development target force-sends development: false, overriding it"
+trace $CLI bundle run my_pipeline
+trace print_requests.py //pipelines
