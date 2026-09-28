@@ -1,17 +1,20 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
+# find.py lists matching files sorted with forward slashes (cross-platform); the regex matches only
+# state files (tfstate/.backup, resources*.json, WAL), excluding the terraform provider cache under
+# .terraform/. Paired with a remote listing of the state directory, this shows exactly which state
+# is present locally and remotely and proves nothing is left behind.
+
 title "Initial deploy on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
 title "Destroy without approval: migration prepared in memory then dropped, stays on terraform"
 # The migration is prepared in memory (in process.go) before the destroy phase asks for approval,
 # so a refused destroy exercises the not-committed path. Nothing durable must be left behind: no
-# direct state, no migrating temp, no WAL - only the terraform state remains.
+# direct state, no migrating temp, no WAL - only the terraform state remains, local and remote.
 trace musterr $CLI bundle destroy
-trace find .databricks/bundle -name "resources.json" -type f
-trace find .databricks/bundle -name "resources.migrating.json*" -type f
-trace find .databricks/bundle -name "*.wal" -type f
-trace find .databricks/bundle -name "terraform.tfstate*" -type f
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
 
 # Destroy behaves like deploy: it migrates the terraform state to direct (writing the local
 # direct state), plan-checks it, and - once approved - destroys on the direct engine. destroyCore
@@ -21,6 +24,6 @@ trace find .databricks/bundle -name "terraform.tfstate*" -type f
 title "Destroy on direct: migrate then destroy"
 trace $CLI bundle destroy --auto-approve
 
-title "Destroy removes both local state files (direct and the superseded terraform state)"
-trace find .databricks/bundle -name "resources.json" -type f
-trace find .databricks/bundle -name "terraform.tfstate*" -type f
+title "Destroy leaves no state behind: no local state files, remote deployment removed"
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 errcode $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
