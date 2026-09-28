@@ -35,19 +35,20 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle destroy --auto-approve
 
 rm "$OUT_REQUESTS"
 # The three =terraform commands above all ran on the higher-serial direct state (serial 10), not
-# terraform. The destroy removed the local direct state but left the terraform state pulled from
-# the remote (created by the initial terraform deploy) intact - a non-migrating destroy does not
-# retire it. This deploy migrates that terraform state to direct and commits, so it runs on direct.
+# terraform. The destroy tore everything down: it removed all local state (both engines) and the
+# remote deployment - a destroy does not preserve a superseded terraform state for a later deploy to
+# resurrect. So this deploy starts fresh on the direct engine: there is nothing to migrate, it just
+# recreates the resource.
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!tf-provider'
-trace print_state.py | jq .serial | contains.py "6"
+trace print_state.py | jq .serial | contains.py "1"
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 #trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
 
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
 trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
-trace print_state.py | jq .serial | contains.py "6"
+trace print_state.py | jq .serial | contains.py "1"
 
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull

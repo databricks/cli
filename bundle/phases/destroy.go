@@ -140,7 +140,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	return cmdio.AskYesOrNo(ctx, "Would you like to proceed?")
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType, migrating bool) {
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
 		// Not reported per resource: destroy names them up front for consent and then
 		// reports only a count, so there is no per-resource output to report into.
@@ -206,47 +206,20 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		return
 	}
 
-	// A destroy that migrated from terraform left the superseded local terraform state behind
-	// (files.Delete already removed the remote one). Remove it before the direct state below: a
-	// crash between the two must never leave a live local terraform.tfstate with no direct state,
-	// which the next deploy would pick up. Gated on migrating, not just engine.IsDirect(): a
-	// non-migrating direct destroy may run alongside a separate, still-valid terraform state that
-	// a later deploy is meant to migrate, and must not delete it.
-	if migrating {
-		_, localTerraformPath := b.StateFilenameTerraform(ctx)
-		if err := os.Remove(localTerraformPath); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			logdiag.LogError(ctx, err)
-		}
-	}
-
-	// Remove the local state file now that the deployment is gone. Destroy only
-	// deletes the remote state; leaving the local file behind keeps its lineage
-	// around, so a later fresh deploy of the same bundle (e.g. from another
-	// machine that has no local state) mints a new lineage that no longer matches
-	// this lingering one, and every subsequent command fails with a lineage
-	// mismatch. Destroy runs on a single engine, so remove only that engine's
-	// state file. Log a removal failure but keep going; the destroy already
+	// The deployment is gone, so remove all local state for this target: both engines' state files
+	// and any terraform.tfstate.backup left by a committed migration. A destroy tears everything
+	// down, so nothing here is worth keeping - in particular a coexisting terraform.tfstate is
+	// always superseded (a direct state only wins engine resolution by a higher serial, i.e. it is
+	// the newer, migrated-from version), so a later deploy has no reason to resurrect it. Remove the
+	// terraform state (and its backup) before the direct state so a crash between them never leaves a
+	// live terraform.tfstate with no direct state that the next deploy would pick up. Leaving any
+	// local state behind would also let a later fresh deploy (e.g. from another machine with no local
+	// state) mint a mismatched lineage. Log a removal failure but keep going; the destroy already
 	// succeeded and its summary is printed above.
-	var localStatePath string
-	if engine.IsDirect() {
-		_, localStatePath = b.StateFilenameDirect(ctx)
-	} else {
-		_, localStatePath = b.StateFilenameTerraform(ctx)
-	}
-	if err := os.Remove(localStatePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		logdiag.LogError(ctx, err)
-	}
-
-	// A migration committed by deploy retires the terraform state by renaming the local one to
-	// terraform.tfstate.backup (see CleanupTerraformStateAfterMigration). On a direct destroy the
-	// deployment is gone, so that relic must not linger. Removing it is unconditional on direct
-	// (unlike the live terraform.tfstate above): a .backup is never read as live state (the resolver
-	// reads terraform.tfstate, not .backup), so it is never the "still-valid terraform state a later
-	// deploy migrates" that gates the removal above - deleting it is always safe here. Pruning it also
-	// lets the now-empty terraform/ dir be removed below.
-	if engine.IsDirect() {
-		_, localTerraformPath := b.StateFilenameTerraform(ctx)
-		if err := os.Remove(localTerraformPath + ".backup"); err != nil && !errors.Is(err, fs.ErrNotExist) {
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	_, localDirectPath := b.StateFilenameDirect(ctx)
+	for _, path := range []string{localTerraformPath, localTerraformPath + ".backup", localDirectPath} {
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			logdiag.LogError(ctx, err)
 		}
 	}
@@ -391,10 +364,10 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 
 	if hasApproval {
 		// Approved. A destroy that migrated from terraform commits the migration as part of its
-		// teardown: it runs on the in-memory migrated (direct) state, destroyCore retires the
-		// local terraform state (gated on migrating), and files.Delete removes the remote one.
-		// There is no separate remote push as in deploy's CommitMigration - the resources are
-		// about to be deleted - and a destroy-only migration is not adoption worth recording.
+		// teardown: it runs on the in-memory migrated (direct) state, destroyCore removes the local
+		// state files (both engines'), and files.Delete removes the remote one. There is no separate
+		// remote push as in deploy's CommitMigration - the resources are about to be deleted - and a
+		// destroy-only migration is not adoption worth recording.
 		// Gated on the resolved engine being direct: a migration that fell back to terraform (e.g.
 		// a failed plan check) left the state on terraform and opened nothing, so this destroy
 		// just runs on terraform.
@@ -438,7 +411,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				return
 			}
 		}
-		destroyCore(ctx, b, plan, engine, migrating)
+		destroyCore(ctx, b, plan, engine)
 	} else {
 		// A prepared terraform→direct migration lives only in memory (nothing durable was
 		// written), so a declined destroy just drops it and stays on the terraform engine. Gated
