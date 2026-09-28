@@ -392,6 +392,16 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				suffix = ""
 			}
 			cmdio.LogString(ctx, fmt.Sprintf("Migrated %d resource%s to direct deployment engine.", count, suffix))
+
+			// Persist the migrated base before UpgradeToWrite opens the WAL, mirroring deploy's
+			// CommitMigration. Otherwise a destroy interrupted between UpgradeToWrite and Finalize
+			// leaves an orphan WAL with no state file: the next run re-migrates (in memory) and
+			// trips UpgradeToWrite's O_EXCL on that WAL. With the base on disk the next run instead
+			// resolves to this committed direct state and its file-backed Open recovers the WAL.
+			if err := b.DeploymentBundle.StateDB.Persist(); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("persisting migrated direct state: %w", err))
+				return
+			}
 		}
 
 		if engine.IsDirect() {
