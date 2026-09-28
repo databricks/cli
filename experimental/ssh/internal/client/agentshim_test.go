@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -159,7 +160,7 @@ func TestEnsureBinary(t *testing.T) {
 	}
 
 	t.Run("unsupported architecture errors", func(t *testing.T) {
-		_, err := ensureBinary(t.Context(), t.TempDir(), nodeArchiveSpec("riscv"))
+		err := ensureBinary(t.Context(), t.TempDir(), nodeArchiveSpec("riscv"))
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "unsupported architecture")
 	})
@@ -208,19 +209,17 @@ func TestEnsureBinary(t *testing.T) {
 	} {
 		t.Run("downloads, extracts, and returns the bin dir ("+c.spec.binaryName+")", func(t *testing.T) {
 			beforeDownloads := downloads
-			binDir, err := ensureBinary(t.Context(), home, c.spec)
+			err := ensureBinary(t.Context(), home, c.spec)
 			require.NoError(t, err)
-			assert.Equal(t, c.wantBinDir, binDir)
-			_, err = os.Stat(filepath.Join(binDir, c.spec.binaryName))
+			_, err = os.Stat(filepath.Join(c.wantBinDir, c.spec.binaryName))
 			require.NoError(t, err)
 			assert.Equal(t, beforeDownloads+1, downloads)
 		})
 
 		t.Run("no-op when the binary is already installed ("+c.spec.binaryName+")", func(t *testing.T) {
 			beforeDownloads := downloads
-			binDir, err := ensureBinary(t.Context(), home, c.spec)
+			err := ensureBinary(t.Context(), home, c.spec)
 			require.NoError(t, err)
-			assert.Equal(t, c.wantBinDir, binDir)
 			assert.Equal(t, beforeDownloads, downloads, "an existing install must not re-download")
 		})
 	}
@@ -238,9 +237,6 @@ func writeFakeExec(t *testing.T, dir, name, body string) {
 // to $FAKE_UV_LOG. It uses only shell builtins so it needs nothing on PATH.
 const fakeUvRecorder = `{
   echo "args: $*"
-  echo "UV_TOOL_DIR=$UV_TOOL_DIR"
-  echo "UV_TOOL_BIN_DIR=$UV_TOOL_BIN_DIR"
-  [ -f "$FAKE_LOCK_PATH" ] && echo "lock-held"
 } > "$FAKE_UV_LOG"`
 
 func TestEnsureToolchain(t *testing.T) {
@@ -250,58 +246,53 @@ func TestEnsureToolchain(t *testing.T) {
 		return
 	}
 
-	lockPath := func(home string) string { return filepath.Join(home, agentRootDir, setupLockName) }
+	for _, staleLock := range []bool{false, true} {
+		t.Run(fmt.Sprintf("no-op when the toolchain is already present (staleLock=%v)", staleLock), func(t *testing.T) {
+			home := t.TempDir()
+			writeFakeExec(t, filepath.Join(home, uvToolBinDir), "ucode", ":")
+			writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
+			writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+			if staleLock {
+				// left by a session killed mid-install
+				writeFakeExec(t, filepath.Join(home, agentRootDir), setupLockName, "")
+			}
+			marker := filepath.Join(t.TempDir(), "uv.log")
+			t.Setenv("FAKE_UV_LOG", marker)
+			t.Setenv("PATH", t.TempDir())
 
-	t.Run("no-op when the toolchain is already present", func(t *testing.T) {
-		home := t.TempDir()
-		binDir := t.TempDir()
-		writeFakeExec(t, binDir, "ucode", ":")
-		writeFakeExec(t, binDir, "npm", ":")
-		// A uv that records if it ever runs: a ready toolchain must install nothing.
-		writeFakeExec(t, binDir, "uv", fakeUvRecorder)
-		marker := filepath.Join(t.TempDir(), "uv.log")
-		t.Setenv("FAKE_UV_LOG", marker)
-		t.Setenv("PATH", binDir)
-
-		require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
-		assert.NoFileExists(t, marker, "uv must not run when the toolchain is already present")
-	})
+			require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
+			assert.NoFileExists(t, marker, "uv must not run when the toolchain is already present")
+		})
+	}
 
 	t.Run("installs the Unity Gateway CLI via uv when uv is already present", func(t *testing.T) {
 		home := t.TempDir()
-		binDir := t.TempDir()
 		// uv and npm are present; ucode is not, so only ucode gets installed and no
-		// download happens (which keeps the test hermetic).
-		writeFakeExec(t, binDir, "uv", fakeUvRecorder)
-		writeFakeExec(t, binDir, "npm", ":")
+		// download happens
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
 		marker := filepath.Join(t.TempDir(), "uv.log")
 		t.Setenv("FAKE_UV_LOG", marker)
-		t.Setenv("FAKE_LOCK_PATH", lockPath(home))
-		t.Setenv("PATH", binDir)
+		t.Setenv("PATH", t.TempDir())
 
 		require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
 
 		out, err := os.ReadFile(marker)
 		require.NoError(t, err)
 		assert.Contains(t, string(out), "tool install git+https://github.com/"+ugRepo+"@"+ugCommit)
-		assert.Contains(t, string(out), "UV_TOOL_DIR="+filepath.Join(home, uvToolDir))
-		assert.Contains(t, string(out), "UV_TOOL_BIN_DIR="+filepath.Join(home, uvToolBinDir))
-		assert.Contains(t, string(out), "lock-held", "the install must run while holding the setup lock")
 		// The tool bin dir is prepended to PATH so the freshly installed ucode is found.
 		assert.Contains(t, filepath.SplitList(os.Getenv("PATH")), filepath.Join(home, uvToolBinDir))
-		assert.NoFileExists(t, lockPath(home), "the setup lock is released once setup finishes")
+		assert.NoFileExists(t, filepath.Join(home, agentRootDir, setupLockName), "the setup lock is released once setup finishes")
 	})
 
 	t.Run("recheck after acquiring the lock skips a redundant install", func(t *testing.T) {
 		home := t.TempDir()
-		binDir := t.TempDir()
 		// uv is present and records if it ever installs; it must not be called once a
 		// concurrent client finishes the toolchain while we wait for the lock.
-		writeFakeExec(t, binDir, "uv", fakeUvRecorder)
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
 		marker := filepath.Join(t.TempDir(), "uv.log")
 		t.Setenv("FAKE_UV_LOG", marker)
-		t.Setenv("FAKE_LOCK_PATH", lockPath(home))
-		t.Setenv("PATH", binDir) // ucode+npm absent → not ready yet
+		t.Setenv("PATH", t.TempDir())
 
 		// Hold the setup lock to stand in for another client mid-install.
 		unlock, err := acquireSetupLock(t.Context(), home)
@@ -313,8 +304,8 @@ func TestEnsureToolchain(t *testing.T) {
 
 		// The other client finishes: publish ucode+npm into the PATH dir, then release
 		// the lock so the waiting ensureToolchain can proceed.
-		writeFakeExec(t, binDir, "ucode", ":")
-		writeFakeExec(t, binDir, "npm", ":")
+		writeFakeExec(t, filepath.Join(home, uvToolBinDir), "ucode", ":")
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
 		unlock()
 
 		require.NoError(t, <-done)

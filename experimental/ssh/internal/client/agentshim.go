@@ -345,6 +345,17 @@ func toolchainReady() bool {
 }
 
 func ensureToolchain(ctx context.Context, home, arch string) error {
+	// add expected tool locations to PATH first
+	uvSpec := uvArchiveSpec(arch)
+	nodeSpec := nodeArchiveSpec(arch)
+	uvToolDirAbsolute := filepath.Join(home, uvToolDir)
+	uvToolBinDirAbsolute := filepath.Join(home, uvToolBinDir)
+	prependPath(ctx, uvToolBinDirAbsolute)
+	for _, spec := range []archiveSpec{uvSpec, nodeSpec} {
+		binDir := filepath.Join(home, agentDepsDir, spec.dirName, spec.binDirName)
+		prependPath(ctx, binDir)
+	}
+
 	if toolchainReady() {
 		return nil
 	}
@@ -358,19 +369,13 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 		return nil
 	}
 
-	uvToolDirAbsolute := filepath.Join(home, uvToolDir)
-	uvToolBinDirAbsolute := filepath.Join(home, uvToolBinDir)
-
 	if _, err := exec.LookPath("uv"); err != nil {
 		cmdio.LogString(ctx, "Installing uv...")
-		uvPath, err := ensureBinary(ctx, home, uvArchiveSpec(arch))
+		err := ensureBinary(ctx, home, uvSpec)
 		if err != nil {
 			return fmt.Errorf("failed to install uv: %w", err)
 		}
-		prependPath(ctx, uvPath)
 	}
-
-	prependPath(ctx, uvToolBinDirAbsolute)
 
 	if _, err := exec.LookPath("ucode"); err != nil {
 		cmdio.LogString(ctx, "Installing Unity Gateway CLI...")
@@ -383,11 +388,10 @@ func ensureToolchain(ctx context.Context, home, arch string) error {
 
 	if _, err := exec.LookPath("npm"); err != nil {
 		cmdio.LogString(ctx, "Installing npm...")
-		nodePath, err := ensureBinary(ctx, home, nodeArchiveSpec(arch))
+		err := ensureBinary(ctx, home, nodeSpec)
 		if err != nil {
 			return err
 		}
-		prependPath(ctx, nodePath)
 	}
 
 	return nil
@@ -405,28 +409,25 @@ type archiveSpec struct {
 
 // ensure the specified binary is installed, installing it if it's not already
 // present. Returns the path to the directory containing the installed binary
-func ensureBinary(ctx context.Context, home string, spec archiveSpec) (string, error) {
+func ensureBinary(ctx context.Context, home string, spec archiveSpec) error {
 	if spec.archiveURL == "" {
-		return "", fmt.Errorf("unsupported architecture for %s download: %s", spec.binaryName, runtime.GOARCH)
+		return fmt.Errorf("unsupported architecture for %s download: %s", spec.binaryName, runtime.GOARCH)
 	}
 
 	depsRoot := filepath.Join(home, agentDepsDir)
 	depsDir := filepath.Join(depsRoot, spec.dirName)
-	binDir := depsDir
-	if spec.binDirName != "" {
-		binDir = filepath.Join(depsDir, spec.binDirName)
-	}
+	binDir := filepath.Join(depsDir, spec.binDirName)
 	if _, err := os.Stat(filepath.Join(binDir, spec.binaryName)); err == nil {
-		return binDir, nil
+		return nil
 	}
 
 	if err := os.MkdirAll(depsRoot, 0o755); err != nil {
-		return "", fmt.Errorf("failed to create %s: %w", depsRoot, err)
+		return fmt.Errorf("failed to create %s: %w", depsRoot, err)
 	}
 
 	tarball, err := downloadVerified(ctx, spec)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer os.Remove(tarball)
 	// Extract into a sibling temp dir and atomically rename it into place, so an
@@ -434,22 +435,22 @@ func ensureBinary(ctx context.Context, home string, spec archiveSpec) (string, e
 	// check above would then wrongly accept as a finished install.
 	tmpDir, err := os.MkdirTemp(depsRoot, spec.binaryName+"-*")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %w", err)
+		return fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	defer os.RemoveAll(tmpDir) // no-op once renamed; cleans up a failed extraction
 	// extract with tar for brevity
 	if err := runCommand(ctx, nil, "tar", "-xf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
-		return "", fmt.Errorf("failed to extract %s: %w", spec.binaryName, err)
+		return fmt.Errorf("failed to extract %s: %w", spec.binaryName, err)
 	}
 	// Clear any partial leftover from a previously-interrupted run, then publish
 	// atomically (same-filesystem rename, since tmpDir is a sibling of nodeDir).
 	if err := os.RemoveAll(depsDir); err != nil {
-		return "", fmt.Errorf("failed to remove %s: %w", depsDir, err)
+		return fmt.Errorf("failed to remove %s: %w", depsDir, err)
 	}
 	if err := os.Rename(tmpDir, depsDir); err != nil {
-		return "", fmt.Errorf("failed to install %s: %w", spec.binaryName, err)
+		return fmt.Errorf("failed to install %s: %w", spec.binaryName, err)
 	}
-	return binDir, nil
+	return nil
 }
 
 func uvArchiveSpec(goarch string) archiveSpec {
