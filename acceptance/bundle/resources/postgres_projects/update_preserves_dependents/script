@@ -1,0 +1,30 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() { $CLI bundle destroy --auto-approve &> LOG.destroy; }
+trap cleanup EXIT
+
+$CLI bundle deploy &> LOG.create
+project_id=$(read_id.py project)
+catalog_id=$(read_id.py catalog)
+role_id=$(read_id.py reader)
+
+title "An in-place project update keeps the catalog and role"
+update_file.py databricks.yml 'Original project name' 'Updated project name'
+$CLI bundle plan -o json > LOG.plan
+trace jq '.plan | map_values(.action)' LOG.plan
+jq -e '.plan["resources.postgres_projects.project"].action == "update" and .plan["resources.postgres_catalogs.catalog"].action == "skip" and .plan["resources.postgres_roles.reader"].action == "skip"' LOG.plan > /dev/null
+
+rm -f "$OUT_REQUESTS"
+$CLI bundle deploy $(readplanarg LOG.plan) &> LOG.update
+trace print_requests.py '//api/2.0/postgres' --del-field body --oneline
+test "$(read_id.py project)" = "$project_id"
+test "$(read_id.py catalog)" = "$catalog_id"
+test "$(read_id.py reader)" = "$role_id"
+trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged"
+
+title "Changing the project identity still recreates dependents"
+update_file.py databricks.yml 'project_id: reference-update-' 'project_id: replacement-'
+$CLI bundle plan -o json > LOG.recreate
+trace jq '.plan | map_values(.action)' LOG.recreate
+jq -e '.plan["resources.postgres_projects.project"].action == "recreate" and .plan["resources.postgres_catalogs.catalog"].action == "recreate" and .plan["resources.postgres_roles.reader"].action == "recreate"' LOG.recreate > /dev/null
+rm -f "$OUT_REQUESTS"

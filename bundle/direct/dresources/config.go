@@ -62,6 +62,10 @@ type RemoteAdditionRule struct {
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.
 type ResourceLifecycleConfig struct {
+	// IDAliases lists remote field paths whose values equal the resource ID.
+	// References to these fields remain known during actions that preserve the ID.
+	IDAliases []string `yaml:"id_aliases,omitempty"`
+
 	// IgnoreRemoteChanges: field patterns where remote changes are ignored (output-only, policy-set).
 	IgnoreRemoteChanges []FieldRule `yaml:"ignore_remote_changes,omitempty"`
 
@@ -132,6 +136,7 @@ const (
 )
 
 var empty = ResourceLifecycleConfig{
+	IDAliases:             nil,
 	IgnoreRemoteChanges:   nil,
 	IgnoreLocalChanges:    nil,
 	RecreateOnChanges:     nil,
