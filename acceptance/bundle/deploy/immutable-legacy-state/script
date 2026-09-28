@@ -9,9 +9,10 @@ title "Deploy an immutable snapshot"
 trace $CLI bundle deploy
 
 title "Rewrite the state the way a CLI without this feature wrote it"
-# Back then full_path had no trailing "/snapshot" segment. It is the only value ending in it, so
-# stripping the segment together with the closing quote leaves the rest of the state untouched.
-trace update_file.py .databricks/bundle/default/resources.json '/snapshot"' '"'
+# Back then full_path had no trailing "/snapshot" segment.
+STATE=.databricks/bundle/default/resources.json
+jq '.state["resources.internal_immutable_snapshots.immutable"].state.full_path |= rtrimstr("/snapshot")' "$STATE" > tmp.json
+mv tmp.json "$STATE"
 
 title "Deploying on top of that state succeeds and moves to the current layout"
 trace $CLI bundle deploy

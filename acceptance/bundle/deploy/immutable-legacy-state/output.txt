@@ -7,8 +7,6 @@ Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
 === Rewrite the state the way a CLI without this feature wrote it
->>> update_file.py .databricks/bundle/default/resources.json /snapshot" "
-
 === Deploying on top of that state succeeds and moves to the current layout
 >>> [CLI] bundle deploy
 Files: 0 uploaded, 0 deleted

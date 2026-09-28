@@ -221,3 +221,24 @@ func TestComputeMetadataMutatorGitFolderPath(t *testing.T) {
 
 	assert.Equal(t, gitFolderPath, b.Metadata.Extra.GitFolderPath)
 }
+
+func TestComputeMetadataMutatorSnapshotContentPath(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Snapshots: map[string]*resources.Snapshot{
+					resources.SnapshotResourceKey: {
+						RemoteRoot: "/Workspace/Users/test@databricks.com/.snapshots",
+						BundleID:   "bundle-id",
+						ZipPath:    "/tmp/content-hash.zip",
+					},
+				},
+			},
+		},
+	}
+
+	diags := bundle.Apply(t.Context(), b, Compute())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "/Workspace/Users/test@databricks.com/.snapshots/bundle-id/content-hash/snapshot", b.Metadata.Config.Workspace.SnapshotContentPath)
+}
