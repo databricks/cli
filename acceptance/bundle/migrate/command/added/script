@@ -1,23 +1,23 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# Seed a prior terraform deployment of job_a (job_b is commented out in config).
-trace seed_tfstate.py terraform.tfstate
+# Replay a prior terraform deployment (only job_a; job_b is commented out)
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
 # Uncomment job_b (add it to config without deploying)
 update_file.py databricks.yml "#job_b" "job_b"
 
-# job_b is not in the terraform state, so the migration skips it; it is created on next deploy
+# job_b skipped, will be created on next deploy
 trace $CLI bundle deployment migrate
 
 # After migration: plan shows job_b as "to add"
-trace $CLI bundle plan | contains.py "1 to add"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "1 to add"
 
 # Deploy creates job_b; verify via recorded requests
 rm "$OUT_REQUESTS"
-trace $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_requests.py //jobs/create
 
 # No further actions planned
-trace $CLI bundle plan | contains.py "2 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "2 unchanged"
 
 rm "$OUT_REQUESTS"

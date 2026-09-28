@@ -1,25 +1,23 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-# Seed a prior terraform deployment of job_a (instance_pools is commented out, so the
-# terraform deployment never had it).
-title "Seed a terraform deployment of job_a only"
-trace seed_tfstate.py terraform.tfstate
+title "Replay a prior terraform deployment (instance_pools is commented out)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
-title "Add a direct-only resource to the config"
+title "Add a direct-only resource to the config without deploying it"
 trace update_file.py databricks.yml "#instance_pools" "instance_pools"
 
 title "Migration ignores the direct-only resource; it will be created on the next deploy"
 trace $CLI bundle deployment migrate
 
 title "After migration: plan shows the direct-only resource as \"to add\""
-trace $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
 
 title "Deploy creates it; verify via recorded requests"
 rm "$OUT_REQUESTS"
-trace $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
 trace print_requests.py //instance-pools/create
 
 title "No further actions planned"
-trace $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
 
 rm "$OUT_REQUESTS"

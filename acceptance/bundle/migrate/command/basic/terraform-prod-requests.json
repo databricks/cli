@@ -1,0 +1,74 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.1/unity-catalog/schemas",
+    "body": {
+      "catalog_name": "mycat",
+      "name": "myschema"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.1/unity-catalog/volumes",
+    "body": {
+      "catalog_name": "mycat",
+      "name": "myvol",
+      "schema_name": "myschema",
+      "volume_type": "MANAGED"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.2/jobs/create",
+    "body": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/migrate-basic-test/prod/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Test Migrated Job",
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/tester@databricks.com/.bundle/migrate-basic-test/prod/files/notebook",
+            "source": "WORKSPACE"
+          },
+          "task_key": "main"
+        }
+      ]
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/migrate-basic-test/prod/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "notebook": {
+            "path": "/Workspace/Users/tester@databricks.com/.bundle/migrate-basic-test/prod/files/pipeline"
+          }
+        }
+      ],
+      "name": "Test Migrated Pipeline",
+      "tags": {
+        "myjob_id": "8790615649482281000",
+        "myjob_name": "Test Migrated Job",
+        "myjob_timeout": "0",
+        "myvolume_id": "mycat.myschema.myvol",
+        "volume_catalog_name": "mycat",
+        "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/120efa64-9b68-46ba-be38-f319458430d2/volumes/79fe8a5b-c6f7-e638-79fe-8a5bc6f7e639"
+      }
+    }
+  }
+]

@@ -18,6 +18,7 @@ Usage: replay_tfstate.py REQUESTS.json TFSTATE.json [-t TARGET]
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -28,6 +29,16 @@ UNIQUE_NAME = os.environ.get("UNIQUE_NAME", "")
 # Per resource: which response field carries the new id. Terraform's tfstate stores the same value
 # as the resource's `id`, keyed here by the create path so we can match a create to its tfstate entry.
 ID_FIELDS = ["job_id", "pipeline_id", "dashboard_id", "experiment_id", "full_name", "id", "name"]
+
+# A backend-minted value that another resource may reference (e.g. a volume's storage_location, which
+# a pipeline tags). We remap these recorded->minted just like ids: a UUID, an s3-style path (which
+# embeds a UUID), or a long numeric id. Timestamps (13-digit millis) are shorter and excluded.
+BACKEND_VALUE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}")
+
+
+def is_backend_value(v):
+    s = str(v)
+    return bool(BACKEND_VALUE.search(s)) or s.startswith("s3://") or (s.isdigit() and len(s) >= 15)
 
 
 def apply_map(text, id_map):
@@ -72,14 +83,14 @@ def main():
     os.remove(args.requests)
     os.remove(args.tfstate)
 
-    # name -> recorded resource id, from the tfstate managed resources.
-    name_to_id = {}
+    # name -> recorded resource attributes, from the tfstate managed resources.
+    name_to_attrs = {}
     for r in tfstate["resources"]:
         if r.get("mode") != "managed":
             continue
         attrs = r["instances"][0]["attributes"]
         if "name" in attrs and "id" in attrs:
-            name_to_id[attrs["name"]] = str(attrs["id"])
+            name_to_attrs[attrs["name"]] = attrs
 
     id_map = {}
     for req in requests:
@@ -91,12 +102,18 @@ def main():
 
         # A create (POST that returns a new id) whose config name matches a tfstate resource:
         # map its recorded id to the freshly minted one.
-        if req["method"] == "POST" and isinstance(body, dict) and body.get("name") in name_to_id:
-            old_id = name_to_id[body["name"]]
+        if req["method"] == "POST" and isinstance(body, dict) and body.get("name") in name_to_attrs:
+            attrs = name_to_attrs[body["name"]]
             new_id = next((str(resp[f]) for f in ID_FIELDS if f in resp), None)
             if new_id is None:
                 sys.exit(f"replay_tfstate.py: no id in response to {req['path']}: {resp}")
-            id_map[old_id] = new_id
+            id_map[str(attrs["id"])] = new_id
+            # Also remap other backend-minted values a later resource may reference (e.g. a volume's
+            # storage_location that a pipeline tags), so those requests and the tfstate stay consistent.
+            for k, v in resp.items():
+                old = attrs.get(k)
+                if old is not None and str(old) != str(v) and is_backend_value(old):
+                    id_map[str(old)] = str(v)
 
     out_dir = os.path.join(".databricks", "bundle", args.target, "terraform")
     os.makedirs(out_dir, exist_ok=True)

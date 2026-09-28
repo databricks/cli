@@ -1,5 +1,5 @@
 
->>> seed_tfstate.py terraform.tfstate
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
@@ -11,12 +11,12 @@ The state file is not synchronized to the workspace yet. To do that and finalize
 To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate
 
 
->>> [CLI] bundle plan
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 create jobs.job_b
 
 Plan: 1 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> [CLI] bundle deploy
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/files...
 Created jobs.job_b
 Files: 1 uploaded, 0 deleted
@@ -46,5 +46,5 @@ Resources: 1 created, 0 changed, 0 deleted, 1 unchanged
   }
 }
 
->>> [CLI] bundle plan
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
