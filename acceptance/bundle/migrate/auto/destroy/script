@@ -3,9 +3,14 @@ export DATABRICKS_BUNDLE_ENGINE=
 title "Initial deploy on terraform"
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 
-title "Destroy without approval: stays on terraform"
+title "Destroy without approval: migration prepared in memory then dropped, stays on terraform"
+# The migration is prepared in memory (in process.go) before the destroy phase asks for approval,
+# so a refused destroy exercises the not-committed path. Nothing durable must be left behind: no
+# direct state, no migrating temp, no WAL - only the terraform state remains.
 trace musterr $CLI bundle destroy
 trace find .databricks/bundle -name "resources.json" -type f
+trace find .databricks/bundle -name "resources.migrating.json*" -type f
+trace find .databricks/bundle -name "*.wal" -type f
 trace find .databricks/bundle -name "terraform.tfstate*" -type f
 
 # Destroy behaves like deploy: it migrates the terraform state to direct (writing the local
