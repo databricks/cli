@@ -53,6 +53,7 @@ type imagePushDeps struct {
 	runCommand      func(context.Context, io.Reader, io.Writer, io.Writer, string, ...string) error
 }
 
+// defaultImagePushDeps connects image-push operations to the real CLI and Docker executables.
 func defaultImagePushDeps() imagePushDeps {
 	return imagePushDeps{
 		configureDocker: configureImageDocker,
@@ -61,6 +62,7 @@ func defaultImagePushDeps() imagePushDeps {
 	}
 }
 
+// configureImageDocker configures authentication through the CLI and returns the resolved registry host.
 func configureImageDocker(ctx context.Context, profile string) (string, error) {
 	executable, err := os.Executable()
 	if err != nil {
@@ -88,6 +90,7 @@ func configureImageDocker(ctx context.Context, profile string) (string, error) {
 	return registryHost, nil
 }
 
+// registryHostFromDockerConfigureOutput extracts the DAR host printed by auth docker configure.
 func registryHostFromDockerConfigureOutput(output string) (string, error) {
 	const prefix = "Configured Docker credential helper for "
 	for line := range strings.Lines(output) {
@@ -98,6 +101,7 @@ func registryHostFromDockerConfigureOutput(output string) (string, error) {
 	return "", errors.New("auth docker configure did not report an Artifact Registry host")
 }
 
+// newImagesCommand creates the AIR images command group and registers its subcommands.
 func newImagesCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "images",
@@ -108,10 +112,12 @@ func newImagesCommand() *cobra.Command {
 	return cmd
 }
 
+// newImagePushCommand creates the push command with production dependencies.
 func newImagePushCommand() *cobra.Command {
 	return newImagePushCommandWithDeps(defaultImagePushDeps())
 }
 
+// newImagePushCommandWithDeps defines push flags and handlers with injectable dependencies.
 func newImagePushCommandWithDeps(deps imagePushDeps) *cobra.Command {
 	var opts imagePushOptions
 	cmd := &cobra.Command{
@@ -141,6 +147,7 @@ The destination --artifact ARTIFACT[:TAG] defaults to the source image name and 
 	return cmd
 }
 
+// runImagePush validates inputs, prepares a compatible source image, and pushes it to DAR.
 func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps) error {
 	ctx := cmd.Context()
 	cmdio.LogString(ctx, "Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.")
@@ -216,6 +223,7 @@ func runImagePush(cmd *cobra.Command, opts *imagePushOptions, deps imagePushDeps
 	return err
 }
 
+// resolveImagePushOptions fills in missing inputs and validates the full Unity Catalog destination.
 func resolveImagePushOptions(
 	ctx context.Context,
 	opts *imagePushOptions,
@@ -258,6 +266,7 @@ func resolveImagePushOptions(
 	}, nil
 }
 
+// promptImagePushValue prompts for a missing value or uses its default when prompting is unavailable.
 func promptImagePushValue(ctx context.Context, value, label, defaultValue, flag string) (string, error) {
 	if value != "" {
 		return value, nil
@@ -278,6 +287,7 @@ func promptImagePushValue(ctx context.Context, value, label, defaultValue, flag 
 	return value, nil
 }
 
+// resolveArtifactAndTag resolves the destination artifact and tag, then validates their naming rules.
 func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultTag string) (string, string, error) {
 	artifact := image
 	tag := defaultTag
@@ -313,6 +323,7 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 	return artifact, tag, nil
 }
 
+// sourceImageDefaults extracts artifact/tag defaults, leaving the artifact empty when its name is invalid.
 func sourceImageDefaults(source string) (string, string) {
 	source, _, _ = strings.Cut(source, "@")
 	repository := source
@@ -329,6 +340,7 @@ func sourceImageDefaults(source string) (string, string) {
 	return artifact, tag
 }
 
+// imageExistsLocally checks Docker's local image list and propagates operational failures.
 func imageExistsLocally(
 	ctx context.Context,
 	runCommand func(context.Context, io.Reader, io.Writer, io.Writer, string, ...string) error,
@@ -337,6 +349,7 @@ func imageExistsLocally(
 ) (bool, error) {
 	// Listing succeeds with empty output for a missing image, but fails for
 	// operational errors such as an unavailable daemon. Inspect cannot distinguish them.
+	// https://docs.docker.com/reference/cli/docker/image/ls/
 	// Match Docker's implicit latest tag rather than listing every tag of a repository.
 	if !strings.Contains(source, "@") && !strings.Contains(source[strings.LastIndex(source, "/")+1:], ":") {
 		source += ":latest"
@@ -348,6 +361,7 @@ func imageExistsLocally(
 	return strings.TrimSpace(output.String()) != "", nil
 }
 
+// runImageCommand runs a subprocess with the supplied context and I/O streams.
 func runImageCommand(ctx context.Context, in io.Reader, out, errOut io.Writer, executable string, args ...string) error {
 	cmd := exec.CommandContext(ctx, executable, args...)
 	cmd.Stdin = in
