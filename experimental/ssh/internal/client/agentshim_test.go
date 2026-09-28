@@ -1,18 +1,25 @@
 package client
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -25,6 +32,8 @@ func TestPrependPath(t *testing.T) {
 	assert.Equal(t, []string{"/b", "/a"}, filepath.SplitList(os.Getenv("PATH")))
 	prependPath(t.Context(), "/new")
 	assert.Equal(t, []string{"/new", "/b", "/a"}, filepath.SplitList(os.Getenv("PATH")))
+	prependPath(t.Context(), "/a") // a deeper existing entry also moves to the front (deduped)
+	assert.Equal(t, []string{"/a", "/new", "/b"}, filepath.SplitList(os.Getenv("PATH")))
 }
 
 func TestRemovePath(t *testing.T) {
@@ -35,7 +44,7 @@ func TestRemovePath(t *testing.T) {
 
 func TestAcquireSetupLock(t *testing.T) {
 	home := t.TempDir()
-	lockPath := filepath.Join(home, agentDir, setupLockName)
+	lockPath := filepath.Join(home, agentRootDir, setupLockName)
 
 	// Acquire creates the sentinel; release removes it.
 	unlock, err := acquireSetupLock(t.Context(), home)
@@ -56,29 +65,44 @@ func TestAcquireSetupLock(t *testing.T) {
 	unlock2()
 }
 
-func TestNodeDownloadArch(t *testing.T) {
-	assert.Equal(t, "x64", nodeDownloadArch("amd64"))
-	assert.Equal(t, "arm64", nodeDownloadArch("arm64"))
-	assert.Empty(t, nodeDownloadArch("mips"))
+func TestNodeArchiveSpec(t *testing.T) {
+	x64Spec := nodeArchiveSpec("amd64")
+	assert.Contains(t, x64Spec.archiveURL, "nodejs.org/dist")
+	assert.Equal(t, "npm", x64Spec.binaryName)
+	assert.Equal(t, nodeX64LinuxChecksum, x64Spec.checksum)
+	assert.Equal(t, "node", x64Spec.dirName)
+
+	arm64Spec := nodeArchiveSpec("arm64")
+	assert.Contains(t, arm64Spec.archiveURL, "nodejs.org/dist")
+	assert.Equal(t, "npm", arm64Spec.binaryName)
+	assert.Equal(t, nodeArm64LinuxChecksum, arm64Spec.checksum)
+	assert.Equal(t, "node", arm64Spec.dirName)
+
+	unknownSpec := nodeArchiveSpec("riscv")
+	assert.Empty(t, unknownSpec.archiveURL)
+	assert.Equal(t, "npm", unknownSpec.binaryName)
+	assert.Empty(t, unknownSpec.checksum)
+	assert.Equal(t, "node", unknownSpec.dirName)
 }
 
-func TestLatestNodeTarball(t *testing.T) {
-	gzSum, x64Sum, armSum := strings.Repeat("0", 64), strings.Repeat("a", 64), strings.Repeat("b", 64)
-	body := gzSum + "  node-v24.1.0-linux-x64.tar.gz\n" + // .gz is skipped (want .xz)
-		x64Sum + "  node-v24.1.0-linux-x64.tar.xz\n" +
-		armSum + "  node-v24.1.0-linux-arm64.tar.xz\n"
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(body))
-	}))
-	defer srv.Close()
+func TestUvArchiveSpec(t *testing.T) {
+	x64Spec := uvArchiveSpec("amd64")
+	assert.Contains(t, x64Spec.archiveURL, "github.com/astral-sh/uv/releases")
+	assert.Equal(t, "uv", x64Spec.binaryName)
+	assert.Equal(t, uvX64LinuxChecksum, x64Spec.checksum)
+	assert.Equal(t, "uv", x64Spec.dirName)
 
-	name, sum, err := latestNodeTarball(t.Context(), srv.URL, "x64")
-	require.NoError(t, err)
-	assert.Equal(t, "node-v24.1.0-linux-x64.tar.xz", name)
-	assert.Equal(t, x64Sum, sum)
+	arm64Spec := uvArchiveSpec("arm64")
+	assert.Contains(t, arm64Spec.archiveURL, "github.com/astral-sh/uv/releases")
+	assert.Equal(t, "uv", arm64Spec.binaryName)
+	assert.Equal(t, uvArm64LinuxChecksum, arm64Spec.checksum)
+	assert.Equal(t, "uv", arm64Spec.dirName)
 
-	_, _, err = latestNodeTarball(t.Context(), srv.URL, "ppc64le")
-	assert.Error(t, err)
+	unknownSpec := uvArchiveSpec("riscv")
+	assert.Empty(t, unknownSpec.archiveURL)
+	assert.Equal(t, "uv", unknownSpec.binaryName)
+	assert.Empty(t, unknownSpec.checksum)
+	assert.Equal(t, "uv", unknownSpec.dirName)
 }
 
 func TestDownloadVerified(t *testing.T) {
@@ -90,7 +114,12 @@ func TestDownloadVerified(t *testing.T) {
 	defer srv.Close()
 
 	t.Run("matching checksum writes the file", func(t *testing.T) {
-		path, err := downloadVerified(t.Context(), srv.URL, hex.EncodeToString(sum[:]))
+		path, err := downloadVerified(t.Context(), archiveSpec{
+			archiveURL: srv.URL,
+			binaryName: "npm",
+			checksum:   hex.EncodeToString(sum[:]),
+			dirName:    "node",
+		})
 		require.NoError(t, err)
 		defer os.Remove(path)
 		got, err := os.ReadFile(path)
@@ -99,9 +128,189 @@ func TestDownloadVerified(t *testing.T) {
 	})
 
 	t.Run("mismatched checksum errors and leaves no file", func(t *testing.T) {
-		_, err := downloadVerified(t.Context(), srv.URL, strings.Repeat("0", 64))
+		_, err := downloadVerified(t.Context(), archiveSpec{
+			archiveURL: srv.URL,
+			binaryName: "npm",
+			checksum:   strings.Repeat("0", 64),
+			dirName:    "node",
+		})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "checksum mismatch")
+	})
+}
+
+// tarGz returns a gzipped tar archive holding a single member at name.
+func tarGz(t *testing.T, name string, content []byte) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	require.NoError(t, tw.WriteHeader(&tar.Header{Name: name, Mode: 0o755, Size: int64(len(content))}))
+	_, err := tw.Write(content)
+	require.NoError(t, err)
+	require.NoError(t, tw.Close())
+	require.NoError(t, gz.Close())
+	return buf.Bytes()
+}
+
+func TestEnsureBinary(t *testing.T) {
+	// ensureBinary uses unix specific tooling, and agent-shim is only intended for Linux,
+	// so skip tests for Windows
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	t.Run("unsupported architecture errors", func(t *testing.T) {
+		err := ensureBinary(t.Context(), t.TempDir(), io.Discard, nodeArchiveSpec("riscv"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unsupported architecture")
+	})
+
+	nodeArchive := tarGz(t, "node/bin/npm", []byte("#!/bin/sh\necho npm\n"))
+	nodeSum := sha256.Sum256(nodeArchive)
+	uvArchive := tarGz(t, "uv/uv", []byte("#!/bin/sh\necho uv\n"))
+	uvSum := sha256.Sum256(uvArchive)
+
+	var downloads int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		downloads++
+		switch r.URL.Path {
+		case "/node.tar.gz":
+			_, _ = w.Write(nodeArchive)
+		case "/uv.tar.gz":
+			_, _ = w.Write(uvArchive)
+		default:
+			panic("unsupported archive " + r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+
+	home := t.TempDir()
+	for _, c := range []struct {
+		spec       archiveSpec
+		wantBinDir string
+	}{
+		{
+			spec: archiveSpec{
+				archiveURL: srv.URL + "/node.tar.gz",
+				binaryName: "npm",
+				checksum:   hex.EncodeToString(nodeSum[:]),
+				dirName:    "node",
+				binDirName: "bin",
+			}, wantBinDir: filepath.Join(home, agentDepsDir, "node", "bin"),
+		},
+		{
+			spec: archiveSpec{
+				archiveURL: srv.URL + "/uv.tar.gz",
+				binaryName: "uv",
+				checksum:   hex.EncodeToString(uvSum[:]),
+				dirName:    "uv",
+			}, wantBinDir: filepath.Join(home, agentDepsDir, "uv"),
+		},
+	} {
+		t.Run("downloads, extracts, and returns the bin dir ("+c.spec.binaryName+")", func(t *testing.T) {
+			beforeDownloads := downloads
+			err := ensureBinary(t.Context(), home, io.Discard, c.spec)
+			require.NoError(t, err)
+			_, err = os.Stat(filepath.Join(c.wantBinDir, c.spec.binaryName))
+			require.NoError(t, err)
+			assert.Equal(t, beforeDownloads+1, downloads)
+		})
+
+		t.Run("no-op when the binary is already installed ("+c.spec.binaryName+")", func(t *testing.T) {
+			beforeDownloads := downloads
+			err := ensureBinary(t.Context(), home, io.Discard, c.spec)
+			require.NoError(t, err)
+			assert.Equal(t, beforeDownloads, downloads, "an existing install must not re-download")
+		})
+	}
+}
+
+// writeFakeExec drops an executable POSIX shell script named name into dir.
+func writeFakeExec(t *testing.T, dir, name, body string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte("#!/bin/sh\n"+body), 0o755))
+}
+
+// fakeUvRecorder is the body of a stand-in `uv` that records how ensureToolchain
+// invoked it (args, the UV_TOOL_* overrides, and whether the setup lock was held)
+// to $FAKE_UV_LOG. It uses only shell builtins so it needs nothing on PATH.
+const fakeUvRecorder = `{
+  echo "args: $*"
+} > "$FAKE_UV_LOG"`
+
+func TestEnsureToolchain(t *testing.T) {
+	// ensureToolchain shells out to POSIX tools and installs a Linux-only toolchain,
+	// so the fake executables below only make sense off Windows.
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	for _, staleLock := range []bool{false, true} {
+		t.Run(fmt.Sprintf("no-op when the toolchain is already present (staleLock=%v)", staleLock), func(t *testing.T) {
+			home := t.TempDir()
+			writeFakeExec(t, filepath.Join(home, uvToolBinDir), "ucode", ":")
+			writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
+			writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+			if staleLock {
+				// left by a session killed mid-install
+				writeFakeExec(t, filepath.Join(home, agentRootDir), setupLockName, "")
+			}
+			marker := filepath.Join(t.TempDir(), "uv.log")
+			t.Setenv("FAKE_UV_LOG", marker)
+			t.Setenv("PATH", t.TempDir())
+
+			require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
+			assert.NoFileExists(t, marker, "uv must not run when the toolchain is already present")
+		})
+	}
+
+	t.Run("installs the Unity Gateway CLI via uv when uv is already present", func(t *testing.T) {
+		home := t.TempDir()
+		// uv and npm are present; ucode is not, so only ucode gets installed and no
+		// download happens
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
+		marker := filepath.Join(t.TempDir(), "uv.log")
+		t.Setenv("FAKE_UV_LOG", marker)
+		t.Setenv("PATH", t.TempDir())
+
+		require.NoError(t, ensureToolchain(cmdio.MockDiscard(t.Context()), home, "amd64"))
+
+		out, err := os.ReadFile(marker)
+		require.NoError(t, err)
+		assert.Contains(t, string(out), "tool install git+https://github.com/"+ugRepo+"@"+ugCommit)
+		// The tool bin dir is prepended to PATH so the freshly installed ucode is found.
+		assert.Contains(t, filepath.SplitList(os.Getenv("PATH")), filepath.Join(home, uvToolBinDir))
+		assert.NoFileExists(t, filepath.Join(home, agentRootDir, setupLockName), "the setup lock is released once setup finishes")
+	})
+
+	t.Run("recheck after acquiring the lock skips a redundant install", func(t *testing.T) {
+		home := t.TempDir()
+		// uv is present and records if it ever installs; it must not be called once a
+		// concurrent client finishes the toolchain while we wait for the lock.
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "uv"), "uv", fakeUvRecorder)
+		marker := filepath.Join(t.TempDir(), "uv.log")
+		t.Setenv("FAKE_UV_LOG", marker)
+		t.Setenv("PATH", t.TempDir())
+
+		// Hold the setup lock to stand in for another client mid-install.
+		unlock, err := acquireSetupLock(t.Context(), home)
+		require.NoError(t, err)
+
+		ctx := cmdio.MockDiscard(t.Context())
+		done := make(chan error, 1)
+		go func() { done <- ensureToolchain(ctx, home, "amd64") }()
+
+		// The other client finishes: publish ucode+npm into the PATH dir, then release
+		// the lock so the waiting ensureToolchain can proceed.
+		writeFakeExec(t, filepath.Join(home, uvToolBinDir), "ucode", ":")
+		writeFakeExec(t, filepath.Join(home, agentDepsDir, "node", "bin"), "npm", ":")
+		unlock()
+
+		require.NoError(t, <-done)
+		assert.NoFileExists(t, marker, "the post-lock readiness recheck must skip installing")
 	})
 }
 
