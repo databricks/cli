@@ -1,0 +1,16 @@
+Cloud = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = true
+
+[[Server]]
+Pattern = "GET /api/2.0/pipelines/{pipeline_id}/updates"
+Response.Body = '''
+{
+  "updates": [
+    {"update_id": "update-3", "state": "COMPLETED", "creation_time": 1640995200000, "validate_only": false},
+    {"update_id": "update-2", "state": "FAILED", "creation_time": 1640908800000, "validate_only": true},
+    {"update_id": "update-1", "state": "CANCELED", "creation_time": 1640822400000, "validate_only": false}
+  ]
+}
+'''
