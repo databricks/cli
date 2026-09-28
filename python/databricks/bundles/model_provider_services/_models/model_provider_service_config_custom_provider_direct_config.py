@@ -6,6 +6,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrOptional
+from databricks.bundles.model_provider_services._models.model_provider_service_config_custom_provider_api_key_header_auth import (
+    ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth,
+    ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthParam,
+)
 from databricks.bundles.model_provider_services._models.model_provider_service_config_provider_secret import (
     ModelProviderServiceConfigProviderSecret,
     ModelProviderServiceConfigProviderSecretParam,
@@ -18,8 +22,9 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class ModelProviderServiceConfigCustomProviderDirectConfig:
     """
-    Direct form of a custom provider configuration. Set `api_key` to the bearer
-    token sent in the `Authorization` header.
+    Direct form of a custom provider configuration. Set `api_key` to send the
+    secret as an `Authorization` bearer token, or `header_auth` to forward it
+    under a caller-chosen HTTP header.
     """
 
     api_key: VariableOrOptional[ModelProviderServiceConfigProviderSecret] = None
@@ -32,6 +37,17 @@ class ModelProviderServiceConfigCustomProviderDirectConfig:
     """
     Endpoint URL of the OpenAI-compatible service (e.g.,
     `https://api.example.com/v1`). Required on Create.
+    """
+
+    header_auth: VariableOrOptional[
+        ModelProviderServiceConfigCustomProviderApiKeyHeaderAuth
+    ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Header-based API-key auth: the secret is forwarded on outbound requests
+    under a caller-chosen HTTP header rather than as an `Authorization`
+    bearer token. Set this instead of `api_key` for header auth.
     """
 
     @classmethod
@@ -57,6 +73,17 @@ class ModelProviderServiceConfigCustomProviderDirectConfigDict(TypedDict, total=
     """
     Endpoint URL of the OpenAI-compatible service (e.g.,
     `https://api.example.com/v1`). Required on Create.
+    """
+
+    header_auth: VariableOrOptional[
+        ModelProviderServiceConfigCustomProviderApiKeyHeaderAuthParam
+    ]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Header-based API-key auth: the secret is forwarded on outbound requests
+    under a caller-chosen HTTP header rather than as an `Authorization`
+    bearer token. Set this instead of `api_key` for header auth.
     """
 
 

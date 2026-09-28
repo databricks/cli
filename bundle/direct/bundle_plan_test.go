@@ -271,6 +271,66 @@ func TestRemoteAlreadySetGuards(t *testing.T) {
 	}
 }
 
+// TestRecreateBackendDefault pins the implicit backend-default behavior for
+// recreate_on_changes fields (recreateOrBackendDefault): an immutable field the
+// config never set (old and new nil) but the backend populated (remote set) is left
+// in place instead of recreating, without any explicit backend_defaults entry. A
+// genuine local change to the same field still recreates. This is what generalizes
+// the trace_location fix to every optional immutable field.
+func TestRecreateBackendDefault(t *testing.T) {
+	adapters, err := dresources.InitAll(nil)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		resource       string
+		field          string
+		ch             *deployplan.ChangeDesc
+		expectedAction deployplan.ActionType
+		expectedReason string
+	}{
+		{
+			// artifact_location is recreate_on_changes with no backend_defaults entry.
+			name:           "config-absent immutable field the backend set is left in place",
+			resource:       "experiments",
+			field:          "artifact_location",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: "dbfs:/databricks/mlflow-tracking/123"},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonImmutableBackendValue,
+		},
+		{
+			// A real change to the immutable field still recreates.
+			name:           "changed immutable field recreates",
+			resource:       "experiments",
+			field:          "artifact_location",
+			ch:             &deployplan.ChangeDesc{Old: "s3://a", New: "s3://b", Remote: "s3://a"},
+			expectedAction: deployplan.Recreate,
+		},
+		{
+			// volumes.storage_location: same shape, different resource.
+			name:           "managed volume storage_location left in place",
+			resource:       "volumes",
+			field:          "storage_location",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: "s3://bucket/vol"},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonImmutableBackendValue,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adapter, ok := adapters[tt.resource]
+			require.True(t, ok)
+			changes := deployplan.Changes{tt.field: tt.ch}
+			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
+			assert.Equal(t, tt.expectedAction, tt.ch.Action)
+			if tt.expectedReason != "" {
+				assert.Equal(t, tt.expectedReason, tt.ch.Reason)
+			}
+		})
+	}
+}
+
 // Map drift handling synthesizes child paths to match against rules. structdiff
 // always emits map keys in bracket notation, so synthetic child paths must too;
 // otherwise rules wouldn't match for identifier-like keys.

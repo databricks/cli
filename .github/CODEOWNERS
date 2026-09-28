@@ -7,6 +7,7 @@
 /cmd/bundle/                            @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /acceptance/bundle/                     @databricks/eng-deco-cli @databricks/eng-deco-dabs
 /libs/template/                         @databricks/eng-deco-cli @databricks/eng-deco-dabs
+/python/                                @databricks/eng-deco-cli @databricks/eng-deco-dabs
 
 # Pipelines
 /cmd/pipelines/                         @databricks/eng-deco-cli @jefferycheng1 @kanterov @lennartkats-db
@@ -19,6 +20,10 @@
 /libs/localenv/                         @databricks/eng-deco-cli @databricks/eng-deco-ax
 /cmd/environments/                      @databricks/eng-deco-cli @databricks/eng-deco-ax
 /acceptance/localenv/                   @databricks/eng-deco-cli @databricks/eng-deco-ax
+
+# SSH tunnel
+/experimental/ssh/                      @databricks/eng-deco-cli @databricks/eng-deco-ax
+/acceptance/ssh/                        @databricks/eng-deco-cli @databricks/eng-deco-ax
 
 # Apps
 /cmd/apps/                              @databricks/eng-deco-cli @databricks/eng-apps-devex
@@ -77,6 +82,7 @@
 # AI Runtime
 /cmd/air/                               @databricks/eng-deco-cli @databricks/eng-ai-custom-training
 /acceptance/air/                        @databricks/eng-deco-cli @databricks/eng-ai-custom-training
+/.nextchanges/air/                      @databricks/eng-deco-cli @databricks/eng-ai-custom-training
 
 # CLI compatibility manifest
 /internal/build/cli-compat.json         @databricks/eng-deco-cli @databricks/eng-apps-devex @databricks/eng-deco-platform

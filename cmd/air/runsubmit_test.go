@@ -37,7 +37,7 @@ func TestDlRuntimeImage(t *testing.T) {
 	// The CLIENT-GPU- prefix is always stripped, even from the config version.
 	assert.Equal(t, "5", dlRuntimeImage(ctx, "CLIENT-GPU-5"))
 	// Default, with the prefix stripped.
-	assert.Equal(t, "4", dlRuntimeImage(ctx, ""))
+	assert.Equal(t, "6", dlRuntimeImage(ctx, ""))
 	// Env override, prefix stripped.
 	t.Setenv(dlRuntimeImageEnv, "CLIENT-GPU-7")
 	assert.Equal(t, "7", dlRuntimeImage(ctx, ""))

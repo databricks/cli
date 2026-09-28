@@ -1,5 +1,5 @@
 source "$TESTDIR/../../cmd/auth/docker/script.prepare"
-setup_docker_auth
+setup_docker_auth "$TESTDIR/../../cmd/auth/docker/token-cache.json"
 
 export DOCKER_CONFIG="$HOME/docker"
 export DOCKER_LOG="$HOME/docker.log"

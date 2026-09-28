@@ -523,11 +523,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
 		} else if reason, ok := findMatchingRuleBidirectional(path, cfg.RecreateOnChanges); ok {
-			ch.Action = deployplan.Recreate
-			ch.Reason = reason
+			ch.Action, ch.Reason = recreateOrBackendDefault(ch, reason)
 		} else if reason, ok := findMatchingRuleBidirectional(path, generatedCfg.RecreateOnChanges); ok {
-			ch.Action = deployplan.Recreate
-			ch.Reason = reason
+			ch.Action, ch.Reason = recreateOrBackendDefault(ch, reason)
 		} else {
 			ch.Action = deployplan.Update
 		}
@@ -738,6 +736,21 @@ func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *str
 		return deployplan.ReasonRemoteAddition, true
 	}
 	return "", false
+}
+
+// recreateOrBackendDefault decides the action for a change that matched a
+// recreate_on_changes rule. An immutable field the config never set (old and new
+// nil) but the backend populated (remote set) is treated as a backend default and
+// left in place: the user does not manage it, and recreating to drop it would be
+// destructive (e.g. dropping an out-of-band UC trace location on an MLflow
+// experiment). This makes the backend default implicit for every optional immutable
+// field, so an explicit backend_defaults entry is only needed for a non-recreate
+// field. Any other change to an immutable field still recreates.
+func recreateOrBackendDefault(ch *deployplan.ChangeDesc, reason string) (deployplan.ActionType, string) {
+	if ch.Old == nil && ch.New == nil && ch.Remote != nil {
+		return deployplan.Skip, deployplan.ReasonImmutableBackendValue
+	}
+	return deployplan.Recreate, reason
 }
 
 // shouldSkipBackendDefault checks if a change should be skipped because the remote value

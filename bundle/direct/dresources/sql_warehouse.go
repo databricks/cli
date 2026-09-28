@@ -71,7 +71,6 @@ func (*ResourceSqlWarehouse) PrepareState(input *resources.SqlWarehouse) *SqlWar
 // RemapState maps the remote SqlWarehouseRemote to SqlWarehouseState for diff comparison.
 // Started is derived from warehouse state so the planner can detect start/stop changes.
 func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWarehouseState {
-	started := warehouse.State == sql.StateRunning
 	return &SqlWarehouseState{
 		CreateWarehouseRequest: sql.CreateWarehouseRequest{
 			AutoStopMins:            warehouse.AutoStopMins,
@@ -89,7 +88,7 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *SqlWarehouseRemote) *SqlWareh
 			WarehouseType:           sql.CreateWarehouseRequestWarehouseType(warehouse.WarehouseType),
 			ForceSendFields:         utils.FilterFields[sql.CreateWarehouseRequest](warehouse.ForceSendFields),
 		},
-		Lifecycle: &StateLifecycle{Started: &started},
+		Lifecycle: warehouse.Lifecycle,
 	}
 }
 

@@ -676,6 +676,8 @@ type ResourceJobTaskAiRuntimeTask struct {
 	MlflowArtifactLocation    string                                    `json:"mlflow_artifact_location,omitempty"`
 	MlflowExperimentDirectory string                                    `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                    `json:"mlflow_run,omitempty"`
+	PriorityClass             string                                    `json:"priority_class,omitempty"`
+	UnityCatalogImagePath     string                                    `json:"unity_catalog_image_path,omitempty"`
 	Deployments               []ResourceJobTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
 }
 
@@ -780,6 +782,8 @@ type ResourceJobTaskForEachTaskTaskAiRuntimeTask struct {
 	MlflowArtifactLocation    string                                                   `json:"mlflow_artifact_location,omitempty"`
 	MlflowExperimentDirectory string                                                   `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                                   `json:"mlflow_run,omitempty"`
+	PriorityClass             string                                                   `json:"priority_class,omitempty"`
+	UnityCatalogImagePath     string                                                   `json:"unity_catalog_image_path,omitempty"`
 	Deployments               []ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
 }
 

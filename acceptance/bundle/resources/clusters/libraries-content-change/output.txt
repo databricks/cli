@@ -16,11 +16,11 @@ OK: cluster created with wheel
   }
 }
 
-=== Badness: wheel code changes but version does not, so redeploy neither reinstalls nor restarts
+=== Badness: wheel code changes but version does not, so redeploy does not reinstall it
 >>> jq .plan["resources.clusters.mycluster"].action tmp.plan.json
 "skip"
 
-OK: no restart on content-only change (known limitation)
+OK: redeployed without reinstalling the changed wheel (known limitation)
 
 >>> print_requests.py //libraries/install
 

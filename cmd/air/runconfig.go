@@ -253,7 +253,7 @@ func validateSecretRefs(secrets map[string]string) error {
 // settings.
 type environmentConfig struct {
 	Dependencies      dependencies `yaml:"dependencies" help:"Inline list of packages to install. Not allowed alongside unity_catalog_image."`
-	Version           stringOrInt  `yaml:"version" help:"Client image version to pin."`
+	Version           stringOrInt  `yaml:"version" help:"Client image version to pin (default: 6). See environment version release notes: https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/"`
 	UnityCatalogImage string       `yaml:"unity_catalog_image" help:"Unity Catalog custom image to run the workload on, as <catalog>.<schema>.<image>:<tag>. Not allowed alongside dependencies or version."`
 }
 

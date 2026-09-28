@@ -1,0 +1,19 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# Testserver-only: an explicit storage_root needs a registered external location on a real
+# workspace, so this is not Cloud-enabled. The normalization-converge class it covers is
+# verified on cloud by schema-name-normalized / volume-name-normalized.
+
+# storage_root is immutable (recreate_on_changes) and UC strips a trailing slash. The config
+# keeps the trailing slash ("s3://bucket/path/") but the deployed value is normalized
+# ("s3://bucket/path"), a difference the user did not make. normalize_slash absorbs it, so the
+# migration proceeds with no warning or recreate and the plan converges.
+
+title "Deploy on terraform; UC strips the trailing slash from storage_root"
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+
+title "Migrate to direct with the same config (storage_root still has the trailing slash)"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+
+title "Follow-up plan on direct: does it converge or keep seeing a diff?"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan

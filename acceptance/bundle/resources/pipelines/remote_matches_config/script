@@ -16,5 +16,3 @@ EOF
 
 trace $CLI bundle plan
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-
-rm "$OUT_REQUESTS"

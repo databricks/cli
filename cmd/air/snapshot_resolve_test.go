@@ -20,12 +20,13 @@ func TestResolveSnapshotPlan_Commit(t *testing.T) {
 	assert.Equal(t, sha, plan.commitSHA)
 	assert.True(t, plan.isGitRepo)
 
-	// A commit pin is valid even with a dirty tree: local changes are irrelevant.
+	// A commit pin is valid even with a dirty tree: local changes are irrelevant, so
+	// resolving the plan does not inspect them while provenance sidecars are disabled.
 	writeRepoFile(t, repo, "a.txt", "2")
 	plan, err = resolveSnapshotPlan(ctx, newGitRepo(repo), &gitRef{Commit: new(sha)}, nil)
 	require.NoError(t, err)
 	assert.Equal(t, modeGitArchive, plan.mode)
-	assert.True(t, plan.hasUncommit)
+	assert.False(t, plan.hasUncommit)
 }
 
 func TestResolveSnapshotPlan_CommitNotLocal(t *testing.T) {
@@ -77,7 +78,7 @@ func TestResolveSnapshotPlan_NoRefPlainTar(t *testing.T) {
 	assert.Equal(t, modePlainTar, plan.mode)
 	assert.Empty(t, plan.commitSHA)
 	assert.True(t, plan.isGitRepo)
-	assert.True(t, plan.hasUncommit)
+	assert.False(t, plan.hasUncommit)
 }
 
 func TestResolveSnapshotPlan_NonGitDir(t *testing.T) {

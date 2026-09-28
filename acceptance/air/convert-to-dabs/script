@@ -22,7 +22,7 @@ trace $CLI air convert-to-dabs b300.yaml --output-dir generated-b300
 title "the B300 bundle preserves its accelerator and AI Runtime version"
 trace cat generated-b300/databricks.yml
 
-title "the current SDK warns about B300 but does not block bundle validation"
+title "the current SDK recognizes B300 so bundle validation is clean"
 (cd generated-b300 && trace $CLI bundle validate)
 
 title "databricks_ai versions use a base environment"

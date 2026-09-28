@@ -452,6 +452,23 @@ func (s *FakeWorkspace) JobsList() Response {
 	return Response{Body: jobs.ListJobsResponse{Jobs: list}}
 }
 
+// installTaskLibrariesOnCluster records a task's libraries on its existing (all-purpose) cluster,
+// mirroring the Jobs service, which installs task libraries via the Libraries API when a run starts.
+// Cluster-status then reports them, matching cloud (where they are cluster-wide, so other jobs and
+// interactive sessions see them too). Callers must hold the workspace lock.
+func (s *FakeWorkspace) installTaskLibrariesOnCluster(task jobs.Task) {
+	if task.ExistingClusterId == "" || len(task.Libraries) == 0 {
+		return
+	}
+	installed := s.ClusterLibraries[task.ExistingClusterId]
+	for _, lib := range task.Libraries {
+		if !containsLibrary(installed, lib) {
+			installed = append(installed, lib)
+		}
+	}
+	s.ClusterLibraries[task.ExistingClusterId] = installed
+}
+
 func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	var request jobs.RunNow
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -486,6 +503,10 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	var tasks []jobs.RunTask
 	if job.Settings != nil {
 		for _, t := range job.Settings.Tasks {
+			// Mirror the Jobs service installing a task's libraries on its existing
+			// (all-purpose) cluster at run time, so cluster-status reports them like on cloud.
+			s.installTaskLibrariesOnCluster(t)
+
 			taskRunId := nextID()
 			taskRun := jobs.RunTask{
 				RunId:   taskRunId,

@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
@@ -106,7 +105,6 @@ func (r *ResourceCluster) PrepareState(input *resources.Cluster) *ClusterState {
 // RemapState maps the remote ClusterRemote to ClusterState for diff comparison.
 // Started is derived from cluster state so the planner can detect start/stop changes.
 func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
-	started := input.State == compute.StateRunning
 	spec := &ClusterState{
 		ClusterSpec: compute.ClusterSpec{
 			ApplyPolicyDefaultValues:   input.ApplyPolicyDefaultValues,
@@ -146,7 +144,7 @@ func (r *ResourceCluster) RemapState(input *ClusterRemote) *ClusterState {
 			WorkerNodeTypeFlexibility:  input.WorkerNodeTypeFlexibility,
 			ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
 		},
-		Lifecycle: &StateLifecycle{Started: &started},
+		Lifecycle: input.Lifecycle,
 		Libraries: input.Libraries,
 	}
 	return spec
@@ -245,8 +243,7 @@ func hasClusterSpecChanges(entry *PlanEntry) bool {
 }
 
 func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *ClusterState, entry *PlanEntry) (*ClusterRemote, error) {
-	edited := hasClusterSpecChanges(entry)
-	if edited {
+	if hasClusterSpecChanges(entry) {
 		// Same retry as in TF provider logic
 		// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 		_, err := retries.Poll(ctx, clusterWaitTimeout, func() (*compute.WaitGetClusterRunning[struct{}], *retries.Err) {
@@ -268,21 +265,16 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *Clust
 	}
 
 	// TODO: a local whl/jar whose workspace path is unchanged but whose contents
-	// changed (same name+version, non-dev mode) is not detected here, so no restart fires.
+	// changed (same name+version, non-dev mode) is not detected here, so it is not reinstalled.
 	// Dev mode handles this via patchwheel (a source-derived version bump).
 	if entry.Changes.HasChange(librariesPath) {
 		if err := r.reconcileLibraries(ctx, id, config.Libraries, entry); err != nil {
 			return nil, err
 		}
-		// A cluster edit restarts the cluster on its own, which applies the library change.
-		// Without an edit we restart so the change takes effect on a running cluster.
-		if !edited {
-			if err := r.restartIfRunning(ctx, id); err != nil {
-				return nil, err
-			}
-			if err := r.waitForInstall(ctx, id, config.Libraries); err != nil {
-				return nil, err
-			}
+		// Installs apply live on a running cluster. Uninstalls are marked UNINSTALL_ON_RESTART
+		// by the backend and take effect at the cluster's next restart; the bundle never restarts it.
+		if err := r.waitForInstall(ctx, id, config.Libraries); err != nil {
+			return nil, err
 		}
 	}
 
@@ -330,8 +322,7 @@ func (r *ResourceCluster) WaitAfterCreate(ctx context.Context, id string, config
 		return nil, err
 	}
 
-	// Install libraries once the cluster is running. A freshly-created cluster has no
-	// attached sessions, so the install applies live without a restart.
+	// Install libraries once the cluster is running: installs only progress on a running cluster.
 	// TODO: Wait is supposed to be side effect free, but in this case moving it to
 	// the create will cause a wait for libraries to be installed befor the cluster is installed.
 	// this increases the risk of losing the cluster. This is a limitation
@@ -411,6 +402,16 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 	case "num_workers", "autoscale":
 		if remoteState != nil && remoteState.State == compute.StateRunning {
 			change.Action = deployplan.Resize
+		}
+
+	case "libraries":
+		// Without a libraries section the bundle does not manage the cluster's libraries, matching
+		// the behaviour before the field existed: job runs install their task libraries cluster-wide,
+		// so what the cluster reports is not drift. With no section, New is nil and the difference
+		// arrives as a single whole-field change; `libraries: []` keeps New non-nil and stays managed.
+		if p.String() == "libraries" && change.New == nil {
+			change.Action = deployplan.Skip
+			change.Reason = deployplan.ReasonUnmanaged
 		}
 	}
 	return nil
@@ -570,27 +571,6 @@ func removedLibraries(desired []compute.Library, entry *PlanEntry) []compute.Lib
 		}
 	}
 	return result
-}
-
-// restartIfRunning restarts the cluster so a library change takes effect, but only when it is
-// running: a stopped cluster applies pending install/uninstall on its next start. It waits for
-// the cluster to return to RUNNING before returning.
-func (r *ResourceCluster) restartIfRunning(ctx context.Context, id string) error {
-	details, err := r.client.Clusters.GetByClusterId(ctx, id)
-	if err != nil {
-		return err
-	}
-	if details.State != compute.StateRunning {
-		log.Debugf(ctx, "cluster %s is not running (%s); skipping restart for library change", id, details.State)
-		return nil
-	}
-	cmdio.LogString(ctx, fmt.Sprintf("Restarting cluster %s because its libraries changed", id))
-	wait, err := r.client.Clusters.Restart(ctx, compute.RestartCluster{ClusterId: id, RestartUser: "", ForceSendFields: nil})
-	if err != nil {
-		return err
-	}
-	_, err = wait.GetWithTimeout(clusterWaitTimeout)
-	return err
 }
 
 // waitForInstall polls until every desired library reaches a terminal installed state. It returns

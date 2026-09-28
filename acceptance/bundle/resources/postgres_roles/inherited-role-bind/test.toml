@@ -1,3 +1,4 @@
+RecordRequests = false
 # Companion to inherited-role-conflict: shows the supported escape hatch.
 # `bundle deployment bind` takes ownership of a pre-existing (e.g. inherited)
 # role so the next deploy manages it instead of trying to create it.

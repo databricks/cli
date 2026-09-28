@@ -188,7 +188,7 @@ class Task:
 
     environment_key: VariableOrOptional[str] = None
     """
-    The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute.
+    The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.
     """
 
     existing_cluster_id: VariableOrOptional[str] = None
@@ -427,7 +427,7 @@ class TaskDict(TypedDict, total=False):
 
     environment_key: VariableOrOptional[str]
     """
-    The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute.
+    The key that references an environment spec in a job. This field is required for Python script, Python wheel and dbt tasks when using serverless compute or a compute resource that uses Environments mode.
     """
 
     existing_cluster_id: VariableOrOptional[str]

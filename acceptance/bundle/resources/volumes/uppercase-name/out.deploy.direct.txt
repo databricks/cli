@@ -50,7 +50,7 @@ Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
       },
       "storage_location": {
         "action": "skip",
-        "reason": "backend_default"
+        "reason": "immutable_backend_value"
       }
     }
   }
