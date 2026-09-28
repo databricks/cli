@@ -3,11 +3,6 @@ provided_id_fields:
   - field: project_id
     reason: id_field
 stable_output_fields:
-  # name ("projects/{project_id}") is assigned by the backend at creation and is
-  # immutable (derived from the immutable project_id). Declaring it lets
-  # ${resources.postgres_projects.X.name} resolve from the remote cache during an
-  # in-place update instead of being delayed until after apply — otherwise every
-  # branch/role/catalog that references it as its parent recreates spuriously on
-  # any project update. See ES-2202624.
+  # name ("projects/{project_id}") is backend-assigned at creation and immutable;
+  # see the stable_output_fields doc in config.go and ES-2202624.
   - field: name
-    reason: immutable backend-assigned identity

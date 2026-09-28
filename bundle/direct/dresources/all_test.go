@@ -1405,6 +1405,55 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 	}
 }
 
+// stableNameOptOut lists resources whose output-only `name` deliberately is NOT
+// declared under stable_output_fields, with the reason. Add an entry only when
+// the name genuinely is not a stable identity (e.g. the backend recomputes it on
+// update). This is the escape hatch for TestOutputOnlyNameIsStable.
+var stableNameOptOut = map[string]string{}
+
+// TestOutputOnlyNameIsStable guards against silently reintroducing ES-2202624. A
+// resource that supports in-place update and whose `name` is output-only —
+// present in RemoteType, absent from StateType, i.e. an AIP identity the backend
+// assigns from the immutable ID — must declare `name` under stable_output_fields.
+// Otherwise a ${resources.X.name} reference is delayed during an in-place
+// (keeps-ID) update instead of resolving from the remote cache, and every
+// dependent that uses it as its own immutable parent is recreated. A resource
+// opts out only with a documented entry in stableNameOptOut.
+//
+// Two cases are exempt:
+//   - A `name` that is also settable (present in StateType) resolves from local
+//     config, not the remote cache, so it is not subject to the bug.
+//   - A resource with no DoUpdate never has an in-place-update (keeps-ID with
+//     changes) action; it only Skips (which already reads the remote cache) or
+//     Recreates, so its name reference is never wrongly delayed.
+func TestOutputOnlyNameIsStable(t *testing.T) {
+	namePath := structpath.MustParsePath("name")
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		if !adapter.HasDoUpdate() {
+			continue
+		}
+
+		inRemote := structaccess.ValidatePath(adapter.RemoteType(), namePath) == nil
+		inState := structaccess.ValidatePath(adapter.StateType(), namePath) == nil
+		if !inRemote || inState {
+			continue
+		}
+
+		if reason, ok := stableNameOptOut[resourceType]; ok {
+			assert.NotEmpty(t, reason, "%s: stableNameOptOut entry must give a reason", resourceType)
+			continue
+		}
+
+		t.Run(resourceType, func(t *testing.T) {
+			assert.True(t, adapter.FieldIsStableOutput(namePath),
+				"output-only `name` must be declared under stable_output_fields in configs/%[1]s.yml (or opted out in stableNameOptOut); otherwise ${resources.%[1]s.<key>.name} references recreate dependents on an in-place update (ES-2202624)", resourceType)
+		})
+	}
+}
+
 func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.WorkspaceClient) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)

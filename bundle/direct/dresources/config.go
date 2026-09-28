@@ -112,6 +112,10 @@ type ResourceLifecycleConfig struct {
 	// part of its own immutable identity (a hierarchical parent/branch name)
 	// recreates spuriously on every in-place update of the target. See
 	// LookupReferencePreDeploy.
+	//
+	// This category only gates reference resolution; it never classifies a change,
+	// so the FieldRule Reason is unused (it would never surface in a plan) and is
+	// left unset in the YAML.
 	StableOutputFields []FieldRule `yaml:"stable_output_fields,omitempty"`
 
 	// HashedFields: field paths persisted to state as a content hash

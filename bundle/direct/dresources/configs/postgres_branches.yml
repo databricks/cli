@@ -10,8 +10,5 @@ ignore_local_changes:
     reason: "input_only; cannot be updated after create"
 stable_output_fields:
   # name ("projects/{project_id}/branches/{branch_id}") is backend-assigned at
-  # creation and immutable. Lets ${resources.postgres_branches.X.name} resolve
-  # during an in-place update instead of being delayed, so roles/databases that
-  # reference it as their parent are not recreated spuriously. See ES-2202624.
+  # creation and immutable; see the stable_output_fields doc in config.go and ES-2202624.
   - field: name
-    reason: immutable backend-assigned identity
