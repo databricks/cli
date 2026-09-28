@@ -27,7 +27,7 @@ UNIQUE_NAME = os.environ.get("UNIQUE_NAME", "")
 
 # Per resource: which response field carries the new id. Terraform's tfstate stores the same value
 # as the resource's `id`, keyed here by the create path so we can match a create to its tfstate entry.
-ID_FIELDS = ["job_id", "pipeline_id", "id", "full_name", "name"]
+ID_FIELDS = ["job_id", "pipeline_id", "dashboard_id", "experiment_id", "full_name", "id", "name"]
 
 
 def apply_map(text, id_map):
