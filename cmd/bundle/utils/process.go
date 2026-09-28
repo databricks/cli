@@ -325,7 +325,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// intact and the run falls back to the terraform engine. Read-only commands that do not
 		// need state keep reading the Terraform state as-is.
 		if b.MigratingToDirect && needsState {
-			if err := migrateTerraformToDirect(ctx, b, stateDesc, requiredEngine); err != nil {
+			if err := migrateTerraformToDirect(ctx, b, stateDesc); err != nil {
 				logdiag.LogError(ctx, err)
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
@@ -565,8 +565,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 // only an internal error returns. Nothing is committed here - deploy calls statemgmt.CommitMigration
 // after approval, destroy commits as part of its teardown. The caller tags the user agent with the
 // resolved stateDesc.Engine afterwards.
-func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc, requiredEngine engine.EngineSetting) error {
-	migrated, err := statemgmt.Migrate(ctx, b, requiredEngine)
+func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
+	migrated, err := statemgmt.Migrate(ctx, b)
 	if err != nil {
 		return fmt.Errorf("migrating Terraform state to the direct engine: %w", err)
 	}

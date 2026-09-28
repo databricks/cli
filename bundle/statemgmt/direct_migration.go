@@ -43,7 +43,7 @@ const warnPrefix = "migration to direct: "
 // returned, and the caller proceeds on the terraform engine, which is still in place - so a failed
 // migration never blocks a command that would succeed. An empty terraform state goes through the
 // same path: the converter writes an empty base state file, so there is no special case here.
-func Migrate(ctx context.Context, b *bundle.Bundle, requiredEngine engine.EngineSetting) (bool, error) {
+func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	_, localTerraformPath := b.StateFilenameTerraform(ctx)
 	tfState, err := migrate.ParseTFStateFull(ctx, localTerraformPath)
 	if err != nil {
@@ -57,7 +57,7 @@ func Migrate(ctx context.Context, b *bundle.Bundle, requiredEngine engine.Engine
 
 	_, localDirectPath := b.StateFilenameDirect(ctx)
 
-	tempStatePath, _, hasWarnings, cfg, err := convertTFStateToDirect(ctx, b, tfState)
+	tempStatePath, hasWarnings, cfg, err := convertTFStateToDirect(ctx, b, tfState)
 	if tempStatePath != "" {
 		// Always remove the temp state and its WAL. The converted state is loaded into memory
 		// below and never renamed into place, so these are the only on-disk copies to clean up.
@@ -92,9 +92,10 @@ func Migrate(ctx context.Context, b *bundle.Bundle, requiredEngine engine.Engine
 		log.Infof(ctx, "migration to the direct engine will recreate %v; the command's approval gates this", recreated)
 	}
 
-	// Load the converted state into memory only (serial tf+1). It was just written by this CLI, so
-	// it is at the current schema version and needs no migration. Nothing is persisted or pushed
-	// here; CommitMigration does that once the command is approved.
+	// Load the converted state into memory only (at a serial above the terraform state's - see
+	// convertTFStateToDirect). It was just written by this CLI, so it is at the current schema
+	// version and needs no migration. Nothing is persisted or pushed here; CommitMigration does
+	// that once the command is approved.
 	raw, err := os.ReadFile(tempStatePath)
 	if err != nil {
 		return false, fmt.Errorf("reading migrated state: %w", err)
@@ -125,10 +126,10 @@ func CleanupTerraformStateAfterMigration(ctx context.Context, b *bundle.Bundle) 
 }
 
 // CommitMigration makes a prepared (in-memory) migration durable - the point of no return. It
-// persists the converted direct state locally (serial tf+1), pushes it to the workspace, retires
-// the superseded terraform state (local rename + remote backup), and records which source
-// triggered the migration. Deploy calls it once the deploy is approved, before applying its own
-// changes (which advance the state to tf+2). If the state push fails the terraform state is left
+// persists the converted direct state locally (at a serial above the terraform state's), pushes it
+// to the workspace, retires the superseded terraform state (local rename + remote backup), and
+// records which source triggered the migration. Deploy calls it once the deploy is approved, before
+// applying its own changes (which advance the state once more). If the state push fails the terraform state is left
 // in place, so the migration is not committed and a retry can complete it. Destroy does not call
 // this: it commits the migration as part of its teardown (files.Delete owns the remote terraform
 // state, and a destroy that migrates only to tear down is not adoption worth recording).
@@ -192,7 +193,7 @@ func DryRunMigrationTelemetry(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	tempStatePath, _, hasWarnings, _, err := convertTFStateToDirect(ctx, b, tfState)
+	tempStatePath, hasWarnings, _, err := convertTFStateToDirect(ctx, b, tfState)
 	if tempStatePath != "" {
 		defer func() {
 			_ = os.Remove(tempStatePath)
@@ -249,28 +250,23 @@ func recreatedResources(plan *deployplan.Plan) []string {
 	return keys
 }
 
-// convertTFStateToDirect converts the given terraform state to the direct engine state,
-// returning the path to the converted state file, the number of resources
-// migrated, whether any warnings were emitted, and the bundle config with
-// terraform interpolation reversed (needed by the caller to run a plan against
-// the converted state). Callers must ensure tfState is non-nil; an empty state
-// (no resource IDs or attrs) yields an empty base state file. The caller is
-// responsible for deleting the temp state's parent directory when it is done with the file.
-func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migrate.TFState) (string, int, bool, *config.Root, error) {
-	// Write the converted state to a sibling of the final resources.json
-	// path so commitMigration's os.Rename stays within one filesystem
-	// (os.TempDir() often lives on a different volume from the project;
-	// cross-filesystem Rename fails with EXDEV). The state DB creates the
-	// file and its .wal itself, so a deterministic sibling name is enough
-	// — no CreateTemp placeholder needed.
-	// UpgradeToWrite creates the parent directory itself, so no MkdirAll here.
+// convertTFStateToDirect converts the given terraform state to a direct-engine state file,
+// returning the path to that file, whether any warnings were emitted, and the bundle config with
+// terraform interpolation reversed (needed by the caller to run a plan against the converted
+// state). Callers must ensure tfState is non-nil; an empty state (no resource IDs or attrs) yields
+// an empty base state file. The caller reads the file into memory and is responsible for removing
+// it (and its .wal) when done.
+func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migrate.TFState) (string, bool, *config.Root, error) {
+	// Write the converted state to a deterministic sibling of the final resources.json path. The
+	// caller (Migrate) reads it into memory with OpenWithData and then removes it; nothing renames
+	// it into place. The state DB creates the file and its .wal itself, and UpgradeToWrite creates
+	// the parent directory, so no CreateTemp or MkdirAll is needed here.
 	_, localDirectPath := b.StateFilenameDirect(ctx)
 	tempStatePath := filepath.Join(filepath.Dir(localDirectPath), "resources.migrating.json")
 	// Clean up any leftovers from a crashed previous run so UpgradeToWrite
 	// (which opens the .wal with O_EXCL) succeeds.
 	_ = os.Remove(tempStatePath)
 	_ = os.Remove(tempStatePath + ".wal")
-	resourceCount := len(tfState.IDs)
 
 	// SecretScopeFixups and the direct-engine state builder report failures via
 	// logdiag. Run them in an isolated + collecting context so their diagnostics
@@ -288,6 +284,10 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		}
 	}()
 
+	// The converted state starts one serial above the terraform state. A populated conversion then
+	// replays a WAL below (SaveState + BuildStateFromTF), which advances the serial once more - so a
+	// populated migration lands at tf+2 and an empty one (persisted directly below, no WAL entries)
+	// stays at tf+1. Either way it outranks the terraform state, which is all engine selection needs.
 	var stateDB dstate.DeploymentState
 	stateDB.OpenWithData(tempStatePath, dstate.NewDatabase(tfState.Lineage, tfState.Serial+1))
 
@@ -297,7 +297,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// intact.
 	if len(tfState.IDs) == 0 && len(tfState.Attrs) == 0 {
 		if err := stateDB.Persist(); err != nil {
-			return tempStatePath, resourceCount, false, nil, fmt.Errorf("persisting empty migrated state: %w", err)
+			return tempStatePath, false, nil, fmt.Errorf("persisting empty migrated state: %w", err)
 		}
 	}
 
@@ -306,7 +306,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// the migrated state and config agree on .permissions entries.
 	bundle.ApplyContext(ctx, b, resourcemutator.SecretScopeFixups(engine.EngineDirect))
 	if logdiag.HasError(ctx) {
-		return tempStatePath, resourceCount, false, nil, errors.New("failed to apply secret scope fixups")
+		return tempStatePath, false, nil, errors.New("failed to apply secret scope fixups")
 	}
 
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
@@ -314,7 +314,7 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// BuildStateFromTF expects ${resources.*} references, so reverse the interpolation first.
 	uninterpolatedRoot, err := reverseInterpolate(b.Config.Value())
 	if err != nil {
-		return tempStatePath, resourceCount, false, nil, fmt.Errorf("failed to reverse interpolation: %w", err)
+		return tempStatePath, false, nil, fmt.Errorf("failed to reverse interpolation: %w", err)
 	}
 
 	var uninterpolatedConfig config.Root
@@ -322,16 +322,16 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 		return uninterpolatedRoot, nil
 	})
 	if err != nil {
-		return tempStatePath, resourceCount, false, nil, fmt.Errorf("failed to create uninterpolated config: %w", err)
+		return tempStatePath, false, nil, fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
 	adapters, err := dresources.InitAll(nil)
 	if err != nil {
-		return tempStatePath, resourceCount, false, nil, err
+		return tempStatePath, false, nil, err
 	}
 
 	if err := stateDB.UpgradeToWrite(); err != nil {
-		return tempStatePath, resourceCount, false, nil, fmt.Errorf("upgrading state for apply: %w", err)
+		return tempStatePath, false, nil, fmt.Errorf("upgrading state for apply: %w", err)
 	}
 
 	// Seed every terraform-state resource into the WAL so the migrated state persists
@@ -343,24 +343,24 @@ func convertTFStateToDirect(ctx context.Context, b *bundle.Bundle, tfState *migr
 	// persist no state file and the migration would fail with a missing resources.json.
 	for key, id := range tfState.IDs {
 		if err := stateDB.SaveState(ctx, key, id, json.RawMessage("{}"), nil); err != nil {
-			return tempStatePath, resourceCount, false, nil, fmt.Errorf("seeding migrated state for %s: %w", key, err)
+			return tempStatePath, false, nil, fmt.Errorf("seeding migrated state for %s: %w", key, err)
 		}
 	}
 
 	// warnPrefix labels the conversion's warnings as coming from the background dry run.
 	hasWarnings, err := migrate.BuildStateFromTF(ctx, &uninterpolatedConfig, adapters, &stateDB, tfState.Attrs, tfState.IDs, warnPrefix)
 	if err != nil {
-		return tempStatePath, resourceCount, hasWarnings, nil, err
+		return tempStatePath, hasWarnings, nil, err
 	}
 
 	if _, err := stateDB.Finalize(ctx); err != nil {
-		return tempStatePath, resourceCount, hasWarnings, nil, err
+		return tempStatePath, hasWarnings, nil, err
 	}
 
 	// BuildStateFromTF reports some failures via logdiag instead of returning an error.
 	if logdiag.HasError(ctx) {
-		return tempStatePath, resourceCount, hasWarnings, nil, errors.New("state conversion failed")
+		return tempStatePath, hasWarnings, nil, errors.New("state conversion failed")
 	}
 
-	return tempStatePath, resourceCount, hasWarnings, &uninterpolatedConfig, nil
+	return tempStatePath, hasWarnings, &uninterpolatedConfig, nil
 }
