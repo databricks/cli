@@ -2,6 +2,14 @@ ignore_local_changes:
   # replace_existing only takes effect on create; toggling it later is a no-op.
   - field: replace_existing
     reason: "input_only; cannot be updated after create"
+stable_output_fields:
+  # name ("projects/{project_id}/branches/{branch_id}/roles/{role_id}") is
+  # backend-assigned at creation and immutable. Lets
+  # ${resources.postgres_roles.X.name} resolve during an in-place update instead
+  # of being delayed, so databases that reference it are not recreated
+  # spuriously. See ES-2202624.
+  - field: name
+    reason: immutable backend-assigned identity
 recreate_on_changes:
   # parent and role_id are immutable (together they form the hierarchical name).
   - field: parent

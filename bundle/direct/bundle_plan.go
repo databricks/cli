@@ -990,7 +990,14 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return value, nil
 	}
 
-	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.FieldTriggersRecreate(fieldPath))
+	// A field is safe to read from the remote cache when the target either has no
+	// changes (Skip) or keeps its ID and the field cannot have changed: an
+	// immutable field (FieldTriggersRecreate) or a backend-assigned stable output
+	// like an AIP name derived from the ID (FieldIsStableOutput). The latter lets
+	// ${resources.X.name} resolve during an in-place update instead of delaying,
+	// which would otherwise recreate dependents that reference it as their parent.
+	canReadRemoteCache := targetAction == deployplan.Skip ||
+		(targetAction.KeepsID() && (adapter.FieldTriggersRecreate(fieldPath) || adapter.FieldIsStableOutput(fieldPath)))
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.

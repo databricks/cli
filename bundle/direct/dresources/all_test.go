@@ -1285,7 +1285,7 @@ func TestResourceConfig(t *testing.T) {
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			validateResourceConfig(t, adapter.StateType(), cfg)
+			validateResourceConfig(t, adapter.StateType(), adapter.RemoteType(), cfg)
 		})
 	}
 }
@@ -1303,12 +1303,12 @@ func TestGeneratedResourceConfig(t *testing.T) {
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			validateResourceConfig(t, adapter.StateType(), cfg)
+			validateResourceConfig(t, adapter.StateType(), adapter.RemoteType(), cfg)
 		})
 	}
 }
 
-func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
+func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cfg *ResourceLifecycleConfig) {
 	for _, p := range cfg.RecreateOnChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
 	}
@@ -1323,6 +1323,10 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 	}
 	for _, p := range cfg.BackendDefaults {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
+	}
+	// stable_output_fields are output-only: absent from StateType, present in RemoteType.
+	for _, p := range cfg.StableOutputFields {
+		assert.NoError(t, structaccess.ValidatePattern(remoteType, p.Field), "StableOutputFields: %s", p.Field)
 	}
 }
 
