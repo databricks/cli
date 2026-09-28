@@ -141,7 +141,7 @@ Usage:
   databricks air images push [flags]
 
 Flags:
-      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for the artifact and 128 for the tag
+      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag
       --catalog string    Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
   -h, --help              help for push
       --pull              Pull the source image even when it is already available locally
@@ -162,7 +162,7 @@ Usage:
   databricks air images push [flags]
 
 Flags:
-      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for the artifact and 128 for the tag
+      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag
       --catalog string    Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
   -h, --help              help for push
       --pull              Pull the source image even when it is already available locally
@@ -175,6 +175,11 @@ Global Flags:
   -p, --profile string   ~/.databrickscfg profile
   -t, --target string    bundle target to use (if applicable)
 
+
+=== reject oversized catalog.schema.artifact before Docker operations
+>>> musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --artifact aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+Warning: This feature is in Preview. APIs may change, and the workspace must enable the Preview features.
+Error: invalid image repository name: catalog.schema.artifact must be 255 characters or less
 
 === all docker commands
 image ls --quiet nvidia/cuda:13.4.1

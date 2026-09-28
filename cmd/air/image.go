@@ -19,12 +19,14 @@ import (
 )
 
 const (
-	maxArtifactNameLength = 255
-	maxImageTagLength     = 128
-	airImagePlatform      = "linux/amd64"
+	maxImageRepositoryLength = 255
+	maxImageTagLength        = 128
+	airImagePlatform         = "linux/amd64"
 )
 
 var (
+	// DAR uses the OCI repository-component grammar without dots or slashes,
+	// which are forbidden in Unity Catalog names.
 	artifactNamePattern = regexp.MustCompile(`^[a-z0-9]+((_|__|-+)[a-z0-9]+)*$`)
 	imageTagPattern     = regexp.MustCompile(`^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$`)
 )
@@ -134,7 +136,7 @@ The destination --artifact ARTIFACT[:TAG] defaults to the source image name and 
 	cmd.Flags().StringVarP(&opts.source, "source", "s", "", "Source container image to push (NAME[:TAG] or NAME@DIGEST)")
 	cmd.Flags().StringVar(&opts.catalog, "catalog", "", "Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens")
 	cmd.Flags().StringVar(&opts.schema, "schema", "", "Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens")
-	cmd.Flags().StringVar(&opts.artifact, "artifact", "", "Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for the artifact and 128 for the tag")
+	cmd.Flags().StringVar(&opts.artifact, "artifact", "", "Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag")
 	cmd.Flags().BoolVar(&opts.pull, "pull", false, "Pull the source image even when it is already available locally")
 	return cmd
 }
@@ -242,6 +244,10 @@ func resolveImagePushOptions(
 	if err != nil {
 		return resolvedImagePushOptions{}, err
 	}
+	// Docker limits the repository path, including both dots but excluding the registry and tag.
+	if len(catalog)+len(schema)+len(artifact)+2 > maxImageRepositoryLength {
+		return resolvedImagePushOptions{}, fmt.Errorf("invalid image repository name: catalog.schema.artifact must be %d characters or less", maxImageRepositoryLength)
+	}
 
 	return resolvedImagePushOptions{
 		source:   source,
@@ -292,9 +298,6 @@ func resolveArtifactAndTag(ctx context.Context, image, defaultArtifact, defaultT
 		tag = after
 	}
 
-	if len(artifact) > maxArtifactNameLength {
-		return "", "", fmt.Errorf("invalid artifact name: must be %d characters or less", maxArtifactNameLength)
-	}
 	if !artifactNamePattern.MatchString(artifact) {
 		return "", "", fmt.Errorf("invalid artifact name %q: use lowercase letters and digits separated by one or two underscores or one or more hyphens", artifact)
 	}

@@ -144,7 +144,7 @@ Usage:
   databricks air images push [flags]
 
 Flags:
-      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for the artifact and 128 for the tag
+      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag
       --catalog string    Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
   -h, --help              help for push
       --pull              Pull the source image even when it is already available locally

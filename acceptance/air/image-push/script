@@ -58,5 +58,10 @@ trace musterr databricks air images push -p docker-test -s example/image:v1 --ca
 trace musterr databricks air images push --region us-west-2
 trace musterr databricks air images push --image artifact
 
+title "reject oversized catalog.schema.artifact before Docker operations"
+cp "$DOCKER_LOG" "$HOME/docker.before-length.log"
+trace musterr databricks air images push -p docker-test -s example/image:v1 --catalog main --schema training --artifact "$(cat oversized-artifact.txt)"
+cmp "$DOCKER_LOG" "$HOME/docker.before-length.log"
+
 title "all docker commands\n"
 cat "$DOCKER_LOG"

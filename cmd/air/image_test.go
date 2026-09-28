@@ -157,6 +157,9 @@ func TestResolveImagePushOptionsValidatesCatalogAndSchema(t *testing.T) {
 		schema  string
 		want    string
 	}{
+		{name: "hyphens", catalog: "my-catalog", schema: "my-schema"},
+		{name: "double underscores", catalog: "my__catalog", schema: "my__schema"},
+		{name: "repeated hyphens", catalog: "my---catalog", schema: "my---schema"},
 		{name: "uppercase catalog", catalog: "Main", schema: "training", want: "invalid catalog"},
 		{name: "leading hyphen", catalog: "-catalog", schema: "training", want: "invalid catalog"},
 		{name: "mixed separators", catalog: "main", schema: "team_-training", want: "invalid schema"},
@@ -172,7 +175,42 @@ func TestResolveImagePushOptionsValidatesCatalogAndSchema(t *testing.T) {
 				schema:   tt.schema,
 				artifact: "artifact:v1",
 			})
+			if tt.want == "" {
+				require.NoError(t, err)
+				return
+			}
 			assert.ErrorContains(t, err, tt.want)
+		})
+	}
+}
+
+func TestResolveImagePushOptionsRepositoryLength(t *testing.T) {
+	for _, tt := range []struct {
+		name      string
+		catalog   string
+		schema    string
+		artifact  string
+		wantError bool
+	}{
+		{name: "255 character repository", catalog: "main", schema: "training", artifact: strings.Repeat("a", 241)},
+		{name: "256 character repository", catalog: "main", schema: "training", artifact: strings.Repeat("a", 242), wantError: true},
+		{name: "255 character artifact exceeds repository limit", catalog: "main", schema: "training", artifact: strings.Repeat("a", 255), wantError: true},
+		{name: "catalog counts toward limit", catalog: strings.Repeat("c", 255), schema: "s", artifact: "a", wantError: true},
+		{name: "schema counts toward limit", catalog: "c", schema: strings.Repeat("s", 255), artifact: "a", wantError: true},
+		{name: "tag excluded from repository length", catalog: "main", schema: "training", artifact: strings.Repeat("a", 241) + ":" + strings.Repeat("t", 128)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := resolveImagePushOptions(cmdio.MockDiscard(t.Context()), &imagePushOptions{
+				source:   "example/image:v1",
+				catalog:  tt.catalog,
+				schema:   tt.schema,
+				artifact: tt.artifact,
+			})
+			if tt.wantError {
+				require.ErrorContains(t, err, "catalog.schema.artifact must be 255 characters or less")
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }
@@ -207,8 +245,6 @@ func TestResolveArtifactAndTagLength(t *testing.T) {
 		image     string
 		wantError string
 	}{
-		{name: "255 character artifact", image: strings.Repeat("a", 255) + ":v1"},
-		{name: "256 character artifact", image: strings.Repeat("a", 256) + ":v1", wantError: "invalid artifact name: must be 255 characters or less"},
 		{name: "128 character tag", image: "artifact:" + strings.Repeat("a", 128)},
 		{name: "129 character tag", image: "artifact:" + strings.Repeat("a", 129), wantError: "invalid image tag: must be 128 characters or less"},
 	}
