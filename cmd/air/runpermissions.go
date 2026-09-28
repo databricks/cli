@@ -164,6 +164,20 @@ func submittedExperimentName(run *jobs.Run) string {
 	return task.MlflowExperimentName
 }
 
+// grantSubmittedPermissions applies the run's configured ACLs after the submit
+// result has been shown, wrapping the bounded best-effort grant in a spinner so
+// it never silently delays the success line. showProgress gates the spinner
+// (text mode only).
+func grantSubmittedPermissions(ctx context.Context, w *databricks.WorkspaceClient, runID int64, permissions []permission, showProgress bool) {
+	if len(permissions) == 0 {
+		return
+	}
+	_ = withSpinner(ctx, showProgress, "Granting permissions…", func() error {
+		applySubmittedPermissions(ctx, w, runID, permissions)
+		return nil
+	})
+}
+
 // applySubmittedPermissions resolves the submitted run and grants its configured
 // ACLs on both the job (remotely) and the MLflow experiment (client-side).
 func applySubmittedPermissions(ctx context.Context, w *databricks.WorkspaceClient, runID int64, permissions []permission) {
