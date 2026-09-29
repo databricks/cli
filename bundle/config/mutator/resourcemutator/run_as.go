@@ -73,11 +73,6 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 
 	if runAs.GroupName != "" {
 		identity = fmt.Sprintf("group %q", runAs.GroupName)
-		for _, pipeline := range b.Config.Resources.Pipelines {
-			if pipeline.RunAs == nil {
-				return diag.Errorf("this CLI version cannot configure run_as.group_name for pipelines; set run_as.user_name or run_as.service_principal_name on each pipeline")
-			}
-		}
 		for _, alert := range b.Config.Resources.Alerts {
 			if alert.RunAs == nil {
 				return diag.Errorf("alerts do not support run_as.group_name; set run_as.user_name or run_as.service_principal_name on each alert")
@@ -164,6 +159,7 @@ func setRunAsForPipelines(b *bundle.Bundle) {
 			continue
 		}
 		pipeline.RunAs = &pipelines.RunAs{
+			GroupName:            runAs.GroupName,
 			ServicePrincipalName: runAs.ServicePrincipalName,
 			UserName:             runAs.UserName,
 		}

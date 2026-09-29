@@ -138,3 +138,18 @@ func TestConvertPipeline(t *testing.T) {
 		},
 	}, out.Permissions["pipeline_my_pipeline"])
 }
+
+func TestConvertPipelineGroupRunAs(t *testing.T) {
+	for _, group := range []string{"group", ""} {
+		t.Run(group, func(t *testing.T) {
+			vin := dyn.V(map[string]dyn.Value{
+				"name":   dyn.V("my pipeline"),
+				"run_as": dyn.V(map[string]dyn.Value{"group_name": dyn.V(group)}),
+			})
+			out := schema.NewResources()
+			err := pipelineConverter{}.Convert(t.Context(), "my_pipeline", vin, out)
+			require.EqualError(t, err, "run_as.group_name for pipelines is not supported with the terraform engine; use the direct engine")
+			assert.Empty(t, out.Pipeline)
+		})
+	}
+}

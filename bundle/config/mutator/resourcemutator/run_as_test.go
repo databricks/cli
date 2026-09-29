@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -377,10 +378,8 @@ func TestRunAsGroupResources(t *testing.T) {
 		resource  string
 		wantError string
 	}{
-		{name: "pipeline", resource: `pipelines: {test: {}}`, wantError: "this CLI version cannot configure run_as.group_name for pipelines"},
 		{name: "alert", resource: `alerts: {test: {}}`, wantError: "alerts do not support run_as.group_name"},
 		{name: "model serving", resource: `model_serving_endpoints: {test: {}}`, wantError: "Run as identity: group \"group\""},
-		{name: "pipeline user override", resource: `pipelines: {test: {run_as: {user_name: user}}}`},
 		{name: "alert sp override", resource: `alerts: {test: {run_as: {service_principal_name: sp}}}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -424,6 +423,11 @@ resources:
     user: {run_as: {user_name: other_user}}
     sp: {run_as: {service_principal_name: other_sp}}
     group: {run_as: {group_name: other_group}}
+  pipelines:
+    inherited: {}
+    user: {run_as: {user_name: other_user}}
+    sp: {run_as: {service_principal_name: other_sp}}
+    group: {run_as: {group_name: other_group}}
 `, tc.root, tc.target)
 			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
 			require.NoError(t, diags.Error())
@@ -436,6 +440,14 @@ resources:
 			assert.Equal(t, &jobs.JobRunAs{UserName: "other_user"}, b.Config.Resources.Jobs["user"].RunAs)
 			assert.Equal(t, &jobs.JobRunAs{ServicePrincipalName: "other_sp"}, b.Config.Resources.Jobs["sp"].RunAs)
 			assert.Equal(t, &jobs.JobRunAs{GroupName: "other_group"}, b.Config.Resources.Jobs["group"].RunAs)
+			assert.Equal(t, &pipelines.RunAs{
+				GroupName:            tc.want.GroupName,
+				ServicePrincipalName: tc.want.ServicePrincipalName,
+				UserName:             tc.want.UserName,
+			}, b.Config.Resources.Pipelines["inherited"].RunAs)
+			assert.Equal(t, &pipelines.RunAs{UserName: "other_user"}, b.Config.Resources.Pipelines["user"].RunAs)
+			assert.Equal(t, &pipelines.RunAs{ServicePrincipalName: "other_sp"}, b.Config.Resources.Pipelines["sp"].RunAs)
+			assert.Equal(t, &pipelines.RunAs{GroupName: "other_group"}, b.Config.Resources.Pipelines["group"].RunAs)
 		})
 	}
 }
