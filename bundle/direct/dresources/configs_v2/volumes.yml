@@ -1,0 +1,9 @@
+fields:
+  catalog_name: {action: id}
+  schema_name: {action: id}
+  name: {action: id_renameable}
+  volume_type: {action: immutable}
+
+  # UC strips trailing slashes on create; matches the Terraform provider's suppressLocationDiff.
+  # https://github.com/databricks/terraform-provider-databricks/blob/v1.65.1/catalog/resource_volume.go#L25
+  storage_location: {action: immutable, compare: trim_slash}

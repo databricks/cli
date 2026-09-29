@@ -1,0 +1,11 @@
+fields:
+  # UC lowercases identifier names; remote returns "myschema" for config "MySchema".
+  name: {action: id}
+  catalog_name: {action: id}
+
+  storage_root: {action: immutable, compare: trim_slash}
+
+  # UC auto-populates unity.catalog.managed.<format>.defaults.* keys after create.
+  # Without this, every subsequent plan produces an Update whose payload is empty,
+  # and UC rejects it with "UpdateSchema Nothing to update".
+  properties['unity.catalog.managed.*.defaults.*']: {action: backend_owned}

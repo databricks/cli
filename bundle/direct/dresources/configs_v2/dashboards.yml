@@ -1,0 +1,10 @@
+fields:
+  # "serialized_dashboard" holds inlined dashboard JSON that differs textually
+  # between local config and remote (we rely on etag for drift), and is never read
+  # back from state, so we persist only its content hash.
+  serialized_dashboard: {action: ignore_remote, reason: etag_based, hashed: true}
+
+  # "dataset_catalog" and "dataset_schema" are write-only fields the server does not
+  # return, so local config (values) and remote state (empty) always differ.
+  dataset_catalog: {action: ignore_remote, reason: input_only}
+  dataset_schema: {action: ignore_remote, reason: input_only}

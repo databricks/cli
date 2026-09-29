@@ -1,0 +1,7 @@
+fields:
+  # project_id is immutable (part of hierarchical name, not in API spec).
+  project_id: {action: id}
+
+  # name ("projects/{project_id}") is backend-assigned at creation and immutable;
+  # see the stable_output_fields doc in config.go and ES-2202624.
+  name: {stable_output: true}

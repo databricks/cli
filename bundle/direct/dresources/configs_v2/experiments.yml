@@ -1,0 +1,6 @@
+fields:
+  # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
+  artifact_location: {action: immutable}
+
+  # Tags updates are not supported by TF. Skip both local edits and remote drift.
+  tags: {action: ignore, reason: terraform_compat}
