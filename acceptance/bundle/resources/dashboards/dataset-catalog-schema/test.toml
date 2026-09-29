@@ -2,6 +2,5 @@ Cloud = true
 RecordRequests = true
 
 Ignore = [
-    "plan_raw.terraform.json",
-    "plan_raw.direct.json",
+    "plan_raw.json",
 ]
