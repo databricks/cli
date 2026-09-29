@@ -163,7 +163,7 @@ func lowerAction(out *ResourceLifecycleConfig, pattern *structpath.PatternNode, 
 	case actionIgnoreRemote:
 		out.IgnoreRemoteChanges = append(out.IgnoreRemoteChanges, rule)
 	case actionBackendOwned:
-		out.BackendDefaults = append(out.BackendDefaults, BackendDefaultRule{Field: pattern})
+		out.BackendDefaults = append(out.BackendDefaults, BackendDefaultRule{Field: pattern, Values: nil})
 	default:
 		// Unreachable via YAML (UnmarshalYAML validates); guards a value added to
 		// validActions but not handled here.
@@ -186,11 +186,11 @@ func lowerModifiers(out *ResourceLifecycleConfig, pattern *structpath.PatternNod
 	}
 
 	if p.Sensitive {
-		out.SensitiveFields = append(out.SensitiveFields, FieldRule{Field: pattern})
+		out.SensitiveFields = append(out.SensitiveFields, FieldRule{Field: pattern, Reason: ""})
 	}
 
 	if p.StableOutput {
-		out.StableOutputFields = append(out.StableOutputFields, FieldRule{Field: pattern})
+		out.StableOutputFields = append(out.StableOutputFields, FieldRule{Field: pattern, Reason: ""})
 	}
 	return nil
 }
