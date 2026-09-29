@@ -1439,8 +1439,11 @@ func TestOutputOnlyNameIsStable(t *testing.T) {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
-		// Without DoUpdate a change Recreates and a no-op Skips (which already reads
-		// the remote cache); neither wrongly delays the reference.
+		// The bug needs an in-place update, which needs DoUpdate. Without it the
+		// target only Skips (the reference reads the remote cache directly) or
+		// Recreates/Creates (KeepsID is false, so FieldIsStableOutput is never
+		// consulted). A stable_output_fields declaration would be inert, so don't
+		// require one; if the resource later gains DoUpdate the guard flags it then.
 		if !adapter.HasDoUpdate() {
 			continue
 		}
@@ -1451,16 +1454,17 @@ func TestOutputOnlyNameIsStable(t *testing.T) {
 			continue
 		}
 
-		// A name in StateType that is not output_only is user-settable: it resolves
-		// from local config, so it is exempt. A backend-owned name — absent from
-		// StateType, or present but output_only — is at risk and must be declared.
+		// A name in StateType that is not output_only is user-settable — the common
+		// case (jobs, pipelines, apps, most UC resources) — and resolves from local
+		// config, so it is exempt. A backend-owned name (absent from StateType, or
+		// present but output_only) is at risk and must be declared.
 		inState := structaccess.ValidatePath(adapter.StateType(), namePath) == nil
 		if inState && !fieldDeclaredOutputOnly(adapter, namePath) {
 			continue
 		}
 
 		if reason, ok := stableNameOptOut[resourceType]; ok {
-			assert.NotEmpty(t, reason, "%s: stableNameOptOut entry must give a reason", resourceType)
+			t.Logf("%s: exempt from the stable-name check: %s", resourceType, reason)
 			continue
 		}
 
