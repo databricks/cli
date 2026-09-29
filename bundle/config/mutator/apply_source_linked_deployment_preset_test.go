@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -102,6 +103,37 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 			expectedValue: &enabled,
 		},
 		{
+			name: "preset nil, dev mode true, immutable folder, bundle in Workspace, databricks runtime",
+			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
+			mutateBundle: func(b *bundle.Bundle) {
+				b.Config.Bundle.Mode = config.Development
+				b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+			},
+			initialValue:  nil,
+			expectedValue: nil,
+		},
+		{
+			name: "preset enabled, immutable folder, bundle in Workspace, databricks runtime",
+			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
+			mutateBundle: func(b *bundle.Bundle) {
+				b.Config.Bundle.Mode = config.Development
+				b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+			},
+			initialValue:  &enabled,
+			expectedValue: &enabled,
+			expectedError: "presets.source_linked_deployment cannot be enabled when experimental.immutable_folder is enabled",
+		},
+		{
+			name: "preset disabled, immutable folder, bundle in Workspace, databricks runtime",
+			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
+			mutateBundle: func(b *bundle.Bundle) {
+				b.Config.Bundle.Mode = config.Development
+				b.Config.Experimental = &config.Experimental{ImmutableFolder: true}
+			},
+			initialValue:  &disabled,
+			expectedValue: &disabled,
+		},
+		{
 			name: "preset enabled, production mode, bundle in Workspace, databricks runtime",
 			ctx:  dbr.MockRuntime(testContext, dbr.Environment{IsDbr: true, Version: "15.4"}),
 			mutateBundle: func(b *bundle.Bundle) {
@@ -147,6 +179,80 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 			}
 
 			require.Equal(t, tt.expectedValue, b.Config.Presets.SourceLinkedDeployment)
+		})
+	}
+}
+
+// TestSourceLinkedDeploymentWorkspaceFilePathResolution runs the mutators that decide
+// what ${workspace.file_path} in a resource resolves to, for a development-mode bundle
+// in /Workspace on Databricks Runtime (where source-linked deployment is auto-enabled).
+func TestSourceLinkedDeploymentWorkspaceFilePathResolution(t *testing.T) {
+	syncRootPath := "/Workspace/Users/user.name@company.com/my_bundle"
+	ctx := dbr.MockRuntime(t.Context(), dbr.Environment{IsDbr: true, Version: "15.4"})
+	enabled := true
+
+	tests := []struct {
+		name                 string
+		immutableFolder      bool
+		expectedSourceLinked *bool
+		expectedPythonFile   string
+	}{
+		{
+			name:                 "source-linked deployment resolves to the sync root",
+			immutableFolder:      false,
+			expectedSourceLinked: &enabled,
+			expectedPythonFile:   syncRootPath + "/src/main.py",
+		},
+		{
+			name:                 "immutable folder disables source-linked deployment and resolves to the snapshot",
+			immutableFolder:      true,
+			expectedSourceLinked: nil,
+			expectedPythonFile:   resources.SnapshotFullPathRef + "/files/src/main.py",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &bundle.Bundle{
+				SyncRootPath: syncRootPath,
+				Config: config.Root{
+					Bundle: config.Bundle{
+						Mode: config.Development,
+					},
+					Experimental: &config.Experimental{
+						ImmutableFolder: tt.immutableFolder,
+					},
+					Workspace: config.Workspace{
+						RootPath: "/Workspace/Users/user.name@company.com/.bundle/my_bundle/dev",
+					},
+					Resources: config.Resources{
+						Jobs: map[string]*resources.Job{
+							"job": {
+								JobSettings: jobs.JobSettings{
+									Tasks: []jobs.Task{
+										{
+											TaskKey: "task",
+											SparkPythonTask: &jobs.SparkPythonTask{
+												PythonFile: "${workspace.file_path}/src/main.py",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			diags := bundle.ApplySeq(ctx, b,
+				mutator.ApplySourceLinkedDeploymentPreset(),
+				mutator.DefineDefaultWorkspacePaths(),
+				mutator.ResolveVariableReferencesOnlyResources("workspace"),
+			)
+			require.NoError(t, diags.Error())
+
+			require.Equal(t, tt.expectedSourceLinked, b.Config.Presets.SourceLinkedDeployment)
+			require.Equal(t, tt.expectedPythonFile, b.Config.Resources.Jobs["job"].Tasks[0].SparkPythonTask.PythonFile)
 		})
 	}
 }
