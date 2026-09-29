@@ -1,10 +1,8 @@
-
->>> [CLI] bundle deploy
 Building python_artifact...
 Uploading dist/my_test_code-0.1.0-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Created jobs.test_job
-Files: 6 uploaded, 0 deleted
+Files: 8 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> find.py --expect 1 whl
@@ -32,11 +30,13 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 >>> jq .path [OUTPUT_DIR]/out.requests.txt
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/.gitignore"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/LOG.plan"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.1.0-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__init__.py"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__main__.py"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/setup.py"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/tmp.plan.json"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
@@ -44,13 +44,11 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/STATE_FILENAME"
 
 >>> update_file.py my_test_code/__init__.py 0.1.0 0.2.0
-
->>> [CLI] bundle deploy
 Building python_artifact...
 Uploading dist/my_test_code-0.2.0-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.test_job
-Files: 2 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> find.py --expect 2 whl
@@ -64,8 +62,10 @@ json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/defa
 === Expecting 1 wheel to be uploaded
 >>> jq .path [OUTPUT_DIR]/out.requests.txt
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/LOG.plan"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.2.0-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_test_code/__init__.py"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/tmp.plan.json"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -73,14 +73,12 @@ json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/defa
 
 === Restore config to target old wheel
 >>> update_file.py databricks.yml ./dist/*.whl ./dist/my*0.1.0*.whl
-
->>> [CLI] bundle deploy
 Building python_artifact...
 Uploading dist/my_test_code-0.1.0-py3-none-any.whl...
 Uploading dist/my_test_code-0.2.0-py3-none-any.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Updated jobs.test_job
-Files: 2 uploaded, 0 deleted
+Files: 4 uploaded, 0 deleted
 Resources: 0 created, 1 changed, 0 deleted, 0 unchanged
 
 >>> find.py --expect 2 whl
@@ -95,8 +93,10 @@ json[0].libraries[0].whl = "/Workspace/Users/[USERNAME]/.bundle/test-bundle/defa
 >>> jq .path [OUTPUT_DIR]/out.requests.txt
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.1.0-py3-none-any.whl"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.2.0-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/LOG.plan"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/databricks.yml"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/dist/my_test_code-0.2.0-py3-none-any.whl"
+"/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/tmp.plan.json"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json"
 "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
