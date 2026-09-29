@@ -9,8 +9,8 @@ id rewritten to the one the backend just minted. The migrate step then reads a r
 backed by real (terraform-shaped) resources.
 
 The requests carry the recorded ids; the backend mints fresh ones on replay. We learn each mapping
-from the create responses (matching a create to its tfstate resource by name) and rewrite it into
-every later request and into the tfstate, so cross-resource references stay consistent.
+from the create responses (matching a create to its tfstate resource by an identifying name) and
+rewrite it into every later request and into the tfstate, so cross-resource references stay consistent.
 
 Usage: replay_tfstate.py REQUESTS.json TFSTATE.json [-t TARGET]
 """
@@ -19,16 +19,27 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import sys
+import urllib.error
+import urllib.request
 
-CLI = os.environ["CLI"]
 HOST = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
+TOKEN = os.environ.get("DATABRICKS_TOKEN", "")
 UNIQUE_NAME = os.environ.get("UNIQUE_NAME", "")
+
+# Talk to the (local) workspace directly rather than via `databricks api`: the CLI renders responses
+# through Go's `any`, which decodes JSON numbers as float64 and silently mangles the low digits of a
+# freshly minted id (they exceed 2^53), so the id we'd record would not match the one the backend
+# stored. Python's json keeps ids exact. Bypass any proxy: these tests only hit the local server.
+_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 # Per resource: which response field carries the new id. Terraform's tfstate stores the same value
 # as the resource's `id`, keyed here by the create path so we can match a create to its tfstate entry.
 ID_FIELDS = ["job_id", "pipeline_id", "dashboard_id", "experiment_id", "full_name", "id", "name"]
+
+# A create request is matched to its tfstate resource by a human-supplied identifying field; different
+# resource types name it differently (jobs/pipelines use `name`, dashboards use `display_name`, …).
+NAME_FIELDS = ["name", "display_name", "full_name"]
 
 # A backend-minted value that another resource may reference (e.g. a volume's storage_location, which
 # a pipeline tags). We remap these recorded->minted just like ids: a UUID, an s3-style path (which
@@ -48,13 +59,19 @@ def apply_map(text, id_map):
 
 
 def api(method, path, body):
-    cmd = [CLI, "api", method.lower(), path, "--output", "json"]
-    if body is not None:
-        cmd += ["--json", json.dumps(body)]
-    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8")
-    if r.returncode != 0:
-        sys.exit(f"replay_tfstate.py: {method} {path} failed:\n{r.stdout}\n{r.stderr}")
-    return json.loads(r.stdout) if r.stdout.strip() else {}
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(HOST + path, data=data, method=method.upper())
+    req.add_header("Authorization", "Bearer " + TOKEN)
+    # Stable UA so tests that record the replayed requests don't pin the Python version.
+    req.add_header("User-Agent", "replay_tfstate.py")
+    if data is not None:
+        req.add_header("Content-Type", "application/json")
+    try:
+        with _opener.open(req) as resp:
+            text = resp.read().decode()
+    except urllib.error.HTTPError as e:
+        sys.exit(f"replay_tfstate.py: {method} {path} failed: HTTP {e.code}\n{e.read().decode()}")
+    return json.loads(text) if text.strip() else {}
 
 
 def main():
@@ -83,14 +100,17 @@ def main():
     os.remove(args.requests)
     os.remove(args.tfstate)
 
-    # name -> recorded resource attributes, from the tfstate managed resources.
+    # identifying name -> recorded resource attributes, from the tfstate managed resources.
     name_to_attrs = {}
     for r in tfstate["resources"]:
         if r.get("mode") != "managed":
             continue
         attrs = r["instances"][0]["attributes"]
-        if "name" in attrs and "id" in attrs:
-            name_to_attrs[attrs["name"]] = attrs
+        if "id" not in attrs:
+            continue
+        for nf in NAME_FIELDS:
+            if attrs.get(nf):
+                name_to_attrs[str(attrs[nf])] = attrs
 
     id_map = {}
     for req in requests:
@@ -100,10 +120,13 @@ def main():
             body = json.loads(apply_map(json.dumps(body), id_map))
         resp = api(req["method"], path, body)
 
-        # A create (POST that returns a new id) whose config name matches a tfstate resource:
+        # A create (POST that returns a new id) whose identifying name matches a tfstate resource:
         # map its recorded id to the freshly minted one.
-        if req["method"] == "POST" and isinstance(body, dict) and body.get("name") in name_to_attrs:
-            attrs = name_to_attrs[body["name"]]
+        create_name = None
+        if isinstance(body, dict):
+            create_name = next((str(body[nf]) for nf in NAME_FIELDS if body.get(nf)), None)
+        if req["method"] == "POST" and create_name in name_to_attrs:
+            attrs = name_to_attrs[create_name]
             new_id = next((str(resp[f]) for f in ID_FIELDS if f in resp), None)
             if new_id is None:
                 sys.exit(f"replay_tfstate.py: no id in response to {req['path']}: {resp}")

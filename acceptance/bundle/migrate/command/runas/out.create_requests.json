@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/api_post cmd-exec-id/[UUID] interactive/none auth/pat"
+      "replay_tfstate.py"
     ]
   },
   "method": "POST",
@@ -32,7 +32,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[CLI_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/api_put cmd-exec-id/[UUID] interactive/none auth/pat"
+      "replay_tfstate.py"
     ]
   },
   "method": "PUT",
