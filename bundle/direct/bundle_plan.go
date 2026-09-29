@@ -691,7 +691,8 @@ func shouldSkipNormalized(cfg *dresources.ResourceLifecycleConfig, path *structp
 // reports an update, and so does a field the user removed from config (Old != nil) — that
 // is a deletion the user asked for, not a backend addition.
 //
-// The rule is gated on a field within the same object (ignore_remote_additions.when_set).
+// The rule may be gated on a field within the same object (ignore_remote_additions.when_set);
+// when when_set is omitted the rule always applies to a declared object.
 // For cluster specs that gate is policy_id: an attached cluster policy supplies values
 // server-side — "fixed" elements always, "defaultValue" elements when the request sets
 // apply_policy_default_values — so the remote spec is legitimately a superset of what the
@@ -729,9 +730,13 @@ func shouldSkipRemoteAddition(cfg *dresources.ResourceLifecycleConfig, path *str
 			// are validated against the state type by TestResourcesYMLRemoteAdditionGates.
 			continue
 		}
-		value, err := structaccess.Get(object, rule.WhenSet)
-		if err != nil || allEmpty(value) {
-			continue
+		// A nil gate (when_set omitted) always applies to a declared object; otherwise the
+		// rule fires only when the gate field is set.
+		if rule.WhenSet != nil {
+			value, err := structaccess.Get(object, rule.WhenSet)
+			if err != nil || allEmpty(value) {
+				continue
+			}
 		}
 		return deployplan.ReasonRemoteAddition, true
 	}
