@@ -14,16 +14,16 @@ Stream logs after submission using:
 >>> print_requests.py --get //api/2.2/jobs/runs/submit //api/2.2/jobs/runs/get //api/2.0/permissions //api/2.0/mlflow --sort --unique
 {
   "method": "GET",
-  "path": "/api/2.0/mlflow/experiments/get-by-name",
+  "path": "/api/2.2/jobs/runs/get",
   "q": {
-    "experiment_name": "/Shared/submit-smoke"
+    "run_id": "555"
   }
 }
 {
   "method": "GET",
-  "path": "/api/2.2/jobs/runs/get",
+  "path": "/api/2.2/jobs/runs/get-output",
   "q": {
-    "run_id": "555"
+    "run_id": "456"
   }
 }
 {

@@ -2,6 +2,7 @@ package aircmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -15,13 +16,12 @@ import (
 
 const (
 	// mlflowPermissionTimeout bounds the best-effort experiment permission grant.
-	// The AI Runtime backend creates the MLflow experiment at submit time, so
-	// get-by-name normally resolves on the first try; this only caps a brief
-	// read-after-write consistency race and keeps submit from stalling.
+	// The run's MLflow experiment id comes from runs/get-output, which may lag the
+	// submit by a moment; this caps how long we wait for it and keeps a
+	// not-yet-populated output from stalling submit.
 	mlflowPermissionTimeout = 2 * time.Second
-	// mlflowPermissionPollInterval is how often get-by-name is retried while
-	// waiting for the experiment to become visible. Kept short since the
-	// experiment already exists.
+	// mlflowPermissionPollInterval is how often runs/get-output is retried while
+	// waiting for the experiment id to appear.
 	mlflowPermissionPollInterval = 100 * time.Millisecond
 )
 
@@ -97,24 +97,23 @@ func experimentAccessControl(p permission) (ml.ExperimentAccessControlRequest, b
 	return acl, true
 }
 
-// resolveExperimentID polls get-by-name until the experiment is resolvable or
-// ctx expires. The AI Runtime backend creates the experiment around submit time,
-// so a brief wait covers the window where it isn't visible yet.
-func resolveExperimentID(ctx context.Context, w *databricks.WorkspaceClient, experimentName string) (string, error) {
+// resolveSubmittedExperimentID polls runs/get-output for the run's MLflow
+// experiment id until it appears or ctx expires. The id is the run's own
+// experiment, so granting on it can never touch a different user's experiment —
+// unlike resolving a bare experiment name, which would have to guess the owning
+// directory (and has no default for a service principal). Returns "" if the id
+// doesn't become available in time.
+func resolveSubmittedExperimentID(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run) string {
 	ticker := time.NewTicker(mlflowPermissionPollInterval)
 	defer ticker.Stop()
 	for {
-		resp, err := w.Experiments.GetByName(ctx, ml.GetByNameRequest{ExperimentName: experimentName})
-		if err == nil && resp.Experiment != nil {
-			return resp.Experiment.ExperimentId, nil
+		if out := aiRuntimeTaskOutput(ctx, w, run); out != nil && out.MlflowExperimentId != "" {
+			return out.MlflowExperimentId
 		}
 
 		select {
 		case <-ctx.Done():
-			if err != nil {
-				return "", fmt.Errorf("failed to resolve experiment %q: %w", experimentName, err)
-			}
-			return "", fmt.Errorf("experiment %q not found", experimentName)
+			return ""
 		case <-ticker.C:
 		}
 	}
@@ -124,7 +123,7 @@ func resolveExperimentID(ctx context.Context, w *databricks.WorkspaceClient, exp
 // configured ACLs to it. Unlike jobs, whose permissions are set remotely, the
 // experiment is created by the AI Runtime backend so its ACLs must be set here
 // from the client.
-func grantExperimentPermissions(ctx context.Context, w *databricks.WorkspaceClient, experimentName string, permissions []permission) error {
+func grantExperimentPermissions(ctx context.Context, w *databricks.WorkspaceClient, run *jobs.Run, permissions []permission) error {
 	experimentACL := make([]ml.ExperimentAccessControlRequest, 0, len(permissions))
 	for _, p := range permissions {
 		if acl, ok := experimentAccessControl(p); ok {
@@ -135,12 +134,17 @@ func grantExperimentPermissions(ctx context.Context, w *databricks.WorkspaceClie
 		return nil
 	}
 
-	experimentID, err := resolveExperimentID(ctx, w, experimentName)
-	if err != nil {
-		return err
+	// Bound only the resolution: a not-yet-populated output must never stall the
+	// grant indefinitely, but the UpdatePermissions call below runs on the
+	// caller's context.
+	resolveCtx, cancel := context.WithTimeout(ctx, mlflowPermissionTimeout)
+	defer cancel()
+	experimentID := resolveSubmittedExperimentID(resolveCtx, w, run)
+	if experimentID == "" {
+		return errors.New("could not resolve the run's MLflow experiment")
 	}
 
-	_, err = w.Experiments.UpdatePermissions(ctx, ml.ExperimentPermissionsRequest{
+	_, err := w.Experiments.UpdatePermissions(ctx, ml.ExperimentPermissionsRequest{
 		ExperimentId:      experimentID,
 		AccessControlList: experimentACL,
 	})
@@ -148,21 +152,6 @@ func grantExperimentPermissions(ctx context.Context, w *databricks.WorkspaceClie
 		return fmt.Errorf("failed to grant experiment permissions: %w", err)
 	}
 	return nil
-}
-
-// submittedExperimentName returns the full MLflow experiment name resolved onto
-// the run's AI Runtime task, or "" when the run has no experiment. Unlike
-// experimentName in format.go it keeps the leading /Users/<user>/ prefix, which
-// get-by-name requires.
-func submittedExperimentName(run *jobs.Run) string {
-	if len(run.Tasks) == 0 {
-		return ""
-	}
-	task := run.Tasks[0].GenAiComputeTask
-	if task == nil {
-		return ""
-	}
-	return task.MlflowExperimentName
 }
 
 // grantSubmittedPermissions applies the run's configured ACLs after the submit
@@ -198,15 +187,9 @@ func applySubmittedPermissions(ctx context.Context, w *databricks.WorkspaceClien
 		log.Warnf(ctx, "job was created successfully, but permissions could not be granted")
 	}
 
-	experimentName := submittedExperimentName(run)
-	if experimentName == "" {
-		return
-	}
-	// Best-effort and time-bounded: the experiment may not be resolvable yet, and
-	// a missing experiment must never fail an otherwise-successful submit.
-	expCtx, cancel := context.WithTimeout(ctx, mlflowPermissionTimeout)
-	defer cancel()
-	if err := grantExperimentPermissions(expCtx, w, experimentName, permissions); err != nil {
+	// Best-effort: a missing experiment must never fail an otherwise-successful
+	// submit.
+	if err := grantExperimentPermissions(ctx, w, run, permissions); err != nil {
 		log.Warnf(ctx, "failed to grant experiment permissions: %v", err)
 		log.Warnf(ctx, "job was created successfully, but experiment permissions could not be granted")
 	}
