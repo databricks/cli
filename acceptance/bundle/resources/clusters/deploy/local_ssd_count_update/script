@@ -23,3 +23,14 @@ print_requests.py //clusters/edit | jq '.body.gcp_attributes'
 
 title "Deploy 3: no config change, should converge to a no-op\n"
 trace $CLI bundle plan
+
+title "Now the user removes local_ssd_count again\n"
+update_file.py databricks.yml "
+        local_ssd_count: 0" ""
+
+title "Deploy 4: removing the explicit 0 is a change, symmetric with setting it\n"
+trace $CLI bundle plan
+trace $CLI bundle deploy -qq
+
+title "Deploy 5: no config change, should converge to a no-op\n"
+trace $CLI bundle plan

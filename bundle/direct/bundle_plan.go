@@ -835,17 +835,18 @@ func allEmpty(values ...any) bool {
 // allEmptyChange reports whether a change is an empty no-op that should be skipped.
 // All of Old/New/Remote must be empty-ish under isEmpty (nil, a zero int, "", empty map).
 //
-// The one exception is a genuine local change: when New is an integer the config
-// force-sent that differs from Old, it is a real value to apply, not an unset field.
-// This is what setting gcp_attributes.local_ssd_count: 0 on a cluster first deployed
-// without the field looks like (Old nil, New 0). A zero the backend merely echoes for a
-// field nobody set (New empty) or a value the config did not actually change (Old == New,
-// e.g. an unchanged num_workers: 0) stays a no-op.
+// The one exception is a genuine local change involving an explicit integer zero: an int
+// force-sent on either side of the diff that differs from the other side is a real change
+// the config makes, so it must be applied rather than dismissed as empty. This covers both
+// setting gcp_attributes.local_ssd_count: 0 on a cluster first deployed without the field
+// (Old nil, New 0) and removing it again (Old 0, New nil). A zero the backend merely echoes
+// for a field nobody set (Old and New empty) or a value the config did not actually change
+// (Old == New, e.g. an unchanged num_workers: 0) stays a no-op.
 func allEmptyChange(ch *deployplan.ChangeDesc) bool {
 	if !allEmpty(ch.Old, ch.New, ch.Remote) {
 		return false
 	}
-	if isZeroInt(ch.New) && !structdiff.IsEqual(ch.Old, ch.New) {
+	if (isZeroInt(ch.Old) || isZeroInt(ch.New)) && !structdiff.IsEqual(ch.Old, ch.New) {
 		return false
 	}
 	return true
