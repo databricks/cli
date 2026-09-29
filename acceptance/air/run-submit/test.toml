@@ -24,11 +24,22 @@ Response.Body = '''
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/get"
 Response.Body = '''
-{"job_id":123,"run_id":555}
+{"job_id":123,"run_id":555,"tasks":[{"run_id":456,"ai_runtime_task":{"experiment":"submit-smoke"}}]}
 '''
 
 [[Server]]
 Pattern = "PATCH /api/2.0/permissions/jobs/123"
+Response.Body = '{}'
+
+# The run's MLflow experiment id comes from runs/get-output (keyed by the task
+# run id); the CLI grants the same ACLs on that experiment, with job levels
+# mapped to experiment levels.
+[[Server]]
+Pattern = "GET /api/2.2/jobs/runs/get-output"
+Response.Body = '{"ai_runtime_task_output":{"mlflow_experiment_id":"42"}}'
+
+[[Server]]
+Pattern = "PATCH /api/2.0/permissions/experiments/42"
 Response.Body = '{}'
 
 # The snapshot tarball is named <dir>_<cachekey[:16]>.tar.gz, where <dir> is the

@@ -375,11 +375,12 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		priorityClass = *cfg.Compute.PriorityClass
 	}
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
+	// Permissions are granted by the caller, after the submit result is shown, so
+	// the best-effort grant never delays the success line.
 	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath())
 	if err != nil {
 		return 0, "", err
 	}
-	applySubmittedPermissions(ctx, w, runID, cfg.Permissions)
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil
