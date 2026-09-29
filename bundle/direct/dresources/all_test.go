@@ -1408,58 +1408,57 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 	}
 }
 
-// stableNameOptOut lists resources whose output-only `name` deliberately is NOT
-// declared under stable_output_fields, with the reason. Add an entry only when
-// the name genuinely is not a stable identity (e.g. the backend recomputes it on
-// update). This is the escape hatch for TestOutputOnlyNameIsStable.
-//
-// A user-settable name (in StateType and not output_only, e.g. jobs) is not in
-// scope and does not belong here: it resolves from local config.
-var stableNameOptOut = map[string]string{}
+// userProvidedName is the opt-out reason for a resource whose `name` is written
+// by the user rather than assigned by the backend: a ${...name} reference
+// resolves from local config, and a rename must change it, so it must not be
+// pinned stable.
+const userProvidedName = "name is user-provided, not a backend-assigned identity"
 
-// TestOutputOnlyNameIsStable guards against silently reintroducing ES-2202624. On
-// a resource that supports in-place update, an output-only `name` — one the
-// backend owns (an AIP identity derived from the immutable ID), so it is not
-// resolvable from local config — must be declared under stable_output_fields.
-// Otherwise a ${resources.X.name} reference is delayed during an in-place
-// (keeps-ID) update instead of resolving from the remote cache, and every
-// dependent that uses it as its own immutable parent is recreated. A resource
-// opts out only with a documented entry in stableNameOptOut.
+// stableNameOptOut lists resources whose `name` is a RemoteType field but must
+// NOT be declared stable_output_fields, with the reason. Every updatable resource
+// with a name in RemoteType is either declared stable or listed here — that is
+// what TestNameStableOrOptedOut enforces. These names are all user-provided; only
+// a backend-assigned identity (the Lakebase hierarchical names) needs to be
+// stable so cross-resource references resolve during an in-place update.
+var stableNameOptOut = map[string]string{
+	"apps":                    userProvidedName,
+	"catalogs":                userProvidedName,
+	"cluster_policies":        userProvidedName,
+	"database_instances":      userProvidedName,
+	"experiments":             userProvidedName,
+	"external_locations":      userProvidedName,
+	"jobs":                    userProvidedName,
+	"model_serving_endpoints": userProvidedName,
+	"models":                  userProvidedName,
+	"pipelines":               userProvidedName,
+	"registered_models":       userProvidedName,
+	"schemas":                 userProvidedName,
+	"secrets":                 userProvidedName,
+	"sql_warehouses":          userProvidedName,
+	"vector_search_endpoints": userProvidedName,
+	"volumes":                 userProvidedName,
+}
+
+// TestNameStableOrOptedOut guards against silently reintroducing ES-2202624: a
+// ${resources.X.name} reference delayed during X's in-place update recreates
+// every dependent that uses it as an immutable parent. To prevent that, a
+// resource whose `name` can be referenced must declare it under
+// stable_output_fields so the reference resolves from the remote cache.
 //
-// "Output-only" is not the same as "absent from StateType": a backend-owned field
-// can also appear in StateType. So a name is treated as output-only when it is in
-// RemoteType and either absent from StateType or declared output_only. A
-// user-settable name (in StateType, not output_only, e.g. jobs) is exempt — it
-// resolves from local config, so it is not at risk and must NOT be declared
-// stable, since a rename must change the reference. Resources with no DoUpdate are
-// also exempt: they never take an in-place-update action.
-func TestOutputOnlyNameIsStable(t *testing.T) {
+// The guard requires this for every resource that supports in-place update and
+// has a `name` in RemoteType, unless it is listed in stableNameOptOut. Resources
+// with no DoUpdate are skipped: they never take an in-place-update action, so the
+// reference is never delayed.
+func TestNameStableOrOptedOut(t *testing.T) {
 	namePath := structpath.MustParsePath("name")
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
-		// The bug needs an in-place update, which needs DoUpdate. Without it the
-		// target only Skips (the reference reads the remote cache directly) or
-		// Recreates/Creates (KeepsID is false, so FieldIsStableOutput is never
-		// consulted). A stable_output_fields declaration would be inert, so don't
-		// require one; if the resource later gains DoUpdate the guard flags it then.
 		if !adapter.HasDoUpdate() {
 			continue
 		}
-
-		// The resolver reads name from the remote cache, so it must be a RemoteType
-		// path to be resolvable there at all.
 		if structaccess.ValidatePath(adapter.RemoteType(), namePath) != nil {
-			continue
-		}
-
-		// A name in StateType that is not output_only is user-settable — the common
-		// case (jobs, pipelines, apps, most UC resources) — and resolves from local
-		// config, so it is exempt. A backend-owned name (absent from StateType, or
-		// present but output_only) is at risk and must be declared.
-		inState := structaccess.ValidatePath(adapter.StateType(), namePath) == nil
-		if inState && !fieldDeclaredOutputOnly(adapter, namePath) {
 			continue
 		}
 
@@ -1470,26 +1469,9 @@ func TestOutputOnlyNameIsStable(t *testing.T) {
 
 		t.Run(resourceType, func(t *testing.T) {
 			assert.True(t, adapter.FieldIsStableOutput(namePath),
-				"output-only `name` must be declared under stable_output_fields in configs/%[1]s.yml (or opted out in stableNameOptOut); otherwise ${resources.%[1]s.<key>.name} references recreate dependents on an in-place update (ES-2202624)", resourceType)
+				"`name` must be declared under stable_output_fields in configs/%[1]s.yml, or listed in stableNameOptOut; otherwise ${resources.%[1]s.<key>.name} references recreate dependents on an in-place update (ES-2202624)", resourceType)
 		})
 	}
-}
-
-// fieldDeclaredOutputOnly reports whether path is declared output_only in the
-// resource's ignore_remote_changes rules — a backend-owned value the user does
-// not set, even though it may appear in StateType.
-func fieldDeclaredOutputOnly(adapter *Adapter, path *structpath.PathNode) bool {
-	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
-		if cfg == nil {
-			continue
-		}
-		for _, r := range cfg.IgnoreRemoteChanges {
-			if strings.HasSuffix(r.Reason, "output_only") && path.HasPatternPrefix(r.Field) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.WorkspaceClient) {
