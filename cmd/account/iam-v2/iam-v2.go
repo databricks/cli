@@ -23,11 +23,11 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iam-v2",
-		Short: `*Beta* These APIs are used to manage identities and the workspace access of these identities in <Databricks>.`,
+		Short: `*Beta* These APIs are used to manage identities and the workspace access of these identities in Databricks.`,
 		Long: `This command is in Beta and may change without notice.
 
 These APIs are used to manage identities and the workspace access of these
-  identities in <Databricks>.`,
+  identities in Databricks.`,
 		GroupID: "iam",
 		RunE:    root.ReportUnknownSubcommand,
 	}

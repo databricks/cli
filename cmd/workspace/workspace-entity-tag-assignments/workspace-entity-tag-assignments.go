@@ -78,7 +78,7 @@ Create a tag assignment for an entity.
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces, notebooks
+      dashboards, designerfiles, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -171,7 +171,7 @@ Delete a tag assignment for an entity.
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces, notebooks
+      dashboards, designerfiles, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -238,7 +238,7 @@ Get a tag assignment for an entity.
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces, notebooks
+      dashboards, designerfiles, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -319,7 +319,7 @@ List tag assignments for an entity.
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces, notebooks
+      dashboards, designerfiles, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name`
 
@@ -393,7 +393,7 @@ Update a tag assignment for an entity.
 
   Arguments:
     ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
-      dashboards, geniespaces, notebooks
+      dashboards, designerfiles, geniespaces, notebooks
     ENTITY_ID: The identifier of the entity to which the tag is assigned. For apps, the
       entity_id is the app name
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces

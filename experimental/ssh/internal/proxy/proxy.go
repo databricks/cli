@@ -316,7 +316,9 @@ func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.
 		if finished.Load() || ctx.Err() != nil {
 			closeErr = pc.close()
 		}
-		return errors.Join(closeErr, pc.closeConnection(), pc.closeSource(src))
+		// Cleanup can win the errgroup's first-error race with the I/O loops.
+		// Preserve parent cancellation even when the close control frame fails.
+		return errors.Join(ctx.Err(), closeErr, pc.closeConnection(), pc.closeSource(src))
 	})
 	err := g.Wait()
 	if err == nil || isNormalClosure(err) {

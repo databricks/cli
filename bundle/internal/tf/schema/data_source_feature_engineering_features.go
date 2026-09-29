@@ -189,6 +189,14 @@ type DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource struct {
 	TransformationSql string   `json:"transformation_sql,omitempty"`
 }
 
+type DataSourceFeatureEngineeringFeaturesFeaturesSourceFeatureViewSourceFeatureReferences struct {
+	Feature string `json:"feature"`
+}
+
+type DataSourceFeatureEngineeringFeaturesFeaturesSourceFeatureViewSource struct {
+	FeatureReferences []DataSourceFeatureEngineeringFeaturesFeaturesSourceFeatureViewSourceFeatureReferences `json:"feature_references,omitempty"`
+}
+
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSourceEntityColumnIdentifiers struct {
 	VariantExprPath string `json:"variant_expr_path"`
 }
@@ -229,11 +237,12 @@ type DataSourceFeatureEngineeringFeaturesFeaturesSourceStreamSource struct {
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesSource struct {
-	DeltaTableSource *DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource `json:"delta_table_source,omitempty"`
-	KafkaSource      *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSource      `json:"kafka_source,omitempty"`
-	Lateness         *DataSourceFeatureEngineeringFeaturesFeaturesSourceLateness         `json:"lateness,omitempty"`
-	RequestSource    *DataSourceFeatureEngineeringFeaturesFeaturesSourceRequestSource    `json:"request_source,omitempty"`
-	StreamSource     *DataSourceFeatureEngineeringFeaturesFeaturesSourceStreamSource     `json:"stream_source,omitempty"`
+	DeltaTableSource  *DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource  `json:"delta_table_source,omitempty"`
+	FeatureViewSource *DataSourceFeatureEngineeringFeaturesFeaturesSourceFeatureViewSource `json:"feature_view_source,omitempty"`
+	KafkaSource       *DataSourceFeatureEngineeringFeaturesFeaturesSourceKafkaSource       `json:"kafka_source,omitempty"`
+	Lateness          *DataSourceFeatureEngineeringFeaturesFeaturesSourceLateness          `json:"lateness,omitempty"`
+	RequestSource     *DataSourceFeatureEngineeringFeaturesFeaturesSourceRequestSource     `json:"request_source,omitempty"`
+	StreamSource      *DataSourceFeatureEngineeringFeaturesFeaturesSourceStreamSource      `json:"stream_source,omitempty"`
 }
 
 type DataSourceFeatureEngineeringFeaturesFeaturesTimeWindowContinuous struct {

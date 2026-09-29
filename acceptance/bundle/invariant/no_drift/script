@@ -1,4 +1,4 @@
-# Invariant to test: no drift after deploy
+# Invariant to test: no drift after deploy, and that removing a non-required field converges.
 # Additional checks: no internal errors / panics in validate/plan/deploy
 
 invariant_setup
@@ -14,3 +14,26 @@ fi
 invariant_deploy LOG.deploy $CLI bundle deploy $(readplanarg plan.json)
 
 invariant_verify_no_drift
+
+# Field removal: dropping a non-required field (tagged `# CAN_REMOVE` on each of its lines) must be
+# applied as an update that converges -- a field the config stops declaring must be sent as its zero
+# value, not silently dropped from the request (which either fails or drifts forever). Runs only on the
+# non-READPLAN variant (the saved-plan path is orthogonal) and only for configs that tag a field.
+# `# CANNOT_REMOVE` documents a field whose removal is broken and is deliberately kept; the marker is
+# matched with its `# ` prefix so neither it nor prose mentioning the marker is stripped.
+if [[ -z "$READPLAN" ]] && grep -q '# CAN_REMOVE' databricks.yml; then
+    grep -v '# CAN_REMOVE' databricks.yml > databricks.yml.new
+    mv databricks.yml.new databricks.yml
+    cp databricks.yml LOG.config.removed
+
+    $CLI bundle plan -o json > LOG.plan_removed.json 2>LOG.plan_removed.err
+    cat LOG.plan_removed.err | contains.py '!panic:' '!internal error' > /dev/null
+    verify_update.py LOG.plan_removed.json
+
+    # Plain deploy (not invariant_deploy): a second INPUT_CONFIG_OK would make output.txt differ
+    # from the variants that skip this block.
+    trace $CLI bundle deploy &> LOG.deploy_removed
+    cat LOG.deploy_removed | contains.py '!panic:' '!internal error' > /dev/null
+
+    invariant_verify_no_drift
+fi

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -77,6 +78,52 @@ func validateJobGitSource(gitSource *jobs.GitSource) *Response {
 	return &response
 }
 
+// validateSparkPythonTasks mirrors the Jobs API validation of
+// spark_python_task.python_file. The backend only treats a task as git-sourced
+// when source == GIT is set explicitly (it does not infer it from the job's
+// git_source), so a bare repo-relative python_file is rejected unless the
+// task's source is GIT.
+func validateSparkPythonTasks(tasks []jobs.Task) *Response {
+	for _, task := range tasks {
+		if response := validateSparkPythonTask(task.SparkPythonTask); response != nil {
+			return response
+		}
+		if task.ForEachTask != nil {
+			if response := validateSparkPythonTask(task.ForEachTask.Task.SparkPythonTask); response != nil {
+				return response
+			}
+		}
+	}
+	return nil
+}
+
+func validateSparkPythonTask(task *jobs.SparkPythonTask) *Response {
+	if task == nil || task.Source == jobs.SourceGit || !isRelativePythonFile(task.PythonFile) {
+		return nil
+	}
+	return &Response{
+		StatusCode: 400,
+		Body: map[string]string{
+			"error_code": "INVALID_PARAMETER_VALUE",
+			"message":    fmt.Sprintf("Invalid python file reference: %s. Please visit the Databricks user guide for supported python references", task.PythonFile),
+		},
+	}
+}
+
+// isRelativePythonFile reports whether path is a bare relative path, i.e. neither
+// an absolute workspace path (leading "/") nor a scheme-qualified URI (dbfs:/,
+// s3://, file://, ...). Those two shapes are the only ones the backend accepts
+// for a non-git spark_python_task.
+func isRelativePythonFile(path string) bool {
+	if path == "" || strings.HasPrefix(path, "/") {
+		return false
+	}
+	if u, err := url.Parse(path); err == nil && u.Scheme != "" {
+		return false
+	}
+	return true
+}
+
 func (s *FakeWorkspace) JobsCreate(req Request) Response {
 	var request jobs.CreateJob
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -86,6 +133,9 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 	if response := validateJobGitSource(request.GitSource); response != nil {
+		return *response
+	}
+	if response := validateSparkPythonTasks(request.Tasks); response != nil {
 		return *response
 	}
 
@@ -134,6 +184,9 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 		}
 	}
 	if response := validateJobGitSource(request.NewSettings.GitSource); response != nil {
+		return *response
+	}
+	if response := validateSparkPythonTasks(request.NewSettings.Tasks); response != nil {
 		return *response
 	}
 
@@ -399,6 +452,23 @@ func (s *FakeWorkspace) JobsList() Response {
 	return Response{Body: jobs.ListJobsResponse{Jobs: list}}
 }
 
+// installTaskLibrariesOnCluster records a task's libraries on its existing (all-purpose) cluster,
+// mirroring the Jobs service, which installs task libraries via the Libraries API when a run starts.
+// Cluster-status then reports them, matching cloud (where they are cluster-wide, so other jobs and
+// interactive sessions see them too). Callers must hold the workspace lock.
+func (s *FakeWorkspace) installTaskLibrariesOnCluster(task jobs.Task) {
+	if task.ExistingClusterId == "" || len(task.Libraries) == 0 {
+		return
+	}
+	installed := s.ClusterLibraries[task.ExistingClusterId]
+	for _, lib := range task.Libraries {
+		if !containsLibrary(installed, lib) {
+			installed = append(installed, lib)
+		}
+	}
+	s.ClusterLibraries[task.ExistingClusterId] = installed
+}
+
 func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	var request jobs.RunNow
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -433,6 +503,10 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 	var tasks []jobs.RunTask
 	if job.Settings != nil {
 		for _, t := range job.Settings.Tasks {
+			// Mirror the Jobs service installing a task's libraries on its existing
+			// (all-purpose) cluster at run time, so cluster-status reports them like on cloud.
+			s.installTaskLibrariesOnCluster(t)
+
 			taskRunId := nextID()
 			taskRun := jobs.RunTask{
 				RunId:   taskRunId,

@@ -1,0 +1,6 @@
+Cloud = false
+RecordRequests = true
+
+# This behaviour only differs on the direct engine: terraform already stamps
+# source: GIT via tfdyn. Run direct only.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

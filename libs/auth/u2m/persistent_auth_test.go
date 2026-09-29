@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -163,6 +164,60 @@ func TestPersistentAuthClientID(t *testing.T) {
 			}
 			if cfg.ClientID != tt.want {
 				t.Errorf("client ID = %q, want %q", cfg.ClientID, tt.want)
+			}
+		})
+	}
+}
+
+func TestPersistentAuthResources(t *testing.T) {
+	tests := []struct {
+		name string
+		opts []PersistentAuthOption
+		want []string
+	}{
+		{
+			name: "none",
+			want: nil,
+		},
+		{
+			name: "single",
+			opts: []PersistentAuthOption{WithResources([]string{"https://workspace.test/ai-gateway/mcp-services/system.ai.github"})},
+			want: []string{"https://workspace.test/ai-gateway/mcp-services/system.ai.github"},
+		},
+		{
+			name: "multiple",
+			opts: []PersistentAuthOption{WithResources([]string{"https://a.test/r1", "https://b.test/r2"})},
+			want: []string{"https://a.test/r1", "https://b.test/r2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			arg, err := NewBasicWorkspaceOAuthArgument("https://workspace.test")
+			if err != nil {
+				t.Fatalf("NewBasicWorkspaceOAuthArgument(): %v", err)
+			}
+			opts := append([]PersistentAuthOption{
+				WithOAuthArgument(arg),
+				WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
+			}, tt.opts...)
+			p, err := NewPersistentAuth(t.Context(), opts...)
+			if err != nil {
+				t.Fatalf("NewPersistentAuth(): %v", err)
+			}
+			cfg, err := p.oauth2Config()
+			if err != nil {
+				t.Fatalf("oauth2Config(): %v", err)
+			}
+			parsed, err := url.Parse(cfg.Endpoint.AuthURL)
+			if err != nil {
+				t.Fatalf("parsing AuthURL %q: %v", cfg.Endpoint.AuthURL, err)
+			}
+
+			got := parsed.Query()["resource"]
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("resource params = %v, want %v (AuthURL=%q)", got, tt.want, cfg.Endpoint.AuthURL)
 			}
 		})
 	}
@@ -1069,7 +1124,7 @@ func TestChallenge(t *testing.T) {
 	}()
 
 	state := <-browserOpened
-	resp, err := http.Get("http://localhost:8020?code=__THIS__&state=" + state)
+	resp, err := http.Get("http://" + p.redirectAddr + "?code=__THIS__&state=" + state)
 	if err != nil {
 		t.Fatalf("http.Get(): want no error, got %v", err)
 	}
@@ -1128,7 +1183,7 @@ func TestChallenge_ReturnsErrorOnFailure(t *testing.T) {
 	}()
 
 	<-browserOpened
-	resp, err := http.Get("http://localhost:8020?error=access_denied&error_description=Policy%20evaluation%20failed%20for%20this%20request")
+	resp, err := http.Get("http://" + p.redirectAddr + "?error=access_denied&error_description=Policy%20evaluation%20failed%20for%20this%20request")
 	if err != nil {
 		t.Fatalf("http.Get(): want no error, got %v", err)
 	}
@@ -1260,7 +1315,6 @@ func TestU2M_ScopesAndOfflineAccess(t *testing.T) {
 	const (
 		testWorkspaceHost = "https://workspace.cloud.databricks.test"
 		testTokenEndpoint = "/oidc/v1/token"
-		testCallbackURL   = "http://localhost:8020"
 	)
 
 	tests := []struct {
@@ -1388,7 +1442,7 @@ func TestU2M_ScopesAndOfflineAccess(t *testing.T) {
 				t.Errorf("scope: want %q, got %q", tt.want, scopeReceived)
 			}
 
-			resp, err := http.Get(fmt.Sprintf("%s?code=__CODE__&state=%s", testCallbackURL, stateReceived))
+			resp, err := http.Get(fmt.Sprintf("http://%s?code=__CODE__&state=%s", p.redirectAddr, stateReceived))
 			if err != nil {
 				t.Fatalf("http.Get(): want no error, got %v", err)
 			}

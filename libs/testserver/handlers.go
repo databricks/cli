@@ -275,6 +275,13 @@ func AddDefaultHandlers(server *Server) {
 		return TestMetastore
 	})
 
+	server.Handle("GET", "/api/2.1/unity-catalog/metastore_summary", func(req Request) any {
+		return catalog.GetMetastoreSummaryResponse{
+			MetastoreId: TestMetastore.MetastoreId,
+			Region:      "us-west-2",
+		}
+	})
+
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
 		return req.Workspace.JobsCreate(req)
 	})
@@ -1025,6 +1032,19 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
 		return req.Workspace.ClustersPermanentDelete(req)
+	})
+
+	// Cluster libraries:
+	server.Handle("POST", "/api/2.0/libraries/install", func(req Request) any {
+		return req.Workspace.LibrariesInstall(req)
+	})
+
+	server.Handle("POST", "/api/2.0/libraries/uninstall", func(req Request) any {
+		return req.Workspace.LibrariesUninstall(req)
+	})
+
+	server.Handle("GET", "/api/2.0/libraries/cluster-status", func(req Request) any {
+		return req.Workspace.LibrariesClusterStatus(req, req.URL.Query().Get("cluster_id"))
 	})
 
 	// MLflow Experiments:

@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -61,7 +61,7 @@ func cleanBundles(ctx context.Context, execPath, prefix string) error {
 		return fmt.Errorf("cannot create workspace client: %w", err)
 	}
 
-	me, err := w.CurrentUser.Me(ctx, iam.MeRequest{})
+	me, err := iamutil.GetCurrentUser(ctx, w)
 	if err != nil {
 		return fmt.Errorf("cannot resolve current user: %w", err)
 	}

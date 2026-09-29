@@ -175,10 +175,10 @@ func findDirectFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 		if sf.PkgPath != "" { // unexported
 			continue
 		}
-		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" || sf.Name == EmbeddedSliceFieldName {
+		if IsSkippedField(sf) || sf.Name == EmbeddedSliceFieldName {
 			continue
 		}
+		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
 		if name != key {
 			continue
 		}
@@ -190,6 +190,14 @@ func findDirectFieldByKeyType(t reflect.Type, key string) (reflect.StructField, 
 		return sf, true
 	}
 	return reflect.StructField{}, false
+}
+
+// IsSkippedField reports whether encoding/json omits the field entirely. Only
+// the exact tag `json:"-"` does that: `json:"-,"` and `json:"-,omitempty"`
+// name the field "-", which is a distinction structtag's parsed name cannot
+// carry (it reports "-" for both).
+func IsSkippedField(sf reflect.StructField) bool {
+	return sf.Tag.Get("json") == "-"
 }
 
 // embeddedStructTypes returns the anonymous struct fields of t, dereferenced.

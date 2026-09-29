@@ -21,7 +21,6 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
 type AlwaysPull bool
@@ -127,7 +126,7 @@ func filerRead(ctx context.Context, f filer.Filer, path string, engine engine.En
 
 // PullResourcesState determines correct state to use by reading all 4 states (terraform/direct, local/remote).
 // If state is present and the requested engine disagrees, a warning is issued and the state's engine is used.
-func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) (context.Context, *StateDesc) {
+func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull, requiredEngine engine.EngineSetting) *StateDesc {
 	var err error
 
 	// We read all 4 possible states: terraform/direct X local/remote and then use env var to validate that correct one is used.
@@ -138,7 +137,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	states := readStates(ctx, b, alwaysPull)
 
 	if logdiag.HasError(ctx) {
-		return ctx, nil
+		return nil
 	}
 
 	var winner *StateDesc
@@ -160,7 +159,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	err = validateStates(states)
 	if err != nil {
 		logStatesError(ctx, err.Error(), states)
-		return ctx, winner
+		return winner
 	}
 
 	if requiredEngine.Type != engine.EngineNotSet && requiredEngine.Type != winner.Engine {
@@ -181,17 +180,13 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		}
 	}
 
-	// Set the engine in the user agent
-	// XXX move this outside this function to bundle/config/engine
-	ctx = useragent.InContext(ctx, "engine", string(winner.Engine))
-
 	if len(states) == 0 {
-		return ctx, winner
+		return winner
 	}
 
 	if winner.IsLocal {
 		// local state is fresh, nothing to do
-		return ctx, winner
+		return winner
 	}
 
 	if !winner.IsLocal {
@@ -205,11 +200,11 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 		err := atomicfile.Write(localStatePath, winner.Content, 0o600, atomicfile.MkDir(0o700))
 		if err != nil {
 			logdiag.LogError(ctx, err)
-			return ctx, winner
+			return winner
 		}
 	}
 
-	return ctx, winner
+	return winner
 }
 
 func readStates(ctx context.Context, b *bundle.Bundle, alwaysPull AlwaysPull) []*StateDesc {

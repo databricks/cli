@@ -75,6 +75,34 @@ func TestRegistryHostRejectsUnsupportedWorkspaceHost(t *testing.T) {
 	assert.ErrorContains(t, err, `"workspace.example.test" is not a supported Databricks workspace host`)
 }
 
+func TestRegistryHostForLoopbackTestServer(t *testing.T) {
+	got, err := RegistryHost("123456789", "us-west-2", "http://127.0.0.1:8080")
+	require.NoError(t, err)
+	assert.Equal(t, "123456789.container.us-west-2.localhost", got)
+
+	registry, err := ParseRegistryHost(got)
+	require.NoError(t, err)
+	assert.Equal(t, Registry{
+		WorkspaceID: "123456789",
+		Host:        "123456789.container.us-west-2.localhost",
+	}, registry)
+}
+
+func TestRegistryServesWorkspaceHost(t *testing.T) {
+	localRegistry := Registry{WorkspaceID: "123456789", Host: "123456789.container.us-west-2.localhost"}
+	remoteRegistry := Registry{WorkspaceID: "123456789", Host: "123456789.container.us-west-2.cloud.databricks.com"}
+
+	assert.True(t, localRegistry.ServesWorkspaceHost("http://127.0.0.1:8080"))
+	assert.False(t, localRegistry.ServesWorkspaceHost("https://workspace.cloud.databricks.com"))
+	assert.True(t, remoteRegistry.ServesWorkspaceHost("https://workspace.cloud.databricks.com"))
+	assert.False(t, remoteRegistry.ServesWorkspaceHost("http://127.0.0.1:8080"))
+}
+
+func TestRegistryHostRejectsLocalhostWorkspaceHost(t *testing.T) {
+	_, err := RegistryHost("123456789", "us-west-2", "https://workspace.localhost")
+	assert.ErrorContains(t, err, `"workspace.localhost" is not a supported Databricks workspace host`)
+}
+
 func TestParseRegistryHost(t *testing.T) {
 	cases := []string{
 		"123456789.container.us-west-2.cloud.databricks.com",

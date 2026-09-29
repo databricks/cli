@@ -241,11 +241,11 @@ func findFieldInStruct(v reflect.Value, key string) (reflect.Value, reflect.Stru
 			continue
 		}
 
+		if IsSkippedField(sf) {
+			continue
+		}
 		// Read JSON tag using structtag helper
 		name := structtag.JSONTag(sf.Tag.Get("json")).Name()
-		if name == "-" {
-			name = ""
-		}
 
 		if sf.Name == EmbeddedSliceFieldName {
 			continue // EmbeddedSlice fields are not accessible by name

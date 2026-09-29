@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -25,13 +26,44 @@ func (m *initializeURLs) Name() string {
 }
 
 func (m *initializeURLs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	workspaceID, err := auth.ResolveWorkspaceID(ctx, b.WorkspaceClient(ctx))
+	client := b.WorkspaceClient(ctx)
+	host := client.Config.CanonicalHostName()
+
+	// A configured, non-numeric workspace ID (a UUID connection-style
+	// identifier) can't be validated against CurrentWorkspaceID, which
+	// strictly parses the org ID header as an integer and would error on a
+	// UUID. Skip the API call entirely and pass it through unchanged.
+	cfgID := client.Config.WorkspaceID
+	if cfgID != "" && cfgID != auth.WorkspaceIDNone {
+		if _, err := strconv.ParseInt(cfgID, 10, 64); err != nil {
+			if err := initializeForWorkspace(b, cfgID, host); err != nil {
+				return diag.FromErr(err)
+			}
+			return nil
+		}
+	}
+
+	// Otherwise, always resolve the workspace ID from the API. This is the
+	// only way to detect a numeric workspace ID that is stale or mis-scoped
+	// (e.g. a leftover value from a different profile or an old pasted SPOG
+	// URL): if the configured value disagrees with the org ID the workspace
+	// actually reports, embedding it in ?w= would silently navigate to the
+	// wrong workspace, so we error out instead.
+	apiID, err := client.CurrentWorkspaceID(ctx)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	host := b.WorkspaceClient(ctx).Config.CanonicalHostName()
-	err = initializeForWorkspace(b, workspaceID, host)
-	if err != nil {
+	orgID := strconv.FormatInt(apiID, 10)
+
+	if cfgID != "" && cfgID != auth.WorkspaceIDNone && cfgID != orgID {
+		return diag.Errorf(
+			"workspace_id %s in your configuration does not match the connected workspace (ID: %s); "+
+				"remove or correct workspace_id in your profile or bundle config to disambiguate",
+			cfgID, orgID,
+		)
+	}
+
+	if err := initializeForWorkspace(b, orgID, host); err != nil {
 		return diag.FromErr(err)
 	}
 	return nil

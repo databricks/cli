@@ -13,6 +13,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const windowsShimChildEnv = "DATABRICKS_WINDOWS_SHIM_TEST_EXIT"
+
+// TestMain lets the Windows shim invoke this test binary as a fake CLI.
+func TestMain(m *testing.M) {
+	if os.Getenv(windowsShimChildEnv) != "" {
+		os.Args = []string{os.Args[0], "-test.run=^TestWindowsShimExitChild$"}
+	}
+	m.Run()
+}
+
+func TestWindowsShimExitChild(t *testing.T) {
+	switch os.Getenv(windowsShimChildEnv) {
+	case "failure":
+		t.Fatal("simulated CLI failure")
+	case "success":
+		return
+	default:
+		t.Skip("shim child process only")
+	}
+}
+
 func writeTestDatabricksExecutable(t *testing.T, dir string) string {
 	t.Helper()
 	name := "databricks"
@@ -169,6 +190,35 @@ func TestWindowsShimDisablesInheritedDelayedExpansion(t *testing.T) {
 	out, err := cmd.Output()
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"Username":"oauthtoken","Secret":"secret"}`, string(out))
+}
+
+func TestWindowsShimPropagatesTokenExitCode(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Windows command shim test")
+	}
+
+	dir := t.TempDir()
+	fakeDatabricks, err := os.Executable()
+	require.NoError(t, err)
+
+	shim := filepath.Join(dir, "docker-credential-databricks.cmd")
+	require.NoError(t, os.WriteFile(shim, []byte(cmdShimScript(fakeDatabricks)), 0o644))
+
+	t.Run("failure with inherited ERRORLEVEL", func(t *testing.T) {
+		cmd := exec.Command(shim, "get")
+		cmd.Env = append(os.Environ(), "ERRORLEVEL=0", windowsShimChildEnv+"=failure")
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		require.ErrorAs(t, err, &exitErr)
+		assert.Equal(t, 1, exitErr.ExitCode())
+	})
+
+	t.Run("success", func(t *testing.T) {
+		cmd := exec.Command(shim, "get")
+		cmd.Env = append(os.Environ(), "ERRORLEVEL=42", windowsShimChildEnv+"=success")
+		require.NoError(t, cmd.Run())
+		assert.Equal(t, 0, cmd.ProcessState.ExitCode())
+	})
 }
 
 func TestInstallShimReportsPathStatus(t *testing.T) {

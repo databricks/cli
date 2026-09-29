@@ -5,6 +5,7 @@ package schema
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesCronScheduleTrigger struct {
 	CronExpression string `json:"cron_expression,omitempty"`
 	Mode           string `json:"mode,omitempty"`
+	TimezoneId     string `json:"timezone_id,omitempty"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOfflineStoreConfig struct {

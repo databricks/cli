@@ -19,6 +19,7 @@ type Profile struct {
 	HasClientCredentials bool
 	ClientID             string
 	Scopes               string
+	Resources            string
 	AuthType             string
 }
 

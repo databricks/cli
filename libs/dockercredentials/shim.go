@@ -73,11 +73,12 @@ func cmdShimScript(databricksPath string) string {
 	// Percent signs must be doubled so cmd.exe treats them literally in executable paths.
 	script := fmt.Sprintf(`@echo off
 setlocal EnableExtensions DisableDelayedExpansion
+set "ERRORLEVEL="
 if not "%%~1"=="get" goto unsupported
 if not "%%~2"=="" goto unsupported
 set DATABRICKS_LOG_FILE=stderr
 "%s" auth docker token
-exit /b
+exit /b %%errorlevel%%
 
 :unsupported
 echo docker-credential-databricks only supports get 1>&2

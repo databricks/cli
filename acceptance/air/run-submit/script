@@ -1,0 +1,25 @@
+# Pinned commit dates keep the resolved HEAD SHA — and thus the snapshot cache key
+# baked into the tarball name — stable across runs.
+export GIT_AUTHOR_DATE="2020-01-01T00:00:00Z"
+export GIT_COMMITTER_DATE="2020-01-01T00:00:00Z"
+git-repo-init
+
+# Pin the config to the committed HEAD. git.commit tolerates a dirty working tree
+# (the pinned revision is what gets archived), which matters here because this
+# script generates run.yaml in the working dir after the commit.
+sed "s/COMMIT_SHA/$(git rev-parse HEAD)/" run.yaml.tmpl > run.yaml
+
+title "submit with a git code_source"
+trace $CLI air run -f run.yaml
+
+title "the ai_runtime_task and additive job permission grants"
+# Include MLflow paths so an accidental experiment request appears in the golden output.
+trace print_requests.py --get //api/2.2/jobs/runs/submit //api/2.2/jobs/runs/get //api/2.0/permissions //api/2.0/mlflow --sort --unique
+
+title "submit a B300 workload with AI Runtime 6"
+trace $CLI air run -f b300.yaml
+
+title "the B300 accelerator and runtime reach the submit payload"
+trace print_requests.py //api/2.2/jobs/runs/submit
+
+rm -fr .git

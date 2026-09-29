@@ -23,7 +23,7 @@ class TelemetryExportDestination:
 
     unity_catalog: VariableOrOptional[UnityCatalog] = None
     """
-    [Public Preview] Unity Catalog Destinations for OTEL telemetry export.
+    Unity Catalog Destinations for OTEL telemetry export.
     """
 
     @classmethod
@@ -39,7 +39,7 @@ class TelemetryExportDestinationDict(TypedDict, total=False):
 
     unity_catalog: VariableOrOptional[UnityCatalogParam]
     """
-    [Public Preview] Unity Catalog Destinations for OTEL telemetry export.
+    Unity Catalog Destinations for OTEL telemetry export.
     """
 
 
