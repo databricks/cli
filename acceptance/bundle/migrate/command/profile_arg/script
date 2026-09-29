@@ -1,7 +1,10 @@
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# Replay a prior terraform deployment (a single job)
+trace replay_tfstate.py terraform-requests.json terraform.tfstate -t dev
 
 # only interested in output here; for some reason in test env -p is not validated
 trace $CLI bundle deployment migrate -p non_existent321
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy -t prod
+# Replay a prior terraform deployment on a different target (a job and a schema)
+trace replay_tfstate.py terraform-prod-requests.json terraform-prod.tfstate -t prod
+
 trace $CLI bundle deployment migrate -p non_existent321 -t prod

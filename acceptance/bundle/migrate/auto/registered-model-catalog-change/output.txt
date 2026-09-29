@@ -4,12 +4,8 @@
   "name": "othercat_[UNIQUE_NAME]"
 }
 
-=== Deploy the model on terraform in catalog 'main'
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Created registered_models.my_model
-Files: 2 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Move the model to another catalog and deploy on direct
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
@@ -18,7 +14,7 @@ Notice: migrating your bundle to direct deployment engine (https://github.com/da
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
 Migrated 1 resource to direct deployment engine.
 Recreated registered_models.my_model
-Files: 1 uploaded, 0 deleted
+Files: 2 uploaded, 0 deleted
 Resources: 1 created, 0 changed, 1 deleted, 0 unchanged
 
 >>> print_migration_telemetry

@@ -1,9 +1,5 @@
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-added-test/default/files...
-Created jobs.job_a
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json

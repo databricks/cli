@@ -4,13 +4,7 @@ Error: This command migrates the existing Terraform state file (terraform.tfstat
 
 To start using direct engine, set "engine: direct" under bundle in your databricks.yml or deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.
 
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Created jobs.test_job
-Created pipelines.test_pipeline
-Created volumes.test_volume
-Files: 3 uploaded, 0 deleted
-Resources: 3 created, 0 changed, 0 deleted, 0 unchanged
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate -t dev
 
 >>> [CLI] bundle deployment migrate
 Success! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
@@ -26,14 +20,6 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.js
 
 >>> jq .state."resources.pipelines.test_pipeline".state.tags.volume_storage_location out.new_state.json
 "s3://[METASTORE_NAME]/metastore/[UUID]/volumes/[UUID]"
-
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
-
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Files: 2 uploaded, 0 deleted
-Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
@@ -74,7 +60,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Files: 0 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --get //jobs/get
@@ -112,18 +98,11 @@ Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
 Updated jobs.test_job
 Updated pipelines.test_pipeline
-Files: 2 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 
-=== Different target, still on terraform
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy -t prod
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
-Created jobs.test_job
-Created pipelines.test_pipeline
-Created schemas.test_schema
-Created volumes.test_volume
-Files: 6 uploaded, 0 deleted
-Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
+=== Different target, still on the terraform state from a prior deployment
+>>> replay_tfstate.py .databricks/terraform-prod-requests.json .databricks/terraform-prod.tfstate -t prod
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod
 [TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"

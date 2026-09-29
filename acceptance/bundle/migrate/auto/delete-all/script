@@ -1,7 +1,7 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Initial deploy on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
 # Removing every resource leaves the migration with no config-declared resources, so
 # BuildStateFromTF records no WAL entries. The migration must still persist the seeded

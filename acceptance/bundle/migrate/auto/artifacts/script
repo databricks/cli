@@ -1,7 +1,7 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Initial deploy on terraform (expands the whl glob and uploads the wheel)"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
 title "Redeploy with direct default: auto-migration runs after the build, so library refs are resolved"
 trace $CLI bundle deploy

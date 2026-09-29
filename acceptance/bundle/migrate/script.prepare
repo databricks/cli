@@ -5,3 +5,8 @@
 print_migration_telemetry() {
     print_telemetry_bool_values | grep '^direct_' || true
 }
+
+# The replay fixtures and the generated out.* files live in the bundle root but are not bundle
+# files, so keep them out of `bundle deploy`'s upload. The list excludes .gitignore itself so it is
+# not uploaded either; test.toml adds .gitignore to Ignore so the harness does not flag it.
+printf '%s\n' '.gitignore' 'out.*' 'terraform*.tfstate' 'terraform*-requests.json' > .gitignore

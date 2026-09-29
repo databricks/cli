@@ -1,7 +1,7 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Deploy with terraform (instance_pools is commented out; terraform cannot deploy it)"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Add a direct-only resource and opt in to the direct engine via config"
