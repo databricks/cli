@@ -86,4 +86,13 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:5:3
 
-No active deployment found to destroy!
+The following resources will be deleted:
+  delete resources.pipelines.foo
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Set 'cascade_on_destroy: false' on a pipeline to retain datasets on pipeline deletion:
+  delete resources.pipelines.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production
+
+Destroy: 1 deleted

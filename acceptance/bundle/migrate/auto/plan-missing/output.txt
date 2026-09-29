@@ -2,8 +2,6 @@
 === Replay a prior terraform deployment (captured from a real terraform run)
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
->>> push_remote_tfstate.py
-
 === deploy --plan with a missing plan file fails after the migration prepared the direct state
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy --plan does-not-exist.json
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).

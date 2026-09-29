@@ -2,9 +2,6 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 title "Replay a prior terraform deployment (captured from a real terraform run)"
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
-# The rejected deploy below never pushes state, so surface the remote terraform.tfstate the deploy
-# would have found (replay only wrote the local one) to prove the migration leaks no direct state.
-trace push_remote_tfstate.py
 rm -f "$OUT_REQUESTS"
 
 title "Direct + deployment-history requested against a terraform state is rejected before commit"

@@ -2,8 +2,6 @@
 === Replay a prior terraform deployment (captured from a real terraform run)
 >>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
->>> push_remote_tfstate.py
-
 === Opt in via env var; inject 403 on the DELETE of remote terraform.tfstate
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
 Notice: migrating your bundle to direct deployment engine (https://github.com/databricks/cli/issues/6765).

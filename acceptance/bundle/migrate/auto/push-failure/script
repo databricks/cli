@@ -2,9 +2,6 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 title "Replay a prior terraform deployment (captured from a real terraform run)"
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
-# Surface the remote terraform.tfstate the deploy would have found (replay only wrote the local
-# one) so the migration has a remote state to back up when it commits.
-trace push_remote_tfstate.py
 rm -f "$OUT_REQUESTS"
 
 title "Opt in via env var; inject 403 on the resources.json push so the deploy fails"

@@ -16,6 +16,5 @@ Run URL: [DATABRICKS_URL]/jobs/[NUMID]/runs/[NUMID]?o=[NUMID]
 .databricks/bundle/default/terraform/terraform.tfstate
 
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
-Error: Path (/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state) doesn't exist.
-
-Exit code: 1
+ID                   Type  Language  Path
+[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate

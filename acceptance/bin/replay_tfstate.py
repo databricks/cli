@@ -19,10 +19,14 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.request
 
+import print_state
+
+CLI = os.environ["CLI"]
 HOST = os.environ.get("DATABRICKS_HOST", "").rstrip("/")
 TOKEN = os.environ.get("DATABRICKS_TOKEN", "")
 UNIQUE_NAME = os.environ.get("UNIQUE_NAME", "")
@@ -56,6 +60,12 @@ def apply_map(text, id_map):
     for old, new in id_map.items():
         text = text.replace(old, new)
     return text
+
+
+def run_cli(*args):
+    r = subprocess.run([CLI, *args], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8")
+    if r.returncode != 0:
+        sys.exit(f"replay_tfstate.py: {' '.join(args)} failed:\n{r.stdout}")
 
 
 def api(method, path, body):
@@ -140,8 +150,16 @@ def main():
 
     out_dir = os.path.join(".databricks", "bundle", args.target, "terraform")
     os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, "terraform.tfstate"), "w") as f:
+    local_path = os.path.join(out_dir, "terraform.tfstate")
+    with open(local_path, "w") as f:
         f.write(apply_map(tfstate_raw, id_map))
+
+    # A real terraform deploy leaves its state both on disk and in the workspace; push the remote
+    # copy too so a later migrate has a remote state to back up and tests that inspect the remote
+    # state dir see it. workspace import does not create parents, so mkdirs first.
+    state_dir = print_state.get_remote_state_path(args.target)
+    run_cli("workspace", "mkdirs", state_dir)
+    run_cli("workspace", "import", f"{state_dir}/terraform.tfstate", "--file", local_path, "--format", "AUTO", "--overwrite")
 
 
 if __name__ == "__main__":

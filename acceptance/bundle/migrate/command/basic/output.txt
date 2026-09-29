@@ -108,4 +108,5 @@ Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 [TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod --force-pull
+terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
 [TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"

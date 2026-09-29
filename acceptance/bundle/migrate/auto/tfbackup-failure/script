@@ -2,10 +2,6 @@ export DATABRICKS_BUNDLE_ENGINE=
 
 title "Replay a prior terraform deployment (captured from a real terraform run)"
 trace replay_tfstate.py terraform-requests.json terraform.tfstate
-# The migration backs up + deletes the REMOTE terraform.tfstate; replay only wrote the local one,
-# so push it to the workspace state path (as the terraform deploy used to) to give the faulted
-# DELETE a target.
-trace push_remote_tfstate.py
 rm -f "$OUT_REQUESTS"
 
 title "Opt in via env var; inject 403 on the DELETE of remote terraform.tfstate"
