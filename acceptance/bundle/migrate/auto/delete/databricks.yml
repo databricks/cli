@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    job_keep:
+      name: "Keep Job"
+    job_drop: # TO_REMOVE
+      name: "Drop Job" # TO_REMOVE

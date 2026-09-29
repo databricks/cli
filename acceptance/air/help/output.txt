@@ -12,6 +12,7 @@ Available Commands:
   cancel          Cancel one or more runs
   convert-to-dabs Convert an AIR run YAML into a Databricks Asset Bundle
   get             Show status, configuration, and timing details for a specified run
+  images          Manage container images for AI Runtime
   list            List active runs for the current user
   logs            Stream or fetch logs for a run
   pools           View provisioned GPU pools
@@ -104,6 +105,57 @@ Global Flags:
   -t, --target string    bundle target to use (if applicable)
 
 Use "databricks air pools [command] --help" for more information about a command.
+
+=== images help
+>>> [CLI] air images --help
+Manage container images for AI Runtime
+
+Usage:
+  databricks air images [flags]
+  databricks air images [command]
+
+Available Commands:
+  push        Push a container image to Databricks Artifact Registry
+
+Flags:
+  -h, --help   help for images
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks air images [command] --help" for more information about a command.
+
+=== images push help
+>>> [CLI] air images push --help
+Push a container image to Databricks Artifact Registry under the specified Unity Catalog catalog and schema.
+
+The command configures Docker's Databricks credential helper, automatically detects
+the registry region, and pushes the source image to catalog.schema.artifact:tag.
+Omitted image details are prompted for when the terminal is interactive.
+
+AIR requires linux/amd64 images. A compatible local image is reused; missing images
+are pulled for linux/amd64. Use --pull to refresh an existing local image.
+The destination --artifact ARTIFACT[:TAG] defaults to the source image name and tag.
+
+Usage:
+  databricks air images push [flags]
+
+Flags:
+      --artifact string   Destination ARTIFACT[:TAG]; defaults to the source image name and tag (latest if untagged); maximum 255 characters for catalog.schema.artifact and 128 for the tag
+      --catalog string    Destination Unity Catalog catalog; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -h, --help              help for push
+      --pull              Pull the source image even when it is already available locally
+      --schema string     Destination Unity Catalog schema; use lowercase letters and digits separated by one or two underscores or one or more hyphens
+  -s, --source string     Source container image to push (NAME[:TAG] or NAME@DIGEST)
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
 
 === logs help
 >>> [CLI] air logs --help

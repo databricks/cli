@@ -1,0 +1,29 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+# find.py lists matching files sorted with forward slashes (cross-platform); the regex matches only
+# state files (tfstate/.backup, resources*.json, WAL), excluding the terraform provider cache under
+# .terraform/. Paired with a remote listing of the state directory, this shows exactly which state
+# is present locally and remotely and proves nothing is left behind.
+
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+
+title "Destroy without approval: migration prepared in memory then dropped, stays on terraform"
+# The migration is prepared in memory (in process.go) before the destroy phase asks for approval,
+# so a refused destroy exercises the not-committed path. Nothing durable must be left behind: no
+# direct state, no migrating temp, no WAL - only the terraform state remains, local and remote.
+trace musterr $CLI bundle destroy
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+
+# Destroy behaves like deploy: it migrates the terraform state to direct (writing the local
+# direct state), plan-checks it, and - once approved - destroys on the direct engine. destroyCore
+# then removes the local state files: the superseded terraform state first, then the direct state,
+# so a crash between the two never leaves a live terraform.tfstate with no direct state. A declined
+# destroy would discard the migration and stay on terraform.
+title "Destroy on direct: migrate then destroy"
+trace $CLI bundle destroy --auto-approve
+
+title "Destroy leaves no state behind: no local state files, remote deployment removed"
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 musterr $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"

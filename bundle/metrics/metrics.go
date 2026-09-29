@@ -34,6 +34,10 @@ const (
 	DirectMigrateWarnings    = "direct_migrate_warnings"
 	// True when the post-convert plan check failed; the migration was not committed.
 	DirectMigratePlanError = "direct_migrate_plan_error"
+	// True when the migrated state's first plan would recreate (destroy + create) an
+	// existing resource. The migration still commits; the recreate is a genuine pending
+	// change gated by the deploy's --auto-approve, and this only records how often it happens.
+	DirectMigrateRecreatePlanned = "direct_migrate_recreate_planned"
 
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the three keys is true;
