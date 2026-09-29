@@ -14,7 +14,8 @@ update_file.py databricks.yml "#local_ssd_count: 0" "local_ssd_count: 0"
 
 title "Deploy 2: bundle should detect and apply the local_ssd_count change\n"
 trace $CLI bundle plan
-$CLI bundle plan -o json | nostamp > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
+title "local_ssd_count change in the plan:\n"
+$CLI bundle plan -o json | jq '.plan[].changes["gcp_attributes.local_ssd_count"]'
 trace $CLI bundle deploy -qq
 
 title "gcp_attributes sent on update (empty means the change was NOT applied):\n"
@@ -28,6 +29,8 @@ update_file.py databricks.yml "local_ssd_count: 0" "#local_ssd_count: 0"
 
 title "Deploy 4: removing the explicit 0 is a change, symmetric with setting it\n"
 trace $CLI bundle plan
+title "local_ssd_count change in the plan:\n"
+$CLI bundle plan -o json | jq '.plan[].changes["gcp_attributes.local_ssd_count"]'
 trace $CLI bundle deploy -qq
 
 title "Deploy 5: no config change, should converge to a no-op\n"

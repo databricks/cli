@@ -18,6 +18,12 @@ update clusters.test_cluster
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
+=== local_ssd_count change in the plan:
+{
+  "action": "update",
+  "new": 0
+}
+
 >>> [CLI] bundle deploy -qq
 
 === gcp_attributes sent on update (empty means the change was NOT applied):
@@ -40,6 +46,13 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 update clusters.test_cluster
 
 Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+=== local_ssd_count change in the plan:
+{
+  "action": "update",
+  "old": 0,
+  "remote": 0
+}
 
 >>> [CLI] bundle deploy -qq
 
