@@ -424,6 +424,14 @@ func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {
 func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff, remoteDiff []structdiff.Change, oldState, remoteState any) (deployplan.Changes, error) {
 	m := make(deployplan.Changes)
 
+	// A keyed-slice element is matched by value, so the local diff (against saved
+	// state) and the remote diff (against the backend) can label the same element's
+	// key field differently — e.g. a principal saved under user_name but read back as
+	// service_principal_name. Index by the key-field-agnostic path so the two views
+	// merge into one change instead of appearing twice; the display key stays the
+	// first (local) path.
+	displayByKey := make(map[string]string)
+
 	for _, ch := range localDiff {
 		e := deployplan.ChangeDesc{
 			Old: ch.Old,
@@ -433,31 +441,35 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 			// We cannot assume e.Remote is the same as config: if the whole struct is missing, there might be diff entry for parent
 			e.Remote, _ = structaccess.Get(remoteState, ch.Path)
 		}
-		m[ch.Path.String()] = &e
+		display := ch.Path.String()
+		m[display] = &e
+		displayByKey[ch.Path.KeyValueAgnosticString()] = display
 	}
 
 	for _, ch := range remoteDiff {
-		entry := m[ch.Path.String()]
-		if entry == nil {
-			// we have difference for remoteState but not difference for localState
-			// from remoteDiff we can find out remote value (ch.Old) and new config value (ch.New) but we don't know oldState value
-			oldStateVal, err := structaccess.Get(oldState, ch.Path)
-			_, isNotFound := errors.AsType[*structaccess.NotFoundError](err)
-			if err != nil && !isNotFound {
-				log.Debugf(ctx, "Constructing diff: accessing %q on %T: %s", ch.Path, oldState, err)
-			}
-			m[ch.Path.String()] = &deployplan.ChangeDesc{
-				Old:    oldStateVal,
-				New:    ch.New,
-				Remote: ch.Old,
-			}
-		} else {
+		if display, ok := displayByKey[ch.Path.KeyValueAgnosticString()]; ok {
+			entry := m[display]
 			entry.Remote = ch.Old
 			if !structdiff.IsEqual(entry.New, ch.New) {
 				// this is not fatal (may result in unexpected drift or undetected change but not incorrect deploy), but good to log this
 				log.Warnf(ctx, "unexpected local and remote diffs (%T, %T); entry=%v ch=%v", entry.New, ch.New, entry, ch)
 			}
+			continue
 		}
+		// we have difference for remoteState but not difference for localState
+		// from remoteDiff we can find out remote value (ch.Old) and new config value (ch.New) but we don't know oldState value
+		oldStateVal, err := structaccess.Get(oldState, ch.Path)
+		_, isNotFound := errors.AsType[*structaccess.NotFoundError](err)
+		if err != nil && !isNotFound {
+			log.Debugf(ctx, "Constructing diff: accessing %q on %T: %s", ch.Path, oldState, err)
+		}
+		display := ch.Path.String()
+		m[display] = &deployplan.ChangeDesc{
+			Old:    oldStateVal,
+			New:    ch.New,
+			Remote: ch.Old,
+		}
+		displayByKey[ch.Path.KeyValueAgnosticString()] = display
 	}
 
 	return m, nil

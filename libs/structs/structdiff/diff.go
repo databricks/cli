@@ -23,8 +23,14 @@ type Change struct {
 //   - func(T) (string, string) - typed function for specific element type T
 //   - func(any) (string, string) - generic function accepting any element
 //
-// The function returns (keyField, keyValue). The keyField is typically a field name
-// like "task_key", and keyValue is the value that uniquely identifies the element.
+// The function returns (keyField, keyValue). keyValue is the identity: elements are
+// matched across the two sides by keyValue alone. keyField is only used to render
+// the path (e.g. "task_key" -> [task_key='...']) and may vary between elements — a
+// permission, for instance, keys on "user_name", "service_principal_name", or
+// "group_name" depending on which is set. Because keyValue is the identity, a matched
+// element's own key field is never diffed: the same value carried under a different
+// key field (e.g. user_name vs service_principal_name for one principal) compares
+// equal rather than reporting a spurious change.
 type KeyFunc = any
 
 // keyFuncCaller wraps a KeyFunc and provides a type-checked Call method.
@@ -70,8 +76,11 @@ type diffContext struct {
 //
 // The sliceKeys parameter maps path patterns to functions that extract
 // key field/value pairs from slice elements. When provided, slices at matching
-// paths are compared as maps keyed by (keyField, keyValue) instead of by index.
-// Path patterns use dot notation (e.g., "tasks" or "job.tasks").
+// paths are matched by key value instead of by index (the key field is used only
+// to render the path). Because the value identifies the element, a diff on the
+// element's own key field is not a real change and is dropped: this lets the same
+// identity carried under different fields (e.g. user_name vs service_principal_name)
+// compare equal. Path patterns use dot notation (e.g., "tasks" or "job.tasks").
 // The [*] wildcard matches any slice index in the path.
 // Note, key wildcard is not supported yet ("a.*.c")
 // Pass nil if no slice key functions are needed.
@@ -366,9 +375,23 @@ func validateKeyFuncElementType(seq reflect.Value, expected reflect.Type) error 
 	return nil
 }
 
+// appendSkippingKeyFields appends pairChanges to changes, dropping any change on an
+// element's own key field: a direct child of node whose field name is keyField1 or
+// keyField2. See the call site for why such a diff is not a real change.
+func appendSkippingKeyFields(changes *[]Change, pairChanges []Change, node *structpath.PathNode, keyField1, keyField2 string) {
+	for _, ch := range pairChanges {
+		if ch.Path.Parent() == node {
+			if field, ok := ch.Path.StringKey(); ok && (field == keyField1 || field == keyField2) {
+				continue
+			}
+		}
+		*changes = append(*changes, ch)
+	}
+}
+
 // diffSliceByKey compares two slices using the provided key function.
-// Elements are matched by their (keyField, keyValue) pairs instead of by index.
-// Duplicate keys are allowed and matched in order.
+// Elements are matched by their key value instead of by index (keyField is only
+// used to render the path). Duplicate keys are allowed and matched in order.
 func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc KeyFunc, changes *[]Change) error {
 	caller, err := newKeyFuncCaller(keyFunc)
 	if err != nil {
@@ -427,9 +450,16 @@ func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.
 		minLen := min(len(list1), len(list2))
 		for i := range minLen {
 			node := structpath.NewKeyValue(path, keyField, keyValue)
-			if err := diffValues(ctx, node, list1[i].value, list2[i].value, changes); err != nil {
+			var pairChanges []Change
+			if err := diffValues(ctx, node, list1[i].value, list2[i].value, &pairChanges); err != nil {
 				return err
 			}
+			// Elements are matched by key value alone (keyField is only for display), so a
+			// diff on an element's own key field means the two sides carry the same identity
+			// under different fields (e.g. a principal returned as service_principal_name but
+			// declared as user_name). The identity is unchanged, so drop that field diff;
+			// non-key fields still diff normally.
+			appendSkippingKeyFields(changes, pairChanges, node, list1[i].keyField, list2[i].keyField)
 		}
 
 		// Handle extra elements in old (deleted)

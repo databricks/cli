@@ -109,6 +109,9 @@ type IResource interface {
 	WaitAfterDelete(ctx context.Context, id string) error
 
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
+	// Elements are matched by the KeyFunc's value, not its field, and a matched element's own key field is not
+	// diffed, so the same identity under a different field (e.g. user_name vs service_principal_name) compares
+	// equal. See structdiff.KeyFunc for the full semantics.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices() map[string]any
 
