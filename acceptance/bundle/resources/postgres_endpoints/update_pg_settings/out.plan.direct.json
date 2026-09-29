@@ -32,11 +32,6 @@
           "statement_timeout": "16000"
         }
       }
-    },
-    "settings.pg_settings['statement_timeout']": {
-      "action": "update",
-      "old": "8000",
-      "new": "16000"
     }
   }
 }

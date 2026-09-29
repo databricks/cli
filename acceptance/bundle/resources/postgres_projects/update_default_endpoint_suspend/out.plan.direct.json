@@ -14,11 +14,6 @@
         "suspend_timeout_duration": "600s"
       }
     },
-    "default_endpoint_settings.suspend_timeout_duration": {
-      "action": "update",
-      "old": "300s",
-      "new": "600s"
-    },
     "display_name": {
       "action": "skip",
       "reason": "spec:input_only",
