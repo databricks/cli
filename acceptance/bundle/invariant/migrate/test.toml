@@ -1,3 +1,7 @@
+# Migration replays a per-config terraform-state fixture instead of a terraform deploy, so
+# (unlike the other invariant tests) it cannot run against a real workspace: keep it local-only.
+Cloud = false
+
 # Recording needs a bundle it has seen from the start. This test seeds a state file,
 # so recording refuses it. TODO(DMS): drop this once existing state can be
 # handed over to the service (see the TODO in dstate.Open).
@@ -60,3 +64,11 @@ EnvMatrixExclude.no_secret = ["INPUT_CONFIG=secret.yml.tmpl"]
 
 # Terraform types sampling_fraction as an integer and truncates 0.5; covered by no_drift.
 EnvMatrixExclude.no_model_serving_endpoint_telemetry = ["INPUT_CONFIG=model_serving_endpoint_telemetry.yml.tmpl"]
+
+# Permissions on these reference a backend-minted secondary id (the mlflow registered_model_id /
+# the serving endpoint id) that the fake server's create response omits, so replay cannot map the
+# recorded id to the freshly minted one and the permission lands on a stale id, showing as drift.
+# The fixtures are captured; restoring coverage needs those create responses to return the id (and
+# replay to recurse it). model.yml keeps migrate coverage for registered models.
+EnvMatrixExclude.no_model_with_permissions = ["INPUT_CONFIG=model_with_permissions.yml.tmpl"]
+EnvMatrixExclude.no_model_serving_endpoint = ["INPUT_CONFIG=model_serving_endpoint.yml.tmpl"]
