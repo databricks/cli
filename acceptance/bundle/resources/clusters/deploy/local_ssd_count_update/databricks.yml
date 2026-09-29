@@ -11,3 +11,4 @@ resources:
       gcp_attributes:
         availability: PREEMPTIBLE_GCP
         zone_id: auto
+        #local_ssd_count: 0

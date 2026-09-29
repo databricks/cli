@@ -10,8 +10,7 @@ title "gcp_attributes sent on create (local_ssd_count absent):\n"
 print_requests.py //clusters/create | jq '.body.gcp_attributes'
 
 title "Now the user adds an explicit local_ssd_count: 0 to the config\n"
-update_file.py databricks.yml "zone_id: auto" "zone_id: auto
-        local_ssd_count: 0"
+update_file.py databricks.yml "#local_ssd_count: 0" "local_ssd_count: 0"
 
 title "Deploy 2: bundle should detect and apply the local_ssd_count change\n"
 trace $CLI bundle plan
@@ -25,8 +24,7 @@ title "Deploy 3: no config change, should converge to a no-op\n"
 trace $CLI bundle plan
 
 title "Now the user removes local_ssd_count again\n"
-update_file.py databricks.yml "
-        local_ssd_count: 0" ""
+update_file.py databricks.yml "local_ssd_count: 0" "#local_ssd_count: 0"
 
 title "Deploy 4: removing the explicit 0 is a change, symmetric with setting it\n"
 trace $CLI bundle plan
