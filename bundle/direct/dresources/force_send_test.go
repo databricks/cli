@@ -56,9 +56,7 @@ func assertForceSendHonored(t *testing.T, typ reflect.Type) {
 	owner := fieldByIndexAlloc(ptr.Elem(), sf.Index[:len(sf.Index)-1])
 
 	var goNames, jsonNames []string
-	ownerType := owner.Type()
-	for i := range ownerType.NumField() {
-		field := ownerType.Field(i)
+	for field := range owner.Type().Fields() {
 		if !field.IsExported() || field.Anonymous || !isBasicKind(field.Type.Kind()) {
 			continue
 		}
