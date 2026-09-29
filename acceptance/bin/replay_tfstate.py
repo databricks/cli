@@ -159,7 +159,9 @@ def main():
     # state dir see it. workspace import does not create parents, so mkdirs first.
     state_dir = print_state.get_remote_state_path(args.target)
     run_cli("workspace", "mkdirs", state_dir)
-    run_cli("workspace", "import", f"{state_dir}/terraform.tfstate", "--file", local_path, "--format", "AUTO", "--overwrite")
+    run_cli(
+        "workspace", "import", f"{state_dir}/terraform.tfstate", "--file", local_path, "--format", "AUTO", "--overwrite"
+    )
 
 
 if __name__ == "__main__":
