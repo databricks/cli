@@ -37,26 +37,9 @@ UNIQUE_NAME = os.environ.get("UNIQUE_NAME", "")
 _opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
-def bearer():
-    """The auth token replay authenticates with. Locally the fake server routes by the PAT in
-    DATABRICKS_TOKEN, so prefer it to hit the same workspace as the bundle commands. On cloud there
-    is no PAT and auth is OAuth, so ask the CLI for the resolved token (the same auth the bundle
-    commands use) - a bare Bearer DATABRICKS_TOKEN is empty and unauthorized (HTTP 401) there."""
-    tok = os.environ.get("DATABRICKS_TOKEN", "")
-    if tok:
-        return tok
-    r = subprocess.run(
-        [CLI, "auth", "token", "--output", "json"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8"
-    )
-    if r.returncode == 0 and r.stdout.strip():
-        try:
-            return json.loads(r.stdout)["access_token"]
-        except (json.JSONDecodeError, KeyError):
-            pass
-    return tok
-
-
-TOKEN = bearer()
+# The fake server routes by the PAT in DATABRICKS_TOKEN. These fixtures are captured against it, so
+# the migrate tests that replay them are local-only (see their test.toml) - there is no cloud path.
+TOKEN = os.environ.get("DATABRICKS_TOKEN", "")
 
 # Per resource: which response field carries the new id. Terraform's tfstate stores the same value
 # as the resource's `id`, keyed here by the create path so we can match a create to its tfstate entry.
