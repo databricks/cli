@@ -25,7 +25,7 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Destroy: 1 deleted
 
->>> replay_tfstate.py terraform-2-requests.json terraform-2.tfstate -t dev
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate -t dev
 
 >>> [CLI] bundle deployment migrate --var job_name=Custom Job Name
 Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json

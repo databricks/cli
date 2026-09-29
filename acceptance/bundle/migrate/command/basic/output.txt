@@ -60,7 +60,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
-Files: 5 uploaded, 0 deleted
+Files: 3 uploaded, 0 deleted
 Resources: 0 created, 0 changed, 0 deleted, 3 unchanged
 
 >>> print_requests.py --get //jobs/get
@@ -98,7 +98,7 @@ Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
 Updated jobs.test_job
 Updated pipelines.test_pipeline
-Files: 2 uploaded, 0 deleted
+Files: 1 uploaded, 0 deleted
 Resources: 0 created, 2 changed, 0 deleted, 1 unchanged
 
 === Different target, still on the terraform state from a prior deployment

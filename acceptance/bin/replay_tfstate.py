@@ -106,9 +106,8 @@ def main():
     requests = json.loads(requests_raw)
     tfstate = json.loads(tfstate_raw)
 
-    # Drop the fixtures from the bundle root so a later deploy does not sync them as bundle files.
-    os.remove(args.requests)
-    os.remove(args.tfstate)
+    # The fixtures stay on disk (a later deploy skips them via the .gitignore script.prepare writes),
+    # so replay is non-destructive and a single fixture can be replayed more than once.
 
     # identifying name -> recorded resource attributes, from the tfstate managed resources.
     name_to_attrs = {}
