@@ -26,6 +26,7 @@ Warning: unknown field: instance_profile_arn
     "user_name": "[USERNAME]"
   }
 ]
+[TESTROOT]/bundle/resources/permissions/database_instances/current_can_manage/../../_script: line 4: DATABRICKS_BUNDLE_ENGINE: unbound variable
 Warning: unknown field: catalog_name
   at resources.database_instances.foo
   in databricks.yml:8:7
@@ -35,37 +36,4 @@ Warning: unknown field: instance_profile_arn
   in databricks.yml:9:7
 
 
->>> [CLI] bundle deploy
-Warning: unknown field: catalog_name
-  at resources.database_instances.foo
-  in databricks.yml:8:7
-
-Warning: unknown field: instance_profile_arn
-  at resources.database_instances.foo
-  in databricks.yml:9:7
-
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created database_instances.foo
-Created database_instances.foo.permissions
-Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] bundle destroy --auto-approve
-Warning: unknown field: catalog_name
-  at resources.database_instances.foo
-  in databricks.yml:8:7
-
-Warning: unknown field: instance_profile_arn
-  at resources.database_instances.foo
-  in databricks.yml:9:7
-
-The following resources will be deleted:
-  delete resources.database_instances.foo
-
-This action will result in the deletion of the following Lakebase database instances.
-All data stored in them will be permanently lost:
-  delete resources.database_instances.foo
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Destroy: 1 deleted
+Exit code: 1

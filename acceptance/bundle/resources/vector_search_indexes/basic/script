@@ -19,4 +19,4 @@ trace $CLI vector-search-indexes get-index "${index_name}" | jq '{name, endpoint
 
 trace $CLI bundle summary
 
-trace print_requests.py //vector-search/indexes > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py //vector-search/indexes > out.requests.json

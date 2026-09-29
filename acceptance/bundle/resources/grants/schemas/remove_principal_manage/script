@@ -28,7 +28,7 @@ trace $CLI bundle deploy -qq
 # The revoke request (engine-specific): the direct engine removes MANAGE by name in
 # addition to ALL_PRIVILEGES, terraform removes MANAGE directly. Removing only
 # ALL_PRIVILEGES would leave MANAGE behind on the backend.
-print_requests.py --method PATCH //permissions > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests.py --method PATCH //permissions > out.requests.txt
 
 # The removed principal is gone, and the deploy converges (no perpetual update) on
 # both engines.

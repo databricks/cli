@@ -18,22 +18,6 @@
     "user_name": "[USERNAME]"
   }
 ]
+[TESTROOT]/bundle/resources/permissions/postgres_projects/current_can_manage/../../_script: line 4: DATABRICKS_BUNDLE_ENGINE: unbound variable
 
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created postgres_projects.foo
-Created postgres_projects.foo.permissions
-Files: 2 uploaded, 0 deleted
-Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
-
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.postgres_projects.foo
-
-This action will result in the deletion of the following Lakebase projects along with
-all their branches, databases, and endpoints. All data stored in them will be permanently lost:
-  delete resources.postgres_projects.foo
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
-
-Destroy: 1 deleted
+Exit code: 1

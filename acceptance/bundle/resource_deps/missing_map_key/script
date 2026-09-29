@@ -4,6 +4,6 @@ if [ "$DATABRICKS_BUNDLE_ENGINE" = "terraform" ]; then
   mv databricks.yml.tmp databricks.yml
 fi
 
-trace $CLI bundle validate -o json | jq .resources > out.validate.$DATABRICKS_BUNDLE_ENGINE.json
-errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle validate -o json | jq .resources > out.validate.json
+errcode $CLI bundle plan &> out.plan.txt
+musterr $CLI bundle deploy &> out.deploy.txt

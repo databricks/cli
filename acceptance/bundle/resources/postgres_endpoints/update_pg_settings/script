@@ -22,12 +22,12 @@ trace update_file.py databricks.yml "statement_timeout: 8000" "statement_timeout
 # spec.settings.pg_settings are both accepted, while an indexed path is answered with
 # 400 "Unknown field path in update_mask".
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.json
 rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 # The mask each engine sends: direct names the map, terraform replaces the whole spec.
-trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace print_requests.py --del-body project_id,branch_id,endpoint_id --sort '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
 
 title "Plan again: the change must leave no drift behind"
 trace $CLI bundle plan

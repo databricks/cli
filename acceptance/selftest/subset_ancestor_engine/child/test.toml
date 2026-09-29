@@ -1,1 +1,5 @@
 EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
+
+# Only "direct" remains after the terraform engine was removed; bind the var so the
+# ancestor _script (which references it) runs, still exercising anyHelperScriptUsesEngine.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -7,7 +7,7 @@ cp -r $TESTDIR/../whl_prebuilt_multiple/dist/lib/other_test_code-0.0.1-py3-none-
 trace $CLI bundle validate -o json | nostamp | jq .artifacts
 
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
-nostamp < tmp.plan.json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+nostamp < tmp.plan.json > out.plan_create.json
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.deploy
 cat LOG.deploy | contains.py "patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+" "patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+" > /dev/null
 
@@ -28,7 +28,7 @@ rm "$OUT_REQUESTS"
 title "Updating the local wheel and deploying again\n"
 touch my_test_code/src/new_module.py
 $CLI bundle plan -o json > tmp.plan.json 2>>LOG.plan
-nostamp < tmp.plan.json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+nostamp < tmp.plan.json > out.plan_update.json
 $CLI bundle deploy $(readplanarg tmp.plan.json) &> LOG.redeploy
 cat LOG.redeploy | contains.py "patched_wheels/my_test_code_my_test_code/my_test_code-0.0.1+" "patched_wheels/my_prebuilt_whl_other_test_code/other_test_code-0.0.1+" > /dev/null
 

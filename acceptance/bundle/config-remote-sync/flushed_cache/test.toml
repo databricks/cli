@@ -5,7 +5,7 @@ Ignore = [".databricks", "databricks.yml"]
 
 Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 # Normalize ls error messages across platforms
 
 [[Repls]]
