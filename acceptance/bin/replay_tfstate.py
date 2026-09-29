@@ -152,15 +152,30 @@ def main():
             create_name = next((str(body[nf]) for nf in NAME_FIELDS if body.get(nf)), None)
         if req["method"] == "POST" and create_name in name_to_attrs:
             attrs = name_to_attrs[create_name]
-            # When the resource's id is the identifying name we sent (registered models, serving
-            # endpoints, …), it is client-provided and already stable, so there is nothing to remap;
-            # extracting a backend id here would either fail (nested response) or map the name to a
-            # separate uuid the response also carries. Only remap a genuinely backend-minted id.
             if str(attrs["id"]) != create_name:
+                # Backend-minted primary id (jobs, pipelines, volumes): map recorded -> minted.
                 new_id = next((str(resp[f]) for f in ID_FIELDS if f in resp), None)
                 if new_id is None:
                     sys.exit(f"replay_tfstate.py: no id in response to {req['path']}: {resp}")
                 id_map[str(attrs["id"])] = new_id
+            else:
+                # The primary id is the client-provided name (registered models, serving endpoints),
+                # but the backend still mints a SECONDARY id that permissions target
+                # (serving_endpoint_id, registered_model_id). It rides the create response as `id`,
+                # or - for mlflow models - comes from the databricks GET terraform issues (capture
+                # drops GETs), so fetch it the same way. Map the recorded secondary id -> minted.
+                minted = resp.get("id")
+                if minted is None and req["path"].endswith("/mlflow/registered-models/create"):
+                    g = api(
+                        "GET",
+                        "/api/2.0/mlflow/databricks/registered-models/get?name=" + urllib.parse.quote(create_name),
+                        None,
+                    )
+                    minted = (g.get("registered_model_databricks") or {}).get("id")
+                if minted is not None and is_backend_value(minted):
+                    for k, v in attrs.items():
+                        if k != "id" and is_backend_value(v):
+                            id_map[str(v)] = str(minted)
             # Also remap other backend-minted values a later resource may reference (e.g. a volume's
             # storage_location that a pipeline tags), so those requests and the tfstate stay consistent.
             for k, v in resp.items():
