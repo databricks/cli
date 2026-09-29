@@ -45,43 +45,15 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 	}
 }
 
-// remapSecretRemote maps a secret returned by the API to the config's shape: the resolved
-// value and owner come back under effective_*, so we surface them under value/owner, and
-// output-only fields are dropped. It runs wherever remote state is produced
-// (DoRead/DoCreate/DoUpdate), so no RemapState hook is needed.
-func remapSecretRemote(remote *catalog.Secret) *catalog.Secret {
-	return &catalog.Secret{
-		CatalogName:     remote.CatalogName,
-		SchemaName:      remote.SchemaName,
-		Name:            remote.Name,
-		Value:           remote.EffectiveValue,
-		Comment:         remote.Comment,
-		ExpireTime:      remote.ExpireTime,
-		Owner:           remote.EffectiveOwner,
-		CreateTime:      nil,
-		CreatedBy:       "",
-		EffectiveOwner:  "",
-		EffectiveValue:  "",
-		FullName:        "",
-		MetastoreId:     "",
-		UpdateTime:      nil,
-		UpdatedBy:       "",
-		ForceSendFields: utils.FilterFields[catalog.Secret](nil),
-	}
-}
-
-// DoRead fetches the secret by full name. IncludeValue is set so remapSecretRemote can
-// recover the stored value from EffectiveValue.
+// DoRead fetches the secret by full name. IncludeValue is set so effective_value carries
+// the stored value; value/owner and the output-only metadata are declared
+// ignore_remote_changes, so the full remote can flow through unchanged.
 func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
-	remote, err := r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
+	return r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
 		FullName:        id,
 		IncludeValue:    true,
 		ForceSendFields: nil,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return remapSecretRemote(remote), nil
 }
 
 // DoCreate creates a new UC secret.
@@ -92,7 +64,7 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 	if err != nil || response == nil {
 		return "", nil, err
 	}
-	return response.FullName, remapSecretRemote(response), nil
+	return response.FullName, response, nil
 }
 
 // comment is force-sent on update so that clearing it in config clears it on the secret. The
@@ -114,7 +86,7 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog
 	if err != nil {
 		return nil, err
 	}
-	return remapSecretRemote(response), nil
+	return response, nil
 }
 
 // DoDelete deletes the secret.
