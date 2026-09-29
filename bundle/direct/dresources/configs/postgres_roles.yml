@@ -1,7 +1,7 @@
 ignore_local_changes:
   # replace_existing only takes effect on create; toggling it later is a no-op.
   - field: replace_existing
-    reason: "input_only; cannot be updated after create"
+    reason: input_only
 stable_output_fields:
   # name ("projects/{project_id}/branches/{branch_id}/roles/{role_id}") is
   # backend-assigned at creation and immutable; see the stable_output_fields doc
