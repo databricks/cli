@@ -35,6 +35,7 @@
     "artifacts_dynamic_version": true,
     "jobs_max_concurrent_runs": 4,
     "name_prefix": "[dev [USERNAME]] ",
+    "pipelines_development": true,
     "tags": {
       "dev": "[USERNAME]"
     },
@@ -146,6 +147,7 @@
           "kind": "BUNDLE",
           "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
         },
+        "development": true,
         "edition": "ADVANCED",
         "environment": {
           "dependencies": [

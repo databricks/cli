@@ -95,8 +95,8 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient(ctx)
 
-	// Infer development mode from the bundle target
-	development := r.bundle.Config.Bundle.Mode == config.Development
+	// The preset is defaulted to true by "mode: development" and honors an explicit opt-out.
+	development := config.IsExplicitlyEnabled(r.bundle.Config.Presets.PipelinesDevelopment)
 
 	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID, development)
 	if err != nil {

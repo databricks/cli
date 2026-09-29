@@ -121,6 +121,7 @@
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
           },
+          "development": true,
           "edition": "ADVANCED",
           "environment": {
             "dependencies": [

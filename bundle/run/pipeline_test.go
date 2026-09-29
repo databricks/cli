@@ -88,8 +88,7 @@ func TestPipelineRunnerRestart(t *testing.T) {
 
 	// Mock runner starting a new update
 	pipelineApi.EXPECT().StartUpdate(mock.Anything, pipelines.StartUpdate{
-		PipelineId:      "123",
-		ForceSendFields: []string{"Development"},
+		PipelineId: "123",
 	}).Return(&pipelines.StartUpdateResponse{
 		UpdateId: "456",
 	}, nil)
@@ -113,15 +112,17 @@ func TestPipelineRunnerRestart(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestPipelineRunnerRunSetsDevelopmentFromMode(t *testing.T) {
+func TestPipelineRunnerRunSetsDevelopmentFromPreset(t *testing.T) {
+	enabled := true
+	disabled := false
 	tests := []struct {
 		name            string
-		mode            config.Mode
+		preset          *bool
 		wantDevelopment bool
 	}{
-		{name: "no mode", mode: "", wantDevelopment: false},
-		{name: "development", mode: config.Development, wantDevelopment: true},
-		{name: "production", mode: config.Production, wantDevelopment: false},
+		{name: "unset", preset: nil, wantDevelopment: false},
+		{name: "enabled", preset: &enabled, wantDevelopment: true},
+		{name: "disabled", preset: &disabled, wantDevelopment: false},
 	}
 
 	for _, tc := range tests {
@@ -132,8 +133,8 @@ func TestPipelineRunnerRunSetsDevelopmentFromMode(t *testing.T) {
 
 			b := &bundle.Bundle{
 				Config: config.Root{
-					Bundle: config.Bundle{
-						Mode: tc.mode,
+					Presets: config.Presets{
+						PipelinesDevelopment: tc.preset,
 					},
 					Resources: config.Resources{
 						Pipelines: map[string]*resources.Pipeline{
@@ -155,11 +156,9 @@ func TestPipelineRunnerRunSetsDevelopmentFromMode(t *testing.T) {
 
 			pipelineApi := m.GetMockPipelinesAPI()
 
-			// Development is force-sent so that false is not dropped by omitempty.
 			pipelineApi.EXPECT().StartUpdate(mock.Anything, pipelines.StartUpdate{
-				PipelineId:      "123",
-				Development:     tc.wantDevelopment,
-				ForceSendFields: []string{"Development"},
+				PipelineId:  "123",
+				Development: tc.wantDevelopment,
 			}).Return(&pipelines.StartUpdateResponse{
 				UpdateId: "456",
 			}, nil)

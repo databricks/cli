@@ -25,6 +25,7 @@
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/state/metadata.json"
           },
+          "development": true,
           "edition": "ADVANCED",
           "name": "[dev [USERNAME]] pipeline for mycatalog.dev_[USERNAME]_myschema.myname",
           "tags": {

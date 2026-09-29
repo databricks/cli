@@ -64,6 +64,7 @@ View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/state/metadata.json"
     },
+    "development": true,
     "edition": "ADVANCED",
     "id": "[UUID]",
     "name": "[dev [USERNAME]] lakeflow_project_etl_2",

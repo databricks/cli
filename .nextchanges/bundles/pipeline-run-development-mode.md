@@ -1,1 +1,1 @@
-* Pipeline development mode is now decided per update from the bundle target mode at run time, rather than stamped on the pipeline at deploy time. Deploy no longer sets the pipeline-level `development` property, and the `presets.pipelines_development` setting has been removed.
+* `bundle run` and `pipelines run` now send the per-update `development` parameter for pipelines in development mode targets. Setting `development` on a pipeline is deprecated and now emits a warning; use `mode: development` instead. ([#6863](https://github.com/databricks/cli/pull/6863))

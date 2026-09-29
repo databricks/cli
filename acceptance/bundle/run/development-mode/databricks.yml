@@ -14,3 +14,7 @@ targets:
     default: true
   dev:
     mode: development
+  dev_preset_off:
+    mode: development
+    presets:
+      pipelines_development: false

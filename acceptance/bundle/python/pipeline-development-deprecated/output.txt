@@ -1,0 +1,23 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.with_development.development
+  in resources.py:7:1
+
+Name: my_project
+Target: dev
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/my_project/dev
+
+Found 1 warning
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.with_development.development
+  in resources.py:7:1
+
+{
+  "with_development": true,
+  "without_development": true
+}

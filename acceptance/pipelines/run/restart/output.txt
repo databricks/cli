@@ -29,7 +29,5 @@ Pipeline configurations for this update:
 {
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
-  "body": {
-    "development": false
-  }
+  "body": {}
 }

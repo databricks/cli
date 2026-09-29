@@ -25,7 +25,6 @@ Update ID: [UUID]
   "method": "POST",
   "path": "/api/2.0/pipelines/[UUID]/updates",
   "body": {
-    "development": false,
     "validate_only": true
   }
 }

@@ -58,8 +58,6 @@ func (o *PipelineOptions) Validate(pipeline *resources.Pipeline) error {
 	return nil
 }
 
-// toPayload builds the StartUpdate request. development is inferred from the
-// bundle target mode by the caller (see pipelineRunner.Run).
 func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID string, development bool) (*pipelines.StartUpdate, error) {
 	if err := o.Validate(pipeline); err != nil {
 		return nil, err
@@ -72,12 +70,10 @@ func (o *PipelineOptions) toPayload(pipeline *resources.Pipeline, pipelineID str
 		FullRefresh:          o.FullRefreshAll,
 		FullRefreshSelection: o.FullRefresh,
 		ValidateOnly:         o.ValidateOnly,
-		Development:          development,
 
-		// Force-send Development so the resolved per-update value always wins.
-		// The pipelines API falls back to the pipeline-level development property
-		// when this field is omitted, and `omitempty` would drop a false value.
-		ForceSendFields: []string{"Development"},
+		// Only true is sent. When false the field is omitted, so the backend keeps
+		// using the pipeline-level development property while it is being deprecated.
+		Development: development,
 	}
 	return payload, nil
 }

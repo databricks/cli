@@ -1,5 +1,9 @@
 
 >>> [CLI] bundle deploy
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my.development
+  in databricks.yml:11:20
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/zero-value-fields/default/files...
 Created pipelines.my
 Files: 2 uploaded, 0 deleted

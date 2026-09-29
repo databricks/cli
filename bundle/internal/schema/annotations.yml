@@ -2186,6 +2186,9 @@ targets:
         "name_prefix":
           "description": |-
             The prefix for job runs of the bundle.
+        "pipelines_development":
+          "description": |-
+            Whether pipeline deployments should be locked in development mode.
         "source_linked_deployment":
           "description": |-
             Whether to link the deployment to the bundle source.

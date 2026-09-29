@@ -63,6 +63,10 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
       development: true
 
 >>> [CLI] bundle deploy
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.bar.development
+  in databricks.yml:18:20
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-no-drift-[UNIQUE_NAME]/default/files...
 Updated pipelines.bar
 Files: 1 uploaded, 0 deleted
@@ -155,6 +159,10 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 ]
 
 >>> [CLI] bundle summary -o json
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.bar.development
+  in databricks.yml:18:20
+
 {
   "deployment_id": "[NUMID]",
   "latest_version_id": 2
@@ -162,6 +170,10 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 
 === The plan shows the updated pipeline at serial 2 with the deployment_history feature
 >>> [CLI] bundle plan -o json
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.bar.development
+  in databricks.yml:18:20
+
 {
   "plan_version": [PLAN_VERSION],
   "cli_version": "[CLI_VERSION]",
@@ -173,6 +185,10 @@ Resources: 0 created, 1 changed, 0 deleted, 1 unchanged
 }
 
 >>> [CLI] bundle plan
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.bar.development
+  in databricks.yml:18:20
+
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === The raw recorded state the service holds after the update
@@ -189,4 +205,8 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Plan again: no residual drift, and the version stamps are ignored
 >>> [CLI] bundle plan
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.bar.development
+  in databricks.yml:18:20
+
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
