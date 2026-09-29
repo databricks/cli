@@ -375,6 +375,15 @@ func TestScalarZeroChange(t *testing.T) {
 			ch:             &deployplan.ChangeDesc{Old: nil, New: 0, Remote: 0},
 			expectedAction: deployplan.Update,
 		},
+		{
+			// Mirror of the fix: config removes a field it previously set to 0. A zero int is
+			// wire-equivalent to absent (omitempty) and cannot be unset via PATCH, and the
+			// exception only fires for an explicit New, so clearing it stays a no-op.
+			name:           "clearing an integer zero is a no-op",
+			ch:             &deployplan.ChangeDesc{Old: 0, New: nil, Remote: 0},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
 	}
 
 	for _, tt := range tests {
