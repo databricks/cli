@@ -917,6 +917,63 @@ resources:
         "lifecycle":
           "description": |-
             Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.
+    "features":
+      "description": |-
+        The feature definitions for the bundle, where each key is the name of the feature.
+      "markdown_description": |-
+        The feature definitions for the bundle, where each key is the name of the feature.
+      "$fields":
+        "filter_condition":
+          "description": |-
+            PLACEHOLDER
+        "function":
+          "$fields":
+            "aggregation_function":
+              "$fields":
+                "time_window":
+                  "$fields":
+                    "continuous":
+                      "description": |-
+                        PLACEHOLDER
+                    "sliding":
+                      "description": |-
+                        PLACEHOLDER
+                    "tumbling":
+                      "description": |-
+                        PLACEHOLDER
+            "extra_parameters":
+              "description": |-
+                PLACEHOLDER
+            "function_type":
+              "description": |-
+                PLACEHOLDER
+        "inputs":
+          "description": |-
+            PLACEHOLDER
+        "lifecycle":
+          "description": |-
+            PLACEHOLDER
+        "source":
+          "$fields":
+            "delta_table_source":
+              "$fields":
+                "entity_columns":
+                  "description": |-
+                    PLACEHOLDER
+                "timeseries_column":
+                  "description": |-
+                    PLACEHOLDER
+            "kafka_source":
+              "$fields":
+                "entity_column_identifiers":
+                  "description": |-
+                    PLACEHOLDER
+                "timeseries_column_identifier":
+                  "description": |-
+                    PLACEHOLDER
+        "time_window":
+          "description": |-
+            PLACEHOLDER
     "genie_spaces":
       "description": |-
         PLACEHOLDER

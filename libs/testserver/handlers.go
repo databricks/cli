@@ -671,6 +671,20 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.McpServices, req.Vars["name"])
 	})
 
+	// Feature Engineering features:
+	server.Handle("POST", "/api/2.0/feature-engineering/features", func(req Request) any {
+		return req.Workspace.FeaturesCreate(req)
+	})
+	server.Handle("GET", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+	})
+	server.Handle("PATCH", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		return req.Workspace.FeaturesUpdate(req, req.Vars["full_name"])
+	})
+	server.Handle("DELETE", "/api/2.0/feature-engineering/features/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Features, req.Vars["full_name"])
+	})
+
 	// Model Provider Services (AI Gateway):
 
 	server.Handle("POST", "/api/2.1/unity-catalog/model-provider-services", func(req Request) any {

@@ -1,0 +1,29 @@
+title "Initial summary before deploy"
+trace $CLI bundle summary -o json | jq .resources.features.feature1
+
+title "Verify it does not exist yet"
+trace musterr $CLI feature-engineering get-feature main.myschema.myfeature
+
+trace $CLI bundle deploy
+trace print_requests.py //feature-engineering
+
+title "Summary should show the id and the Catalog Explorer url"
+trace $CLI bundle summary -o json | jq ".resources.features.feature1 | {id, url}"
+
+title "Verify deployment"
+trace $CLI feature-engineering get-feature main.myschema.myfeature | jq '{full_name, description, catalog_name, schema_name, name}'
+
+title "Update description (should update in place, not recreate)"
+trace update_file.py databricks.yml DESCRIPTION1 DESCRIPTION2
+trace $CLI bundle deploy
+trace print_requests.py //feature-engineering
+trace $CLI feature-engineering get-feature main.myschema.myfeature | jq .description
+
+title "Change an immutable field (should plan a recreate)"
+trace update_file.py databricks.yml amount other_column
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //feature-engineering
+
+rm -f out.requests.txt

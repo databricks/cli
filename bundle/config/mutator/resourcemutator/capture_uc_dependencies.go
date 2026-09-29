@@ -190,6 +190,20 @@ func (m *captureUCDependencies) Apply(ctx context.Context, b *bundle.Bundle) dia
 		catalogName, schemaName := parts[0], parts[1]
 		idx.Name = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
 	}
+	for _, f := range b.Config.Resources.Features {
+		if f == nil {
+			continue
+		}
+		if dynvar.ContainsVariableReference(f.FullName) {
+			continue
+		}
+		parts, ok := splitUCName(f.FullName, 3)
+		if !ok {
+			continue
+		}
+		catalogName, schemaName := parts[0], parts[1]
+		f.FullName = resolveCatalog(b, catalogName) + "." + resolveSchema(b, catalogName, schemaName) + "." + parts[2]
+	}
 	for _, mse := range b.Config.Resources.ModelServingEndpoints {
 		if mse == nil {
 			continue

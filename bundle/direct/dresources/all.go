@@ -11,6 +11,7 @@ var SupportedResources = map[string]any{
 	"job_runs":                    (*ResourceJobRun)(nil),
 	"pipelines":                   (*ResourcePipeline)(nil),
 	"experiments":                 (*ResourceExperiment)(nil),
+	"features":                    (*ResourceFeature)(nil),
 	"catalogs":                    (*ResourceCatalog)(nil),
 	"schemas":                     (*ResourceSchema)(nil),
 	"external_locations":          (*ResourceExternalLocation)(nil),

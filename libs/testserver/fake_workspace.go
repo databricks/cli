@@ -217,6 +217,8 @@ type FakeWorkspace struct {
 	ModelServices         map[string]catalog.ModelService
 	McpServices           map[string]catalog.McpService
 	ModelProviderServices map[string]catalog.ModelProviderService
+
+	Features              map[string]ml.Feature
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
@@ -497,6 +499,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		ModelServices:         map[string]catalog.ModelService{},
 		McpServices:           map[string]catalog.McpService{},
 		ModelProviderServices: map[string]catalog.ModelProviderService{},
+		Features:              map[string]ml.Feature{},
 		Volumes:               map[string]catalog.VolumeInfo{},
 		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
 		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},

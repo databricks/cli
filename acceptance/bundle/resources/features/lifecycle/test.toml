@@ -1,0 +1,11 @@
+Cloud = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+]
+
+# Fake SQL endpoint so create_table.py works against the local test server too.
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
