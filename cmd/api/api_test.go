@@ -1,9 +1,11 @@
 package api
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -228,6 +230,59 @@ func TestResolveOrgID(t *testing.T) {
 			assert.Equal(t, c.want, got)
 		})
 	}
+}
+
+// TestBuildRequestBody covers how --json is turned into the value passed to
+// the SDK: verbatim bytes for body methods (so large integers survive), the
+// decoding path for query-string methods, and client-side rejection of
+// malformed JSON.
+func TestBuildRequestBody(t *testing.T) {
+	// A >2^53 integer whose low digits a float64 round-trip would drop.
+	const bigJSON = `{"job_id": 18000000000000000123}`
+
+	t.Run("no --json -> nil body", func(t *testing.T) {
+		var p flags.JsonFlag
+		got, err := buildRequestBody(http.MethodPost, &p)
+		require.NoError(t, err)
+		assert.Nil(t, got)
+	})
+
+	// Body methods send the bytes verbatim, unchanged from the flag.
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch} {
+		t.Run(method+" sends verbatim bytes", func(t *testing.T) {
+			var p flags.JsonFlag
+			require.NoError(t, p.Set(bigJSON))
+			got, err := buildRequestBody(method, &p)
+			require.NoError(t, err)
+			assert.Equal(t, []byte(bigJSON), got)
+		})
+	}
+
+	t.Run("body method rejects malformed JSON", func(t *testing.T) {
+		var p flags.JsonFlag
+		require.NoError(t, p.Set(`not json`))
+		_, err := buildRequestBody(http.MethodPost, &p)
+		assert.EqualError(t, err, "--json is not valid JSON")
+	})
+
+	// Query-string methods keep the decoding path: the SDK builds the query
+	// from a decoded value, not raw bytes.
+	for _, method := range []string{http.MethodGet, http.MethodDelete, http.MethodHead} {
+		t.Run(method+" decodes for the query string", func(t *testing.T) {
+			var p flags.JsonFlag
+			require.NoError(t, p.Set(`{"a": "b"}`))
+			got, err := buildRequestBody(method, &p)
+			require.NoError(t, err)
+			assert.Equal(t, map[string]any{"a": "b"}, got)
+		})
+	}
+
+	t.Run("query-string method rejects malformed JSON", func(t *testing.T) {
+		var p flags.JsonFlag
+		require.NoError(t, p.Set(`{"a":`))
+		_, err := buildRequestBody(http.MethodGet, &p)
+		require.Error(t, err)
+	})
 }
 
 // TestNormalizeWorkspaceID covers the helper that strips the CLI-only
