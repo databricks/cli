@@ -73,7 +73,7 @@ To re-bind the resource later, use:
 		if !ok {
 			tfName = rd.PluralName
 		}
-		phases.Unbind(ctx, b, rd.SingularName, tfName, args[0], stateDesc.Engine)
+		phases.Unbind(ctx, b, tfName, args[0], stateDesc.Engine)
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}
