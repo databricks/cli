@@ -1,0 +1,26 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+for target in nested colocated external; do
+    title "Destroy with $target state"
+    trace $CLI bundle deploy -t "$target"
+    root="/Workspace/Users/${CURRENT_USER_NAME}/.bundle/dms-destroy-paths-${UNIQUE_NAME}/${target}"
+    case "$target" in
+        nested) state="$root/state" ;;
+        colocated) state="$root" ;;
+        external) state="$root-state" ;;
+    esac
+    deployment_id=$($CLI workspace get-status "$state/resources.deployment.json" | jq -r .object_id)
+    add_repl "$deployment_id" DEPLOYMENT_ID
+    rm -f "$OUT_REQUESTS"
+
+    trace $CLI bundle destroy -t "$target" --auto-approve
+    # Contained nodes must reach workspace deletion in place; only external state is trashed.
+    trace print_requests.py --dms --method DELETE //api/2.0/bundle --keep
+    trace print_requests.py //api/2.0/workspace/delete
+    trace musterr $CLI workspace get-status "$state/resources.deployment.json"
+    trace musterr $CLI workspace get-status "$root"
+done
+
+# The external state directory retains its existing cleanup behavior.
+trace $CLI workspace delete "$state" --recursive
+rm -f "$OUT_REQUESTS"

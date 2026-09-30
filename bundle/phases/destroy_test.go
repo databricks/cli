@@ -66,3 +66,25 @@ func TestRemoveEmptyDirsDepthLimit(t *testing.T) {
 	_, err := removeEmptyDirs(t.TempDir(), maxStateDirDepth+1)
 	assert.ErrorContains(t, err, "nesting exceeds")
 }
+
+func TestDeploymentNodeInRoot(t *testing.T) {
+	for _, tc := range []struct {
+		name, rootPath, statePath string
+		want                      bool
+	}{
+		{"nested", "/Workspace/bundle", "/Workspace/bundle/state", true},
+		{"same directory", "/Workspace/bundle", "/Workspace/bundle", true},
+		{"trailing slash", "/Workspace/bundle/", "/Workspace/bundle/state", true},
+		{"normalized", "/Workspace/bundle", "/Workspace/bundle/state/../state", true},
+		{"sibling prefix", "/Workspace/bundle", "/Workspace/bundle-state", false},
+		{"parent", "/Workspace/bundle", "/Workspace", false},
+		{"outside after normalization", "/Workspace/bundle", "/Workspace/bundle/../state", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			b := &bundle.Bundle{}
+			b.Config.Workspace.RootPath = tc.rootPath
+			b.Config.Workspace.StatePath = tc.statePath
+			assert.Equal(t, tc.want, deploymentNodeInRoot(b))
+		})
+	}
+}

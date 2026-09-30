@@ -1,0 +1,126 @@
+
+=== Destroy with nested state
+>>> [CLI] bundle deploy -t nested
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/nested/files...
+Created jobs.example
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle destroy -t nested --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.example
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/nested
+
+Destroy: 1 deleted
+
+>>> print_requests.py --dms --method DELETE //api/2.0/bundle --keep
+
+>>> print_requests.py //api/2.0/workspace/delete
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/nested",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]"
+  }
+}
+
+>>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/nested/state/resources.deployment.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/nested/state/resources.deployment.json) doesn't exist.
+
+>>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/nested
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/nested) doesn't exist.
+
+=== Destroy with colocated state
+>>> [CLI] bundle deploy -t colocated
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/colocated/files...
+Created jobs.example
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle destroy -t colocated --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.example
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/colocated
+
+Destroy: 1 deleted
+
+>>> print_requests.py --dms --method DELETE //api/2.0/bundle --keep
+
+>>> print_requests.py //api/2.0/workspace/delete
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/colocated",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]"
+  }
+}
+
+>>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/colocated/resources.deployment.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/colocated/resources.deployment.json) doesn't exist.
+
+>>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/colocated
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/colocated) doesn't exist.
+
+=== Destroy with external state
+>>> [CLI] bundle deploy -t external
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/external/files...
+Created jobs.example
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> [CLI] bundle destroy -t external --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.example
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/external
+
+Destroy: 1 deleted
+
+>>> print_requests.py --dms --method DELETE //api/2.0/bundle --keep
+{
+  "method": "DELETE",
+  "path": "/api/2.0/bundle/deployments/[DEPLOYMENT_ID_3]"
+}
+
+>>> print_requests.py //api/2.0/workspace/delete
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/external",
+    "recursive": true
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]"
+  }
+}
+
+>>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/external-state/resources.deployment.json
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/external-state/resources.deployment.json) doesn't exist.
+
+>>> musterr [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/external
+Error: Path (/Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/external) doesn't exist.
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/.bundle/dms-destroy-paths-[UNIQUE_NAME]/external-state --recursive
