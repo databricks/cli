@@ -1,0 +1,1 @@
+* The `postgres_snapshot_schedules` resource (introduced in [v1.16.0](https://github.com/databricks/cli/releases/tag/v1.16.0)) is now marked Beta and is no longer available in PyDABs, matching the other `postgres_*` resources; configure it in YAML instead. ([#6887](https://github.com/databricks/cli/pull/6887))
