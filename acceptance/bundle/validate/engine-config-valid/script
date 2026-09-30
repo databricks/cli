@@ -1,2 +1,3 @@
 trace $CLI bundle validate
-trace $CLI bundle validate -t terraform-target
+# engine: terraform was removed in v1.19.0, so the terraform-target now fails validation.
+trace musterr $CLI bundle validate -t terraform-target
