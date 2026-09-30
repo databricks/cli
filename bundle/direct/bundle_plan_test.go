@@ -341,7 +341,7 @@ func TestScalarZeroChange(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		field          string // defaults to gcp_attributes.local_ssd_count
+		field          string
 		ch             *deployplan.ChangeDesc
 		expectedAction deployplan.ActionType
 		expectedReason string
@@ -349,12 +349,14 @@ func TestScalarZeroChange(t *testing.T) {
 		{
 			// The fix: config sets the field to 0 for the first time (remote lacks it).
 			name:           "explicit config zero is an update",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: 0, Remote: nil},
 			expectedAction: deployplan.Update,
 		},
 		{
 			// Config never set it, the backend just echoed a zero: not a change.
 			name:           "backend-echoed zero is a no-op",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: 0},
 			expectedAction: deployplan.Skip,
 			expectedReason: deployplan.ReasonEmpty,
@@ -362,6 +364,7 @@ func TestScalarZeroChange(t *testing.T) {
 		{
 			// Control: nothing set anywhere.
 			name:           "all empty is a no-op",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: nil},
 			expectedAction: deployplan.Skip,
 			expectedReason: deployplan.ReasonEmpty,
@@ -373,6 +376,7 @@ func TestScalarZeroChange(t *testing.T) {
 			// updates even though the remote already reports 0 — before the fix it was
 			// wrongly skipped as empty.
 			name:           "explicit zero on a managed field updates even when remote reports zero",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: 0, Remote: 0},
 			expectedAction: deployplan.Update,
 		},
@@ -381,6 +385,7 @@ func TestScalarZeroChange(t *testing.T) {
 			// genuine local change (Old 0, New nil differ), symmetric with setting it, so it
 			// updates rather than being dismissed as empty.
 			name:           "clearing an integer zero is an update",
+			field:          "gcp_attributes.local_ssd_count",
 			ch:             &deployplan.ChangeDesc{Old: 0, New: nil, Remote: 0},
 			expectedAction: deployplan.Update,
 		},
@@ -436,11 +441,7 @@ func TestScalarZeroChange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			adapter, ok := adapters["clusters"]
 			require.True(t, ok)
-			field := tt.field
-			if field == "" {
-				field = "gcp_attributes.local_ssd_count"
-			}
-			changes := deployplan.Changes{field: tt.ch}
+			changes := deployplan.Changes{tt.field: tt.ch}
 			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
