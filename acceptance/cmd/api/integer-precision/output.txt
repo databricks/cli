@@ -1,0 +1,20 @@
+
+=== Response: a >2^53 id renders exactly, keys stay in server order
+>>> [CLI] api get /api/2.0/test/bigint
+{
+  "name": "a<b",
+  "job_id": [NUMID]
+}
+OK: response id preserved
+
+=== Request: a >2^53 id in --json is sent verbatim
+>>> print_requests.py //test/bigint --del-field headers
+{
+  "method": "POST",
+  "path": "/api/2.0/test/bigint",
+  "body": {
+    "name": "a<b",
+    "job_id": [NUMID]
+  }
+}
+OK: request id preserved

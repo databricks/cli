@@ -1,6 +1,9 @@
 package api
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/spf13/cobra"
 )
 
@@ -72,10 +76,9 @@ func makeCommand(method string) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			path := args[0]
 
-			var request any
-			diags := payload.Unmarshal(&request)
-			if diags.HasError() {
-				return diags.Error()
+			request, err := buildRequestBody(method, &payload)
+			if err != nil {
+				return err
 			}
 
 			cfg := &config.Config{}
@@ -123,12 +126,12 @@ func makeCommand(method string) *cobra.Command {
 				headers[auth.WorkspaceIDHeader] = orgID
 			}
 
-			var response any
+			var response bytes.Buffer
 			err = api.Do(cmd.Context(), method, path, headers, nil, request, &response)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(cmd.Context(), response)
+			return renderResponse(cmd.Context(), response.Bytes())
 		},
 	}
 
@@ -138,6 +141,53 @@ func makeCommand(method string) *cobra.Command {
 	command.Flags().StringVar(&workspaceIDFlag, "workspace-id", "",
 		"Override the workspace routing identifier on this call. Mutually exclusive with --account.")
 	return command
+}
+
+// buildRequestBody turns the --json flag into the value passed to the SDK's
+// Do. POST/PUT/PATCH bodies are sent verbatim as raw bytes so integers keep
+// their exact value; decoding into `any` degrades any integer above 2^53 to a
+// float64. GET/DELETE/HEAD instead serialize the payload into the query
+// string, which the SDK builds from a decoded map/struct rather than raw bytes
+// (see databricks-sdk-go/httpclient/request.go, makeRequestBody), so those
+// keep the decoding path.
+func buildRequestBody(method string, payload *flags.JsonFlag) (any, error) {
+	raw := payload.Raw()
+	if raw == nil {
+		return nil, nil
+	}
+	switch method {
+	case http.MethodGet, http.MethodDelete, http.MethodHead:
+		var request any
+		if diags := payload.Unmarshal(&request); diags.HasError() {
+			return nil, diags.Error()
+		}
+		return request, nil
+	default:
+		// json.Valid preserves the client-side rejection of malformed --json
+		// that the decoding path used to provide.
+		if !json.Valid(raw) {
+			return nil, errors.New("--json is not valid JSON")
+		}
+		return raw, nil
+	}
+}
+
+// renderResponse writes the API response as JSON. The raw *bytes.Buffer target
+// passed to Do skips the SDK's json.Unmarshal, so integers beyond float64
+// precision and the server's object key order survive to the output (see
+// cmdio.RenderJSONBytes).
+func renderResponse(ctx context.Context, raw []byte) error {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 {
+		return nil
+	}
+	// The SDK maps an HTML body (typically a Private Link login page) to the
+	// actionable ErrHTMLContent inside the json.Unmarshal that the raw target
+	// bypasses, so re-detect it here.
+	if trimmed[0] == '<' {
+		return httpclient.ErrHTMLContent
+	}
+	return cmdio.RenderJSONBytes(ctx, raw)
 }
 
 // normalizeWorkspaceID strips the CLI-only WorkspaceIDNone sentinel so the

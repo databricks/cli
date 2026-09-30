@@ -1,0 +1,11 @@
+# Fixture endpoints exercised only by this test. The GET response carries a
+# >2^53 integer id and non-alphabetical keys so the golden shows the CLI renders
+# the body verbatim (server key order kept, '<' not escaped) instead of
+# round-tripping it through a Go map.
+[[Server]]
+Pattern = "GET /api/2.0/test/bigint"
+Response.Body = '{"name": "a<b", "job_id": 18000000000000000123}'
+
+[[Server]]
+Pattern = "POST /api/2.0/test/bigint"
+Response.Body = '{}'

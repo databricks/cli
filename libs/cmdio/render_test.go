@@ -214,6 +214,54 @@ func TestRenderJSONColorGate(t *testing.T) {
 	}
 }
 
+func TestRenderJSONBytes(t *testing.T) {
+	// A >2^53 integer, non-alphabetical keys, and an unescaped '<' that all
+	// survive: RenderJSONBytes must not decode the value (which would round the
+	// integer to a float64, sort the keys, and escape the '<').
+	raw := []byte(`{"job_id":18000000000000000123,"name":"a<b"}`)
+	want := "{\n  \"job_id\": 18000000000000000123,\n  \"name\": \"a<b\"\n}\n"
+
+	out := &bytes.Buffer{}
+	c := &cmdIO{out: out, err: out}
+	require.NoError(t, RenderJSONBytes(InContext(t.Context(), c), raw))
+	assert.Equal(t, want, out.String())
+}
+
+func TestRenderJSONBytesColorGate(t *testing.T) {
+	raw := []byte(`{"n":1}`)
+	for _, tt := range []struct {
+		name        string
+		stdoutIsTTY bool
+		color       bool
+		wantANSI    bool
+	}{
+		{"tty with color", true, true, true},
+		{"no tty with color", false, true, false},
+		{"tty without color", true, false, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			out := &bytes.Buffer{}
+			c := &cmdIO{
+				capabilities: Capabilities{stdoutIsTTY: tt.stdoutIsTTY, color: tt.color},
+				out:          out,
+				err:          out,
+			}
+			require.NoError(t, RenderJSONBytes(InContext(t.Context(), c), raw))
+			if tt.wantANSI {
+				assert.Contains(t, out.String(), "\x1b[")
+			} else {
+				assert.NotContains(t, out.String(), "\x1b[")
+			}
+		})
+	}
+}
+
+func TestRenderJSONBytesInvalid(t *testing.T) {
+	out := &bytes.Buffer{}
+	c := &cmdIO{out: out, err: out}
+	assert.Error(t, RenderJSONBytes(InContext(t.Context(), c), []byte("not json")))
+}
+
 func TestRender(t *testing.T) {
 	for _, c := range makeTestCases() {
 		t.Run(c.name, func(t *testing.T) {
