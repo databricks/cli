@@ -1,15 +1,13 @@
 # databricks api must preserve integers exactly in both directions: any integer
-# above 2^53 loses its low digits if it round-trips through a float64 (they
-# round to ...000). The global test.toml normalizes 8+ digit integers to [NUMID]
-# in output.txt, so the exact digits can't be asserted there; contains.py runs
-# before that normalization and checks them on the raw output, while the key
-# order shown in the golden confirms the bytes are rendered/sent verbatim.
+# above 2^53 loses its low digits if it round-trips through a float64 (...000).
+# test.toml rewrites the fixed id below to [JOB_ID] only when its exact digits
+# survive, so [JOB_ID] in the golden proves the round-trip is lossless. The
+# verbatim key order (name before job_id) and unescaped '<' confirm the bytes
+# are rendered/sent as-is rather than through a sorted, HTML-escaped Go map.
 
 title "Response: a >2^53 id renders exactly, keys stay in server order"
-MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/test/bigint | contains.py "18000000000000000123" "!18000000000000000000"
-echo "OK: response id preserved"
+MSYS_NO_PATHCONV=1 trace $CLI api get /api/2.0/test/bigint
 
 title "Request: a >2^53 id in --json is sent verbatim"
 MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/test/bigint --json '{"name": "a<b", "job_id": 18000000000000000123}' > /dev/null
-trace print_requests.py //test/bigint --del-field headers | contains.py "18000000000000000123" "!18000000000000000000"
-echo "OK: request id preserved"
+trace print_requests.py //test/bigint --del-field headers
