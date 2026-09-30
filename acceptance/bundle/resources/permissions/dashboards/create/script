@@ -5,11 +5,11 @@ fi
 envsubst < databricks.yml.tmpl > databricks.yml
 
 trace $CLI bundle validate -o json | jq .resources.dashboards.foo.permissions
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 $CLI bundle plan --output json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 # Add all resource IDs to runtime replacements to avoid pattern matching ambiguity

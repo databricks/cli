@@ -20,8 +20,9 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, engine engine.EngineType) {
+func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, stateDesc *statemgmt.StateDesc) {
 	log.Info(ctx, "Phase: bind")
+	engine := stateDesc.Engine
 
 	bundle.ApplyContext(ctx, b, lock.Acquire(lock.GoalBind))
 	if logdiag.HasError(ctx) {
@@ -41,7 +42,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, en
 		}
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
 
-		if b.ConfiguresDeploymentHistory(ctx) {
+		if stateDesc.IsDMS() {
 			// A recorded deployment keeps its resources in the metadata service, so the bind is
 			// recorded there rather than written to the state file.
 			bindWithHistory(ctx, b, resourceKey, opts.ResourceId, opts.AutoApprove)
@@ -93,32 +94,36 @@ func jsonDump(ctx context.Context, v any, field string) string {
 	return string(b)
 }
 
-// confirmBindPlan shows the bound resource's planned action and, unless autoApprove, asks the user
-// to confirm. It reports whether the bind should proceed; on decline or an unpromptable console it
-// logs the reason and returns false. A plain bind or skip changes nothing, so it proceeds without a
-// prompt. immediate is true when the caller applies the change now (the DMS path) rather than
-// deferring it to the next deploy, so the prompt describes the right timing. The caller owns any
-// cleanup on a false return.
+// confirmBindPlan displays changes and asks for approval before applying or staging them.
+// Immediate binds also apply permissions and grants, so those changes need approval too.
 func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove, immediate bool) bool {
-	var entry *deployplan.PlanEntry
-	if plan != nil {
-		entry = plan.Plan[resourceKey]
-	}
-	changesWorkspace := entry != nil && entry.Action != deployplan.Skip && entry.Action != deployplan.Bind && entry.Action != deployplan.Undefined
-	if !changesWorkspace || autoApprove {
+	if autoApprove {
 		return true
 	}
-
-	cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", entry.Action, resourceKey))
-	if len(entry.Changes) > 0 {
-		cmdio.LogString(ctx, "\nChanges detected:")
-		for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
-			change := entry.Changes[field]
-			if change.Action != deployplan.Skip {
-				cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
-			}
+	changesWorkspace := false
+	for _, action := range plan.GetActions() {
+		if !immediate && action.ResourceKey != resourceKey {
+			continue
 		}
-		cmdio.LogString(ctx, "")
+		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Bind || action.ActionType == deployplan.Undefined {
+			continue
+		}
+		changesWorkspace = true
+		entry := plan.Plan[action.ResourceKey]
+		cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", entry.Action, action.ResourceKey))
+		if len(entry.Changes) > 0 {
+			cmdio.LogString(ctx, "\nChanges detected:")
+			for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
+				change := entry.Changes[field]
+				if change.Action != deployplan.Skip {
+					cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
+				}
+			}
+			cmdio.LogString(ctx, "")
+		}
+	}
+	if !changesWorkspace {
+		return true
 	}
 
 	if !cmdio.IsPromptSupported(ctx) {

@@ -1,0 +1,51 @@
+# A tunnel session must survive a payload larger than the proxy's internal buffers, in both
+# directions. `ssh connect --ide` pushes several megabytes while the remote IDE server starts,
+# so a ceiling here breaks the IDE outright: #6558 capped the unacknowledged replay window at
+# 1 MiB and read a full window as a peer that had stopped acknowledging, which ended every
+# session that moved more than that. That shipped in v1.16.0 and was reverted in #6608; this test
+# is here so a re-introduction is caught before users are.
+#
+# The byte counts below are the assertion, not the exit code: the regression ended the session
+# with truncated output and, depending on which side noticed the drop first, exit code 0.
+#
+# 8 MiB is the size that matters: the remote IDE server pushes about 7 MiB while it starts, and
+# it is eight times the window that broke. Keep the payload under 10,000,000 bytes - the root
+# test.toml rewrites any run of 8 or more digits to [NUMID], which would erase the counts.
+PAYLOAD_BYTES=8388608
+
+# Generated rather than committed: 8 MiB does not belong in the repo, and the exact bytes do not
+# matter. SSH MACs the byte stream (RFC 4253 section 6), so anything lost, duplicated or
+# reordered ends the session, which shows up here as a short count. The same command runs
+# remotely for the download and locally for the upload, so both directions move the same bytes.
+payload_cmd="yes 0123456789abcdefghijklmnopqrstuvwxyz | head -c $PAYLOAD_BYTES"
+
+if [ -n "${CLOUD_ENV:-}" ]; then
+  # Serverless CPU: nothing to provision, so this is the cheapest real tunnel to open.
+  CONNECT_FLAGS="--releases-dir=$CLI_RELEASES_DIR"
+else
+  # No compute locally: the test server backs the driver-proxy /ssh websocket with a real sshd,
+  # so the transfer crosses a real ssh session over a ws:// tunnel. Needs sshd (only task
+  # test-exp-ssh provisions it); the test server probes the same way, so skip where it's absent.
+  if [ -z "$(command -v sshd || ls /usr/sbin/sshd /usr/local/sbin/sshd /sbin/sshd 2>/dev/null)" ]; then
+    echo "SKIP_TEST sshd (openssh-server) not installed"
+    exit 0
+  fi
+
+  # No release artifacts locally and they're never executed; stand in empty archives.
+  mkdir -p releases
+  : >releases/databricks_cli_linux_amd64.zip
+  : >releases/databricks_cli_linux_arm64.zip
+  CONNECT_FLAGS="--releases-dir=$PWD/releases --known-hosts-dir=known-hosts"
+fi
+
+title "Download $PAYLOAD_BYTES bytes over the tunnel\n"
+errcode $CLI ssh connect $CONNECT_FLAGS -- "$payload_cmd" >received.bin 2>LOG.download
+echo "received $(wc -c <received.bin | tr -d ' ') of $PAYLOAD_BYTES bytes"
+
+title "Upload $PAYLOAD_BYTES bytes over the tunnel\n"
+sh -c "$payload_cmd" >sent.bin
+errcode $CLI ssh connect $CONNECT_FLAGS -- "wc -c" <sent.bin >remote-count.txt 2>LOG.upload
+# The remote count is empty when the session ended before `wc` could report; say 0 rather than
+# leaving a blank in the output.
+remote_count=$(tr -dc 0-9 <remote-count.txt)
+echo "delivered ${remote_count:-0} of $PAYLOAD_BYTES bytes"

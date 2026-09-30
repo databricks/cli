@@ -3,7 +3,10 @@
 kill_after.py "POST /api/2.2/jobs/create" 2 1
 
 echo "=== First deploy (crashes on job_03) ==="
-trace errcode $CLI bundle deploy
+# -q: the per-resource "Created" lines race the kill signal, so which of them flush
+# before the process dies is not stable (notably on Windows). This test asserts WAL
+# content, not deploy stdout.
+trace errcode $CLI bundle deploy -q
 
 echo ""
 echo "=== WAL content after crash ==="

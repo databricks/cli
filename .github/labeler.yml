@@ -1,0 +1,56 @@
+# Configuration for the "PR Labeler" workflow (.github/workflows/labeler.yml).
+#
+# Maps a label to the file globs that, when matched by a PR's diff, cause the
+# label to be applied. Uses the actions/labeler v7 config format, documented at
+# https://github.com/actions/labeler/blob/v7.0.0/README.md
+#
+# To add a new mapping, copy the block below. The label MUST already exist in
+# the repository (labeler does not create labels), and globs use minimatch
+# syntax where `**` matches nested paths:
+#
+#   <LABEL>:
+#     - changed-files:
+#         - any-glob-to-any-file:
+#             - 'some/path/**'
+#             - 'another/path/**'
+
+AIR:
+  - changed-files:
+      - any-glob-to-any-file:
+          # Current (experimental) location.
+          - 'experimental/air/**'
+          - 'acceptance/experimental/air/**'
+          # Post-graduation location (see #6722): commands move to cmd/air,
+          # acceptance tests to acceptance/air. Kept alongside the experimental
+          # globs so labeling survives the move.
+          - 'cmd/air/**'
+          - 'acceptance/air/**'
+
+DABs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'bundle/**'
+          - 'cmd/bundle/**'
+          - 'acceptance/bundle/**'
+
+PyDABs:
+  - any:
+      - changed-files:
+          # The PyDABs (databricks-bundles) Python package. Requires at least one
+          # hand-written file, so DABs PRs that only regenerate PyDABs code are
+          # not labeled. Mirrors python/databricks/bundles/.gitattributes and
+          # python/databricks_tests/.gitattributes.
+          - all-globs-to-any-file:
+              - 'python/**'
+              - '!python/databricks/bundles/*/_models/**'
+              - '!python/databricks/bundles/*/__init__.py'
+              - '!python/databricks/bundles/core/_generated/**'
+              - '!python/databricks_tests/core/_generated/**'
+      - changed-files:
+          - any-glob-to-any-file:
+              # The Go side of PyDABs: the mutator that runs the Python subprocess.
+              # Also matches 'bundle/**', so these PRs get the DABs label too.
+              - 'bundle/config/mutator/python/**'
+              # Acceptance tests that exercise PyDABs specifically.
+              - 'acceptance/bundle/python/**'
+              - 'acceptance/bundle/templates/pydabs/**'

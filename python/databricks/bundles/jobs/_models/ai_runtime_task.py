@@ -10,6 +10,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
+from databricks.bundles.jobs._models.ai_runtime_task_priority_class import (
+    AiRuntimeTaskPriorityClass,
+    AiRuntimeTaskPriorityClassParam,
+)
 from databricks.bundles.jobs._models.deployment_spec import (
     DeploymentSpec,
     DeploymentSpecParam,
@@ -95,6 +99,26 @@ class AiRuntimeTask:
     omitted, MLflow generates a default name.
     """
 
+    priority_class: VariableOrOptional[AiRuntimeTaskPriorityClass] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Scheduling priority class for the workload. May only be set together with
+    a pre-provisioned capacity reservation (a deployment's
+    `compute.provisioned_capacity_id`); it is rejected on a workload that runs
+    on on-demand capacity.
+    """
+
+    unity_catalog_image_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional Unity Catalog path for a custom container image. When set,
+    the task runs on the specified container image instead of the default
+    Databricks client image. Format:
+    `{catalog}.{schema}.{image_name}:{tag}`
+    """
+
     @classmethod
     def from_dict(cls, value: "AiRuntimeTaskDict") -> "Self":
         return _transform(cls, value)
@@ -167,6 +191,26 @@ class AiRuntimeTaskDict(TypedDict, total=False):
     """
     [Public Preview] Optional display name for the MLflow run created under `experiment`. If
     omitted, MLflow generates a default name.
+    """
+
+    priority_class: VariableOrOptional[AiRuntimeTaskPriorityClassParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Scheduling priority class for the workload. May only be set together with
+    a pre-provisioned capacity reservation (a deployment's
+    `compute.provisioned_capacity_id`); it is rejected on a workload that runs
+    on on-demand capacity.
+    """
+
+    unity_catalog_image_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    [Private Preview] Optional Unity Catalog path for a custom container image. When set,
+    the task runs on the specified container image instead of the default
+    Databricks client image. Format:
+    `{catalog}.{schema}.{image_name}:{tag}`
     """
 
 

@@ -1,0 +1,7 @@
+# Generated, do not edit.
+
+ignore_remote_changes:
+  - field: postgres_database
+    reason: spec:input_only
+  - field: role
+    reason: spec:input_only

@@ -10,10 +10,10 @@ trace find.py --expect 2 whl
 cd ..
 
 title "Expecting 2 wheels in libraries section in /jobs/create"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' out.requests.txt
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks' "$OUT_REQUESTS"
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.environments' "$OUT_REQUESTS"
 
 title "Expecting 2 wheels to be uploaded"
-trace jq .path < out.requests.txt | grep import | grep whl | sort
+trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

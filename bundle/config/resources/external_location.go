@@ -53,9 +53,9 @@ func (e *ExternalLocation) InitializeURL(baseURL url.URL) {
 	// The Url field is for the storage path (s3://...), not a workspace URL
 }
 
-func (e *ExternalLocation) GetURL() string {
-	// Return empty as external locations don't have a workspace URL
-	return ""
+func (e *ExternalLocation) GetURL() (string, bool) {
+	// External locations don't have a workspace URL
+	return "", false
 }
 
 func (e *ExternalLocation) GetName() string {

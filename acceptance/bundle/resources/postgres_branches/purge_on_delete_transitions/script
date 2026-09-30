@@ -8,7 +8,7 @@ cleanup() {
    # so the trash entry doesn't linger past the test.
    $CLI postgres delete-branch --purge "${branch_name}" 2>>LOG.delete-branch || true
    $CLI postgres delete-project --purge "${project_name}" 2>>LOG.delete-project || true
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -38,7 +38,7 @@ update_file.py databricks.yml "purge_on_delete: false" "# PURGE_ON_DELETE"
 trace $CLI bundle deploy
 trace get_purge
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "bundle destroy (branch DELETE must be a plain DELETE, no ?purge=true)"
 $CLI bundle destroy --auto-approve > out.destroy.txt 2>&1 || true

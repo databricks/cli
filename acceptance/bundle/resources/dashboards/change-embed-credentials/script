@@ -2,7 +2,7 @@ export EMBED_CREDENTIALS="false"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm out.requests.txt
+    rm "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -32,12 +32,12 @@ deploy_dashboard
 # Print API requests made to create parent_path or create / update the dashboard.
 # Terraform serialized OUTPUT_ONLY fields in the request body while direct does not.
 # That's why we write the requests to separate files.
-cat out.requests.txt | \
+cat "$OUT_REQUESTS" | \
  jq 'select(.method == "PATCH")' | \
  jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
  > out.patch.requests.$DATABRICKS_BUNDLE_ENGINE.txt
 
-cat out.requests.txt | \
+cat "$OUT_REQUESTS" | \
  jq 'select(.method == "POST")' | \
  jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
  > out.post.requests.txt

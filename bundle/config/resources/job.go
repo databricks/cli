@@ -14,6 +14,7 @@ import (
 
 type Job struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	jobs.JobSettings
 
 	Permissions []JobPermission `json:"permissions,omitempty"`
@@ -60,8 +61,4 @@ func (j *Job) InitializeURL(baseURL url.URL) {
 
 func (j *Job) GetName() string {
 	return j.Name
-}
-
-func (j *Job) GetURL() string {
-	return j.URL
 }

@@ -14,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/testproxy"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
@@ -114,7 +115,7 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 		w, err := databricks.NewWorkspaceClient()
 		require.NoError(t, err)
 
-		user, err := w.CurrentUser.Me(t.Context(), iam.MeRequest{})
+		user, err := iamutil.GetCurrentUser(t.Context(), w)
 		require.NoError(t, err, "Failed to get current user")
 
 		cfg := w.Config

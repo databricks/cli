@@ -2,10 +2,12 @@ package phases
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/metadata"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -26,15 +28,19 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 		return
 	}
 
-	ctx = withWorkspaceClient(ctx, b)
+	if !cmdctx.HasWorkspaceClient(ctx) {
+		ctx = cmdctx.SetWorkspaceClient(ctx, wsc)
+	}
 	db := &b.DeploymentBundle.StateDB
-	if err := openRecordedState(ctx, db, localStatePath(ctx, b), deploymentID, lastVersionID); err != nil {
+	_, localPath := b.StateFilenameDirect(ctx)
+	if err := db.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: deploymentID, LastVersionID: lastVersionID}); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
+	defer completeRecordedVersion(ctx, b)
+
 	if existingID := db.GetResourceID(resourceKey); existingID != "" {
-		finalizeState(ctx, db)
 		logdiag.LogError(ctx, direct.ErrResourceAlreadyBound{ResourceKey: resourceKey, ExistingID: existingID, NewID: resourceID})
 		return
 	}
@@ -48,7 +54,6 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 	}
 	bundle.ApplySeqContext(ctx, b, muts...)
 	if logdiag.HasError(ctx) {
-		finalizeState(ctx, db)
 		return
 	}
 
@@ -58,14 +63,15 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 	b.DeploymentBundle.BindID = resourceID
 	plan, err := b.DeploymentBundle.CalculatePlan(ctx, wsc, &b.Config)
 	if err != nil {
-		finalizeState(ctx, db)
 		logdiag.LogError(ctx, err)
 		return
 	}
-	plan.FilterToSelected([]string{strings.TrimPrefix(resourceKey, "resources.")})
+	if err := selectBindPlan(plan, resourceKey); err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 
 	if !confirmBindPlan(ctx, resourceKey, plan, autoApprove, true) {
-		finalizeState(ctx, db)
 		return
 	}
 
@@ -74,9 +80,6 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 		logdiag.LogError(ctx, err)
 		return
 	}
-	// From here the state is open for write and may hold a version; drain and complete it (with
-	// failure on error) on every path, so nothing is left open or a version left dangling.
-	defer completeRecordedVersion(ctx, b)
 
 	if !createDeploymentAndStamp(ctx, b, deployment, firstBind) {
 		return
@@ -91,11 +94,11 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 		return
 	}
 
-	b.DeploymentBundle.Apply(ctx, wsc, plan)
+	b.DeploymentBundle.Apply(ctx, wsc, plan, false)
 }
 
 // completeRecordedVersion drains the buffered operations and closes the version out, completing
-// with failure if anything went wrong. Deferred once a version exists so every path completes it.
+// with failure if anything went wrong. Before a version is claimed, it only closes the state.
 func completeRecordedVersion(ctx context.Context, b *bundle.Bundle) {
 	db := &b.DeploymentBundle.StateDB
 	if _, err := db.Finalize(ctx); err != nil {
@@ -106,28 +109,15 @@ func completeRecordedVersion(ctx context.Context, b *bundle.Bundle) {
 	}
 }
 
-// openRecordedState opens the deployment's recorded state for read, reading its resources from the
-// metadata service.
-func openRecordedState(ctx context.Context, db *dstate.DeploymentState, path, deploymentID string, lastVersionID int) error {
-	return db.Open(ctx, path, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: deploymentID, LastVersionID: lastVersionID})
-}
-
-// finalizeState drains and closes the state without recording a version, for the paths that open it
-// but do not commit (a no-op or a declined bind).
-func finalizeState(ctx context.Context, db *dstate.DeploymentState) {
-	if _, err := db.Finalize(ctx); err != nil {
-		logdiag.LogError(ctx, err)
+// selectBindPlan includes the bound resource and its children, keeping unchanged dependencies
+// for reference resolution. A bind must not deploy changes to other resources.
+func selectBindPlan(plan *deployplan.Plan, resourceKey string) error {
+	plan.FilterToSelected([]string{strings.TrimPrefix(resourceKey, "resources.")})
+	for _, action := range plan.GetActions() {
+		if action.ResourceKey == resourceKey || strings.HasPrefix(action.ResourceKey, resourceKey+".") || action.ActionType == deployplan.Skip {
+			continue
+		}
+		return fmt.Errorf("cannot bind %s: dependency %s requires %s; deploy or bind the dependency first", resourceKey, action.ResourceKey, action.ActionType)
 	}
-}
-
-func localStatePath(ctx context.Context, b *bundle.Bundle) string {
-	_, localPath := b.StateFilenameDirect(ctx)
-	return localPath
-}
-
-func withWorkspaceClient(ctx context.Context, b *bundle.Bundle) context.Context {
-	if !cmdctx.HasWorkspaceClient(ctx) {
-		return cmdctx.SetWorkspaceClient(ctx, b.WorkspaceClient(ctx))
-	}
-	return ctx
+	return nil
 }

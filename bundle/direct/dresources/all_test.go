@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -95,6 +96,30 @@ var testConfig map[string]any = map[string]any{
 	"synced_database_tables": &resources.SyncedDatabaseTable{
 		SyncedDatabaseTable: database.SyncedDatabaseTable{
 			Name: "main.myschema.my_synced_table",
+		},
+	},
+
+	"model_services": &resources.ModelService{
+		ModelServiceConfig: resources.ModelServiceConfig{
+			Parent:         "schemas/main.default",
+			ModelServiceId: "my_model_service",
+			Comment:        "Test model service",
+		},
+	},
+
+	"mcp_services": &resources.McpService{
+		McpServiceConfig: resources.McpServiceConfig{
+			Parent:       "schemas/main.default",
+			McpServiceId: "my_mcp_service",
+			Comment:      "Test mcp service",
+		},
+	},
+
+	"model_provider_services": &resources.ModelProviderService{
+		ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+			Parent:                 "schemas/main.default",
+			ModelProviderServiceId: "my_model_provider_service",
+			Comment:                "Test model provider service",
 		},
 	},
 
@@ -742,6 +767,39 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"model_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_service",
+			FullName:      "main.myschema.mymodelservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"mcp_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "mcp_service",
+			FullName:      "main.myschema.mymcpservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"model_provider_services.grants": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "model_provider_service",
+			FullName:      "main.myschema.myproviderservice",
+			EmbeddedSlice: []catalog.PrivilegeAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeApplyTag},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"secret_scopes.permissions": func(ctx context.Context, client *databricks.WorkspaceClient) (any, error) {
 		err := client.Secrets.CreateScope(ctx, workspace.CreateScope{
 			Scope:            "permissions_test_scope",
@@ -1162,8 +1220,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID, newState)
 	require.NoError(t, err)
 
+	// WaitAfterDelete polls until the resource reads back gone; a NotFound is that
+	// success and the caller (DeploymentUnit.waitDeleted) maps it to nil, so accept it here too.
 	err = adapter.WaitAfterDelete(ctx, createdID)
-	require.NoError(t, err)
+	if !apierr.IsMissing(err) {
+		require.NoError(t, err)
+	}
 
 	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
@@ -1173,10 +1235,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.NoError(t, err)
 	}
 
-	// postgres_snapshot_schedules has no delete endpoint: DoDelete disables the
-	// schedule by setting an empty cadence set, and the schedule remains readable
-	// (it is intrinsic to the branch), so DoRead still succeeds afterwards.
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "postgres_snapshot_schedules"
+	// A resource that implements no DoDelete (permissions, grants, job_runs)
+	// leaves the resource in place, so DoRead still succeeds afterwards.
+	// postgres_snapshot_schedules does implement DoDelete but has no delete
+	// endpoint: it disables the schedule by setting an empty cadence set, and the
+	// schedule remains readable (it is intrinsic to the branch).
+	deleteIsNoop := !adapter.HasDoDelete() || group == "postgres_snapshot_schedules"
 	isImmutable := strings.HasSuffix(group, "internal_immutable_snapshots")
 	// Apps DoDelete is fire-and-forget: the API returns success while the app
 	// sits in DELETING state for up to ~20 minutes before the record is removed.
@@ -1221,7 +1285,7 @@ func TestResourceConfig(t *testing.T) {
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			validateResourceConfig(t, adapter.StateType(), cfg)
+			validateResourceConfig(t, adapter.StateType(), adapter.RemoteType(), cfg)
 		})
 	}
 }
@@ -1239,12 +1303,12 @@ func TestGeneratedResourceConfig(t *testing.T) {
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			validateResourceConfig(t, adapter.StateType(), cfg)
+			validateResourceConfig(t, adapter.StateType(), adapter.RemoteType(), cfg)
 		})
 	}
 }
 
-func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
+func validateResourceConfig(t *testing.T, stateType, remoteType reflect.Type, cfg *ResourceLifecycleConfig) {
 	for _, p := range cfg.RecreateOnChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
 	}
@@ -1259,6 +1323,13 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 	}
 	for _, p := range cfg.BackendDefaults {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
+	}
+	// stable_output_fields must be valid paths in RemoteType: the reference
+	// resolver reads their value from the remote cache. The backend owns the
+	// value, but the field may or may not also appear in StateType, so we only
+	// require presence in RemoteType.
+	for _, p := range cfg.StableOutputFields {
+		assert.NoError(t, structaccess.ValidatePattern(remoteType, p.Field), "StableOutputFields %s: must be a valid RemoteType path", p.Field)
 	}
 }
 
@@ -1333,6 +1404,77 @@ func TestNoUpdateResourcesCoverAllFields(t *testing.T) {
 				}
 			})
 			require.NoError(t, err)
+		})
+	}
+}
+
+// stableNameOptOut is the explicit escape hatch for TestNameStableOrOptedOut: a
+// resource whose `name` is backend-owned (so not auto-exempt) yet must still NOT
+// be declared stable_output_fields — e.g. the backend recomputes the name on
+// update, so its remote value is not stable. Empty today.
+var stableNameOptOut = map[string]string{}
+
+// nameIsUserProvided reports whether `name` is a plain user-set field: present in
+// StateType and touched by no ignore rule (so not output_only or otherwise
+// backend-owned). Such a name resolves from local config, so a ${...name}
+// reference is never delayed — and it must not be pinned stable, since a rename
+// must change the reference.
+func nameIsUserProvided(adapter *Adapter, path *structpath.PathNode) bool {
+	if structaccess.ValidatePath(adapter.StateType(), path) != nil {
+		return false
+	}
+	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+		if cfg == nil {
+			continue
+		}
+		for _, rules := range [][]FieldRule{cfg.IgnoreRemoteChanges, cfg.IgnoreLocalChanges} {
+			for _, r := range rules {
+				if path.HasPatternPrefix(r.Field) {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+// TestNameStableOrOptedOut guards against silently reintroducing ES-2202624: a
+// ${resources.X.name} reference delayed during X's in-place update recreates
+// every dependent that uses it as an immutable parent. To prevent that, a
+// backend-assigned `name` that can be referenced must be declared under
+// stable_output_fields so the reference resolves from the remote cache.
+//
+// For every resource that supports in-place update and has a `name` in RemoteType,
+// the name must be either auto-exempt (a plain user-provided field, which resolves
+// from local config), declared stable, or listed in stableNameOptOut. Resources
+// with no DoUpdate are skipped: they never take an in-place-update action, so the
+// reference is never delayed.
+func TestNameStableOrOptedOut(t *testing.T) {
+	namePath := structpath.MustParsePath("name")
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		if !adapter.HasDoUpdate() {
+			continue
+		}
+		if structaccess.ValidatePath(adapter.RemoteType(), namePath) != nil {
+			continue
+		}
+
+		if nameIsUserProvided(adapter, namePath) {
+			t.Logf("%s: auto-exempt — name is user-provided (in StateType, not output_only or ignored); resolves from local config", resourceType)
+			continue
+		}
+
+		if reason, ok := stableNameOptOut[resourceType]; ok {
+			t.Logf("%s: exempt from the stable-name check: %s", resourceType, reason)
+			continue
+		}
+
+		t.Run(resourceType, func(t *testing.T) {
+			assert.True(t, adapter.FieldIsStableOutput(namePath),
+				"backend-assigned `name` must be declared under stable_output_fields in configs/%[1]s.yml, or listed in stableNameOptOut; otherwise ${resources.%[1]s.<key>.name} references recreate dependents on an in-place update (ES-2202624)", resourceType)
 		})
 	}
 }

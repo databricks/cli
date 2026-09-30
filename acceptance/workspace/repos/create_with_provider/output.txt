@@ -25,3 +25,33 @@
 
 === Delete by id should work
 >>> [CLI] repos delete [NUMID]
+
+>>> print_requests.py --get //repos //workspace/get-status
+{
+  "method": "POST",
+  "path": "/api/2.0/repos",
+  "body": {
+    "path": "/Repos/me@databricks.com/test-repo",
+    "provider": "gitHub",
+    "url": "https://github.com/databricks/databricks-empty-ide-project.git"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/repos/[NUMID]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/workspace/get-status",
+  "q": {
+    "path": "/Repos/me@databricks.com/test-repo"
+  }
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/repos/[NUMID]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/repos/[NUMID]"
+}

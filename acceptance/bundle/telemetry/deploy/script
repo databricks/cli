@@ -1,6 +1,6 @@
 trace $CLI bundle deploy
 
-trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
+trace cat "$OUT_REQUESTS" | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson' > telemetry.json
 
 # Assert that the telemetry mechanism is working and recording mutator execution times.
 # We only check that at least one mutator execution time is recorded to avoid flakiness on fast machines
@@ -44,5 +44,5 @@ update_file.py out.telemetry.txt $cmd_exec_id  '[CMD-EXEC-ID]'
 update_file.py out.telemetry.txt "11111111-2222-3333-4444-555555555555"  '[BUNDLE_UUID]'
 update_file.py out.telemetry.txt $deployment_id  '[DEPLOYMENT_ID]'
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 rm telemetry.json

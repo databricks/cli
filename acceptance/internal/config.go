@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const configFilename = "test.toml"
+const ConfigFilename = "test.toml"
 
 type TestConfig struct {
 	// Place to describe what's wrong with this test. Does not affect how the test is run.
@@ -84,6 +84,17 @@ type TestConfig struct {
 
 	// List of request headers to include when recording requests.
 	IncludeRequestHeaders []string
+
+	// Map of name -> regexp. Each run of consecutive output lines matching one of the
+	// regexps is sorted before comparison. Use for output whose line order is not
+	// deterministic, e.g. "bundle deploy" reporting resources as they are applied in
+	// parallel. Entries are keyed by name so an inner test.toml can replace an
+	// inherited pattern by reusing its name, or switch it off via SortLinesOn.
+	SortLines map[string]string
+
+	// Map of SortLines name -> whether to apply it. If a name is not listed, defaults
+	// to true; set it to false to drop an inherited pattern for this test.
+	SortLinesOn map[string]bool
 
 	// List of gitignore patterns to ignore when checking output files
 	Ignore []string
@@ -160,7 +171,7 @@ type ServerStub struct {
 func FindConfigs(t *testing.T, dir string) []string {
 	var configs []string
 	for {
-		path := filepath.Join(dir, configFilename)
+		path := filepath.Join(dir, ConfigFilename)
 		_, err := os.Stat(path)
 
 		if err == nil {
@@ -193,7 +204,7 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	}
 
 	result := DoLoadConfig(t, configs[0])
-	leafConfigPath := filepath.Join(dir, configFilename)
+	leafConfigPath := filepath.Join(dir, ConfigFilename)
 	leafConfig := TestConfig{}
 	hasLeafConfig := configs[0] == leafConfigPath
 	if hasLeafConfig {

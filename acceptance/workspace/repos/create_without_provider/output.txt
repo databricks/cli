@@ -8,3 +8,14 @@
   "provider": "gitHub",
   "url": "https://github.com/databricks/databricks-empty-ide-project.git"
 }
+
+>>> print_requests.py --get //repos //workspace/get-status
+{
+  "method": "POST",
+  "path": "/api/2.0/repos",
+  "body": {
+    "path": "/Repos/me@databricks.com/test-repo",
+    "provider": "gitHub",
+    "url": "https://github.com/databricks/databricks-empty-ide-project.git"
+  }
+}

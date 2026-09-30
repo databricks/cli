@@ -81,8 +81,10 @@ per target environment.`,
 
 		sourceCodePath := app.DefaultSourceCodePath
 		// If the source code path is not set, we don't need to download anything.
-		// This is the case for apps that are not yet deployed.
-		if sourceCodePath != "" {
+		// This is the case for apps that are not yet deployed. A git-backed app
+		// keeps its source in Git rather than the workspace, so there is nothing
+		// to download and ConvertAppToValue emits git_repository/git_source instead.
+		if app.GitRepository == nil && sourceCodePath != "" {
 			err = downloader.MarkDirectoryForDownload(ctx, &sourceCodePath)
 			if err != nil {
 				return err

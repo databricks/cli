@@ -1,0 +1,12 @@
+# The standalone clusters resource boots a real cluster at deploy, which is slow and has hit
+# capacity limits on cloud; CloudSlow keeps it out of the per-PR run (it still runs locally and
+# in the full cloud sweep). Output is projected to the policy tag so it is cloud-portable.
+Cloud = true
+CloudSlow = true
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+RecordRequests = false
+
+Ignore = [
+    "databricks.yml",
+]

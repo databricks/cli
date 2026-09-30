@@ -10,7 +10,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -46,7 +46,7 @@ fi
 
 # Print API requests made to create the dashboard.
 # This verifies that dataset_catalog and dataset_schema are passed to the API.
-cat out.requests.txt | \
+cat "$OUT_REQUESTS" | \
  jq 'select(.method == "POST")' | \
  jq 'select(.path | contains("/api/2.0/lakeview/dashboards"))' | \
  jq 'select(.path | contains("/published") | not)' \

@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm out.requests.txt
+    rm "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -12,7 +12,7 @@ trace $CLI bundle deploy -qq
 grep -v DELETE < databricks.yml > databricks.yml.tmp && mv databricks.yml.tmp databricks.yml
 
 trace $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 trace $CLI bundle deploy -qq
 trace print_requests.py '^//api/2.0/bundle' '^//import-file/' '^//workspace/' '^//telemetry-ext' &> out.deploy.requests.txt

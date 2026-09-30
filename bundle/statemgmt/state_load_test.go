@@ -32,6 +32,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.models.test_mlflow_model":                                    {ID: "1"},
 		"resources.experiments.test_mlflow_experiment":                          {ID: "1"},
 		"resources.model_serving_endpoints.test_model_serving":                  {ID: "1"},
+		"resources.model_services.test_model_service":                           {ID: "main.default.test_model_service"},
+		"resources.mcp_services.test_mcp_service":                               {ID: "main.default.test_mcp_service"},
+		"resources.model_provider_services.test_model_provider_service":         {ID: "main.default.test_model_provider_service"},
 		"resources.registered_models.test_registered_model":                     {ID: "1"},
 		"resources.quality_monitors.test_monitor":                               {ID: "1"},
 		"resources.catalogs.test_catalog":                                       {ID: "1"},
@@ -164,6 +167,14 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "main.default.test_secret", config.Resources.Secrets["test_secret"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Secrets["test_secret"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_model_service", config.Resources.ModelServices["test_model_service"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServices["test_model_service"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_mcp_service", config.Resources.McpServices["test_mcp_service"].ID)
+	assert.Equal(t, "main.default.test_model_provider_service", config.Resources.ModelProviderServices["test_model_provider_service"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.McpServices["test_mcp_service"].ModifiedStatus)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelProviderServices["test_model_provider_service"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -424,6 +435,30 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			ModelServices: map[string]*resources.ModelService{
+				"test_model_service": {
+					ModelServiceConfig: resources.ModelServiceConfig{
+						Parent:         "schemas/main.default",
+						ModelServiceId: "test_model_service",
+					},
+				},
+			},
+			McpServices: map[string]*resources.McpService{
+				"test_mcp_service": {
+					McpServiceConfig: resources.McpServiceConfig{
+						Parent:       "schemas/main.default",
+						McpServiceId: "test_mcp_service",
+					},
+				},
+			},
+			ModelProviderServices: map[string]*resources.ModelProviderService{
+				"test_model_provider_service": {
+					ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+						Parent:                 "schemas/main.default",
+						ModelProviderServiceId: "test_model_provider_service",
+					},
+				},
+			},
 		},
 	}
 
@@ -534,6 +569,14 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Empty(t, config.Resources.ClusterPolicies["test_cluster_policy"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ClusterPolicies["test_cluster_policy"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.ModelServices["test_model_service"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServices["test_model_service"].ModifiedStatus)
+
+	assert.Empty(t, config.Resources.McpServices["test_mcp_service"].ID)
+	assert.Empty(t, config.Resources.ModelProviderServices["test_model_provider_service"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.McpServices["test_mcp_service"].ModifiedStatus)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelProviderServices["test_model_provider_service"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -961,6 +1004,48 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			ModelServices: map[string]*resources.ModelService{
+				"test_model_service": {
+					ModelServiceConfig: resources.ModelServiceConfig{
+						Parent:         "schemas/main.default",
+						ModelServiceId: "test_model_service",
+					},
+				},
+				"test_model_service_new": {
+					ModelServiceConfig: resources.ModelServiceConfig{
+						Parent:         "schemas/main.default",
+						ModelServiceId: "test_model_service_new",
+					},
+				},
+			},
+			McpServices: map[string]*resources.McpService{
+				"test_mcp_service": {
+					McpServiceConfig: resources.McpServiceConfig{
+						Parent:       "schemas/main.default",
+						McpServiceId: "test_mcp_service",
+					},
+				},
+				"test_mcp_service_new": {
+					McpServiceConfig: resources.McpServiceConfig{
+						Parent:       "schemas/main.default",
+						McpServiceId: "test_mcp_service_new",
+					},
+				},
+			},
+			ModelProviderServices: map[string]*resources.ModelProviderService{
+				"test_model_provider_service": {
+					ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+						Parent:                 "schemas/main.default",
+						ModelProviderServiceId: "test_model_provider_service",
+					},
+				},
+				"test_model_provider_service_new": {
+					ModelProviderServiceConfig: resources.ModelProviderServiceConfig{
+						Parent:                 "schemas/main.default",
+						ModelProviderServiceId: "test_model_provider_service_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -1022,6 +1107,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.instance_pools.test_instance_pool_old":                   {ID: "2"},
 		"resources.cluster_policies.test_cluster_policy":                    {ID: "cp-1"},
 		"resources.cluster_policies.test_cluster_policy_old":                {ID: "cp-2"},
+		"resources.model_services.test_model_service":                       {ID: "main.default.test_model_service"},
+		"resources.model_services.test_model_service_old":                   {ID: "main.default.test_model_service_old"},
+		"resources.mcp_services.test_mcp_service":                           {ID: "main.default.test_mcp_service"},
+		"resources.model_provider_services.test_model_provider_service":     {ID: "main.default.test_model_provider_service"},
+		"resources.mcp_services.test_mcp_service_old":                       {ID: "main.default.test_mcp_service_old"},
+		"resources.model_provider_services.test_model_provider_service_old": {ID: "main.default.test_model_provider_service_old"},
 		"resources.secrets.test_secret":                                     {ID: "main.default.test_secret"},
 		"resources.secrets.test_secret_old":                                 {ID: "main.default.test_secret_old"},
 	}
@@ -1232,6 +1323,26 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ClusterPolicies["test_cluster_policy_old"].ModifiedStatus)
 	assert.Empty(t, config.Resources.ClusterPolicies["test_cluster_policy_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ClusterPolicies["test_cluster_policy_new"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_model_service", config.Resources.ModelServices["test_model_service"].ID)
+	assert.Empty(t, config.Resources.ModelServices["test_model_service"].ModifiedStatus)
+	assert.Equal(t, "main.default.test_model_service_old", config.Resources.ModelServices["test_model_service_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelServices["test_model_service_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.ModelServices["test_model_service_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelServices["test_model_service_new"].ModifiedStatus)
+
+	assert.Equal(t, "main.default.test_mcp_service", config.Resources.McpServices["test_mcp_service"].ID)
+	assert.Equal(t, "main.default.test_model_provider_service", config.Resources.ModelProviderServices["test_model_provider_service"].ID)
+	assert.Empty(t, config.Resources.McpServices["test_mcp_service"].ModifiedStatus)
+	assert.Empty(t, config.Resources.ModelProviderServices["test_model_provider_service"].ModifiedStatus)
+	assert.Equal(t, "main.default.test_mcp_service_old", config.Resources.McpServices["test_mcp_service_old"].ID)
+	assert.Equal(t, "main.default.test_model_provider_service_old", config.Resources.ModelProviderServices["test_model_provider_service_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.McpServices["test_mcp_service_old"].ModifiedStatus)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ModelProviderServices["test_model_provider_service_old"].ModifiedStatus)
+	assert.Empty(t, config.Resources.McpServices["test_mcp_service_new"].ID)
+	assert.Empty(t, config.Resources.ModelProviderServices["test_model_provider_service_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.McpServices["test_mcp_service_new"].ModifiedStatus)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ModelProviderServices["test_model_provider_service_new"].ModifiedStatus)
 
 	assert.Equal(t, "main.default.test_secret", config.Resources.Secrets["test_secret"].ID)
 	assert.Empty(t, config.Resources.Secrets["test_secret"].ModifiedStatus)

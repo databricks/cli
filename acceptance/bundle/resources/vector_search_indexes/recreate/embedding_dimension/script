@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -15,11 +15,11 @@ print_requests() {
     # --unique collapses the repeated identical poll GETs (one on the testserver,
     # many on a real workspace that provisions asynchronously) to a stable count.
     trace print_requests.py --get --unique '//vector-search/indexes' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 
 title "Initial deployment"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 print_requests create
@@ -28,7 +28,7 @@ title "Change embedding_dimension (should trigger recreation)"
 trace update_file.py databricks.yml "embedding_dimension: 768" "embedding_dimension: 384"
 
 trace $CLI bundle plan
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy --auto-approve
 
 print_requests recreate

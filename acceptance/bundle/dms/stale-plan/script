@@ -35,4 +35,4 @@ trace jq '{serial}' .databricks/bundle/default/resources.json
 title "Replaying the older plan is rejected: same deployment, outdated version"
 trace musterr $CLI bundle deploy --plan tmp.plan2.json
 
-rm -f tmp.plan.json tmp.plan2.json out.requests.txt
+rm -f tmp.plan.json tmp.plan2.json "$OUT_REQUESTS"

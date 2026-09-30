@@ -1,0 +1,9 @@
+{
+  "state_engine": "direct",
+  "resources": [
+    {
+      "resource_type": "jobs",
+      "count": 1
+    }
+  ]
+}

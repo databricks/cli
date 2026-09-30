@@ -44,7 +44,9 @@ const (
 	// itself a service principal.
 	GuestServicePrincipalTokenPrefix = "dbapi2"
 	// EventualConsistencyTokenPrefix identifies workspaces that simulate eventual
-	// consistency: the first GET after a create returns 404 (not yet visible).
+	// consistency / propagation delays: the first GET after a create returns 404
+	// (not yet visible), and a deleted synced table stays in DELETING instead of
+	// disappearing (so the direct engine's post-delete poll has a teardown to wait out).
 	EventualConsistencyTokenPrefix = "dbapi3"
 	UserID                         = "1000012345"
 	TestDefaultClusterId           = "0123-456789-cluster0"
@@ -175,6 +177,13 @@ type FakeWorkspace struct {
 	url                string
 	isServicePrincipal bool
 
+	// eventualConsistency simulates propagation delays (see EventualConsistencyTokenPrefix).
+	// For synced tables it makes deletion slow: a deleted table stays in DELETING and keeps
+	// being returned by GET, so the direct engine's post-delete poll (WaitAfterDelete) has a
+	// real teardown to wait out. Off by default, so the default path and terraform (which
+	// recreates without polling) keep immediate deletion.
+	eventualConsistency bool
+
 	directories  map[string]workspace.ObjectInfo
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
@@ -199,11 +208,15 @@ type FakeWorkspace struct {
 	ModelRegistryModels   map[string]ml.Model
 	ModelRegistryModelIDs map[string]string // model name -> numeric ID
 	Clusters              map[string]compute.ClusterDetails
+	ClusterLibraries      map[string][]compute.Library // cluster id -> installed libraries
 	InstancePools         map[string]compute.GetInstancePool
 	ClusterPolicies       map[string]compute.Policy
 	Catalogs              map[string]catalog.CatalogInfo
 	ExternalLocations     map[string]catalog.ExternalLocationInfo
 	RegisteredModels      map[string]catalog.RegisteredModelInfo
+	ModelServices         map[string]catalog.ModelService
+	McpServices           map[string]catalog.McpService
+	ModelProviderServices map[string]catalog.ModelProviderService
 	ServingEndpoints      map[string]serving.ServingEndpointDetailed
 	VectorSearchEndpoints map[string]vectorsearch.EndpointInfo
 	VectorSearchIndexes   map[string]fakeVectorSearchIndex
@@ -420,9 +433,11 @@ func MapDelete[K comparable, V any](w *FakeWorkspace, collection map[K]V, key K)
 }
 
 func NewFakeWorkspace(url, token string) *FakeWorkspace {
+	eventualConsistency := strings.HasPrefix(token, EventualConsistencyTokenPrefix)
 	return &FakeWorkspace{
-		url:                url,
-		isServicePrincipal: strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		url:                 url,
+		isServicePrincipal:  strings.HasPrefix(token, ServicePrincipalTokenPrefix),
+		eventualConsistency: eventualConsistency,
 		directories: map[string]workspace.ObjectInfo{
 			"/Workspace": {
 				ObjectType: "DIRECTORY",
@@ -466,23 +481,26 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:                map[int64]jobs.Job{},
-		JobRuns:             map[int64]jobs.Run{},
-		JobRunOutputs:       map[int64]jobs.RunOutput{},
-		JobRunIdempotency:   map[string]int64{},
-		Grants:              map[string][]catalog.PrivilegeAssignment{},
-		Pipelines:           map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:     map[string]bool{},
-		Monitors:            map[string]catalog.MonitorInfo{},
-		Apps:                map[string]apps.App{},
-		Catalogs:            map[string]catalog.CatalogInfo{},
-		ExternalLocations:   map[string]catalog.ExternalLocationInfo{},
-		Schemas:             map[string]catalog.SchemaInfo{},
-		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
-		Volumes:             map[string]catalog.VolumeInfo{},
-		Dashboards:          NewEventualMap[string, *fakeDashboard](strings.HasPrefix(token, EventualConsistencyTokenPrefix)),
-		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
-		GenieSpaces:         map[string]dashboards.GenieSpace{},
+		Jobs:                  map[int64]jobs.Job{},
+		JobRuns:               map[int64]jobs.Run{},
+		JobRunOutputs:         map[int64]jobs.RunOutput{},
+		JobRunIdempotency:     map[string]int64{},
+		Grants:                map[string][]catalog.PrivilegeAssignment{},
+		Pipelines:             map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:       map[string]bool{},
+		Monitors:              map[string]catalog.MonitorInfo{},
+		Apps:                  map[string]apps.App{},
+		Catalogs:              map[string]catalog.CatalogInfo{},
+		ExternalLocations:     map[string]catalog.ExternalLocationInfo{},
+		Schemas:               map[string]catalog.SchemaInfo{},
+		RegisteredModels:      map[string]catalog.RegisteredModelInfo{},
+		ModelServices:         map[string]catalog.ModelService{},
+		McpServices:           map[string]catalog.McpService{},
+		ModelProviderServices: map[string]catalog.ModelProviderService{},
+		Volumes:               map[string]catalog.VolumeInfo{},
+		Dashboards:            NewEventualMap[string, *fakeDashboard](eventualConsistency),
+		PublishedDashboards:   map[string]dashboards.PublishedDashboard{},
+		GenieSpaces:           map[string]dashboards.GenieSpace{},
 		SqlWarehouses: map[string]sql.GetWarehouseResponse{
 			TestDefaultWarehouseId: {
 				Id:    TestDefaultWarehouseId,
@@ -532,7 +550,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				SingleUserName:   TestUser.UserName,
 			},
 		},
-		InstancePools: map[string]compute.GetInstancePool{},
+		InstancePools:    map[string]compute.GetInstancePool{},
+		ClusterLibraries: map[string][]compute.Library{},
 		ClusterPolicies: map[string]compute.Policy{
 			// Seeded so the stateful list keeps backing the variable-lookup tests
 			// (e.g. acceptance/bundle/variables/env_overrides resolves these by name).

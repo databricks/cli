@@ -3,13 +3,13 @@ envsubst < databricks.yml.tmpl > databricks.yml
 cleanup() {
    # Belt-and-braces in case bundle destroy was skipped or partially failed.
    $CLI postgres delete-project "projects/test-pg-proj-${UNIQUE_NAME}" 2>/dev/null || true
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 trace $CLI bundle validate
 
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 # Confirm the implicit production branch is now under management.

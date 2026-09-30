@@ -1,9 +1,9 @@
 trace $CLI bundle validate -o json | jq .resources.$RESOURCE.foo.permissions
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 trace errcode $CLI bundle deploy &> out.deploy.txt
 
 # Register the model's numeric ID for output replacement.

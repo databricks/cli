@@ -13,6 +13,7 @@ import (
 
 type MlflowModel struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	ml.CreateModelRequest
 
 	Permissions []MlflowModelPermission `json:"permissions,omitempty"`
@@ -55,8 +56,4 @@ func (s *MlflowModel) InitializeURL(baseURL url.URL) {
 
 func (s *MlflowModel) GetName() string {
 	return s.Name
-}
-
-func (s *MlflowModel) GetURL() string {
-	return s.URL
 }

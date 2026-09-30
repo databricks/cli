@@ -98,12 +98,12 @@ func (s *Snapshot) GetName() string {
 	return s.RelativePath()
 }
 
-func (s *Snapshot) GetURL() string {
+func (s *Snapshot) GetURL() (string, bool) {
 	// A snapshot is a workspace folder owned by the project's service principal, so
 	// a browser URL is constructible from its path. We don't surface one yet:
 	// workspaceurls has no folder-path helper, and the path is only known during
 	// deploy (its content hash is derived from the zip staged by the deploy pipeline).
-	return ""
+	return "", false
 }
 
 func (s *Snapshot) InitializeURL(_ url.URL) {

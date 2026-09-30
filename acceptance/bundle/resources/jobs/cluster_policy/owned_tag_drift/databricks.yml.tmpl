@@ -1,0 +1,35 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  cluster_policies:
+    my_policy:
+      name: test-policy-$UNIQUE_NAME
+      definition:
+        custom_tags.CostCenter:
+          type: fixed
+          value: from-policy
+
+  jobs:
+    # The config owns custom_tags.Mine. It is deliberately NOT a policy-governed tag: a fixed
+    # policy enforces on edit too, so an out-of-band change to the policy's own tag would be
+    # rejected (see config_conflicts_policy) and there would be no drifted state to observe.
+    my_job:
+      name: test-job-$UNIQUE_NAME
+      job_clusters:
+        - job_cluster_key: main
+          new_cluster:
+            policy_id: ${resources.cluster_policies.my_policy.id}
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+            custom_tags:
+              Mine: mine
+      tasks:
+        - task_key: main
+          job_cluster_key: main
+          spark_python_task:
+            python_file: ./hello_world.py

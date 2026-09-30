@@ -3,9 +3,9 @@ trace $CLI bundle deploy
 trace find.py --expect 1 whl
 
 title "Expecting 1 wheel in libraries section in /jobs/create"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[0].libraries' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/create") | .body.tasks[0].libraries' "$OUT_REQUESTS"
 
 title "Expecting 1 wheel to be uploaded"
-trace jq .path < out.requests.txt | grep import | grep whl | sort
+trace jq .path < "$OUT_REQUESTS" | grep import | grep whl | sort
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

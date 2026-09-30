@@ -3,6 +3,7 @@ package template
 import (
 	"cmp"
 	"context"
+	"fmt"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -202,6 +203,18 @@ type writerWithFullTelemetry struct {
 }
 
 func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		BundleInitEvent: &protos.BundleInitEvent{
+			BundleUuid:       bundleUuid,
+			TemplateName:     string(tmpl.name),
+			TemplateEnumArgs: tmpl.templateEnumArgs(),
+		},
+	})
+}
+
+// templateEnumArgs returns the enum and boolean input values to report in
+// telemetry, sorted by key for deterministic output.
+func (tmpl *writerWithFullTelemetry) templateEnumArgs() []protos.BundleInitTemplateEnumArg {
 	var args []protos.BundleInitTemplateEnumArg
 	for k, v := range tmpl.config.values {
 		s := tmpl.config.schema.Properties[k]
@@ -214,9 +227,11 @@ func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
 			})
 
 		case len(s.Enum) > 0:
+			// Enum values may be strings, integers or numbers depending on the
+			// schema, so format by value rather than asserting a string type.
 			args = append(args, protos.BundleInitTemplateEnumArg{
 				Key:   k,
-				Value: v.(string),
+				Value: fmt.Sprint(v),
 			})
 
 		default:
@@ -231,11 +246,5 @@ func (tmpl *writerWithFullTelemetry) LogTelemetry(ctx context.Context) {
 		return cmp.Compare(a.Key, b.Key)
 	})
 
-	telemetry.Log(ctx, protos.DatabricksCliLog{
-		BundleInitEvent: &protos.BundleInitEvent{
-			BundleUuid:       bundleUuid,
-			TemplateName:     string(tmpl.name),
-			TemplateEnumArgs: args,
-		},
-	})
+	return args
 }

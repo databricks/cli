@@ -1,7 +1,7 @@
 trace $CLI bundle validate -t dev -o json | jq .resources
 $CLI bundle plan -o json | nostamp > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace errcode $CLI bundle deploy -t dev &> out.deploy.txt
-trace jq -s '.[] | select(.path=="/api/2.0/pipelines") | .body.name' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.0/pipelines") | .body.name' "$OUT_REQUESTS"
 trace print_telemetry_bool_values | grep -v direct_drymigrate
 print_telemetry_bool_values | grep direct_drymigrate > out.drymigrate.$DATABRICKS_BUNDLE_ENGINE.txt || true
-rm out.requests.txt
+rm "$OUT_REQUESTS"

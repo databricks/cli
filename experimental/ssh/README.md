@@ -36,7 +36,39 @@ file with `StrictHostKeyChecking yes`. Tunnel host keys therefore never land in
 `~/.ssh/known_hosts`, where a name - unique only within one workspace - would collide with an
 entry left by other compute.
 
+### Filesystem access
+
+On dedicated compute, the tunnel server registers its own process with the filesystem
+daemons. SSH sessions that remain descendants of that server can keep accessing
+`/Workspace` and `/Volumes` if the bootstrap notebook exits and the server survives.
+This does not keep the compute or server alive, preserve detached processes that leave
+the server's process tree, or restore them after a server restart.
+
+The server checks its workspace-file registration and current credential every 60 seconds.
+It updates the workspace-file registration when the credential changes or the registered
+process is lost, and retries failed registrations. Unchanged workspace-file registrations
+do not generate updates. Volume registration is refreshed on every tick so it recovers
+after an independent UC-FUSE restart.
+The bootstrap supplies a fixed credential; checking it again cannot renew an expired or
+revoked credential. Registration entries may remain until compute shutdown. Matching
+the process start time prevents a reused PID from inheriting an old registration.
+
+Registration failures are warnings. On compute where the daemon APIs are unavailable,
+the tunnel starts and file access continues to depend on the bootstrap notebook as before.
+
+On serverless, the server skips registration entirely: non-root sessions are firewalled off
+the daemon ports, so every attempt would fail. `/Workspace` and `/Volumes` access comes from
+the bootstrap REPL's own registration, which covers the server and its descendants. The
+container is torn down about 35-60 seconds after the REPL exits, so nothing outlives the
+bootstrap run. The server logs one line at startup saying registration was skipped.
+
+When the current-user lookup succeeds, registration also includes the workspace home
+directory so workspace files can prepopulate its directory cache. This does not change the
+session's working directory or filesystem permissions.
+See [filesystem troubleshooting](./FAILURE_MODES.md#filesystem-access-after-the-bootstrap-notebook-exits).
+
 ## Development
+
 ```shell
 ./task build snapshot-release
 ./cli ssh connect --cluster=<id> --releases-dir=./dist --debug # or modify ssh config accordingly
@@ -44,6 +76,52 @@ entry left by other compute.
 
 To reproduce and test the known `ssh connect` failure modes (container missing `sshd`, or a
 container that can't run the Python bootstrap), see [FAILURE_MODES.md](./FAILURE_MODES.md).
+
+## Keeping detached processes alive
+
+By default nothing outlives the session: when the last client disconnects, the server shuts
+down after `--shutdown-delay` and the bootstrap notebook sweeps every process it parents,
+including work that was deliberately detached with `tmux`, `setsid` or `nohup`.
+
+`--keep-detached-processes` prevents idle shutdown while detached work is still running.
+It works with dedicated clusters and serverless compute:
+
+```sh
+databricks ssh connect --cluster=<id> --keep-detached-processes
+databricks ssh connect --name=my-session --keep-detached-processes
+```
+
+When `--shutdown-delay` elapses with no SSH clients, the server checks for detached processes.
+If it finds any, it stays available for reconnection and checks again every 15 seconds.
+Once no detached work remains, it shuts down. A reconnect cancels the pending check; after
+the last client disconnects again, the full `--shutdown-delay` applies again. If the process
+tree cannot be read, the server postpones shutdown and retries rather than risking the work.
+
+- **It keeps compute running.** On dedicated clusters the active job also
+  suppresses autotermination. An idle `tmux` session counts as detached work even after the
+  command in its pane finishes; close the session when you no longer need it.
+- **Reconnect to the same session.** Use the same cluster ID or serverless connection name.
+  The existing server and notebook remain alive, so a reconnect can attach to the original
+  `tmux` session rather than creating a replacement run.
+- **The maximum lifetime still applies.** `--server-timeout` (24h by default) bounds the job
+  from its start, regardless of connected clients or detached work. The flag does not
+  survive a job cancellation, notebook restart, or compute termination. Multi-day work
+  belongs in Jobs/DABs.
+- **The notebook must remain alive too.** It anchors the detached processes' workspace
+  filesystem access. If the SSH server exits for another reason, the bootstrap still
+  preserves detached work and holds the run open, as before. This fallback preserves work,
+  not SSH access: it does not restart the server inside that run.
+
+`databricks ssh setup` takes the same flag and bakes it into the host's `ProxyCommand`, so
+`ssh <name>` sessions ask for it too. That is the only place a configured host can set it: the
+`ProxyCommand` is the invocation that submits the run, and the mode is fixed at submission.
+
+A reconnect that omits the flag reuses a running server that was started with it, hold
+included, so a session that never asked for it can end up holding the cluster open. Asking for
+it against a server that was started without it starts a fresh server instead.
+
+When the flag is *not* set and the server does find detached processes at teardown, it logs a
+warning naming them, so work that is about to be swept is no longer lost silently.
 
 ## Design
 
@@ -148,3 +226,57 @@ Note that `metadata.json` is published before the server starts accepting connec
 left behind when the server exits. Neither its presence nor its contents prove that a server is
 running, which is why the client always re-checks `/metadata` through the driver proxy before
 reusing a port.
+
+### Session resume protocol
+
+Resume protocol v2 lets an SSH session survive a dropped websocket without losing or duplicating
+bytes. The protocol is symmetric: the client and server keep separate offsets and replay buffers
+for their outgoing streams.
+
+Before opening the websocket, the client requests `/capabilities`. It enables resume only when the
+server returns `{"resume_version":2}`. A missing route, another version, an invalid response, or a
+probe that takes more than ten seconds leaves resume disabled. The SSH connection still proceeds.
+When resume is enabled, the initial websocket URL includes these query parameters:
+
+| Parameter | Initial value | Meaning |
+| --- | --- | --- |
+| `id` | A new session UUID | Identifies the SSH session across websocket connections. |
+| `resume_version` | `2` | Selects this protocol version. |
+| `delivered` | `0` | Reports how many peer payload bytes this side has written to its local stream. |
+
+Binary websocket frames carry SSH payload. Text frames contain `{"delivered":N}` and acknowledge
+that the receiver wrote the first `N` bytes to sshd's stdin on the server or stdout on the client.
+Each side appends outgoing payload to a one MiB replay buffer before writing it to the websocket.
+Acknowledgments release buffer space. The receiver sends them after 64 KiB or 100 milliseconds.
+When the buffer is full, the sender stops reading its source until an acknowledgment frees space.
+
+After an unexpected disconnect, the client retries for 60 seconds. The server retains the session
+for 90 seconds so it remains available throughout that retry period.
+
+```mermaid
+sequenceDiagram
+  participant C as Client proxy
+  participant S as Server proxy
+  C->>S: GET /ssh?id=ID&resume_version=2&delivered=C&reattach=1
+  S->>S: Close the old socket and stop delivery at offset S
+  S-->>C: Websocket upgrade
+  S->>C: Text frame {"delivered":S}
+  par Replay server output after C
+    S->>C: Binary frames [C, server sent offset)
+  and Replay client input after S
+    C->>S: Binary frames [S, client sent offset)
+  end
+  C->>S: Continue payload and acknowledgments
+  S->>C: Continue payload and acknowledgments
+```
+
+The `delivered` value on the reattach URL tells the server where to replay its output. The first
+text frame on the new websocket gives the client the corresponding offset for its input. Each side
+replays the buffered range from the peer's offset before sending new payload. The server returns
+HTTP 409 when the existing session did not negotiate resume and HTTP 410 when the session no longer
+exists. Those responses stop retries; other connection failures retry within the 60-second budget.
+
+A normal websocket close with reason `finished` ends the session instead of starting a reattach.
+This explicit reason distinguishes a clean EOF from a dropped connection. Scheduled authentication
+handovers reuse the same session ID without `reattach=1`; if a handover itself drops, protocol v2
+uses the same reattach exchange to recover it.

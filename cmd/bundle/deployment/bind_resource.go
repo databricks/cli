@@ -16,6 +16,12 @@ import (
 // BindResource binds a bundle resource to an existing workspace resource.
 // This function is shared between the bind command and generate commands with --bind flag.
 func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock, skipInitContext bool) error {
+	_, err := bindResource(cmd, resourceKey, resourceId, autoApprove, forceLock, skipInitContext)
+	return err
+}
+
+// bindResource reports whether the bind applied its changes immediately.
+func bindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprove, forceLock, skipInitContext bool) (bool, error) {
 	b, stateDesc, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 		SkipInitContext: skipInitContext,
 		AlwaysPull:      true,
@@ -24,23 +30,23 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		},
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 	ctx := cmd.Context()
 
 	resource, err := b.Config.Resources.FindResourceByConfigKey(resourceKey)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	w := b.WorkspaceClient(ctx)
 	exists, err := resource.Exists(ctx, w, resourceId)
 	if err != nil {
-		return fmt.Errorf("failed to fetch the resource, err: %w", err)
+		return false, fmt.Errorf("failed to fetch the resource, err: %w", err)
 	}
 
 	if !exists {
-		return fmt.Errorf("%s with an id '%s' is not found", resource.ResourceDescription().SingularName, resourceId)
+		return false, fmt.Errorf("%s with an id '%s' is not found", resource.ResourceDescription().SingularName, resourceId)
 	}
 
 	tfName, ok := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
@@ -52,11 +58,11 @@ func BindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 		ResourceType: tfName,
 		ResourceKey:  resourceKey,
 		ResourceId:   resourceId,
-	}, stateDesc.Engine)
+	}, stateDesc)
 	if logdiag.HasError(ctx) {
-		return root.ErrAlreadyPrinted
+		return false, root.ErrAlreadyPrinted
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Successfully bound %s with an id '%s'", resource.ResourceDescription().SingularName, resourceId))
-	return nil
+	return stateDesc.IsDMS(), nil
 }

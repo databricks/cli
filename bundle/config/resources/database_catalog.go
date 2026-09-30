@@ -14,6 +14,7 @@ import (
 
 type DatabaseCatalog struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	database.DatabaseCatalog
 }
 
@@ -45,10 +46,6 @@ func (d *DatabaseCatalog) ResourceDescription() ResourceDescription {
 
 func (d *DatabaseCatalog) GetName() string {
 	return d.Name
-}
-
-func (d *DatabaseCatalog) GetURL() string {
-	return d.URL
 }
 
 func (d *DatabaseCatalog) InitializeURL(baseURL url.URL) {

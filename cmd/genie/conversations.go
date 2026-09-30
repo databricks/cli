@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 )
 
@@ -82,25 +83,7 @@ func saveStore(path string, store conversationStore) {
 	if err != nil {
 		return
 	}
-	if err := os.MkdirAll(filepath.Dir(path), conversationDirPerm); err != nil {
-		return
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".genie-conversations-*.tmp")
-	if err != nil {
-		return
-	}
-	defer os.Remove(tmp.Name())
-	defer tmp.Close()
-	if _, err := tmp.Write(raw); err != nil {
-		return
-	}
-	if err := tmp.Chmod(conversationFilePerm); err != nil {
-		return
-	}
-	if err := tmp.Close(); err != nil {
-		return
-	}
-	_ = os.Rename(tmp.Name(), path)
+	_ = atomicfile.Write(path, raw, conversationFilePerm, atomicfile.MkDir(conversationDirPerm))
 }
 
 // lookupConversationID returns the server conversation id mapped to sessionID on

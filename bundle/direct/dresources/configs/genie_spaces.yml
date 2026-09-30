@@ -1,0 +1,10 @@
+ignore_remote_changes:
+  # serialized_space locally (structured YAML) and remotely (JSON string) will differ
+  # textually, so we cannot meaningfully compare them for drift.
+  - field: serialized_space
+    reason: etag_based
+
+# "serialized_space" holds inlined Genie space JSON that is never read back
+# from state, so we persist only its content hash.
+hashed_fields:
+  - serialized_space

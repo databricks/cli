@@ -1,0 +1,21 @@
+# Deploy a job with a schedule block; saved state and remote both have it.
+trace $CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+# Local change: a leaf inside the schedule block (saved state vs config differ at
+# schedule.timezone_id).
+update_file.py databricks.yml "timezone_id: UTC" "timezone_id: America/New_York"
+
+# Remote change: drop the whole schedule block out-of-band (remote vs config differ
+# at the schedule block level).
+edit_resource.py jobs $job_id <<EOF
+r["schedule"] = None
+EOF
+
+# The local diff is at the leaf (schedule.timezone_id) while the remote diff is at
+# the block (schedule = nil vs the configured block). structdiff records the remote
+# side as one block-level change instead of descending, so the plan's "changes"
+# carries BOTH the whole "schedule" block and the "schedule.timezone_id" leaf
+# instead of merging them into leaves.
+trace $CLI bundle plan
+$CLI bundle plan -o json | nostamp > out.plan.direct.json

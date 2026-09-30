@@ -5,6 +5,7 @@ package workspace
 import (
 	access_control "github.com/databricks/cli/cmd/workspace/access-control"
 	agent_bricks "github.com/databricks/cli/cmd/workspace/agent-bricks"
+	ai_functions "github.com/databricks/cli/cmd/workspace/ai-functions"
 	ai_gateway "github.com/databricks/cli/cmd/workspace/ai-gateway"
 	ai_search "github.com/databricks/cli/cmd/workspace/ai-search"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
@@ -37,6 +38,7 @@ import (
 	data_quality "github.com/databricks/cli/cmd/workspace/data-quality"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	database "github.com/databricks/cli/cmd/workspace/database"
+	domains "github.com/databricks/cli/cmd/workspace/domains"
 	entity_tag_assignments "github.com/databricks/cli/cmd/workspace/entity-tag-assignments"
 	environments "github.com/databricks/cli/cmd/workspace/environments"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
@@ -97,6 +99,7 @@ import (
 	repos "github.com/databricks/cli/cmd/workspace/repos"
 	resource_quotas "github.com/databricks/cli/cmd/workspace/resource-quotas"
 	rfa "github.com/databricks/cli/cmd/workspace/rfa"
+	sandbox "github.com/databricks/cli/cmd/workspace/sandbox"
 	schemas "github.com/databricks/cli/cmd/workspace/schemas"
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	secrets_uc "github.com/databricks/cli/cmd/workspace/secrets-uc"
@@ -139,6 +142,7 @@ func All() []*cobra.Command {
 
 	out = append(out, access_control.New())
 	out = append(out, agent_bricks.New())
+	out = append(out, ai_functions.New())
 	out = append(out, ai_gateway.New())
 	out = append(out, ai_search.New())
 	out = append(out, alerts.New())
@@ -171,6 +175,7 @@ func All() []*cobra.Command {
 	out = append(out, data_quality.New())
 	out = append(out, data_sources.New())
 	out = append(out, database.New())
+	out = append(out, domains.New())
 	out = append(out, entity_tag_assignments.New())
 	out = append(out, environments.New())
 	out = append(out, experiments.New())
@@ -231,6 +236,7 @@ func All() []*cobra.Command {
 	out = append(out, repos.New())
 	out = append(out, resource_quotas.New())
 	out = append(out, rfa.New())
+	out = append(out, sandbox.New())
 	out = append(out, schemas.New())
 	out = append(out, secrets.New())
 	out = append(out, secrets_uc.New())

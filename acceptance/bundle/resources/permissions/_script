@@ -1,14 +1,14 @@
 trace $CLI bundle validate -o json | nostamp.py | jq .resources.$RESOURCE.foo.permissions
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 $CLI bundle plan -o json | nostamp.py > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 print_requests() {
-    jq -c < out.requests.txt | jq 'select(.method != "GET" and (.path | contains("permissions")) and (.path | contains("/api/2.0/bundle") | not))'
-    rm out.requests.txt
+    jq -c < "$OUT_REQUESTS" | jq 'select(.method != "GET" and (.path | contains("permissions")) and (.path | contains("/api/2.0/bundle") | not))'
+    rm "$OUT_REQUESTS"
 }
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 trace $CLI bundle deploy
 print_requests > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 

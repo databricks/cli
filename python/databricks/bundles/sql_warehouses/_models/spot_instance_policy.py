@@ -6,19 +6,23 @@ from typing import Literal
 
 class SpotInstancePolicy(Enum):
     """
-    EndpointSpotInstancePolicy configures whether the endpoint should use spot
-    instances.
+    EndpointSpotInstancePolicy configures whether the endpoint should use spot instances.
 
-    The breakdown of how the EndpointSpotInstancePolicy converts to per cloud
-    configurations is:
+    The breakdown of how the EndpointSpotInstancePolicy converts to per cloud configurations is:
 
-    +-------+--------------------------------------+--------------------------------+
-    | Cloud |            COST_OPTIMIZED            |     RELIABILITY_OPTIMIZED |
-    +-------+--------------------------------------+--------------------------------+
-    | AWS   | On Demand Driver with Spot Executors | On Demand Driver and
-    Executors | | AZURE | On Demand Driver and Executors       | On Demand Driver
-    and Executors |
-    +-------+--------------------------------------+--------------------------------+
+    .. list-table::
+       :header-rows: 1
+
+       * - Cloud
+         - COST_OPTIMIZED
+         - RELIABILITY_OPTIMIZED
+       * - AWS
+         - On Demand Driver with Spot Executors
+         - On Demand Driver and Executors
+       * - AZURE
+         - On Demand Driver and Executors
+         - On Demand Driver and Executors
+
     """
 
     POLICY_UNSPECIFIED = "POLICY_UNSPECIFIED"

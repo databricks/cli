@@ -121,6 +121,11 @@ type DataSourceWorkspaceSettingV2EffectiveStringVal struct {
 	Value string `json:"value,omitempty"`
 }
 
+type DataSourceWorkspaceSettingV2EffectiveWorkspaceLabel struct {
+	Color string `json:"color,omitempty"`
+	Label string `json:"label,omitempty"`
+}
+
 type DataSourceWorkspaceSettingV2IntegerVal struct {
 	Value int `json:"value,omitempty"`
 }
@@ -146,6 +151,11 @@ type DataSourceWorkspaceSettingV2StringVal struct {
 	Value string `json:"value,omitempty"`
 }
 
+type DataSourceWorkspaceSettingV2WorkspaceLabel struct {
+	Color string `json:"color,omitempty"`
+	Label string `json:"label,omitempty"`
+}
+
 type DataSourceWorkspaceSettingV2 struct {
 	AibiDashboardEmbeddingAccessPolicy             *DataSourceWorkspaceSettingV2AibiDashboardEmbeddingAccessPolicy             `json:"aibi_dashboard_embedding_access_policy,omitempty"`
 	AibiDashboardEmbeddingApprovedDomains          *DataSourceWorkspaceSettingV2AibiDashboardEmbeddingApprovedDomains          `json:"aibi_dashboard_embedding_approved_domains,omitempty"`
@@ -164,6 +174,7 @@ type DataSourceWorkspaceSettingV2 struct {
 	EffectivePersonalCompute                       *DataSourceWorkspaceSettingV2EffectivePersonalCompute                       `json:"effective_personal_compute,omitempty"`
 	EffectiveRestrictWorkspaceAdmins               *DataSourceWorkspaceSettingV2EffectiveRestrictWorkspaceAdmins               `json:"effective_restrict_workspace_admins,omitempty"`
 	EffectiveStringVal                             *DataSourceWorkspaceSettingV2EffectiveStringVal                             `json:"effective_string_val,omitempty"`
+	EffectiveWorkspaceLabel                        *DataSourceWorkspaceSettingV2EffectiveWorkspaceLabel                        `json:"effective_workspace_label,omitempty"`
 	IntegerVal                                     *DataSourceWorkspaceSettingV2IntegerVal                                     `json:"integer_val,omitempty"`
 	Name                                           string                                                                      `json:"name"`
 	OperationalEmailCustomRecipient                *DataSourceWorkspaceSettingV2OperationalEmailCustomRecipient                `json:"operational_email_custom_recipient,omitempty"`
@@ -171,4 +182,5 @@ type DataSourceWorkspaceSettingV2 struct {
 	ProviderConfig                                 *DataSourceWorkspaceSettingV2ProviderConfig                                 `json:"provider_config,omitempty"`
 	RestrictWorkspaceAdmins                        *DataSourceWorkspaceSettingV2RestrictWorkspaceAdmins                        `json:"restrict_workspace_admins,omitempty"`
 	StringVal                                      *DataSourceWorkspaceSettingV2StringVal                                      `json:"string_val,omitempty"`
+	WorkspaceLabel                                 *DataSourceWorkspaceSettingV2WorkspaceLabel                                 `json:"workspace_label,omitempty"`
 }

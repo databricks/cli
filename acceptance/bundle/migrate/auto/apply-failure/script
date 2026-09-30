@@ -1,0 +1,31 @@
+export DATABRICKS_BUNDLE_ENGINE=
+
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+rm -f "$OUT_REQUESTS"
+
+# Change the job so the migrating deploy must update it (jobs/reset), giving us a resource apply
+# to fault AFTER the migration has committed.
+trace update_file.py databricks.yml "Test Auto-Migrate Apply Failure" "Test Auto-Migrate Apply Failure (updated)"
+
+title "Migrating deploy: migration commits (point of no return), then the job apply fails"
+# CommitMigration runs after approval and BEFORE the apply: it pushes resources.json and retires
+# the terraform state, so the bundle is durably on direct. The subsequent jobs/reset then fails
+# (403). A deploy that fails after the commit has still migrated - this is the accepted window.
+fault.py "POST /api/2.2/jobs/reset" 403 0 1
+trace DATABRICKS_BUNDLE_ENGINE=direct errcode $CLI bundle deploy
+trace print_migration_telemetry
+rm -f "$OUT_REQUESTS"
+
+title "On direct despite the failed apply: resources.json present, terraform state retired\n"
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
+
+title "Retry finishes the apply on the already-migrated direct state (no re-migration)"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_migration_telemetry
+rm -f "$OUT_REQUESTS"
+
+title "Local state remains direct\n"
+trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
+trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"

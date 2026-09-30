@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle
+
+resources:
+  model_provider_services:
+    mps1:
+      parent: schemas/main.myschema
+      model_provider_service_id: mysvc
+      comment: bound service
+      config:
+        provider_type: EXTERNAL_MODEL_PROVIDER_TYPE_CUSTOM
+        custom:
+          direct:
+            base_url: https://api.example.com/v1
+            api_key:
+              plaintext: dummy-api-key

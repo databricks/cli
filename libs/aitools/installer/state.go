@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/env"
 )
 
@@ -118,38 +119,13 @@ func migrateState(state *InstallState) {
 // SaveState writes install state to the given directory atomically.
 // Creates the directory if it does not exist.
 func SaveState(dir string, state *InstallState) error {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("failed to create state directory: %w", err)
-	}
-
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 	data = append(data, '\n')
 
-	// Atomic write: write to temp file in the same directory, then rename.
-	tmp, err := os.CreateTemp(dir, ".state-*.tmp")
-	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
-	}
-	tmpName := tmp.Name()
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return fmt.Errorf("failed to write temp file: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("failed to close temp file: %w", err)
-	}
-
-	if err := os.Rename(tmpName, filepath.Join(dir, stateFileName)); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("failed to rename state file: %w", err)
-	}
-	return nil
+	return atomicfile.Write(filepath.Join(dir, stateFileName), data, 0o600, atomicfile.MkDir(0o755))
 }
 
 // GlobalSkillsDir returns the path to the global skills directory (~/.databricks/aitools/skills/).

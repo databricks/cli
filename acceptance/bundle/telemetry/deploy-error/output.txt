@@ -5,4 +5,4 @@ Error: unable to define default workspace root: bundle name not defined
 
 Exit code: 1
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt

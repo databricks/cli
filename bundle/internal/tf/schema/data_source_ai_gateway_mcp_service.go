@@ -3,18 +3,17 @@
 package schema
 
 type DataSourceAiGatewayMcpServiceConfigRateLimits struct {
-	Key             string `json:"key"`
-	Principal       string `json:"principal,omitempty"`
-	RenewalPeriod   string `json:"renewal_period"`
-	RequestTagKey   string `json:"request_tag_key,omitempty"`
-	RequestTagValue string `json:"request_tag_value,omitempty"`
-	Requests        int    `json:"requests,omitempty"`
-	Tokens          int    `json:"tokens,omitempty"`
+	Key           string `json:"key"`
+	Principal     string `json:"principal,omitempty"`
+	RenewalPeriod string `json:"renewal_period"`
+	Requests      int    `json:"requests,omitempty"`
+	Tokens        int    `json:"tokens,omitempty"`
 }
 
 type DataSourceAiGatewayMcpServiceConfigSourceConnection struct {
-	IsDeleted bool   `json:"is_deleted,omitempty"`
-	Name      string `json:"name"`
+	IsDeleted bool              `json:"is_deleted,omitempty"`
+	Name      string            `json:"name"`
+	Options   map[string]string `json:"options,omitempty"`
 }
 
 type DataSourceAiGatewayMcpServiceConfig struct {
@@ -36,7 +35,6 @@ type DataSourceAiGatewayMcpService struct {
 	Etag           string                                       `json:"etag,omitempty"`
 	MetastoreId    string                                       `json:"metastore_id,omitempty"`
 	Name           string                                       `json:"name"`
-	Owner          string                                       `json:"owner,omitempty"`
 	ProviderConfig *DataSourceAiGatewayMcpServiceProviderConfig `json:"provider_config,omitempty"`
 	UpdateTime     string                                       `json:"update_time,omitempty"`
 	UpdatedBy      string                                       `json:"updated_by,omitempty"`

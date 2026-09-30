@@ -14,6 +14,7 @@ import (
 
 type SyncedDatabaseTable struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	database.SyncedDatabaseTable
 }
 
@@ -45,10 +46,6 @@ func (s *SyncedDatabaseTable) ResourceDescription() ResourceDescription {
 
 func (s *SyncedDatabaseTable) GetName() string {
 	return s.Name
-}
-
-func (s *SyncedDatabaseTable) GetURL() string {
-	return s.URL
 }
 
 func (s *SyncedDatabaseTable) InitializeURL(baseURL url.URL) {

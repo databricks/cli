@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -88,9 +91,11 @@ func logPipelineDeleteApproval(ctx context.Context, b *bundle.Bundle, actions []
 func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) (bool, error) {
 	deleteActions := plan.GetActions()
 
-	// Deletes of resources that are already gone remotely only clean up the state,
-	// so they don't count as destructive actions and are not listed as deletions.
-	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.Gone })
+	// Deletes that only clean up the state (already gone remotely, or no delete
+	// operation) are not destructive, so they are not listed as deletions and need no
+	// approval. In particular this makes prevent_destroy inert for state-only
+	// resources: nothing is destroyed.
+	deleteActions = slices.DeleteFunc(deleteActions, func(a deployplan.Action) bool { return a.IsStateOnlyDelete() })
 
 	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
@@ -137,7 +142,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 
 func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
 	if engine.IsDirect() {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan)
+		// Not reported per resource: destroy names them up front for consent and then
+		// reports only a count, so there is no per-resource output to report into.
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, false)
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -178,7 +185,9 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 
 	bundle.ApplyContext(ctx, b, files.Delete())
 
-	if !logdiag.HasError(ctx) && b.Quiet < bundle.QuietAll {
+	// Print the summary even on error: resources that were deleted are still worth
+	// reporting (an accurate partial count is a follow-up).
+	if b.Quiet < bundle.QuietAll {
 		// Count top-level resources only, matching the approval list above (which
 		// skips children); this also keeps the count stable across engines. Gone
 		// resources are excluded to match that list: they were already deleted
@@ -186,12 +195,87 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 		// a destruction to report.
 		deleted := 0
 		for _, a := range plan.GetActions() {
-			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.Gone {
+			if a.ActionType == deployplan.Delete && !a.IsChildResource() && !a.IsStateOnlyDelete() {
 				deleted++
 			}
 		}
 		cmdio.LogString(ctx, fmt.Sprintf("Destroy: %d deleted", deleted))
 	}
+
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	// The deployment is gone, so remove all local state for this target: both engines' state files
+	// and any terraform.tfstate.backup left by a committed migration. A destroy tears everything
+	// down, so nothing here is worth keeping - in particular a coexisting terraform.tfstate is
+	// always superseded (a direct state only wins engine resolution by a higher serial, i.e. it is
+	// the newer, migrated-from version), so a later deploy has no reason to resurrect it. Remove the
+	// terraform state (and its backup) before the direct state so a crash between them never leaves a
+	// live terraform.tfstate with no direct state that the next deploy would pick up. Leaving any
+	// local state behind would also let a later fresh deploy (e.g. from another machine with no local
+	// state) mint a mismatched lineage. Log a removal failure but keep going; the destroy already
+	// succeeded and its summary is printed above.
+	_, localTerraformPath := b.StateFilenameTerraform(ctx)
+	_, localDirectPath := b.StateFilenameDirect(ctx)
+	for _, path := range []string{localTerraformPath, localTerraformPath + ".backup", localDirectPath} {
+		if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			logdiag.LogError(ctx, err)
+		}
+	}
+
+	// Destroy leaves empty scaffolding directories behind once their contents are
+	// gone (e.g. .internal/ and sync-snapshots/ after the state and sync files are
+	// removed), so prune them rather than littering empty directories. Pruning stays
+	// within the target's state dir, so a sibling engine's state (terraform/) or
+	// another target is untouched. Cosmetic cleanup: a failure here does not fail the
+	// destroy.
+	stateDir := b.GetLocalStateDir(ctx)
+	if _, err := removeEmptyDirs(stateDir, 0); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Debugf(ctx, "cannot prune empty state directories under %s: %v", stateDir, err)
+	}
+}
+
+// maxStateDirDepth caps removeEmptyDirs recursion. The local state tree is only a
+// few levels deep (bundle/<target>/{.internal,sync-snapshots,terraform}); the cap is
+// a defensive guard against a pathologically deep tree, not a limit ever hit in
+// practice.
+const maxStateDirDepth = 100
+
+// removeEmptyDirs removes every empty directory in the subtree rooted at dir,
+// bottom-up, and reports whether dir itself was removed. Symlinked entries count as
+// content and are never traversed, so a symlinked provider mirror is left intact.
+// depth is the caller's recursion depth; recursion stops with an error once it passes
+// maxStateDirDepth.
+func removeEmptyDirs(dir string, depth int) (bool, error) {
+	if depth > maxStateDirDepth {
+		return false, fmt.Errorf("state directory nesting exceeds %d levels at %s", maxStateDirDepth, dir)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false, err
+	}
+	empty := true
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			empty = false
+			continue
+		}
+		removed, err := removeEmptyDirs(filepath.Join(dir, entry.Name()), depth+1)
+		if err != nil {
+			return false, err
+		}
+		if !removed {
+			empty = false
+		}
+	}
+	if !empty {
+		return false, nil
+	}
+	if err := os.Remove(dir); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // The destroy phase deletes artifacts and resources.
@@ -279,6 +363,34 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	}
 
 	if hasApproval {
+		// Approved. A destroy that migrated from terraform commits the migration as part of its
+		// teardown: it runs on the in-memory migrated (direct) state, destroyCore removes the local
+		// state files (both engines'), and files.Delete removes the remote one. There is no separate
+		// remote push as in deploy's CommitMigration - the resources are about to be deleted - and a
+		// destroy-only migration is not adoption worth recording.
+		// Gated on the resolved engine being direct: a migration that fell back to terraform (e.g.
+		// a failed plan check) left the state on terraform and opened nothing, so this destroy
+		// just runs on terraform.
+		migrating := b.MigratingToDirect && engine.IsDirect()
+		if migrating {
+			count := len(b.DeploymentBundle.StateDB.ExportState(ctx))
+			suffix := "s"
+			if count == 1 {
+				suffix = ""
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("Migrated %d resource%s to direct deployment engine.", count, suffix))
+
+			// Persist the migrated base before UpgradeToWrite opens the WAL, mirroring deploy's
+			// CommitMigration. Otherwise a destroy interrupted between UpgradeToWrite and Finalize
+			// leaves an orphan WAL with no state file: the next run re-migrates (in memory) and
+			// trips UpgradeToWrite's O_EXCL on that WAL. With the base on disk the next run instead
+			// resolves to this committed direct state and its file-backed Open recovers the WAL.
+			if err := b.DeploymentBundle.StateDB.Persist(); err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("persisting migrated direct state: %w", err))
+				return
+			}
+		}
+
 		if engine.IsDirect() {
 			// Upgrade from read (opened by process.go) to write mode
 			if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
@@ -301,6 +413,12 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 		}
 		destroyCore(ctx, b, plan, engine)
 	} else {
+		// A prepared terraform→direct migration lives only in memory (nothing durable was
+		// written), so a declined destroy just drops it and stays on the terraform engine. Gated
+		// on the resolved engine being direct: a migration that fell back leaves nothing to keep.
+		if b.MigratingToDirect && engine.IsDirect() {
+			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
+		}
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}
 }

@@ -1,0 +1,14 @@
+# Deploy both by re-planning and from a plan saved on disk, so the hashes
+# computed during planning survive plan serialization.
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = ["tmp.*.*"]
+
+# Content hashes are stable but unreadable, and the parent's `\d{8,}` rule
+# mangles any digit run inside them. Order=1 runs before it; Distinct keeps
+# different hashes distinguishable.
+[[Repls]]
+Old = '[0-9a-f]{64}'
+New = '[FILE_HASH]'
+Order = 1
+Distinct = true

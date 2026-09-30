@@ -2,7 +2,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -10,7 +10,7 @@ project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 
 title "Initial deployment"
 trace $CLI bundle deploy
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 
 title "Change one field inside default_endpoint_settings"
 # The bundle declares no suspension field, which is what makes this a regression test:

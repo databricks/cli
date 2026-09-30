@@ -10,8 +10,8 @@ ppid1=`read_id.py my`
 print_requests() {
     # Excludes /api/2.0/bundle: a DMS operation path embeds the resource key, so it also
     # contains "/pipelines".
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")) and (.path | contains("/api/2.0/bundle") | not))' < out.requests.txt | nostamp.py
-    rm -f out.requests.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")) and (.path | contains("/api/2.0/bundle") | not))' < "$OUT_REQUESTS" | nostamp.py
+    rm -f "$OUT_REQUESTS"
 }
 
 trace print_requests
@@ -35,4 +35,4 @@ trace $CLI bundle destroy --auto-approve
 
 trace print_requests
 trace musterr $CLI pipelines get $ppid2
-rm out.requests.txt
+rm "$OUT_REQUESTS"

@@ -2,18 +2,18 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
 print_requests() {
     local name=$1
     trace print_requests.py --keep '//vector-search/endpoints' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 
 title "Initial deployment with STANDARD endpoint_type"
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 print_requests create
@@ -22,7 +22,7 @@ title "Change endpoint_type (should trigger recreation)"
 trace update_file.py databricks.yml "endpoint_type: STANDARD" "endpoint_type: STORAGE_OPTIMIZED"
 
 trace $CLI bundle plan
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy --auto-approve
 
 print_requests recreate

@@ -186,7 +186,7 @@ func TestBuildDiscoveryAuthorizeURL_HostOverride(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := buildDiscoveryAuthorizeURL(tc.host, "localhost:8020", "s", pkce, scopes, "")
+			got := buildDiscoveryAuthorizeURL(tc.host, "localhost:8020", "s", pkce, scopes, appClientID, "")
 			u, err := url.Parse(got)
 			if err != nil {
 				t.Fatalf("parsing URL: %v", err)
@@ -215,7 +215,7 @@ func TestBuildDiscoveryAuthorizeURL_Target(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := buildDiscoveryAuthorizeURL(defaultLoginDatabricksHost, "localhost:8020", "s", pkce, scopes, tc.target)
+			got := buildDiscoveryAuthorizeURL(defaultLoginDatabricksHost, "localhost:8020", "s", pkce, scopes, appClientID, tc.target)
 			u, err := url.Parse(got)
 			if err != nil {
 				t.Fatalf("parsing URL: %v", err)
@@ -273,6 +273,12 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 		if r.URL.Path != "/oidc/v1/token" {
 			t.Errorf("token server: want path /oidc/v1/token, got %s", r.URL.Path)
 		}
+		if err := r.ParseForm(); err != nil {
+			t.Fatalf("token server: parsing form: %v", err)
+		}
+		if got := r.Form.Get("client_id"); got != "custom-client-id" {
+			t.Errorf("token server: client_id = %q, want %q", got, "custom-client-id")
+		}
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{"access_token":"test-access-token","refresh_token":"test-refresh-token","token_type":"Bearer","expires_in":3600}`)
 	}))
@@ -288,7 +294,7 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 	}
 
 	storedTokens := map[string]*oauth2.Token{}
-	cacheMock := &tokenCacheMock{
+	cacheMock := &tokenStoreMock{
 		store: func(key string, tok *oauth2.Token) error {
 			storedTokens[key] = tok
 			return nil
@@ -302,12 +308,13 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 
 	p, err := NewPersistentAuth(
 		t.Context(),
-		WithTokenCache(cacheMock),
+		WithTokenStore(cacheMock),
 		WithBrowser(browserMock),
 		WithHttpClient(tokenServer.Client()),
 		WithOAuthEndpointSupplier(MockOAuthEndpointSupplier{}),
 		WithOAuthArgument(arg),
 		WithDiscoveryLogin(),
+		WithClientID("custom-client-id"),
 	)
 	if err != nil {
 		t.Fatalf("NewPersistentAuth(): %v", err)
@@ -323,8 +330,11 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 	dts := &discoveryTokenSource{pa: p}
 
 	errc := make(chan error, 1)
+	tokenc := make(chan *oauth2.Token, 1)
 	go func() {
-		errc <- dts.challenge()
+		token, err := dts.challenge()
+		tokenc <- token
+		errc <- err
 	}()
 
 	// Wait for browser to be called and extract state from the URL.
@@ -339,6 +349,9 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 		dest, err := url.Parse(destURL)
 		if err != nil {
 			t.Fatalf("parsing destination_url: %v", err)
+		}
+		if got := dest.Query().Get("client_id"); got != "custom-client-id" {
+			t.Errorf("authorize URL: client_id = %q, want %q", got, "custom-client-id")
 		}
 		state = dest.Query().Get("state")
 		if state == "" {
@@ -378,17 +391,17 @@ func TestDiscoveryTokenSource_Challenge(t *testing.T) {
 	if arg.GetDiscoveredHost() != expectedHost {
 		t.Errorf("discovered host = %q, want %q", arg.GetDiscoveredHost(), expectedHost)
 	}
-	if len(storedTokens) != 1 {
-		t.Fatalf("store count: want 1 key (profile), got %d", len(storedTokens))
+	if len(storedTokens) != 0 {
+		t.Fatalf("store count: want 0, got %d", len(storedTokens))
 	}
-	storedToken := storedTokens["test-profile"]
-	if storedToken == nil {
-		t.Fatalf("stored token for profile key is nil")
+	returnedToken := <-tokenc
+	if returnedToken == nil {
+		t.Fatal("returned token is nil")
 	}
-	if storedToken.AccessToken != "test-access-token" {
-		t.Errorf("access token = %q, want %q", storedToken.AccessToken, "test-access-token")
+	if returnedToken.AccessToken != "test-access-token" {
+		t.Errorf("access token = %q, want %q", returnedToken.AccessToken, "test-access-token")
 	}
-	if storedToken.RefreshToken != "test-refresh-token" {
-		t.Errorf("refresh token = %q, want %q", storedToken.RefreshToken, "test-refresh-token")
+	if returnedToken.RefreshToken != "test-refresh-token" {
+		t.Errorf("refresh token = %q, want %q", returnedToken.RefreshToken, "test-refresh-token")
 	}
 }

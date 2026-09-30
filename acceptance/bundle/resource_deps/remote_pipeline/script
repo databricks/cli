@@ -1,6 +1,6 @@
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipeline"))) | (.body.name // empty)' < out.requests.txt
-    rm out.requests.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipeline"))) | (.body.name // empty)' < "$OUT_REQUESTS"
+    rm "$OUT_REQUESTS"
 }
 
 $CLI bundle plan -o json | nostamp > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json

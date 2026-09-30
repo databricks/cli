@@ -658,8 +658,9 @@ type ResourceJobSparkSubmitTask struct {
 }
 
 type ResourceJobTaskAiRuntimeTaskDeploymentsCompute struct {
-	AcceleratorCount int    `json:"accelerator_count"`
-	AcceleratorType  string `json:"accelerator_type"`
+	AcceleratorCount      int    `json:"accelerator_count"`
+	AcceleratorType       string `json:"accelerator_type"`
+	ProvisionedCapacityId string `json:"provisioned_capacity_id,omitempty"`
 }
 
 type ResourceJobTaskAiRuntimeTaskDeployments struct {
@@ -675,6 +676,8 @@ type ResourceJobTaskAiRuntimeTask struct {
 	MlflowArtifactLocation    string                                    `json:"mlflow_artifact_location,omitempty"`
 	MlflowExperimentDirectory string                                    `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                    `json:"mlflow_run,omitempty"`
+	PriorityClass             string                                    `json:"priority_class,omitempty"`
+	UnityCatalogImagePath     string                                    `json:"unity_catalog_image_path,omitempty"`
 	Deployments               []ResourceJobTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
 }
 
@@ -761,8 +764,9 @@ type ResourceJobTaskEmailNotifications struct {
 }
 
 type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeploymentsCompute struct {
-	AcceleratorCount int    `json:"accelerator_count"`
-	AcceleratorType  string `json:"accelerator_type"`
+	AcceleratorCount      int    `json:"accelerator_count"`
+	AcceleratorType       string `json:"accelerator_type"`
+	ProvisionedCapacityId string `json:"provisioned_capacity_id,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments struct {
@@ -778,6 +782,8 @@ type ResourceJobTaskForEachTaskTaskAiRuntimeTask struct {
 	MlflowArtifactLocation    string                                                   `json:"mlflow_artifact_location,omitempty"`
 	MlflowExperimentDirectory string                                                   `json:"mlflow_experiment_directory,omitempty"`
 	MlflowRun                 string                                                   `json:"mlflow_run,omitempty"`
+	PriorityClass             string                                                   `json:"priority_class,omitempty"`
+	UnityCatalogImagePath     string                                                   `json:"unity_catalog_image_path,omitempty"`
 	Deployments               []ResourceJobTaskForEachTaskTaskAiRuntimeTaskDeployments `json:"deployments,omitempty"`
 }
 

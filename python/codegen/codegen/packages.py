@@ -3,13 +3,10 @@ import re
 from pathlib import Path
 from typing import Optional
 
-# Resources with a field type the generator can't model yet. Excluded until
-# support for that type is added.
-RESOURCE_DENYLIST = {
-    "resources.ClusterPolicy",  # interface{}
-    "resources.Dashboard",  # interface{}
-    "resources.GenieSpace",  # interface{}
-}
+# Resources with a field type the generator can't model yet are parked here and
+# excluded from generation until support for that type is added. Empty now, but
+# kept as the escape hatch for future resources that hit an unmodellable type.
+RESOURCE_DENYLIST: set[str] = set()
 
 # Only GA and public-preview resources are generated; later stages may still change.
 _EXCLUDED_RESOURCE_STAGES = {"PUBLIC_BETA", "PRIVATE_PREVIEW"}
@@ -62,6 +59,9 @@ RESOURCE_NAMESPACE = _load_resource_namespace()
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
 
 RENAMES = {
+    # interface{} carries no schema, so it is modelled as Any: JSON/YAML values
+    # pass through untyped. The Go config mutators validate the value.
+    "interface": "Any",
     # time.Time is a scalar serialized as an RFC3339 string; the Go side models
     # it as a string too (see libs/dyn/convert/sdk_native_types.go).
     "time.Time": "str",
@@ -87,6 +87,8 @@ PRIMITIVES = [
     "int",
     "int64",
     "float64",
+    # Treated as Any (see RENAMES); terminal, like a scalar, so it never recurses.
+    "interface",
 ]
 
 

@@ -7,7 +7,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
    trace $CLI bundle destroy --auto-approve
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -15,7 +15,7 @@ endpoint_name="projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/my-e
 
 title "Initial deployment with suspend_timeout_duration: 300s"
 trace $CLI bundle deploy
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI postgres get-endpoint "${endpoint_name}" | endpoint_fields
 
 title "Change suspend_timeout_duration to 600s"
@@ -27,7 +27,7 @@ title "Plan and deploy"
 # is the one per-engine file left.
 trace $CLI bundle plan
 trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_endpoints.my_endpoint" | {action, changes}' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"
 trace $CLI bundle deploy
 
 # The update_mask each engine sends is the whole point of this test.

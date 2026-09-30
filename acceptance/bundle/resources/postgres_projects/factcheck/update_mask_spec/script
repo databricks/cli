@@ -1,0 +1,44 @@
+# What update_mask=spec accepts on a postgres project, via raw $CLI (no bundle).
+# Identical sequence to ../update_mask_star, but masking spec instead of *; diff
+# the two output.txt files to see where the masks agree and differ. After each
+# update print_requests.py shows the exact PATCH sent.
+#
+# To run this outside the acceptance harness (against a real workspace), stub the
+# harness-provided helpers, then `bash` this file:
+#   export CLI=databricks UNIQUE_NAME=$(date +%s)
+#   trace()   { echo "+ $*" >&2; "$@"; }
+#   errcode() { "$@" || echo "Exit code: $?"; }
+#   title()   { printf '\n=== %s\n' "$*"; }
+#   project_fields()    { jq '{name, project_id, status}'; }
+#   print_requests.py() { :; }   # harness-only request recorder; no-op standalone
+
+pid="factcheck-spec-${UNIQUE_NAME}"
+name="projects/${pid}"
+
+cleanup() {
+    $CLI postgres delete-project "$name" --purge --no-wait &> LOG.cleanup || true
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+title "Create accepts a minimal body; the server materializes the rest"
+$CLI postgres create-project "$pid" --json '{"spec":{"display_name":"orig","pg_version":16}}' &> LOG.create
+trace $CLI postgres get-project "$name" | project_fields
+
+title "update_mask=spec with a partial body (omits history_retention_duration + default_endpoint_settings)"
+# spec is a patch, not a replace: it applies what is present and leaves the rest.
+errcode trace $CLI postgres update-project "$name" spec --json '{"spec":{"display_name":"changed","pg_version":16}}' | project_fields
+trace print_requests.py //postgres/projects --method PATCH
+
+title "Set default_endpoint_settings to a non-default value (leaf mask)"
+$CLI postgres update-project "$name" 'spec.default_endpoint_settings.autoscaling_limit_min_cu,spec.default_endpoint_settings.autoscaling_limit_max_cu,spec.default_endpoint_settings.suspension' --json '{"spec":{"default_endpoint_settings":{"autoscaling_limit_min_cu":0.5,"autoscaling_limit_max_cu":4,"suspend_timeout_duration":"300s"}}}' &> LOG.setup
+trace $CLI postgres get-project "$name" | project_fields
+trace print_requests.py //postgres/projects --method PATCH
+
+title "update_mask=spec with a body that now omits the non-default default_endpoint_settings"
+# 500: masking the whole spec resets the omitted sub-message and its emptied autoscaling
+# limits fail validation. The other fields are applied first, so it is a partial write —
+# the final read below shows display_name changed to changed2 while the response errored.
+errcode trace $CLI postgres update-project "$name" spec --json '{"spec":{"display_name":"changed2","pg_version":16,"history_retention_duration":"604800s"}}' | project_fields
+trace print_requests.py //postgres/projects --method PATCH
+trace $CLI postgres get-project "$name" | project_fields

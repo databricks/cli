@@ -1,0 +1,16 @@
+bundle:
+  name: schema-grants-manage-out-of-band-$UNIQUE_NAME
+
+resources:
+  schemas:
+    grants_schema:
+      name: schema_manage_oob_$UNIQUE_NAME
+      catalog_name: main
+      grants:
+        # Config declares only ALL_PRIVILEGES for the principal. MANAGE is granted
+        # out of band below; because ALL_PRIVILEGES does not imply MANAGE, the
+        # deploy must revoke it by name so the plan converges instead of reporting
+        # a perpetual update.
+        - principal: $CURRENT_USER_NAME
+          privileges:
+            - ALL_PRIVILEGES

@@ -17,6 +17,10 @@ func Groups() []cobra.Group {
 			Title: "Compute",
 		},
 		{
+			ID:    "sandbox",
+			Title: "Sandbox",
+		},
+		{
 			ID:    "lakeflow",
 			Title: "Lakeflow",
 		},
@@ -101,6 +105,10 @@ func Groups() []cobra.Group {
 			Title: "Agent Bricks",
 		},
 		{
+			ID:    "aifunctions",
+			Title: "AI Functions",
+		},
+		{
 			ID:    "tags",
 			Title: "Tags",
 		},
@@ -115,6 +123,10 @@ func Groups() []cobra.Group {
 		{
 			ID:    "bundledeployments",
 			Title: "Bundle Deployments",
+		},
+		{
+			ID:    "domains",
+			Title: "Domains",
 		},
 	}
 }

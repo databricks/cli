@@ -32,10 +32,7 @@ var knownMissingInRemoteType = map[string][]string{
 		"warehouse_id",
 	},
 	"secret_scopes": {
-		"backend_azure_keyvault",
 		"initial_manage_principal",
-		"scope",
-		"scope_backend_type",
 	},
 	"postgres_branches": {
 		"replace_existing",
@@ -94,7 +91,7 @@ var knownMissingInStateType = map[string][]string{
 	"job_runs": {
 		// State stores trigger fingerprints, not the config trigger list / prevent_destroy.
 		"lifecycle.prevent_destroy",
-		"lifecycle.triggers[*]",
+		"lifecycle.triggers",
 	},
 	"dashboards": {
 		"file_path",

@@ -37,6 +37,7 @@ func (c PostgresSnapshotScheduleConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresSnapshotSchedule struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresSnapshotScheduleConfig
 }
 
@@ -72,9 +73,9 @@ func (b *PostgresSnapshotSchedule) GetName() string {
 	return b.ID
 }
 
-func (b *PostgresSnapshotSchedule) GetURL() string {
+func (b *PostgresSnapshotSchedule) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (b *PostgresSnapshotSchedule) InitializeURL(_ url.URL) {

@@ -1,4 +1,6 @@
-trace curl -s $DATABRICKS_HOST/api/2.0/preview/scim/v2/Me
-trace curl -sD - $DATABRICKS_HOST/custom/endpoint?query=param
+MSYS_NO_PATHCONV=1 trace curl -s $DATABRICKS_HOST/api/2.0/preview/scim/v2/Me
+MSYS_NO_PATHCONV=1 trace curl -sD - $DATABRICKS_HOST/custom/endpoint?query=param
 
-trace errcode $CLI workspace get-status /a/b/c
+MSYS_NO_PATHCONV=1 trace errcode $CLI workspace get-status /a/b/c
+
+trace print_requests.py --get //

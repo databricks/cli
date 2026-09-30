@@ -10,35 +10,42 @@ import (
 
 var resourcesPrefix = dyn.MustPathFromString("resources")
 
-// ResolveConfigAgainstState resolves ${resources.*} references in the bundle config so
-// consumers such as "bundle run" see concrete values rather than references. For a
+// ResolveConfigAgainstState resolves ${resources.*} references within the resource at
+// target so its runner ("bundle run") sees concrete values rather than references. For a
 // reference resources.<group>.<name>.<field>, the value is taken from that resource's
 // persisted state (the source of truth after deploy) when available, falling back to
 // the config for anything not in state. Non-resource references are left untouched, and
 // references that resolve to neither are left as-is rather than failing the command.
 //
+// Only the target resource is resolved: its runner is the sole consumer of resolved
+// config, so resolving other resources is unnecessary work. It is also unsafe — an
+// unrelated resource may reference a resource that was never deployed, whose ${...}.id
+// falls back to an empty config string and then fails int type-checking.
+//
 // The state consultation only applies to the direct engine (its state DB holds fields
 // like the immutable snapshot's full_path that never reach the config); with terraform
 // the state DB is closed and everything resolves from config, which is where state load
 // has already written each resource's id.
-func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root) error {
+func (b *DeploymentBundle) ResolveConfigAgainstState(cfg *config.Root, target dyn.Path) error {
 	return cfg.Mutate(func(root dyn.Value) (dyn.Value, error) {
 		// Fall back to the fully-normalized config so references to fields that are
 		// implied (not explicitly set) still resolve.
 		normalized, _ := convert.Normalize(cfg, root, convert.IncludeMissingFields)
 
-		return dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
-			if !path.HasPrefix(resourcesPrefix) {
-				return dyn.InvalidValue, dynvar.ErrSkipResolution
-			}
-			if v, ok := b.lookupStateField(path); ok {
+		return dyn.MapByPath(root, target, func(_ dyn.Path, resource dyn.Value) (dyn.Value, error) {
+			return dynvar.Resolve(resource, func(path dyn.Path) (dyn.Value, error) {
+				if !path.HasPrefix(resourcesPrefix) {
+					return dyn.InvalidValue, dynvar.ErrSkipResolution
+				}
+				if v, ok := b.lookupStateField(path); ok {
+					return v, nil
+				}
+				v, err := dyn.GetByPath(normalized, path)
+				if err != nil {
+					return dyn.InvalidValue, dynvar.ErrSkipResolution
+				}
 				return v, nil
-			}
-			v, err := dyn.GetByPath(normalized, path)
-			if err != nil {
-				return dyn.InvalidValue, dynvar.ErrSkipResolution
-			}
-			return v, nil
+			})
 		})
 	})
 }

@@ -58,6 +58,7 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 		"created_at": 0,
 		"created_by": "tester@databricks.com",
 		"comment": "updated comment",
+		"custom_max_retention_hours": 0,
 		"effective_predictive_optimization_flag": {
 			"inherited_from_name": "deco-uc-prod-isolated-aws-us-east-1",
 			"inherited_from_type": "METASTORE",

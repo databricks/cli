@@ -38,6 +38,7 @@ func (c PostgresRoleConfig) MarshalJSON() ([]byte, error) {
 
 type PostgresRole struct {
 	BaseResource
+	ID string `json:"id,omitempty" bundle:"readonly"`
 	PostgresRoleConfig
 }
 
@@ -71,13 +72,14 @@ func (r *PostgresRole) ResourceDescription() ResourceDescription {
 }
 
 func (r *PostgresRole) GetName() string {
-	// Roles don't have a user-visible name field.
-	return ""
+	// Roles have no name field of their own; the resource name is the ID
+	// ("projects/{project_id}/branches/{branch_id}/roles/{role_id}").
+	return r.ID
 }
 
-func (r *PostgresRole) GetURL() string {
+func (r *PostgresRole) GetURL() (string, bool) {
 	// The IDs in the API do not (yet) map to IDs in the web UI.
-	return ""
+	return "", false
 }
 
 func (r *PostgresRole) InitializeURL(_ url.URL) {

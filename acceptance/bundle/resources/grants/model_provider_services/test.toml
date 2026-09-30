@@ -1,0 +1,5 @@
+# AI Gateway securables are direct-engine only (no Terraform provider path), so
+# there is no direct-vs-terraform request divergence to reconcile on cloud;
+# compare the recorded requests locally instead.
+Cloud = false
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

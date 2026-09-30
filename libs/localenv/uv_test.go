@@ -382,6 +382,49 @@ func TestUvFailureIncludesStderr(t *testing.T) {
 	})
 }
 
+func TestIsUvResolutionConflict(t *testing.T) {
+	// Positive cases are uv's two resolver-failure headlines; negatives are
+	// unrelated sync failures that must stay E_PROVISION.
+	assert.True(t, isUvResolutionConflict("  × No solution found when resolving dependencies:\n  ╰─▶ Because ..."))
+	assert.True(t, isUvResolutionConflict("error: your project's requirements are unsatisfiable"))
+	assert.True(t, isUvResolutionConflict("NO SOLUTION FOUND"), "match is case-insensitive")
+	assert.False(t, isUvResolutionConflict("error: Connection refused"))
+	assert.False(t, isUvResolutionConflict("error: Failed to build `foo==1.0`"))
+	assert.False(t, isUvResolutionConflict("error: No interpreter found for Python 3.12"))
+	assert.False(t, isUvResolutionConflict(""))
+	// An offline cache miss carries the resolver banner ("... was not found in the
+	// cache ... No solution found") but is a reachability problem, not a dependency
+	// conflict; the "network was disabled" hint keeps it E_PROVISION.
+	assert.False(t, isUvResolutionConflict("× No solution found when resolving dependencies:\n  ╰─▶ Because foo was not found in the cache ...\nhint: Packages were unavailable because the network was disabled"))
+}
+
+func TestProvisionClassifiesResolutionConflict(t *testing.T) {
+	t.Run("resolver_failure_is_provision_conflict", func(t *testing.T) {
+		ctx, stub := process.WithStub(t.Context())
+		stub.WithStderrFor(`sync`, "  × No solution found when resolving dependencies:\n  ╰─▶ Because the requested pins are unsatisfiable.")
+		stub.WithFailureFor(`sync`, errors.New("exit status 1"))
+
+		err := (&uvManager{bin: "uv"}).Provision(ctx, t.TempDir(), "3.12")
+
+		var pe *PipelineError
+		require.ErrorAs(t, err, &pe)
+		assert.Equal(t, ErrProvisionConflict, pe.Code)
+		assert.Contains(t, pe.Msg, "No solution found")
+	})
+
+	t.Run("unrelated_failure_stays_provision", func(t *testing.T) {
+		ctx, stub := process.WithStub(t.Context())
+		stub.WithStderrFor(`sync`, "error: Connection refused")
+		stub.WithFailureFor(`sync`, errors.New("exit status 1"))
+
+		err := (&uvManager{bin: "uv"}).Provision(ctx, t.TempDir(), "3.12")
+
+		var pe *PipelineError
+		require.ErrorAs(t, err, &pe)
+		assert.Equal(t, ErrProvision, pe.Code)
+	})
+}
+
 func TestConfirmUvInstall(t *testing.T) {
 	t.Run("opt_in_env_var_consents_without_prompt", func(t *testing.T) {
 		// Non-interactive context, but the opt-in env var grants consent.

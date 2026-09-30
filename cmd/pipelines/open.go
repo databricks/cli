@@ -72,7 +72,10 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		}
 
 		// Confirm that the resource has a URL.
-		url := ref.Resource.GetURL()
+		url, supported := ref.Resource.GetURL()
+		if !supported {
+			return errors.New("this resource type does not have a URL")
+		}
 		if url == "" {
 			return errors.New("pipeline does not have a URL associated with it (has it been deployed?)")
 		}

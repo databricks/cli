@@ -1,0 +1,9 @@
+
+=== Current CLI deploys: serialized_dashboard is stored as a content hash
+json.state.resources.dashboards.dashboard1.state.serialized_dashboard = "sha256:[HASH]";
+
+=== Old CLI on the hashed state plans a drift update, not a recreate or crash
+=== The old CLI redeploys and writes full content back, so the drift is self-correcting
+json.state.resources.dashboards.dashboard1.state.serialized_dashboard = "{\"pages\":[{\"name\":\"main\",\"displayName\":\"Sales Overview\",\"layout\":[{\"widget\":{\"name\":\"counter1\"}}]}]}\n";
+
+=== A second old-CLI plan is a no-op

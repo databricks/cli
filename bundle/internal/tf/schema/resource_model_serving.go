@@ -80,6 +80,7 @@ type ResourceModelServingConfigServedEntitiesExternalModelAmazonBedrockConfig st
 	AwsSecretAccessKeyPlaintext string `json:"aws_secret_access_key_plaintext,omitempty"`
 	BedrockProvider             string `json:"bedrock_provider"`
 	InstanceProfileArn          string `json:"instance_profile_arn,omitempty"`
+	UcServiceCredentialName     string `json:"uc_service_credential_name,omitempty"`
 }
 
 type ResourceModelServingConfigServedEntitiesExternalModelAnthropicConfig struct {

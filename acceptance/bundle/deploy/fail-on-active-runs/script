@@ -5,6 +5,6 @@ trace $CLI bundle deploy
 trace errcode $CLI bundle deploy --fail-on-active-runs
 
 title "Expecting only 1 delete request to artifact_path/.internal folder from the first deploy"
-trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.0/workspace/delete") | select(.body.path | test(".*/artifacts/.internal"))' "$OUT_REQUESTS"
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

@@ -101,14 +101,24 @@ func FetchDeployment(ctx context.Context, w *databricks.WorkspaceClient, statePa
 		return "", nil, 0, err
 	}
 
-	lastVersionID := 0
-	if deployment.LastVersionId != "" {
-		lastVersionID, err = strconv.Atoi(deployment.LastVersionId)
-		if err != nil {
-			return "", nil, 0, fmt.Errorf("failed to parse last_version_id %q: %w", deployment.LastVersionId, err)
-		}
+	lastVersionID, err := parseLastVersionID(deployment)
+	if err != nil {
+		return "", nil, 0, err
 	}
 	return deploymentID, deployment, lastVersionID, nil
+}
+
+// parseLastVersionID parses the deployment's last recorded version, which the service reports
+// as a string. It returns 0 when the deployment does not exist yet or has no recorded version.
+func parseLastVersionID(dmsDeployment *bundledeployments.Deployment) (int, error) {
+	if dmsDeployment == nil || dmsDeployment.LastVersionId == "" {
+		return 0, nil
+	}
+	v, err := strconv.Atoi(dmsDeployment.LastVersionId)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse last_version_id %q: %w", dmsDeployment.LastVersionId, err)
+	}
+	return v, nil
 }
 
 // UpdateDeployment writes the fields mask names onto the deployment. The service ignores every

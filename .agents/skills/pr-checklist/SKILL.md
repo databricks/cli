@@ -59,6 +59,7 @@ Add a changelog fragment under `.nextchanges/` when your change is user-visible.
 
 **When to add an entry:**
 - New or changed CLI command, flag, or subcommand behavior
+- User-visible change to a `databricks air` command, including preview commands (put it under `air`)
 - New or changed bundle config field, schema, or engine behavior
 - New direct dependency (annotate under `Dependency updates`)
 - Bug fix that users will notice
@@ -69,7 +70,7 @@ Add a changelog fragment under `.nextchanges/` when your change is user-visible.
 - Auto-generated output changes without a corresponding user-facing change
 
 **How to add:**
-- Create `.nextchanges/<section>/<name>.md`, picking the section folder that fits: `cli`, `bundles`, `dependency-updates`, `notable-changes`, or `api-changes`. `<name>` is arbitrary (a feature name or your PR number) — just keep it unique.
+- Create `.nextchanges/<section>/<name>.md`, picking the section folder that fits: `cli`, `air`, `bundles`, `dependency-updates`, `notable-changes`, or `api-changes`. `<name>` is arbitrary (a feature name or your PR number) — just keep it unique.
 - Write a single line in user-facing language, no Jira links: start it with a `* ` bullet marker and end it with a period.
 - **Voice and tense: imperative mood, active voice.** Lead with a verb that names the change — `Add`, `Fix`, `Bump`, `Remove`, `Deprecate`, `Support`, `Reject`, `Warn` — and describe the user-facing effect, not the implementation. Never use past tense (`Added`/`Fixed`) or first person (`we`/`I`/`our`). When a change reads better as a resulting behavior than as a verb, lead with the affected command, flag, or field in the present tense with "now".
   - GOOD: Add support for the `cluster_policies` resource type.

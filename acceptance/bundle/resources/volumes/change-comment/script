@@ -33,4 +33,4 @@ trace print_requests.py //unity
 trace musterr $CLI volumes read main.myschema.myvolume
 $CLI bundle summary -o json | jq .resources.volumes.volume1
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"

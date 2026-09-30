@@ -8,6 +8,7 @@ const (
 	PresetsNamePrefixIsSet              = "presets_name_prefix_is_set"
 	AppLifecycleStarted                 = "app_lifecycle_started"
 	ClusterLifecycleStarted             = "cluster_lifecycle_started"
+	DeploymentHistoryEnabled            = "deployment_history_enabled"
 	SqlWarehouseLifecycleStarted        = "sql_warehouse_lifecycle_started"
 	SelectUsed                          = "select_used"
 
@@ -33,6 +34,10 @@ const (
 	DirectMigrateWarnings    = "direct_migrate_warnings"
 	// True when the post-convert plan check failed; the migration was not committed.
 	DirectMigratePlanError = "direct_migrate_plan_error"
+	// True when the migrated state's first plan would recreate (destroy + create) an
+	// existing resource. The migration still commits; the recreate is a genuine pending
+	// change gated by the deploy's --auto-approve, and this only records how often it happens.
+	DirectMigrateRecreatePlanned = "direct_migrate_recreate_planned"
 
 	// Recorded when an automatic post-deploy migration to the direct engine
 	// actually ran (state was rewritten). Exactly one of the three keys is true;
@@ -109,4 +114,13 @@ const (
 	DMSUndeclaredOtherUser        = "dms_undeclared_other_user"
 	DMSUndeclaredServicePrincipal = "dms_undeclared_service_principal"
 	DMSUndeclaredGroup            = "dms_undeclared_group"
+
+	// Task-type usage is recorded generically at deploy as one "has_<task_type>" key
+	// per task type present in the bundle (e.g. has_notebook_task, has_ai_runtime_task);
+	// see collectTaskTypes in bundle/phases. The two keys below are extra
+	// ai_runtime_task-specific dimensions, emitted only when the bundle declares an
+	// ai_runtime_task, so a false value means "has an ai_runtime_task, but it is not
+	// scheduled / not multi-task". GPU type and count are intentionally not recorded here.
+	AiRuntimeTaskScheduled = "ai_runtime_task_scheduled"
+	AiRuntimeTaskMultitask = "ai_runtime_task_multitask"
 )

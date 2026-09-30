@@ -3,7 +3,7 @@ unset MSYS_NO_PATHCONV
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm -f out.requests.txt
+    rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 
@@ -11,7 +11,7 @@ trap cleanup EXIT
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle deploy
 
-rm out.requests.txt
+rm "$OUT_REQUESTS"
 
 dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.inline_dash.id')
 add_repl "$dashboard_id" DASHBOARD_ID

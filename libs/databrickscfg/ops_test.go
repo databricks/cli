@@ -185,6 +185,40 @@ default_profile = DEFAULT
 `, string(contents))
 }
 
+func TestSaveResourcesToProfile(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	require.NoError(t, SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "u2m",
+		Host:       "https://foo",
+	}))
+
+	resources := []string{
+		"https://foo/ai-gateway/mcp/system.ai.github",
+		"https://foo/ai-gateway/mcp/system.ai.slack",
+	}
+	require.NoError(t, SaveResourcesToProfile(ctx, "u2m", path, resources))
+
+	contents, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(contents), "resources = https://foo/ai-gateway/mcp/system.ai.github,https://foo/ai-gateway/mcp/system.ai.slack")
+
+	// An empty list clears the key.
+	require.NoError(t, SaveResourcesToProfile(ctx, "u2m", path, nil))
+	contents, err = os.ReadFile(path)
+	require.NoError(t, err)
+	assert.NotContains(t, string(contents), "resources")
+}
+
+func TestSaveResourcesToProfile_MissingProfile(t *testing.T) {
+	ctx := t.Context()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+	err := SaveResourcesToProfile(ctx, "does-not-exist", path, []string{"https://foo/ai-gateway/mcp/system.ai.github"})
+	assert.ErrorContains(t, err, `profile "does-not-exist" not found`)
+}
+
 func TestGetDefaultProfile(t *testing.T) {
 	testCases := []struct {
 		name    string

@@ -5,7 +5,7 @@ export PARENT_PATH=" /Users/$USERNAME/.bundle/change-parent-path-$UNIQUE_NAME/de
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm out.requests.txt
+    rm "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 # Deploy the dashboard and capture the ID
@@ -33,7 +33,7 @@ new_dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboa
 add_repl "$new_dashboard_id" NEW_DASHBOARD_ID
 
 # Print API requests made to create parent_path or create / update / delete the dashboard.
-cat out.requests.txt | \
+cat "$OUT_REQUESTS" | \
  jq 'select(.method == "POST" or .method == "PATCH" or .method == "DELETE")' | \
  jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
  > out.dashboardrequests.txt

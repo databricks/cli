@@ -14,6 +14,7 @@ func newBindCommand() *cobra.Command {
 
 This command binds a workspace resource to a corresponding bundle resource definition.
 After binding, the workspace resource will be updated based on the bundle configuration on the next deployment.
+For targets that record deployment history, binding applies these changes immediately.
 
 Arguments:
   KEY         - The resource key defined in your bundle configuration
@@ -50,12 +51,16 @@ Any manual changes made in the workspace UI may be overwritten on deployment.`,
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		err := BindResource(cmd, args[0], args[1], autoApprove, forceLock, false)
+		immediate, err := bindResource(cmd, args[0], args[1], autoApprove, forceLock, false)
 		if err != nil {
 			return err
 		}
 
-		cmdio.LogString(cmd.Context(), "Run 'bundle deploy' to deploy changes to your workspace")
+		if immediate {
+			cmdio.LogString(cmd.Context(), "Bind changes have been applied to your workspace")
+		} else {
+			cmdio.LogString(cmd.Context(), "Run 'bundle deploy' to deploy changes to your workspace")
+		}
 		return nil
 	}
 

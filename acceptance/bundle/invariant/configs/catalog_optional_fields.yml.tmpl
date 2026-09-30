@@ -6,6 +6,9 @@ resources:
     foo:
       name: test-catalog-$UNIQUE_NAME
       comment: This is a test catalog
-      custom_max_retention_hours: 48
+      custom_max_retention_hours: 48 # CAN_REMOVE
       managed_encryption_settings:
         customer_managed_key_id: 00000000-0000-0000-0000-000000000000
+      properties:
+        tier: bronze
+        team: data # CAN_REMOVE

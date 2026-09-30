@@ -36,5 +36,5 @@ title "Plan again: no residual drift, and the version stamps are ignored"
 trace $CLI bundle plan | contains.py "Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged"
 
 # The list-resources and plan/state captures above record requests we do not assert on; drop them so
-# out.requests.txt does not become a nondeterministic golden.
-rm -f out.requests.txt
+# "$OUT_REQUESTS" does not become a nondeterministic golden.
+rm -f "$OUT_REQUESTS"

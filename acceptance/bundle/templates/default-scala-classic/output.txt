@@ -1,0 +1,53 @@
+
+>>> [CLI] bundle init default-scala --config-file ./input.json --output-dir actual
+
+Welcome to the default-scala template for Declarative Automation Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+
+✨ Your new project has been created in the 'my_default_scala' directory!
+
+Please refer to the README.md file for "getting started" instructions.
+See also the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> diff.py [TESTROOT]/bundle/templates/default-scala-classic/../default-scala/output actual
+--- [TESTROOT]/bundle/templates/default-scala-classic/../default-scala/output/my_default_scala/README.md
++++ actual/my_default_scala/README.md
+@@ -91,3 +91,7 @@
+
+ ### Job configuration
+-This project uses serverless compute. No cluster setup is required.
++This project uses standard compute for the job cluster. Standard compute requires Unity Catalog volume JAR paths to be allowlisted by your workspace admin.
++
++If you want to use an existing cluster instead, replace `job_cluster_key` in the task configuration with `existing_cluster_id: <your_cluster_id>` in the job YAML file.
++
++You can also customize the cluster configuration (node type, worker count, Spark version) in the `job_clusters` section of the job YAML file.
+--- [TESTROOT]/bundle/templates/default-scala-classic/../default-scala/output/my_default_scala/resources/my_default_scala.job.yml
++++ actual/my_default_scala/resources/my_default_scala.job.yml
+@@ -12,4 +12,5 @@
+       tasks:
+         - task_key: main_task
++          job_cluster_key: job_cluster
+           spark_jar_task:
+             main_class_name: com.examples.Main
+@@ -19,9 +20,12 @@
+               - "--schema"
+               - "{{job.parameters.schema}}"
+-          environment_key: default
+-      environments:
+-        - environment_key: default
+-          spec:
+-            environment_version: "5"
+-            java_dependencies:
+-              - ${workspace.artifact_path}/.internal/my_default_scala-assembly-0.1.jar
++          libraries:
++            - jar: ${workspace.artifact_path}/.internal/my_default_scala-assembly-0.1.jar
++      job_clusters:
++        - job_cluster_key: job_cluster
++          new_cluster:
++            spark_version: 17.3.x-scala2.13
++            node_type_id: [NODE_TYPE_ID]
++            autoscale:
++              min_workers: 1
++              max_workers: 4

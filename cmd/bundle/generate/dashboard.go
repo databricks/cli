@@ -16,14 +16,9 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy/terraform"
-	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/generate"
-	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/deployment"
-	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -386,41 +381,7 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {
-	phases.Initialize(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	requiredEngine, err := utils.ResolveEngineSetting(ctx, b)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-	ctx, stateDesc := statemgmt.PullResourcesState(ctx, b, statemgmt.AlwaysPull(true), requiredEngine)
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	var state statemgmt.ExportedResourcesMap
-	if stateDesc.Engine.IsDirect() {
-		_, localPath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.StateDB.Open(ctx, localPath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		state = b.DeploymentBundle.ExportState(ctx)
-	} else {
-		var err error
-		state, err = terraform.ParseResourcesState(ctx, b)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-	}
-
-	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(state),
-	)
+	ctx = loadStateForGenerate(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}

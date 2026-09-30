@@ -5,7 +5,7 @@ touch foo.py
 cleanup() {
   trace $CLI bundle destroy --auto-approve
   trace $CLI pipelines delete ${PIPELINE_ID}
-  rm out.requests.txt
+  rm "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 

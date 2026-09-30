@@ -86,7 +86,7 @@ func createResumableTestClient(t *testing.T, serverURL string, errChan chan erro
 	createConn := func(ctx context.Context, dial DialRequest) (*websocket.Conn, error) {
 		url := fmt.Sprintf("%s?id=%s", wsURL, dial.ConnID)
 		if dial.ResumeCapable {
-			url += fmt.Sprintf("&delivered=%d", dial.Delivered)
+			url += fmt.Sprintf("&resume_version=2&delivered=%d", dial.Delivered)
 			if dial.Reattach {
 				url += "&reattach=1"
 			}

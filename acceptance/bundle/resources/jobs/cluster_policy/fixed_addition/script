@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+title "Policy-supplied spark_version and custom_tags are not drift at any cluster-spec location\n"
+trace $CLI bundle plan
+
+title "Each is classified remote_addition\n"
+trace $CLI bundle plan -o json | jq -S '.plan["resources.jobs.my_job"].changes
+  | with_entries(select(.key | test("custom_tags|spark_version")))'

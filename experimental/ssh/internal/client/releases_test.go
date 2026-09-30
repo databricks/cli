@@ -1,12 +1,16 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"strings"
 	"syscall"
 	"testing"
 
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -94,4 +98,46 @@ func TestNewHTTP11WorkspaceClient(t *testing.T) {
 
 	// The source config is not mutated: it keeps its own (nil) transport.
 	assert.Nil(t, src.HTTPTransport)
+}
+
+func TestUploadReleasesWithExistingBinary(t *testing.T) {
+	tests := []struct {
+		name         string
+		version      string
+		wantUploaded []string
+	}{
+		{
+			name:         "release version skips the upload",
+			version:      "1.12.0",
+			wantUploaded: nil,
+		},
+		{
+			name:         "dev version overwrites the binary",
+			version:      "1.12.1-dev+abcdef123456",
+			wantUploaded: []string{"amd64", "arm64"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := t.Context()
+			workspaceFiler, err := filer.NewLocalClient(t.TempDir())
+			require.NoError(t, err)
+			for _, arch := range []string{"amd64", "arm64"} {
+				remoteBinaryPath := strings.TrimSuffix(getReleaseName(arch, tt.version), ".zip") + "/databricks"
+				err := workspaceFiler.Write(ctx, remoteBinaryPath, strings.NewReader("old"), filer.CreateParentDirectories)
+				require.NoError(t, err)
+			}
+
+			var uploaded []string
+			getRelease := func(ctx context.Context, architecture, version, releasesDir string) (io.ReadCloser, error) {
+				uploaded = append(uploaded, architecture)
+				return io.NopCloser(strings.NewReader("new")), nil
+			}
+
+			err = uploadReleases(ctx, workspaceFiler, getRelease, tt.version, "")
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantUploaded, uploaded)
+		})
+	}
 }

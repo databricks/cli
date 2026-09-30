@@ -28,7 +28,7 @@ HH:MM:SS Debug: non-retriable error: Post "[DATABRICKS_URL]/telemetry-ext": cont
 HH:MM:SS Debug: Attempt 1 failed due to a timeout. Will not retry pid=PID
 HH:MM:SS Info: telemetry upload failed: uploading telemetry logs timed out: Post "[DATABRICKS_URL]/telemetry-ext": context deadline exceeded pid=PID
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "frontend_log_event_id": "[UUID]",
   "entry": {

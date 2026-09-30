@@ -1,30 +1,17 @@
 
 >>> [CLI] schemas create dms_bind_[UNIQUE_NAME] main
 {
-  "browse_only": false,
-  "catalog_name": "main",
-  "catalog_type": "MANAGED_CATALOG",
-  "created_at": [UNIX_TIME_MILLIS][0],
-  "created_by": "[USERNAME]",
-  "effective_predictive_optimization_flag": {
-    "inherited_from_name": "[METASTORE_NAME]",
-    "inherited_from_type": "METASTORE",
-    "value": "ENABLE"
-  },
-  "enable_predictive_optimization": "INHERIT",
-  "full_name": "main.dms_bind_[UNIQUE_NAME]",
-  "metastore_id": "[UUID]",
-  "name": "dms_bind_[UNIQUE_NAME]",
-  "owner": "[USERNAME]",
-  "schema_id": "[UUID]",
-  "updated_at": [UNIX_TIME_MILLIS][0],
-  "updated_by": "[USERNAME]"
+  "full_name": "main.dms_bind_[UNIQUE_NAME]"
 }
 
+=== A missing resource cannot be bound
+>>> musterr [CLI] bundle deployment bind sc main.missing_[UNIQUE_NAME] --auto-approve
+Error: schema with an id 'main.missing_[UNIQUE_NAME]' is not found
+
 === Bind sc, the first bind: it creates the deployment. The config already matches, so this is a plain bind that records the resource without touching it
->>> [CLI] bundle deployment bind sc main.dms_bind_[UNIQUE_NAME] --auto-approve
+>>> [CLI] bundle deployment bind sc main.dms_bind_[UNIQUE_NAME]
 Successfully bound schema with an id 'main.dms_bind_[UNIQUE_NAME]'
-Run 'bundle deploy' to deploy changes to your workspace
+Bind changes have been applied to your workspace
 
 === Version 1 records only sc, with the plain bind action type; the jobs are left untouched
 >>> print_requests.py --dms --method POST //versions --nostamp
@@ -53,10 +40,16 @@ Run 'bundle deploy' to deploy changes to your workspace
   }
 }
 
+=== An update requires confirmation and leaves the workspace unchanged without it
+>>> [CLI] jobs get [FOO_ID]
+{
+  "name": "bind-target-[UNIQUE_NAME]"
+}
+
 === Bind foo into the existing deployment: its config differs, so this is a bind-and-update that applies the config now
 >>> [CLI] bundle deployment bind foo [FOO_ID] --auto-approve
 Successfully bound job with an id '[FOO_ID]'
-Run 'bundle deploy' to deploy changes to your workspace
+Bind changes have been applied to your workspace
 
 === Version 2 records only foo and its permissions (bar is untouched) and chains to version 1
 >>> print_requests.py --dms --method POST //versions --nostamp
@@ -89,6 +82,24 @@ Run 'bundle deploy' to deploy changes to your workspace
     "completion_reason": "VERSION_COMPLETE_SUCCESS"
   }
 }
+
+=== The bound job has already been updated
+>>> [CLI] jobs get [FOO_ID]
+{
+  "name": "foo"
+}
+
+=== An already-bound resource cannot be rebound
+>>> musterr [CLI] bundle deployment bind foo [FOO_ID] --auto-approve
+Error: Resource already managed
+
+The bundle is already managing resource for resources.jobs.foo and it is bound to the requested ID [FOO_ID].
+
+
+=== Unbind remains unsupported for recorded deployments
+>>> musterr [CLI] bundle deployment unbind foo
+Error: unbind is not supported for a bundle target that records deployment history
+
 
 === sc and foo are now managed; bar is still an unmanaged create
 >>> [CLI] bundle plan

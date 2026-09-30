@@ -64,7 +64,7 @@ HH:MM:SS Debug: non-retriable error: Endpoint not implemented. pid=PID sdk=true
 HH:MM:SS Info: Attempt 3 failed due to a server side error. Retrying status code: 501 pid=PID
 HH:MM:SS Info: telemetry upload failed: failed to upload telemetry logs after three attempts pid=PID
 
->>> cat out.requests.txt
+>>> cat [OUTPUT_DIR]/out.requests.txt
 {
   "frontend_log_event_id": "[UUID]",
   "entry": {

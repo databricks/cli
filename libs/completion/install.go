@@ -3,7 +3,8 @@ package completion
 import (
 	"context"
 	"os"
-	"path/filepath"
+
+	"github.com/databricks/cli/libs/atomicfile"
 )
 
 // Install configures shell completion for the given shell. homeDir is used
@@ -26,22 +27,11 @@ func Install(ctx context.Context, shell Shell, homeDir string) (filePath string,
 		return filePath, true, nil
 	}
 
+	// Fish uses a file-drop model; any existing file was ruled out above.
 	if shell == Fish {
-		return installFish(filePath, shell)
+		return filePath, false, atomicfile.Write(filePath, []byte(ShimContent(shell)), 0o644, atomicfile.MkDir(0o755))
 	}
 	return installRC(filePath, shell)
-}
-
-// installFish handles the file-drop model for fish completions.
-// The caller must check Status before calling this — existence checks are not
-// repeated here.
-func installFish(filePath string, shell Shell) (string, bool, error) {
-	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return filePath, false, err
-	}
-
-	return filePath, false, os.WriteFile(filePath, []byte(ShimContent(shell)), 0o644)
 }
 
 // installRC handles the RC file model for bash, zsh, and powershell.
@@ -59,27 +49,15 @@ func installRC(filePath string, shell Shell) (string, bool, error) {
 		}
 	}
 
-	// Create parent directory if needed (e.g. for PowerShell profiles).
-	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return filePath, false, err
-	}
-
 	// Ensure a leading newline before the block if the file doesn't end with one.
 	shim := ShimContent(shell)
 	if len(content) > 0 && content[len(content)-1] != '\n' {
 		shim = "\n" + shim
 	}
 
-	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, perm)
-	if err != nil {
-		return filePath, false, err
-	}
-	defer f.Close()
-
-	if _, err := f.WriteString(shim); err != nil {
-		return filePath, false, err
-	}
-
-	return filePath, false, nil
+	// Append our block by rewriting the file atomically, so an interrupted
+	// install cannot leave a torn block in the user's RC file. The parent dir
+	// may be missing (e.g. for PowerShell profiles), so create it too.
+	newContent := append(content, []byte(shim)...)
+	return filePath, false, atomicfile.Write(filePath, newContent, perm, atomicfile.MkDir(0o755))
 }

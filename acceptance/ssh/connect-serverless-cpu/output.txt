@@ -21,6 +21,7 @@
         "notebook_task": {
           "base_parameters": {
             "authorizedKeySecretName": "client-public-key",
+            "keepDetachedProcesses": "false",
             "maxClients": "10",
             "secretScopeName": "[USERNAME]-[CPU_CONN]-ssh-tunnel-keys",
             "serverless": "true",

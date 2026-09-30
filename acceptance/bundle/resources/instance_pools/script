@@ -5,13 +5,13 @@ trace $CLI bundle summary
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    rm out.requests.txt
+    rm "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 trace $CLI bundle deploy
 
 title "Verify the create request"
-trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/create")))' out.requests.txt
+trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/create")))' "$OUT_REQUESTS"
 
 trace $CLI bundle summary
 
@@ -20,7 +20,7 @@ trace update_file.py databricks.yml my_instance_pool my_instance_pool_2
 trace $CLI bundle deploy
 
 title "Verify the update request"
-trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/edit")))' out.requests.txt
+trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/edit")))' "$OUT_REQUESTS"
 
 trace $CLI bundle summary
 
@@ -28,6 +28,6 @@ title "Destroy the instance pool"
 trace $CLI bundle destroy --auto-approve
 
 title "Verify the destroy request"
-trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/delete")))' out.requests.txt
+trace jq 'select(.method == "POST" and (.path | contains("/instance-pools/delete")))' "$OUT_REQUESTS"
 
 trace $CLI bundle summary

@@ -17,7 +17,9 @@ type Profile struct {
 	ClusterID            string
 	ServerlessComputeID  string
 	HasClientCredentials bool
+	ClientID             string
 	Scopes               string
+	Resources            string
 	AuthType             string
 }
 

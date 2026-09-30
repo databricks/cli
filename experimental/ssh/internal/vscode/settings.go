@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/experimental/ssh/internal/fileutil"
+	"github.com/databricks/cli/libs/atomicfile"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
@@ -417,7 +418,7 @@ func updateSettings(v *hujson.Value, connectionName string, missing *missingSett
 }
 
 func saveSettings(path string, v *hujson.Value) error {
-	if err := os.WriteFile(path, v.Pack(), 0o600); err != nil {
+	if err := atomicfile.Write(path, v.Pack(), 0o600); err != nil {
 		return fmt.Errorf("failed to write settings file: %w", err)
 	}
 	return nil

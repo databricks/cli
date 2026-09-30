@@ -16,8 +16,7 @@ import (
 // ErrNotFound is returned by Store.Lookup when no entry exists for the key, or
 // when a stored entry cannot be decoded by this CLI version (an unknown format
 // is treated as a miss so the caller re-mints rather than failing). It is the
-// CLI-owned counterpart to the U2M cache.ErrNotFound; the adapter in
-// ToU2MTokenCache translates between the storage and OAuth layers.
+// signal to callers that they need to mint or otherwise obtain a token.
 var ErrNotFound = errors.New("token not found")
 
 // Entry is the value held in the CLI token store. It wraps the credential so
@@ -31,10 +30,8 @@ type Entry struct {
 
 // Store is the CLI's token-storage abstraction: a key/value store with no
 // policy of its own. Implementations are the plaintext file cache and the OS
-// keyring cache. The interface is owned by the CLI rather than the SDK so the
-// entry schema can evolve (metadata, per-entry resilience) without being
-// constrained by the U2M-internal cache.TokenCache, which only
-// carries a bare *oauth2.Token.
+// keyring and in-memory stores. The entry schema can evolve with additive
+// metadata without changing the Store interface.
 type Store interface {
 	// Put writes e under key, replacing any existing entry.
 	Put(key string, e Entry) error

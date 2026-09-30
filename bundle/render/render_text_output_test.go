@@ -299,28 +299,35 @@ func TestRenderSummary(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {
-						BaseResource: resources.BaseResource{ID: "1", URL: "https://url1"},
-						JobSettings:  jobs.JobSettings{Name: "job1-name"},
+						ID:           "1",
+						BaseResource: resources.BaseResource{URL: "https://url1"},
+
+						JobSettings: jobs.JobSettings{Name: "job1-name"},
 					},
 					"job2": {
-						BaseResource: resources.BaseResource{ID: "2", URL: "https://url2"},
-						JobSettings:  jobs.JobSettings{Name: "job2-name"},
+						ID:           "2",
+						BaseResource: resources.BaseResource{URL: "https://url2"},
+
+						JobSettings: jobs.JobSettings{Name: "job2-name"},
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline2": {
-						BaseResource: resources.BaseResource{ID: "4"},
+						ID: "4",
+
 						// no URL
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline2-name"},
 					},
 					"pipeline1": {
-						BaseResource:   resources.BaseResource{ID: "3", URL: "https://url3"},
+						ID:           "3",
+						BaseResource: resources.BaseResource{URL: "https://url3"},
+
 						CreatePipeline: pipelines.CreatePipeline{Name: "pipeline1-name"},
 					},
 				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {
-						BaseResource: resources.BaseResource{ID: "catalog.schema"},
+						ID: "catalog.schema",
 						CreateSchema: catalog.CreateSchema{
 							Name: "schema",
 						},
@@ -329,10 +336,18 @@ func TestRenderSummary(t *testing.T) {
 				},
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"endpoint1": {
-						BaseResource: resources.BaseResource{ID: "7", URL: "https://url4"},
+						ID:           "7",
+						BaseResource: resources.BaseResource{URL: "https://url4"},
+
 						CreateServingEndpoint: serving.CreateServingEndpoint{
 							Name: "my_serving_endpoint",
 						},
+					},
+				},
+				SecretScopes: map[string]*resources.SecretScope{
+					// Secret scopes never have a URL, regardless of deployment.
+					"scope1": {
+						Name: "my_scope",
 					},
 				},
 			},
@@ -370,6 +385,9 @@ Resources:
     schema1:
       Name: schema
       URL:  (not deployed)
+  Secret Scopes:
+    scope1:
+      Name: my_scope
 `
 	assert.Equal(t, expectedSummary, writer.String())
 }

@@ -174,7 +174,7 @@ tasks:
       - "{{.EMBED_SOURCES}}"
       - "**/testdata/**"
     cmds:
-      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
+      - "uv run --script tools/lintdiff.py {{.GO_TOOL}} golangci-lint run --allow-parallel-runners -j=4 --fix"
 
   # --- Formatting ---
 
@@ -225,7 +225,7 @@ tasks:
       - tools/lintdiff.py
       - "{{.EMBED_SOURCES}}"
     cmds:
-      - "./tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
+      - "uv run --script tools/lintdiff.py {{.GO_TOOL}} golangci-lint fmt"
 
   fmt-yaml:
     desc: Format YAML files
@@ -279,12 +279,17 @@ tasks:
   ws:
     desc: Fix whitespace issues
     cmds:
-      - "./tools/validate_whitespace.py --fix"
+      - "uv run --script tools/validate_whitespace.py --fix"
 
   check-changelog:
     desc: Validate .nextchanges fragment placement and links
     cmds:
-      - "./tools/validate_nextchanges.py"
+      - "uv run --script tools/validate_nextchanges.py"
+
+  check-codeowners:
+    desc: Check that CLI maintainers are the first owner on every CODEOWNERS rule
+    cmds:
+      - 'uv run -p ">=3.11" --no-project python tools/validate_codeowners.py'
 
   changelog-preview:
     desc: Print the CHANGELOG.md section the next release would add from .nextchanges/
@@ -294,7 +299,12 @@ tasks:
       # Validate placement first so a misplaced fragment fails loudly instead of
       # being silently skipped by the renderer (see validate_nextchanges.py).
       - task: check-changelog
-      - "uv run --locked internal/genkit/tagging.py --preview"
+      # --frozen renders from the committed tagging.py.lock as-is. Re-resolving (what
+      # --locked does) hits the package index, which breaks under a newer local uv or the
+      # internal PyPI proxy index and rewrites the lock; CI keeps --locked (pinned uv +
+      # pypi.org) in changelog-preview.yml. --python 3.12 satisfies the lock's
+      # requires-python >=3.12, which the script omits (so uv would otherwise pick 3.9).
+      - "uv run --python 3.12 --frozen --script internal/genkit/tagging.py --preview"
 
   deadcode:
     desc: Check for dead code
@@ -303,7 +313,7 @@ tasks:
       - go.mod
       - go.sum
     cmds:
-      - ./tools/check_deadcode.py
+      - "uv run --script tools/check_deadcode.py"
 
   check-lockfiles:
     desc: Fail if a Databricks PyPI proxy URL leaked into a uv.lock or .py.lock
@@ -313,8 +323,13 @@ tasks:
     cmds:
       - "! git grep -lF databricks.com -- '*uv.lock' '*.py.lock'"
 
+  check-agents-setup:
+    desc: Check every agent's config setup is in sync with AGENTS.md/.agents; fails if anything was out of sync
+    cmds:
+      - "uv run --script tools/validate_agents_setup.py"
+
   checks:
-    desc: Run quick checks (tidy, whitespace, deadcode, changelog, lockfiles)
+    desc: Run quick checks (tidy, whitespace, deadcode, changelog, codeowners, lockfiles, agent setup)
     # Sequential: `tidy` rewrites go.mod/go.sum and any future tidy work
     # touching more paths should not race with the whitespace scanner.
     cmds:
@@ -322,7 +337,9 @@ tasks:
       - task: ws
       - task: deadcode
       - task: check-changelog
+      - task: check-codeowners
       - task: check-lockfiles
+      - task: check-agents-setup
 
   install-pythons:
     desc: Install Python 3.9-3.13 via uv
@@ -461,6 +478,11 @@ tasks:
     generates:
       - test-output-unit-root.json
     cmds:
+      # Unit packages default to a far shorter per-package timeout than the acceptance
+      # suite (test-acc keeps 60m for the single, legitimately long ./acceptance binary).
+      # The slowest unit package observed across Linux/macOS/Windows is ~83s, so 10m is
+      # ample headroom while a hung package (e.g. a wedged goroutine) fails in minutes
+      # instead of burning the full hour. LOCAL_TIMEOUT still overrides when needed.
       - |
         {{.GO_TOOL}} gotestsum \
           --format ${GOTESTSUM_FORMAT:-pkgname-and-test-fails} \
@@ -468,7 +490,7 @@ tasks:
           --jsonfile test-output-unit-root.json \
           --rerun-fails \
           --packages "{{.TEST_PACKAGES}}" \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-unit-tools:
     desc: Run unit tests in tools/ module
@@ -492,7 +514,7 @@ tasks:
           --jsonfile test-output-unit-tools.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-unit-codegen:
     desc: Run unit tests in bundle/internal/tf/codegen module
@@ -512,7 +534,7 @@ tasks:
           --jsonfile test-output-unit-codegen.json \
           --rerun-fails \
           --packages ./... \
-          -- -timeout=${LOCAL_TIMEOUT:-60m}
+          -- -timeout=${LOCAL_TIMEOUT:-10m}
 
   test-acc:
     desc: Run acceptance tests
@@ -606,7 +628,7 @@ tasks:
   bump-mlops-stacks:
     desc: Bump the vendored mlops-stacks acceptance template to github.com/databricks/mlops-stacks HEAD
     cmds:
-      - "./tools/bump_mlops_stacks.py"
+      - 'uv run -p ">=3.11" --no-project python tools/bump_mlops_stacks.py'
       # The bump rewrites a test input, so refresh that test's golden output.
       - "go test ./acceptance -run '^TestAccept/bundle/deploy/mlops-stacks' -update -timeout=${LOCAL_TIMEOUT:-60m}"
 
@@ -869,39 +891,49 @@ tasks:
     cmds:
       - go run ./internal/cligen --input .codegen/cli.json --output .
 
-  # Refreshes .codegen/cli.json from the OpenAPI spec at .codegen/_openapi_sha.
+  # Refreshes .codegen/cli.json from the Universe commit pinned in
+  # .codegen/_openapi_sha.
   # cli.json is a genkit SDK target like any other (mode cli_v1 in .codegen.json):
-  # the cli_v1 producer is decoupled from the spec, so genkit is built from the
-  # universe checkout's HEAD (the current producer), while the spec itself is
-  # fetched by SHA. Run it when the spec SHA is bumped; `task generate` then
-  # consumes the committed cli.json. SDK version bumps (go.mod/go.sum) are a
-  # manual `go get` step beforehand; TestConsistentDatabricksSdkVersion asserts
-  # the two stay in sync.
+  # Genkit and the spec are built from the same Universe commit so their schema
+  # dialects cannot drift. The build runs in a temporary shared clone, leaving
+  # the developer's Universe checkout untouched. The commit SHA is passed
+  # alongside the built file; update-sdk keeps the previous
+  # .codegen/_openapi_sha available during generation and writes the same SHA
+  # afterwards. `task generate` then consumes the committed cli.json. SDK
+  # version bumps (go.mod/go.sum) are a manual `go get` step beforehand;
+  # TestConsistentDatabricksSdkVersion asserts the two stay in sync.
   #
-  # No `sources:`/`generates:`: the producer is built from the universe
-  # checkout's HEAD, which no source fingerprint can capture, so a checksum
-  # cache would report "up to date" after pulling a newer producer.
+  # No `sources:`/`generates:`: this task deliberately refreshes cli.json from
+  # an external Universe checkout whenever it is invoked.
   generate-clijson:
-    desc: Produce .codegen/cli.json from the OpenAPI spec via genkit (requires universe repo with the cli_v1 producer)
+    desc: Produce .codegen/cli.json from its pinned Universe commit via genkit
     vars:
       UNIVERSE_DIR:
         sh: echo "${UNIVERSE_DIR:-$HOME/universe}"
     cmds:
-      # Building from a dirty universe tree would produce a cli.json that no
-      # universe commit can reproduce. Set UNIVERSE_ALLOW_DIRTY=1 to build from
-      # uncommitted producer changes deliberately (e.g. while iterating on the
-      # producer itself).
       - |
-        if [ -z "$UNIVERSE_ALLOW_DIRTY" ]; then
-          if ! git -C {{.UNIVERSE_DIR}} diff --quiet || ! git -C {{.UNIVERSE_DIR}} diff --cached --quiet; then
-            echo "Error: universe repo at {{.UNIVERSE_DIR}} has uncommitted changes; commit or stash them, or set UNIVERSE_ALLOW_DIRTY=1 to build the producer from the dirty tree"
-            exit 1
-          fi
+        OPENAPI_SHA="$(tr -d '[:space:]' < "{{.ROOT_DIR}}/.codegen/_openapi_sha")"
+        BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/databricks-cli-universe.XXXXXX")"
+        trap 'rm -rf -- "$BUILD_DIR"' EXIT HUP INT TERM
+
+        echo "Creating temporary Universe checkout at ${OPENAPI_SHA}..."
+        git clone --quiet --shared --no-checkout "{{.UNIVERSE_DIR}}" "$BUILD_DIR/universe"
+        if ! git -C "$BUILD_DIR/universe" cat-file -e "${OPENAPI_SHA}^{commit}" 2>/dev/null; then
+          echo "Fetching the missing Universe commit from the upstream remote..."
+          UNIVERSE_REMOTE="$(git -C "{{.UNIVERSE_DIR}}" remote get-url origin)"
+          git -C "$BUILD_DIR/universe" fetch --no-tags "$UNIVERSE_REMOTE" master
         fi
-      - echo "Building genkit at universe HEAD $(git -C {{.UNIVERSE_DIR}} rev-parse --short HEAD)..."
-      - cd {{.UNIVERSE_DIR}} && ./tools/bazel build //openapi/genkit
-      - echo "Generating CLI code..."
-      - '{{.UNIVERSE_DIR}}/bazel-bin/openapi/genkit/genkit_/genkit update-sdk --dir {{.ROOT_DIR}}'
+        git -C "$BUILD_DIR/universe" checkout --quiet --detach "$OPENAPI_SHA"
+
+        echo "Building genkit and OpenAPI spec at ${OPENAPI_SHA}..."
+        cd "$BUILD_DIR/universe"
+        ./tools/bazel build //deco/genkit //openapi:all-internal.json
+
+        echo "Generating CLI code..."
+        "$BUILD_DIR/universe/bazel-bin/deco/genkit/genkit_/genkit" update-sdk \
+          --dir "{{.ROOT_DIR}}" \
+          --openapi-spec-file "$BUILD_DIR/universe/bazel-bin/openapi/all-internal.json" \
+          --openapi-spec-sha "$OPENAPI_SHA"
       # genkit also writes .gitattributes, but that file is owned by
       # generate-cligen (which derives it from .gitattributes.manual plus the
       # rendered file list), so discard genkit's copy.
@@ -1045,9 +1077,9 @@ tasks:
       - bundle/direct/dresources/apitypes.yml
       - acceptance/bundle/refschema/out.fields.txt
     generates:
-      - bundle/direct/dresources/resources.generated.yml
+      - bundle/direct/dresources/configs/*.generated.yml
     cmds:
-      - "sh -c 'uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt > bundle/direct/dresources/resources.generated.yml'"
+      - "uv run --script bundle/direct/tools/generate_resources.py .codegen/cli.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt bundle/direct/dresources/configs"
 
   # pydabs-* tasks are defined in python/Taskfile.yml (included above).
 
@@ -1072,16 +1104,16 @@ tasks:
     desc: Run 1k benchmark and print summary
     cmds:
       - task: bench-1k
-      - ./tools/bench_parse.py bench1k.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench1k.log'
 
   bench-100-summary:
     desc: Run 100 benchmark and print summary
     cmds:
       - task: bench-100
-      - ./tools/bench_parse.py bench100.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench100.log'
 
   bench-10-summary:
     desc: Run 10 benchmark and print summary
     cmds:
       - task: bench-10
-      - ./tools/bench_parse.py bench10.log
+      - 'uv run -p ">=3.11" --no-project python tools/bench_parse.py bench10.log'

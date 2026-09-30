@@ -2,16 +2,14 @@ package dresources
 
 import (
 	"context"
-	"net/http"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/structs/structdiff"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -68,22 +66,14 @@ func (*ResourceSecret) RemapState(remote *catalog.Secret) *catalog.Secret {
 	}
 }
 
-// DoRead fetches the secret by full name.
+// DoRead fetches the secret by full name. IncludeValue is set so RemapState can
+// recover the stored value from EffectiveValue.
 func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
-	apiClient, err := client.New(r.client.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	// SDK does not support include_value in the GetSecretRequest, so we use the API directly.
-	var secret catalog.Secret
-	err = apiClient.Do(ctx, http.MethodGet, "/api/2.1/unity-catalog/secrets/"+id, auth.WorkspaceIDHeaders(r.client.Config), map[string]any{
-		"include_value": true,
-	}, nil, &secret)
-	if err != nil {
-		return nil, err
-	}
-	return &secret, nil
+	return r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
+		FullName:        id,
+		IncludeValue:    true,
+		ForceSendFields: nil,
+	})
 }
 
 // DoCreate creates a new UC secret.
@@ -97,11 +87,18 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 	return response.FullName, response, nil
 }
 
+// comment is force-sent on update so that clearing it in config clears it on the secret. The
+// update_mask is "*" and the backend merges, so an omitempty comment would be dropped from the
+// body and the old value would drift back. Verified against a real workspace: {"comment": ""} clears it.
+var secretForceSend = []string{"Comment"}
+
 // DoUpdate updates the secret in place and returns remote state.
 func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog.Secret, _ *PlanEntry) (*catalog.Secret, error) {
+	secret := *state
+	secret.ForceSendFields = utils.FilterFields[catalog.Secret](append(slices.Clone(secretForceSend), state.ForceSendFields...))
 	response, err := r.client.SecretsUc.UpdateSecret(ctx, catalog.UpdateSecretRequest{
 		FullName: id,
-		Secret:   *state,
+		Secret:   secret,
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"*"},
 		},

@@ -22,4 +22,4 @@ rm -rf .databricks
 trace $CLI bundle plan
 # plan probes the state files concurrently, so the recorded order varies. Only the
 # operations above are asserted; drop the rest rather than diff a racy order.
-rm -f out.requests.txt
+rm -f "$OUT_REQUESTS"

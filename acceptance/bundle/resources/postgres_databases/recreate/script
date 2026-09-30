@@ -7,7 +7,7 @@ cleanup() {
    $CLI postgres delete-database "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/databases/test-database-${UNIQUE_NAME}" 2>/dev/null || true
    $CLI postgres delete-database "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/databases/test-database-${UNIQUE_NAME}-v2" 2>/dev/null || true
 
-   rm -f out.requests.txt
+   rm -f "$OUT_REQUESTS"
 }
 trap cleanup EXIT
 

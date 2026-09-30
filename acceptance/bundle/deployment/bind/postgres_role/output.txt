@@ -12,8 +12,7 @@ Workspace:
 Resources:
   Postgres roles:
     role1:
-      Name: 
-      URL:  (not deployed)
+      Name: projects/test-project/branches/main/roles/test-role
 
 >>> [CLI] bundle deployment unbind role1
 
@@ -27,4 +26,3 @@ Resources:
   Postgres roles:
     role1:
       Name: 
-      URL:  (not deployed)

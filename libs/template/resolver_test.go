@@ -82,6 +82,92 @@ func TestTemplateResolverForCustomUrl(t *testing.T) {
 	assert.Equal(t, "/config/file", tmpl.Writer.(*defaultWriter).configPath)
 }
 
+func TestTemplateResolverForBundleExamples(t *testing.T) {
+	tests := []struct {
+		url         string
+		templateDir string
+		wantName    string
+	}{
+		{"https://github.com/databricks/bundle-examples", "contrib/templates/dbt-factory", "bundle-examples/contrib/templates/dbt-factory"},
+		// Equivalent template directories canonicalize to the same identifier.
+		{"https://github.com/databricks/bundle-examples", "./contrib/templates/dbt-factory", "bundle-examples/contrib/templates/dbt-factory"},
+		{"https://github.com/databricks/bundle-examples", "contrib/templates/dbt-factory/.", "bundle-examples/contrib/templates/dbt-factory"},
+		// Without a template directory we can only attribute the init to the repo.
+		{"https://github.com/databricks/bundle-examples", "", "bundle-examples"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.url+"|"+tc.templateDir, func(t *testing.T) {
+			r := Resolver{
+				TemplatePathOrUrl: tc.url,
+				TemplateDir:       tc.templateDir,
+			}
+
+			tmpl, err := r.Resolve(t.Context())
+			require.NoError(t, err)
+
+			// bundle-examples is a first-party repo, so we record verbose telemetry
+			// (template name and enum args) for it.
+			w, ok := tmpl.Writer.(*writerWithFullTelemetry)
+			require.True(t, ok, "expected a full-telemetry writer")
+			assert.Equal(t, tc.wantName, string(w.name))
+			assert.Equal(t, tc.url, tmpl.Reader.(*gitReader).gitUrl)
+		})
+	}
+}
+
+func TestTemplateResolverForBundleExamplesRejectsEscapingTemplateDir(t *testing.T) {
+	// A template directory that escapes the cloned repo would load an arbitrary
+	// local template, so it must not be recorded as first-party.
+	for _, dir := range []string{
+		"../../../local-template",
+		// Starts inside the repo but escapes it after cleaning.
+		"./contrib/../../now-i-am-outside",
+		"/etc/local-template",
+	} {
+		t.Run(dir, func(t *testing.T) {
+			r := Resolver{
+				TemplatePathOrUrl: "https://github.com/databricks/bundle-examples",
+				TemplateDir:       dir,
+			}
+
+			tmpl, err := r.Resolve(t.Context())
+			require.NoError(t, err)
+			assert.IsType(t, &defaultWriter{}, tmpl.Writer)
+		})
+	}
+}
+
+func TestIsBundleExamplesRepo(t *testing.T) {
+	// Recognized across the common Git URL forms.
+	for _, url := range []string{
+		"https://github.com/databricks/bundle-examples",
+		"https://github.com/databricks/bundle-examples.git",
+		"https://github.com/databricks/bundle-examples/",
+		"git@github.com:databricks/bundle-examples.git",
+		"ssh://git@github.com/databricks/bundle-examples.git",
+		"ssh://git@github.com:22/databricks/bundle-examples.git",
+		// GitHub owner/repo names are case-insensitive.
+		"https://github.com/Databricks/Bundle-Examples",
+	} {
+		assert.True(t, isBundleExamplesRepo(url), url)
+	}
+
+	// Other repos, forks, hosts, owners and local paths must not match.
+	for _, url := range []string{
+		"https://github.com/databricks/cli",
+		"https://github.com/someone/bundle-examples",
+		"https://github.com/databricks/bundle-examples-fork",
+		"https://gitlab.com/databricks/bundle-examples",
+		"/local/bundle-examples",
+		// An "@" embedded in the path must not be mistaken for the host: this
+		// clones from attacker.example, not github.com.
+		"https://attacker.example/foo@github.com/databricks/bundle-examples",
+	} {
+		assert.False(t, isBundleExamplesRepo(url), url)
+	}
+}
+
 func TestTemplateResolverForCustomPath(t *testing.T) {
 	r := Resolver{
 		TemplatePathOrUrl: "/custom/path",
