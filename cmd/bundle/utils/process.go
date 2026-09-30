@@ -316,14 +316,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 		// the direct state.
 		needsState := opts.InitIDs || opts.ErrorOnEmptyState || opts.Deploy || opts.ReadPlanPath != "" || opts.PreDeployChecks || opts.PostStateFunc != nil
 
-		// Migrate a Terraform state to the direct engine: when the direct engine is requested
-		// (the default) and the existing state still uses Terraform, convert it so the run
-		// proceeds on the direct engine. Migrate is in-memory and reversible - nothing is written
-		// or pushed - so plan, run, and a declined deploy just drop it and stay on terraform;
-		// deploy makes it durable by calling CommitMigration after approval, destroy as part of
-		// its teardown. If the migration's plan check fails, Migrate leaves the Terraform state
-		// intact and the run falls back to the terraform engine. Read-only commands that do not
-		// need state keep reading the Terraform state as-is.
+		// Migrate a Terraform state to the direct engine: the direct engine is the only engine,
+		// so when the existing state still uses Terraform, convert it so the run proceeds on the
+		// direct engine. Migrate is in-memory and reversible - nothing is written or pushed - so
+		// plan, run, and a declined deploy just drop it; deploy makes it durable by calling
+		// CommitMigration after approval, destroy as part of its teardown. The Terraform engine
+		// was removed in v1.19.0, so a migration failure is fatal - there is no engine to fall
+		// back to. Read-only commands that do not need state keep reading the Terraform state.
 		if b.MigratingToDirect && needsState {
 			if err := migrateTerraformToDirect(ctx, b, stateDesc); err != nil {
 				logdiag.LogError(ctx, err)
@@ -559,10 +558,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 }
 
 // migrateTerraformToDirect converts the bundle's Terraform state to the direct engine in memory.
-// On success it advances stateDesc and metrics to the direct engine. Any failure that leaves the
-// migration unviable (parse, conversion, plan check) leaves the Terraform state intact
-// (migrated=false) so the caller proceeds on the terraform engine and the command still runs;
-// only an internal error returns. Nothing is committed here - deploy calls statemgmt.CommitMigration
+// On success it advances stateDesc and metrics to the direct engine. Any failure (parse,
+// conversion, plan check) is fatal and returns an error: the Terraform engine was removed, so there
+// is no engine to fall back to. Nothing is committed here - deploy calls statemgmt.CommitMigration
 // after approval, destroy commits as part of its teardown. The caller tags the user agent with the
 // resolved stateDesc.Engine afterwards.
 func migrateTerraformToDirect(ctx context.Context, b *bundle.Bundle, stateDesc *statemgmt.StateDesc) error {
@@ -583,18 +581,28 @@ func ResolveEngineSetting(ctx context.Context, b *bundle.Bundle) (engine.EngineS
 	configEngine := b.Config.Bundle.Engine
 
 	if configEngine != engine.EngineNotSet {
+		parsed, ok := engine.Parse(string(configEngine))
+		if !ok {
+			return engine.EngineSetting{}, fmt.Errorf("invalid value %q for bundle.engine (expected %q)", configEngine, engine.EngineDirect)
+		}
+		if parsed == engine.EngineTerraform {
+			return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
+		}
 		source := "bundle.engine setting"
 		v := dyn.GetValue(b.Config.Value(), "bundle.engine")
 		if locs := v.Locations(); len(locs) > 0 {
 			loc := locs[0]
 			source = fmt.Sprintf("bundle.engine setting at %s:%d:%d", filepath.ToSlash(loc.File), loc.Line, loc.Column)
 		}
-		return engine.EngineSetting{Type: configEngine, Source: source, ConfigType: configEngine}, nil
+		return engine.EngineSetting{Type: parsed, Source: source, ConfigType: parsed}, nil
 	}
 
 	envEngine, err := engine.FromEnv(ctx)
 	if err != nil {
 		return engine.EngineSetting{}, err
+	}
+	if envEngine == engine.EngineTerraform {
+		return engine.EngineSetting{}, errors.New(engine.TerraformRemovedMessage)
 	}
 	if envEngine != engine.EngineNotSet {
 		return engine.EngineSetting{Type: envEngine, Source: engine.EnvVar + " environment variable"}, nil
