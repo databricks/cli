@@ -106,7 +106,13 @@ func (s *FakeWorkspace) VectorSearchEndpointUpdate(req Request, endpointName str
 	if endpoint.ScalingInfo == nil {
 		endpoint.ScalingInfo = &vectorsearch.EndpointScalingInfo{}
 	}
-	endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
+	// Only apply target_qps when the caller actually sent it. On removal the CLI drops the zero
+	// value (omitempty), so an absent field must leave the old value in place -- the removal never
+	// takes effect and the next plan re-proposes it -- mirroring the real backend.
+	fields, _ := parseUpdateFields(req.Body)
+	if _, ok := fields["target_qps"]; ok {
+		endpoint.ScalingInfo.RequestedTargetQps = patchReq.TargetQps
+	}
 	endpoint.LastUpdatedTimestamp = nowMilli()
 	endpoint.LastUpdatedUser = s.CurrentUser().UserName
 
