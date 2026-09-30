@@ -18,5 +18,8 @@ trace cat commands.log
 title "Reject conflicting lockfiles"
 trace musterr $CLI apps validate --path conflicting
 
+title "Reject unsupported package managers"
+trace musterr $CLI apps validate --path unsupported
+
 title "Reject malformed package.json"
 trace musterr $CLI apps validate --path invalid

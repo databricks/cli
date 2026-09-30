@@ -22,20 +22,36 @@ func TestDetectPackageManager(t *testing.T) {
 		{name: "npm", lockfiles: []string{"package-lock.json"}, want: "npm"},
 		{name: "npm shrinkwrap", lockfiles: []string{"npm-shrinkwrap.json"}, want: "npm"},
 		{name: "pnpm", lockfiles: []string{"pnpm-lock.yaml"}, want: "pnpm"},
-		{name: "yarn", lockfiles: []string{"yarn.lock"}, want: "yarn"},
-		{name: "bun", lockfiles: []string{"bun.lock"}, want: "bun"},
-		{name: "bun binary", lockfiles: []string{"bun.lockb"}, want: "bun"},
 		{name: "npm aliases", lockfiles: []string{"package-lock.json", "npm-shrinkwrap.json"}, want: "npm"},
-		{name: "bun aliases", lockfiles: []string{"bun.lock", "bun.lockb"}, want: "bun"},
+		{
+			name:      "unsupported yarn",
+			lockfiles: []string{"yarn.lock"},
+			wantError: "yarn is not supported for apps validation (found yarn.lock); use npm or pnpm",
+		},
+		{
+			name:      "unsupported bun",
+			lockfiles: []string{"bun.lock"},
+			wantError: "bun is not supported for apps validation (found bun.lock); use npm or pnpm",
+		},
+		{
+			name:      "unsupported bun binary",
+			lockfiles: []string{"bun.lockb"},
+			wantError: "bun is not supported for apps validation (found bun.lockb); use npm or pnpm",
+		},
+		{
+			name:      "unsupported manager alongside npm",
+			lockfiles: []string{"package-lock.json", "yarn.lock"},
+			wantError: "yarn is not supported for apps validation (found yarn.lock); use npm or pnpm",
+		},
 		{
 			name:      "conflicting managers",
-			lockfiles: []string{"yarn.lock", "package-lock.json"},
-			wantError: "conflicting package manager lockfiles: package-lock.json, yarn.lock; keep lockfiles for only one package manager",
+			lockfiles: []string{"pnpm-lock.yaml", "package-lock.json"},
+			wantError: "conflicting package manager lockfiles: package-lock.json, pnpm-lock.yaml; keep lockfiles for only one package manager",
 		},
 		{
 			name:      "conflict includes all lockfiles",
-			lockfiles: []string{"bun.lockb", "bun.lock", "pnpm-lock.yaml", "package-lock.json", "npm-shrinkwrap.json"},
-			wantError: "conflicting package manager lockfiles: package-lock.json, npm-shrinkwrap.json, pnpm-lock.yaml, bun.lock, bun.lockb; keep lockfiles for only one package manager",
+			lockfiles: []string{"pnpm-lock.yaml", "package-lock.json", "npm-shrinkwrap.json"},
+			wantError: "conflicting package manager lockfiles: package-lock.json, npm-shrinkwrap.json, pnpm-lock.yaml; keep lockfiles for only one package manager",
 		},
 	}
 	for _, tt := range tests {
@@ -65,7 +81,7 @@ func TestDetectPackageManagerInvalidLockfile(t *testing.T) {
 
 func TestDetectPackageManagerProjectDirectory(t *testing.T) {
 	dir := t.TempDir()
-	testutil.Touch(t, dir, "yarn.lock")
+	testutil.Touch(t, dir, "pnpm-lock.yaml")
 	projectDir := filepath.Join(dir, "app")
 	testutil.Touch(t, projectDir, "package-lock.json")
 	manager, err := validation.DetectPackageManager(projectDir)

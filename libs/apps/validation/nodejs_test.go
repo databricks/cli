@@ -20,7 +20,7 @@ var validationScripts = []string{"typegen", "lint:ast-grep", "typecheck", "build
 func stubPackageManagers(t *testing.T) {
 	t.Helper()
 	binDir := t.TempDir()
-	for _, manager := range []string{"npm", "pnpm", "yarn", "bun"} {
+	for _, manager := range []string{"npm", "pnpm"} {
 		for _, suffix := range []string{"", ".cmd"} {
 			stub := testutil.ReadFile(t, "testdata/package-manager"+suffix)
 			require.NoError(t, os.WriteFile(filepath.Join(binDir, manager+suffix), []byte(stub), 0o755))
@@ -51,8 +51,6 @@ func TestNodeJsValidatePackageManagers(t *testing.T) {
 		{manager: "npm"},
 		{manager: "npm", lockfile: "package-lock.json"},
 		{manager: "pnpm", lockfile: "pnpm-lock.yaml"},
-		{manager: "yarn", lockfile: "yarn.lock"},
-		{manager: "bun", lockfile: "bun.lock"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.manager+"/"+tt.lockfile, func(t *testing.T) {
@@ -113,7 +111,7 @@ func TestNodeJsValidateCommandFailure(t *testing.T) {
 		t.Run(command, func(t *testing.T) {
 			dir := t.TempDir()
 			writeValidationProject(t, dir, validationScripts)
-			testutil.Touch(t, dir, "yarn.lock")
+			testutil.Touch(t, dir, "pnpm-lock.yaml")
 			t.Setenv("VALIDATION_TEST_FAIL", command)
 			validator := validation.ValidationNodeJs{}
 			result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
@@ -124,7 +122,7 @@ func TestNodeJsValidateCommandFailure(t *testing.T) {
 			assert.Contains(t, result.Details.Stdout, "validation stdout")
 			assert.Contains(t, result.Details.Stderr, "validation stderr")
 			commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
-			assert.True(t, strings.HasSuffix(strings.ReplaceAll(commands, "\r\n", "\n"), "yarn "+command+"\n"), commands)
+			assert.True(t, strings.HasSuffix(strings.ReplaceAll(commands, "\r\n", "\n"), "pnpm "+command+"\n"), commands)
 		})
 	}
 }
