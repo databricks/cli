@@ -859,11 +859,11 @@ func allEmptyChange(ch *deployplan.ChangeDesc) bool {
 
 // isZeroScalar reports whether v is a number or bool holding its zero value (0, 0.0, false).
 //
-// Strings are excluded because the DropEmptyStrings mutator strips an explicit "" on an
-// omitempty field from the config before the diff runs (mirroring JSON omitempty and keeping
-// the terraform and direct engines consistent). So a non-nil "" never reaches this classifier
-// from the real config path — only Old/New that came through DropEmptyStrings do — and adding
-// reflect.String here would be dead code that also contradicts that deliberate behavior.
+// Strings need no case here — not because the planner excludes them, but because the
+// DropEmptyStrings mutator already strips an explicit "" on an omitempty field before the plan
+// runs (mirroring JSON omitempty and keeping the terraform and direct engines consistent). So a
+// non-nil "" never reaches this classifier from real config, and adding reflect.String would be
+// dead code.
 func isZeroScalar(v any) bool {
 	if v == nil {
 		return false
