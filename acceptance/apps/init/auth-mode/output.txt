@@ -398,3 +398,18 @@ Exit code: 1
 Error: invalid --auth-mode value: "both" (must be obo or sp; use --set <plugin>.<resourceKey>.authMode=both for a single resource)
 
 Exit code: 1
+
+=== Validate: OBO resource whose scope was removed from user_api_scopes
+>>> [CLI] apps init --template ./template --skip-install --name app-val --features analytics --set analytics.sql-warehouse.id=wh1 --set analytics.sql-warehouse.authMode=obo
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-val
+  Files: 3
+
+
+>>> errcode [CLI] apps validate --path app-val
+Error: resource "sql-warehouse" is accessed on behalf of the user but its scope "sql" is missing from user_api_scopes in databricks.yml
+
+Exit code: 1

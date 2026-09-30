@@ -27,3 +27,11 @@ title "Errors"
 trace errcode $CLI apps init --template ./template --skip-install --name app-err --features jobs --set jobs.job.authMode=obo
 trace errcode $CLI apps init --template ./template --skip-install --name app-err --features jobs --set jobs.secret.authMode=sp
 trace errcode $CLI apps init --template ./template --skip-install --name app-err --features jobs --auth-mode both
+
+title "Validate: OBO resource whose scope was removed from user_api_scopes"
+trace $CLI apps init --template ./template --skip-install --name app-val --features analytics \
+  --set analytics.sql-warehouse.id=wh1 --set analytics.sql-warehouse.authMode=obo
+grep -v -- '- sql$' app-val/databricks.yml > app-val/databricks.yml.new
+mv app-val/databricks.yml.new app-val/databricks.yml
+trace errcode $CLI apps validate --path app-val
+rm -rf app-val
