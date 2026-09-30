@@ -27,6 +27,7 @@
       "displayName": "Genie",
       "description": "Genie spaces",
       "package": "@databricks/appkit",
+      "scopes": ["genie"],
       "resources": {
         "required": [
           {

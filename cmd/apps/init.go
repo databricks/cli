@@ -209,7 +209,7 @@ Environment variables:
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip confirmation prompts for optional resources. Optional resources are only configured when their values are provided via --set.")
-	cmd.Flags().StringVar(&authMode, "auth-mode", "", "Default resource auth mode: obo (on behalf of the user) or sp (service principal). Prompts if not provided in interactive mode, otherwise sp.")
+	cmd.Flags().StringVar(&authMode, "auth-mode", "", "Default resource auth mode: obo (on behalf of the user) or sp (service principal). With obo, resources that cannot be accessed on behalf of the user use sp. Prompts if not provided in interactive mode, otherwise sp.")
 	cmd.Flags().BoolVar(&skipInstall, "skip-install", false, "Skip installing project dependencies (e.g. npm install / uv sync). Cannot be combined with --run.")
 
 	return cmd
@@ -345,29 +345,28 @@ func parseSetAuthModes(setValues []string, m *manifest.Manifest) (map[string]str
 
 // resolveAuthModes returns the auth mode of each resource. Precedence, highest first:
 // --set authMode, the prompted choice, the --auth-mode default, then sp.
-// App-only resources and resources without an entry resolve to sp.
-func resolveAuthModes(resources []manifest.Resource, setModes, promptedModes map[string]string, defaultMode string) (map[string]string, error) {
-	modes := make(map[string]string)
+// setModes and promptedModes only hold modes their resources support. The --auth-mode
+// default applies only to resources that can be accessed on behalf of the user; the keys
+// of the other resources it does not apply to are returned as keptSP.
+func resolveAuthModes(resources []manifest.Resource, setModes, promptedModes map[string]string, defaultMode string) (modes map[string]string, keptSP []string) {
+	modes = make(map[string]string)
 	for _, r := range resources {
-		if r.AppOnly {
-			continue
-		}
 		mode, ok := setModes[r.Key()]
 		if !ok {
 			mode, ok = promptedModes[r.Key()]
 		}
-		if !ok {
+		if !ok && defaultMode == generator.AuthModeOBO {
+			if r.AppOnly || r.Scope == "" {
+				keptSP = append(keptSP, r.Key())
+				continue
+			}
 			mode = defaultMode
 		}
-		if mode == "" || mode == generator.AuthModeSP {
-			continue
+		if mode == generator.AuthModeOBO || mode == generator.AuthModeBoth {
+			modes[r.Key()] = mode
 		}
-		if r.Scope == "" {
-			return nil, fmt.Errorf("resource %q of plugin %q cannot be accessed on behalf of the user; use --set %s.%s.%s=sp", r.Key(), r.PluginName, r.PluginName, r.Key(), authModeField)
-		}
-		modes[r.Key()] = mode
 	}
-	return modes, nil
+	return modes, keptSP
 }
 
 // pluginHasResourceField checks whether a plugin declares a resource with the given key and field name.
@@ -1471,11 +1470,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
-	authModes, err := resolveAuthModes(
+	authModes, keptSP := resolveAuthModes(
 		append(m.CollectResources(selectedPlugins), m.CollectOptionalResources(selectedPlugins)...),
 		setAuthModes, promptedAuthModes, opts.authMode)
-	if err != nil {
-		return err
+	if len(keptSP) > 0 {
+		cmdio.LogString(ctx, "Note: these resources cannot be accessed on behalf of the user and use the service principal: "+strings.Join(keptSP, ", "))
 	}
 
 	// Warn when --features adds plugins that the pre-rendered template

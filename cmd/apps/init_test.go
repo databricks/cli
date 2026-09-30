@@ -1521,22 +1521,23 @@ func TestResolveAuthModes(t *testing.T) {
 	m := authModeManifest()
 	resources := m.CollectResources([]string{"analytics", "jobs"})
 
-	got, err := resolveAuthModes(resources, nil, nil, "")
-	require.NoError(t, err)
+	got, keptSP := resolveAuthModes(resources, nil, nil, "")
 	assert.Empty(t, got)
+	assert.Empty(t, keptSP)
 
-	got, err = resolveAuthModes(resources, map[string]string{"job": "sp"}, nil, "obo")
-	require.NoError(t, err)
+	// The --auth-mode obo default skips resources without a scope and app-only resources.
+	got, keptSP = resolveAuthModes(resources, nil, nil, "obo")
 	assert.Equal(t, map[string]string{"sql-warehouse": "obo"}, got)
+	assert.Equal(t, []string{"secret", "job"}, keptSP)
 
-	_, err = resolveAuthModes(resources, nil, nil, "obo")
-	assert.ErrorContains(t, err, "use --set jobs.job.authMode=sp")
+	// An explicit --set wins and is not reported as kept on sp.
+	got, keptSP = resolveAuthModes(resources, map[string]string{"job": "sp", "sql-warehouse": "sp"}, nil, "obo")
+	assert.Empty(t, got)
+	assert.Equal(t, []string{"secret"}, keptSP)
 
-	got, err = resolveAuthModes(resources, map[string]string{"sql-warehouse": "both"}, map[string]string{"sql-warehouse": "obo"}, "")
-	require.NoError(t, err)
+	got, _ = resolveAuthModes(resources, map[string]string{"sql-warehouse": "both"}, map[string]string{"sql-warehouse": "obo"}, "")
 	assert.Equal(t, map[string]string{"sql-warehouse": "both"}, got)
 
-	got, err = resolveAuthModes(resources, nil, map[string]string{"sql-warehouse": "obo"}, "")
-	require.NoError(t, err)
+	got, _ = resolveAuthModes(resources, nil, map[string]string{"sql-warehouse": "obo"}, "")
 	assert.Equal(t, map[string]string{"sql-warehouse": "obo"}, got)
 }

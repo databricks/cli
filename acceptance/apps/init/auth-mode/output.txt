@@ -86,6 +86,7 @@ targets:
 
 === App-wide OBO, job kept on the service principal
 >>> [CLI] apps init --template ./template --skip-install --name app-obo --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --auth-mode obo --set jobs.job.authMode=sp
+Note: these resources cannot be accessed on behalf of the user and use the service principal: secret
 ✔ Creating project
 
 ✔ Project created successfully!
@@ -231,9 +232,160 @@ targets:
       secret_key: k
       secret_scope: s
 
+=== App-wide OBO: resources without a scope stay on the service principal
+>>> [CLI] apps init --template ./template --skip-install --name app-obo-lenient --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --auth-mode obo
+Note: these resources cannot be accessed on behalf of the user and use the service principal: job, secret
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-obo-lenient
+  Files: 3
+
+command: ['npm', 'run', 'start']
+env:
+  - name: DATABRICKS_WAREHOUSE_ID
+    value: wh1
+  - name: DATABRICKS_GENIE_SPACE_ID
+    value: g1
+  - name: DATABRICKS_JOB_ID
+    valueFrom: job
+  - name: SECRET_KEY
+    valueFrom: secret
+  - name: SECRET_SCOPE
+    valueFrom: secret
+bundle:
+  name: app-obo-lenient
+
+variables:
+  job_id:
+    description: Job ID
+  secret_key:
+    description: Job token
+  secret_scope:
+    description: Job token
+
+resources:
+  apps:
+    app:
+      name: "app-obo-lenient"
+      description: "A Databricks App powered by AppKit"
+      source_code_path: ./
+
+      # Start the app automatically on deploy.
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+        - genie
+        - ai-gateway
+
+      # The resources which this app has access to.
+      resources:
+        - name: job
+          job:
+            id: ${var.job_id}
+            permission: CAN_MANAGE_RUN
+        - name: secret
+          secret:
+            scope: ${var.secret_scope}
+            key: ${var.secret_key}
+            permission: READ
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: [DATABRICKS_URL]
+
+    variables:
+      job_id: 42
+      secret_key: k
+      secret_scope: s
+
+=== Analytics OBO, genie space on the service principal: plugin scopes still emitted
+>>> [CLI] apps init --template ./template --skip-install --name app-genie-sp --features analytics,genie,jobs --set analytics.sql-warehouse.id=wh1 --set genie.genie-space.id=g1 --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --set analytics.sql-warehouse.authMode=obo --set genie.genie-space.authMode=sp
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/app-genie-sp
+  Files: 3
+
+command: ['npm', 'run', 'start']
+env:
+  - name: DATABRICKS_WAREHOUSE_ID
+    value: wh1
+  - name: DATABRICKS_GENIE_SPACE_ID
+    valueFrom: genie-space
+  - name: DATABRICKS_JOB_ID
+    valueFrom: job
+  - name: SECRET_KEY
+    valueFrom: secret
+  - name: SECRET_SCOPE
+    valueFrom: secret
+bundle:
+  name: app-genie-sp
+
+variables:
+  genie_space_id:
+    description: Genie Space ID
+  genie_space_name:
+    description: Genie Space
+  job_id:
+    description: Job ID
+  secret_key:
+    description: Job token
+  secret_scope:
+    description: Job token
+
+resources:
+  apps:
+    app:
+      name: "app-genie-sp"
+      description: "A Databricks App powered by AppKit"
+      source_code_path: ./
+
+      # Start the app automatically on deploy.
+      lifecycle:
+        started: true
+      user_api_scopes:
+        - sql
+        - ai-gateway
+        - genie
+
+      # The resources which this app has access to.
+      resources:
+        - name: genie-space
+          genie_space:
+            name: ${var.genie_space_name}
+            space_id: ${var.genie_space_id}
+            permission: CAN_RUN
+        - name: job
+          job:
+            id: ${var.job_id}
+            permission: CAN_MANAGE_RUN
+        - name: secret
+          secret:
+            scope: ${var.secret_scope}
+            key: ${var.secret_key}
+            permission: READ
+
+targets:
+  default:
+    default: true
+    workspace:
+      host: [DATABRICKS_URL]
+
+    variables:
+      genie_space_id: g1
+      job_id: 42
+      secret_key: k
+      secret_scope: s
+
 === Errors
->>> errcode [CLI] apps init --template ./template --skip-install --name app-err --features jobs --set jobs.job.id=42 --set jobs.secret.scope=s --set jobs.secret.key=k --auth-mode obo
-Error: resource "job" of plugin "jobs" cannot be accessed on behalf of the user; use --set jobs.job.authMode=sp
+>>> errcode [CLI] apps init --template ./template --skip-install --name app-err --features jobs --set jobs.job.authMode=obo
+Error: resource "job" of plugin "jobs" cannot be accessed on behalf of the user; use jobs.job.authMode=sp
 
 Exit code: 1
 
