@@ -2,7 +2,9 @@ package resourcemutator
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -162,8 +164,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // two conditions:
 //  1. The resource supports setting a run_as identity to a different user
 //     from the owner/creator of the resource. For example, jobs.
-//  2. Run as semantics do not apply to the resource. We do not plan to add
-//     platform side support for `run_as` for these resources. For example,
+//  2. Run as semantics do not apply to the resource's current API. For example,
 //     experiments or registered models.
 //
 // Any resource that is not on the allow list cannot be used when the bundle
@@ -171,14 +172,9 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // return an error if such a resource has been defined, and the run_as identity
 // is different from the current deployment identity.
 //
-// Action Item: If you are adding a new resource to DABs, please check in with
-// the relevant owning team whether the resource should be on the allow list or (implicitly) on
-// the deny list. Any resources that could have run_as semantics in the future
-// should be on the deny list.
-// For example: Teams for pipelines, model serving endpoints or Lakeview dashboards
-// are planning to add platform side support for `run_as` for these resources at
-// some point in the future. These resources are (implicitly) on the deny list, since
-// they are not on the allow list below.
+// If a resource gains run_as support, review this list and the group support
+// classification below. Model serving endpoints are excluded. Dashboards are
+// allowed when embed_credentials is false and rejected otherwise.
 var allowList = []string{
 	"alerts",
 	"catalogs",
@@ -216,6 +212,76 @@ var allowList = []string{
 	"vector_search_endpoints",
 	"vector_search_indexes",
 	"volumes",
+}
+
+type groupRunAsSupport int
+
+const (
+	groupRunAsUnsupported groupRunAsSupport = iota
+	groupRunAsSupported
+)
+
+// Classify every resource type that exposes a run_as field.
+var groupRunAsSupportByResource = map[string]groupRunAsSupport{
+	"alerts":    groupRunAsUnsupported,
+	"jobs":      groupRunAsSupported,
+	"pipelines": groupRunAsSupported,
+}
+
+func TestRunAsGroupSupportClassification(t *testing.T) {
+	actual := make(map[string]groupRunAsSupport)
+	resourceTypes := reflect.TypeOf(config.Resources{})
+	for i := range resourceTypes.NumField() {
+		field := resourceTypes.Field(i)
+		require.Equal(t, reflect.Map, field.Type.Kind(), field.Name)
+		require.Equal(t, reflect.Pointer, field.Type.Elem().Kind(), field.Name)
+		resourceType := field.Type.Elem().Elem()
+		runAsField, ok := resourceType.FieldByName("RunAs")
+		if !ok {
+			continue
+		}
+
+		name, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		require.Equal(t, reflect.Pointer, runAsField.Type.Kind(), name)
+		runAsType := runAsField.Type.Elem()
+		require.Equal(t, reflect.Struct, runAsType.Kind(), name)
+		support := groupRunAsUnsupported
+		if _, ok := runAsType.FieldByName("GroupName"); ok {
+			support = groupRunAsSupported
+		}
+		actual[name] = support
+	}
+
+	require.Equal(t, groupRunAsSupportByResource, actual)
+}
+
+func TestRunAsGroupSupportBehavior(t *testing.T) {
+	for resourceType, support := range groupRunAsSupportByResource {
+		t.Run(resourceType, func(t *testing.T) {
+			yaml := fmt.Sprintf("run_as: {group_name: group}\nworkspace: {current_user: {userName: deployer}}\nresources:\n  %s: {test: {}}\n", resourceType)
+			r, diags := config.LoadFromBytes("databricks.yml", []byte(yaml))
+			require.NoError(t, diags.Error())
+			b := &bundle.Bundle{Config: *r}
+			diags = bundle.Apply(t.Context(), b, SetRunAs())
+
+			switch support {
+			case groupRunAsUnsupported:
+				require.ErrorContains(t, diags.Error(), "run_as.group_name")
+			case groupRunAsSupported:
+				require.NoError(t, diags.Error())
+				switch resourceType {
+				case "jobs":
+					assert.Equal(t, "group", b.Config.Resources.Jobs["test"].RunAs.GroupName)
+				case "pipelines":
+					assert.Equal(t, "group", b.Config.Resources.Pipelines["test"].RunAs.GroupName)
+				default:
+					t.Fatalf("add a group propagation assertion for %s", resourceType)
+				}
+			default:
+				t.Fatalf("unknown group run_as support level for %s", resourceType)
+			}
+		})
+	}
 }
 
 func TestRunAsErrorForUnsupportedResources(t *testing.T) {
