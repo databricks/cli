@@ -341,6 +341,7 @@ func TestScalarZeroChange(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		field          string // defaults to gcp_attributes.local_ssd_count
 		ch             *deployplan.ChangeDesc
 		expectedAction deployplan.ActionType
 		expectedReason string
@@ -383,13 +384,40 @@ func TestScalarZeroChange(t *testing.T) {
 			ch:             &deployplan.ChangeDesc{Old: 0, New: nil, Remote: 0},
 			expectedAction: deployplan.Update,
 		},
+		{
+			// Same treatment for a bool: an explicit false the prior state lacked is a real
+			// change on a managed field (use_preemptible_executors), not an empty no-op.
+			name:           "explicit bool false is an update",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: false, Remote: false},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// But a false the backend echoes for a bool the config never set stays a no-op.
+			name:           "backend-echoed bool false is a no-op",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: false},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
+		{
+			// And for a float: an explicit 0.0 the prior state lacked is a real change.
+			name:           "explicit float zero is an update",
+			field:          "azure_attributes.spot_bid_max_price",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: 0.0, Remote: 0.0},
+			expectedAction: deployplan.Update,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			adapter, ok := adapters["clusters"]
 			require.True(t, ok)
-			changes := deployplan.Changes{"gcp_attributes.local_ssd_count": tt.ch}
+			field := tt.field
+			if field == "" {
+				field = "gcp_attributes.local_ssd_count"
+			}
+			changes := deployplan.Changes{field: tt.ch}
 			require.NoError(t, addPerFieldActions(t.Context(), adapter, changes, nil, nil))
 			assert.Equal(t, tt.expectedAction, tt.ch.Action)
 			if tt.expectedReason != "" {
