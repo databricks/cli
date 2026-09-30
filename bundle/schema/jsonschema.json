@@ -2609,6 +2609,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "[Beta]",
                     "properties": {
                       "branch": {
                         "description": "The branch whose automatic-snapshot schedule this manages. Format: projects/{project_id}/branches/{branch_id}",
@@ -2626,7 +2627,8 @@
                     "additionalProperties": false,
                     "required": [
                       "branch"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
