@@ -427,11 +427,13 @@ func TestScalarZeroChange(t *testing.T) {
 			expectedAction: deployplan.Update,
 		},
 		{
-			// Strings are left out to stay in line with the DropEmptyStrings mutator; a
-			// backend-echoed "" (only in Remote) stays a no-op.
-			name:           "empty string is a no-op",
+			// Unlike an explicit 0/false, an explicit "" is left as a no-op: strings are not
+			// in isZeroScalar. (In practice the DropEmptyStrings mutator strips "" upstream, so
+			// New is never "" from real config; this pins the classifier regardless, and fails
+			// if reflect.String is ever added to isZeroScalar.)
+			name:           "explicit empty string is a no-op",
 			field:          "gcp_attributes.google_service_account",
-			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: ""},
+			ch:             &deployplan.ChangeDesc{Old: nil, New: "", Remote: ""},
 			expectedAction: deployplan.Skip,
 			expectedReason: deployplan.ReasonEmpty,
 		},
