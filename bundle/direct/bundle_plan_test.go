@@ -401,10 +401,24 @@ func TestScalarZeroChange(t *testing.T) {
 			expectedReason: deployplan.ReasonEmpty,
 		},
 		{
+			// Clearing a bool the config previously set to false is symmetric with setting it.
+			name:           "clearing a bool false is an update",
+			field:          "gcp_attributes.use_preemptible_executors",
+			ch:             &deployplan.ChangeDesc{Old: false, New: nil, Remote: false},
+			expectedAction: deployplan.Update,
+		},
+		{
 			// And for a float: an explicit 0.0 the prior state lacked is a real change.
 			name:           "explicit float zero is an update",
 			field:          "azure_attributes.spot_bid_max_price",
 			ch:             &deployplan.ChangeDesc{Old: nil, New: 0.0, Remote: 0.0},
+			expectedAction: deployplan.Update,
+		},
+		{
+			// Clearing a float the config previously set to 0.0 is symmetric with setting it.
+			name:           "clearing a float zero is an update",
+			field:          "azure_attributes.spot_bid_max_price",
+			ch:             &deployplan.ChangeDesc{Old: 0.0, New: nil, Remote: 0.0},
 			expectedAction: deployplan.Update,
 		},
 		{
