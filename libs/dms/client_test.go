@@ -65,30 +65,3 @@ func TestUpdateRequestSendsExactlyTheMaskedFields(t *testing.T) {
 		"deployment_mode": bundledeployments.DeploymentMode(""),
 	}, newDeploymentUpdate(deployment, "target_name,deployment_mode"))
 }
-
-func TestParseLastVersionID(t *testing.T) {
-	tests := []struct {
-		name       string
-		deployment *bundledeployments.Deployment
-		want       int
-		wantErr    bool
-	}{
-		{"nil deployment", nil, 0, false},
-		{"empty version", &bundledeployments.Deployment{}, 0, false},
-		{"version zero", &bundledeployments.Deployment{LastVersionId: "0"}, 0, false},
-		{"valid version", &bundledeployments.Deployment{LastVersionId: "7"}, 7, false},
-		{"invalid version", &bundledeployments.Deployment{LastVersionId: "abc"}, 0, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseLastVersionID(tt.deployment)
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}

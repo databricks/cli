@@ -8,34 +8,25 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/service/bundledeployments"
 )
 
 // bindWithHistory applies adoption immediately and records it in DMS, the deployment's
-// authoritative state. File-based binds defer changes until the next deploy.
+// authoritative state. The caller opens StateDB before entering this phase.
 func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourceID string, autoApprove bool) {
 	wsc := b.WorkspaceClient(ctx)
 
-	deploymentID, deployment, lastVersionID, err := dms.FetchDeployment(ctx, wsc, b.Config.Workspace.StatePath)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
-	if !cmdctx.HasWorkspaceClient(ctx) {
-		ctx = cmdctx.SetWorkspaceClient(ctx, wsc)
-	}
 	db := &b.DeploymentBundle.StateDB
-	_, localPath := b.StateFilenameDirect(ctx)
-	if err := db.Open(ctx, localPath, dstate.WithRecovery(false), dstate.WithWrite(false), dstate.WithDeploymentHistory(true), dstate.OpenDmsArgs{DeploymentID: deploymentID, LastVersionID: lastVersionID}); err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
-
-	defer completeRecordedVersion(ctx, b)
+	defer func() {
+		if _, err := db.Finalize(ctx); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+		if _, err := db.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
+			logdiag.LogError(ctx, err)
+		}
+	}()
 
 	if existingID := db.GetResourceID(resourceKey); existingID != "" {
 		logdiag.LogError(ctx, fmt.Errorf("%s is already bound to ID %q; rebinding is not supported with deployment history", resourceKey, existingID))
@@ -43,9 +34,9 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 	}
 
 	// Stamp before planning to avoid reporting deployment metadata as drift.
-	muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(lastVersionID + 1)}
-	if deploymentID != "" {
-		muts = append(muts, metadata.AnnotateDeployment(deploymentID))
+	muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(db.VersionID + 1)}
+	if db.DeploymentID != "" {
+		muts = append(muts, metadata.AnnotateDeployment(db.DeploymentID))
 	}
 	bundle.ApplySeqContext(ctx, b, muts...)
 	if logdiag.HasError(ctx) {
@@ -68,6 +59,17 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 		return
 	}
 
+	var deployment *bundledeployments.Deployment
+	if db.DeploymentID != "" {
+		deployment, err = db.DmsClient().Service.GetDeployment(ctx, bundledeployments.GetDeploymentRequest{
+			Name: dms.DeploymentName(db.DeploymentID),
+		})
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
 	if err := db.UpgradeToWrite(); err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -88,17 +90,6 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 	}
 
 	b.DeploymentBundle.Apply(ctx, wsc, plan, false)
-}
-
-// completeRecordedVersion closes state and completes any claimed version, including on failure.
-func completeRecordedVersion(ctx context.Context, b *bundle.Bundle) {
-	db := &b.DeploymentBundle.StateDB
-	if _, err := db.Finalize(ctx); err != nil {
-		logdiag.LogError(ctx, err)
-	}
-	if _, err := db.CompleteVersion(ctx, !logdiag.HasError(ctx)); err != nil {
-		logdiag.LogError(ctx, err)
-	}
 }
 
 // selectBindPlan includes the bound resource and its children, keeping unchanged dependencies

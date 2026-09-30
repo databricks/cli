@@ -53,6 +53,17 @@ func bindResource(cmd *cobra.Command, resourceKey, resourceId string, autoApprov
 	if !ok {
 		tfName = resource.ResourceDescription().PluralName
 	}
+	if stateDesc.IsDMS() {
+		if err := utils.OpenDirectStateForRead(ctx, b, stateDesc); err != nil {
+			return false, err
+		}
+		defer func() {
+			if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+				logdiag.LogError(ctx, err)
+			}
+		}()
+	}
+
 	phases.Bind(ctx, b, &terraform.BindOptions{
 		AutoApprove:  autoApprove,
 		ResourceType: tfName,
