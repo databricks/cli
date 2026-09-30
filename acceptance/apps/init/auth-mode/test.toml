@@ -1,1 +1,6 @@
 Cloud = false
+
+[[Repls]]
+# Fix path with reverse slashes in the output for Windows.
+Old = 'TEST_TMP_DIR]\\(app-[a-z-]+)'
+New = 'TEST_TMP_DIR]/${1}'
