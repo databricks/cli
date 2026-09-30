@@ -38,11 +38,7 @@ type validateConfigResponse struct {
 // proceed (where the config is validated again, authoritatively). A 5xx is a
 // backend problem, not the user's config, so it fails open too. Only a 4xx (the
 // server rejected the config) or a populated error list blocks.
-func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containerSets ...[]submittedContainer) error {
-	var containers []submittedContainer
-	if len(containerSets) > 0 {
-		containers = containerSets[0]
-	}
+func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, commandPath string, containers []submittedContainer) error {
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create API client: %w", err)
@@ -66,11 +62,7 @@ func preflightValidate(ctx context.Context, w *databricks.WorkspaceClient, cfg *
 // the workspace path where the command script will be uploaded; the caller computes it before this
 // call so the server can validate the real path. `parameters` is intentionally omitted: it is
 // free-form nested hyperparameters uploaded as a YAML file at submit, not the proto's string map.
-func validateConfigRequest(cfg *runConfig, commandPath string, containerSets ...[]submittedContainer) map[string]any {
-	var containers []submittedContainer
-	if len(containerSets) > 0 {
-		containers = containerSets[0]
-	}
+func validateConfigRequest(cfg *runConfig, commandPath string, containers []submittedContainer) map[string]any {
 	compute := map[string]any{}
 	if cfg.Compute != nil {
 		compute["accelerator_type"] = cfg.Compute.AcceleratorType
