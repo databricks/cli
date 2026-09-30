@@ -1,0 +1,7 @@
+#!/bin/sh
+printf 'pnpm %s\n' "$*" >> commands.log
+if [ "$*" = "${VALIDATION_TEST_FAIL:-}" ]; then
+    echo "validation stdout"
+    echo "validation stderr" >&2
+    exit 17
+fi
