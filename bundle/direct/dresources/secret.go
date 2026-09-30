@@ -45,15 +45,30 @@ func (*ResourceSecret) PrepareState(input *resources.Secret) *catalog.Secret {
 	}
 }
 
-// DoRead fetches the secret by full name. IncludeValue is set so effective_value carries
-// the stored value; value/owner and the output-only metadata are declared
-// ignore_remote_changes, so the full remote can flow through unchanged.
+// remapSecretRemote surfaces the resolved value and owner (the API returns them under
+// effective_value/effective_owner) under value/owner so remote state matches the config
+// shape — without this, the persisted value is empty and every plan re-reports an update.
+// The rest of the secret, including the output-only metadata, is left intact and handled
+// by ignore_remote_changes, so no information is discarded. It runs wherever remote state
+// is produced (DoRead/DoCreate/DoUpdate), so no RemapState hook is needed.
+func remapSecretRemote(remote *catalog.Secret) *catalog.Secret {
+	remote.Value = remote.EffectiveValue
+	remote.Owner = remote.EffectiveOwner
+	return remote
+}
+
+// DoRead fetches the secret by full name. IncludeValue is set so remapSecretRemote can
+// recover the stored value from EffectiveValue.
 func (r *ResourceSecret) DoRead(ctx context.Context, id string) (*catalog.Secret, error) {
-	return r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
+	remote, err := r.client.SecretsUc.GetSecret(ctx, catalog.GetSecretRequest{
 		FullName:        id,
 		IncludeValue:    true,
 		ForceSendFields: nil,
 	})
+	if err != nil {
+		return nil, err
+	}
+	return remapSecretRemote(remote), nil
 }
 
 // DoCreate creates a new UC secret.
@@ -64,7 +79,7 @@ func (r *ResourceSecret) DoCreate(ctx context.Context, state *catalog.Secret) (s
 	if err != nil || response == nil {
 		return "", nil, err
 	}
-	return response.FullName, response, nil
+	return response.FullName, remapSecretRemote(response), nil
 }
 
 // comment is force-sent on update so that clearing it in config clears it on the secret. The
@@ -86,7 +101,7 @@ func (r *ResourceSecret) DoUpdate(ctx context.Context, id string, state *catalog
 	if err != nil {
 		return nil, err
 	}
-	return response, nil
+	return remapSecretRemote(response), nil
 }
 
 // DoDelete deletes the secret.
