@@ -1,29 +1,27 @@
 # Generated, do not edit.
 
-recreate_on_changes:
-  - field: source_branch
+fields:
+  expire_time:
+    ignore_remote: spec:input_only
+  is_protected:
+    ignore_remote: spec:input_only
+  no_expiry:
+    ignore_remote: spec:input_only
+  source_branch:
+    action: immutable
     reason: spec:immutable
-  - field: source_branch_lsn
+    ignore_remote: spec:input_only
+  source_branch_lsn:
+    action: immutable
     reason: spec:immutable
-  - field: source_branch_time
+    ignore_remote: spec:input_only
+  source_branch_time:
+    action: immutable
     reason: spec:immutable
-  - field: source_snapshot
+    ignore_remote: spec:input_only
+  source_snapshot:
+    action: immutable
     reason: spec:immutable
-
-ignore_remote_changes:
-  - field: expire_time
-    reason: spec:input_only
-  - field: is_protected
-    reason: spec:input_only
-  - field: no_expiry
-    reason: spec:input_only
-  - field: source_branch
-    reason: spec:input_only
-  - field: source_branch_lsn
-    reason: spec:input_only
-  - field: source_branch_time
-    reason: spec:input_only
-  - field: source_snapshot
-    reason: spec:input_only
-  - field: ttl
-    reason: spec:input_only
+    ignore_remote: spec:input_only
+  ttl:
+    ignore_remote: spec:input_only

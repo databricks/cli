@@ -186,8 +186,12 @@ var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
 			panic(err)
 		}
 
-		var rc ResourceLifecycleConfig
-		if err := yaml.Unmarshal(data, &rc); err != nil {
+		var fpc FieldPolicyConfig
+		if err := yaml.Unmarshal(data, &fpc); err != nil {
+			panic(fmt.Errorf("%s: %w", name, err))
+		}
+		rc, err := fpc.Lower()
+		if err != nil {
 			panic(fmt.Errorf("%s: %w", name, err))
 		}
 

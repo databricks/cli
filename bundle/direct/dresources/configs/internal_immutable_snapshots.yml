@@ -1,2 +1,2 @@
-recreate_on_changes:
-  - reason: immutable
+action: immutable
+fields: {}

@@ -1,17 +1,16 @@
 # Generated, do not edit.
 
-recreate_on_changes:
-  - field: parent_path
+fields:
+  create_time:
+    ignore_remote: spec:output_only
+  dashboard_id:
+    ignore_remote: spec:output_only
+  lifecycle_state:
+    ignore_remote: spec:output_only
+  parent_path:
+    action: immutable
     reason: spec:immutable
-
-ignore_remote_changes:
-  - field: create_time
-    reason: spec:output_only
-  - field: dashboard_id
-    reason: spec:output_only
-  - field: lifecycle_state
-    reason: spec:output_only
-  - field: path
-    reason: spec:output_only
-  - field: update_time
-    reason: spec:output_only
+  path:
+    ignore_remote: spec:output_only
+  update_time:
+    ignore_remote: spec:output_only

@@ -1,15 +1,15 @@
 # Generated, do not edit.
 
-ignore_remote_changes:
-  - field: config.inference_table.is_deleted
-    reason: spec:output_only
-  - field: config.inference_table.table
-    reason: spec:output_only
-  - field: config.routing.destinations[*].is_deleted
-    reason: spec:output_only
-  - field: config.routing.destinations[*].provisioned_throughput_config.model
-    reason: spec:output_only
-  - field: config.routing.fallback.destinations[*].is_deleted
-    reason: spec:output_only
-  - field: config.routing.fallback.destinations[*].provisioned_throughput_config.model
-    reason: spec:output_only
+fields:
+  config.inference_table.is_deleted:
+    ignore_remote: spec:output_only
+  config.inference_table.table:
+    ignore_remote: spec:output_only
+  config.routing.destinations[*].is_deleted:
+    ignore_remote: spec:output_only
+  config.routing.destinations[*].provisioned_throughput_config.model:
+    ignore_remote: spec:output_only
+  config.routing.fallback.destinations[*].is_deleted:
+    ignore_remote: spec:output_only
+  config.routing.fallback.destinations[*].provisioned_throughput_config.model:
+    ignore_remote: spec:output_only

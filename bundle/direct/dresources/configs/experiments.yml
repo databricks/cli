@@ -1,11 +1,9 @@
 # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
-recreate_on_changes:
-  - field: artifact_location
-    reason: immutable
-ignore_remote_changes:
+fields:
+  artifact_location:
+    action: immutable
   # Tags updates are not supported by TF. This mirrors that behaviour.
-  - field: tags
-    reason: terraform_compat
-ignore_local_changes:
-  - field: tags
+  tags:
+    ignore_remote: terraform_compat
+    action: ignore_local
     reason: terraform_compat

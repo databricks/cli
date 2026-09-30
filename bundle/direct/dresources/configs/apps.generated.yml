@@ -1,54 +1,53 @@
 # Generated, do not edit.
 
-ignore_remote_changes:
-  - field: git_repository.caller_credential_id
-    reason: spec:input_only
-  - field: git_source
-    reason: spec:input_only
-  - field: source_code_path
-    reason: spec:input_only
-
-  - field: active_deployment
-    reason: spec:output_only
-  - field: app_status
-    reason: spec:output_only
-  - field: compute_status
-    reason: spec:output_only
-  - field: create_time
-    reason: spec:output_only
-  - field: creator
-    reason: spec:output_only
-  - field: default_git_source
-    reason: spec:output_only
-  - field: default_source_code_path
-    reason: spec:output_only
-  - field: effective_budget_policy_id
-    reason: spec:output_only
-  - field: effective_usage_policy_id
-    reason: spec:output_only
-  - field: effective_user_api_scopes
-    reason: spec:output_only
-  - field: id
-    reason: spec:output_only
-  - field: oauth2_app_client_id
-    reason: spec:output_only
-  - field: oauth2_app_integration_id
-    reason: spec:output_only
-  - field: pending_deployment
-    reason: spec:output_only
-  - field: resources[*].uc_securable.securable_kind
-    reason: spec:output_only
-  - field: service_principal_client_id
-    reason: spec:output_only
-  - field: service_principal_id
-    reason: spec:output_only
-  - field: service_principal_name
-    reason: spec:output_only
-  - field: thumbnail_url
-    reason: spec:output_only
-  - field: update_time
-    reason: spec:output_only
-  - field: updater
-    reason: spec:output_only
-  - field: url
-    reason: spec:output_only
+fields:
+  active_deployment:
+    ignore_remote: spec:output_only
+  app_status:
+    ignore_remote: spec:output_only
+  compute_status:
+    ignore_remote: spec:output_only
+  create_time:
+    ignore_remote: spec:output_only
+  creator:
+    ignore_remote: spec:output_only
+  default_git_source:
+    ignore_remote: spec:output_only
+  default_source_code_path:
+    ignore_remote: spec:output_only
+  effective_budget_policy_id:
+    ignore_remote: spec:output_only
+  effective_usage_policy_id:
+    ignore_remote: spec:output_only
+  effective_user_api_scopes:
+    ignore_remote: spec:output_only
+  git_repository.caller_credential_id:
+    ignore_remote: spec:input_only
+  git_source:
+    ignore_remote: spec:input_only
+  id:
+    ignore_remote: spec:output_only
+  oauth2_app_client_id:
+    ignore_remote: spec:output_only
+  oauth2_app_integration_id:
+    ignore_remote: spec:output_only
+  pending_deployment:
+    ignore_remote: spec:output_only
+  resources[*].uc_securable.securable_kind:
+    ignore_remote: spec:output_only
+  service_principal_client_id:
+    ignore_remote: spec:output_only
+  service_principal_id:
+    ignore_remote: spec:output_only
+  service_principal_name:
+    ignore_remote: spec:output_only
+  source_code_path:
+    ignore_remote: spec:input_only
+  thumbnail_url:
+    ignore_remote: spec:output_only
+  update_time:
+    ignore_remote: spec:output_only
+  updater:
+    ignore_remote: spec:output_only
+  url:
+    ignore_remote: spec:output_only

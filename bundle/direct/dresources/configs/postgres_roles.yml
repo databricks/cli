@@ -1,26 +1,26 @@
-ignore_local_changes:
+fields:
   # replace_existing only takes effect on create; toggling it later is a no-op.
-  - field: replace_existing
+  replace_existing:
+    action: ignore_local
     reason: input_only
-stable_output_fields:
   # name ("projects/{project_id}/branches/{branch_id}/roles/{role_id}") is
   # backend-assigned at creation and immutable; see the stable_output_fields doc
   # in config.go and ES-2202624.
-  - field: name
-recreate_on_changes:
+  name:
+    stable_output: true
   # parent and role_id are immutable (together they form the hierarchical name).
-  - field: parent
-    reason: immutable
-  - field: role_id
-    reason: immutable
+  parent:
+    action: immutable
+  role_id:
+    action: immutable
   # The PATCH update_mask only accepts spec.attributes and spec.membership_roles;
   # the backend rejects spec.postgres_role, spec.auth_method, and spec.identity_type
   # with 400 INVALID_PARAMETER_VALUE "Unknown field path in update_mask". These spec
   # fields are not marked immutable in the OpenAPI definition yet, so the generator
   # doesn't catch them — declare the constraint manually until upstream is fixed.
-  - field: postgres_role
-    reason: immutable
-  - field: auth_method
-    reason: immutable
-  - field: identity_type
-    reason: immutable
+  postgres_role:
+    action: immutable
+  auth_method:
+    action: immutable
+  identity_type:
+    action: immutable

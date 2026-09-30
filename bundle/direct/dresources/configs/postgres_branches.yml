@@ -1,14 +1,14 @@
-provided_id_fields:
+fields:
   # parent and branch_id are immutable (part of hierarchical name, not in API spec)
-  - field: parent
-    reason: id_field
-  - field: branch_id
-    reason: id_field
-ignore_local_changes:
+  parent:
+    action: id
+  branch_id:
+    action: id
   # replace_existing only takes effect on create; toggling it later is a no-op.
-  - field: replace_existing
+  replace_existing:
+    action: ignore_local
     reason: input_only
-stable_output_fields:
   # name ("projects/{project_id}/branches/{branch_id}") is backend-assigned at
   # creation and immutable; see the stable_output_fields doc in config.go and ES-2202624.
-  - field: name
+  name:
+    stable_output: true

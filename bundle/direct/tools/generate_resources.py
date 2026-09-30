@@ -141,24 +141,9 @@ def filter_prefixes(fields):
     return result
 
 
-def write_field_group(lines, header, fields):
-    """Write a group of fields with field and reason, grouped by behavior."""
-    if lines:
-        lines.append("")
-    lines.append(f"{header}:")
-    # Group by behavior
-    by_behavior = {}
-    for field, behavior in fields:
-        by_behavior.setdefault(behavior, []).append(field)
-    first = True
-    for behavior in sorted(by_behavior):
-        if not first:
-            lines.append("")
-        first = False
-        reason = f"spec:{behavior.lower()}"
-        for field in by_behavior[behavior]:
-            lines.append(f"  - field: {field}")
-            lines.append(f"    reason: {reason}")
+def quote_key(field):
+    """Quote a field key when it starts with a character YAML would misread (e.g. '*')."""
+    return f'"{field}"' if field[:1] in "*[]{}&!|>%@`\"'#" else field
 
 
 GENERATED_SUFFIX = ".generated.yml"
@@ -167,7 +152,12 @@ HEADER = "# Generated, do not edit."
 
 
 def generate(behaviors):
-    """Render one resource's field behaviors, or "" if it has none."""
+    """Render one resource's field behaviors in the field-keyed format, or "" if none.
+
+    A field maps to a single action (immutable) plus an ignore_remote modifier whose value
+    is the reason; the two are filtered for prefixes independently, matching the flat
+    recreate_on_changes / ignore_remote_changes lists they replace.
+    """
     ignore_remote, recreate = [], []
     for field, fb in sorted(behaviors.items()):
         if "OUTPUT_ONLY" in fb:
@@ -183,13 +173,19 @@ def generate(behaviors):
     if not ignore_remote and not recreate:
         return ""
 
-    lines = []
-    if recreate:
-        write_field_group(lines, "recreate_on_changes", recreate)
-    if ignore_remote:
-        write_field_group(lines, "ignore_remote_changes", ignore_remote)
+    entries = {}  # field -> ordered list of (key, value)
+    for field, _ in recreate:
+        entries.setdefault(field, []).extend([("action", "immutable"), ("reason", "spec:immutable")])
+    for field, behavior in ignore_remote:
+        entries.setdefault(field, []).append(("ignore_remote", f"spec:{behavior.lower()}"))
 
-    return HEADER + "\n\n" + "\n".join(lines) + "\n"
+    lines = [HEADER, "", "fields:"]
+    for field in sorted(entries):
+        lines.append(f"  {quote_key(field)}:")
+        for key, value in entries[field]:
+            lines.append(f"    {key}: {value}")
+
+    return "\n".join(lines) + "\n"
 
 
 def write_files(outdir, resource_behaviors):
