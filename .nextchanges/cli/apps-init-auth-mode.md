@@ -1,0 +1,1 @@
+* Added `--auth-mode` and `--set <plugin>.<resourceKey>.authMode=obo|sp|both` to `databricks apps init` so AppKit resources can be accessed on behalf of the user, by the service principal, or both. The default stays service principal.

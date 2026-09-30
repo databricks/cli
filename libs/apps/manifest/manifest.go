@@ -35,6 +35,13 @@ type Resource struct {
 	Permission  string                   `json:"permission"`  // e.g., "CAN_USE"
 	Fields      map[string]ResourceField `json:"fields"`      // field definitions with env var mappings
 
+	// Scope is the user_api_scope needed to use this resource on behalf of the user.
+	// Empty when the resource type cannot be used on behalf of the user.
+	Scope string `json:"scope,omitempty"`
+
+	// AppOnly resources (e.g., secret, database) are always bound to the service principal.
+	AppOnly bool `json:"appOnly,omitempty"`
+
 	// PluginName is the machine name of the plugin (e.g., "lakebase").
 	// Set during resource collection. Not part of the JSON manifest.
 	PluginName string `json:"-"`
@@ -80,6 +87,9 @@ type Plugin struct {
 	RequiredByTemplate bool      `json:"requiredByTemplate"`
 	Resources          Resources `json:"resources"`
 	OnSetupMessage     string    `json:"onSetupMessage"`
+
+	// Scopes are user_api_scopes the plugin needs that are not tied to a resource (e.g., "ai-gateway").
+	Scopes []string `json:"scopes,omitempty"`
 
 	// Stability is one of "beta", "ga", or empty.
 	// Stored as a plain string so unknown future values round-trip unchanged.

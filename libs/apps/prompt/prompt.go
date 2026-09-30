@@ -118,6 +118,7 @@ type CreateProjectConfig struct {
 	Dependencies map[string]string // e.g., {"sql_warehouse_id": "abc123"}
 	Deploy       bool              // Whether to deploy the app after creation
 	RunMode      RunMode           // How to run the app after creation
+	AuthModes    map[string]string // resource key -> auth mode chosen in the prompt
 }
 
 // App name constraints.

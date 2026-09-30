@@ -1457,3 +1457,86 @@ func TestSetFirstAppNameNoResources(t *testing.T) {
 	require.NotNil(t, bundleName)
 	assert.Equal(t, "myapp", bundleName.Value)
 }
+
+func authModeManifest() *manifest.Manifest {
+	return &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"analytics": {
+				Name: "analytics",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{Type: "sql_warehouse", ResourceKey: "sql-warehouse", Scope: "sql", PluginName: "analytics", Fields: map[string]manifest.ResourceField{"id": {}}},
+						{Type: "secret", ResourceKey: "secret", AppOnly: true, PluginName: "analytics", Fields: map[string]manifest.ResourceField{"scope": {}, "key": {}}},
+					},
+				},
+			},
+			"jobs": {
+				Name: "jobs",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{Type: "job", ResourceKey: "job", PluginName: "jobs", Fields: map[string]manifest.ResourceField{"id": {}}},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestParseSetAuthModes(t *testing.T) {
+	m := authModeManifest()
+	tests := []struct {
+		name      string
+		setValues []string
+		want      map[string]string
+		wantErr   string
+	}{
+		{name: "values ignored", setValues: []string{"analytics.sql-warehouse.id=wh"}, want: map[string]string{}},
+		{name: "obo", setValues: []string{"analytics.sql-warehouse.authMode=obo"}, want: map[string]string{"sql-warehouse": "obo"}},
+		{name: "both", setValues: []string{"analytics.sql-warehouse.authMode=both"}, want: map[string]string{"sql-warehouse": "both"}},
+		{name: "sp without scope", setValues: []string{"jobs.job.authMode=sp"}, want: map[string]string{"job": "sp"}},
+		{name: "invalid value", setValues: []string{"analytics.sql-warehouse.authMode=user"}, wantErr: "invalid auth mode"},
+		{name: "unknown resource", setValues: []string{"analytics.nope.authMode=obo"}, wantErr: "no resource with key"},
+		{name: "app only", setValues: []string{"analytics.secret.authMode=sp"}, wantErr: "always accessed by the app's service principal"},
+		{name: "obo without scope", setValues: []string{"jobs.job.authMode=obo"}, wantErr: "cannot be accessed on behalf of the user"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseSetAuthModes(tt.setValues, m)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+
+	// parseSetValues must accept and skip the authMode pseudo-field.
+	rv, err := parseSetValues([]string{"analytics.sql-warehouse.authMode=obo", "analytics.sql-warehouse.id=wh"}, m)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"sql-warehouse.id": "wh"}, rv)
+}
+
+func TestResolveAuthModes(t *testing.T) {
+	m := authModeManifest()
+	resources := m.CollectResources([]string{"analytics", "jobs"})
+
+	got, err := resolveAuthModes(resources, nil, nil, "")
+	require.NoError(t, err)
+	assert.Empty(t, got)
+
+	got, err = resolveAuthModes(resources, map[string]string{"job": "sp"}, nil, "obo")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"sql-warehouse": "obo"}, got)
+
+	_, err = resolveAuthModes(resources, nil, nil, "obo")
+	assert.ErrorContains(t, err, "use --set jobs.job.authMode=sp")
+
+	got, err = resolveAuthModes(resources, map[string]string{"sql-warehouse": "both"}, map[string]string{"sql-warehouse": "obo"}, "")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"sql-warehouse": "both"}, got)
+
+	got, err = resolveAuthModes(resources, nil, map[string]string{"sql-warehouse": "obo"}, "")
+	require.NoError(t, err)
+	assert.Equal(t, map[string]string{"sql-warehouse": "obo"}, got)
+}

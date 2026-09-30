@@ -40,6 +40,30 @@ type Config struct {
 	// ResourceValues maps resource value keys to values.
 	// Keys use "resource_key.field_name" format (e.g., "sql-warehouse.id" -> "abc123").
 	ResourceValues map[string]string
+	// AuthModes maps resource keys to their auth mode (AuthModeSP, AuthModeOBO, or AuthModeBoth).
+	// Resources without an entry use AuthModeSP.
+	AuthModes map[string]string
+}
+
+// Auth modes describe how the app accesses a resource.
+const (
+	// AuthModeSP binds the resource to the app's service principal.
+	AuthModeSP = "sp"
+	// AuthModeOBO injects the resource id and accesses it on behalf of the user.
+	AuthModeOBO = "obo"
+	// AuthModeBoth binds the resource to the service principal and also grants the user scope.
+	AuthModeBoth = "both"
+)
+
+// isOBOOnly returns true if the resource is accessed only on behalf of the user (not bound to the service principal).
+func isOBOOnly(r manifest.Resource, cfg Config) bool {
+	return cfg.AuthModes[r.Key()] == AuthModeOBO
+}
+
+// needsScope returns true if the resource is accessed on behalf of the user.
+func needsScope(r manifest.Resource, cfg Config) bool {
+	mode := cfg.AuthModes[r.Key()]
+	return mode == AuthModeOBO || mode == AuthModeBoth
 }
 
 // hasResourceValues returns true if any value exists in cfg for the given resource.
@@ -60,10 +84,12 @@ func GenerateBundleVariables(plugins []manifest.Plugin, cfg Config) string {
 
 	for _, p := range plugins {
 		for _, r := range p.Resources.Required {
-			lines = append(lines, generateVariableLines(r)...)
+			if !isOBOOnly(r, cfg) {
+				lines = append(lines, generateVariableLines(r)...)
+			}
 		}
 		for _, r := range p.Resources.Optional {
-			if hasResourceValues(r, cfg) {
+			if hasResourceValues(r, cfg) && !isOBOOnly(r, cfg) {
 				lines = append(lines, generateVariableLines(r)...)
 			}
 		}
@@ -101,6 +127,9 @@ func GenerateBundleResources(plugins []manifest.Plugin, cfg Config) string {
 	for _, p := range plugins {
 		// Required resources
 		for _, r := range p.Resources.Required {
+			if isOBOOnly(r, cfg) {
+				continue
+			}
 			resource := generateResourceYAML(r, 8)
 			if resource != "" {
 				blocks = append(blocks, resource)
@@ -108,7 +137,7 @@ func GenerateBundleResources(plugins []manifest.Plugin, cfg Config) string {
 		}
 		// Optional resources (only if value provided)
 		for _, r := range p.Resources.Optional {
-			if hasResourceValues(r, cfg) {
+			if hasResourceValues(r, cfg) && !isOBOOnly(r, cfg) {
 				resource := generateResourceYAML(r, 8)
 				if resource != "" {
 					blocks = append(blocks, resource)
@@ -128,10 +157,12 @@ func GenerateTargetVariables(plugins []manifest.Plugin, cfg Config) string {
 
 	for _, p := range plugins {
 		for _, r := range p.Resources.Required {
-			lines = append(lines, generateTargetVarLines(r, cfg)...)
+			if !isOBOOnly(r, cfg) {
+				lines = append(lines, generateTargetVarLines(r, cfg)...)
+			}
 		}
 		for _, r := range p.Resources.Optional {
-			if hasResourceValues(r, cfg) {
+			if hasResourceValues(r, cfg) && !isOBOOnly(r, cfg) {
 				lines = append(lines, generateTargetVarLines(r, cfg)...)
 			}
 		}
@@ -231,17 +262,18 @@ func GenerateDotEnvExample(plugins []manifest.Plugin) string {
 // GenerateAppEnv generates the env entries for app.yaml.
 // Each resource field with an Env mapping produces a YAML list entry with
 // name (the env var) and valueFrom (the resource key in databricks.yml resources).
+// Resources accessed only on behalf of the user get a literal value instead of valueFrom.
 // Includes both required resources and optional resources that have values.
 func GenerateAppEnv(plugins []manifest.Plugin, cfg Config) string {
 	var lines []string
 
 	for _, p := range plugins {
 		for _, r := range p.Resources.Required {
-			lines = append(lines, appEnvLines(r)...)
+			lines = append(lines, appEnvLines(r, cfg)...)
 		}
 		for _, r := range p.Resources.Optional {
 			if hasResourceValues(r, cfg) {
-				lines = append(lines, appEnvLines(r)...)
+				lines = append(lines, appEnvLines(r, cfg)...)
 			}
 		}
 	}
@@ -250,8 +282,9 @@ func GenerateAppEnv(plugins []manifest.Plugin, cfg Config) string {
 }
 
 // appEnvLines returns app.yaml env entries for a resource.
-// Each field with an Env produces "- name: <ENV>\n  valueFrom: <resourceKey>".
-func appEnvLines(r manifest.Resource) []string {
+// Each field with an Env produces "- name: <ENV>\n  valueFrom: <resourceKey>",
+// or "- name: <ENV>\n  value: <value>" when the resource is accessed only on behalf of the user.
+func appEnvLines(r manifest.Resource, cfg Config) []string {
 	var lines []string
 	for _, fieldName := range r.FieldNames() {
 		field := r.Fields[fieldName]
@@ -261,12 +294,56 @@ func appEnvLines(r manifest.Resource) []string {
 		if field.LocalOnly {
 			continue
 		}
+		if isOBOOnly(r, cfg) {
+			lines = append(lines,
+				"  - name: "+field.Env,
+				"    value: "+quoteYAMLValue(cfg.ResourceValues[r.Key()+"."+fieldName]),
+			)
+			continue
+		}
 		lines = append(lines,
 			"  - name: "+field.Env,
 			"    valueFrom: "+r.Key(),
 		)
 	}
 	return lines
+}
+
+// GenerateUserAPIScopes generates the user_api_scopes entries for databricks.yml.
+// Output is indented with 8 spaces for insertion under "user_api_scopes:".
+// Returns "" unless at least one resource is accessed on behalf of the user. The scopes are
+// those of the resources accessed on behalf of the user, followed by the plugins' capability
+// scopes, deduplicated in first-seen order.
+func GenerateUserAPIScopes(plugins []manifest.Plugin, cfg Config) string {
+	var scopes []string
+	for _, p := range plugins {
+		for _, r := range p.Resources.Required {
+			if needsScope(r, cfg) {
+				scopes = append(scopes, r.Scope)
+			}
+		}
+		for _, r := range p.Resources.Optional {
+			if hasResourceValues(r, cfg) && needsScope(r, cfg) {
+				scopes = append(scopes, r.Scope)
+			}
+		}
+	}
+	if len(scopes) == 0 {
+		return ""
+	}
+	for _, p := range plugins {
+		scopes = append(scopes, p.Scopes...)
+	}
+
+	var lines []string
+	seen := make(map[string]bool)
+	for _, s := range scopes {
+		if !seen[s] {
+			seen[s] = true
+			lines = append(lines, "        - "+s)
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // appResourceSpec defines how a manifest resource type maps to DABs AppResource YAML.

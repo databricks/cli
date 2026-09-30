@@ -1,0 +1,74 @@
+{
+  "version": "1.0",
+  "plugins": {
+    "analytics": {
+      "name": "analytics",
+      "displayName": "Analytics",
+      "description": "SQL analytics",
+      "package": "@databricks/appkit",
+      "scopes": ["ai-gateway"],
+      "resources": {
+        "required": [
+          {
+            "type": "sql_warehouse",
+            "alias": "SQL Warehouse",
+            "resourceKey": "sql-warehouse",
+            "description": "SQL Warehouse for analytics queries",
+            "permission": "CAN_USE",
+            "scope": "sql",
+            "fields": {"id": {"env": "DATABRICKS_WAREHOUSE_ID", "description": "SQL Warehouse ID"}}
+          }
+        ],
+        "optional": []
+      }
+    },
+    "genie": {
+      "name": "genie",
+      "displayName": "Genie",
+      "description": "Genie spaces",
+      "package": "@databricks/appkit",
+      "resources": {
+        "required": [
+          {
+            "type": "genie_space",
+            "alias": "Genie Space",
+            "resourceKey": "genie-space",
+            "description": "Genie Space",
+            "permission": "CAN_RUN",
+            "scope": "genie",
+            "fields": {"id": {"env": "DATABRICKS_GENIE_SPACE_ID", "description": "Genie Space ID"}}
+          }
+        ],
+        "optional": []
+      }
+    },
+    "jobs": {
+      "name": "jobs",
+      "displayName": "Jobs",
+      "description": "Lakeflow jobs",
+      "package": "@databricks/appkit",
+      "resources": {
+        "required": [
+          {
+            "type": "job",
+            "alias": "Job",
+            "resourceKey": "job",
+            "description": "Job to trigger",
+            "permission": "CAN_MANAGE_RUN",
+            "fields": {"id": {"env": "DATABRICKS_JOB_ID", "description": "Job ID"}}
+          },
+          {
+            "type": "secret",
+            "alias": "Secret",
+            "resourceKey": "secret",
+            "description": "Job token",
+            "permission": "READ",
+            "appOnly": true,
+            "fields": {"scope": {"env": "SECRET_SCOPE"}, "key": {"env": "SECRET_KEY"}}
+          }
+        ],
+        "optional": []
+      }
+    }
+  }
+}
