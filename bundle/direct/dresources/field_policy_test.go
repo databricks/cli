@@ -52,7 +52,7 @@ func TestFieldPolicySpecLowers(t *testing.T) {
 	}}.Lower()
 	require.NoError(t, err)
 	assert.Equal(t, "spec:immutable", c.RecreateOnChanges[0].Reason)
-	remote := []string{}
+	var remote []string
 	for _, r := range c.IgnoreRemoteChanges {
 		remote = append(remote, r.Field.String()+"|"+r.Reason)
 	}
