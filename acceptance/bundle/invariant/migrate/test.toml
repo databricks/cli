@@ -1,5 +1,8 @@
-# Migration replays a per-config terraform-state fixture instead of a terraform deploy, so
-# (unlike the other invariant tests) it cannot run against a real workspace: keep it local-only.
+# Migration replays a per-config terraform-state fixture captured once against the local test
+# server (not a live terraform deploy), and replay_tfstate.py authenticates its raw API calls with
+# $DATABRICKS_TOKEN -- empty under cloud OAuth. So these are local-only for now; a cloud path needs
+# replay to auth via the SDK chain (`$CLI api`, once the cmd/api int64-precision bug is fixed) plus
+# fixtures captured against a real workspace.
 Cloud = false
 
 # Recording needs a bundle it has seen from the start. This test seeds a state file,
