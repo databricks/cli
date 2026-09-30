@@ -181,6 +181,7 @@ func TestAgentChoicesOnlyOffersActionableAgents(t *testing.T) {
 	assert.Contains(t, names, agents.NamePi)
 	assert.Contains(t, names, agents.NameGemini)
 	assert.Contains(t, names, agents.NameGoose)
+	assert.Contains(t, names, agents.NameKiro)
 	assert.NotContains(t, names, agents.NameCursor)
 	assert.NotContains(t, names, agents.NameCodex)
 	assert.NotContains(t, names, agents.NameOpenCode)
