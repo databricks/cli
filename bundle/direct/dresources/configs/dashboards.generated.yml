@@ -2,15 +2,14 @@
 
 fields:
   create_time:
-    ignore_remote: spec:output_only
+    spec: output_only
   dashboard_id:
-    ignore_remote: spec:output_only
+    spec: output_only
   lifecycle_state:
-    ignore_remote: spec:output_only
+    spec: output_only
   parent_path:
-    action: immutable
-    reason: spec:immutable
+    spec: immutable
   path:
-    ignore_remote: spec:output_only
+    spec: output_only
   update_time:
-    ignore_remote: spec:output_only
+    spec: output_only

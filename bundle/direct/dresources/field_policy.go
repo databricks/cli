@@ -37,6 +37,13 @@ type FieldPolicyConfig struct {
 // backend defaults, storage, redaction, reference resolution). The modifiers never
 // conflict with the Action, so a field cannot be handed contradictory behaviours.
 type FieldPolicy struct {
+	// Spec lists the OpenAPI-declared behaviours for a field (one or a list of
+	// immutable / input_only / output_only). Each implies its own mechanism and a
+	// "spec:<behaviour>" reason: immutable recreates, input_only/output_only skip
+	// remote drift. This is what the generated configs emit; hand-written configs use
+	// Action / IgnoreRemote instead (their reasons are manual, not spec-derived).
+	Spec specBehaviours `yaml:"spec,omitempty"`
+
 	// Action is the local-change decision. Empty = a normal in-place update.
 	Action action `yaml:"action,omitempty"`
 
@@ -106,6 +113,39 @@ func (a *action) UnmarshalYAML(unmarshal func(any) error) error {
 	return nil
 }
 
+// OpenAPI behaviours a spec entry may carry, each mapping to a mechanism and a
+// "spec:<behaviour>" reason in lowerSpec.
+const (
+	specImmutable  = "immutable"
+	specInputOnly  = "input_only"
+	specOutputOnly = "output_only"
+)
+
+var validSpecBehaviours = map[string]bool{specImmutable: true, specInputOnly: true, specOutputOnly: true}
+
+// specBehaviours accepts either a single behaviour ("spec: output_only") or a list
+// ("spec: [immutable, input_only]"), and rejects unknown behaviours at parse time.
+type specBehaviours []string
+
+func (s *specBehaviours) UnmarshalYAML(unmarshal func(any) error) error {
+	var one string
+	if err := unmarshal(&one); err == nil {
+		*s = specBehaviours{one}
+	} else {
+		var many []string
+		if err := unmarshal(&many); err != nil {
+			return err
+		}
+		*s = many
+	}
+	for _, b := range *s {
+		if !validSpecBehaviours[b] {
+			return fmt.Errorf("unknown spec behaviour %q", b)
+		}
+	}
+	return nil
+}
+
 const (
 	compareTrimSlash = "trim_slash"
 
@@ -169,8 +209,28 @@ func lowerAction(out *ResourceLifecycleConfig, pattern *structpath.PatternNode, 
 	return nil
 }
 
+// lowerSpec appends the flat rules for a field's OpenAPI-declared behaviours, each with
+// a "spec:<behaviour>" reason: immutable recreates, input_only/output_only skip remote drift.
+func lowerSpec(out *ResourceLifecycleConfig, pattern *structpath.PatternNode, spec specBehaviours) error {
+	for _, b := range spec {
+		switch b {
+		case specImmutable:
+			out.RecreateOnChanges = append(out.RecreateOnChanges, FieldRule{Field: pattern, Reason: "spec:" + specImmutable})
+		case specInputOnly, specOutputOnly:
+			out.IgnoreRemoteChanges = append(out.IgnoreRemoteChanges, FieldRule{Field: pattern, Reason: "spec:" + b})
+		default:
+			// Unreachable via YAML (UnmarshalYAML validates against validSpecBehaviours).
+			return fmt.Errorf("unhandled spec behaviour %q", b)
+		}
+	}
+	return nil
+}
+
 func lowerField(out *ResourceLifecycleConfig, pattern *structpath.PatternNode, field string, p FieldPolicy) error {
 	if err := lowerAction(out, pattern, p.Action, p.Reason); err != nil {
+		return err
+	}
+	if err := lowerSpec(out, pattern, p.Spec); err != nil {
 		return err
 	}
 

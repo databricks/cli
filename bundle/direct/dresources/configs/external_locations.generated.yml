@@ -2,18 +2,18 @@
 
 fields:
   effective_enable_file_events:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_file_event_queue:
-    ignore_remote: spec:output_only
+    spec: output_only
   file_event_queue.managed_aqs.managed_resource_id:
-    ignore_remote: spec:output_only
+    spec: output_only
   file_event_queue.managed_pubsub.managed_resource_id:
-    ignore_remote: spec:output_only
+    spec: output_only
   file_event_queue.managed_sqs.managed_resource_id:
-    ignore_remote: spec:output_only
+    spec: output_only
   file_event_queue.provided_aqs.managed_resource_id:
-    ignore_remote: spec:output_only
+    spec: output_only
   file_event_queue.provided_pubsub.managed_resource_id:
-    ignore_remote: spec:output_only
+    spec: output_only
   file_event_queue.provided_sqs.managed_resource_id:
-    ignore_remote: spec:output_only
+    spec: output_only

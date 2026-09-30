@@ -2,6 +2,6 @@
 
 fields:
   config.source_connection.is_deleted:
-    ignore_remote: spec:output_only
+    spec: output_only
   config.source_connection.options:
-    ignore_remote: spec:output_only
+    spec: output_only

@@ -2,7 +2,6 @@
 
 fields:
   trace_location:
-    action: immutable
-    reason: spec:immutable
+    spec: immutable
   trace_location.uc_trace_location.effective_table_prefix:
-    ignore_remote: spec:output_only
+    spec: output_only

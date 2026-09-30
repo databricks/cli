@@ -2,75 +2,74 @@
 
 fields:
   child_instance_refs:
-    ignore_remote: spec:output_only
+    spec: output_only
   child_instance_refs[*].branch_time:
-    ignore_remote: spec:output_only
+    spec: output_only
   child_instance_refs[*].effective_lsn:
-    ignore_remote: spec:output_only
+    spec: output_only
   child_instance_refs[*].lsn:
-    ignore_remote: spec:output_only
+    spec: output_only
   child_instance_refs[*].name:
-    ignore_remote: spec:output_only
+    spec: output_only
   child_instance_refs[*].uid:
-    ignore_remote: spec:output_only
+    spec: output_only
   creation_time:
-    ignore_remote: spec:output_only
+    spec: output_only
   creator:
-    ignore_remote: spec:output_only
+    spec: output_only
   custom_tags:
-    ignore_remote: spec:input_only
+    spec: input_only
   custom_tags[*].key:
-    ignore_remote: spec:input_only
+    spec: input_only
   custom_tags[*].value:
-    ignore_remote: spec:input_only
+    spec: input_only
   effective_capacity:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_custom_tags:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_custom_tags[*].key:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_custom_tags[*].value:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_enable_pg_native_login:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_enable_readable_secondaries:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_node_count:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_retention_window_in_days:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_stopped:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_usage_policy_id:
-    ignore_remote: spec:output_only
+    spec: output_only
   enable_pg_native_login:
-    ignore_remote: spec:input_only
+    spec: input_only
   enable_readable_secondaries:
-    ignore_remote: spec:input_only
+    spec: input_only
   node_count:
-    ignore_remote: spec:input_only
+    spec: input_only
   parent_instance_ref:
-    action: immutable
-    reason: spec:immutable
+    spec: immutable
   parent_instance_ref.effective_lsn:
-    ignore_remote: spec:output_only
+    spec: output_only
   parent_instance_ref.lsn:
-    ignore_remote: spec:input_only
+    spec: input_only
   parent_instance_ref.uid:
-    ignore_remote: spec:output_only
+    spec: output_only
   pg_version:
-    ignore_remote: spec:output_only
+    spec: output_only
   read_only_dns:
-    ignore_remote: spec:output_only
+    spec: output_only
   read_write_dns:
-    ignore_remote: spec:output_only
+    spec: output_only
   retention_window_in_days:
-    ignore_remote: spec:input_only
+    spec: input_only
   state:
-    ignore_remote: spec:output_only
+    spec: output_only
   stopped:
-    ignore_remote: spec:input_only
+    spec: input_only
   uid:
-    ignore_remote: spec:output_only
+    spec: output_only
   usage_policy_id:
-    ignore_remote: spec:input_only
+    spec: input_only

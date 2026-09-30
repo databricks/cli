@@ -2,20 +2,18 @@
 
 fields:
   autoscaling_limit_max_cu:
-    ignore_remote: spec:input_only
+    spec: input_only
   autoscaling_limit_min_cu:
-    ignore_remote: spec:input_only
+    spec: input_only
   disabled:
-    ignore_remote: spec:input_only
+    spec: input_only
   endpoint_type:
-    action: immutable
-    reason: spec:immutable
-    ignore_remote: spec:input_only
+    spec: [immutable, input_only]
   group:
-    ignore_remote: spec:input_only
+    spec: input_only
   no_suspension:
-    ignore_remote: spec:input_only
+    spec: input_only
   settings:
-    ignore_remote: spec:input_only
+    spec: input_only
   suspend_timeout_duration:
-    ignore_remote: spec:input_only
+    spec: input_only

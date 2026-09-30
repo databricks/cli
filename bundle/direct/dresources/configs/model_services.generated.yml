@@ -2,14 +2,14 @@
 
 fields:
   config.inference_table.is_deleted:
-    ignore_remote: spec:output_only
+    spec: output_only
   config.inference_table.table:
-    ignore_remote: spec:output_only
+    spec: output_only
   config.routing.destinations[*].is_deleted:
-    ignore_remote: spec:output_only
+    spec: output_only
   config.routing.destinations[*].provisioned_throughput_config.model:
-    ignore_remote: spec:output_only
+    spec: output_only
   config.routing.fallback.destinations[*].is_deleted:
-    ignore_remote: spec:output_only
+    spec: output_only
   config.routing.fallback.destinations[*].provisioned_throughput_config.model:
-    ignore_remote: spec:output_only
+    spec: output_only

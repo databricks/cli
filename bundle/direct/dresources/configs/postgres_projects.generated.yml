@@ -2,24 +2,22 @@
 
 fields:
   budget_policy_id:
-    ignore_remote: spec:input_only
+    spec: input_only
   custom_tags:
-    ignore_remote: spec:input_only
+    spec: input_only
   custom_tags[*].key:
-    ignore_remote: spec:input_only
+    spec: input_only
   custom_tags[*].value:
-    ignore_remote: spec:input_only
+    spec: input_only
   default_branch:
-    ignore_remote: spec:input_only
+    spec: input_only
   default_endpoint_settings:
-    ignore_remote: spec:input_only
+    spec: input_only
   display_name:
-    ignore_remote: spec:input_only
+    spec: input_only
   enable_pg_native_login:
-    ignore_remote: spec:input_only
+    spec: input_only
   history_retention_duration:
-    ignore_remote: spec:input_only
+    spec: input_only
   pg_version:
-    action: immutable
-    reason: spec:immutable
-    ignore_remote: spec:input_only
+    spec: [immutable, input_only]

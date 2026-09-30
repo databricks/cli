@@ -2,12 +2,12 @@
 
 fields:
   attributes:
-    ignore_remote: spec:input_only
+    spec: input_only
   auth_method:
-    ignore_remote: spec:input_only
+    spec: input_only
   identity_type:
-    ignore_remote: spec:input_only
+    spec: input_only
   membership_roles:
-    ignore_remote: spec:input_only
+    spec: input_only
   postgres_role:
-    ignore_remote: spec:input_only
+    spec: input_only

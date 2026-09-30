@@ -36,6 +36,29 @@ func TestFieldPolicyEveryActionLowers(t *testing.T) {
 	}
 }
 
+// TestFieldPolicyRejectsUnknownSpec proves the spec behaviour set is enforced by the parser.
+func TestFieldPolicyRejectsUnknownSpec(t *testing.T) {
+	var fpc FieldPolicyConfig
+	err := yaml.Unmarshal([]byte("fields:\n  name: { spec: writeonce }\n"), &fpc)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `unknown spec behaviour "writeonce"`)
+}
+
+// TestFieldPolicySpecLowers pins each OpenAPI behaviour to its mechanism and spec: reason.
+func TestFieldPolicySpecLowers(t *testing.T) {
+	c, err := FieldPolicyConfig{Fields: map[string]FieldPolicy{
+		"a": {Spec: specBehaviours{specImmutable, specInputOnly}},
+		"b": {Spec: specBehaviours{specOutputOnly}},
+	}}.Lower()
+	require.NoError(t, err)
+	assert.Equal(t, "spec:immutable", c.RecreateOnChanges[0].Reason)
+	remote := []string{}
+	for _, r := range c.IgnoreRemoteChanges {
+		remote = append(remote, r.Field.String()+"|"+r.Reason)
+	}
+	assert.ElementsMatch(t, []string{"a|spec:input_only", "b|spec:output_only"}, remote)
+}
+
 // TestFieldPolicyLowerVolumes pins the lowering of a representative resource that
 // exercises id, id_renameable, immutable, and the trim_slash comparison modifier.
 func TestFieldPolicyLowerVolumes(t *testing.T) {

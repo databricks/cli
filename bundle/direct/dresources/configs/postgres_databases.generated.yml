@@ -2,6 +2,6 @@
 
 fields:
   postgres_database:
-    ignore_remote: spec:input_only
+    spec: input_only
   role:
-    ignore_remote: spec:input_only
+    spec: input_only

@@ -2,4 +2,4 @@
 
 fields:
   ingestion_definition.source_type:
-    ignore_remote: spec:output_only
+    spec: output_only

@@ -154,9 +154,10 @@ HEADER = "# Generated, do not edit."
 def generate(behaviors):
     """Render one resource's field behaviors in the field-keyed format, or "" if none.
 
-    A field maps to a single action (immutable) plus an ignore_remote modifier whose value
-    is the reason; the two are filtered for prefixes independently, matching the flat
-    recreate_on_changes / ignore_remote_changes lists they replace.
+    Each field lists its OpenAPI behaviours under `spec` (immutable / input_only /
+    output_only); the loader maps each to its mechanism and a spec:<behaviour> reason.
+    immutable and the remote-ignored behaviours are filtered for prefixes independently,
+    matching the flat recreate_on_changes / ignore_remote_changes lists they replace.
     """
     ignore_remote, recreate = [], []
     for field, fb in sorted(behaviors.items()):
@@ -173,17 +174,18 @@ def generate(behaviors):
     if not ignore_remote and not recreate:
         return ""
 
-    entries = {}  # field -> ordered list of (key, value)
+    spec = {}  # field -> ordered list of behaviours
     for field, _ in recreate:
-        entries.setdefault(field, []).extend([("action", "immutable"), ("reason", "spec:immutable")])
+        spec.setdefault(field, []).append("immutable")
     for field, behavior in ignore_remote:
-        entries.setdefault(field, []).append(("ignore_remote", f"spec:{behavior.lower()}"))
+        spec.setdefault(field, []).append(behavior.lower())
 
     lines = [HEADER, "", "fields:"]
-    for field in sorted(entries):
+    for field in sorted(spec):
+        behaviours = spec[field]
+        value = behaviours[0] if len(behaviours) == 1 else "[" + ", ".join(behaviours) + "]"
         lines.append(f"  {quote_key(field)}:")
-        for key, value in entries[field]:
-            lines.append(f"    {key}: {value}")
+        lines.append(f"    spec: {value}")
 
     return "\n".join(lines) + "\n"
 

@@ -2,26 +2,18 @@
 
 fields:
   expire_time:
-    ignore_remote: spec:input_only
+    spec: input_only
   is_protected:
-    ignore_remote: spec:input_only
+    spec: input_only
   no_expiry:
-    ignore_remote: spec:input_only
+    spec: input_only
   source_branch:
-    action: immutable
-    reason: spec:immutable
-    ignore_remote: spec:input_only
+    spec: [immutable, input_only]
   source_branch_lsn:
-    action: immutable
-    reason: spec:immutable
-    ignore_remote: spec:input_only
+    spec: [immutable, input_only]
   source_branch_time:
-    action: immutable
-    reason: spec:immutable
-    ignore_remote: spec:input_only
+    spec: [immutable, input_only]
   source_snapshot:
-    action: immutable
-    reason: spec:immutable
-    ignore_remote: spec:input_only
+    spec: [immutable, input_only]
   ttl:
-    ignore_remote: spec:input_only
+    spec: input_only

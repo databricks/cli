@@ -2,10 +2,8 @@
 
 fields:
   branch:
-    ignore_remote: spec:input_only
+    spec: input_only
   create_database_if_missing:
-    ignore_remote: spec:input_only
+    spec: input_only
   postgres_database:
-    action: immutable
-    reason: spec:immutable
-    ignore_remote: spec:input_only
+    spec: [immutable, input_only]

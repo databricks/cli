@@ -2,4 +2,4 @@
 
 fields:
   browse_only:
-    ignore_remote: spec:output_only
+    spec: output_only

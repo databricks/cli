@@ -2,18 +2,18 @@
 
 fields:
   create_time:
-    ignore_remote: spec:output_only
+    spec: output_only
   effective_run_as:
-    ignore_remote: spec:output_only
+    spec: output_only
   evaluation.last_evaluated_at:
-    ignore_remote: spec:output_only
+    spec: output_only
   evaluation.state:
-    ignore_remote: spec:output_only
+    spec: output_only
   id:
-    ignore_remote: spec:output_only
+    spec: output_only
   lifecycle_state:
-    ignore_remote: spec:output_only
+    spec: output_only
   owner_user_name:
-    ignore_remote: spec:output_only
+    spec: output_only
   update_time:
-    ignore_remote: spec:output_only
+    spec: output_only
