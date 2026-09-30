@@ -1,0 +1,1 @@
+* Remove support for the Terraform deployment engine: `bundle.engine: terraform` and `DATABRICKS_BUNDLE_ENGINE=terraform` now error, and existing Terraform state migrates to the direct engine automatically. Install Databricks CLI v1.18.x to keep deploying with Terraform. ([#6888](https://github.com/databricks/cli/pull/6888))
