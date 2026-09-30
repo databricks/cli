@@ -1,5 +1,28 @@
 # Version changelog
 
+## Release v1.19.0 (2026-09-30)
+
+### CLI
+
+ * Honor `CLAUDE_CONFIG_DIR` in `aitools` commands. ([#6838](https://github.com/databricks/cli/pull/6838))
+ * Added `--ttl` and `--no-expiry` flags to `databricks postgres create-branch` so a branch's expiration can be set without hand-writing a `--json` spec. `--ttl` accepts the REST API duration form (`604800s`), a Go duration (`168h`), or day/week units (`7d`, `3w`); `--no-expiry` creates a branch that never expires. One of `--ttl`, `--no-expiry`, or a spec expiration in `--json` is required. ([#6313](https://github.com/databricks/cli/pull/6313))
+ * `databricks ssh connect` serverless sessions now provide Claude Code and Codex configured with Unity Gateway out of the box. ([#6885](https://github.com/databricks/cli/pull/6885))
+
+### AI Runtime
+
+ * Add `databricks air images push` (Preview) to configure Docker authentication and push container images to Databricks Artifact Registry. ([#6869](https://github.com/databricks/cli/pull/6869))
+ * `air run` now grants the configured `permissions` on the MLflow experiment as well as the job. ([#6870](https://github.com/databricks/cli/pull/6870))
+
+### Bundles
+
+ * Add libraries field to clusters. ([#6831](https://github.com/databricks/cli/pull/6831))
+ * Error out when a configured `workspace_id` does not match the connected workspace, instead of silently using it in resource URLs emitted by `bundle summary`. ([#6754](https://github.com/databricks/cli/pull/6754))
+ * Fix spurious recreation of Lakebase (Postgres) branches, roles, and catalogs when the referenced project is updated in place: an in-place project change (e.g. `display_name`) no longer forces a delete + create of resources that reference the project's or branch's `name`. ([#6865](https://github.com/databricks/cli/pull/6865))
+ * Direct engine now detects and applies an explicitly configured integer zero (e.g. `gcp_attributes.local_ssd_count: 0`) added to a resource first deployed without the field. ([#6867](https://github.com/databricks/cli/pull/6867))
+ * Migrate existing Terraform deployment state to the direct engine before deploying (previously done after a Terraform deploy), so the deploy runs on the direct engine. ([#6749](https://github.com/databricks/cli/pull/6749))
+ * The `postgres_snapshot_schedules` resource (introduced in [v1.16.0](https://github.com/databricks/cli/releases/tag/v1.16.0)) is now marked Beta and is no longer available in PyDABs, matching the other `postgres_*` resources; configure it in YAML instead. ([#6887](https://github.com/databricks/cli/pull/6887))
+
+
 ## Release v1.18.0 (2026-09-24)
 
 ### CLI
