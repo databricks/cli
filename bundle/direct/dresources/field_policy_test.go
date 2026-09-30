@@ -40,7 +40,7 @@ func TestFieldPolicyEveryActionLowers(t *testing.T) {
 // exercises id, id_renameable, immutable, and the trim_slash comparison modifier.
 func TestFieldPolicyLowerVolumes(t *testing.T) {
 	rules := func(rs []FieldRule) []string {
-		out := []string{}
+		var out []string
 		for _, r := range rs {
 			out = append(out, r.Field.String()+"|"+r.Reason)
 		}
