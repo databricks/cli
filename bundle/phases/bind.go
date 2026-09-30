@@ -34,11 +34,6 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, st
 	}()
 
 	if engine.IsDirect() {
-		if stateDesc.IsDMS() {
-			logdiag.LogError(ctx, errors.New("bind is not supported for a bundle target that records deployment history"))
-			return
-		}
-
 		// Direct engine: import into temp state, run plan, check for changes
 		// This follows the same pattern as terraform import
 		groupName, ok := terraform.TerraformToGroupName[opts.ResourceType]
@@ -46,57 +41,33 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, st
 			groupName = opts.ResourceType
 		}
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
-		_, statePath := b.StateFilenameDirect(ctx)
 
-		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-
-		// If there are changes and auto-approve is not set, show plan and ask for confirmation
-		if result.HasChanges && !opts.AutoApprove {
-			// Display the planned changes for the bound resource
-			cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", result.Action, resourceKey))
-
-			// Show details of what will change
-			if result.Plan != nil {
-				if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
-					cmdio.LogString(ctx, "\nChanges detected:")
-					for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
-						change := entry.Changes[field]
-						if change.Action != deployplan.Skip {
-							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
-						}
-					}
-					cmdio.LogString(ctx, "")
-				}
-			}
-
-			if !cmdio.IsPromptSupported(ctx) {
-				result.Cancel()
-				logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
+		if stateDesc.IsDMS() {
+			// A recorded deployment keeps its resources in the metadata service, so the bind is
+			// recorded there rather than written to the state file.
+			bindWithHistory(ctx, b, resourceKey, opts.ResourceId, opts.AutoApprove)
+			if logdiag.HasError(ctx) {
 				return
 			}
+		} else {
+			_, statePath := b.StateFilenameDirect(ctx)
 
-			ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
+			result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(ctx), &b.Config, statePath, resourceKey, opts.ResourceId)
 			if err != nil {
-				result.Cancel()
 				logdiag.LogError(ctx, err)
 				return
 			}
-			if !ans {
+
+			if !confirmBindPlan(ctx, resourceKey, result.Plan, opts.AutoApprove, false) {
 				result.Cancel()
-				logdiag.LogError(ctx, errors.New("import aborted"))
 				return
 			}
-		}
 
-		// Finalize: rename temp state to final location
-		err = result.Finalize()
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
+			// Finalize: rename temp state to final location
+			if err := result.Finalize(); err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
 		}
 	} else {
 		// Terraform engine: use terraform import
@@ -121,6 +92,60 @@ func jsonDump(ctx context.Context, v any, field string) string {
 		return "??"
 	}
 	return string(b)
+}
+
+// confirmBindPlan displays changes and asks for approval before applying or staging them.
+// Immediate binds also apply permissions and grants, so those changes need approval too.
+func confirmBindPlan(ctx context.Context, resourceKey string, plan *deployplan.Plan, autoApprove, immediate bool) bool {
+	if autoApprove {
+		return true
+	}
+	changesWorkspace := false
+	for _, action := range plan.GetActions() {
+		if !immediate && action.ResourceKey != resourceKey {
+			continue
+		}
+		if action.ActionType == deployplan.Skip || action.ActionType == deployplan.Bind || action.ActionType == deployplan.Undefined {
+			continue
+		}
+		changesWorkspace = true
+		entry := plan.Plan[action.ResourceKey]
+		cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", entry.Action, action.ResourceKey))
+		if len(entry.Changes) > 0 {
+			cmdio.LogString(ctx, "\nChanges detected:")
+			for _, field := range slices.Sorted(maps.Keys(entry.Changes)) {
+				change := entry.Changes[field]
+				if change.Action != deployplan.Skip {
+					cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
+				}
+			}
+			cmdio.LogString(ctx, "")
+		}
+	}
+	if !changesWorkspace {
+		return true
+	}
+
+	if !cmdio.IsPromptSupported(ctx) {
+		logdiag.LogError(ctx, fmt.Errorf("this bind operation requires user confirmation, but the current console does not support prompting.\nTo proceed, use --auto-approve after reviewing the plan above.%s", agent.AgentNotice()))
+		return false
+	}
+
+	prompt := "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'."
+	if immediate {
+		prompt = "Confirm bind? The change will be applied to the workspace now."
+	}
+	ans, err := cmdio.AskYesOrNo(ctx, prompt)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return false
+	}
+	if !ans {
+		logdiag.LogError(ctx, errors.New("import aborted"))
+		return false
+	}
+
+	return true
 }
 
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string, engine engine.EngineType) {

@@ -1,0 +1,11 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+job_id=$($CLI jobs create --json '{"name": "target-'$UNIQUE_NAME'"}' | jq -r '.job_id')
+add_repl "$job_id" JOB_ID
+
+title "The service rejects the operation upload, so recording the bind fails"
+trace fault.py "PATCH /api/2.0/bundle/*" 500 0 1
+trace musterr $CLI bundle deployment bind foo "$job_id" --auto-approve
+
+title "The version is still completed - with failure - rather than left holding its lease"
+trace print_requests.py --dms --method POST //versions

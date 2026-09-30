@@ -1,0 +1,39 @@
+
+=== The service rejects the operation upload, so recording the bind fails
+>>> fault.py PATCH /api/2.0/bundle/* 500 0 1
+
+>>> musterr [CLI] bundle deployment bind foo [JOB_ID] --auto-approve
+Error: recording operation for resources.jobs.foo: Fault injected by test. (500 INJECTED)
+
+Endpoint: PATCH [DATABRICKS_URL]/api/2.0/bundle/deployments/[NUMID]/versions/1/operations/jobs.foo?update_mask=state%2Cerror_message%2Cresource_id%2Cstatus
+HTTP Status: 500 Internal Server Error
+API error_code: INJECTED
+API message: Fault injected by test.
+
+
+=== The version is still completed - with failure - rather than left holding its lease
+>>> print_requests.py --dms --method POST //versions
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions",
+  "q": {
+    "version_id": "1"
+  },
+  "body": {
+    "cli_version": "[CLI_VERSION]",
+    "version_type": "VERSION_TYPE_DEPLOY",
+    "operations": [
+      {
+        "resource_key": "jobs.foo",
+        "action_type": "OPERATION_ACTION_TYPE_BIND_AND_UPDATE"
+      }
+    ]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/bundle/deployments/[NUMID]/versions/1/complete",
+  "body": {
+    "completion_reason": "VERSION_COMPLETE_FAILURE"
+  }
+}

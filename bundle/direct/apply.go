@@ -35,8 +35,19 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, planEntry *deployplan.PlanEntry) error {
 	ctx = log.WithPrefix(ctx, "deploying "+d.ResourceKey)
 	ctx = d.withResourceKey(ctx)
-	if actionType == deployplan.Create {
+
+	// Bind adopts an existing resource, so its id comes from the plan entry rather than state.
+	switch actionType {
+	case deployplan.Create:
 		return d.Create(ctx, db, newState)
+	case deployplan.Bind:
+		copyRemoteEtag(d.ResourceKey, planEntry.RemoteState, newState)
+		log.Infof(ctx, "Bound %s id=%#v", d.ResourceKey, planEntry.ID)
+		return d.saveState(ctx, db, planEntry.ID, newState, d.DependsOn)
+	case deployplan.BindAndUpdate:
+		return d.Update(ctx, db, planEntry.ID, newState, planEntry)
+	default:
+		// Remaining actions require an existing state entry.
 	}
 
 	oldID := db.GetResourceID(d.ResourceKey)

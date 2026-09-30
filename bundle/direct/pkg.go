@@ -50,6 +50,10 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
+
+	// BindKey and BindID identify the resource to adopt during `bundle deployment bind`.
+	BindKey string
+	BindID  string
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

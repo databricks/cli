@@ -36,18 +36,31 @@ func (e ErrResourceAlreadyBound) Error() string {
 		e.ResourceKey, e.ExistingID)
 }
 
-// BindResult contains the result of a bind operation including any detected changes.
+// BindResult contains the result of a bind operation.
 type BindResult struct {
-	// HasChanges is true if deploying after bind would make changes to the resource
-	HasChanges bool
-	// Action is the planned action for the bound resource (e.g., "skip", "update", "recreate")
-	Action deployplan.ActionType
-	// Plan contains the full deployment plan for the bound resource
+	// Plan contains the full deployment plan for the bound resource.
 	Plan *deployplan.Plan
 	// TempStatePath is the path to the temporary state file
 	TempStatePath string
 	// StatePath is the path to the final state file
 	StatePath string
+}
+
+// copyRemoteEtag preserves etag-based drift detection when adopting dashboards and Genie spaces.
+func copyRemoteEtag(resourceKey string, remoteState, newState any) {
+	if remoteState == nil {
+		return
+	}
+	if !strings.Contains(resourceKey, ".dashboards.") && !strings.Contains(resourceKey, ".genie_spaces.") {
+		return
+	}
+	etag, err := structaccess.Get(remoteState, structpath.NewStringKey(nil, "etag"))
+	if err != nil || etag == nil {
+		return
+	}
+	if etagStr, ok := etag.(string); ok && etagStr != "" {
+		_ = structaccess.Set(newState, structpath.NewStringKey(nil, "etag"), etagStr)
+	}
 }
 
 // Bind adds an existing workspace resource to a temporary state and calculates
@@ -64,7 +77,7 @@ type BindResult struct {
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
 	// The state is opened without a DMS client, so the writes below record nothing;
-	// phases.Bind and phases.Unbind refuse to run at all when recording is enabled.
+	// Recorded deployments use phases.bindWithHistory instead.
 	var checkStateDB dstate.DeploymentState
 	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err == nil {
 		existingID := checkStateDB.GetResourceID(resourceKey)
@@ -136,17 +149,8 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			dependsOn = entry.DependsOn
 		}
 
-		// Copy etag from remote state for resources that use etag-based drift
-		// detection (dashboards and genie spaces). The etag is not provided by the
-		// user; it comes from remote. If we don't store it in state, we won't
-		// detect remote drift correctly and the next plan shows a bogus update.
-		if (strings.Contains(resourceKey, ".dashboards.") || strings.Contains(resourceKey, ".genie_spaces.")) && entry != nil && entry.RemoteState != nil {
-			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
-			if err == nil && etag != nil {
-				if etagStr, ok := etag.(string); ok && etagStr != "" {
-					_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
-				}
-			}
+		if entry != nil {
+			copyRemoteEtag(resourceKey, entry.RemoteState, sv.Value)
 		}
 
 		// Compact hashed_fields fields so the persisted state stays small. Not needed for
@@ -196,22 +200,11 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		return nil, err
 	}
 
-	// Check if the bound resource has changes
-	result := &BindResult{
-		HasChanges:    false,
-		Action:        deployplan.Skip,
+	return &BindResult{
 		Plan:          plan,
 		TempStatePath: tmpStatePath,
 		StatePath:     statePath,
-	}
-
-	entry = plan.Plan[resourceKey]
-	if entry != nil {
-		result.Action = entry.Action
-		result.HasChanges = result.Action != deployplan.Skip && result.Action != deployplan.Undefined
-	}
-
-	return result, nil
+	}, nil
 }
 
 // Finalize completes the bind operation by renaming the temp state to the final location.
