@@ -476,7 +476,10 @@ environment:
 }
 
 func TestInjectContainers(t *testing.T) {
-	payload := buildSubmitPayload(baseRunConfig(), "/Workspace/run/command.sh", "6", "", snapshotResult{}, nil)
+	cfg := baseRunConfig()
+	cfg.Containers = []containerConfig{{Name: "inference", Ranks: []int{0, 1}, UnityCatalogImage: "main.ml.inference:v1"}}
+	payload := buildSubmitPayload(cfg, "/Workspace/run/command.sh", "6", "", snapshotResult{}, nil)
+	assert.Empty(t, payload.Tasks[0].AiRuntimeTask.Deployments[0].CommandPath)
 	raw, err := json.Marshal(payload)
 	require.NoError(t, err)
 	var body map[string]any
@@ -500,6 +503,54 @@ func TestInjectContainers(t *testing.T) {
 	assert.Equal(t, "main.ml.inference:v1", first["unity_catalog_image_path"])
 	assert.Equal(t, []any{0, 1}, first["ranks"])
 	assert.NotContains(t, first, "environment_variables")
+}
+
+func TestSubmitWorkloadSendsContainerCommandsWithoutDeploymentCommand(t *testing.T) {
+	server := testserver.New(t)
+	t.Cleanup(server.Close)
+
+	var got map[string]any
+	server.Handle("POST", "/api/2.2/jobs/runs/submit", func(req testserver.Request) any {
+		require.NoError(t, json.Unmarshal(req.Body, &got))
+		return jobs.SubmitRunResponse{RunId: 777}
+	})
+	stubValidateConfig(server)
+	testserver.AddDefaultHandlers(server)
+	w, err := databricks.NewWorkspaceClient(&databricks.Config{Host: server.URL, Token: "token"})
+	require.NoError(t, err)
+
+	cfgPath := writeConfigFile(t, "run.yaml", `experiment_name: container-run
+compute:
+  accelerator_type: GPU_1xA10
+  num_accelerators: 2
+containers:
+  - name: inference
+    ranks: [0]
+    unity_catalog_image: main.ml.inference:v1
+    command: python infer.py
+  - name: trainer
+    ranks: [1]
+    unity_catalog_image: main.ml.trainer:v1
+    command: python train.py
+`)
+	cfg, err := loadRunConfig(cfgPath)
+	require.NoError(t, err)
+	_, _, err = submitWorkload(t.Context(), w, cfg, cfgPath, "idem-key", false)
+	require.NoError(t, err)
+
+	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(got)
+	require.NoError(t, err)
+	deployments := aiRuntimeTask["deployments"].([]any)
+	require.Len(t, deployments, 1)
+	deployment := deployments[0].(map[string]any)
+	assert.NotContains(t, deployment, "command_path")
+	containers := deployment["containers"].([]any)
+	require.Len(t, containers, 2)
+	for i, name := range []string{"inference", "trainer"} {
+		container := containers[i].(map[string]any)
+		assert.Equal(t, name, container["name"])
+		assert.True(t, strings.HasSuffix(container["command_path"].(string), "/containers/"+name+"/command.sh"))
+	}
 }
 
 // A working-tree code_source is packaged into a tarball, uploaded via libs/filer,

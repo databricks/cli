@@ -57,15 +57,18 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
 func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRun {
+	deployment := jobs.DeploymentSpec{
+		Compute: jobs.ComputeSpec{
+			AcceleratorType:  jobs.ComputeSpecAcceleratorType(cfg.Compute.AcceleratorType),
+			AcceleratorCount: cfg.Compute.NumAccelerators,
+		},
+	}
+	if len(cfg.Containers) == 0 {
+		deployment.CommandPath = commandPath
+	}
 	task := jobs.AiRuntimeTask{
-		Experiment: cfg.ExperimentName,
-		Deployments: []jobs.DeploymentSpec{{
-			CommandPath: commandPath,
-			Compute: jobs.ComputeSpec{
-				AcceleratorType:  jobs.ComputeSpecAcceleratorType(cfg.Compute.AcceleratorType),
-				AcceleratorCount: cfg.Compute.NumAccelerators,
-			},
-		}},
+		Experiment:     cfg.ExperimentName,
+		Deployments:    []jobs.DeploymentSpec{deployment},
 		CodeSourcePath: snap.CodeSourcePath,
 	}
 	if cfg.MLflowRunName != nil {
@@ -190,6 +193,8 @@ func injectContainers(body map[string]any, containers []submittedContainer) erro
 	if !ok {
 		return errors.New("AIR submit payload deployment has an invalid shape")
 	}
+	// The SDK's DeploymentSpec marshals its required command_path even when
+	// empty. Container runs have their own commands, so omit that wire field.
 	delete(deployment, "command_path")
 	raw := make([]any, 0, len(containers))
 	for _, container := range containers {
