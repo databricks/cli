@@ -1,0 +1,105 @@
+
+=== mode: development with pipeline development: false: deploy and run both use development: true
+>>> [CLI] bundle deploy -t dev_false
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:18:24
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/dev_false/files...
+Created pipelines.my_pipeline
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> print_requests.py //pipelines
+{
+  "path": "/api/2.0/pipelines",
+  "development": true
+}
+
+>>> [CLI] bundle run my_pipeline -t dev_false
+Warning: The development property of pipelines is deprecated. Use the "mode: development" in your databricks.yml instead. See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.
+  at resources.pipelines.my_pipeline.development
+  in databricks.yml:18:24
+
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true
+  }
+}
+
+=== Switched to mode: development without redeploying: run sends development: true
+>>> [CLI] bundle deploy -t switch_to_dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/switch_to_dev/files...
+Created pipelines.my_pipeline
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml switch_to_dev: {} switch_to_dev: {mode: development}
+
+>>> [CLI] bundle run my_pipeline -t switch_to_dev
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {
+    "development": true
+  }
+}
+
+=== Switched away from mode: development without redeploying: run does not send development
+>>> [CLI] bundle deploy -t switch_from_dev
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/switch_from_dev/files...
+Created pipelines.my_pipeline
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> update_file.py databricks.yml switch_from_dev: {mode: development} switch_from_dev: {}
+
+>>> [CLI] bundle run my_pipeline -t switch_from_dev
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[UUID]/updates",
+  "body": {}
+}
+
+=== Pipeline switched to production outside the bundle: run on a development target sends development: true
+>>> [CLI] bundle deploy -t ui_toggle
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-dev-mode-changes/ui_toggle/files...
+Created pipelines.my_pipeline
+Files: 2 uploaded, 0 deleted
+Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+
+>>> DATABRICKS_BUNDLE_TARGET=ui_toggle edit_resource.py pipelines [MY_PIPELINE_ID]
+
+>>> DATABRICKS_BUNDLE_TARGET=ui_toggle [CLI] pipelines get [MY_PIPELINE_ID]
+false
+
+>>> [CLI] bundle run my_pipeline -t ui_toggle
+Update URL: [DATABRICKS_URL]/#joblist/pipelines/[MY_PIPELINE_ID]/updates/[UUID]
+
+Update ID: [UUID]
+
+>>> print_requests.py //pipelines
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines/[MY_PIPELINE_ID]/updates",
+  "body": {
+    "development": true
+  }
+}
