@@ -3,5 +3,4 @@ fields:
   # computed from the policy family by the backend and returned on read. Config
   # leaves definition empty, so old/new are nil and backend_defaults skips the
   # server-computed remote value; without this every deploy sees drift and re-Edits.
-  definition:
-    backend_default: true
+  definition: [backend_default]

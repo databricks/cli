@@ -1,29 +1,16 @@
 # Generated, do not edit.
 
 fields:
-  config.amazon_bedrock.direct.aws_access_key.secret_access_key.plaintext:
-    spec: input_only
-  config.anthropic.direct.api_key.plaintext:
-    spec: input_only
-  config.azure_openai.direct.api_key.plaintext:
-    spec: input_only
-  config.azure_openai.direct.entra_service_principal.client_secret.plaintext:
-    spec: input_only
-  config.custom.direct.api_key.plaintext:
-    spec: input_only
-  config.custom.direct.header_auth.api_key_value.plaintext:
-    spec: input_only
-  config.gemini_enterprise.direct.api_key.plaintext:
-    spec: input_only
-  config.inference_table.is_deleted:
-    spec: output_only
-  config.inference_table.table:
-    spec: output_only
-  config.microsoft_foundry.direct.api_key.plaintext:
-    spec: input_only
-  config.microsoft_foundry.direct.entra_service_principal.client_secret.plaintext:
-    spec: input_only
-  config.openai.direct.api_key.plaintext:
-    spec: input_only
-  config.provider_type:
-    spec: immutable
+  config.amazon_bedrock.direct.aws_access_key.secret_access_key.plaintext: [input_only]
+  config.anthropic.direct.api_key.plaintext: [input_only]
+  config.azure_openai.direct.api_key.plaintext: [input_only]
+  config.azure_openai.direct.entra_service_principal.client_secret.plaintext: [input_only]
+  config.custom.direct.api_key.plaintext: [input_only]
+  config.custom.direct.header_auth.api_key_value.plaintext: [input_only]
+  config.gemini_enterprise.direct.api_key.plaintext: [input_only]
+  config.inference_table.is_deleted: [mutable_output]
+  config.inference_table.table: [mutable_output]
+  config.microsoft_foundry.direct.api_key.plaintext: [input_only]
+  config.microsoft_foundry.direct.entra_service_principal.client_secret.plaintext: [input_only]
+  config.openai.direct.api_key.plaintext: [input_only]
+  config.provider_type: [immutable]

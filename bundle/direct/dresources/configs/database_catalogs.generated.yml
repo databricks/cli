@@ -1,7 +1,5 @@
 # Generated, do not edit.
 
 fields:
-  create_database_if_not_exists:
-    spec: input_only
-  uid:
-    spec: output_only
+  create_database_if_not_exists: [input_only]
+  uid: [mutable_output]

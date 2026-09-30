@@ -1,10 +1,6 @@
 fields:
   # The endpoint API has no rename; the endpoint is fetched by name.
-  name:
-    action: id
-  endpoint_type:
-    action: immutable
-  # The API returns effective_budget_policy_id which may include inherited workspace policies,
-  # not the user-set budget_policy_id. Ignore until the API exposes the user-set value directly.
+  name: [id]
+  endpoint_type: [immutable]
   budget_policy_id:
     ignore_remote: effective_vs_requested

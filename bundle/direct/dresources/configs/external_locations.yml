@@ -1,9 +1,5 @@
 fields:
-  credential_name:
-    action: immutable
-  encryption_details:
-    action: immutable
-  file_event_queue:
-    action: immutable
-  name:
-    action: id_renameable
+  credential_name: [immutable]
+  encryption_details: [immutable]
+  file_event_queue: [immutable]
+  name: [renameable_id]

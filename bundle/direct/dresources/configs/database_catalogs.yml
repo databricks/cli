@@ -6,5 +6,4 @@
 # output-only) so no-op deploys stay idempotent.
 action: immutable
 fields:
-  name:
-    action: id
+  name: [id]

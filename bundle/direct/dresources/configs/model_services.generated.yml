@@ -1,15 +1,9 @@
 # Generated, do not edit.
 
 fields:
-  config.inference_table.is_deleted:
-    spec: output_only
-  config.inference_table.table:
-    spec: output_only
-  config.routing.destinations[*].is_deleted:
-    spec: output_only
-  config.routing.destinations[*].provisioned_throughput_config.model:
-    spec: output_only
-  config.routing.fallback.destinations[*].is_deleted:
-    spec: output_only
-  config.routing.fallback.destinations[*].provisioned_throughput_config.model:
-    spec: output_only
+  config.inference_table.is_deleted: [mutable_output]
+  config.inference_table.table: [mutable_output]
+  config.routing.destinations[*].is_deleted: [mutable_output]
+  config.routing.destinations[*].provisioned_throughput_config.model: [mutable_output]
+  config.routing.fallback.destinations[*].is_deleted: [mutable_output]
+  config.routing.fallback.destinations[*].provisioned_throughput_config.model: [mutable_output]

@@ -1,75 +1,39 @@
 # Generated, do not edit.
 
 fields:
-  child_instance_refs:
-    spec: output_only
-  child_instance_refs[*].branch_time:
-    spec: output_only
-  child_instance_refs[*].effective_lsn:
-    spec: output_only
-  child_instance_refs[*].lsn:
-    spec: output_only
-  child_instance_refs[*].name:
-    spec: output_only
-  child_instance_refs[*].uid:
-    spec: output_only
-  creation_time:
-    spec: output_only
-  creator:
-    spec: output_only
-  custom_tags:
-    spec: input_only
-  custom_tags[*].key:
-    spec: input_only
-  custom_tags[*].value:
-    spec: input_only
-  effective_capacity:
-    spec: output_only
-  effective_custom_tags:
-    spec: output_only
-  effective_custom_tags[*].key:
-    spec: output_only
-  effective_custom_tags[*].value:
-    spec: output_only
-  effective_enable_pg_native_login:
-    spec: output_only
-  effective_enable_readable_secondaries:
-    spec: output_only
-  effective_node_count:
-    spec: output_only
-  effective_retention_window_in_days:
-    spec: output_only
-  effective_stopped:
-    spec: output_only
-  effective_usage_policy_id:
-    spec: output_only
-  enable_pg_native_login:
-    spec: input_only
-  enable_readable_secondaries:
-    spec: input_only
-  node_count:
-    spec: input_only
-  parent_instance_ref:
-    spec: immutable
-  parent_instance_ref.effective_lsn:
-    spec: output_only
-  parent_instance_ref.lsn:
-    spec: input_only
-  parent_instance_ref.uid:
-    spec: output_only
-  pg_version:
-    spec: output_only
-  read_only_dns:
-    spec: output_only
-  read_write_dns:
-    spec: output_only
-  retention_window_in_days:
-    spec: input_only
-  state:
-    spec: output_only
-  stopped:
-    spec: input_only
-  uid:
-    spec: output_only
-  usage_policy_id:
-    spec: input_only
+  child_instance_refs: [mutable_output]
+  child_instance_refs[*].branch_time: [mutable_output]
+  child_instance_refs[*].effective_lsn: [mutable_output]
+  child_instance_refs[*].lsn: [mutable_output]
+  child_instance_refs[*].name: [mutable_output]
+  child_instance_refs[*].uid: [mutable_output]
+  creation_time: [mutable_output]
+  creator: [mutable_output]
+  custom_tags: [input_only]
+  custom_tags[*].key: [input_only]
+  custom_tags[*].value: [input_only]
+  effective_capacity: [mutable_output]
+  effective_custom_tags: [mutable_output]
+  effective_custom_tags[*].key: [mutable_output]
+  effective_custom_tags[*].value: [mutable_output]
+  effective_enable_pg_native_login: [mutable_output]
+  effective_enable_readable_secondaries: [mutable_output]
+  effective_node_count: [mutable_output]
+  effective_retention_window_in_days: [mutable_output]
+  effective_stopped: [mutable_output]
+  effective_usage_policy_id: [mutable_output]
+  enable_pg_native_login: [input_only]
+  enable_readable_secondaries: [input_only]
+  node_count: [input_only]
+  parent_instance_ref: [immutable]
+  parent_instance_ref.effective_lsn: [mutable_output]
+  parent_instance_ref.lsn: [input_only]
+  parent_instance_ref.uid: [mutable_output]
+  pg_version: [mutable_output]
+  read_only_dns: [mutable_output]
+  read_write_dns: [mutable_output]
+  retention_window_in_days: [input_only]
+  state: [mutable_output]
+  stopped: [input_only]
+  uid: [mutable_output]
+  usage_policy_id: [input_only]

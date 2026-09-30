@@ -44,23 +44,8 @@ fields:
   # in GET responses (verified for both ANY_UPDATED and ALL_UPDATED), so
   # without this every plan after a successful deploy reports an update.
   # https://github.com/databricks/cli/issues/6315
-  trigger.table_update.condition:
-    ignore_remote: input_only
-  # Same field via the multi-trigger list. Untested: creating a job with
-  # "triggers" fails with 404 FEATURE_DISABLED ("The 'triggers' field is in
-  # private preview and is not enabled for this workspace"), so there is no
-  # invariant config for it. Both shapes carry the same
-  # TableUpdateTriggerConfiguration message and the backend builds it from
-  # the same expression on read, so the field is dropped here too.
-  triggers[*].table_update.condition:
-    ignore_remote: input_only
-  # A cluster policy supplies cluster settings server-side: "fixed" elements always,
-  # "defaultValue" elements when the request sets apply_policy_default_values. The bundle
-  # is not the source for those, so the remote spec is legitimately a superset of what the
-  # config declares and an added field is not drift. Measured backend behavior is pinned by
-  # acceptance/bundle/resources/jobs/cluster_policy (fixed_addition, default_flag).
-  # https://github.com/databricks/cli/issues/5179
-  # https://github.com/databricks/cli/issues/6512
+  trigger.table_update.condition: [input_only]
+  triggers[*].table_update.condition: [input_only]
   tasks[*].new_cluster:
     remote_additions_when: policy_id
   tasks[*].for_each_task.task.new_cluster:
@@ -69,46 +54,21 @@ fields:
     remote_additions_when: policy_id
   # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
   # s.SchemaPath("enable_elastic_disk").SetComputed()
-  tasks[*].new_cluster.enable_elastic_disk:
-    backend_default: true
-  tasks[*].for_each_task.task.new_cluster.enable_elastic_disk:
-    backend_default: true
-  job_clusters[*].new_cluster.enable_elastic_disk:
-    backend_default: true
-  # Same as clusters.enable_local_disk_encryption — see clusters/resource_cluster.go#L332
-  # s.SchemaPath("enable_local_disk_encryption").SetComputed()
-  tasks[*].new_cluster.enable_local_disk_encryption:
-    backend_default: true
-  tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption:
-    backend_default: true
-  job_clusters[*].new_cluster.enable_local_disk_encryption:
-    backend_default: true
-  # Same as clusters.node_type_id — see clusters/resource_cluster.go#L333
-  # s.SchemaPath("node_type_id").SetComputed()
-  tasks[*].new_cluster.node_type_id:
-    backend_default: true
-  tasks[*].for_each_task.task.new_cluster.node_type_id:
-    backend_default: true
-  job_clusters[*].new_cluster.node_type_id:
-    backend_default: true
-  # Same as clusters.driver_node_type_id — see clusters/resource_cluster.go#L334
-  # s.SchemaPath("driver_node_type_id").SetComputed()
-  tasks[*].new_cluster.driver_node_type_id:
-    backend_default: true
-  tasks[*].for_each_task.task.new_cluster.driver_node_type_id:
-    backend_default: true
-  job_clusters[*].new_cluster.driver_node_type_id:
-    backend_default: true
-  # Same as clusters.driver_instance_pool_id — see clusters/resource_cluster.go#L335
-  # s.SchemaPath("driver_instance_pool_id").SetComputed()
-  tasks[*].new_cluster.driver_instance_pool_id:
-    backend_default: true
-  tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id:
-    backend_default: true
-  job_clusters[*].new_cluster.driver_instance_pool_id:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L531
-  # s.SchemaPath("format").SetComputed()
+  tasks[*].new_cluster.enable_elastic_disk: [backend_default]
+  tasks[*].for_each_task.task.new_cluster.enable_elastic_disk: [backend_default]
+  job_clusters[*].new_cluster.enable_elastic_disk: [backend_default]
+  tasks[*].new_cluster.enable_local_disk_encryption: [backend_default]
+  tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption: [backend_default]
+  job_clusters[*].new_cluster.enable_local_disk_encryption: [backend_default]
+  tasks[*].new_cluster.node_type_id: [backend_default]
+  tasks[*].for_each_task.task.new_cluster.node_type_id: [backend_default]
+  job_clusters[*].new_cluster.node_type_id: [backend_default]
+  tasks[*].new_cluster.driver_node_type_id: [backend_default]
+  tasks[*].for_each_task.task.new_cluster.driver_node_type_id: [backend_default]
+  job_clusters[*].new_cluster.driver_node_type_id: [backend_default]
+  tasks[*].new_cluster.driver_instance_pool_id: [backend_default]
+  tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id: [backend_default]
+  job_clusters[*].new_cluster.driver_instance_pool_id: [backend_default]
   format:
     backend_values: ["MULTI_TASK", "SINGLE_TASK"]
   "tasks[*].run_if":
@@ -119,35 +79,15 @@ fields:
     backend_values: ["ALL_SUCCESS"]
   # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L640
   # s.SchemaPath("task", "for_each_task", "task", "run_if").SetSuppressDiffWithDefault(jobs.RunIfAllSuccess)
-  run_as:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L527
-  # s.SchemaPath("run_as").SetComputed()
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L521-L524
-  # s.SchemaPath("task", "notebook_task", "source").SetSuppressDiff()
-  # s.SchemaPath("task", "spark_python_task", "source").SetSuppressDiff()
-  # s.SchemaPath("task", "sql_task", "file", "source").SetSuppressDiff()
-  # s.SchemaPath("task", "dbt_task", "source").SetSuppressDiff()
-  tasks[*].notebook_task.source:
-    backend_default: true
-  tasks[*].for_each_task.task.notebook_task.source:
-    backend_default: true
-  tasks[*].spark_python_task.source:
-    backend_default: true
-  tasks[*].for_each_task.task.spark_python_task.source:
-    backend_default: true
-  tasks[*].sql_task.file.source:
-    backend_default: true
-  tasks[*].for_each_task.task.sql_task.file.source:
-    backend_default: true
-  tasks[*].dbt_task.source:
-    backend_default: true
-  tasks[*].for_each_task.task.dbt_task.source:
-    backend_default: true
-  # Same as clusters.data_security_mode: backend sets this when not specified
-  tasks[*].new_cluster.data_security_mode:
-    backend_default: true
-  tasks[*].for_each_task.task.new_cluster.data_security_mode:
-    backend_default: true
-  job_clusters[*].new_cluster.data_security_mode:
-    backend_default: true
+  run_as: [backend_default]
+  tasks[*].notebook_task.source: [backend_default]
+  tasks[*].for_each_task.task.notebook_task.source: [backend_default]
+  tasks[*].spark_python_task.source: [backend_default]
+  tasks[*].for_each_task.task.spark_python_task.source: [backend_default]
+  tasks[*].sql_task.file.source: [backend_default]
+  tasks[*].for_each_task.task.sql_task.file.source: [backend_default]
+  tasks[*].dbt_task.source: [backend_default]
+  tasks[*].for_each_task.task.dbt_task.source: [backend_default]
+  tasks[*].new_cluster.data_security_mode: [backend_default]
+  tasks[*].for_each_task.task.new_cluster.data_security_mode: [backend_default]
+  job_clusters[*].new_cluster.data_security_mode: [backend_default]

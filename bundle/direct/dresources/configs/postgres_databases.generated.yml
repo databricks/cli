@@ -1,7 +1,5 @@
 # Generated, do not edit.
 
 fields:
-  postgres_database:
-    spec: input_only
-  role:
-    spec: input_only
+  postgres_database: [input_only]
+  role: [input_only]

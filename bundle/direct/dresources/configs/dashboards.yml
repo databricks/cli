@@ -8,7 +8,5 @@ fields:
     hashed: true
   # "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
   # They will always differ between local config (which has values) and remote state (which has empty strings).
-  dataset_catalog:
-    ignore_remote: input_only
-  dataset_schema:
-    ignore_remote: input_only
+  dataset_catalog: [input_only]
+  dataset_schema: [input_only]

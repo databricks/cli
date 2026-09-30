@@ -1,21 +1,11 @@
 # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
 fields:
-  name:
-    action: id
-  # description is immutable, can't be updated via API
-  description:
-    action: immutable
-  config.auto_capture_config.catalog_name:
-    action: immutable
-  config.auto_capture_config.schema_name:
-    action: immutable
-  config.auto_capture_config.table_name_prefix:
-    action: immutable
-  route_optimized:
-    action: immutable
-  # budget_policy_id is in ServingEndpointDetailed but GET never populates it
-  # (the API returns effective_budget_policy_id instead), so the remote always
-  # reports empty. This is not a backend default, so suppress remote changes.
+  name: [id]
+  description: [immutable]
+  config.auto_capture_config.catalog_name: [immutable]
+  config.auto_capture_config.schema_name: [immutable]
+  config.auto_capture_config.table_name_prefix: [immutable]
+  route_optimized: [immutable]
   budget_policy_id:
     ignore_remote: no_update_api
     action: ignore_local
@@ -23,30 +13,13 @@ fields:
   # table_names creates a profile and is not returned; inference_table_config round-trips.
   # The spec annotated this input_only in the v0.171 spec but no longer does, so the rule
   # has to be manual again.
-  telemetry_config.table_names:
-    ignore_remote: input_only
+  telemetry_config.table_names: [input_only]
   rate_limits:
     action: ignore_local
     reason: not_implemented
   # Remote-only telemetry is reported as a change at this parent path.
-  telemetry_config:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
-  # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
-  config.served_entities[*].name:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L384
-  # common.CustomizeSchemaPath(m, "config", "served_entities", "workload_type").SetComputed()
-  config.served_entities[*].workload_type:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L372
-  # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
-  config.auto_capture_config.enabled:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
-  # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
-  # The backend defaults traffic_config (100% to the served entity) when the user
-  # does not specify one. Suppress only that default: if the user sets traffic_config
-  # and the remote diverges, normal drift detection still applies.
-  config.traffic_config:
-    backend_default: true
+  telemetry_config: [backend_default]
+  config.served_entities[*].name: [backend_default]
+  config.served_entities[*].workload_type: [backend_default]
+  config.auto_capture_config.enabled: [backend_default]
+  config.traffic_config: [backend_default]

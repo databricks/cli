@@ -1,13 +1,8 @@
 # Generated, do not edit.
 
 fields:
-  attributes:
-    spec: input_only
-  auth_method:
-    spec: input_only
-  identity_type:
-    spec: input_only
-  membership_roles:
-    spec: input_only
-  postgres_role:
-    spec: input_only
+  attributes: [input_only]
+  auth_method: [input_only]
+  identity_type: [input_only]
+  membership_roles: [input_only]
+  postgres_role: [input_only]

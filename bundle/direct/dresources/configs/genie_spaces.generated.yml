@@ -1,5 +1,4 @@
 # Generated, do not edit.
 
 fields:
-  etag:
-    spec: output_only
+  etag: [mutable_output]

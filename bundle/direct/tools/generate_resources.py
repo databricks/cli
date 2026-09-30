@@ -152,12 +152,13 @@ HEADER = "# Generated, do not edit."
 
 
 def generate(behaviors):
-    """Render one resource's field behaviors in the field-keyed format, or "" if none.
+    """Render one resource's field behaviors as a field -> [tokens] list, or "" if none.
 
-    Each field lists its OpenAPI behaviours under `spec` (immutable / input_only /
-    output_only); the loader maps each to its mechanism and a spec:<behaviour> reason.
-    immutable and the remote-ignored behaviours are filtered for prefixes independently,
-    matching the flat recreate_on_changes / ignore_remote_changes lists they replace.
+    Tokens: immutable (recreate), input_only / mutable_output (skip remote drift),
+    immutable_output (a backend-assigned value that never changes -> stable/reference-safe;
+    an output field can't recreate, so IMMUTABLE+OUTPUT_ONLY folds into this one token).
+    The immutable and remote-ignored behaviours are prefix-filtered independently, matching
+    the flat recreate_on_changes / ignore_remote_changes lists they replace.
     """
     ignore_remote, recreate = [], []
     for field, fb in sorted(behaviors.items()):
@@ -168,24 +169,30 @@ def generate(behaviors):
         if "IMMUTABLE" in fb:
             recreate.append((field, "IMMUTABLE"))
 
-    ignore_remote = filter_prefixes(ignore_remote)
-    recreate = filter_prefixes(recreate)
+    remote = dict(filter_prefixes(ignore_remote))  # field -> OUTPUT_ONLY | INPUT_ONLY
+    immutable = {f for f, _ in filter_prefixes(recreate)}
 
-    if not ignore_remote and not recreate:
+    if not remote and not immutable:
         return ""
 
-    spec = {}  # field -> ordered list of behaviours
-    for field, _ in recreate:
-        spec.setdefault(field, []).append("immutable")
-    for field, behavior in ignore_remote:
-        spec.setdefault(field, []).append(behavior.lower())
+    tokens = {}
+    for field in sorted(set(remote) | immutable):
+        rem = remote.get(field)
+        if field in immutable and rem == "OUTPUT_ONLY":
+            tokens[field] = ["immutable_output"]  # immutable server-set value: stable, not recreate
+            continue
+        toks = []
+        if field in immutable:
+            toks.append("immutable")
+        if rem == "INPUT_ONLY":
+            toks.append("input_only")
+        elif rem == "OUTPUT_ONLY":
+            toks.append("mutable_output")
+        tokens[field] = toks
 
     lines = [HEADER, "", "fields:"]
-    for field in sorted(spec):
-        behaviours = spec[field]
-        value = behaviours[0] if len(behaviours) == 1 else "[" + ", ".join(behaviours) + "]"
-        lines.append(f"  {quote_key(field)}:")
-        lines.append(f"    spec: {value}")
+    for field in sorted(tokens):
+        lines.append(f"  {quote_key(field)}: [{', '.join(tokens[field])}]")
 
     return "\n".join(lines) + "\n"
 

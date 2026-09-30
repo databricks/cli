@@ -6,21 +6,9 @@ fields:
   # name ("projects/{project_id}/branches/{branch_id}/roles/{role_id}") is
   # backend-assigned at creation and immutable; see the stable_output_fields doc
   # in config.go and ES-2202624.
-  name:
-    stable_output: true
-  # parent and role_id are immutable (together they form the hierarchical name).
-  parent:
-    action: immutable
-  role_id:
-    action: immutable
-  # The PATCH update_mask only accepts spec.attributes and spec.membership_roles;
-  # the backend rejects spec.postgres_role, spec.auth_method, and spec.identity_type
-  # with 400 INVALID_PARAMETER_VALUE "Unknown field path in update_mask". These spec
-  # fields are not marked immutable in the OpenAPI definition yet, so the generator
-  # doesn't catch them — declare the constraint manually until upstream is fixed.
-  postgres_role:
-    action: immutable
-  auth_method:
-    action: immutable
-  identity_type:
-    action: immutable
+  name: [immutable_output]
+  parent: [immutable]
+  role_id: [immutable]
+  postgres_role: [immutable]
+  auth_method: [immutable]
+  identity_type: [immutable]

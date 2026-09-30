@@ -1,23 +1,13 @@
 # Generated, do not edit.
 
 fields:
-  budget_policy_id:
-    spec: input_only
-  custom_tags:
-    spec: input_only
-  custom_tags[*].key:
-    spec: input_only
-  custom_tags[*].value:
-    spec: input_only
-  default_branch:
-    spec: input_only
-  default_endpoint_settings:
-    spec: input_only
-  display_name:
-    spec: input_only
-  enable_pg_native_login:
-    spec: input_only
-  history_retention_duration:
-    spec: input_only
-  pg_version:
-    spec: [immutable, input_only]
+  budget_policy_id: [input_only]
+  custom_tags: [input_only]
+  custom_tags[*].key: [input_only]
+  custom_tags[*].value: [input_only]
+  default_branch: [input_only]
+  default_endpoint_settings: [input_only]
+  display_name: [input_only]
+  enable_pg_native_login: [input_only]
+  history_retention_duration: [input_only]
+  pg_version: [immutable, input_only]

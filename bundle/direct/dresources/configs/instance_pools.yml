@@ -9,19 +9,11 @@ fields:
   gcp_attributes:
     ignore_remote: managed
   # force_new and not accepted by /instance-pools/edit.
-  disk_spec:
-    action: immutable
-  node_type_flexibility:
-    action: immutable
-  preloaded_spark_versions:
-    action: immutable
-  preloaded_docker_images:
-    action: immutable
-  # Defaults to true server-side.
-  enable_elastic_disk:
-    backend_default: true
-  # Backend applies a default of 60 minutes when the field is omitted.
+  disk_spec: [immutable]
+  node_type_flexibility: [immutable]
+  preloaded_spark_versions: [immutable]
+  preloaded_docker_images: [immutable]
+  enable_elastic_disk: [backend_default]
   idle_instance_autotermination_minutes:
     backend_values: [60]
-  max_capacity:
-    backend_default: true
+  max_capacity: [backend_default]

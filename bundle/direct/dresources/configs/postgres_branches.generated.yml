@@ -1,19 +1,11 @@
 # Generated, do not edit.
 
 fields:
-  expire_time:
-    spec: input_only
-  is_protected:
-    spec: input_only
-  no_expiry:
-    spec: input_only
-  source_branch:
-    spec: [immutable, input_only]
-  source_branch_lsn:
-    spec: [immutable, input_only]
-  source_branch_time:
-    spec: [immutable, input_only]
-  source_snapshot:
-    spec: [immutable, input_only]
-  ttl:
-    spec: input_only
+  expire_time: [input_only]
+  is_protected: [input_only]
+  no_expiry: [input_only]
+  source_branch: [immutable, input_only]
+  source_branch_lsn: [immutable, input_only]
+  source_branch_time: [immutable, input_only]
+  source_snapshot: [immutable, input_only]
+  ttl: [input_only]

@@ -1,3 +1,2 @@
 fields:
-  name:
-    action: id
+  name: [id]

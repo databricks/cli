@@ -3,7 +3,5 @@ fields:
   # name (model-provider-services/{catalog}.{schema}.{model_provider_service}),
   # which is the ID the resource is fetched by. Both immutable; a local
   # change recreates. DoRead reconstructs them from the returned name.
-  parent:
-    action: id
-  model_provider_service_id:
-    action: id
+  parent: [id]
+  model_provider_service_id: [id]

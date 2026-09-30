@@ -5,5 +5,4 @@
 action: immutable
 fields:
   # catalog_id is part of the hierarchical name and immutable.
-  catalog_id:
-    action: id
+  catalog_id: [id]

@@ -1,5 +1,4 @@
 # Generated, do not edit.
 
 fields:
-  browse_only:
-    spec: output_only
+  browse_only: [mutable_output]

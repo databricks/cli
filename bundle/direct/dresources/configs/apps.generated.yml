@@ -1,53 +1,28 @@
 # Generated, do not edit.
 
 fields:
-  active_deployment:
-    spec: output_only
-  app_status:
-    spec: output_only
-  compute_status:
-    spec: output_only
-  create_time:
-    spec: output_only
-  creator:
-    spec: output_only
-  default_git_source:
-    spec: output_only
-  default_source_code_path:
-    spec: output_only
-  effective_budget_policy_id:
-    spec: output_only
-  effective_usage_policy_id:
-    spec: output_only
-  effective_user_api_scopes:
-    spec: output_only
-  git_repository.caller_credential_id:
-    spec: input_only
-  git_source:
-    spec: input_only
-  id:
-    spec: output_only
-  oauth2_app_client_id:
-    spec: output_only
-  oauth2_app_integration_id:
-    spec: output_only
-  pending_deployment:
-    spec: output_only
-  resources[*].uc_securable.securable_kind:
-    spec: output_only
-  service_principal_client_id:
-    spec: output_only
-  service_principal_id:
-    spec: output_only
-  service_principal_name:
-    spec: output_only
-  source_code_path:
-    spec: input_only
-  thumbnail_url:
-    spec: output_only
-  update_time:
-    spec: output_only
-  updater:
-    spec: output_only
-  url:
-    spec: output_only
+  active_deployment: [mutable_output]
+  app_status: [mutable_output]
+  compute_status: [mutable_output]
+  create_time: [mutable_output]
+  creator: [mutable_output]
+  default_git_source: [mutable_output]
+  default_source_code_path: [mutable_output]
+  effective_budget_policy_id: [mutable_output]
+  effective_usage_policy_id: [mutable_output]
+  effective_user_api_scopes: [mutable_output]
+  git_repository.caller_credential_id: [input_only]
+  git_source: [input_only]
+  id: [mutable_output]
+  oauth2_app_client_id: [mutable_output]
+  oauth2_app_integration_id: [mutable_output]
+  pending_deployment: [mutable_output]
+  resources[*].uc_securable.securable_kind: [mutable_output]
+  service_principal_client_id: [mutable_output]
+  service_principal_id: [mutable_output]
+  service_principal_name: [mutable_output]
+  source_code_path: [input_only]
+  thumbnail_url: [mutable_output]
+  update_time: [mutable_output]
+  updater: [mutable_output]
+  url: [mutable_output]

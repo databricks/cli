@@ -13,65 +13,65 @@ import (
 // only one policy, and a repeated key is a load error, not a silently-shadowed rule.
 func TestFieldPolicyRejectsDuplicateField(t *testing.T) {
 	var fpc FieldPolicyConfig
-	err := yaml.Unmarshal([]byte("fields:\n  name: { action: id }\n  name: { action: immutable }\n"), &fpc)
+	err := yaml.Unmarshal([]byte("fields:\n  name: [id]\n  name: [immutable]\n"), &fpc)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), `already defined`)
 }
 
-// TestFieldPolicyRejectsUnknownAction proves the action enum is enforced by the
-// parser: an unknown value fails at yaml.Unmarshal, not later in Lower.
-func TestFieldPolicyRejectsUnknownAction(t *testing.T) {
+// TestFieldPolicyRejectsUnknownToken proves the behaviour vocabulary is enforced by the parser.
+func TestFieldPolicyRejectsUnknownToken(t *testing.T) {
 	var fpc FieldPolicyConfig
-	err := yaml.Unmarshal([]byte("fields:\n  name: { action: teleport }\n"), &fpc)
+	err := yaml.Unmarshal([]byte("fields:\n  name: [teleport]\n"), &fpc)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `unknown action "teleport"`)
+	assert.Contains(t, err.Error(), `unknown behaviour "teleport"`)
 }
 
-// TestFieldPolicyEveryActionLowers keeps validActions and the lowerAction switch in
-// sync: every value the parser accepts must lower without hitting the default guard.
-func TestFieldPolicyEveryActionLowers(t *testing.T) {
-	for a := range validActions {
-		_, err := FieldPolicyConfig{Fields: map[string]FieldPolicy{"name": {Action: a}}}.Lower()
-		require.NoErrorf(t, err, "action %q", a)
+func rulesOf(rs []FieldRule) []string {
+	var out []string
+	for _, r := range rs {
+		out = append(out, r.Field.String()+"|"+r.Reason)
 	}
+	return out
 }
 
-// TestFieldPolicyRejectsUnknownSpec proves the spec behaviour set is enforced by the parser.
-func TestFieldPolicyRejectsUnknownSpec(t *testing.T) {
-	var fpc FieldPolicyConfig
-	err := yaml.Unmarshal([]byte("fields:\n  name: { spec: writeonce }\n"), &fpc)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `unknown spec behaviour "writeonce"`)
-}
-
-// TestFieldPolicySpecLowers pins each OpenAPI behaviour to its mechanism and spec: reason.
-func TestFieldPolicySpecLowers(t *testing.T) {
-	c, err := FieldPolicyConfig{Fields: map[string]FieldPolicy{
-		"a": {Spec: specBehaviours{specImmutable, specInputOnly}},
-		"b": {Spec: specBehaviours{specOutputOnly}},
-	}}.Lower()
-	require.NoError(t, err)
-	assert.Equal(t, "spec:immutable", c.RecreateOnChanges[0].Reason)
-	var remote []string
-	for _, r := range c.IgnoreRemoteChanges {
-		remote = append(remote, r.Field.String()+"|"+r.Reason)
-	}
-	assert.ElementsMatch(t, []string{"a|spec:input_only", "b|spec:output_only"}, remote)
-}
-
-// TestFieldPolicyLowerVolumes pins the lowering of a representative resource that
-// exercises id, id_renameable, immutable, and the trim_slash comparison modifier.
+// TestFieldPolicyLowerVolumes pins the list-form lowering of a representative resource that
+// exercises id, renameable_id, immutable, and the trim_slash comparison modifier.
 func TestFieldPolicyLowerVolumes(t *testing.T) {
-	rules := func(rs []FieldRule) []string {
-		var out []string
-		for _, r := range rs {
-			out = append(out, r.Field.String()+"|"+r.Reason)
-		}
-		return out
-	}
 	c := GetResourceConfig("volumes")
-	assert.ElementsMatch(t, []string{"catalog_name|id_field", "schema_name|id_field"}, rules(c.ProvidedIDFields))
-	assert.ElementsMatch(t, []string{"name|id_changes"}, rules(c.UpdatableIDFields))
-	assert.ElementsMatch(t, []string{"storage_location|immutable", "volume_type|immutable"}, rules(c.RecreateOnChanges))
-	assert.ElementsMatch(t, []string{"storage_location|uc_strips_trailing_slash"}, rules(c.NormalizeSlash))
+	assert.ElementsMatch(t, []string{"catalog_name|id_field", "schema_name|id_field"}, rulesOf(c.ProvidedIDFields))
+	assert.ElementsMatch(t, []string{"name|id_changes"}, rulesOf(c.UpdatableIDFields))
+	assert.ElementsMatch(t, []string{"storage_location|immutable", "volume_type|immutable"}, rulesOf(c.RecreateOnChanges))
+	assert.ElementsMatch(t, []string{"storage_location|uc_strips_trailing_slash"}, rulesOf(c.NormalizeSlash))
+}
+
+// TestFieldPolicyTokensLower checks each behaviour token maps to the right flat rule, and
+// that spec-derived reasons pick up the "spec:" prefix only in generated configs.
+func TestFieldPolicyTokensLower(t *testing.T) {
+	parse := func(yml string, generated bool) ResourceLifecycleConfig {
+		var fpc FieldPolicyConfig
+		require.NoError(t, yaml.Unmarshal([]byte(yml), &fpc))
+		rc, err := fpc.Lower(generated)
+		require.NoError(t, err)
+		return rc
+	}
+
+	hand := parse("fields:\n  a: [immutable, input_only]\n  b: [mutable_output]\n  c: [immutable_output]\n", false)
+	assert.ElementsMatch(t, []string{"a|immutable"}, rulesOf(hand.RecreateOnChanges))
+	assert.ElementsMatch(t, []string{"a|input_only", "b|output_only"}, rulesOf(hand.IgnoreRemoteChanges))
+	assert.ElementsMatch(t, []string{"c|"}, rulesOf(hand.StableOutputFields))
+
+	gen := parse("fields:\n  a: [immutable, input_only]\n  b: [mutable_output]\n", true)
+	assert.ElementsMatch(t, []string{"a|spec:immutable"}, rulesOf(gen.RecreateOnChanges))
+	assert.ElementsMatch(t, []string{"a|spec:input_only", "b|spec:output_only"}, rulesOf(gen.IgnoreRemoteChanges))
+}
+
+// TestFieldPolicyMapForm checks the map form for value-bearing behaviours.
+func TestFieldPolicyMapForm(t *testing.T) {
+	var fpc FieldPolicyConfig
+	require.NoError(t, yaml.Unmarshal([]byte("fields:\n  v: { ignore_remote: etag_based, hashed: true }\n  r: { ignore_local: input_only }\n"), &fpc))
+	rc, err := fpc.Lower(false)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"v|etag_based"}, rulesOf(rc.IgnoreRemoteChanges))
+	assert.ElementsMatch(t, []string{"r|input_only"}, rulesOf(rc.IgnoreLocalChanges))
+	assert.Equal(t, []string{"v"}, rc.HashedFields)
 }

@@ -177,8 +177,9 @@ var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
 
 	for _, name := range names {
 		dst, resourceType := handWritten, strings.TrimSuffix(path.Base(name), ymlSuffix)
+		isGenerated := false
 		if trimmed, ok := strings.CutSuffix(resourceType, generatedSuffix); ok {
-			dst, resourceType = generated, trimmed
+			dst, resourceType, isGenerated = generated, trimmed, true
 		}
 
 		data, err := configFS.ReadFile(name)
@@ -190,7 +191,7 @@ var loadConfigs = sync.OnceValues(func() (*Config, *Config) {
 		if err := yaml.Unmarshal(data, &fpc); err != nil {
 			panic(fmt.Errorf("%s: %w", name, err))
 		}
-		rc, err := fpc.Lower()
+		rc, err := fpc.Lower(isGenerated)
 		if err != nil {
 			panic(fmt.Errorf("%s: %w", name, err))
 		}

@@ -1,9 +1,6 @@
 # Generated, do not edit.
 
 fields:
-  branch:
-    spec: input_only
-  create_database_if_missing:
-    spec: input_only
-  postgres_database:
-    spec: [immutable, input_only]
+  branch: [input_only]
+  create_database_if_missing: [input_only]
+  postgres_database: [immutable, input_only]

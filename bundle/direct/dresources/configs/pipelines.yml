@@ -1,24 +1,12 @@
 fields:
-  storage:
-    action: immutable
-  ingestion_definition.connection_name:
-    action: immutable
-  ingestion_definition.ingestion_gateway_id:
-    action: immutable
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L204
-  gateway_definition.connection_id:
-    action: immutable
-  gateway_definition.connection_name:
-    action: immutable
-  gateway_definition.gateway_storage_catalog:
-    action: immutable
-  gateway_definition.gateway_storage_schema:
-    action: immutable
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
-  ingestion_definition.ingest_from_uc_foreign_catalog:
-    action: immutable
-  # See jobs above: version_id is set on every deploy, so it is ignored as a
-  # local/remote change. deployment_id is left out so a change to it still shows.
+  storage: [immutable]
+  ingestion_definition.connection_name: [immutable]
+  ingestion_definition.ingestion_gateway_id: [immutable]
+  gateway_definition.connection_id: [immutable]
+  gateway_definition.connection_name: [immutable]
+  gateway_definition.gateway_storage_catalog: [immutable]
+  gateway_definition.gateway_storage_schema: [immutable]
+  ingestion_definition.ingest_from_uc_foreign_catalog: [immutable]
   deployment.version_id:
     ignore_remote: auto
     action: ignore_local
@@ -37,31 +25,12 @@ fields:
   # or gcp-cli: those envs authenticate as a service principal that lacks servicePrincipal.user
   # on itself, so it can't self-bind run_as. In the default (unset) case on all three clouds,
   # GET returns only the flat run_as_user_name and no structured run_as.
-  run_as:
-    ignore_remote: input_only
-  # Carried by CreatePipeline/EditPipeline but never returned by GET, so remote
-  # always reads back false and a config value of true never converges.
-  allow_duplicate_names:
-    ignore_remote: input_only
-  # Pipelines adds ANSI mode to the configuration map when it is omitted.
+  run_as: [input_only]
+  allow_duplicate_names: [input_only]
   configuration['spark.sql.ansi.enabled']:
     backend_values: ["true"]
-  clusters[*].node_type_id:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L218
-  # s.SchemaPath("cluster", "node_type_id").SetComputed()
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L219
-  # s.SchemaPath("cluster", "driver_node_type_id").SetComputed()
-  clusters[*].driver_node_type_id:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L220
-  # s.SchemaPath("cluster", "enable_local_disk_encryption").SetComputed()
-  clusters[*].enable_local_disk_encryption:
-    backend_default: true
-  # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L229-L230
-  # s.SchemaPath("event_log", "catalog").SetComputed()
-  # s.SchemaPath("event_log", "schema").SetComputed()
-  event_log.catalog:
-    backend_default: true
-  event_log.schema:
-    backend_default: true
+  clusters[*].node_type_id: [backend_default]
+  clusters[*].driver_node_type_id: [backend_default]
+  clusters[*].enable_local_disk_encryption: [backend_default]
+  event_log.catalog: [backend_default]
+  event_log.schema: [backend_default]

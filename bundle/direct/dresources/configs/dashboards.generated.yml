@@ -1,15 +1,9 @@
 # Generated, do not edit.
 
 fields:
-  create_time:
-    spec: output_only
-  dashboard_id:
-    spec: output_only
-  lifecycle_state:
-    spec: output_only
-  parent_path:
-    spec: immutable
-  path:
-    spec: output_only
-  update_time:
-    spec: output_only
+  create_time: [mutable_output]
+  dashboard_id: [mutable_output]
+  lifecycle_state: [mutable_output]
+  parent_path: [immutable]
+  path: [mutable_output]
+  update_time: [mutable_output]

@@ -1,19 +1,11 @@
 # Generated, do not edit.
 
 fields:
-  autoscaling_limit_max_cu:
-    spec: input_only
-  autoscaling_limit_min_cu:
-    spec: input_only
-  disabled:
-    spec: input_only
-  endpoint_type:
-    spec: [immutable, input_only]
-  group:
-    spec: input_only
-  no_suspension:
-    spec: input_only
-  settings:
-    spec: input_only
-  suspend_timeout_duration:
-    spec: input_only
+  autoscaling_limit_max_cu: [input_only]
+  autoscaling_limit_min_cu: [input_only]
+  disabled: [input_only]
+  endpoint_type: [immutable, input_only]
+  group: [input_only]
+  no_suspension: [input_only]
+  settings: [input_only]
+  suspend_timeout_duration: [input_only]

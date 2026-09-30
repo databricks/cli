@@ -7,5 +7,4 @@
 # edit still triggers a recreate. Same pattern as secret_scopes.
 action: immutable
 fields:
-  synced_table_id:
-    action: id
+  synced_table_id: [id]

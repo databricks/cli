@@ -4,7 +4,5 @@ fields:
   # resource is fetched by. Both are immutable; a local change recreates.
   # DoRead reconstructs them from the returned name, so a remote-only
   # difference can only be normalization and is skipped.
-  parent:
-    action: id
-  model_service_id:
-    action: id
+  parent: [id]
+  model_service_id: [id]

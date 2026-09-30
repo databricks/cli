@@ -1,19 +1,11 @@
 # Generated, do not edit.
 
 fields:
-  create_time:
-    spec: output_only
-  effective_run_as:
-    spec: output_only
-  evaluation.last_evaluated_at:
-    spec: output_only
-  evaluation.state:
-    spec: output_only
-  id:
-    spec: output_only
-  lifecycle_state:
-    spec: output_only
-  owner_user_name:
-    spec: output_only
-  update_time:
-    spec: output_only
+  create_time: [mutable_output]
+  effective_run_as: [mutable_output]
+  evaluation.last_evaluated_at: [mutable_output]
+  evaluation.state: [mutable_output]
+  id: [mutable_output]
+  lifecycle_state: [mutable_output]
+  owner_user_name: [mutable_output]
+  update_time: [mutable_output]

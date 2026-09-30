@@ -1,7 +1,5 @@
 # Generated, do not edit.
 
 fields:
-  config.source_connection.is_deleted:
-    spec: output_only
-  config.source_connection.options:
-    spec: output_only
+  config.source_connection.is_deleted: [mutable_output]
+  config.source_connection.options: [mutable_output]

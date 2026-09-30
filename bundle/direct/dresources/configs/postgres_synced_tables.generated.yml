@@ -1,41 +1,22 @@
 # Generated, do not edit.
 
 fields:
-  accelerated_sync:
-    spec: input_only
-  branch:
-    spec: input_only
-  create_database_objects_if_missing:
-    spec: input_only
-  existing_pipeline_id:
-    spec: input_only
-  extra_columns:
-    spec: input_only
-  extra_columns[*].column_name:
-    spec: input_only
-  extra_columns[*].column_type:
-    spec: input_only
-  extra_columns[*].compute:
-    spec: input_only
-  extra_columns[*].maintenance:
-    spec: input_only
-  new_pipeline_spec:
-    spec: input_only
-  postgres_database:
-    spec: input_only
-  primary_key_columns:
-    spec: input_only
-  scheduling_policy:
-    spec: input_only
-  source_table_full_name:
-    spec: input_only
-  timeseries_key:
-    spec: input_only
-  type_overrides:
-    spec: input_only
-  type_overrides[*].column_name:
-    spec: input_only
-  type_overrides[*].pg_type:
-    spec: input_only
-  type_overrides[*].size:
-    spec: input_only
+  accelerated_sync: [input_only]
+  branch: [input_only]
+  create_database_objects_if_missing: [input_only]
+  existing_pipeline_id: [input_only]
+  extra_columns: [input_only]
+  extra_columns[*].column_name: [input_only]
+  extra_columns[*].column_type: [input_only]
+  extra_columns[*].compute: [input_only]
+  extra_columns[*].maintenance: [input_only]
+  new_pipeline_spec: [input_only]
+  postgres_database: [input_only]
+  primary_key_columns: [input_only]
+  scheduling_policy: [input_only]
+  source_table_full_name: [input_only]
+  timeseries_key: [input_only]
+  type_overrides: [input_only]
+  type_overrides[*].column_name: [input_only]
+  type_overrides[*].pg_type: [input_only]
+  type_overrides[*].size: [input_only]

@@ -1,5 +1,4 @@
 # Generated, do not edit.
 
 fields:
-  ingestion_definition.source_type:
-    spec: output_only
+  ingestion_definition.source_type: [mutable_output]

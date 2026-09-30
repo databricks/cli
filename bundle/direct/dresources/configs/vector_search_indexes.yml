@@ -1,26 +1,10 @@
 fields:
-  name:
-    action: id
-  # The index API has no rename or update path, so every config change
-  # has to go through delete + create.
-  endpoint_name:
-    action: immutable
-  index_type:
-    action: immutable
-  index_subtype:
-    action: immutable
-  primary_key:
-    action: immutable
-  delta_sync_index_spec:
-    action: immutable
-  direct_access_index_spec:
-    action: immutable
-  # The backend rewrites schema_json on create: user-facing type names
-  # ("integer", "long", "short", "byte") are stored in Unity Catalog as
-  # Spark type names ("int", "bigint", "smallint", "tinyint") and the
-  # columns come back in sorted key order, so GET never echoes the user's
-  # literal input. Without this rule the rewrite reads as a change to the
-  # immutable direct_access_index_spec and plans a destructive recreate
-  # that drops all upserted vectors.
+  name: [id]
+  endpoint_name: [immutable]
+  index_type: [immutable]
+  index_subtype: [immutable]
+  primary_key: [immutable]
+  delta_sync_index_spec: [immutable]
+  direct_access_index_spec: [immutable]
   direct_access_index_spec.schema_json:
     ignore_remote: normalized_by_backend

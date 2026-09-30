@@ -1,23 +1,13 @@
 # Generated, do not edit.
 
 fields:
-  data_synchronization_status:
-    spec: output_only
-  database_instance_name:
-    spec: input_only
-  effective_database_instance_name:
-    spec: output_only
-  effective_logical_database_name:
-    spec: output_only
-  logical_database_name:
-    spec: input_only
-  spec.accelerated_sync:
-    spec: input_only
-  spec.create_database_objects_if_missing:
-    spec: input_only
-  spec.existing_pipeline_id:
-    spec: input_only
-  spec.new_pipeline_spec:
-    spec: input_only
-  unity_catalog_provisioning_state:
-    spec: output_only
+  data_synchronization_status: [mutable_output]
+  database_instance_name: [input_only]
+  effective_database_instance_name: [mutable_output]
+  effective_logical_database_name: [mutable_output]
+  logical_database_name: [input_only]
+  spec.accelerated_sync: [input_only]
+  spec.create_database_objects_if_missing: [input_only]
+  spec.existing_pipeline_id: [input_only]
+  spec.new_pipeline_spec: [input_only]
+  unity_catalog_provisioning_state: [mutable_output]

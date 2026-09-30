@@ -1,5 +1,3 @@
 fields:
-  table_name:
-    action: id
-  assets_dir:
-    action: immutable
+  table_name: [id]
+  assets_dir: [immutable]
