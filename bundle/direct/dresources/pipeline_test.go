@@ -30,26 +30,26 @@ func TestPipelineOverrideChangeDescCascadeOnDestroy(t *testing.T) {
 
 	t.Run("unset forces state-only update", func(t *testing.T) {
 		change := &ChangeDesc{Action: deployplan.Skip, Old: ptr(false), New: nil}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), cascadePath, change, nil))
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), cascadePath, change, nil, nil))
 		assert.Equal(t, deployplan.Update, change.Action)
 	})
 
 	t.Run("changed value forces state-only update", func(t *testing.T) {
 		change := &ChangeDesc{Action: deployplan.Skip, Old: ptr(true), New: ptr(false)}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), cascadePath, change, nil))
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), cascadePath, change, nil, nil))
 		assert.Equal(t, deployplan.Update, change.Action)
 	})
 
 	t.Run("unchanged value is left as skip", func(t *testing.T) {
 		change := &ChangeDesc{Action: deployplan.Skip, Old: ptr(false), New: ptr(false)}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), cascadePath, change, nil))
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), cascadePath, change, nil, nil))
 		assert.Equal(t, deployplan.Skip, change.Action)
 	})
 
 	t.Run("other paths are untouched", func(t *testing.T) {
 		namePath := structpath.MustParsePath("name")
 		change := &ChangeDesc{Action: deployplan.Skip, Old: "a", New: nil}
-		require.NoError(t, r.OverrideChangeDesc(t.Context(), namePath, change, nil))
+		require.NoError(t, r.OverrideChangeDesc(t.Context(), namePath, change, nil, nil))
 		assert.Equal(t, deployplan.Skip, change.Action)
 	})
 }

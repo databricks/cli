@@ -1231,7 +1231,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err)
 
 	if adapter.HasOverrideChangeDesc() {
-		err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
+		err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil, nil)
 		require.NoError(t, err)
 	}
 

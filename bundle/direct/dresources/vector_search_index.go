@@ -247,7 +247,7 @@ func (r *ResourceVectorSearchIndex) WaitAfterDelete(ctx context.Context, id stri
 // lookupEndpointUuid distinguishes this (404 -> "") from transient errors
 // (propagated through DoRead/DoCreate), so reaching this branch with empty
 // remoteUuid unambiguously means the endpoint is gone.
-func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, remote *VectorSearchIndexRemote) error {
+func (*ResourceVectorSearchIndex) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *VectorSearchIndexState, remote *VectorSearchIndexRemote) error {
 	if path.String() != "endpoint_uuid" {
 		return nil
 	}

@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -165,6 +167,77 @@ func (*ResourcePermissions) KeyedSlices() map[string]any {
 	return map[string]any{
 		"": permissionKey,
 	}
+}
+
+// hasPrincipal reports whether any entry names the given principal value under the
+// given field ("user_name" or "service_principal_name"). Nil-safe: missing state
+// (e.g. a resource not yet created) holds no principals.
+func (s *PermissionsState) hasPrincipal(field, value string) bool {
+	if s == nil {
+		return false
+	}
+	for _, p := range s.EmbeddedSlice {
+		switch field {
+		case "user_name":
+			if p.UserName == value {
+				return true
+			}
+		case "service_principal_name":
+			if p.ServicePrincipalName == value {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// OverrideChangeDesc suppresses false-positive drift when a principal is declared
+// under one field (e.g. user_name) but the Permissions API stores and returns it
+// under the other (service_principal_name) — which the backend does when a user_name
+// holds a service principal's application ID. The entry is matched by value (see
+// permissionKey), so the only diff is the field name; we drop the user_name /
+// service_principal_name leaf change whenever the same value is present under the
+// counterpart field on the other side. A level change on the same principal surfaces
+// via its own ".level" leaf and is left untouched.
+//
+// Matching purely on value means a user and a service principal sharing the exact
+// same name string would be treated as one principal; that collision does not occur
+// in practice (user names are emails, service principal names are application IDs).
+func (*ResourcePermissions) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, ch *ChangeDesc, newState, remoteState *PermissionsState) error {
+	field, ok := path.StringKey()
+	if !ok {
+		return nil
+	}
+
+	var counterpart string
+	switch field {
+	case "user_name":
+		counterpart = "service_principal_name"
+	case "service_principal_name":
+		counterpart = "user_name"
+	default:
+		return nil
+	}
+
+	// Match on value only, not level: level is a separate leaf that surfaces on its
+	// own. Gating these drops on a matching level would resurrect the field-swap diff
+	// whenever the level also changed.
+
+	// Config adds this field while remote holds the same value under the counterpart.
+	if newStr, ok := ch.New.(string); ok && newStr != "" && remoteState.hasPrincipal(counterpart, newStr) {
+		ch.Reason = deployplan.ReasonDrop
+		return nil
+	}
+
+	// Remote has this field (config does not) while config declares the same value
+	// under the counterpart field.
+	if ch.New == nil {
+		if remoteStr, ok := ch.Remote.(string); ok && remoteStr != "" && newState.hasPrincipal(counterpart, remoteStr) {
+			ch.Reason = deployplan.ReasonDrop
+		}
+	}
+
+	return nil
 }
 
 // parsePermissionsID extracts the object type and ID from a permissions ID string.
