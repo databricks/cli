@@ -5,15 +5,14 @@ trace replay_tfstate.py terraform-requests.json terraform.tfstate
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 
-title "Inject GET failure so the plan check blocks the migration"
-# The plan check calls GET /api/2.2/jobs/get for each resource to compare
-# local config against remote state. A 403 (non-retryable) causes the plan
-# to fail → the migration is abandoned and the bundle stays on terraform.
-# The migration runs before any terraform plan, so the plan check's DoRead is
-# the first GET here; OFFSET=0 fails it, and TIMES=1 lets terraform's later
-# read through so the fallback deploy succeeds.
+title "Inject GET failure so the migration plan check fails: migration hard-errors (no terraform fallback)"
+# The migration plan-checks the converted state, GET-ing each resource to compare local config
+# against remote state. A 403 (non-retryable) fails the plan check. The terraform engine was
+# removed in v1.19.0, so there is no fallback: the deploy errors and nothing is committed, leaving
+# the bundle on its terraform state so a retry can migrate. The migration runs before any plan, so
+# the plan check's DoRead is the first GET here: OFFSET=0 fails it, and TIMES=1 lets the retry through.
 fault.py "GET /api/2.2/jobs/get*" 403 0 1
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle deploy
 trace print_migration_telemetry
 rm -f "$OUT_REQUESTS"
 
