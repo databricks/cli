@@ -96,7 +96,9 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	w := r.bundle.WorkspaceClient(ctx)
 
 	// The preset is defaulted to true by "mode: development" and honors an explicit opt-out.
-	development := config.IsExplicitlyEnabled(r.bundle.Config.Presets.PipelinesDevelopment)
+	// Also require the resolved pipeline value: a Python mutator can set it back to false
+	// after the preset is applied, and that deployed false must keep winning.
+	development := config.IsExplicitlyEnabled(r.bundle.Config.Presets.PipelinesDevelopment) && r.pipeline.Development
 
 	req, err := opts.Pipeline.toPayload(r.pipeline, pipelineID, development)
 	if err != nil {

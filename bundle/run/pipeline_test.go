@@ -116,19 +116,25 @@ func TestPipelineRunnerRunSetsDevelopmentFromPreset(t *testing.T) {
 	enabled := true
 	disabled := false
 	tests := []struct {
-		name            string
-		preset          *bool
-		wantDevelopment bool
+		name                string
+		preset              *bool
+		pipelineDevelopment bool
+		wantDevelopment     bool
 	}{
-		{name: "unset", preset: nil, wantDevelopment: false},
-		{name: "enabled", preset: &enabled, wantDevelopment: true},
-		{name: "disabled", preset: &disabled, wantDevelopment: false},
+		{name: "unset", preset: nil, pipelineDevelopment: false, wantDevelopment: false},
+		{name: "unset with pipeline development", preset: nil, pipelineDevelopment: true, wantDevelopment: false},
+		{name: "enabled", preset: &enabled, pipelineDevelopment: true, wantDevelopment: true},
+		{name: "enabled with pipeline development overridden to false", preset: &enabled, pipelineDevelopment: false, wantDevelopment: false},
+		{name: "disabled", preset: &disabled, pipelineDevelopment: true, wantDevelopment: false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			pipeline := &resources.Pipeline{
 				ID: "123",
+				CreatePipeline: pipelines.CreatePipeline{
+					Development: tc.pipelineDevelopment,
+				},
 			}
 
 			b := &bundle.Bundle{
