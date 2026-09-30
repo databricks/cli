@@ -910,3 +910,25 @@ func TestGetSet_DashIsAFieldNameWhenTheTagHasOptions(t *testing.T) {
 	assert.Equal(t, "set", target.Named, "Set must write to Named")
 	assert.Equal(t, "s", target.Skipped, "json:\"-\" field must stay out of reach")
 }
+
+// A struct embedding a pointer to itself: the search must visit each type once, or a key it
+// never finds sends it round forever. Get and Set walk the value (a nil self-pointer would end
+// the walk on its own, so the target here points at itself); ValidateByString walks the type,
+// where nothing stops an unbounded walk but the seen set.
+type cyclicEmbed struct {
+	*cyclicEmbed
+	Name string `json:"name,omitempty"`
+}
+
+func TestCyclicEmbedTerminates(t *testing.T) {
+	target := &cyclicEmbed{Name: "n"} //exhaustruct:ignore
+	target.cyclicEmbed = target
+
+	got, err := structaccess.GetByString(target, "name")
+	require.NoError(t, err)
+	assert.Equal(t, "n", got)
+
+	_, err = structaccess.GetByString(target, "nope")
+	require.Error(t, err)
+	require.Error(t, structaccess.ValidateByString(reflect.TypeFor[cyclicEmbed](), "nope"))
+}
