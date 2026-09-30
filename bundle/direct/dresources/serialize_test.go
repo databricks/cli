@@ -367,9 +367,12 @@ func assertForceSendHonored(t *testing.T, typ reflect.Type) {
 	data, err := json.Marshal(ptr.Interface())
 	require.NoError(t, err)
 
-	keys := jsonKeys(data)
+	// The ForceSendFields owner is the top-level struct or an embed, so its fields
+	// serialize at the document root; a top-level key check is enough.
+	var top map[string]json.RawMessage
+	require.NoError(t, json.Unmarshal(data, &top))
 	for _, name := range jsonNames {
-		assert.Contains(t, keys, name,
+		assert.Contains(t, top, name,
 			"field %q is force-sent (zero value) but was dropped from the JSON: the type marshals via plain encoding/json instead of a ForceSendFields-aware marshaler", name)
 	}
 }
@@ -399,30 +402,4 @@ func fieldByIndexAlloc(v reflect.Value, index []int) reflect.Value {
 		v = v.Field(i)
 	}
 	return v
-}
-
-// jsonKeys returns every object key present anywhere in the JSON document, so a
-// forced field is found regardless of the nesting level it serializes at.
-func jsonKeys(data []byte) map[string]bool {
-	var root any
-	if err := json.Unmarshal(data, &root); err != nil {
-		return nil
-	}
-	keys := map[string]bool{}
-	var walk func(any)
-	walk = func(x any) {
-		switch t := x.(type) {
-		case map[string]any:
-			for k, v := range t {
-				keys[k] = true
-				walk(v)
-			}
-		case []any:
-			for _, e := range t {
-				walk(e)
-			}
-		}
-	}
-	walk(root)
-	return keys
 }
