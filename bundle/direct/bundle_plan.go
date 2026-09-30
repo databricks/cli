@@ -858,13 +858,8 @@ func allEmptyChange(ch *deployplan.ChangeDesc) bool {
 }
 
 // isZeroScalar reports whether v is a number or bool holding its zero value (0, 0.0, false).
-//
-// Strings need no case here — not because the planner excludes them, but because the
-// DropEmptyStrings mutator already strips an explicit "" on an omitempty field before the plan
-// runs. That is deliberate: an empty string most often comes from a variable that resolved to
-// "" (e.g. ${var.foo} left unset), which the user expects to be omitted rather than sent
-// literally. So a non-nil "" never reaches this classifier from real config, and adding
-// reflect.String would be dead code.
+// Strings are left out to stay in line with the DropEmptyStrings mutator, which drops an
+// explicit "" before the plan runs.
 func isZeroScalar(v any) bool {
 	if v == nil {
 		return false
