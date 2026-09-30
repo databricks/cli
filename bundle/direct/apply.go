@@ -41,12 +41,13 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	case deployplan.Create:
 		return d.Create(ctx, db, newState)
 	case deployplan.Bind:
-		return d.Bind(ctx, db, planEntry.ID, newState, planEntry)
+		copyRemoteEtag(d.ResourceKey, planEntry.RemoteState, newState)
+		log.Infof(ctx, "Bound %s id=%#v", d.ResourceKey, planEntry.ID)
+		return d.saveState(ctx, db, planEntry.ID, newState, d.DependsOn)
 	case deployplan.BindAndUpdate:
-		// Adopt and apply the config in one step; the update is the same as any other.
 		return d.Update(ctx, db, planEntry.ID, newState, planEntry)
 	default:
-		// The remaining actions act on a resource already in state; handled below.
+		// Remaining actions require an existing state entry.
 	}
 
 	oldID := db.GetResourceID(d.ResourceKey)
@@ -66,15 +67,6 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
-}
-
-// Bind adopts an existing workspace resource: it records the id and config as state without any
-// API write, since the config already matches the resource. The remote etag is copied in so
-// etag-based drift detection (dashboards, genie_spaces) still works on the next plan.
-func (d *DeploymentUnit) Bind(ctx context.Context, db *dstate.DeploymentState, id string, newState any, planEntry *deployplan.PlanEntry) error {
-	copyRemoteEtag(d.ResourceKey, planEntry.RemoteState, newState)
-	log.Infof(ctx, "Bound %s id=%#v", d.ResourceKey, id)
-	return d.saveState(ctx, db, id, newState, d.DependsOn)
 }
 
 // Create creates the resource and records its state.

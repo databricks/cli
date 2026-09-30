@@ -15,10 +15,8 @@ import (
 	"github.com/databricks/cli/libs/logdiag"
 )
 
-// bindWithHistory adopts an existing workspace resource for a deployment that records history with
-// the metadata service. The service is the source of truth, so the bind is planned and applied now
-// (as a Bind or BindAndUpdate operation in its own version), unlike the file-based bind which
-// defers the change to the next deploy.
+// bindWithHistory applies adoption immediately and records it in DMS, the deployment's
+// authoritative state. File-based binds defer changes until the next deploy.
 func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourceID string, autoApprove bool) {
 	wsc := b.WorkspaceClient(ctx)
 
@@ -45,11 +43,9 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 		return
 	}
 
-	// Stamp deployment metadata into config (as a deploy does) so the recorded state matches and a
-	// later plan sees no drift. A first bind's deployment_id is stamped after it is created below.
-	firstBind := deploymentID == ""
+	// Stamp before planning to avoid reporting deployment metadata as drift.
 	muts := []bundle.Mutator{metadata.AnnotateDeploymentVersion(lastVersionID + 1)}
-	if !firstBind {
+	if deploymentID != "" {
 		muts = append(muts, metadata.AnnotateDeployment(deploymentID))
 	}
 	bundle.ApplySeqContext(ctx, b, muts...)
@@ -57,8 +53,6 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 		return
 	}
 
-	// Plan the resource as an adoption of the existing id, then narrow the plan to it (and its own
-	// grants/permissions) so the bind leaves the rest of the deployment untouched.
 	b.DeploymentBundle.BindKey = resourceKey
 	b.DeploymentBundle.BindID = resourceID
 	plan, err := b.DeploymentBundle.CalculatePlan(ctx, wsc, &b.Config)
@@ -75,13 +69,13 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 		return
 	}
 
-	// Commit now: claim a version, apply the adoption, and complete it.
 	if err := db.UpgradeToWrite(); err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
-	if !createDeploymentAndStamp(ctx, b, deployment, firstBind) {
+	createOrUpdateDeployment(ctx, b, deployment)
+	if logdiag.HasError(ctx) {
 		return
 	}
 	staged, err := stagedOperations(plan)
@@ -97,8 +91,7 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 	b.DeploymentBundle.Apply(ctx, wsc, plan, false)
 }
 
-// completeRecordedVersion drains the buffered operations and closes the version out, completing
-// with failure if anything went wrong. Before a version is claimed, it only closes the state.
+// completeRecordedVersion closes state and completes any claimed version, including on failure.
 func completeRecordedVersion(ctx context.Context, b *bundle.Bundle) {
 	db := &b.DeploymentBundle.StateDB
 	if _, err := db.Finalize(ctx); err != nil {

@@ -76,7 +76,8 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	dmsClient := db.StateDB.DmsClient()
 	metadata := deploymentMetadata(b)
 	deploymentID := db.StateDB.DeploymentID
-	if deploymentID == "" {
+	firstDeploy := deploymentID == ""
+	if firstDeploy {
 		id, err := dmsClient.CreateDeployment(ctx, b.Config.Workspace.StatePath, metadata)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("failed to create deployment: %w", err))
@@ -95,24 +96,11 @@ func createOrUpdateDeployment(ctx context.Context, b *bundle.Bundle, current *bu
 	bundle.ApplyFuncContext(ctx, b, func(_ context.Context, b *bundle.Bundle) {
 		b.Config.Bundle.Deployment.DeploymentID = deploymentID
 	})
-}
-
-// createDeploymentAndStamp runs createOrUpdateDeployment, then on a first deploy stamps the created
-// id into the plan the apply reads (the id did not exist at plan time). It reports whether it
-// succeeded; on failure it has already logged. firstDeploy is captured before the create, which
-// assigns the id. Shared by the deploy and bind phases.
-func createDeploymentAndStamp(ctx context.Context, b *bundle.Bundle, current *bundledeployments.Deployment, firstDeploy bool) bool {
-	createOrUpdateDeployment(ctx, b, current)
-	if logdiag.HasError(ctx) {
-		return false
-	}
-	if firstDeploy {
-		if err := b.DeploymentBundle.StampDeploymentIdForFirstVersion(b.DeploymentBundle.StateDB.DeploymentID); err != nil {
+	if firstDeploy && !logdiag.HasError(ctx) {
+		if err := db.StampDeploymentIdForFirstVersion(deploymentID); err != nil {
 			logdiag.LogError(ctx, err)
-			return false
 		}
 	}
-	return true
 }
 
 // startVersion claims the version the run settled on and opens the buffer that records

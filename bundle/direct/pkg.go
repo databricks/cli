@@ -51,9 +51,7 @@ type DeploymentBundle struct {
 	RemoteStateCache sync.Map
 	StateCache       structvar.Cache
 
-	// BindKey and BindID, when BindKey is set, make CalculatePlan adopt the existing workspace
-	// resource BindID as resource BindKey - planned as Bind (config already matches) or
-	// BindAndUpdate (config differs) instead of Create. Set only by `bundle deployment bind`.
+	// BindKey and BindID identify the resource to adopt during `bundle deployment bind`.
 	BindKey string
 	BindID  string
 }

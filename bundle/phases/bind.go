@@ -166,10 +166,9 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 			groupName = tfResourceType
 		}
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
-		// Unbind under the deployment metadata service is not supported yet (no unbind operation
-		// action type exists); DeploymentBundle.Unbind errors for a recorded deployment.
 		_, statePath := b.StateFilenameDirect(ctx)
-		if err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey); err != nil {
+		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
+		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
 		}

@@ -47,9 +47,7 @@ const (
 	Skip      ActionType = "skip"
 	Resize    ActionType = "resize"
 	Update    ActionType = "update"
-	// Bind adopts an existing workspace resource whose config already matches it: record it in
-	// state without touching the resource. BindAndUpdate adopts it and applies the config in one
-	// step. Both are set only for the resource named by `bundle deployment bind`.
+	// Bind adopts without changing the resource; BindAndUpdate also applies configuration changes.
 	Bind          ActionType = "bind"
 	BindAndUpdate ActionType = "bind_and_update"
 	UpdateWithID  ActionType = "update_id"

@@ -362,8 +362,8 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	// then - so stamp the one just created into the plan the apply reads.
 	// IsDirect first: the state must be open to read its features, and only the direct engine opens it.
 	if stateEngine.IsDirect() && b.DeploymentBundle.StateDB.IsDeploymentMetadataService() {
-		firstDeploy := b.DeploymentBundle.StateDB.DeploymentID == ""
-		if !createDeploymentAndStamp(ctx, b, dmsDeployment, firstDeploy) {
+		createOrUpdateDeployment(ctx, b, dmsDeployment)
+		if logdiag.HasError(ctx) {
 			return
 		}
 

@@ -269,9 +269,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
 
-		// adopt is `bundle deployment bind`: take over the existing workspace resource b.BindID
-		// rather than creating a new one. It has no prior state, so the id and baseline below come
-		// from the bind request and config instead of the state file.
+		// A bind reads the existing resource without requiring a saved state entry.
 		adopt := b.BindKey == resourceKey
 
 		// Tolerate empty-ID entries from older partial-recreate failures
@@ -392,11 +390,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			// because we know remote does not exist.
 			action = deployplan.Create
 		case adopt:
-			// Adopting an existing resource: no change is a plain bind, an in-place update is a
-			// bind-and-update that applies the config in the same step. A heavier change
-			// (recreate/resize) cannot be applied by adopting, so reject it rather than silently
-			// downgrading to an update and skipping the destructive-change confirmation a deploy
-			// would show.
+			// Bind supports adoption and in-place updates, not recreation or resize.
 			switch maxAction := getMaxAction(entry.Changes); maxAction {
 			case deployplan.Skip:
 				action = deployplan.Bind
@@ -1011,11 +1005,9 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 
 	if fieldPathS == "id" {
 		if targetAction.KeepsID() {
-			id := b.StateDB.GetResourceID(targetResourceKey)
-			if id == "" {
-				// A resource being adopted (bundle deployment bind) is not in state yet; its id is
-				// carried on the plan entry instead, so a sub-resource can resolve it here.
-				id = targetEntry.ID
+			id := targetEntry.ID
+			if targetAction != deployplan.Bind && targetAction != deployplan.BindAndUpdate {
+				id = b.StateDB.GetResourceID(targetResourceKey)
 			}
 			if id == "" {
 				return nil, errors.New("internal error: no db entry")

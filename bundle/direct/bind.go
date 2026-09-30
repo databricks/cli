@@ -38,7 +38,7 @@ func (e ErrResourceAlreadyBound) Error() string {
 
 // BindResult contains the result of a bind operation.
 type BindResult struct {
-	// Plan contains the full deployment plan; confirmBindPlan reads the bound resource's action.
+	// Plan contains the full deployment plan for the bound resource.
 	Plan *deployplan.Plan
 	// TempStatePath is the path to the temporary state file
 	TempStatePath string
@@ -46,9 +46,7 @@ type BindResult struct {
 	StatePath string
 }
 
-// copyRemoteEtag copies the remote etag into newState for resources that use etag-based drift
-// detection (dashboards, genie_spaces). The etag comes from remote, not the user; without it the
-// next plan reports a bogus update. A no-op for other resources or when there is no remote state.
+// copyRemoteEtag preserves etag-based drift detection when adopting dashboards and Genie spaces.
 func copyRemoteEtag(resourceKey string, remoteState, newState any) {
 	if remoteState == nil {
 		return
@@ -79,7 +77,7 @@ func copyRemoteEtag(resourceKey string, remoteState, newState any) {
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
 	// The state is opened without a DMS client, so the writes below record nothing;
-	// phases.Bind and phases.Unbind refuse to run at all when recording is enabled.
+	// Recorded deployments use phases.bindWithHistory instead.
 	var checkStateDB dstate.DeploymentState
 	if err := checkStateDB.Open(ctx, statePath, dstate.WithRecovery(true), dstate.WithWrite(false), dstate.WithDeploymentHistory(false), dstate.OpenDmsArgs{}); err == nil {
 		existingID := checkStateDB.GetResourceID(resourceKey)
@@ -151,11 +149,9 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 			dependsOn = entry.DependsOn
 		}
 
-		var remoteState any
 		if entry != nil {
-			remoteState = entry.RemoteState
+			copyRemoteEtag(resourceKey, entry.RemoteState, sv.Value)
 		}
-		copyRemoteEtag(resourceKey, remoteState, sv.Value)
 
 		// Compact hashed_fields fields so the persisted state stays small. Not needed for
 		// correctness — the next plan (CalculatePlan) compacts the saved state on read.
