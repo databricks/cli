@@ -942,7 +942,7 @@ func buildRemoteShellArgs(opts ClientOptions, wsHome, version string) []string {
 		return []string{shell}
 	}
 	// Write each agent's wrapper (quoted heredoc keeps its $VARS literal), then open the shell.
-	remoteShimDir := filepath.Join("$HOME", agentBinDir)
+	remoteShimDir := "$HOME/" + agentBinDir
 	var cmd strings.Builder
 	fmt.Fprintf(&cmd, "mkdir -p \"%s\"\n", remoteShimDir)
 	for _, agent := range SupportedAgentNames() {
