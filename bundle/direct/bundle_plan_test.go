@@ -407,6 +407,16 @@ func TestScalarZeroChange(t *testing.T) {
 			ch:             &deployplan.ChangeDesc{Old: nil, New: 0.0, Remote: 0.0},
 			expectedAction: deployplan.Update,
 		},
+		{
+			// Strings are intentionally not covered: the DropEmptyStrings mutator strips an
+			// explicit "" on an omitempty field before the diff, so a non-nil "" never reaches
+			// here from real config. A backend-echoed "" (only in Remote) stays a no-op.
+			name:           "empty string is a no-op",
+			field:          "gcp_attributes.google_service_account",
+			ch:             &deployplan.ChangeDesc{Old: nil, New: nil, Remote: ""},
+			expectedAction: deployplan.Skip,
+			expectedReason: deployplan.ReasonEmpty,
+		},
 	}
 
 	for _, tt := range tests {

@@ -835,14 +835,18 @@ func allEmpty(values ...any) bool {
 // allEmptyChange reports whether a change is an empty no-op that should be skipped.
 // All of Old/New/Remote must be empty-ish under isEmpty (nil, a zero scalar, "", empty map).
 //
-// The one exception is a genuine local change involving an explicit zero scalar: a number or
-// bool force-sent on either side of the diff that differs from the other side is a real change
-// the config makes, so it must be applied rather than dismissed as empty. This covers both
-// setting gcp_attributes.local_ssd_count: 0 on a cluster first deployed without the field
-// (Old nil, New 0) and removing it again (Old 0, New nil). A zero the backend merely echoes
-// for a field nobody set (Old and New empty) or a value the config did not actually change
-// (Old == New, e.g. an unchanged num_workers: 0) stays a no-op. Strings are deliberately
-// excluded (see isZeroScalar).
+// The one exception is a genuine local change involving an explicit zero scalar: a value
+// force-sent on either side of the diff that differs from the other side is a real change the
+// config makes, so it must be applied rather than dismissed as empty. This covers both setting
+// gcp_attributes.local_ssd_count: 0 on a cluster first deployed without the field (Old nil,
+// New 0) and removing it again (Old 0, New nil). A zero the backend merely echoes for a field
+// nobody set (Old and New empty) or a value the config did not actually change (Old == New,
+// e.g. an unchanged num_workers: 0) stays a no-op.
+//
+// The check reads only Old (saved state) and New (desired state); both are derived from config
+// (saveState persists newState, never the remote read), so a non-nil zero here always means the
+// value was explicitly configured. The backend-supplied Remote value is only consulted by the
+// allEmpty gate above, so backend normalization of a zero (e.g. "" <-> null) never triggers this.
 func allEmptyChange(ch *deployplan.ChangeDesc) bool {
 	if !allEmpty(ch.Old, ch.New, ch.Remote) {
 		return false
@@ -854,8 +858,12 @@ func allEmptyChange(ch *deployplan.ChangeDesc) bool {
 }
 
 // isZeroScalar reports whether v is a number or bool holding its zero value (0, 0.0, false).
-// Strings are excluded on purpose: backends routinely normalize "" to null (and back), so an
-// explicit empty string is not a reliable signal and would produce false-positive drift.
+//
+// Strings are excluded because the DropEmptyStrings mutator strips an explicit "" on an
+// omitempty field from the config before the diff runs (mirroring JSON omitempty and keeping
+// the terraform and direct engines consistent). So a non-nil "" never reaches this classifier
+// from the real config path — only Old/New that came through DropEmptyStrings do — and adding
+// reflect.String here would be dead code that also contradicts that deliberate behavior.
 func isZeroScalar(v any) bool {
 	if v == nil {
 		return false
