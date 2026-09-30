@@ -156,8 +156,8 @@ workspace: { current_user: { userName: test }}`)
 	})
 	assert.NoError(t, err)
 
-	assert.Equal(t, int64(2), b.Metrics.PythonAddedResourcesCount)
-	assert.Equal(t, int64(0), b.Metrics.PythonUpdatedResourcesCount)
+	assert.Equal(t, map[string]int64{"jobs": 1, "pipelines": 1}, b.Metrics.PythonAddedResources)
+	assert.Nil(t, b.Metrics.PythonUpdatedResources)
 
 	assert.Len(t, diags, 1)
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
@@ -237,8 +237,8 @@ resources:
 	})
 	assert.NoError(t, err)
 
-	assert.Equal(t, int64(0), b.Metrics.PythonAddedResourcesCount)
-	assert.Equal(t, int64(1), b.Metrics.PythonUpdatedResourcesCount)
+	assert.Nil(t, b.Metrics.PythonAddedResources)
+	assert.Equal(t, map[string]int64{"jobs": 1}, b.Metrics.PythonUpdatedResources)
 }
 
 func TestPythonMutator_badOutput(t *testing.T) {

@@ -3,7 +3,10 @@ package phases
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 )
@@ -173,4 +176,41 @@ func TestAiRuntimeTaskMetrics(t *testing.T) {
 			assert.Equal(t, tc.multitask, multitask, "multitask")
 		})
 	}
+}
+
+func TestPydabsMetrics(t *testing.T) {
+	pythonConfig := config.Python{
+		Resources: []string{"resources:load_resources"},
+		Mutators:  []string{"mutators:m1", "mutators:m2"},
+	}
+	metrics := bundle.Metrics{
+		PythonAddedResources:   map[string]int64{"jobs": 2, "pipelines": 1},
+		PythonUpdatedResources: map[string]int64{"jobs": 3, "apps": 1},
+	}
+	expected := &protos.BundleDeployPydabs{
+		ResourceLoadersCount:  1,
+		ResourceMutatorsCount: 2,
+		AddedResourcesCount:   3,
+		UpdatedResourcesCount: 4,
+		Resources: []protos.PydabsResourceTypeCount{
+			{ResourceType: "apps", AddedCount: 0, UpdatedCount: 1},
+			{ResourceType: "jobs", AddedCount: 2, UpdatedCount: 3},
+			{ResourceType: "pipelines", AddedCount: 1, UpdatedCount: 0},
+		},
+	}
+
+	t.Run("python", func(t *testing.T) {
+		b := &bundle.Bundle{Config: config.Root{Python: pythonConfig}, Metrics: metrics}
+		assert.Equal(t, expected, pydabsMetrics(b))
+	})
+
+	t.Run("experimental/python", func(t *testing.T) {
+		b := &bundle.Bundle{Config: config.Root{Experimental: &config.Experimental{Python: pythonConfig}}, Metrics: metrics}
+		assert.Equal(t, expected, pydabsMetrics(b))
+	})
+
+	t.Run("not used", func(t *testing.T) {
+		b := &bundle.Bundle{}
+		assert.Equal(t, &protos.BundleDeployPydabs{}, pydabsMetrics(b))
+	})
 }
