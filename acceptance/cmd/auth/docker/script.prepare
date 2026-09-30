@@ -31,9 +31,10 @@ install_databricks_cli() {
     mkdir -p "$HOME/bin"
     if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
         cp "$(cygpath -u "$CLI")" "$HOME/bin/databricks.exe"
+        export PATH="$(cygpath -u "$HOME/bin"):$PATH"
     else
         cp "$CLI" "$HOME/bin/databricks"
         chmod +x "$HOME/bin/databricks"
+        export PATH="$HOME/bin:$PATH"
     fi
-    export PATH="$HOME/bin:$PATH"
 }

@@ -16,10 +16,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/telemetry"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -31,22 +35,41 @@ import (
 
 const (
 	// home-relative directory to hold files/dependencies for the shim.
-	agentDir = ".agent-shim"
+	agentRootDir = ".agent-shim"
 
 	// directory which holds the per-agent wrappers; must match remoteShimDir in client.go.
-	binDir = agentDir + "/bin"
+	agentBinDir = agentRootDir + "/bin"
+
+	// directory which holds toolchain deps (npm, uv) fetched when the image ships none.
+	agentDepsDir = agentRootDir + "/deps"
 
 	// the GitHub repo the shim installs the Unity Gateway CLI from.
 	ugRepo = "databricks/unity-gateway"
 
-	// pins the Unity Gateway CLI release tag the shim installs.
-	ugVersion = "v0.1.0"
+	// pins the Unity Gateway CLI commit the shim installs.
+	ugCommit = "7f408803f9c0fe4958e6d264fd94595283a49a19" // v0.1.0
+
+	// pins the version of uv downloaded
+	uvBaseURL = "https://github.com/astral-sh/uv/releases/download/0.12.18/"
+
+	// SHA-256 of each pinned uv release tarball
+	uvX64LinuxChecksum   = "89eadd7c76fc063887959510d5ba0ab1264dfd5f1143b925ddb73021a40acf16"
+	uvArm64LinuxChecksum = "afb6291f3f0a6b4521fc67b947822506c41dde5b60d2189dd8f3695b2ac8c9e7"
+
+	// overrides for uv tool installs so they are isolated to a directory we control
+	uvToolDir    = agentDepsDir + "/uv_tools"
+	uvToolBinDir = agentDepsDir + "/uv_tools_bin"
+
+	// pins the version of node/npm downloaded
+	nodeVersion = "v24.21.0"
+	nodeBaseURL = "https://nodejs.org/dist/" + nodeVersion + "/"
+
+	// SHA-256 of each pinned node release tarball
+	nodeX64LinuxChecksum   = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6"
+	nodeArm64LinuxChecksum = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2"
 
 	// environment variable used to pass the user's workspace home to the shim for the agent context.
 	workspaceHomeEnv = "DATABRICKS_WORKSPACE_HOME"
-
-	// directory which holds toolchain deps (Node/npm) fetched when the image ships none.
-	depsDir = agentDir + "/deps"
 
 	// the file holding the Databricks session context.
 	contextFile = "agent-system-context.md"
@@ -93,17 +116,152 @@ func agentByName(name string) (agentSpec, bool) {
 	return agentSpec{}, false
 }
 
-func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) error {
+func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agentName string, agentArgs []string) (retErr error) {
+	// Report the outcome of the launch. Setup runs from here to the exec below, so time it
+	// from here too. Each failing step sets outcome.errorCategory; the returned error is
+	// picked up via the named return.
+	start := time.Now()
+	outcome := agentShimOutcome{}
+	launched := false
+	defer func() {
+		// A successful launch replaces this process with execve below (having emitted and
+		// uploaded its own event first), so this defer normally runs only when the launch
+		// failed; cmd/root then uploads the buffered event as usual on the returned error.
+		// `launched` guards the rare case where execProcess itself returns an error: the
+		// success event is already uploaded, so don't emit a second, contradictory event.
+		if retErr == nil || launched {
+			return
+		}
+		outcome.err = retErr
+		outcome.ctxErr = ctx.Err()
+		logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
+	}()
+
 	agent, ok := agentByName(agentName)
 	if !ok {
-		return fmt.Errorf("unsupported agent %q", agentName)
+		return categorize(protos.SshAgentShimErrorCategoryUnsupportedAgent, fmt.Errorf("unsupported agent %q", agentName))
 	}
 	// Probe first: fail fast before the slow first-run bootstrap if the gateway is off.
+	// probeAIGateway attributes the specific GATEWAY_* cause; GATEWAY_UNAVAILABLE is the fallback.
 	if err := probeAIGateway(ctx, client); err != nil {
-		return err
+		return ensureCategory(protos.SshAgentShimErrorCategoryGatewayUnavailable, err)
 	}
 	workspace := strings.TrimRight(client.Config.Host, "/")
-	return bootstrapAndLaunchAgent(ctx, agent, workspace, agentArgs)
+
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return categorize(protos.SshAgentShimErrorCategoryToolchainSetupFailed, fmt.Errorf("failed to resolve home directory: %w", err))
+	}
+	// bootstrapToolchain attributes the per-component install failure; TOOLCHAIN_SETUP_FAILED
+	// is the fallback for a lock or PATH problem.
+	if err := bootstrapToolchain(ctx, home); err != nil {
+		return ensureCategory(protos.SshAgentShimErrorCategoryToolchainSetupFailed, err)
+	}
+
+	argv0, argv, environ, err := prepareAgentLaunch(ctx, home, agent, workspace, agentArgs)
+	if err != nil {
+		return ensureCategory(protos.SshAgentShimErrorCategoryAgentLaunchFailed, err)
+	}
+
+	// The agent is ready to launch. execProcess replaces this process, so cmd/root's
+	// end-of-command telemetry upload never runs; emit and flush the success event first.
+	launched = true
+	logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
+	uploadAgentShimTelemetry(ctx, agentName, time.Since(start))
+	return execProcess(argv0, argv, environ)
+}
+
+// agentShimOutcome is the observed result of an agent-shim launch, collected by
+// RunAgentShim for telemetry.
+type agentShimOutcome struct {
+	err error
+	// ctxErr is the context's error when the outcome is logged. Tracked apart from err
+	// because a step that shells out reports a killed child as *exec.ExitError, which carries
+	// no trace of the cancellation.
+	ctxErr error
+}
+
+// launchError carries the telemetry category for a failure alongside the underlying error,
+// so RunAgentShim can attribute it via errors.As rather than matching on the error text
+// (which the repo forbids). It is transparent to the user: Error and Unwrap both delegate.
+type launchError struct {
+	category protos.SshAgentShimErrorCategory
+	err      error
+}
+
+func (e *launchError) Error() string { return e.err.Error() }
+func (e *launchError) Unwrap() error { return e.err }
+
+// categorize tags err with a telemetry category. A nil err is returned unchanged.
+func categorize(category protos.SshAgentShimErrorCategory, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &launchError{category: category, err: err}
+}
+
+// ensureCategory tags err with fallback unless a deeper call already attributed it, so the
+// most specific category set at the failure site wins over the stage's coarse fallback.
+func ensureCategory(fallback protos.SshAgentShimErrorCategory, err error) error {
+	if err == nil {
+		return nil
+	}
+	if _, ok := errors.AsType[*launchError](err); ok {
+		return err
+	}
+	return categorize(fallback, err)
+}
+
+// category returns the error category to report. An interruption means the user gave up,
+// whichever step observed it first, so it wins over the category attributed at the failure
+// site; an unattributed failure is reported as UNKNOWN so it stays countable.
+func (o agentShimOutcome) category() protos.SshAgentShimErrorCategory {
+	if o.err == nil {
+		return protos.SshAgentShimErrorCategoryUnspecified
+	}
+	if errors.Is(o.ctxErr, context.Canceled) || errors.Is(o.err, context.Canceled) {
+		return protos.SshAgentShimErrorCategoryUserAborted
+	}
+	if le, ok := errors.AsType[*launchError](o.err); ok {
+		return le.category
+	}
+	return protos.SshAgentShimErrorCategoryUnknown
+}
+
+func logAgentShimEvent(ctx context.Context, agentName string, outcome agentShimOutcome, setupDuration time.Duration) {
+	telemetry.Log(ctx, protos.DatabricksCliLog{
+		SshAgentShimEvent: buildAgentShimEvent(agentName, outcome, setupDuration),
+	})
+}
+
+// buildAgentShimEvent maps the agent name and outcome onto the telemetry event. It is
+// separated from logAgentShimEvent so the field mapping can be unit tested.
+func buildAgentShimEvent(agentName string, outcome agentShimOutcome, setupDuration time.Duration) *protos.SshAgentShimEvent {
+	return &protos.SshAgentShimEvent{
+		AgentName:       agentName,
+		IsSuccess:       outcome.err == nil,
+		ErrorCategory:   outcome.category(),
+		SetupDurationMs: setupDuration.Milliseconds(),
+	}
+}
+
+// uploadAgentShimTelemetry flushes buffered telemetry before the shim execs into the agent.
+// A successful launch replaces this process (see execProcess), so the end-of-command upload
+// in cmd/root.Execute never runs; this rebuilds the ExecutionContext that upload would have
+// attached. Best-effort: an upload failure must not stop the launch.
+func uploadAgentShimTelemetry(ctx context.Context, agentName string, execDuration time.Duration) {
+	err := telemetry.Upload(ctx, protos.ExecutionContext{
+		CmdExecID:       cmdctx.ExecId(ctx),
+		Version:         build.GetInfo().Version,
+		Command:         "ssh_agent-shim_" + agentName,
+		OperatingSystem: runtime.GOOS,
+		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
+		ExecutionTimeMs: execDuration.Milliseconds(),
+		ExitCode:        0,
+	})
+	if err != nil {
+		log.Debugf(ctx, "agent-shim telemetry upload failed: %s", err)
+	}
 }
 
 // --- Unity AI Gateway preflight ---
@@ -120,8 +278,6 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 const (
 	legacyEndpointsPath       = "/api/ai-gateway/v2/endpoints"
 	modelServiceProbePageSize = 50
-	modelServiceProbeMaxPages = 20
-	modelServiceProbeMaxItems = modelServiceProbePageSize * modelServiceProbeMaxPages
 	aiGatewayDocsURL          = "https://docs.databricks.com/aws/en/ai-gateway/overview-beta"
 )
 
@@ -177,21 +333,21 @@ func probeAIGateway(ctx context.Context, wsclient *databricks.WorkspaceClient) e
 	case looksLikeTransient(modelSvc.err) || looksLikeTransient(legacy.err):
 		// A rate-limit/5xx/network blip is not "disabled" — tell the user to retry
 		// rather than sending them to the enablement docs.
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayTransientError, versionNeutralGatewayError(
 			fmt.Sprintf("could not verify the Databricks Unity AI Gateway on %s: the probe hit a transient error (model services: %s; legacy endpoints: %s). Retry in a moment", host, modelSvc.err.Error(), legacy.err.Error()),
-		)
+		))
 	case errors.Is(modelSvc.err, apierr.ErrPermissionDenied):
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
 			fmt.Sprintf("model service access could not be verified on %s (%s). The legacy endpoint fallback also failed (%s). The model service probe requires permission to list Unity Catalog model services. Verify USE CATALOG on `system`, and USE SCHEMA and EXECUTE on `system.ai`", host, modelSvc.err.Error(), legacy.err.Error()),
-		)
+		))
 	case errors.Is(legacy.err, apierr.ErrPermissionDenied):
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayPermissionDenied, versionNeutralGatewayError(
 			fmt.Sprintf("legacy endpoint access could not be verified on %s (%s). The model service probe also failed (%s). Verify the caller's workspace permissions for the legacy endpoints listing", host, legacy.err.Error(), modelSvc.err.Error()),
-		)
+		))
 	default:
-		return versionNeutralGatewayError(
+		return categorize(protos.SshAgentShimErrorCategoryGatewayNotEnabled, versionNeutralGatewayError(
 			fmt.Sprintf("the Databricks Unity AI Gateway is not enabled on this workspace (%s): neither model services (%s) nor legacy endpoints (%s) are available. See %s", host, modelSvc.err.Error(), legacy.err.Error(), aiGatewayDocsURL),
-		)
+		))
 	}
 }
 
@@ -280,39 +436,32 @@ func looksLikeTransient(err error) bool {
 }
 
 func aiGatewayAuthError(host, reason string) error {
-	return versionNeutralGatewayError(
+	return categorize(protos.SshAgentShimErrorCategoryGatewayAuthFailed, versionNeutralGatewayError(
 		fmt.Sprintf("the Databricks workspace %s rejected the access token (%s). Try:\n  databricks auth logout --host %s\n  databricks auth login --host %s", host, reason, host, host),
-	)
+	))
 }
 
 func aiGatewayScopeError(host, reason string) error {
-	return versionNeutralGatewayError(
+	return categorize(protos.SshAgentShimErrorCategoryGatewayScopeFailed, versionNeutralGatewayError(
 		fmt.Sprintf("the access token for %s is missing an OAuth scope required by the AI Gateway APIs (%s). Re-authenticate to mint a token with the needed scopes:\n  databricks auth login --host %s", host, reason, host),
-	)
+	))
 }
 
 // --- end Unity AI Gateway preflight ---
 
-func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace string, agentArgs []string) error {
-	home, err := env.UserHomeDir(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to resolve home directory: %w", err)
-	}
-
+func bootstrapToolchain(ctx context.Context, home string) error {
 	// Reconstruct the PATH tooling runs under on every launch rather than caching
 	// it: every entry is a known location, so deriving it can't restore a stale
 	// path (e.g. a versioned CLI dir from an older session). Drop the shim dir so
-	// Unity Gateway CLI execs the real agent rather than this wrapper, then prepend
-	// uv/ug's bin, this databricks CLI's own dir (so it's used by ug/the spawned agent),
-	// and the Node bin ensureNode installs into.
-	removePath(ctx, filepath.Join(home, binDir))
-	prependPath(ctx, filepath.Join(home, ".local", "bin")) // uv
+	// Unity Gateway CLI execs the real agent rather than this wrapper
+	removePath(ctx, filepath.Join(home, agentBinDir))
+	// add this CLI to PATH so agents can use it
 	if self, err := os.Executable(); err == nil {
 		prependPath(ctx, filepath.Dir(self))
 	}
-	prependPath(ctx, filepath.Join(home, depsDir, "node", "bin"))
 
-	if err := ensureToolchain(ctx, home); err != nil {
+	err := ensureToolchain(ctx, home, runtime.GOARCH)
+	if err != nil {
 		return err
 	}
 
@@ -320,13 +469,7 @@ func bootstrapAndLaunchAgent(ctx context.Context, agent agentSpec, workspace str
 	// box so it doesn't clutter the agent session.
 	disableNpmUpdateNotifier(ctx)
 
-	// Put npm's global bin on PATH so an npm-installed agent binary resolves after
-	// Unity Gateway CLI installs it.
-	if prefix := npmGlobalPrefix(ctx); prefix != "" {
-		prependPath(ctx, filepath.Join(prefix, "bin"))
-	}
-
-	return launchAgent(ctx, home, agent, workspace, agentArgs)
+	return nil
 }
 
 func toolchainReady() bool {
@@ -335,7 +478,18 @@ func toolchainReady() bool {
 	return ugErr == nil && npmErr == nil
 }
 
-func ensureToolchain(ctx context.Context, home string) error {
+func ensureToolchain(ctx context.Context, home, arch string) error {
+	// add expected tool locations to PATH first
+	uvSpec := uvArchiveSpec(arch)
+	nodeSpec := nodeArchiveSpec(arch)
+	uvToolDirAbsolute := filepath.Join(home, uvToolDir)
+	uvToolBinDirAbsolute := filepath.Join(home, uvToolBinDir)
+	prependPath(ctx, uvToolBinDirAbsolute)
+	for _, spec := range []archiveSpec{uvSpec, nodeSpec} {
+		binDir := filepath.Join(home, agentDepsDir, spec.dirName, spec.binDirName)
+		prependPath(ctx, binDir)
+	}
+
 	if toolchainReady() {
 		return nil
 	}
@@ -349,38 +503,116 @@ func ensureToolchain(ctx context.Context, home string) error {
 		return nil
 	}
 
-	// 1. uv (installs into ~/.local/bin).
 	if _, err := exec.LookPath("uv"); err != nil {
-		cmdio.LogString(ctx, "Installing uv...")
-		if err := runShell(ctx, "curl -LsSf https://astral.sh/uv/install.sh | sh"); err != nil {
-			return fmt.Errorf("failed to install uv: %w", err)
+		if err := runStep(ctx, "Installing uv", func(out io.Writer) error {
+			if err := ensureBinary(ctx, home, out, uvSpec); err != nil {
+				return fmt.Errorf("failed to install uv: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return categorize(protos.SshAgentShimErrorCategoryUvInstallFailed, err)
 		}
 	}
 
-	// 2. Unity Gateway CLI (pinned stock upstream release).
 	if _, err := exec.LookPath("ucode"); err != nil {
-		cmdio.LogString(ctx, "Installing Unity Gateway CLI...")
-		if err := runCommand(ctx, "uv", "tool", "install", "git+https://github.com/"+ugRepo+"@"+ugVersion); err != nil {
-			return fmt.Errorf("failed to install Unity Gateway CLI: %w", err)
+		if err := runStep(ctx, "Installing Unity Gateway CLI", func(out io.Writer) error {
+			env := os.Environ()
+			env = append(env, "UV_TOOL_DIR="+uvToolDirAbsolute, "UV_TOOL_BIN_DIR="+uvToolBinDirAbsolute)
+			if err := runCommand(ctx, out, env, "uv", "tool", "install", "git+https://github.com/"+ugRepo+"@"+ugCommit); err != nil {
+				return fmt.Errorf("failed to install Unity Gateway CLI: %w", err)
+			}
+			return nil
+		}); err != nil {
+			return categorize(protos.SshAgentShimErrorCategoryGatewayCLIInstallFailed, err)
 		}
 	}
 
-	// 3. Node/npm (installs into depsDir/node/bin)
 	if _, err := exec.LookPath("npm"); err != nil {
-		cmdio.LogString(ctx, "Installing npm...")
-		if _, err := ensureNode(ctx, home); err != nil {
-			return err
+		if err := runStep(ctx, "Installing Node.js", func(out io.Writer) error {
+			return ensureBinary(ctx, home, out, nodeSpec)
+		}); err != nil {
+			return categorize(protos.SshAgentShimErrorCategoryNodeInstallFailed, err)
 		}
 	}
 
 	return nil
 }
 
+type archiveSpec struct {
+	// "" if this is an unsupported architecture
+	archiveURL string
+	binaryName string
+	dirName    string
+	// sub-directory inside dirName where the binary is located, "" if it's the same as dirName
+	binDirName string
+	checksum   string
+}
+
+// ensure the specified binary is installed, installing it if it's not already
+// present. Extraction output is written to out. Returns the path to the directory
+// containing the installed binary
+func ensureBinary(ctx context.Context, home string, out io.Writer, spec archiveSpec) error {
+	if spec.archiveURL == "" {
+		return fmt.Errorf("unsupported architecture for %s download: %s", spec.binaryName, runtime.GOARCH)
+	}
+
+	depsRoot := filepath.Join(home, agentDepsDir)
+	depsDir := filepath.Join(depsRoot, spec.dirName)
+	binDir := filepath.Join(depsDir, spec.binDirName)
+	if _, err := os.Stat(filepath.Join(binDir, spec.binaryName)); err == nil {
+		return nil
+	}
+
+	if err := os.MkdirAll(depsRoot, 0o755); err != nil {
+		return fmt.Errorf("failed to create %s: %w", depsRoot, err)
+	}
+
+	tarball, err := downloadVerified(ctx, spec)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tarball)
+	// Extract into a sibling temp dir and atomically rename it into place, so an
+	// interrupted extraction never leaves a half-populated dir that the os.Stat
+	// check above would then wrongly accept as a finished install.
+	tmpDir, err := os.MkdirTemp(depsRoot, spec.binaryName+"-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir) // no-op once renamed; cleans up a failed extraction
+	// extract with tar for brevity
+	if err := runCommand(ctx, out, nil, "tar", "-xf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
+		return fmt.Errorf("failed to extract %s: %w", spec.binaryName, err)
+	}
+	// Clear any partial leftover from a previously-interrupted run, then publish
+	// atomically (same-filesystem rename, since tmpDir is a sibling of nodeDir).
+	if err := os.RemoveAll(depsDir); err != nil {
+		return fmt.Errorf("failed to remove %s: %w", depsDir, err)
+	}
+	if err := os.Rename(tmpDir, depsDir); err != nil {
+		return fmt.Errorf("failed to install %s: %w", spec.binaryName, err)
+	}
+	return nil
+}
+
+func uvArchiveSpec(goarch string) archiveSpec {
+	spec := archiveSpec{dirName: "uv", binaryName: "uv"}
+	switch goarch {
+	case "amd64":
+		spec.archiveURL = uvBaseURL + "uv-x86_64-unknown-linux-gnu.tar.gz"
+		spec.checksum = uvX64LinuxChecksum
+	case "arm64":
+		spec.archiveURL = uvBaseURL + "uv-aarch64-unknown-linux-gnu.tar.gz"
+		spec.checksum = uvArm64LinuxChecksum
+	}
+	return spec
+}
+
 // take a machine-local lock (an O_EXCL sentinel file) serializing first-run setup
 // across SSH clients. It blocks until the lock is free, reclaiming one left behind
 // by a dead process after setupLockStaleAfter. The returned func releases the lock.
 func acquireSetupLock(ctx context.Context, home string) (func(), error) {
-	lockPath := filepath.Join(home, agentDir, setupLockName)
+	lockPath := filepath.Join(home, agentRootDir, setupLockName)
 	if err := os.MkdirAll(filepath.Dir(lockPath), 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create %s: %w", filepath.Dir(lockPath), err)
 	}
@@ -408,16 +640,18 @@ func acquireSetupLock(ctx context.Context, home string) (func(), error) {
 	}
 }
 
-func launchAgent(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) error {
+// prepareAgentLaunch resolves the Unity Gateway CLI and builds the argv and environment for
+// launching the agent. It stops short of the exec so the caller can emit telemetry first.
+func prepareAgentLaunch(ctx context.Context, home string, agent agentSpec, workspace string, agentArgs []string) (argv0 string, argv, environ []string, err error) {
 	ugPath, err := exec.LookPath("ucode")
 	if err != nil {
-		return fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err)
+		return "", nil, nil, categorize(protos.SshAgentShimErrorCategoryUnityGatewayCLINotFound, fmt.Errorf("the Unity Gateway CLI was not found on PATH after setup: %w", err))
 	}
 	contextArgs, err := injectAgentContext(ctx, home, agent)
 	if err != nil {
-		return err
+		return "", nil, nil, categorize(protos.SshAgentShimErrorCategoryAgentContextSetupFailed, err)
 	}
-	argv := []string{"ucode", agent.name}
+	argv = []string{"ucode", agent.name}
 	if workspace != "" {
 		argv = append(argv, "--workspace", workspace)
 	}
@@ -430,7 +664,7 @@ func launchAgent(ctx context.Context, home string, agent agentSpec, workspace st
 			_ = os.Setenv("DATABRICKS_BEARER", token)
 		}
 	}
-	return execProcess(ugPath, argv, os.Environ())
+	return ugPath, argv, os.Environ(), nil
 }
 
 // put the Databricks context where the agent reads it, returning any extra argv.
@@ -440,7 +674,7 @@ func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]st
 	case agent.contextFlag != "":
 		// Keep the scratch context file under the shim's own directory so it never
 		// clobbers an unrelated file the user happens to have in their home.
-		dir := filepath.Join(home, agentDir)
+		dir := filepath.Join(home, agentRootDir)
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return nil, fmt.Errorf("failed to create %s: %w", dir, err)
 		}
@@ -468,75 +702,25 @@ func injectAgentContext(ctx context.Context, home string, agent agentSpec) ([]st
 	}
 }
 
-// download the latest Krypton LTS Node into deps/node once, returning its bin.
-// Linux-only by design: the shim runs on the serverless driver, so the tarball
-// name is hardcoded to linux while nodeDownloadArch guards the arch.
-func ensureNode(ctx context.Context, home string) (string, error) {
-	depsRoot := filepath.Join(home, depsDir)
-	nodeDir := filepath.Join(depsRoot, "node")
-	nodeBin := filepath.Join(nodeDir, "bin")
-	if _, err := os.Stat(filepath.Join(nodeBin, "npm")); err == nil {
-		return nodeBin, nil
-	}
-
-	arch := nodeDownloadArch(runtime.GOARCH)
-	if arch == "" {
-		return "", fmt.Errorf("unsupported architecture for Node download: %s", runtime.GOARCH)
-	}
-	const base = "https://nodejs.org/dist/latest-krypton"
-	tarName, wantSum, err := latestNodeTarball(ctx, base+"/SHASUMS256.txt", arch)
-	if err != nil {
-		return "", err
-	}
-	if err := os.MkdirAll(depsRoot, 0o755); err != nil {
-		return "", fmt.Errorf("failed to create %s: %w", depsRoot, err)
-	}
-	// Download to a temp file, verifying its SHA256 from SHASUMS256.txt before use.
-	tarball, err := downloadVerified(ctx, base+"/"+tarName, wantSum)
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(tarball)
-	// Extract into a sibling temp dir and atomically rename it into place, so an
-	// interrupted extraction never leaves a half-populated node dir that the
-	// os.Stat(npm) check above would then wrongly accept as a finished install.
-	tmpDir, err := os.MkdirTemp(depsRoot, "node-*")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %w", err)
-	}
-	defer os.RemoveAll(tmpDir) // no-op once renamed; cleans up a failed extraction
-	// Node's .tar.xz is the smallest download; extract it with the system tar.
-	if err := runCommand(ctx, "tar", "-xJf", tarball, "--strip-components=1", "-C", tmpDir); err != nil {
-		return "", fmt.Errorf("failed to extract Node.js: %w", err)
-	}
-	// Clear any partial leftover from a previously-interrupted run, then publish
-	// atomically (same-filesystem rename, since tmpDir is a sibling of nodeDir).
-	if err := os.RemoveAll(nodeDir); err != nil {
-		return "", fmt.Errorf("failed to remove %s: %w", nodeDir, err)
-	}
-	if err := os.Rename(tmpDir, nodeDir); err != nil {
-		return "", fmt.Errorf("failed to install Node.js: %w", err)
-	}
-	return nodeBin, nil
-}
-
-// fetch url to a temp file, failing unless its SHA256 matches wantSum. The caller
-// is responsible for removing the returned file.
-func downloadVerified(ctx context.Context, url, wantSum string) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+// fetch url to a temp file, failing unless its SHA256 matches the expected checksum.
+// The caller is responsible for removing the returned file.
+func downloadVerified(ctx context.Context, spec archiveSpec) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, spec.archiveURL, nil)
 	if err != nil {
 		return "", err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to download %s: %w", url, err)
+		return "", fmt.Errorf("failed to download %s: %w", spec.archiveURL, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to download %s: HTTP %d", url, resp.StatusCode)
+		return "", fmt.Errorf("failed to download %s: HTTP %d", spec.archiveURL, resp.StatusCode)
 	}
 
-	f, err := os.CreateTemp("", "node-*.tar.xz")
+	// either .tar.gz or .tar.xz
+	fileExt := spec.archiveURL[len(spec.archiveURL)-7:]
+	f, err := os.CreateTemp("", spec.binaryName+"-*."+fileExt)
 	if err != nil {
 		return "", err
 	}
@@ -544,51 +728,30 @@ func downloadVerified(ctx context.Context, url, wantSum string) (string, error) 
 	if _, err := io.Copy(io.MultiWriter(f, sum), resp.Body); err != nil {
 		f.Close()
 		os.Remove(f.Name())
-		return "", fmt.Errorf("failed to download %s: %w", url, err)
+		return "", fmt.Errorf("failed to download %s: %w", spec.archiveURL, err)
 	}
 	if err := f.Close(); err != nil {
 		os.Remove(f.Name())
 		return "", err
 	}
-	if got := hex.EncodeToString(sum.Sum(nil)); !strings.EqualFold(got, wantSum) {
+	if got := hex.EncodeToString(sum.Sum(nil)); !strings.EqualFold(got, spec.checksum) {
 		os.Remove(f.Name())
-		return "", fmt.Errorf("checksum mismatch for %s: got %s, want %s", url, got, wantSum)
+		return "", fmt.Errorf("checksum mismatch for %s: got %s, want %s", spec.archiveURL, got, spec.checksum)
 	}
 	return f.Name(), nil
 }
 
-func nodeDownloadArch(goarch string) string {
+func nodeArchiveSpec(goarch string) archiveSpec {
+	spec := archiveSpec{binDirName: "bin", dirName: "node", binaryName: "npm"}
 	switch goarch {
 	case "amd64":
-		return "x64"
+		spec.archiveURL = nodeBaseURL + "node-" + nodeVersion + "-linux-x64.tar.xz"
+		spec.checksum = nodeX64LinuxChecksum
 	case "arm64":
-		return "arm64"
-	default:
-		return ""
+		spec.archiveURL = nodeBaseURL + "node-" + nodeVersion + "-linux-arm64.tar.xz"
+		spec.checksum = nodeArm64LinuxChecksum
 	}
-}
-
-func latestNodeTarball(ctx context.Context, shasumsURL, arch string) (name, sum string, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, shasumsURL, nil)
-	if err != nil {
-		return "", "", err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to fetch Node checksums: %w", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return "", "", fmt.Errorf("failed to read Node checksums: %w", err)
-	}
-	re := regexp.MustCompile(`^([0-9a-f]{64})\s+(node-v[0-9.]+-linux-` + regexp.QuoteMeta(arch) + `\.tar\.xz)$`)
-	for line := range strings.SplitSeq(string(body), "\n") {
-		if m := re.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
-			return m[2], m[1], nil
-		}
-	}
-	return "", "", fmt.Errorf("no linux-%s Node tarball found in %s", arch, shasumsURL)
+	return spec
 }
 
 // turn off npm's "new version available" box so it doesn't clutter the installation
@@ -600,27 +763,17 @@ func disableNpmUpdateNotifier(ctx context.Context) {
 	}
 }
 
-func npmGlobalPrefix(ctx context.Context) string {
-	out, err := exec.CommandContext(ctx, "npm", "prefix", "-g").Output()
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(out))
-}
-
-func runCommand(ctx context.Context, name string, args ...string) error {
+// runCommand runs name with the given args, writing combined stdout+stderr to out
+// (captured so it surfaces only on failure). When env is non-nil it replaces the
+// process environment. Stdin is left closed: the shim's install steps are
+// non-interactive.
+func runCommand(ctx context.Context, out io.Writer, env []string, name string, args ...string) error {
 	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func runShell(ctx context.Context, script string) error {
-	cmd := exec.CommandContext(ctx, "sh", "-c", script)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = out
+	cmd.Stderr = out
+	if len(env) > 0 {
+		cmd.Env = env
+	}
 	return cmd.Run()
 }
 

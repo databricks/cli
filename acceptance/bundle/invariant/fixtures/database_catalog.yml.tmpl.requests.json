@@ -1,0 +1,48 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/artifacts/.internal"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/workspace/mkdirs",
+    "body": {
+      "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files/app"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/database/instances",
+    "body": {
+      "capacity": "CU_1",
+      "name": "test-db-instance-[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/2.0/database/catalogs",
+    "body": {
+      "create_database_if_not_exists": true,
+      "database_instance_name": "test-db-instance-[UNIQUE_NAME]",
+      "database_name": "test_db",
+      "name": "test-catalog-[UNIQUE_NAME]"
+    }
+  }
+]

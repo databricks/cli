@@ -1,6 +1,10 @@
 RecordRequests = true
 IncludeRequestHeaders = ["X-Databricks-Workspace-Id"]
 
-# git-bash can't resolve/exec the installed .cmd shim on Windows; that path is
-# covered by Go unit tests in libs/dockercredentials. Run this end-to-end on Unix.
-GOOS.windows = false
+[[Repls]]
+Old = 'docker-credential-databricks\.cmd'
+New = 'docker-credential-databricks'
+
+[[Repls]]
+Old = '(?m)docker-credential-databricks only supports get +$'
+New = 'docker-credential-databricks only supports get'

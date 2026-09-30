@@ -142,11 +142,16 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 				out := cmd.OutOrStdout()
 				printSubmitResult(ctx, out, runIDStr, dashboardURL)
 				printPostSubmitGuidance(out, w.Config.Profile, runIDStr)
+				grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, true)
 				return nil
 			}
 			// PENDING is the submit status, distinct from the --watch JSONL
 			// SUBMITTED event type below.
-			return renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL})
+			if err := renderEnvelope(ctx, runResult{Status: "PENDING", RunID: runIDStr, DashboardURL: dashboardURL}); err != nil {
+				return err
+			}
+			grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
+			return nil
 		}
 
 		// --watch: stream the submitted run's logs until it reaches a terminal
@@ -177,6 +182,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			}
 			// The MLflow links stream in via the logs below, so don't poll here.
 			printSubmitResult(ctx, out, runIDStr, dashboardURL)
+			grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, true)
 			// Separate the submit summary from the streamed logs.
 			fmt.Fprintln(out)
 			fmt.Fprintln(out, monitoringMessage)
@@ -196,6 +202,7 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 		// envelope after streaming.
 		out := cmd.OutOrStdout()
 		printSubmittedEvent(out, runIDStr, dashboardURL)
+		grantSubmittedPermissions(ctx, w, runID, cfg.Permissions, false)
 		req.onStatusChange = func(current, previous string) {
 			printStatusEvent(out, current, previous)
 		}

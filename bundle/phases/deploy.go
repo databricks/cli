@@ -294,8 +294,48 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
+	haveApproval, err := approvalForDeploy(ctx, b, plan)
+	if !haveApproval {
+		// No version was created, so the deferred CompleteVersion is a no-op and the version
+		// number is left for the next deploy. Both the user declining and a console that
+		// cannot prompt land here.
+		//
+		// A prepared terraform→direct migration lives only in memory (Migrate wrote nothing
+		// durable and CommitMigration below never ran), so a declined deploy just drops it and
+		// stays on the terraform engine - nothing changes. Gated on the resolved engine being
+		// direct: if the migration fell back to terraform (e.g. its plan check failed), there is
+		// no prepared migration to keep and the deploy declining is just a terraform decline.
+		if b.MigratingToDirect && stateEngine.IsDirect() {
+			log.Warnf(ctx, "Migration not committed, keeping Terraform state")
+		}
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
+	}
+
+	// Approved. Commit a prepared terraform→direct migration now, before the deploy applies
+	// anything: this is the migration's point of no return - it pushes the converted state at
+	// serial tf+1 and retires the terraform state, so from here the bundle is on direct. The
+	// deploy below then advances the state to tf+2. Committing here rather than after the deploy
+	// keeps the model clean (once approved, we are on direct) at the cost of one window: a deploy
+	// that then fails has still migrated, where staying on terraform might have been possible.
+	// Gated on the resolved engine being direct: a migration that fell back to terraform (e.g. a
+	// failed plan check) left the state on terraform and opened nothing, so there is nothing to
+	// commit and the deploy proceeds on terraform.
+	if b.MigratingToDirect && stateEngine.IsDirect() {
+		statemgmt.CommitMigration(ctx, b, requestedEngine)
+		if logdiag.HasError(ctx) {
+			return
+		}
+	}
+
 	if stateEngine.IsDirect() {
-		// Upgrade from read (opened by process.go) to write mode
+		// Upgrade from read (opened by process.go, or by Migrate) to write mode. After approval
+		// and the migration commit above, so a declined deploy never opens a WAL it must discard,
+		// and the migration's tf+1 push lands before this advances the WAL header to tf+2.
 		if err := b.DeploymentBundle.StateDB.UpgradeToWrite(); err != nil {
 			logdiag.LogError(ctx, err)
 			return
@@ -311,23 +351,9 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		}
 	}
 
-	// InitForApply receives ctx and could log a diagnostic without returning an
-	// error, so re-check before deploying. (UpgradeToWrite above takes no ctx and
-	// thus cannot log, so the earlier check is enough to guard the WAL open.)
+	// InitForApply receives ctx and could log a diagnostic without returning an error, so
+	// re-check before deploying.
 	if logdiag.HasError(ctx) {
-		return
-	}
-
-	haveApproval, err := approvalForDeploy(ctx, b, plan)
-	if !haveApproval {
-		// No version was created, so the deferred CompleteVersion is a no-op and the version
-		// number is left for the next deploy. Both the user declining and a console that
-		// cannot prompt land here.
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		cmdio.LogString(ctx, "Deployment cancelled!")
 		return
 	}
 
@@ -381,24 +407,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	logDeploySummary(ctx, b, plan, stateEngine)
 
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
-
-	// Migrate the state to the direct engine, if the user opted in (via
-	// bundle.engine or DATABRICKS_BUNDLE_ENGINE) and a dry-run of the migration
-	// comes back clean. Without the opt-in, or when the dry-run reports problems,
-	// nothing is written: only the outcome is recorded in telemetry, and the
-	// deploy is unaffected.
-	//
-	// Last, after the deploy has reported what it did: this is post-deploy work,
-	// and its warnings read as belonging to the deploy if they precede the
-	// summary.
-	//
-	// Gated on the deploy alone, which the early return above already guarantees
-	// — not on the postdeploy script. The resources were applied before that
-	// script ran, so the state is worth migrating even if it failed, the same
-	// reasoning that prints the summary ahead of it.
-	if !stateEngine.IsDirect() {
-		statemgmt.MigrateToDirect(ctx, b, requestedEngine)
-	}
 }
 
 func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {

@@ -88,6 +88,11 @@ workspace_id = [NUMID]
   "Username": "oauthtoken"
 }
 
+=== Invalid registry host
+
+>>> musterr docker-credential-databricks get
+Error: "registry.example.test" is not a Databricks Artifact Registry host
+
 >>> musterr docker-credential-databricks erase
 docker-credential-databricks only supports get
 

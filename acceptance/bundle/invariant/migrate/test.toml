@@ -1,3 +1,10 @@
+# These migrate a per-config terraform-state fixture (replayed by replay_tfstate.py, captured once
+# against the local test server) instead of running a live terraform deploy, so they are local-only.
+# That is complete coverage, not a gap: tf->direct migration is a one-time transition over a closed
+# set of resource types (terraform gets no new converters, and resources created on the direct
+# engine are never migrated), so a real-workspace run would add nothing.
+Cloud = false
+
 # Recording needs a bundle it has seen from the start. This test seeds a state file,
 # so recording refuses it. TODO(DMS): drop this once existing state can be
 # handed over to the service (see the TODO in dstate.Open).
@@ -28,6 +35,8 @@ EnvMatrixExclude.no_genie_space = ["INPUT_CONFIG=genie_space.yml.tmpl"]
 EnvMatrixExclude.no_instance_pool = ["INPUT_CONFIG=instance_pool.yml.tmpl"]
 # Cluster policies are direct-only; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_cluster_policy = ["INPUT_CONFIG=cluster_policy.yml.tmpl"]
+# Cluster libraries are direct-only; the terraform deploy that seeds the migration fails for them.
+EnvMatrixExclude.no_cluster_libraries = ["INPUT_CONFIG=cluster_libraries.yml.tmpl"]
 # AI Gateway securables are direct-only; the terraform deploy that seeds the migration fails for them.
 EnvMatrixExclude.no_model_service = ["INPUT_CONFIG=model_service.yml.tmpl"]
 

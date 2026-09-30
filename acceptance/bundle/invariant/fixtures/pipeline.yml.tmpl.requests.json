@@ -1,0 +1,39 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/pipelines",
+    "body": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "development": true,
+      "edition": "ADVANCED",
+      "libraries": [
+        {
+          "file": {
+            "path": "/Workspace/Users/tester@databricks.com/.bundle/test-bundle-[UNIQUE_NAME]/default/files/pipeline.py"
+          }
+        }
+      ],
+      "name": "test-pipeline-[UNIQUE_NAME]"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/api/2.0/permissions/pipelines/79fec858-df65-cd58-79fe-c858df65cd59",
+    "body": {
+      "access_control_list": [
+        {
+          "group_name": "users",
+          "permission_level": "CAN_VIEW"
+        },
+        {
+          "permission_level": "IS_OWNER",
+          "user_name": "tester@databricks.com"
+        }
+      ]
+    }
+  }
+]

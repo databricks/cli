@@ -1,0 +1,12 @@
+Cloud = true
+CloudSlow = true
+RecordRequests = false
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+EnvMatrix.READPLAN = ["", "1"]
+
+Ignore = [".databricks", "databricks.yml", "tmp.plan.json"]
+
+[[Repls]]
+Old = "[0-9]{4}-[0-9]{6}-[0-9a-z]{8}"
+New = "[UUID]"

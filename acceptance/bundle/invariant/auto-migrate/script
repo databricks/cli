@@ -5,7 +5,9 @@ unset DATABRICKS_BUNDLE_ENGINE
 
 invariant_setup
 
-invariant_deploy LOG.deploy DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# Replay a prior terraform deployment (per-config fixture captured once from a real terraform
+# run), standing in for the terraform deploy now that these tests must not run terraform.
+invariant_deploy LOG.replay replay_tfstate.py "$TESTDIR/../fixtures/$INPUT_CONFIG.requests.json" "$TESTDIR/../fixtures/$INPUT_CONFIG.tfstate"
 
 # Deploy on the direct default (engine unset): this migrates the terraform state to the
 # direct engine before deploying, exercising the auto path. Not invariant_deploy -- the

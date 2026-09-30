@@ -538,6 +538,10 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.Kind",
                         "x-databricks-launch-stage": "GA"
                       },
+                      "libraries": {
+                        "description": "A list of libraries to install on the cluster. Installed via the Libraries API after the cluster is created. Only supported in direct deployment mode.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/compute.Library"
+                      },
                       "lifecycle": {
                         "description": "Settings that control the deployment lifecycle of the resource, such as preventing it from being destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.LifecycleWithStarted"
@@ -2609,6 +2613,7 @@
                 "oneOf": [
                   {
                     "type": "object",
+                    "description": "[Beta]",
                     "properties": {
                       "branch": {
                         "description": "The branch whose automatic-snapshot schedule this manages. Format: projects/{project_id}/branches/{branch_id}",
@@ -2626,7 +2631,8 @@
                     "additionalProperties": false,
                     "required": [
                       "branch"
-                    ]
+                    ],
+                    "x-databricks-launch-stage": "PUBLIC_BETA"
                   },
                   {
                     "type": "string",
