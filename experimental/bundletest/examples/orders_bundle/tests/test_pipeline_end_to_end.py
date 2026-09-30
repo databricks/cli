@@ -12,7 +12,10 @@ CANNOT test locally — needs the cloud backend:
 - automatic dependency ordering (here the test sequences run_job calls itself)
 """
 
+import pytest
 
+
+@pytest.mark.bundle_resource("jobs.transform_orders", "jobs.aggregate_orders")
 def test_bronze_to_silver_to_gold(env):
     env.seed(
         "shop.bronze.raw_orders",

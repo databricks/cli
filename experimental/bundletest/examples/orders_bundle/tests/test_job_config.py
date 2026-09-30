@@ -16,7 +16,10 @@ NOTE: env.resource(kind, name) wraps this same get_resource call for any resourc
 the typed handles (env.pipeline, env.dashboard, ...) add resource-specific accessors on top.
 """
 
+import pytest
 
+
+@pytest.mark.bundle_resource("jobs.transform_orders")
 def test_job_is_wired_to_its_sql(env):
     job = env.backend.get_resource("jobs", "transform_orders")
     assert job["name"] == "transform_orders"
