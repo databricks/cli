@@ -28,6 +28,8 @@ func stubPackageManagers(t *testing.T) {
 	}
 	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("VALIDATION_TEST_FAIL", "")
+	t.Setenv("VALIDATION_TEST_UPDATE", "")
+	t.Setenv("VALIDATION_TEST_PACKAGE_JSON", "")
 }
 
 // writeValidationProject creates a manifest with the requested scripts.
@@ -127,13 +129,121 @@ func TestNodeJsValidateCommandFailure(t *testing.T) {
 	}
 }
 
+func TestNodeJsValidateUpdatedScripts(t *testing.T) {
+	stubPackageManagers(t)
+	tests := []struct {
+		name           string
+		command        string
+		scripts        []string
+		updatedScripts []string
+		wantCommands   string
+		wantSuccess    bool
+	}{
+		{
+			name:           "install adds build",
+			command:        "install",
+			updatedScripts: []string{"build"},
+			wantCommands:   "npm install\nnpm run build\n",
+		},
+		{
+			name:           "typegen adds build",
+			command:        "run typegen",
+			scripts:        []string{"typegen"},
+			updatedScripts: []string{"typegen", "build"},
+			wantCommands:   "npm install\nnpm run typegen\nnpm run build\n",
+		},
+		{
+			name:         "install removes build",
+			command:      "install",
+			scripts:      []string{"build"},
+			wantCommands: "npm install\n",
+			wantSuccess:  true,
+		},
+		{
+			name:           "typegen removes build",
+			command:        "run typegen",
+			scripts:        []string{"typegen", "build"},
+			updatedScripts: []string{"typegen"},
+			wantCommands:   "npm install\nnpm run typegen\n",
+			wantSuccess:    true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			writeValidationProject(t, dir, tt.scripts)
+			updatedDir := t.TempDir()
+			writeValidationProject(t, updatedDir, tt.updatedScripts)
+			t.Setenv("VALIDATION_TEST_UPDATE", tt.command)
+			t.Setenv("VALIDATION_TEST_PACKAGE_JSON", filepath.Join(updatedDir, "package.json"))
+			t.Setenv("VALIDATION_TEST_FAIL", "run build")
+			validator := validation.ValidationNodeJs{}
+			result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantSuccess, result.Success)
+			if !tt.wantSuccess {
+				require.NotNil(t, result.Details)
+				assert.Equal(t, "Failed to build", result.Message)
+				assert.Equal(t, 17, result.Details.ExitCode)
+			}
+			commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
+			assert.Equal(t, tt.wantCommands, strings.ReplaceAll(commands, "\r\n", "\n"))
+		})
+	}
+}
+
+func TestNodeJsValidatePackageJSONBOM(t *testing.T) {
+	stubPackageManagers(t)
+	dir := t.TempDir()
+	writeValidationProject(t, dir, []string{"build"})
+	path := filepath.Join(dir, "package.json")
+	testutil.WriteFile(t, path, "\xef\xbb\xbf"+testutil.ReadFile(t, path))
+	validator := validation.ValidationNodeJs{}
+	result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
+	require.NoError(t, err)
+	require.True(t, result.Success, "%+v", result.Details)
+	commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
+	assert.Equal(t, "npm install\nnpm run build\n", strings.ReplaceAll(commands, "\r\n", "\n"))
+}
+
 func TestNodeJsValidateInvalidPackageJSON(t *testing.T) {
+	stubPackageManagers(t)
 	dir := t.TempDir()
 	testutil.WriteFile(t, filepath.Join(dir, "package.json"), "{")
 	validator := validation.ValidationNodeJs{}
-	_, err := validator.Validate(t.Context(), dir, validation.ValidateOptions{})
+	result, err := validator.Validate(t.Context(), dir, validation.ValidateOptions{})
 	require.ErrorContains(t, err, "failed to parse package.json")
 	assert.ErrorAs(t, err, new(*json.SyntaxError))
+	assert.Nil(t, result)
+	assert.NoFileExists(t, filepath.Join(dir, "commands.log"))
+}
+
+func TestNodeJsValidateMissingPackageJSON(t *testing.T) {
+	stubPackageManagers(t)
+	dir := t.TempDir()
+	validator := validation.ValidationNodeJs{}
+	result, err := validator.Validate(t.Context(), dir, validation.ValidateOptions{})
+	require.ErrorContains(t, err, "failed to read package.json")
+	assert.ErrorIs(t, err, os.ErrNotExist)
+	assert.Nil(t, result)
+	assert.NoFileExists(t, filepath.Join(dir, "commands.log"))
+}
+
+func TestNodeJsValidateUpdatedInvalidPackageJSON(t *testing.T) {
+	stubPackageManagers(t)
+	dir := t.TempDir()
+	writeValidationProject(t, dir, validationScripts)
+	updatedPath := filepath.Join(t.TempDir(), "package.json")
+	testutil.WriteFile(t, updatedPath, "{")
+	t.Setenv("VALIDATION_TEST_UPDATE", "install")
+	t.Setenv("VALIDATION_TEST_PACKAGE_JSON", updatedPath)
+	validator := validation.ValidationNodeJs{}
+	result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
+	require.ErrorContains(t, err, "failed to parse package.json")
+	assert.ErrorAs(t, err, new(*json.SyntaxError))
+	assert.Nil(t, result)
+	commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
+	assert.Equal(t, "npm install\n", strings.ReplaceAll(commands, "\r\n", "\n"))
 }
 
 func TestNodeJsValidateMissingPackageManager(t *testing.T) {

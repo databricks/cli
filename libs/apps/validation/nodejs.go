@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,15 +30,9 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 	log.Infof(ctx, "Starting Node.js validation: build + typecheck")
 	startTime := time.Now()
 
-	packageJSON, err := os.ReadFile(filepath.Join(workDir, "package.json"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read package.json: %w", err)
-	}
-	var project struct {
-		Scripts map[string]string `json:"scripts"`
-	}
-	if err := json.Unmarshal(packageJSON, &project); err != nil {
-		return nil, fmt.Errorf("failed to parse package.json: %w", err)
+	// Reject an invalid manifest before running commands that may modify it.
+	if _, err := readPackageScripts(workDir); err != nil {
+		return nil, err
 	}
 
 	manager, err := DetectPackageManager(workDir)
@@ -98,9 +93,15 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 			cmdio.LogString(ctx, "⏭️  Skipped "+step.displayName)
 			continue
 		}
-		if _, ok := project.Scripts[step.script]; step.script != "" && !ok {
-			cmdio.LogString(ctx, fmt.Sprintf("⏭️  Skipped %s (script %q not found)", step.displayName, step.script))
-			continue
+		if step.script != "" {
+			scripts, err := readPackageScripts(workDir)
+			if err != nil {
+				return nil, err
+			}
+			if _, ok := scripts[step.script]; !ok {
+				cmdio.LogString(ctx, fmt.Sprintf("⏭️  Skipped %s (script %q not found)", step.displayName, step.script))
+				continue
+			}
 		}
 
 		command := manager + " install"
@@ -143,6 +144,23 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 		Success: true,
 		Message: fmt.Sprintf("All validation checks passed (%.1fs)", totalDuration.Seconds()),
 	}, nil
+}
+
+// readPackageScripts reloads the manifest because earlier validation steps can change it.
+func readPackageScripts(workDir string) (map[string]string, error) {
+	packageJSON, err := os.ReadFile(filepath.Join(workDir, "package.json"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read package.json: %w", err)
+	}
+	// npm strips a UTF-8 BOM before decoding: https://github.com/npm/json-parse-even-better-errors.
+	packageJSON = bytes.TrimPrefix(packageJSON, []byte("\xef\xbb\xbf"))
+	var project struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if err := json.Unmarshal(packageJSON, &project); err != nil {
+		return nil, fmt.Errorf("failed to parse package.json: %w", err)
+	}
+	return project.Scripts, nil
 }
 
 // hasNodeModules returns true if node_modules directory exists in the workDir.
