@@ -32,6 +32,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/telemetry/protos"
 )
 
 type phase string
@@ -162,6 +163,23 @@ func getOpts(b *bundle.Bundle, phase phase) (opts, error) {
 	}
 }
 
+// pythonConfigSection reports which section the user declared Python support in.
+func pythonConfigSection(b *bundle.Bundle) protos.PydabsConfigSection {
+	pythonEnabled := !reflect.DeepEqual(b.Config.Python, config.Python{})
+	experimentalPythonEnabled := b.Config.Experimental != nil && !reflect.DeepEqual(b.Config.Experimental.Python, config.Python{})
+
+	switch {
+	case pythonEnabled && experimentalPythonEnabled:
+		return protos.PydabsConfigSectionBoth
+	case pythonEnabled:
+		return protos.PydabsConfigSectionPython
+	case experimentalPythonEnabled:
+		return protos.PydabsConfigSectionExperimentalPython
+	default:
+		return protos.PydabsConfigSectionUnspecified
+	}
+}
+
 // applyBackwardsCompatibilityFixes applies fixes to bundle configuration
 // so that older version of databricks-bundles Python library continue to see
 // 'experimental.python' section even if bundle configuration uses 'python' section.
@@ -210,6 +228,12 @@ func applyBackwardsCompatibilityFixes(b *bundle.Bundle) error {
 }
 
 func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+	// Record before applyBackwardsCompatibilityFixes copies 'python' into 'experimental/python',
+	// which makes the sections indistinguishable. The load_resources phase runs first.
+	if m.phase == PythonMutatorPhaseLoadResources {
+		b.Metrics.PythonConfigSection = pythonConfigSection(b)
+	}
+
 	err := applyBackwardsCompatibilityFixes(b)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to apply backwards compatibility fixes: %w", err))

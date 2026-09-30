@@ -82,6 +82,9 @@ type Metrics struct {
 	PythonAddedResources   map[string]int64
 	PythonUpdatedResources map[string]int64
 
+	// Configuration section Python support is declared in.
+	PythonConfigSection protos.PydabsConfigSection
+
 	// StateEngine is the engine that ran (or would have run) the deploy. Set to the
 	// requested engine as soon as it is resolved, then refined to the state's engine
 	// once the state is pulled, so deploy telemetry reports it even when the deploy

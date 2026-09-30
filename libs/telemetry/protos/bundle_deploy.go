@@ -176,6 +176,10 @@ type BundleDeployPydabs struct {
 
 	// One entry per resource type added or updated by Python, ordered by type name.
 	Resources []PydabsResourceTypeCount `json:"resources,omitempty"`
+
+	// Configuration section the user declared Python support in: 'python',
+	// 'experimental/python', or both.
+	ConfigSection PydabsConfigSection `json:"config_section,omitempty"`
 }
 
 // PydabsResourceTypeCount holds PyDABs counts for a single resource type.

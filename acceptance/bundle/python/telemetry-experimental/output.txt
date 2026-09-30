@@ -27,7 +27,8 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
         "added_count": 1,
         "updated_count": 0
       }
-    ]
+    ],
+    "config_section": "EXPERIMENTAL_PYTHON"
   },
   "experimental": {
     "python_added_resources_count": 2,

@@ -186,6 +186,7 @@ func TestPydabsMetrics(t *testing.T) {
 	metrics := bundle.Metrics{
 		PythonAddedResources:   map[string]int64{"jobs": 2, "pipelines": 1},
 		PythonUpdatedResources: map[string]int64{"jobs": 3, "apps": 1},
+		PythonConfigSection:    protos.PydabsConfigSectionPython,
 	}
 	expected := &protos.BundleDeployPydabs{
 		ResourceLoadersCount:  1,
@@ -197,14 +198,10 @@ func TestPydabsMetrics(t *testing.T) {
 			{ResourceType: "jobs", AddedCount: 2, UpdatedCount: 3},
 			{ResourceType: "pipelines", AddedCount: 1, UpdatedCount: 0},
 		},
+		ConfigSection: protos.PydabsConfigSectionPython,
 	}
 
-	t.Run("python", func(t *testing.T) {
-		b := &bundle.Bundle{Config: config.Root{Python: pythonConfig}, Metrics: metrics}
-		assert.Equal(t, expected, pydabsMetrics(b))
-	})
-
-	t.Run("experimental/python", func(t *testing.T) {
+	t.Run("used", func(t *testing.T) {
 		b := &bundle.Bundle{Config: config.Root{Experimental: &config.Experimental{Python: pythonConfig}}, Metrics: metrics}
 		assert.Equal(t, expected, pydabsMetrics(b))
 	})

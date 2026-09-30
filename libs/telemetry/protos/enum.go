@@ -24,3 +24,12 @@ const (
 	BundleDeployArtifactPathTypeWorkspace   BundleDeployArtifactPathType = "WORKSPACE_FILE_SYSTEM"
 	BundleDeployArtifactPathTypeVolume      BundleDeployArtifactPathType = "UC_VOLUME"
 )
+
+type PydabsConfigSection string
+
+const (
+	PydabsConfigSectionUnspecified        PydabsConfigSection = "TYPE_UNSPECIFIED"
+	PydabsConfigSectionPython             PydabsConfigSection = "PYTHON"
+	PydabsConfigSectionExperimentalPython PydabsConfigSection = "EXPERIMENTAL_PYTHON"
+	PydabsConfigSectionBoth               PydabsConfigSection = "BOTH"
+)

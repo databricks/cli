@@ -23,6 +23,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/process"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -158,6 +159,7 @@ workspace: { current_user: { userName: test }}`)
 
 	assert.Equal(t, map[string]int64{"jobs": 1, "pipelines": 1}, b.Metrics.PythonAddedResources)
 	assert.Nil(t, b.Metrics.PythonUpdatedResources)
+	assert.Equal(t, protos.PydabsConfigSectionExperimentalPython, b.Metrics.PythonConfigSection)
 
 	assert.Len(t, diags, 1)
 	assert.Equal(t, "job doesn't have any tasks", diags[0].Summary)
@@ -239,6 +241,29 @@ resources:
 
 	assert.Nil(t, b.Metrics.PythonAddedResources)
 	assert.Equal(t, map[string]int64{"jobs": 1}, b.Metrics.PythonUpdatedResources)
+
+	// Recorded only in the load_resources phase.
+	assert.Empty(t, b.Metrics.PythonConfigSection)
+}
+
+func TestPythonConfigSection(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaml     string
+		expected protos.PydabsConfigSection
+	}{
+		{"none", `bundle: {name: test}`, protos.PydabsConfigSectionUnspecified},
+		{"python", `python: {resources: ["resources:load"]}`, protos.PydabsConfigSectionPython},
+		{"experimental/python", `experimental: {python: {resources: ["resources:load"]}}`, protos.PydabsConfigSectionExperimentalPython},
+		{"both", `
+python: {resources: ["resources:load"]}
+experimental: {python: {resources: ["resources:load"]}}`, protos.PydabsConfigSectionBoth},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, pythonConfigSection(loadYaml("databricks.yml", tc.yaml)))
+		})
+	}
 }
 
 func TestPythonMutator_badOutput(t *testing.T) {

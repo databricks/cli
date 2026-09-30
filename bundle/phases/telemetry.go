@@ -197,12 +197,11 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 }
 
 // pydabsMetrics reports usage of Python support. Loaders and mutators are read from
-// 'python', falling back to 'experimental/python'; the Python mutator rejects
-// configs where both are set and differ.
+// 'experimental/python' only: the Python mutator copies 'python' there.
 func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
-	pythonConfig := b.Config.Python
-	if reflect.DeepEqual(pythonConfig, config.Python{}) && b.Config.Experimental != nil {
-		pythonConfig = b.Config.Experimental.Python
+	experimentalConfig := b.Config.Experimental
+	if experimentalConfig == nil {
+		experimentalConfig = &config.Experimental{}
 	}
 
 	added := b.Metrics.PythonAddedResources
@@ -213,8 +212,9 @@ func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
 	types = slices.Compact(types)
 
 	out := &protos.BundleDeployPydabs{
-		ResourceLoadersCount:  int64(len(pythonConfig.Resources)),
-		ResourceMutatorsCount: int64(len(pythonConfig.Mutators)),
+		ResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
+		ResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
+		ConfigSection:         b.Metrics.PythonConfigSection,
 	}
 	for _, t := range types {
 		out.AddedResourcesCount += added[t]
