@@ -91,9 +91,7 @@ Bind changes have been applied to your workspace
 
 === An already-bound resource cannot be rebound
 >>> musterr [CLI] bundle deployment bind foo [FOO_ID] --auto-approve
-Error: Resource already managed
-
-The bundle is already managing resource for resources.jobs.foo and it is bound to the requested ID [FOO_ID].
+Error: resources.jobs.foo is already bound to ID "[FOO_ID]"; rebinding is not supported with deployment history
 
 
 === Unbind remains unsupported for recorded deployments

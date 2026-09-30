@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dms"
@@ -39,7 +38,7 @@ func bindWithHistory(ctx context.Context, b *bundle.Bundle, resourceKey, resourc
 	defer completeRecordedVersion(ctx, b)
 
 	if existingID := db.GetResourceID(resourceKey); existingID != "" {
-		logdiag.LogError(ctx, direct.ErrResourceAlreadyBound{ResourceKey: resourceKey, ExistingID: existingID, NewID: resourceID})
+		logdiag.LogError(ctx, fmt.Errorf("%s is already bound to ID %q; rebinding is not supported with deployment history", resourceKey, existingID))
 		return
 	}
 
