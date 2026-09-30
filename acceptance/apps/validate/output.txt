@@ -73,7 +73,11 @@ pnpm run build
 
 === Reject conflicting lockfiles
 >>> musterr [CLI] apps validate --path conflicting
-Error: validation error: conflicting package manager lockfiles: pnpm-lock.yaml, yarn.lock; keep lockfiles for only one package manager
+Error: validation error: conflicting package manager lockfiles: package-lock.json, pnpm-lock.yaml; keep lockfiles for only one package manager
+
+=== Reject unsupported package managers
+>>> musterr [CLI] apps validate --path unsupported
+Error: validation error: yarn is not supported for apps validation (found yarn.lock); use npm or pnpm
 
 === Reject malformed package.json
 >>> musterr [CLI] apps validate --path invalid

@@ -23,10 +23,9 @@ This command detects the project type and runs the appropriate validation:
 The package manager is detected from lockfiles in the project directory:
 - package-lock.json or npm-shrinkwrap.json: npm
 - pnpm-lock.yaml: pnpm
-- yarn.lock: Yarn
-- bun.lock or bun.lockb: Bun
 
-Projects without a lockfile use npm. Lockfiles for different package managers
+Only npm and pnpm are supported. Yarn and Bun lockfiles are rejected.
+Projects without a lockfile use npm. Lockfiles for both npm and pnpm
 must be resolved before validation. The selected package manager must be on PATH.
 Dependencies are installed when node_modules is absent.
 

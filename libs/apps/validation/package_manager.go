@@ -49,6 +49,9 @@ func DetectPackageManager(workDir string) (string, error) {
 		if !info.Mode().IsRegular() {
 			return "", fmt.Errorf("lockfile %s must be a regular file", lockfile.name)
 		}
+		if lockfile.manager != packageManagerNpm && lockfile.manager != packageManagerPnpm {
+			return "", fmt.Errorf("%s is not supported for apps validation (found %s); use npm or pnpm", lockfile.manager, lockfile.name)
+		}
 
 		found = append(found, lockfile.name)
 		if manager != "" && manager != lockfile.manager {
