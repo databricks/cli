@@ -79,7 +79,7 @@ def print_resource_recorded(group, name, *attrs):
 
 if os.environ.get("DATABRICKS_BUNDLE_DEPLOYMENT_HISTORY") == "true":
     print_resource_recorded(*sys.argv[1:])
-elif os.environ.get("DATABRICKS_BUNDLE_ENGINE", "").startswith("direct"):
-    print_resource_direct(*sys.argv[1:])
-else:
+elif os.environ.get("DATABRICKS_BUNDLE_ENGINE") == "terraform":
     print_resource_terraform(*sys.argv[1:])
+else:
+    print_resource_direct(*sys.argv[1:])
