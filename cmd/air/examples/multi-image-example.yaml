@@ -2,7 +2,7 @@
 # on rank 0 for generations and model-weight synchronization. Build the images
 # from the two Dockerfiles in this directory, publish them to Unity Catalog,
 # and replace both image placeholders below before submitting this file.
-experiment_name: qwen05b_grpo_dar_e2e_5epochs
+experiment_name: qwen_grpo_multi_image
 compute:
   accelerator_type: GPU_1xA10
   num_accelerators: 2
@@ -10,7 +10,7 @@ max_retries: 0
 containers:
   - name: inference
     ranks: [0]
-    unity_catalog_image: REPLACE_WITH_INFERENCE_IMAGE
+    unity_catalog_image: your_catalog.your_schema.vllm_trl:0.24.0
     environment_variables:
       variables:
         MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
@@ -49,12 +49,12 @@ containers:
 
   - name: trainer
     ranks: [1]
-    unity_catalog_image: REPLACE_WITH_TRAINER_IMAGE
+    unity_catalog_image: your_catalog.your_schema.trl_vllm:0.24.0
     environment_variables:
       variables:
         MODEL_ID: Qwen/Qwen2.5-0.5B-Instruct
         HF_HOME: /local_disk0/huggingface
-    command: |
+    command: |-
       set -euo pipefail
       export VLLM_HOST="$MASTER_ADDR"
       cleanup() {
