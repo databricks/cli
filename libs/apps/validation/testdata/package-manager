@@ -1,5 +1,8 @@
 #!/bin/sh
 printf '%s %s\n' "${0##*/}" "$*" >> commands.log
+if [ "$*" = "${VALIDATION_TEST_UPDATE:-}" ]; then
+    cp "$VALIDATION_TEST_PACKAGE_JSON" package.json || exit 1
+fi
 if [ "$*" = "${VALIDATION_TEST_FAIL:-}" ]; then
     echo "validation stdout"
     echo "validation stderr" >&2
