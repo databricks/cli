@@ -70,6 +70,11 @@ autoclass_content = "class"
 
 toc_object_entries = False
 
+# Resolve stdlib cross-references against a vendored inventory instead of
+# fetching docs.python.org/3.10/objects.inv at build time. The public URL is
+# still used for the generated links; only the inventory is read locally, so a
+# docs.python.org outage can't break the strict (-W) build. Python 3.10 is
+# frozen, so the file never needs refreshing.
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.10", None),
+    "python": ("https://docs.python.org/3.10", "_inventory/python-3.10.inv"),
 }
