@@ -6,6 +6,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -177,17 +178,20 @@ func stageRunArtifacts(ctx context.Context, launchWriter fileWriter, items []upl
 		})
 	}
 
-	if err := group.Wait(); err != nil {
-		return snapshotResult{}, err
-	}
-	return snap, nil
+	err := group.Wait()
+	// Preserve measurements from attempted snapshot phases even if staging fails.
+	return snap, err
 }
 
 // submitWorkload runs the submit happy path: ensure the experiment directory,
 // upload the launch artifacts, assemble the Jobs payload, and submit it. It
 // returns the new run_id and its dashboard URL. showProgress enables the stderr
 // staging spinner (text mode only).
-func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (int64, string, error) {
+func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *runConfig, configPath, idempotencyKey string, showProgress bool) (runID int64, dashboardURL string, err error) {
+	start := time.Now()
+	var snap snapshotResult
+	defer func() { logRunEvent(ctx, cfg, snap, runID, time.Since(start), err) }()
+
 	// Compute the launch dir and command_path up front — a read-only workspace lookup plus a
 	// local path build, no writes yet — so the pre-flight validates the real command_path. The
 	// same path is reused for the upload and submit below, so the validated path is the submitted
@@ -264,7 +268,6 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		}
 	}
 
-	var snap snapshotResult
 	err = withSpinner(ctx, showProgress, "Staging run artifacts…", func() error {
 		var stageErr error
 		snap, stageErr = stageRunArtifacts(ctx, fc, items, stageSnapshot)
@@ -291,11 +294,11 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
 	// Permissions are granted by the caller, after the submit result is shown, so
 	// the best-effort grant never delays the success line.
-	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath())
+	runID, err = submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath())
 	if err != nil {
 		return 0, "", err
 	}
 
-	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
+	dashboardURL = strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil
 }
