@@ -25,10 +25,7 @@ const (
 
 	// pnpmDualPMThreshold is the first AppKit template version that supports dual package manager
 	// (pnpm and npm). Template versions below this threshold only support npm.
-	// TODO(VERIFY): Confirm this version with the AppKit template owners. This is a placeholder pending AppKit
-	// release notes or the implementing PR in the AppKit repository. Once confirmed, replace with the actual
-	// version (e.g., "0.24.0" if that's when dual-PM support was introduced).
-	pnpmDualPMThreshold = "0.25.0"
+	pnpmDualPMThreshold = "0.82.0"
 )
 
 // Manager represents a package manager with its properties.
