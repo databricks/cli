@@ -1,14 +1,17 @@
 package paths
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVisitJobPaths(t *testing.T) {
@@ -129,6 +132,44 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	var expected []dyn.Path
 
 	assert.ElementsMatch(t, expected, actual)
+}
+
+func TestVisitJobPaths_projectEnvironments(t *testing.T) {
+	value, err := yamlloader.LoadYAML("resources/jobs.yml", strings.NewReader(`
+resources:
+  jobs:
+    first:
+      environments:
+        - environment_key: project
+          spec:
+            project_environment: ../pyproject.toml
+        - environment_key: standard
+          spec:
+            environment_version: "4"
+            dependencies: [requests]
+        - environment_key: requirements
+          spec:
+            project_environment: ../requirements.txt
+    second:
+      environments:
+        - environment_key: project
+          spec:
+            project_environment: /Workspace/shared/pyproject.toml
+`))
+	require.NoError(t, err)
+
+	var actual []string
+	_, err = VisitJobPaths(value, func(p dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
+		assert.Equal(t, TranslateModeFile, mode)
+		actual = append(actual, p.String())
+		return v, nil
+	})
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{
+		"resources.jobs.first.environments[0].spec.project_environment",
+		"resources.jobs.first.environments[2].spec.project_environment",
+		"resources.jobs.second.environments[0].spec.project_environment",
+	}, actual)
 }
 
 func TestVisitJobPaths_foreach(t *testing.T) {
