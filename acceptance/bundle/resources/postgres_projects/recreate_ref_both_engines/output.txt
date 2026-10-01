@@ -1,0 +1,30 @@
+
+=== Initial deployment
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-ref-both-[UNIQUE_NAME]/default/files...
+Created postgres_catalogs.cat
+Created postgres_projects.p
+Files: 0 uploaded, 0 deleted
+Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
+
+=== Bump pg_version: recreates the project; project_id (hence name) is unchanged
+>>> update_file.py databricks.yml pg_version: 16 pg_version: 17
+
+>>> [CLI] bundle plan
+recreate postgres_catalogs.cat
+recreate postgres_projects.p
+
+Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_catalogs.cat
+  delete resources.postgres_projects.p
+
+This action will result in the deletion of the following Lakebase projects along with
+all their branches, databases, and endpoints. All data stored in them will be permanently lost:
+  delete resources.postgres_projects.p
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-ref-both-[UNIQUE_NAME]/default
+
+Destroy: 2 deleted

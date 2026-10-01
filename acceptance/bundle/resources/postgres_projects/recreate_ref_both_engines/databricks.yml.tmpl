@@ -1,0 +1,24 @@
+bundle:
+  name: recreate-ref-both-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+# pg_version is spec:immutable, so BOTH engines recreate the project on a bump - an
+# apples-to-apples recreate of the referent, with no engine disagreement on the field.
+# project_id is unchanged, so the project's name (projects/{project_id}) is stable across
+# the recreate. The catalog's branch is built from that stable name, so the catalog's
+# config value does not actually change.
+resources:
+  postgres_projects:
+    p:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: P
+      pg_version: 16
+
+  postgres_catalogs:
+    cat:
+      catalog_id: mycat
+      branch: ${resources.postgres_projects.p.name}/branches/production
+      postgres_database: appdb
+      create_database_if_missing: true

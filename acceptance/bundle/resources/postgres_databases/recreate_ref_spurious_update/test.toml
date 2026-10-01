@@ -1,0 +1,6 @@
+# Local-only demonstration of a direct-engine planner bug (reference to a resource being
+# recreated reads as a phantom change). Not Cloud: terraform updating the role in place (vs
+# the backend delete+create) is a testserver behavior.
+Cloud = false
+RecordRequests = false
+EnvMatrix.DMS = []
