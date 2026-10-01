@@ -494,6 +494,20 @@ func (a *Adapter) FieldTriggersRecreate(path *structpath.PathNode) bool {
 	return false
 }
 
+// FieldIsStableOutput reports whether the field is an output-only value the
+// backend fixes at creation and never changes on update (declared under
+// stable_output_fields). Like FieldTriggersRecreate, a caller that knows the ID
+// is preserved can conclude the field is unchanged, so its remote value is safe
+// to read.
+func (a *Adapter) FieldIsStableOutput(path *structpath.PathNode) bool {
+	for _, p := range a.resourceConfig.StableOutputFields {
+		if path.HasPatternPrefix(p.Field) {
+			return true
+		}
+	}
+	return false
+}
+
 // PrepareInputConfig converts the node's bundle config into the input for PrepareState and the
 // references needed to complete it. Resources without PrepareInputConfig pass their config through.
 func (a *Adapter) PrepareInputConfig(inputConfig any, resourceKey string) (*structvar.StructVar, error) {

@@ -1,0 +1,13 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.1/unity-catalog/volumes",
+    "body": {
+      "catalog_name": "main",
+      "name": "test-volume-[UNIQUE_NAME]",
+      "schema_name": "default",
+      "storage_location": "s3://test-bucket/path/",
+      "volume_type": "EXTERNAL"
+    }
+  }
+]

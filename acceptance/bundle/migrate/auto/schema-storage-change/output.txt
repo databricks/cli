@@ -1,14 +1,8 @@
 
-=== Initial deploy on terraform with storage_root s3://mybucket/init
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created schemas.my_schema
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 >>> print_migration_telemetry
-direct_drymigrate_success true
-direct_drymigrate_warnings false
 
 === Change immutable storage_root; without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy
@@ -36,7 +30,6 @@ direct_migrate_recreate_planned true
 >>> MSYS_NO_PATHCONV=1 [CLI] workspace list /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state
 ID                   Type  Language  Path
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deployment.json
-[NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json
 [NUMID]  FILE            /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate
 
 === With --auto-approve the migration commits and the recreate is applied on direct

@@ -5,8 +5,8 @@ export DATABRICKS_BUNDLE_ENGINE=
 # .terraform/. Paired with a remote listing of the state directory, this shows exactly which state
 # is present locally and remotely and proves nothing is left behind.
 
-title "Initial deploy on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Replay a prior terraform deployment"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
 title "Destroy without approval: migration prepared in memory then dropped, stays on terraform"
 # The migration is prepared in memory (in process.go) before the destroy phase asks for approval,

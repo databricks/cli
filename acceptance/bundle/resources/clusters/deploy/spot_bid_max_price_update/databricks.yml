@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  clusters:
+    test_cluster:
+      cluster_name: test-cluster
+      spark_version: 13.3.x-scala2.12
+      node_type_id: n2-highmem-4
+      num_workers: 1
+      azure_attributes:
+        availability: SPOT_WITH_FALLBACK_AZURE
+        #spot_bid_max_price: 0

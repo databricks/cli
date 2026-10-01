@@ -100,6 +100,25 @@ type ResourceLifecycleConfig struct {
 	// When old and new are nil but remote is set, and the remote value matches allowed values (if specified), the change is skipped.
 	BackendDefaults []BackendDefaultRule `yaml:"backend_defaults,omitempty"`
 
+	// StableOutputFields: output-only fields the backend assigns at creation and
+	// never changes on update — typically an AIP resource name derived from the
+	// immutable ID (e.g. a postgres project's "name" = "projects/{project_id}").
+	// The backend owns the value, so it is validated against RemoteType (from
+	// which the resolver reads it); the field may or may not also appear in
+	// StateType.
+	//
+	// A cross-resource reference to such a field (${resources.X.name}) resolves
+	// from the remote cache during a keeps-ID update instead of being delayed
+	// until after apply. Without this, a dependent that treats the reference as
+	// part of its own immutable identity (a hierarchical parent/branch name)
+	// recreates spuriously on every in-place update of the target. See
+	// LookupReferencePreDeploy.
+	//
+	// This category only gates reference resolution; it never classifies a change,
+	// so the FieldRule Reason is unused (it would never surface in a plan) and is
+	// left unset in the YAML.
+	StableOutputFields []FieldRule `yaml:"stable_output_fields,omitempty"`
+
 	// HashedFields: field paths persisted to state as a content hash
 	// ("sha256:<hex>") instead of the raw value. This is only valid
 	// for large, equality-only fields that are never read back from state
@@ -140,6 +159,7 @@ var empty = ResourceLifecycleConfig{
 	NormalizeSlash:        nil,
 	IgnoreRemoteAdditions: nil,
 	BackendDefaults:       nil,
+	StableOutputFields:    nil,
 	HashedFields:          nil,
 	SensitiveFields:       nil,
 }
