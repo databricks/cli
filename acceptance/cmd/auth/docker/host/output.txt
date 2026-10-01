@@ -36,12 +36,16 @@ Credential helper configured: NO
 >>> musterr [CLI] auth docker host --profile docker-test
 Error: read Docker config [TEST_TMP_DIR]/home/docker/config.json: invalid character 'n' looking for beginning of object key string
 
-=== Credential helper configured as the default store
+=== Default credential store without an installed helper
 
->>> [CLI] auth docker host --profile docker-test --output json
+>>> PATH=[TEST_TMP_DIR]/home [CLI] auth docker host --profile docker-test
+Registry host: [NUMID].container.us-west-2.localhost
+Credential helper configured: NO
+
+>>> PATH=[TEST_TMP_DIR]/home [CLI] auth docker host --profile docker-test --output json
 {
   "host": "[NUMID].container.us-west-2.localhost",
-  "configured": true
+  "configured": false
 }
 
 === Profiles unchanged
