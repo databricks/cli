@@ -8,12 +8,14 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/versioncheck"
 )
 
 const (
-	staleVersionThreshold = 6 * 30 * 24 * time.Hour
-	installDocsURL        = "https://docs.databricks.com/dev-tools/cli/install.html"
+	staleVersionThreshold  = 6 * 30 * 24 * time.Hour
+	installDocsURL         = "https://docs.databricks.com/dev-tools/cli/install.html"
+	staleVersionDisableEnv = "DATABRICKS_CLI_DISABLE_STALE_VERSION_WARNING"
 )
 
 // staleVersionWarning returns the warning for a build older than the threshold, or "" otherwise.
@@ -26,18 +28,27 @@ func staleVersionWarning(buildTime, now time.Time, upgradeCommand string) string
 	msg := fmt.Sprintf("Warning: this version of the Databricks CLI was built on %s and is more than 6 months old. "+
 		"We strongly recommend updating to the latest version.\n", buildTime.UTC().Format(time.DateOnly))
 	if upgradeCommand != "" {
-		return msg + "To upgrade, run: " + upgradeCommand + "\n"
+		msg += "To upgrade, run: " + upgradeCommand + "\n"
+	} else {
+		msg += "See " + installDocsURL + " to upgrade.\n"
 	}
-	return msg + "See " + installDocsURL + " to upgrade.\n"
+	return msg + "To silence this warning, set " + staleVersionDisableEnv + "=1.\n"
+}
+
+func skipStaleVersionWarning(ctx context.Context, info build.Info) bool {
+	if info.IsDevelopment() {
+		return true
+	}
+	if disabled, _ := env.GetBool(ctx, staleVersionDisableEnv); disabled {
+		return true
+	}
+	// DBR installs the latest CLI by default, so skip the warning there.
+	return dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx)
 }
 
 func warnIfStaleVersion(ctx context.Context) {
 	info := build.GetInfo()
-	if info.IsDevelopment() {
-		return
-	}
-	// DBR installs the latest CLI by default, so skip the warning there.
-	if dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx) {
+	if skipStaleVersionWarning(ctx, info) {
 		return
 	}
 	_, command := versioncheck.DetectInstallMethod(ctx)
