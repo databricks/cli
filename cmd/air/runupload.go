@@ -68,12 +68,14 @@ func buildArtifacts(cfg *runConfig) ([]uploadItem, error) {
 		items = append(items, uploadItem{commandScriptName, []byte(*cfg.Command)})
 	}
 
+	var hyperparameters []byte
 	if len(cfg.Parameters) > 0 {
 		data, err := yaml.Marshal(cfg.Parameters)
 		if err != nil {
 			return nil, fmt.Errorf("failed to serialize parameters: %w", err)
 		}
-		items = append(items, uploadItem{hyperparametersName, data})
+		hyperparameters = data
+		items = append(items, uploadItem{hyperparametersName, hyperparameters})
 	}
 
 	// The ai_runtime_task proto carries no inline env vars or secrets; stage them
@@ -96,6 +98,9 @@ func buildArtifacts(cfg *runConfig) ([]uploadItem, error) {
 	for _, container := range cfg.Containers {
 		dir := path.Join("containers", container.Name)
 		items = append(items, uploadItem{path.Join(dir, commandScriptName), []byte(*container.Command)})
+		if len(hyperparameters) > 0 {
+			items = append(items, uploadItem{path.Join(dir, hyperparametersName), hyperparameters})
+		}
 		plain, secrets := containerEnvironmentEntries(cfg, container)
 		if len(plain) > 0 {
 			data, err := json.Marshal(envVarEntries(plain))

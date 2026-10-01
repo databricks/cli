@@ -161,6 +161,9 @@ env_variables:
   OVERRIDE: top
 secrets:
   SHARED_SECRET: scope/shared
+parameters:
+  learning_rate: 0.001
+  epochs: 5
 containers:
   - name: inference
     command: python infer.py
@@ -180,6 +183,10 @@ containers:
 	items, err := buildArtifacts(cfg)
 	require.NoError(t, err)
 	assert.Equal(t, "python infer.py", string(itemData(t, items, "containers/inference/command.sh")))
+	hyperparameters := itemData(t, items, hyperparametersName)
+	assert.YAMLEq(t, "learning_rate: 0.001\nepochs: 5\n", string(hyperparameters))
+	assert.Equal(t, hyperparameters, itemData(t, items, "containers/inference/hyperparameters.yaml"))
+	assert.Equal(t, hyperparameters, itemData(t, items, "containers/dataproc/hyperparameters.yaml"))
 	assert.JSONEq(t, `[{"name":"OVERRIDE","value":"inference"},{"name":"SHARED","value":"top"}]`, string(itemData(t, items, "containers/inference/env_vars.json")))
 	assert.JSONEq(t, `[{"name":"SHARED_SECRET","secret_scope":"scope","secret_key":"shared"},{"name":"TOKEN","secret_scope":"research","secret_key":"hf_token"}]`, string(itemData(t, items, "containers/inference/secret_env_vars.json")))
 	assert.JSONEq(t, `[{"name":"OVERRIDE","value":"top"},{"name":"SHARED","value":"top"}]`, string(itemData(t, items, "containers/dataproc/env_vars.json")))
@@ -187,6 +194,8 @@ containers:
 	w := &fakeWriter{}
 	require.NoError(t, uploadArtifacts(t.Context(), w, items))
 	assert.Equal(t, []string{".", "containers/dataproc", "containers/inference"}, w.mkdirPaths)
+	assert.Equal(t, string(hyperparameters), w.written["containers/inference/hyperparameters.yaml"])
+	assert.Equal(t, string(hyperparameters), w.written["containers/dataproc/hyperparameters.yaml"])
 }
 
 func TestBuildArtifacts_SourceOrderedConfigWithNestedOverrides(t *testing.T) {
