@@ -12,3 +12,6 @@ trace print_requests.py //test/req --del-field headers
 title "Query parameters in the path and a --json body are both sent"
 MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/test/req?foo=bar&x=1" --json '{"hello": "world"}' > /dev/null
 trace print_requests.py //test/req --del-field headers
+
+title "Malformed --json is rejected client-side with a positioned error\n"
+MSYS_NO_PATHCONV=1 musterr $CLI api post /api/2.0/test/req --json '{"a": 1,}'

@@ -22,3 +22,6 @@ OK: Accept header present
     "hello": "world"
   }
 }
+
+=== Malformed --json is rejected client-side with a positioned error
+Error: error decoding JSON at (inline):1:9: invalid character '}' looking for beginning of object key string
