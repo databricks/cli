@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	osexec "os/exec"
 	"path/filepath"
 	"time"
 
@@ -32,18 +30,13 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 	startTime := time.Now()
 
 	// Reject an invalid manifest before running commands that may modify it.
-	if _, err := readPackageScripts(workDir); err != nil {
+	if err := validatePackageJSON(workDir); err != nil {
 		return nil, err
 	}
 
 	manager, err := DetectPackageManager(ctx, workDir)
 	if err != nil {
 		return nil, err
-	}
-	// ErrDot means the manager was found via a relative PATH entry (e.g. node_modules/.bin);
-	// the shell that runs the command resolves it fine, so only a genuine miss is fatal.
-	if _, err := osexec.LookPath(manager); err != nil && !errors.Is(err, osexec.ErrDot) {
-		return nil, fmt.Errorf("cannot run %s; install it and ensure it is on PATH: %w", manager, err)
 	}
 
 	cmdio.LogString(ctx, "Validating project using "+manager+"...")
@@ -97,20 +90,15 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 			continue
 		}
 		if step.script != "" {
-			scripts, err := readPackageScripts(workDir)
-			if err != nil {
+			if err := validatePackageJSON(workDir); err != nil {
 				return nil, err
-			}
-			if _, ok := scripts[step.script]; !ok {
-				cmdio.LogString(ctx, fmt.Sprintf("⏭️  Skipped %s (script %q not found)", step.displayName, step.script))
-				continue
 			}
 		}
 
 		command := manager + " install"
 		if step.script != "" {
-			// Pass --if-present as a safety net: if our presence check and the manager
-			// disagree about a script, this skips it instead of failing the run.
+			// Let the manager resolve scripts, including configured npm workspaces:
+			// https://docs.npmjs.com/cli/using-npm/workspaces#running-commands-in-the-context-of-workspaces
 			command = manager + " run --if-present " + step.script
 		}
 
@@ -151,30 +139,19 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 	}, nil
 }
 
-// readPackageScripts returns the runnable scripts declared in package.json. It reloads
-// the manifest because earlier validation steps can change it, and keeps only non-empty
-// string values so a script set to null, "", or a non-string (like a "//": [...] comment)
-// is treated as absent, matching how npm and pnpm decide a script is runnable.
-func readPackageScripts(workDir string) (map[string]string, error) {
+// validatePackageJSON reloads the manifest because earlier validation steps can change it.
+func validatePackageJSON(workDir string) error {
 	packageJSON, err := os.ReadFile(filepath.Join(workDir, "package.json"))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read package.json: %w", err)
+		return fmt.Errorf("failed to read package.json: %w", err)
 	}
 	// npm strips a UTF-8 BOM before decoding: https://github.com/npm/json-parse-even-better-errors.
 	packageJSON = bytes.TrimPrefix(packageJSON, []byte("\xef\xbb\xbf"))
-	var project struct {
-		Scripts map[string]any `json:"scripts"`
-	}
+	var project struct{}
 	if err := json.Unmarshal(packageJSON, &project); err != nil {
-		return nil, fmt.Errorf("failed to parse package.json: %w", err)
+		return fmt.Errorf("failed to parse package.json: %w", err)
 	}
-	scripts := make(map[string]string, len(project.Scripts))
-	for name, value := range project.Scripts {
-		if s, ok := value.(string); ok && s != "" {
-			scripts[name] = s
-		}
-	}
-	return scripts, nil
+	return nil
 }
 
 // hasNodeModules returns true if node_modules directory exists in the workDir.

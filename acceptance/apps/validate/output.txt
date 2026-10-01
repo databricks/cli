@@ -3,9 +3,9 @@
 >>> withdir app [CLI] apps validate --path ..
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
-⏭️  Skipped Generating types (script "typegen" not found)
-⏭️  Skipped Running AST-grep lint (script "lint:ast-grep" not found)
-⏭️  Skipped Type checking (script "typecheck" not found)
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
 ✅ Building ([DURATION])
 ✅ Running tests ([DURATION])
 ✅ All validation checks passed ([DURATION])
@@ -14,9 +14,9 @@ Validating project using pnpm...
 >>> [CLI] apps validate --skip-tests
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
-⏭️  Skipped Generating types (script "typegen" not found)
-⏭️  Skipped Running AST-grep lint (script "lint:ast-grep" not found)
-⏭️  Skipped Type checking (script "typecheck" not found)
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
 ✅ Building ([DURATION])
 ⏭️  Skipped Running tests
 ✅ All validation checks passed ([DURATION])
@@ -25,9 +25,9 @@ Validating project using pnpm...
 >>> VALIDATION_TEST_FAIL=run --if-present test musterr [CLI] apps validate
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
-⏭️  Skipped Generating types (script "typegen" not found)
-⏭️  Skipped Running AST-grep lint (script "lint:ast-grep" not found)
-⏭️  Skipped Type checking (script "typecheck" not found)
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
 ✅ Building ([DURATION])
 Error: tests failed (duration: [DURATION])
 ❌ Running tests failed ([DURATION])
@@ -44,9 +44,9 @@ Error: validation failed
 >>> VALIDATION_TEST_FAIL=run --if-present build musterr [CLI] apps deploy
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
-⏭️  Skipped Generating types (script "typegen" not found)
-⏭️  Skipped Running AST-grep lint (script "lint:ast-grep" not found)
-⏭️  Skipped Type checking (script "typecheck" not found)
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
 Error: build failed (duration: [DURATION])
 ❌ Building failed ([DURATION])
 validation failed (exit code 17)
@@ -61,14 +61,26 @@ Error: validation failed - fix errors before deploying
 === Commands executed in the project directory
 >>> cat commands.log
 pnpm install
+pnpm run --if-present typegen
+pnpm run --if-present lint:ast-grep
+pnpm run --if-present typecheck
 pnpm run --if-present build
 pnpm run --if-present test
 pnpm install
+pnpm run --if-present typegen
+pnpm run --if-present lint:ast-grep
+pnpm run --if-present typecheck
 pnpm run --if-present build
 pnpm install
+pnpm run --if-present typegen
+pnpm run --if-present lint:ast-grep
+pnpm run --if-present typecheck
 pnpm run --if-present build
 pnpm run --if-present test
 pnpm install
+pnpm run --if-present typegen
+pnpm run --if-present lint:ast-grep
+pnpm run --if-present typecheck
 pnpm run --if-present build
 
 === Warn but continue on conflicting lockfiles
@@ -76,11 +88,11 @@ pnpm run --if-present build
 Warn: found conflicting package manager lockfiles; using package-lock.json and ignoring pnpm-lock.yaml
 Validating project using npm...
 ✅ Installing dependencies ([DURATION])
-⏭️  Skipped Generating types (script "typegen" not found)
-⏭️  Skipped Running AST-grep lint (script "lint:ast-grep" not found)
-⏭️  Skipped Type checking (script "typecheck" not found)
-⏭️  Skipped Building (script "build" not found)
-⏭️  Skipped Running tests (script "test" not found)
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+✅ Running tests ([DURATION])
 ✅ All validation checks passed ([DURATION])
 
 === Warn but continue on unsupported lockfiles
@@ -88,13 +100,27 @@ Validating project using npm...
 Warn: ignoring unsupported lockfile yarn.lock; apps validation uses npm or pnpm
 Validating project using npm...
 ✅ Installing dependencies ([DURATION])
-⏭️  Skipped Generating types (script "typegen" not found)
-⏭️  Skipped Running AST-grep lint (script "lint:ast-grep" not found)
-⏭️  Skipped Type checking (script "typecheck" not found)
-⏭️  Skipped Building (script "build" not found)
-⏭️  Skipped Running tests (script "test" not found)
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+✅ Running tests ([DURATION])
 ✅ All validation checks passed ([DURATION])
 
 === Reject malformed package.json
 >>> musterr [CLI] apps validate --path invalid
 Error: validation error: failed to parse package.json: unexpected end of JSON input
+
+=== Validate npm workspace scripts without root scripts
+>>> grep -x workspace build ran LOG.workspaces
+workspace build ran
+
+>>> grep -F validation failed (exit code 17) LOG.workspaces
+validation failed (exit code 17)
+
+=== Deploy rejects a failing npm workspace build
+>>> grep -x workspace build ran LOG.workspaces-deploy
+workspace build ran
+
+>>> grep -F validation failed - fix errors before deploying LOG.workspaces-deploy
+Error: validation failed - fix errors before deploying

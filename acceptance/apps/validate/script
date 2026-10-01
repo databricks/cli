@@ -1,3 +1,4 @@
+validation_path="$PATH"
 export PATH="$PWD/bin:$PATH"
 
 title "Validate the directory selected by --path"
@@ -23,3 +24,15 @@ trace $CLI apps validate --path unsupported
 
 title "Reject malformed package.json"
 trace musterr $CLI apps validate --path invalid
+
+title "Validate npm workspace scripts without root scripts"
+export PATH="$validation_path"
+mkdir -p workspaces/node_modules
+trace musterr $CLI apps validate --path workspaces &> LOG.workspaces
+trace grep -x "workspace build ran" LOG.workspaces
+trace grep -F "validation failed (exit code 17)" LOG.workspaces
+
+title "Deploy rejects a failing npm workspace build"
+trace withdir workspaces musterr $CLI apps deploy &> LOG.workspaces-deploy
+trace grep -x "workspace build ran" LOG.workspaces-deploy
+trace grep -F "validation failed - fix errors before deploying" LOG.workspaces-deploy
