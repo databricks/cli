@@ -28,6 +28,20 @@ type runResult struct {
 	DashboardURL string `json:"dashboard_url,omitempty"`
 }
 
+const experimentalContainersWarning = `+--------------------------------------------------------------------+
+| WARNING: EXPERIMENTAL FEATURE                                      |
+|                                                                    |
+| This feature is experimental and may change without notice,        |
+| including changes that could break existing workflows.             |
+| Use it only if you accept these risks.                             |
++--------------------------------------------------------------------+`
+
+func warnExperimentalContainers(ctx context.Context, cfg *runConfig) {
+	if len(cfg.Containers) > 0 {
+		cmdio.LogString(ctx, experimentalContainersWarning)
+	}
+}
+
 func newRunCommand() *cobra.Command {
 	var (
 		file           string
@@ -104,6 +118,8 @@ The path must be a separate argument: cobra reserves -h as a boolean, so
 			}
 			return renderEnvelope(ctx, runResult{Status: "DRY_RUN_OK", DryRun: true})
 		}
+
+		warnExperimentalContainers(ctx, cfg)
 
 		jsonOut := root.OutputType(cmd) == flags.OutputJSON
 

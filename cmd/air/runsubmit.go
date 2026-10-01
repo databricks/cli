@@ -1,16 +1,22 @@
 package aircmd
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"path"
 	"strconv"
 	"strings"
 
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
@@ -51,15 +57,18 @@ func dlRuntimeImage(ctx context.Context, runtimeVersion string) string {
 // "false"). Jobs performs the retries — each attempt is a fresh AI Runtime
 // workload.
 func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID string, snap snapshotResult, deps []string) jobs.SubmitRun {
+	deployment := jobs.DeploymentSpec{
+		Compute: jobs.ComputeSpec{
+			AcceleratorType:  jobs.ComputeSpecAcceleratorType(cfg.Compute.AcceleratorType),
+			AcceleratorCount: cfg.Compute.NumAccelerators,
+		},
+	}
+	if len(cfg.Containers) == 0 {
+		deployment.CommandPath = commandPath
+	}
 	task := jobs.AiRuntimeTask{
-		Experiment: cfg.ExperimentName,
-		Deployments: []jobs.DeploymentSpec{{
-			CommandPath: commandPath,
-			Compute: jobs.ComputeSpec{
-				AcceleratorType:  jobs.ComputeSpecAcceleratorType(cfg.Compute.AcceleratorType),
-				AcceleratorCount: cfg.Compute.NumAccelerators,
-			},
-		}},
+		Experiment:     cfg.ExperimentName,
+		Deployments:    []jobs.DeploymentSpec{deployment},
 		CodeSourcePath: snap.CodeSourcePath,
 	}
 	if cfg.MLflowRunName != nil {
@@ -113,18 +122,143 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	}
 }
 
-// submitRun submits the single-task payload produced by buildSubmitPayload.
-func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string) (int64, error) {
-	task := payload.Tasks[0].AiRuntimeTask
-	task.Deployments[0].Compute.ProvisionedCapacityId = poolID
-	task.PriorityClass = jobs.AiRuntimeTaskPriorityClass(priorityClass)
-	task.UnityCatalogImagePath = unityCatalogImagePath
+type submittedContainer struct {
+	Name                  string
+	CommandPath           string
+	Ranks                 []int
+	UnityCatalogImagePath string
+}
 
-	wait, err := w.Jobs.Submit(ctx, payload)
+func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string, containers []submittedContainer) (int64, error) {
+	// None of these fields are modeled by the SDK's AiRuntimeTask, so a run that
+	// sets any of them has to go through the raw /api/2.2 body. priority_class only
+	// ever appears alongside a pool (validation enforces it), but route on
+	// all of them so none can be silently dropped.
+	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" && len(containers) == 0 {
+		wait, err := w.Jobs.Submit(ctx, payload)
+		if err != nil {
+			return 0, err
+		}
+		return wait.RunId, nil
+	}
+
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return 0, fmt.Errorf("failed to marshal AIR submit payload: %w", err)
+	}
+	var body map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&body); err != nil {
+		return 0, fmt.Errorf("failed to decode AIR submit payload: %w", err)
+	}
+	if err := injectPoolFields(body, poolID, priorityClass); err != nil {
+		return 0, err
+	}
+	if unityCatalogImagePath != "" {
+		aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
+		if err != nil {
+			return 0, err
+		}
+		aiRuntimeTask["unity_catalog_image_path"] = unityCatalogImagePath
+	}
+	if len(containers) > 0 {
+		if err := injectContainers(body, containers); err != nil {
+			return 0, err
+		}
+	}
+
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create API client: %w", err)
+	}
+	var response jobs.SubmitRunResponse
+	err = apiClient.Do(ctx, http.MethodPost, "/api/2.2/jobs/runs/submit", auth.WorkspaceIDHeaders(w.Config), nil, body, &response)
 	if err != nil {
 		return 0, err
 	}
-	return wait.RunId, nil
+	return response.RunId, nil
+}
+
+func injectContainers(body map[string]any, containers []submittedContainer) error {
+	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
+	if err != nil {
+		return err
+	}
+	deployments, ok := aiRuntimeTask["deployments"].([]any)
+	if !ok || len(deployments) != 1 {
+		return errors.New("AIR submit payload must contain exactly one deployment")
+	}
+	deployment, ok := deployments[0].(map[string]any)
+	if !ok {
+		return errors.New("AIR submit payload deployment has an invalid shape")
+	}
+	// The SDK's DeploymentSpec marshals its required command_path even when
+	// empty. Container runs have their own commands, so omit that wire field.
+	delete(deployment, "command_path")
+	raw := make([]any, 0, len(containers))
+	for _, container := range containers {
+		ranks := make([]any, len(container.Ranks))
+		for i, rank := range container.Ranks {
+			ranks[i] = rank
+		}
+		raw = append(raw, map[string]any{
+			"name":                     container.Name,
+			"command_path":             container.CommandPath,
+			"ranks":                    ranks,
+			"unity_catalog_image_path": container.UnityCatalogImagePath,
+		})
+	}
+	deployment["containers"] = raw
+	return nil
+}
+
+// injectPoolFields sets the pool-only fields the SDK does not model onto the
+// decoded submit body: priority_class rides directly on the ai_runtime_task,
+// while provisioned_capacity_id (the wire name for the pool) rides on the
+// deployment's compute spec. Each is set only when non-empty.
+func injectPoolFields(body map[string]any, poolID, priorityClass string) error {
+	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
+	if err != nil {
+		return err
+	}
+	if priorityClass != "" {
+		aiRuntimeTask["priority_class"] = priorityClass
+	}
+	if poolID != "" {
+		deployments, ok := aiRuntimeTask["deployments"].([]any)
+		if !ok || len(deployments) != 1 {
+			return errors.New("AIR submit payload must contain exactly one deployment")
+		}
+		deployment, ok := deployments[0].(map[string]any)
+		if !ok {
+			return errors.New("AIR submit payload deployment has an invalid shape")
+		}
+		computeSpec, ok := deployment["compute"].(map[string]any)
+		if !ok {
+			return errors.New("AIR submit payload is missing deployment compute")
+		}
+		computeSpec["provisioned_capacity_id"] = poolID
+	}
+	return nil
+}
+
+// aiRuntimeTaskFromSubmitBody navigates a decoded runs/submit body to its single
+// ai_runtime_task map, erroring if the payload isn't the expected single-task shape.
+func aiRuntimeTaskFromSubmitBody(body map[string]any) (map[string]any, error) {
+	tasks, ok := body["tasks"].([]any)
+	if !ok || len(tasks) != 1 {
+		return nil, errors.New("AIR submit payload must contain exactly one task")
+	}
+	task, ok := tasks[0].(map[string]any)
+	if !ok {
+		return nil, errors.New("AIR submit payload task has an invalid shape")
+	}
+	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
+	if !ok {
+		return nil, errors.New("AIR submit payload is missing ai_runtime_task")
+	}
+	return aiRuntimeTask, nil
 }
 
 // submitToken resolves the idempotency token: the --idempotency-key flag wins,
@@ -202,10 +336,11 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	}
 	funcDir := cliLaunchDir(base, cfg.ExperimentName, runName)
 	commandPath := path.Join(funcDir, commandScriptName)
+	containers := submittedContainers(cfg, funcDir)
 
 	// Pre-flight the config server-side before any upload, so a bad config fails with the
 	// backend's field-level errors and no orphaned artifacts.
-	if err := preflightValidate(ctx, w, cfg, commandPath); err != nil {
+	if err := preflightValidate(ctx, w, cfg, commandPath, containers); err != nil {
 		return 0, "", err
 	}
 
@@ -291,11 +426,24 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
 	// Permissions are granted by the caller, after the submit result is shown, so
 	// the best-effort grant never delays the success line.
-	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath())
+	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath(), containers)
 	if err != nil {
 		return 0, "", err
 	}
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil
+}
+
+func submittedContainers(cfg *runConfig, funcDir string) []submittedContainer {
+	containers := make([]submittedContainer, 0, len(cfg.Containers))
+	for _, container := range cfg.Containers {
+		containers = append(containers, submittedContainer{
+			Name:                  container.Name,
+			CommandPath:           path.Join(funcDir, "containers", container.Name, commandScriptName),
+			Ranks:                 container.Ranks,
+			UnityCatalogImagePath: container.UnityCatalogImage,
+		})
+	}
+	return containers
 }
