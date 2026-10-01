@@ -134,11 +134,15 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	assert.ElementsMatch(t, expected, actual)
 }
 
-func TestVisitJobPaths_projectEnvironments(t *testing.T) {
+func TestVisitJobPaths_preservesProjectEnvironments(t *testing.T) {
 	value, err := yamlloader.LoadYAML("resources/jobs.yml", strings.NewReader(`
 resources:
   jobs:
     first:
+      tasks:
+        - task_key: notebook
+          notebook_task:
+            notebook_path: notebook.py
       environments:
         - environment_key: project
           spec:
@@ -158,18 +162,21 @@ resources:
 `))
 	require.NoError(t, err)
 
-	var actual []string
-	_, err = VisitJobPaths(value, func(p dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
-		assert.Equal(t, TranslateModeFile, mode)
-		actual = append(actual, p.String())
-		return v, nil
+	updated, err := VisitJobPaths(value, func(_ dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
+		assert.Equal(t, TranslateModeNotebook, mode)
+		return dyn.NewValue("/Workspace/bundle/files/"+v.MustString(), v.Locations()), nil
 	})
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{
-		"resources.jobs.first.environments[0].spec.project_environment",
-		"resources.jobs.first.environments[2].spec.project_environment",
-		"resources.jobs.second.environments[0].spec.project_environment",
-	}, actual)
+	for path, want := range map[string]string{
+		"resources.jobs.first.tasks[0].notebook_task.notebook_path":      "/Workspace/bundle/files/notebook.py",
+		"resources.jobs.first.environments[0].spec.project_environment":  "../pyproject.toml",
+		"resources.jobs.first.environments[2].spec.project_environment":  "../requirements.txt",
+		"resources.jobs.second.environments[0].spec.project_environment": "/Workspace/shared/pyproject.toml",
+	} {
+		actual, err := dyn.Get(updated, path)
+		require.NoError(t, err)
+		assert.Equal(t, want, actual.MustString(), path)
+	}
 }
 
 func TestVisitJobPaths_foreach(t *testing.T) {
