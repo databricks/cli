@@ -534,15 +534,12 @@ func configSchema() configField {
 		help: "The run YAML schema. Pass a field path for details, e.g. " + configHelpRoot + `.compute.accelerator_type.
 
   AI coding agents can use the databricks-ai-runtime skill to write workload
-  YAML, submit runs, and monitor progress. The skill is experimental and not
-  officially supported.
+  YAML, submit runs, and monitor progress.
 
   Install the updated skill from the repository's main branch (Bash/Zsh):
 
     DATABRICKS_SKILLS_REF=main databricks aitools install \
       --skills-only --skills databricks-ai-runtime --experimental
-
-  The default skills release still contains the older Python CLI skill.
 
   Follow the prompts to choose your coding agent and installation scope.
   Use --scope project to install into the current project.
