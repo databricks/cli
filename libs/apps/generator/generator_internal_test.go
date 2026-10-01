@@ -1,10 +1,14 @@
 package generator
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestManifestBindingMatchesCompatSpecs checks that a manifest binding equal to the
@@ -34,4 +38,44 @@ func TestManifestBindingMatchesCompatSpecs(t *testing.T) {
 			assert.Equal(t, GenerateAppEnv(compatPlugins, cfg), GenerateAppEnv(boundPlugins, cfg))
 		})
 	}
+}
+
+// sdkAppResourceKeys returns the resource binding keys of apps.AppResource, which are its
+// pointer-to-struct fields (e.g. sql_warehouse, uc_securable), keyed by their json tag.
+func sdkAppResourceKeys(t *testing.T) map[string]bool {
+	keys := make(map[string]bool)
+	typ := reflect.TypeFor[apps.AppResource]()
+	for f := range typ.Fields() {
+		f := f
+		if f.Type.Kind() != reflect.Pointer || f.Type.Elem().Kind() != reflect.Struct {
+			continue
+		}
+		name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
+		keys[name] = true
+	}
+	require.NotEmpty(t, keys)
+	return keys
+}
+
+// TestBindingYamlKeysMatchSDK anchors binding yamlKeys to the Go SDK. A wrong yamlKey in
+// both the manifest and appResourceSpecs passes the byte-identical test but fails here.
+func TestBindingYamlKeysMatchSDK(t *testing.T) {
+	keys := sdkAppResourceKeys(t)
+
+	for typ, spec := range appResourceSpecs {
+		assert.True(t, keys[spec.yamlKey], "appResourceSpecs[%q].yamlKey %q is not an apps.AppResource field", typ, spec.yamlKey)
+	}
+
+	m, err := manifest.Load("../../../acceptance/apps/init/auth-mode/template")
+	require.NoError(t, err)
+	var checked int
+	for _, p := range m.GetPlugins() {
+		for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
+			if r.Binding != nil {
+				checked++
+				assert.True(t, keys[r.Binding.YamlKey], "fixture binding yamlKey %q of %q is not an apps.AppResource field", r.Binding.YamlKey, r.Key())
+			}
+		}
+	}
+	require.Positive(t, checked)
 }
