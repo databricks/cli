@@ -108,11 +108,15 @@ func setupScopeMock(t *testing.T, scope string) *bool {
 }
 
 // setupTestAgents creates config dirs for Claude and Cursor under a temp HOME.
+// XDG_CONFIG_HOME must be neutralized too: OpenCode resolves its config dir
+// from it, so a developer machine with a real ~/.config/opencode (or an XDG
+// override pointing at one) would otherwise detect OpenCode as a third agent.
 func setupTestAgents(t *testing.T) string {
 	t.Helper()
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 	t.Setenv("USERPROFILE", tmp)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".claude"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(tmp, ".cursor"), 0o755))
 	return tmp
@@ -574,6 +578,9 @@ func TestInstallNoAgentsDetected(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 	t.Setenv("USERPROFILE", tmp)
+	// Neutralize XDG_CONFIG_HOME so a real opencode config on the dev machine
+	// is not picked up through it.
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(tmp, ".config"))
 	fakeBinsOnPath(t) // no agent binaries
 	plugins := setupPluginMock(t)
 	skills := setupInstallMock(t)

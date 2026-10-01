@@ -70,10 +70,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ServerOpt
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Filesystem registration is best-effort on compute without reachable daemons.
-	if err := registerFuseCredentials(ctx, client); err != nil {
-		log.Warnf(ctx, "Failed to register SSH filesystem credentials; file access may depend on the bootstrap notebook: %v", err)
-	}
+	startFuseRegistration(ctx, client, opts.Serverless)
 
 	port, err := findAvailablePort(opts.DefaultPort, opts.PortRange)
 	if err != nil {

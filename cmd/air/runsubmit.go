@@ -1,22 +1,16 @@
 package aircmd
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
 	"path"
 	"strconv"
 	"strings"
 
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
@@ -119,98 +113,18 @@ func buildSubmitPayload(cfg *runConfig, commandPath, dlImage, usagePolicyID stri
 	}
 }
 
+// submitRun submits the single-task payload produced by buildSubmitPayload.
 func submitRun(ctx context.Context, w *databricks.WorkspaceClient, payload jobs.SubmitRun, poolID, priorityClass, unityCatalogImagePath string) (int64, error) {
-	// None of these fields are modeled by the SDK's AiRuntimeTask, so a run that
-	// sets any of them has to go through the raw /api/2.2 body. priority_class only
-	// ever appears alongside a pool (validation enforces it), but route on
-	// all of them so none can be silently dropped.
-	if poolID == "" && priorityClass == "" && unityCatalogImagePath == "" {
-		wait, err := w.Jobs.Submit(ctx, payload)
-		if err != nil {
-			return 0, err
-		}
-		return wait.RunId, nil
-	}
+	task := payload.Tasks[0].AiRuntimeTask
+	task.Deployments[0].Compute.ProvisionedCapacityId = poolID
+	task.PriorityClass = jobs.AiRuntimeTaskPriorityClass(priorityClass)
+	task.UnityCatalogImagePath = unityCatalogImagePath
 
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return 0, fmt.Errorf("failed to marshal AIR submit payload: %w", err)
-	}
-	var body map[string]any
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	decoder.UseNumber()
-	if err := decoder.Decode(&body); err != nil {
-		return 0, fmt.Errorf("failed to decode AIR submit payload: %w", err)
-	}
-	if err := injectPoolFields(body, poolID, priorityClass); err != nil {
-		return 0, err
-	}
-	if unityCatalogImagePath != "" {
-		aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
-		if err != nil {
-			return 0, err
-		}
-		aiRuntimeTask["unity_catalog_image_path"] = unityCatalogImagePath
-	}
-
-	apiClient, err := client.New(w.Config)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create API client: %w", err)
-	}
-	var response jobs.SubmitRunResponse
-	err = apiClient.Do(ctx, http.MethodPost, "/api/2.2/jobs/runs/submit", auth.WorkspaceIDHeaders(w.Config), nil, body, &response)
+	wait, err := w.Jobs.Submit(ctx, payload)
 	if err != nil {
 		return 0, err
 	}
-	return response.RunId, nil
-}
-
-// injectPoolFields sets the pool-only fields the SDK does not model onto the
-// decoded submit body: priority_class rides directly on the ai_runtime_task,
-// while provisioned_capacity_id (the wire name for the pool) rides on the
-// deployment's compute spec. Each is set only when non-empty.
-func injectPoolFields(body map[string]any, poolID, priorityClass string) error {
-	aiRuntimeTask, err := aiRuntimeTaskFromSubmitBody(body)
-	if err != nil {
-		return err
-	}
-	if priorityClass != "" {
-		aiRuntimeTask["priority_class"] = priorityClass
-	}
-	if poolID != "" {
-		deployments, ok := aiRuntimeTask["deployments"].([]any)
-		if !ok || len(deployments) != 1 {
-			return errors.New("AIR submit payload must contain exactly one deployment")
-		}
-		deployment, ok := deployments[0].(map[string]any)
-		if !ok {
-			return errors.New("AIR submit payload deployment has an invalid shape")
-		}
-		computeSpec, ok := deployment["compute"].(map[string]any)
-		if !ok {
-			return errors.New("AIR submit payload is missing deployment compute")
-		}
-		computeSpec["provisioned_capacity_id"] = poolID
-	}
-	return nil
-}
-
-// aiRuntimeTaskFromSubmitBody navigates a decoded runs/submit body to its single
-// ai_runtime_task map, erroring if the payload isn't the expected single-task shape.
-func aiRuntimeTaskFromSubmitBody(body map[string]any) (map[string]any, error) {
-	tasks, ok := body["tasks"].([]any)
-	if !ok || len(tasks) != 1 {
-		return nil, errors.New("AIR submit payload must contain exactly one task")
-	}
-	task, ok := tasks[0].(map[string]any)
-	if !ok {
-		return nil, errors.New("AIR submit payload task has an invalid shape")
-	}
-	aiRuntimeTask, ok := task["ai_runtime_task"].(map[string]any)
-	if !ok {
-		return nil, errors.New("AIR submit payload is missing ai_runtime_task")
-	}
-	return aiRuntimeTask, nil
+	return wait.RunId, nil
 }
 
 // submitToken resolves the idempotency token: the --idempotency-key flag wins,
@@ -375,11 +289,12 @@ func submitWorkload(ctx context.Context, w *databricks.WorkspaceClient, cfg *run
 		priorityClass = *cfg.Compute.PriorityClass
 	}
 	// Submit returns as soon as the run is created; we don't wait for it to finish.
+	// Permissions are granted by the caller, after the submit result is shown, so
+	// the best-effort grant never delays the success line.
 	runID, err := submitRun(ctx, w, payload, poolID, priorityClass, cfg.unityCatalogImagePath())
 	if err != nil {
 		return 0, "", err
 	}
-	applySubmittedPermissions(ctx, w, runID, cfg.Permissions)
 
 	dashboardURL := strings.TrimRight(w.Config.Host, "/") + "/jobs/runs/" + strconv.FormatInt(runID, 10)
 	return runID, dashboardURL, nil

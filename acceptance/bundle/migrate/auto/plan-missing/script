@@ -1,7 +1,8 @@
 export DATABRICKS_BUNDLE_ENGINE=
 
-title "Initial deploy on terraform"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Replay a prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
+rm -f "$OUT_REQUESTS"
 
 title "deploy --plan with a missing plan file fails after the migration prepared the direct state"
 # The migration runs in memory (nothing is written) before the saved plan is loaded, so a missing
@@ -13,5 +14,5 @@ title "State is still terraform - the migration was never committed"
 trace find.py '\.databricks/.*(\.tfstate|resources.*\.json|\.wal)'
 trace MSYS_NO_PATHCONV=1 $CLI workspace list "/Workspace/Users/${CURRENT_USER_NAME}/.bundle/test-bundle/default/state"
 
-title "A plain deploy still runs on terraform (the engine was not silently switched)"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "A plain deploy migrates the still-terraform state to direct"
+trace $CLI bundle deploy

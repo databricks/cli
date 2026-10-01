@@ -1,3 +1,5 @@
+EnvMatrix.READPLAN = ["", "1"]
+
 RecordRequests = true
 Ignore = [
     'code.tgz',

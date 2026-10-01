@@ -11,8 +11,8 @@ trap cleanup EXIT
 # case-only difference as backend normalization and keeps the config value, so the migration
 # proceeds with no warning and the plan converges.
 
-title "Deploy on terraform; UC lowercases the volume name"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Replay the prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
 title "Migrate to direct with the same config (mixed-case name unchanged)"
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy

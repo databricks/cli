@@ -1,0 +1,10 @@
+[
+  {
+    "method": "POST",
+    "path": "/api/2.0/mlflow/registered-models/create",
+    "body": {
+      "description": "This is a test model",
+      "name": "test-model-[UNIQUE_NAME]"
+    }
+  }
+]

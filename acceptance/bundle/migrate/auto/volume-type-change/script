@@ -9,8 +9,8 @@ export DATABRICKS_BUNDLE_ENGINE=
 # are in the destructive-approval group, so without --auto-approve the deploy refuses the
 # recreate (exit 1) and the migration is not committed.
 
-title "Deploy on terraform with volume_type MANAGED"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Replay the prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Change volume_type (immutable); without --auto-approve the recreate is refused"

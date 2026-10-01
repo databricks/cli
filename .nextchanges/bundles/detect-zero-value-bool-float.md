@@ -1,0 +1,1 @@
+* Direct engine now detects and applies an explicitly configured zero-value boolean or float (e.g. `gcp_attributes.use_preemptible_executors: false`, `azure_attributes.spot_bid_max_price: 0`) added to a resource first deployed without the field, matching the existing handling of an explicit integer zero. ([#6882](https://github.com/databricks/cli/pull/6882))

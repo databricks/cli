@@ -13,8 +13,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-title "Deploy the schema on terraform in catalog 'main'"
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+title "Replay the prior terraform deployment (captured from a real terraform run)"
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 rm -f "$OUT_REQUESTS"
 
 title "Move the schema to another catalog. Without --auto-approve the recreate is refused"

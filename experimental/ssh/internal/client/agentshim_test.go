@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -20,6 +21,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/telemetry/protos"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -560,4 +562,84 @@ func TestProbeModelServicesPageError(t *testing.T) {
 	assert.False(t, probe.reachable)
 	assert.False(t, probe.resourceAvailable)
 	assert.Error(t, probe.err)
+}
+
+func TestBuildAgentShimEvent(t *testing.T) {
+	t.Run("successful launch reports success and no category", func(t *testing.T) {
+		got := buildAgentShimEvent("claude", agentShimOutcome{}, 1500*time.Millisecond)
+		assert.Equal(t, &protos.SshAgentShimEvent{
+			AgentName:       "claude",
+			IsSuccess:       true,
+			ErrorCategory:   protos.SshAgentShimErrorCategoryUnspecified,
+			SetupDurationMs: 1500,
+		}, got)
+	})
+
+	t.Run("failed launch reports the attributed category", func(t *testing.T) {
+		got := buildAgentShimEvent("codex", agentShimOutcome{
+			err: categorize(protos.SshAgentShimErrorCategoryGatewayAuthFailed, errors.New("boom")),
+		}, 200*time.Millisecond)
+		assert.Equal(t, &protos.SshAgentShimEvent{
+			AgentName:       "codex",
+			IsSuccess:       false,
+			ErrorCategory:   protos.SshAgentShimErrorCategoryGatewayAuthFailed,
+			SetupDurationMs: 200,
+		}, got)
+	})
+}
+
+func TestAgentShimOutcomeCategory(t *testing.T) {
+	errFailed := errors.New("failed")
+
+	tests := []struct {
+		name    string
+		outcome agentShimOutcome
+		want    protos.SshAgentShimErrorCategory
+	}{
+		{
+			name:    "success reports no category",
+			outcome: agentShimOutcome{},
+			want:    protos.SshAgentShimErrorCategoryUnspecified,
+		},
+		{
+			name:    "attributed failure keeps its category",
+			outcome: agentShimOutcome{err: categorize(protos.SshAgentShimErrorCategoryUvInstallFailed, errFailed)},
+			want:    protos.SshAgentShimErrorCategoryUvInstallFailed,
+		},
+		{
+			// A deeper attributed category survives a stage's coarse fallback.
+			name:    "wrapped specific category survives the stage fallback",
+			outcome: agentShimOutcome{err: ensureCategory(protos.SshAgentShimErrorCategoryToolchainSetupFailed, categorize(protos.SshAgentShimErrorCategoryNodeInstallFailed, errFailed))},
+			want:    protos.SshAgentShimErrorCategoryNodeInstallFailed,
+		},
+		{
+			name:    "unattributed failure reports unknown",
+			outcome: agentShimOutcome{err: errFailed},
+			want:    protos.SshAgentShimErrorCategoryUnknown,
+		},
+		{
+			// A cancelled context means the user gave up, and wins over the failure site's category.
+			name:    "cancelled context reports user aborted",
+			outcome: agentShimOutcome{err: categorize(protos.SshAgentShimErrorCategoryToolchainSetupFailed, errFailed), ctxErr: context.Canceled},
+			want:    protos.SshAgentShimErrorCategoryUserAborted,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.outcome.category())
+		})
+	}
+}
+
+func TestPrepareAgentLaunchUnityGatewayCLINotFound(t *testing.T) {
+	// An empty PATH means exec.LookPath("ucode") can't find the CLI, exercising the
+	// UNITY_GATEWAY_CLI_NOT_FOUND attribution.
+	t.Setenv("PATH", t.TempDir())
+	agent, ok := agentByName("claude")
+	require.True(t, ok)
+
+	_, _, _, err := prepareAgentLaunch(t.Context(), t.TempDir(), agent, "https://example.test", nil)
+	require.Error(t, err)
+	assert.Equal(t, protos.SshAgentShimErrorCategoryUnityGatewayCLINotFound, agentShimOutcome{err: err}.category())
 }
