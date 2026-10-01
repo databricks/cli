@@ -13,9 +13,8 @@ import (
 )
 
 const (
-	staleVersionThreshold  = 6 * 30 * 24 * time.Hour
-	installDocsURL         = "https://docs.databricks.com/dev-tools/cli/install.html"
-	staleVersionDisableEnv = "DATABRICKS_CLI_DISABLE_STALE_VERSION_WARNING"
+	staleVersionThreshold = 6 * 30 * 24 * time.Hour
+	installDocsURL        = "https://docs.databricks.com/dev-tools/cli/install.html"
 )
 
 // staleVersionWarning returns the warning for a build older than the threshold, or "" otherwise.
@@ -32,14 +31,14 @@ func staleVersionWarning(buildTime, now time.Time, upgradeCommand string) string
 	} else {
 		msg += "See " + installDocsURL + " to upgrade.\n"
 	}
-	return msg + "To silence this warning, set " + staleVersionDisableEnv + "=1.\n"
+	return msg + "To silence this warning, set " + versioncheck.DisableEnv + "=1.\n"
 }
 
 func skipStaleVersionWarning(ctx context.Context, info build.Info) bool {
 	if info.IsDevelopment() {
 		return true
 	}
-	if disabled, _ := env.GetBool(ctx, staleVersionDisableEnv); disabled {
+	if disabled, _ := env.GetBool(ctx, versioncheck.DisableEnv); disabled {
 		return true
 	}
 	// DBR installs the latest CLI by default, so skip the warning there.

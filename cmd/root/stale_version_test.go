@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/versioncheck"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ func TestStaleVersionWarning(t *testing.T) {
 	stale := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
 	header := "Warning: this version of the Databricks CLI was built on 2026-01-15 and is more than 6 months old. " +
 		"We strongly recommend updating to the latest version.\n"
-	footer := "To silence this warning, set DATABRICKS_CLI_DISABLE_STALE_VERSION_WARNING=1.\n"
+	footer := "To silence this warning, set DATABRICKS_CLI_DISABLE_UPDATE_CHECK=1.\n"
 
 	tests := []struct {
 		name      string
@@ -67,7 +68,7 @@ func TestSkipStaleVersionWarning(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := dbr.MockRuntime(t.Context(), tc.runtime)
 			if tc.env != "" {
-				ctx = env.Set(ctx, staleVersionDisableEnv, tc.env)
+				ctx = env.Set(ctx, versioncheck.DisableEnv, tc.env)
 			}
 			assert.Equal(t, tc.want, skipStaleVersionWarning(ctx, tc.info))
 		})
