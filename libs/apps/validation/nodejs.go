@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	osexec "os/exec"
@@ -35,11 +36,13 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 		return nil, err
 	}
 
-	manager, err := DetectPackageManager(workDir)
+	manager, err := DetectPackageManager(ctx, workDir)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := osexec.LookPath(manager); err != nil {
+	// ErrDot means the manager was found via a relative PATH entry (e.g. node_modules/.bin);
+	// the shell that runs the command resolves it fine, so only a genuine miss is fatal.
+	if _, err := osexec.LookPath(manager); err != nil && !errors.Is(err, osexec.ErrDot) {
 		return nil, fmt.Errorf("cannot run %s; install it and ensure it is on PATH: %w", manager, err)
 	}
 
@@ -106,7 +109,9 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 
 		command := manager + " install"
 		if step.script != "" {
-			command = manager + " run " + step.script
+			// Pass --if-present as a safety net: if our presence check and the manager
+			// disagree about a script, this skips it instead of failing the run.
+			command = manager + " run --if-present " + step.script
 		}
 
 		log.Debugf(ctx, "running %s...", step.name)
@@ -146,7 +151,10 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 	}, nil
 }
 
-// readPackageScripts reloads the manifest because earlier validation steps can change it.
+// readPackageScripts returns the runnable scripts declared in package.json. It reloads
+// the manifest because earlier validation steps can change it, and keeps only non-empty
+// string values so a script set to null, "", or a non-string (like a "//": [...] comment)
+// is treated as absent, matching how npm and pnpm decide a script is runnable.
 func readPackageScripts(workDir string) (map[string]string, error) {
 	packageJSON, err := os.ReadFile(filepath.Join(workDir, "package.json"))
 	if err != nil {
@@ -155,12 +163,18 @@ func readPackageScripts(workDir string) (map[string]string, error) {
 	// npm strips a UTF-8 BOM before decoding: https://github.com/npm/json-parse-even-better-errors.
 	packageJSON = bytes.TrimPrefix(packageJSON, []byte("\xef\xbb\xbf"))
 	var project struct {
-		Scripts map[string]string `json:"scripts"`
+		Scripts map[string]any `json:"scripts"`
 	}
 	if err := json.Unmarshal(packageJSON, &project); err != nil {
 		return nil, fmt.Errorf("failed to parse package.json: %w", err)
 	}
-	return project.Scripts, nil
+	scripts := make(map[string]string, len(project.Scripts))
+	for name, value := range project.Scripts {
+		if s, ok := value.(string); ok && s != "" {
+			scripts[name] = s
+		}
+	}
+	return scripts, nil
 }
 
 // hasNodeModules returns true if node_modules directory exists in the workDir.

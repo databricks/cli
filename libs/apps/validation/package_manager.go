@@ -1,11 +1,13 @@
 package validation
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 const (
@@ -15,9 +17,11 @@ const (
 	packageManagerBun  = "bun"
 )
 
-// DetectPackageManager selects a package manager from lockfiles in workDir.
-// Projects without lockfiles use npm for compatibility with existing validation.
-func DetectPackageManager(workDir string) (string, error) {
+// DetectPackageManager selects a package manager from lockfiles in workDir. Unsupported
+// lockfiles (yarn, bun) and lockfiles for a second manager are logged and ignored rather
+// than failing validation, so a stray lockfile never blocks a deploy that works today.
+// Projects without a supported lockfile use npm for compatibility with existing validation.
+func DetectPackageManager(ctx context.Context, workDir string) (string, error) {
 	lockfiles := []struct {
 		name    string
 		manager string
@@ -35,9 +39,9 @@ func DetectPackageManager(workDir string) (string, error) {
 		{"bun.lockb", packageManagerBun},
 	}
 
-	var manager string
-	var found []string
-	var conflict bool
+	// Lockfiles are listed npm-first, so the first supported one found wins and keeps
+	// npm's precedence for backward compatibility when managers conflict.
+	var manager, chosen string
 	for _, lockfile := range lockfiles {
 		info, err := os.Stat(filepath.Join(workDir, lockfile.name))
 		if errors.Is(err, os.ErrNotExist) {
@@ -50,19 +54,18 @@ func DetectPackageManager(workDir string) (string, error) {
 			return "", fmt.Errorf("lockfile %s must be a regular file", lockfile.name)
 		}
 		if lockfile.manager != packageManagerNpm && lockfile.manager != packageManagerPnpm {
-			return "", fmt.Errorf("%s is not supported for apps validation (found %s); use npm or pnpm", lockfile.manager, lockfile.name)
+			log.Warnf(ctx, "ignoring unsupported lockfile %s; apps validation uses npm or pnpm", lockfile.name)
+			continue
 		}
-
-		found = append(found, lockfile.name)
-		if manager != "" && manager != lockfile.manager {
-			conflict = true
+		if manager == "" {
+			manager, chosen = lockfile.manager, lockfile.name
+			continue
 		}
-		manager = lockfile.manager
+		if lockfile.manager != manager {
+			log.Warnf(ctx, "found conflicting package manager lockfiles; using %s and ignoring %s", chosen, lockfile.name)
+		}
 	}
 
-	if conflict {
-		return "", fmt.Errorf("conflicting package manager lockfiles: %s; keep lockfiles for only one package manager", strings.Join(found, ", "))
-	}
 	if manager == "" {
 		return packageManagerNpm, nil
 	}

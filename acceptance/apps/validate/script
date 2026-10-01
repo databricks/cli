@@ -7,19 +7,19 @@ title "Skip tests"
 trace $CLI apps validate --skip-tests
 
 title "Report a failed script"
-trace VALIDATION_TEST_FAIL="run test" musterr $CLI apps validate
+trace VALIDATION_TEST_FAIL="run --if-present test" musterr $CLI apps validate
 
 title "Deploy validates with the same package manager before uploading"
-trace VALIDATION_TEST_FAIL="run build" musterr $CLI apps deploy
+trace VALIDATION_TEST_FAIL="run --if-present build" musterr $CLI apps deploy
 
 title "Commands executed in the project directory"
 trace cat commands.log
 
-title "Reject conflicting lockfiles"
-trace musterr $CLI apps validate --path conflicting
+title "Warn but continue on conflicting lockfiles"
+trace $CLI apps validate --path conflicting
 
-title "Reject unsupported package managers"
-trace musterr $CLI apps validate --path unsupported
+title "Warn but continue on unsupported lockfiles"
+trace $CLI apps validate --path unsupported
 
 title "Reject malformed package.json"
 trace musterr $CLI apps validate --path invalid
