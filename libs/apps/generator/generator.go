@@ -40,7 +40,7 @@ type Config struct {
 	// ResourceValues maps resource value keys to values.
 	// Keys use "resource_key.field_name" format (e.g., "sql-warehouse.id" -> "abc123").
 	ResourceValues map[string]string
-	// AuthModes maps resource keys to their auth mode (AuthModeSP, AuthModeOBO, or AuthModeBoth).
+	// AuthModes maps a resource's AuthKey to its auth mode (AuthModeSP, AuthModeOBO, or AuthModeBoth).
 	// Resources without an entry use AuthModeSP.
 	AuthModes map[string]string
 }
@@ -57,12 +57,12 @@ const (
 
 // isOBOOnly returns true if the resource is accessed only on behalf of the user (not bound to the service principal).
 func isOBOOnly(r manifest.Resource, cfg Config) bool {
-	return cfg.AuthModes[r.Key()] == AuthModeOBO
+	return cfg.AuthModes[r.AuthKey()] == AuthModeOBO
 }
 
 // needsScope returns true if the resource is accessed on behalf of the user.
 func needsScope(r manifest.Resource, cfg Config) bool {
-	mode := cfg.AuthModes[r.Key()]
+	mode := cfg.AuthModes[r.AuthKey()]
 	return mode == AuthModeOBO || mode == AuthModeBoth
 }
 

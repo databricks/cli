@@ -56,6 +56,14 @@ func (r Resource) Key() string {
 	return r.ResourceKey
 }
 
+// AuthKey identifies a resource for auth-mode lookups using the same type+key
+// identity as resource de-duplication (CollectResources, generator.DedupeResources).
+// Two resources that collapse to one in the generated bundle therefore share an
+// auth mode, while two resources with the same key but different types do not collide.
+func (r Resource) AuthKey() string {
+	return r.Type + ":" + r.Key()
+}
+
 // VarPrefix returns the variable name prefix derived from the resource key.
 // Hyphens are replaced with underscores for YAML variable name compatibility.
 func (r Resource) VarPrefix() string {

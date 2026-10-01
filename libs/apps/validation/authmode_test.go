@@ -87,3 +87,16 @@ resources:
 func TestValidateAuthModesWithoutManifest(t *testing.T) {
 	assert.NoError(t, ValidateAuthModes(t.TempDir()))
 }
+
+func TestValidateAuthModesFollowsIncludes(t *testing.T) {
+	// An OBO resource whose user_api_scopes live in an included file must not be
+	// flagged as missing its scope.
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "appkit.plugins.json"), []byte(authModeManifest), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "app.yaml"), []byte("env:\n  - name: WAREHOUSE_ID\n    value: wh1\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte("include:\n  - resources/*.yml\n"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "resources"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "resources", "app.yml"), []byte("resources:\n  apps:\n    app:\n      user_api_scopes:\n        - sql\n"), 0o644))
+
+	assert.NoError(t, ValidateAuthModes(dir))
+}

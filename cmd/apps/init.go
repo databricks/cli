@@ -338,7 +338,7 @@ func parseSetAuthModes(setValues []string, m *manifest.Manifest) (map[string]str
 		if value != generator.AuthModeSP && r.Scope == "" {
 			return nil, fmt.Errorf("resource %q of plugin %q cannot be accessed on behalf of the user; use %s.%s.%s=sp", resourceKey, pluginName, pluginName, resourceKey, authModeField)
 		}
-		modes[resourceKey] = value
+		modes[r.AuthKey()] = value
 	}
 	return modes, nil
 }
@@ -351,9 +351,9 @@ func parseSetAuthModes(setValues []string, m *manifest.Manifest) (map[string]str
 func resolveAuthModes(resources []manifest.Resource, setModes, promptedModes map[string]string, defaultMode string) (modes map[string]string, keptSP []string) {
 	modes = make(map[string]string)
 	for _, r := range resources {
-		mode, ok := setModes[r.Key()]
+		mode, ok := setModes[r.AuthKey()]
 		if !ok {
-			mode, ok = promptedModes[r.Key()]
+			mode, ok = promptedModes[r.AuthKey()]
 		}
 		if !ok && defaultMode == generator.AuthModeOBO {
 			if r.AppOnly || r.Scope == "" {
@@ -363,10 +363,21 @@ func resolveAuthModes(resources []manifest.Resource, setModes, promptedModes map
 			mode = defaultMode
 		}
 		if mode == generator.AuthModeOBO || mode == generator.AuthModeBoth {
-			modes[r.Key()] = mode
+			modes[r.AuthKey()] = mode
 		}
 	}
 	return modes, keptSP
+}
+
+// resourceConfigured reports whether any of the resource's field values are set.
+// Resource values are keyed "resourceKey.fieldName" (see parseSetValues).
+func resourceConfigured(r manifest.Resource, values map[string]string) bool {
+	for _, fieldName := range r.FieldNames() {
+		if values[r.Key()+"."+fieldName] != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // pluginHasResourceField checks whether a plugin declares a resource with the given key and field name.
@@ -635,7 +646,7 @@ func promptForAuthModes(ctx context.Context, resources []manifest.Resource, them
 				return nil, err
 			}
 		}
-		modes[r.Key()] = mode
+		modes[r.AuthKey()] = mode
 		prompt.PrintAnswered(ctx, r.Alias, authModeLabel(mode))
 	}
 	for _, r := range resources {
@@ -1470,9 +1481,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Always include mandatory plugins regardless of user selection or flags.
 	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
 
-	authModes, keptSP := resolveAuthModes(
-		append(m.CollectResources(selectedPlugins), m.CollectOptionalResources(selectedPlugins)...),
-		setAuthModes, promptedAuthModes, opts.authMode)
+	// Only optional resources that were actually configured end up in the project,
+	// so unconfigured ones must not be resolved or listed in the keptSP note.
+	authResources := m.CollectResources(selectedPlugins)
+	for _, r := range m.CollectOptionalResources(selectedPlugins) {
+		if resourceConfigured(r, resourceValues) {
+			authResources = append(authResources, r)
+		}
+	}
+	authModes, keptSP := resolveAuthModes(authResources, setAuthModes, promptedAuthModes, opts.authMode)
 	if len(keptSP) > 0 {
 		cmdio.LogString(ctx, "Note: these resources cannot be accessed on behalf of the user and use the service principal: "+strings.Join(keptSP, ", "))
 	}

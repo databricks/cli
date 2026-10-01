@@ -1491,9 +1491,9 @@ func TestParseSetAuthModes(t *testing.T) {
 		wantErr   string
 	}{
 		{name: "values ignored", setValues: []string{"analytics.sql-warehouse.id=wh"}, want: map[string]string{}},
-		{name: "obo", setValues: []string{"analytics.sql-warehouse.authMode=obo"}, want: map[string]string{"sql-warehouse": "obo"}},
-		{name: "both", setValues: []string{"analytics.sql-warehouse.authMode=both"}, want: map[string]string{"sql-warehouse": "both"}},
-		{name: "sp without scope", setValues: []string{"jobs.job.authMode=sp"}, want: map[string]string{"job": "sp"}},
+		{name: "obo", setValues: []string{"analytics.sql-warehouse.authMode=obo"}, want: map[string]string{"sql_warehouse:sql-warehouse": "obo"}},
+		{name: "both", setValues: []string{"analytics.sql-warehouse.authMode=both"}, want: map[string]string{"sql_warehouse:sql-warehouse": "both"}},
+		{name: "sp without scope", setValues: []string{"jobs.job.authMode=sp"}, want: map[string]string{"job:job": "sp"}},
 		{name: "invalid value", setValues: []string{"analytics.sql-warehouse.authMode=user"}, wantErr: "invalid auth mode"},
 		{name: "unknown resource", setValues: []string{"analytics.nope.authMode=obo"}, wantErr: "no resource with key"},
 		{name: "app only", setValues: []string{"analytics.secret.authMode=sp"}, wantErr: "always accessed by the app's service principal"},
@@ -1527,17 +1527,24 @@ func TestResolveAuthModes(t *testing.T) {
 
 	// The --auth-mode obo default skips resources without a scope and app-only resources.
 	got, keptSP = resolveAuthModes(resources, nil, nil, "obo")
-	assert.Equal(t, map[string]string{"sql-warehouse": "obo"}, got)
+	assert.Equal(t, map[string]string{"sql_warehouse:sql-warehouse": "obo"}, got)
 	assert.Equal(t, []string{"secret", "job"}, keptSP)
 
 	// An explicit --set wins and is not reported as kept on sp.
-	got, keptSP = resolveAuthModes(resources, map[string]string{"job": "sp", "sql-warehouse": "sp"}, nil, "obo")
+	got, keptSP = resolveAuthModes(resources, map[string]string{"job:job": "sp", "sql_warehouse:sql-warehouse": "sp"}, nil, "obo")
 	assert.Empty(t, got)
 	assert.Equal(t, []string{"secret"}, keptSP)
 
-	got, _ = resolveAuthModes(resources, map[string]string{"sql-warehouse": "both"}, map[string]string{"sql-warehouse": "obo"}, "")
-	assert.Equal(t, map[string]string{"sql-warehouse": "both"}, got)
+	got, _ = resolveAuthModes(resources, map[string]string{"sql_warehouse:sql-warehouse": "both"}, map[string]string{"sql_warehouse:sql-warehouse": "obo"}, "")
+	assert.Equal(t, map[string]string{"sql_warehouse:sql-warehouse": "both"}, got)
 
-	got, _ = resolveAuthModes(resources, nil, map[string]string{"sql-warehouse": "obo"}, "")
-	assert.Equal(t, map[string]string{"sql-warehouse": "obo"}, got)
+	got, _ = resolveAuthModes(resources, nil, map[string]string{"sql_warehouse:sql-warehouse": "obo"}, "")
+	assert.Equal(t, map[string]string{"sql_warehouse:sql-warehouse": "obo"}, got)
+}
+
+func TestResourceConfigured(t *testing.T) {
+	r := manifest.Resource{ResourceKey: "wh", Fields: map[string]manifest.ResourceField{"id": {}}}
+	assert.False(t, resourceConfigured(r, nil))
+	assert.False(t, resourceConfigured(r, map[string]string{"other.id": "x"}))
+	assert.True(t, resourceConfigured(r, map[string]string{"wh.id": "x"}))
 }

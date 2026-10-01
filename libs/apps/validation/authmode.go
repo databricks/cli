@@ -19,6 +19,7 @@ type appYAML struct {
 }
 
 type bundleYAML struct {
+	Include   []string `yaml:"include"`
 	Resources struct {
 		Apps map[string]struct {
 			UserAPIScopes []string `yaml:"user_api_scopes"`
@@ -47,19 +48,40 @@ func ValidateAuthModes(projectPath string) error {
 	if ok, err := readYAML(filepath.Join(projectPath, "app.yaml"), &app); !ok {
 		return err
 	}
-	// ponytail: reads only the root databricks.yml, include files are not followed.
-	var bundle bundleYAML
-	if ok, err := readYAML(filepath.Join(projectPath, "databricks.yml"), &bundle); !ok {
+	var root bundleYAML
+	if ok, err := readYAML(filepath.Join(projectPath, "databricks.yml"), &root); !ok {
 		return err
+	}
+
+	// Follow the root-level include globs so split-config bundles, where the app
+	// resource and user_api_scopes live in separate files, are seen too.
+	bundles := []bundleYAML{root}
+	for _, pattern := range root.Include {
+		matches, err := filepath.Glob(filepath.Join(projectPath, pattern))
+		if err != nil {
+			return fmt.Errorf("invalid include pattern %q: %w", pattern, err)
+		}
+		for _, path := range matches {
+			var inc bundleYAML
+			ok, err := readYAML(path, &inc)
+			if err != nil {
+				return err
+			}
+			if ok {
+				bundles = append(bundles, inc)
+			}
+		}
 	}
 
 	bound := make(map[string]bool)
 	var scopes []string
-	for _, a := range bundle.Resources.Apps {
-		for _, r := range a.Resources {
-			bound[r.Name] = true
+	for _, b := range bundles {
+		for _, a := range b.Resources.Apps {
+			for _, r := range a.Resources {
+				bound[r.Name] = true
+			}
+			scopes = append(scopes, a.UserAPIScopes...)
 		}
-		scopes = append(scopes, a.UserAPIScopes...)
 	}
 
 	byEnv := make(map[string]manifest.Resource)

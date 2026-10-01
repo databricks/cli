@@ -1178,7 +1178,7 @@ func authModeConfig(modes map[string]string) generator.Config {
 
 func TestAuthModeSPIsDefault(t *testing.T) {
 	plugins := authModePlugins()
-	sp := authModeConfig(map[string]string{"sql-warehouse": generator.AuthModeSP})
+	sp := authModeConfig(map[string]string{"sql_warehouse:sql-warehouse": generator.AuthModeSP})
 	unset := authModeConfig(nil)
 
 	assert.Equal(t, generator.GenerateBundleResources(plugins, unset), generator.GenerateBundleResources(plugins, sp))
@@ -1189,7 +1189,7 @@ func TestAuthModeSPIsDefault(t *testing.T) {
 
 func TestAuthModeOBO(t *testing.T) {
 	plugins := authModePlugins()
-	cfg := authModeConfig(map[string]string{"sql-warehouse": generator.AuthModeOBO})
+	cfg := authModeConfig(map[string]string{"sql_warehouse:sql-warehouse": generator.AuthModeOBO})
 
 	assert.NotContains(t, generator.GenerateBundleResources(plugins, cfg), "sql-warehouse")
 	assert.NotContains(t, generator.GenerateBundleVariables(plugins, cfg), "sql_warehouse_id")
@@ -1201,10 +1201,33 @@ func TestAuthModeOBO(t *testing.T) {
 
 func TestAuthModeBoth(t *testing.T) {
 	plugins := authModePlugins()
-	cfg := authModeConfig(map[string]string{"sql-warehouse": generator.AuthModeBoth, "genie-space": generator.AuthModeOBO})
+	cfg := authModeConfig(map[string]string{"sql_warehouse:sql-warehouse": generator.AuthModeBoth, "genie_space:genie-space": generator.AuthModeOBO})
 
 	assert.Contains(t, generator.GenerateBundleResources(plugins, cfg), "- name: sql-warehouse")
 	assert.NotContains(t, generator.GenerateBundleResources(plugins, cfg), "genie-space")
 	assert.Contains(t, generator.GenerateAppEnv(plugins, cfg), "valueFrom: sql-warehouse")
 	assert.Equal(t, "        - sql\n        - genie\n        - ai-gateway", generator.GenerateUserAPIScopes(plugins, cfg))
+}
+
+func TestAuthModeKeyDoesNotCollideAcrossTypes(t *testing.T) {
+	// Two resources share the resourceKey "data" but differ in type, so they must
+	// not share an auth mode: making the warehouse OBO must leave the app-only
+	// secret bound to the service principal and must not emit its empty scope.
+	plugins := []manifest.Plugin{
+		{Name: "a", Resources: manifest.Resources{Required: []manifest.Resource{
+			{Type: "sql_warehouse", ResourceKey: "data", Scope: "sql", Fields: map[string]manifest.ResourceField{"id": {Env: "WAREHOUSE_ID"}}},
+		}}},
+		{Name: "b", Resources: manifest.Resources{Required: []manifest.Resource{
+			{Type: "secret", ResourceKey: "data", AppOnly: true, Fields: map[string]manifest.ResourceField{"token": {Env: "TOKEN"}}},
+		}}},
+	}
+	cfg := generator.Config{
+		ResourceValues: map[string]string{"data.id": "wh1", "data.token": "s"},
+		AuthModes:      map[string]string{"sql_warehouse:data": generator.AuthModeOBO},
+	}
+
+	env := generator.GenerateAppEnv(plugins, cfg)
+	assert.Contains(t, env, "  - name: WAREHOUSE_ID\n    value: wh1") // warehouse: OBO literal
+	assert.Contains(t, env, "  - name: TOKEN\n    valueFrom: data")   // secret: still SP-bound
+	assert.Equal(t, "        - sql", generator.GenerateUserAPIScopes(plugins, cfg))
 }
