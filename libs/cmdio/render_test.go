@@ -221,9 +221,8 @@ func TestRenderJSONBytes(t *testing.T) {
 	raw := []byte(`{"job_id":18000000000000000123,"name":"a<b"}`)
 	want := "{\n  \"job_id\": 18000000000000000123,\n  \"name\": \"a<b\"\n}\n"
 
-	out := &bytes.Buffer{}
-	c := &cmdIO{out: out, err: out}
-	require.NoError(t, RenderJSONBytes(InContext(t.Context(), c), raw))
+	ctx, out := NewTestContextWithStdout(t.Context())
+	require.NoError(t, RenderJSONBytes(ctx, raw))
 	assert.Equal(t, want, out.String())
 }
 
@@ -257,9 +256,8 @@ func TestRenderJSONBytesColorGate(t *testing.T) {
 }
 
 func TestRenderJSONBytesInvalid(t *testing.T) {
-	out := &bytes.Buffer{}
-	c := &cmdIO{out: out, err: out}
-	assert.Error(t, RenderJSONBytes(InContext(t.Context(), c), []byte("not json")))
+	ctx, _ := NewTestContextWithStdout(t.Context())
+	assert.Error(t, RenderJSONBytes(ctx, []byte("not json")))
 }
 
 func TestRender(t *testing.T) {

@@ -1,12 +1,12 @@
 
-=== Response: a >2^53 id renders exactly, keys stay in server order
+=== Response: a >2^53 id is rendered exactly, in server key order
 >>> [CLI] api get /api/2.0/test/bigint
 {
   "name": "a<b",
   "job_id": [JOB_ID]
 }
 
-=== Request: a >2^53 id in --json is sent verbatim
+=== Request body (POST): the id in --json is sent verbatim
 >>> print_requests.py //test/bigint --del-field headers
 {
   "method": "POST",
@@ -14,5 +14,15 @@
   "body": {
     "name": "a<b",
     "job_id": [JOB_ID]
+  }
+}
+
+=== Request query (GET): the id in --json survives in the query string
+>>> print_requests.py --get //test/bigint --del-field headers
+{
+  "method": "GET",
+  "path": "/api/2.0/test/bigint",
+  "q": {
+    "job_id": "[JOB_ID]"
   }
 }

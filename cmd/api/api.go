@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/spf13/cobra"
 )
 
@@ -126,12 +125,16 @@ func makeCommand(method string) *cobra.Command {
 				headers[auth.WorkspaceIDHeader] = orgID
 			}
 
-			var response bytes.Buffer
+			// A *json.RawMessage target copies the response bytes verbatim
+			// (exact integers, key order, unescaped characters) while keeping
+			// the SDK's JSON handling: it sends Accept: application/json and
+			// maps an HTML or non-JSON body to an actionable error.
+			var response json.RawMessage
 			err = api.Do(cmd.Context(), method, path, headers, nil, request, &response)
 			if err != nil {
 				return err
 			}
-			return renderResponse(cmd.Context(), response.Bytes())
+			return renderResponse(cmd.Context(), response)
 		},
 	}
 
@@ -144,48 +147,53 @@ func makeCommand(method string) *cobra.Command {
 }
 
 // buildRequestBody turns the --json flag into the value passed to the SDK's
-// Do. POST/PUT/PATCH bodies are sent verbatim as raw bytes so integers keep
-// their exact value; decoding into `any` degrades any integer above 2^53 to a
-// float64. GET/DELETE/HEAD instead serialize the payload into the query
-// string, which the SDK builds from a decoded map/struct rather than raw bytes
-// (see databricks-sdk-go/httpclient/request.go, makeRequestBody), so those
-// keep the decoding path.
+// Do. Integers must keep their exact value in both shapes: Go's default JSON
+// decoding degrades any integer above 2^53 to a float64, and the query-string
+// path additionally renders large float64s in exponent form.
+//
+// POST/PUT/PATCH send the body verbatim as raw bytes. GET/DELETE/HEAD serialize
+// the payload into the query string, which the SDK builds from a decoded value
+// rather than raw bytes (see databricks-sdk-go/httpclient/request.go,
+// makeRequestBody), so those decode with UseNumber: json.Number keeps the exact
+// digits when makeQueryString formats it with %v.
 func buildRequestBody(method string, payload *flags.JsonFlag) (any, error) {
 	raw := payload.Raw()
 	if raw == nil {
 		return nil, nil
 	}
+	// Reject malformed input client-side with a positioned error (and the @file
+	// source), matching the decoding path this replaced.
+	if err := payload.Validate(); err != nil {
+		return nil, err
+	}
 	switch method {
 	case http.MethodGet, http.MethodDelete, http.MethodHead:
 		var request any
-		if diags := payload.Unmarshal(&request); diags.HasError() {
-			return nil, diags.Error()
+		dec := json.NewDecoder(bytes.NewReader(raw))
+		dec.UseNumber()
+		if err := dec.Decode(&request); err != nil {
+			return nil, err
 		}
 		return request, nil
 	default:
-		// json.Valid preserves the client-side rejection of malformed --json
-		// that the decoding path used to provide.
-		if !json.Valid(raw) {
-			return nil, errors.New("--json is not valid JSON")
+		// A literal `null` body decodes to no body on the SDK side; match that
+		// rather than sending the four bytes "null".
+		if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+			return nil, nil
 		}
 		return raw, nil
 	}
 }
 
-// renderResponse writes the API response as JSON. The raw *bytes.Buffer target
-// passed to Do skips the SDK's json.Unmarshal, so integers beyond float64
-// precision and the server's object key order survive to the output (see
-// cmdio.RenderJSONBytes).
-func renderResponse(ctx context.Context, raw []byte) error {
-	trimmed := bytes.TrimSpace(raw)
-	if len(trimmed) == 0 {
-		return nil
-	}
-	// The SDK maps an HTML body (typically a Private Link login page) to the
-	// actionable ErrHTMLContent inside the json.Unmarshal that the raw target
-	// bypasses, so re-detect it here.
-	if trimmed[0] == '<' {
-		return httpclient.ErrHTMLContent
+// renderResponse writes the API response as JSON, preserving it byte-for-byte
+// (integer literals beyond float64 precision and object key order included).
+// raw is already validated JSON or empty: the SDK rejects a non-JSON body
+// before Do returns.
+func renderResponse(ctx context.Context, raw json.RawMessage) error {
+	if len(raw) == 0 {
+		// Empty body (204, HEAD, or an empty 200). Render `null`, as the
+		// decode-into-any path did.
+		return cmdio.Render(ctx, nil)
 	}
 	return cmdio.RenderJSONBytes(ctx, raw)
 }
