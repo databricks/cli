@@ -23,7 +23,7 @@ func staleVersionWarning(buildTime, now time.Time) string {
 }
 
 func warnIfStaleVersion(ctx context.Context) {
-	// The CLI on DBR is bundled with the runtime image and can't be updated by the user.
+	// DBR installs the latest CLI by default, so skip the warning there.
 	if dbr.HasDetection(ctx) && dbr.RunsOnRuntime(ctx) {
 		return
 	}
