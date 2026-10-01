@@ -48,6 +48,106 @@ func touchEmptyFile(t *testing.T, path string) {
 	f.Close()
 }
 
+func TestTranslatePathsProjectEnvironment(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		path         string
+		localFile    string
+		gitSource    bool
+		sourceLinked bool
+		want         string
+		wantError    string
+	}{
+		{
+			name:      "relative to included YAML",
+			path:      "../pyproject.toml",
+			localFile: "pyproject.toml",
+			want:      "/Workspace/bundle/files/pyproject.toml",
+		},
+		{
+			name:      "requirements file with spaces",
+			path:      "./env files/requirements.txt",
+			localFile: "resources/env files/requirements.txt",
+			want:      "/Workspace/bundle/files/resources/env files/requirements.txt",
+		},
+		{
+			name: "absolute workspace path",
+			path: "/Workspace/shared/pyproject.toml",
+			want: "/Workspace/shared/pyproject.toml",
+		},
+		{
+			name:         "source-linked deployment",
+			path:         "../pyproject.toml",
+			localFile:    "pyproject.toml",
+			sourceLinked: true,
+			want:         "pyproject.toml",
+		},
+		{
+			name:      "git source is unchanged",
+			path:      "../pyproject.toml",
+			gitSource: true,
+			want:      "../pyproject.toml",
+		},
+		{
+			name:      "missing file",
+			path:      "../missing.toml",
+			wantError: "file missing.toml not found",
+		},
+		{
+			name:      "outside sync root",
+			path:      "../../pyproject.toml",
+			wantError: "is not contained in sync root path",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tc.localFile != "" {
+				touchEmptyFile(t, filepath.Join(dir, tc.localFile))
+			}
+			job := &resources.Job{
+				JobSettings: jobs.JobSettings{
+					Environments: []jobs.JobEnvironment{{EnvironmentKey: "project", Spec: &compute.Environment{}}},
+				},
+			}
+			if tc.gitSource {
+				job.GitSource = &jobs.GitSource{GitUrl: "https://example.test/repo.git"}
+			}
+			b := &bundle.Bundle{
+				BundleRootPath: dir,
+				SyncRootPath:   dir,
+				SyncRoot:       vfs.MustNew(dir),
+				Config: config.Root{
+					Workspace: config.Workspace{FilePath: "/Workspace/bundle/files"},
+					Resources: config.Resources{Jobs: map[string]*resources.Job{"job": job}},
+					Presets:   config.Presets{SourceLinkedDeployment: &tc.sourceLinked},
+				},
+			}
+			bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resources", "job.yml")}})
+			const field = "resources.jobs.job.environments[0].spec.project_environment"
+			// Until the SDK exposes this field, invoke the mutators directly so
+			// bundle.Apply does not discard it when converting from SDK types.
+			err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+				return dyn.Set(v, field, dyn.NewValue(tc.path, []dyn.Location{{File: filepath.Join(dir, "resources", "job.yml")}}))
+			})
+			require.NoError(t, err)
+			require.NoError(t, mutator.NormalizePaths().Apply(t.Context(), b).Error())
+			diags := mutator.TranslatePaths().Apply(t.Context(), b)
+			if tc.wantError != "" {
+				require.ErrorContains(t, diags.Error(), tc.wantError)
+				return
+			}
+			require.NoError(t, diags.Error())
+			actual, err := dyn.Get(b.Config.Value(), field)
+			require.NoError(t, err)
+			want := tc.want
+			if tc.sourceLinked {
+				want = filepath.ToSlash(filepath.Join(dir, want))
+			}
+			assert.Equal(t, want, actual.MustString())
+		})
+	}
+}
+
 func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
