@@ -18,7 +18,7 @@ func staleVersionWarning(buildTime, now time.Time) string {
 		return ""
 	}
 	return fmt.Sprintf("Warning: this version of the Databricks CLI was built on %s and is more than 6 months old. "+
-		"We strongly recommend updating to the latest version: https://docs.databricks.com/dev-tools/cli/install.html",
+		"We strongly recommend updating to the latest version: https://docs.databricks.com/dev-tools/cli/install.html\n",
 		buildTime.UTC().Format(time.DateOnly))
 }
 
