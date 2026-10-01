@@ -14,18 +14,36 @@ import (
 
 func TestStaleVersionWarning(t *testing.T) {
 	now := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	stale := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
+	header := "Warning: this version of the Databricks CLI was built on 2026-01-15 and is more than 6 months old. " +
+		"We strongly recommend updating to the latest version.\n"
 
-	// Dev build: no embedded timestamp.
-	assert.Empty(t, staleVersionWarning(time.Unix(0, 0), now))
-	// Recent build.
-	assert.Empty(t, staleVersionWarning(now.AddDate(0, -1, 0), now))
-	// Just under the threshold.
-	assert.Empty(t, staleVersionWarning(now.Add(-staleVersionThreshold+time.Hour), now))
-
-	// Past the threshold: warns and shows the build date.
-	msg := staleVersionWarning(time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC), now)
-	assert.Contains(t, msg, "built on 2026-01-15")
-	assert.Contains(t, msg, "strongly recommend updating")
+	tests := []struct {
+		name      string
+		buildTime time.Time
+		command   string
+		want      string
+	}{
+		{name: "no embedded timestamp", buildTime: time.Unix(0, 0), command: "brew upgrade databricks"},
+		{name: "recent build", buildTime: now.AddDate(0, -1, 0), command: "brew upgrade databricks"},
+		{name: "just under threshold", buildTime: now.Add(-staleVersionThreshold + time.Hour)},
+		{
+			name:      "stale with detected install method",
+			buildTime: stale,
+			command:   "brew upgrade databricks",
+			want:      header + "To upgrade, run: brew upgrade databricks\n",
+		},
+		{
+			name:      "stale with unknown install method",
+			buildTime: stale,
+			want:      header + "See " + installDocsURL + " to upgrade.\n",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, staleVersionWarning(tc.buildTime, now, tc.command))
+		})
+	}
 }
 
 func TestWarnIfStaleVersionSkippedOnDBR(t *testing.T) {
