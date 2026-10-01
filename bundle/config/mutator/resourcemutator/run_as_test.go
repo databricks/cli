@@ -230,9 +230,8 @@ var groupRunAsSupportByResource = map[string]groupRunAsSupport{
 
 func TestRunAsGroupSupportClassification(t *testing.T) {
 	actual := make(map[string]groupRunAsSupport)
-	resourceTypes := reflect.TypeOf(config.Resources{})
-	for i := range resourceTypes.NumField() {
-		field := resourceTypes.Field(i)
+	resourceTypes := reflect.TypeFor[config.Resources]()
+	for field := range resourceTypes.Fields() {
 		require.Equal(t, reflect.Map, field.Type.Kind(), field.Name)
 		require.Equal(t, reflect.Pointer, field.Type.Elem().Kind(), field.Name)
 		resourceType := field.Type.Elem().Elem()
