@@ -8,11 +8,8 @@ on:
   merge_group:
     types: [checks_requested]
   push:
-    # Always run on push to main. The build cache can only be reused
-    # if it was saved by a run from the repository's default branch.
-    # The run result will be identical to that from the merge queue
-    # because the commit is identical, yet we need to perform it to
-    # seed the build cache.
+    # Run relevant Python jobs on main to seed build caches that can be reused
+    # by pull request and merge queue runs.
     branches:
       - main
 
@@ -53,7 +50,7 @@ jobs:
 
   python_tests:
     needs: changes
-    if: ${{ needs.changes.outputs.python == 'true' }}
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.python == 'true') }}
     name: tests
     runs-on: ubuntu-latest
 
@@ -63,6 +60,12 @@ jobs:
         pyVersion: ['3.10', '3.11', '3.12', '3.13']
 
     steps:
+      - name: Fail if change detection did not succeed
+        if: ${{ needs.changes.result != 'success' }}
+        run: |
+          echo "Python change detection did not succeed"
+          exit 1
+
       - name: Checkout repository and submodules
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -111,11 +114,17 @@ jobs:
 
   python_docs:
     needs: changes
-    if: ${{ needs.changes.outputs.python == 'true' }}
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.python == 'true') }}
     name: docs
     runs-on: ubuntu-latest
 
     steps:
+      - name: Fail if change detection did not succeed
+        if: ${{ needs.changes.result != 'success' }}
+        run: |
+          echo "Python change detection did not succeed"
+          exit 1
+
       - name: Checkout repository and submodules
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
