@@ -1,0 +1,14 @@
+# Behaviours of how `databricks api` builds the outgoing request.
+
+title "Accept: application/json is sent (the raw response target must not drop it)"
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/test/req --json '{"a": 1}' > /dev/null
+print_requests.py //test/req | contains.py '"Accept"' '"application/json"' > /dev/null
+printf '\n%s\n' "OK: Accept header present"
+
+title "A literal 'null' --json sends no request body (not the bytes \"null\")"
+MSYS_NO_PATHCONV=1 $CLI api post /api/2.0/test/req --json 'null' > /dev/null
+trace print_requests.py //test/req --del-field headers
+
+title "Query parameters in the path and a --json body are both sent"
+MSYS_NO_PATHCONV=1 $CLI api post "/api/2.0/test/req?foo=bar&x=1" --json '{"hello": "world"}' > /dev/null
+trace print_requests.py //test/req --del-field headers

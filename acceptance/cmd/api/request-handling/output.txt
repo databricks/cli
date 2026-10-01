@@ -1,0 +1,24 @@
+
+=== Accept: application/json is sent (the raw response target must not drop it)
+OK: Accept header present
+
+=== A literal 'null' --json sends no request body (not the bytes "null")
+>>> print_requests.py //test/req --del-field headers
+{
+  "method": "POST",
+  "path": "/api/2.0/test/req"
+}
+
+=== Query parameters in the path and a --json body are both sent
+>>> print_requests.py //test/req --del-field headers
+{
+  "method": "POST",
+  "path": "/api/2.0/test/req",
+  "q": {
+    "foo": "bar",
+    "x": "1"
+  },
+  "body": {
+    "hello": "world"
+  }
+}
