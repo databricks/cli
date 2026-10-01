@@ -3,6 +3,7 @@ package aircmd
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -181,6 +182,61 @@ environment:
 	assert.Contains(t, itemNames(artifacts), commandScriptName)
 	assert.Contains(t, itemNames(artifacts), trainingConfigName)
 	assert.NotContains(t, itemNames(artifacts), "requirements.yaml")
+}
+
+func TestConvertToDabsPreservesPoolPriorityAndUnityCatalogImage(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		poolID        string
+		priorityClass string
+		imagePath     string
+	}{
+		{name: "unset"},
+		{name: "pool", poolID: "capacity-1"},
+		{name: "pool-priority", poolID: "capacity-1", priorityClass: "CRITICAL"},
+		{name: "image", imagePath: "main.air.training:prod"},
+		{name: "pool-image", poolID: "capacity-1", imagePath: "main.air.training:prod"},
+		{name: "pool-priority-image", poolID: "capacity-1", priorityClass: "CRITICAL", imagePath: "main.air.training:prod"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := minimalConfig
+			var computeOptions string
+			if tc.poolID != "" {
+				computeOptions += "  pool_id: " + tc.poolID + "\n"
+			}
+			if tc.priorityClass != "" {
+				computeOptions += "  priority_class: " + tc.priorityClass + "\n"
+			}
+			cfg = strings.Replace(cfg, "  num_accelerators: 1\n", "  num_accelerators: 1\n"+computeOptions, 1)
+			if tc.imagePath != "" {
+				cfg += "environment:\n  unity_catalog_image: " + tc.imagePath + "\n"
+			}
+			path := writeConfigFile(t, "run.yaml", cfg)
+			loaded, err := loadRunConfig(path)
+			require.NoError(t, err)
+
+			root, _, err := convertToDabs(t.Context(), loaded, path, filepath.Dir(path))
+			require.NoError(t, err)
+
+			aiRuntimeTask := "resources.jobs." + loaded.ExperimentName + ".tasks[0].ai_runtime_task"
+			compute := aiRuntimeTask + ".deployments[0].compute"
+			if tc.poolID == "" {
+				assert.False(t, has(root, compute+".provisioned_capacity_id"))
+			} else {
+				assert.Equal(t, tc.poolID, get(t, root, compute+".provisioned_capacity_id").MustString())
+			}
+			if tc.priorityClass == "" {
+				assert.False(t, has(root, aiRuntimeTask+".priority_class"))
+			} else {
+				assert.Equal(t, tc.priorityClass, get(t, root, aiRuntimeTask+".priority_class").MustString())
+			}
+			if tc.imagePath == "" {
+				assert.False(t, has(root, aiRuntimeTask+".unity_catalog_image_path"))
+			} else {
+				assert.Equal(t, tc.imagePath, get(t, root, aiRuntimeTask+".unity_catalog_image_path").MustString())
+			}
+		})
+	}
 }
 
 // Optional fields are omitted rather than emitted empty: no code_source means no
