@@ -46,7 +46,6 @@ func sdkAppResourceKeys(t *testing.T) map[string]bool {
 	keys := make(map[string]bool)
 	typ := reflect.TypeFor[apps.AppResource]()
 	for f := range typ.Fields() {
-		f := f
 		if f.Type.Kind() != reflect.Pointer || f.Type.Elem().Kind() != reflect.Struct {
 			continue
 		}

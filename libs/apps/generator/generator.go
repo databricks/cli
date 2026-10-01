@@ -375,7 +375,7 @@ var appResourceSpecs = map[string]appResourceSpec{
 	},
 	"experiment": {
 		yamlKey:    "experiment",
-		varFields:  [][2]string{{"id", "experiment_id"}},
+		varFields:  [][2]string{{"experimentId", "experiment_id"}},
 		permission: "CAN_READ",
 	},
 	"secret": {
@@ -400,7 +400,7 @@ var appResourceSpecs = map[string]appResourceSpec{
 	},
 	"volume": {
 		yamlKey:      "uc_securable",
-		varFields:    [][2]string{{"id", "securable_full_name"}},
+		varFields:    [][2]string{{"path", "securable_full_name"}},
 		staticFields: [][2]string{{"securable_type", "VOLUME"}},
 		permission:   "READ_VOLUME",
 	},
