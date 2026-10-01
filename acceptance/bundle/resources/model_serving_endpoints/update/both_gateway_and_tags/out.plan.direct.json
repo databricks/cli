@@ -38,6 +38,36 @@
         }
       },
       "remote_state": {
+        "ai_gateway": {
+          "inference_table_config": {
+            "catalog_name": "first-inference-catalog"
+          }
+        },
+        "config": {
+          "served_entities": [
+            {
+              "external_model": {
+                "name": "gpt-4o-mini",
+                "openai_config": {
+                  "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                },
+                "provider": "openai",
+                "task": "llm/v1/chat"
+              },
+              "name": "prod"
+            }
+          ],
+          "traffic_config": {
+            "routes": [
+              {
+                "served_entity_name": "prod",
+                "served_model_name": "prod",
+                "traffic_percentage": 100
+              }
+            ]
+          }
+        },
+        "description": "",
         "endpoint_details": {
           "ai_gateway": {
             "inference_table_config": {
@@ -88,36 +118,8 @@
           ]
         },
         "endpoint_id": "[UUID]",
-        "ai_gateway": {
-          "inference_table_config": {
-            "catalog_name": "first-inference-catalog"
-          }
-        },
-        "config": {
-          "served_entities": [
-            {
-              "external_model": {
-                "name": "gpt-4o-mini",
-                "openai_config": {
-                  "openai_api_key": "{{secrets/test-scope/openai-key}}"
-                },
-                "provider": "openai",
-                "task": "llm/v1/chat"
-              },
-              "name": "prod"
-            }
-          ],
-          "traffic_config": {
-            "routes": [
-              {
-                "served_entity_name": "prod",
-                "served_model_name": "prod",
-                "traffic_percentage": 100
-              }
-            ]
-          }
-        },
         "name": "[ENDPOINT_ID]",
+        "route_optimized": false,
         "tags": [
           {
             "key": "team",
