@@ -1,0 +1,6 @@
+{
+  "action": "update",
+  "old": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner",
+  "new": "${resources.postgres_roles.owner.name}",
+  "remote": ""
+}
