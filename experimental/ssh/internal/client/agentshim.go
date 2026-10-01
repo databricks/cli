@@ -85,7 +85,8 @@ const (
 )
 
 type agentSpec struct {
-	name string
+	name          string
+	telemetryName protos.SshAgentShimAgent
 	// contextFlag passes the context file via this CLI flag (Claude's --append-system-prompt-file).
 	contextFlag string
 	// contextHomeFile writes the context to this $HOME instructions file (codex's AGENTS.md).
@@ -94,8 +95,8 @@ type agentSpec struct {
 
 // Currently limited to the agents whose Unity Gateway CLI command supports --workspace
 var supportedAgents = []agentSpec{
-	{name: "claude", contextFlag: "--append-system-prompt-file"},
-	{name: "codex", contextHomeFile: ".codex/AGENTS.md"},
+	{name: "claude", telemetryName: protos.SshAgentShimAgentClaudeCode, contextFlag: "--append-system-prompt-file"},
+	{name: "codex", telemetryName: protos.SshAgentShimAgentCodex, contextHomeFile: ".codex/AGENTS.md"},
 }
 
 // SupportedAgentNames lists the agents the ssh command registers a subcommand for.
@@ -122,6 +123,7 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 	// picked up via the named return.
 	start := time.Now()
 	outcome := agentShimOutcome{}
+	agent := agentSpec{}
 	launched := false
 	defer func() {
 		// A successful launch replaces this process with execve below (having emitted and
@@ -134,7 +136,7 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 		}
 		outcome.err = retErr
 		outcome.ctxErr = ctx.Err()
-		logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
+		logAgentShimEvent(ctx, agent, outcome, time.Since(start))
 	}()
 
 	agent, ok := agentByName(agentName)
@@ -166,8 +168,8 @@ func RunAgentShim(ctx context.Context, client *databricks.WorkspaceClient, agent
 	// The agent is ready to launch. execProcess replaces this process, so cmd/root's
 	// end-of-command telemetry upload never runs; emit and flush the success event first.
 	launched = true
-	logAgentShimEvent(ctx, agentName, outcome, time.Since(start))
-	uploadAgentShimTelemetry(ctx, agentName, time.Since(start))
+	logAgentShimEvent(ctx, agent, outcome, time.Since(start))
+	uploadAgentShimTelemetry(ctx, agent, time.Since(start))
 	return execProcess(argv0, argv, environ)
 }
 
@@ -228,17 +230,21 @@ func (o agentShimOutcome) category() protos.SshAgentShimErrorCategory {
 	return protos.SshAgentShimErrorCategoryUnknown
 }
 
-func logAgentShimEvent(ctx context.Context, agentName string, outcome agentShimOutcome, setupDuration time.Duration) {
+func logAgentShimEvent(ctx context.Context, agent agentSpec, outcome agentShimOutcome, setupDuration time.Duration) {
 	telemetry.Log(ctx, protos.DatabricksCliLog{
-		SshAgentShimEvent: buildAgentShimEvent(agentName, outcome, setupDuration),
+		SshAgentShimEvent: buildAgentShimEvent(agent, outcome, setupDuration),
 	})
 }
 
 // buildAgentShimEvent maps the agent name and outcome onto the telemetry event. It is
 // separated from logAgentShimEvent so the field mapping can be unit tested.
-func buildAgentShimEvent(agentName string, outcome agentShimOutcome, setupDuration time.Duration) *protos.SshAgentShimEvent {
+func buildAgentShimEvent(agent agentSpec, outcome agentShimOutcome, setupDuration time.Duration) *protos.SshAgentShimEvent {
+	agentValue := agent.telemetryName
+	if agentValue == "" {
+		agentValue = protos.SshAgentShimAgentUnspecified
+	}
 	return &protos.SshAgentShimEvent{
-		AgentName:       agentName,
+		Agent:           agentValue,
 		IsSuccess:       outcome.err == nil,
 		ErrorCategory:   outcome.category(),
 		SetupDurationMs: setupDuration.Milliseconds(),
@@ -249,11 +255,11 @@ func buildAgentShimEvent(agentName string, outcome agentShimOutcome, setupDurati
 // A successful launch replaces this process (see execProcess), so the end-of-command upload
 // in cmd/root.Execute never runs; this rebuilds the ExecutionContext that upload would have
 // attached. Best-effort: an upload failure must not stop the launch.
-func uploadAgentShimTelemetry(ctx context.Context, agentName string, execDuration time.Duration) {
+func uploadAgentShimTelemetry(ctx context.Context, agent agentSpec, execDuration time.Duration) {
 	err := telemetry.Upload(ctx, protos.ExecutionContext{
 		CmdExecID:       cmdctx.ExecId(ctx),
 		Version:         build.GetInfo().Version,
-		Command:         "ssh_agent-shim_" + agentName,
+		Command:         "ssh_agent-shim_" + agent.name,
 		OperatingSystem: runtime.GOOS,
 		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
 		ExecutionTimeMs: execDuration.Milliseconds(),
