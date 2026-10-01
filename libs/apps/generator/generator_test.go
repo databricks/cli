@@ -1231,3 +1231,36 @@ func TestAuthModeKeyDoesNotCollideAcrossTypes(t *testing.T) {
 	assert.Contains(t, env, "  - name: TOKEN\n    valueFrom: data")   // secret: still SP-bound
 	assert.Equal(t, "        - sql", generator.GenerateUserAPIScopes(plugins, cfg))
 }
+
+func TestGenerateBundleResourcesFromManifestBinding(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "tables",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type:        "uc_table",
+						ResourceKey: "table",
+						Description: "Table to read",
+						Permission:  "SELECT",
+						Fields:      map[string]manifest.ResourceField{"name": {Env: "TABLE_NAME", Description: "Table name"}},
+						Binding: &manifest.ResourceBinding{
+							YamlKey:      "uc_securable",
+							VarFields:    [][2]string{{"name", "securable_full_name"}},
+							StaticFields: [][2]string{{"securable_type", "TABLE"}},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{ResourceValues: map[string]string{"table.name": "main.default.t"}}
+
+	assert.Equal(t, `        - name: table
+          uc_securable:
+            securable_full_name: ${var.table_name}
+            securable_type: TABLE
+            permission: SELECT`, generator.GenerateBundleResources(plugins, cfg))
+	assert.Equal(t, "  table_name:\n    description: Table name", generator.GenerateBundleVariables(plugins, cfg))
+	assert.Equal(t, "      table_name: main.default.t", generator.GenerateTargetVariables(plugins, cfg))
+}

@@ -16,6 +16,7 @@
             "description": "SQL Warehouse for analytics queries",
             "permission": "CAN_USE",
             "scope": "sql",
+            "binding": {"yamlKey": "sql_warehouse", "varFields": [["id", "id"]]},
             "fields": {"id": {"env": "DATABRICKS_WAREHOUSE_ID", "description": "SQL Warehouse ID"}}
           }
         ],
