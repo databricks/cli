@@ -22,7 +22,7 @@ Validating project using pnpm...
 ✅ All validation checks passed ([DURATION])
 
 === Report a failed script
->>> VALIDATION_TEST_FAIL=run test musterr [CLI] apps validate
+>>> VALIDATION_TEST_FAIL=run --if-present test musterr [CLI] apps validate
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
 ⏭️  Skipped Generating types (script "typegen" not found)
@@ -41,7 +41,7 @@ validation stderr
 Error: validation failed
 
 === Deploy validates with the same package manager before uploading
->>> VALIDATION_TEST_FAIL=run build musterr [CLI] apps deploy
+>>> VALIDATION_TEST_FAIL=run --if-present build musterr [CLI] apps deploy
 Validating project using pnpm...
 ✅ Installing dependencies ([DURATION])
 ⏭️  Skipped Generating types (script "typegen" not found)
@@ -61,23 +61,39 @@ Error: validation failed - fix errors before deploying
 === Commands executed in the project directory
 >>> cat commands.log
 pnpm install
-pnpm run build
-pnpm run test
+pnpm run --if-present build
+pnpm run --if-present test
 pnpm install
-pnpm run build
+pnpm run --if-present build
 pnpm install
-pnpm run build
-pnpm run test
+pnpm run --if-present build
+pnpm run --if-present test
 pnpm install
-pnpm run build
+pnpm run --if-present build
 
-=== Reject conflicting lockfiles
->>> musterr [CLI] apps validate --path conflicting
-Error: validation error: conflicting package manager lockfiles: package-lock.json, pnpm-lock.yaml; keep lockfiles for only one package manager
+=== Warn but continue on conflicting lockfiles
+>>> [CLI] apps validate --path conflicting
+Warn: found conflicting package manager lockfiles; using package-lock.json and ignoring pnpm-lock.yaml
+Validating project using npm...
+✅ Installing dependencies ([DURATION])
+⏭️  Skipped Generating types (script "typegen" not found)
+⏭️  Skipped Running AST-grep lint (script "lint:ast-grep" not found)
+⏭️  Skipped Type checking (script "typecheck" not found)
+⏭️  Skipped Building (script "build" not found)
+⏭️  Skipped Running tests (script "test" not found)
+✅ All validation checks passed ([DURATION])
 
-=== Reject unsupported package managers
->>> musterr [CLI] apps validate --path unsupported
-Error: validation error: yarn is not supported for apps validation (found yarn.lock); use npm or pnpm
+=== Warn but continue on unsupported lockfiles
+>>> [CLI] apps validate --path unsupported
+Warn: ignoring unsupported lockfile yarn.lock; apps validation uses npm or pnpm
+Validating project using npm...
+✅ Installing dependencies ([DURATION])
+⏭️  Skipped Generating types (script "typegen" not found)
+⏭️  Skipped Running AST-grep lint (script "lint:ast-grep" not found)
+⏭️  Skipped Type checking (script "typecheck" not found)
+⏭️  Skipped Building (script "build" not found)
+⏭️  Skipped Running tests (script "test" not found)
+✅ All validation checks passed ([DURATION])
 
 === Reject malformed package.json
 >>> musterr [CLI] apps validate --path invalid
