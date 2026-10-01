@@ -3,7 +3,9 @@ package validation_test
 import (
 	"encoding/json"
 	"os"
+	osexec "os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -15,6 +17,14 @@ import (
 )
 
 var validationScripts = []string{"typegen", "lint:ast-grep", "typecheck", "build", "test"}
+
+const npmValidationCommands = `npm install
+npm run --if-present typegen
+npm run --if-present lint:ast-grep
+npm run --if-present typecheck
+npm run --if-present build
+npm run --if-present test
+`
 
 // stubPackageManagers records commands without installing packages or requiring Node.js.
 func stubPackageManagers(t *testing.T) {
@@ -44,6 +54,20 @@ func writeValidationProject(t *testing.T, dir string, scripts []string) {
 	testutil.WriteFile(t, filepath.Join(dir, "package.json"), string(data))
 }
 
+// isolateValidationShell keeps installed package managers out of PATH.
+func isolateValidationShell(t *testing.T) {
+	t.Helper()
+	shell := "sh"
+	if runtime.GOOS == "windows" {
+		shell = "cmd.exe"
+	}
+	path, err := osexec.LookPath(shell)
+	require.NoError(t, err)
+	binDir := t.TempDir()
+	require.NoError(t, os.Symlink(path, filepath.Join(binDir, shell)))
+	t.Setenv("PATH", binDir)
+}
+
 func TestNodeJsValidatePackageManagers(t *testing.T) {
 	stubPackageManagers(t)
 	tests := []struct {
@@ -65,18 +89,16 @@ func TestNodeJsValidatePackageManagers(t *testing.T) {
 			result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
 			require.NoError(t, err)
 			require.True(t, result.Success, "%+v", result.Details)
-			wantCommands := []string{tt.manager + " install"}
-			for _, script := range validationScripts {
-				wantCommands = append(wantCommands, tt.manager+" run --if-present "+script)
-			}
+			wantCommands := strings.ReplaceAll(npmValidationCommands, "npm ", tt.manager+" ")
 			commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
-			assert.Equal(t, strings.Join(wantCommands, "\n")+"\n", strings.ReplaceAll(commands, "\r\n", "\n"))
+			assert.Equal(t, wantCommands, strings.ReplaceAll(commands, "\r\n", "\n"))
 		})
 	}
 }
 
 func TestNodeJsValidateSkips(t *testing.T) {
 	stubPackageManagers(t)
+	commands := strings.ReplaceAll(npmValidationCommands, "npm ", "pnpm ")
 	tests := []struct {
 		name        string
 		scripts     []string
@@ -84,10 +106,10 @@ func TestNodeJsValidateSkips(t *testing.T) {
 		skipTests   bool
 		want        string
 	}{
-		{name: "missing scripts", want: "pnpm install\n"},
-		{name: "optional scripts", scripts: []string{"build"}, want: "pnpm install\npnpm run --if-present build\n"},
-		{name: "installed dependencies", scripts: []string{"build"}, nodeModules: true, want: "pnpm run --if-present build\n"},
-		{name: "skip tests", scripts: []string{"build", "test"}, skipTests: true, want: "pnpm install\npnpm run --if-present build\n"},
+		{name: "missing scripts", want: commands},
+		{name: "optional scripts", scripts: []string{"build"}, want: commands},
+		{name: "installed dependencies", scripts: []string{"build"}, nodeModules: true, want: strings.TrimPrefix(commands, "pnpm install\n")},
+		{name: "skip tests", scripts: []string{"build", "test"}, skipTests: true, want: strings.TrimSuffix(commands, "pnpm run --if-present test\n")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -131,6 +153,7 @@ func TestNodeJsValidateCommandFailure(t *testing.T) {
 
 func TestNodeJsValidateUpdatedScripts(t *testing.T) {
 	stubPackageManagers(t)
+	failingBuildCommands := strings.TrimSuffix(npmValidationCommands, "npm run --if-present test\n")
 	tests := []struct {
 		name           string
 		command        string
@@ -143,20 +166,20 @@ func TestNodeJsValidateUpdatedScripts(t *testing.T) {
 			name:           "install adds build",
 			command:        "install",
 			updatedScripts: []string{"build"},
-			wantCommands:   "npm install\nnpm run --if-present build\n",
+			wantCommands:   failingBuildCommands,
 		},
 		{
 			name:           "typegen adds build",
 			command:        "run --if-present typegen",
 			scripts:        []string{"typegen"},
 			updatedScripts: []string{"typegen", "build"},
-			wantCommands:   "npm install\nnpm run --if-present typegen\nnpm run --if-present build\n",
+			wantCommands:   failingBuildCommands,
 		},
 		{
 			name:         "install removes build",
 			command:      "install",
 			scripts:      []string{"build"},
-			wantCommands: "npm install\n",
+			wantCommands: npmValidationCommands,
 			wantSuccess:  true,
 		},
 		{
@@ -164,7 +187,7 @@ func TestNodeJsValidateUpdatedScripts(t *testing.T) {
 			command:        "run --if-present typegen",
 			scripts:        []string{"typegen", "build"},
 			updatedScripts: []string{"typegen"},
-			wantCommands:   "npm install\nnpm run --if-present typegen\n",
+			wantCommands:   npmValidationCommands,
 			wantSuccess:    true,
 		},
 	}
@@ -176,7 +199,10 @@ func TestNodeJsValidateUpdatedScripts(t *testing.T) {
 			writeValidationProject(t, updatedDir, tt.updatedScripts)
 			t.Setenv("VALIDATION_TEST_UPDATE", tt.command)
 			t.Setenv("VALIDATION_TEST_PACKAGE_JSON", filepath.Join(updatedDir, "package.json"))
-			t.Setenv("VALIDATION_TEST_FAIL", "run --if-present build")
+			// The manager fails newly added builds and skips removed builds via --if-present.
+			if !tt.wantSuccess {
+				t.Setenv("VALIDATION_TEST_FAIL", "run --if-present build")
+			}
 			validator := validation.ValidationNodeJs{}
 			result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
 			require.NoError(t, err)
@@ -203,14 +229,14 @@ func TestNodeJsValidatePackageJSONBOM(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, result.Success, "%+v", result.Details)
 	commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
-	assert.Equal(t, "npm install\nnpm run --if-present build\n", strings.ReplaceAll(commands, "\r\n", "\n"))
+	assert.Equal(t, npmValidationCommands, strings.ReplaceAll(commands, "\r\n", "\n"))
 }
 
 func TestNodeJsValidateNonRunnableScripts(t *testing.T) {
 	stubPackageManagers(t)
 	dir := t.TempDir()
-	// null, "", and non-string values aren't runnable scripts for npm/pnpm, and a
-	// non-string value must not fail decoding. Only "build" should run.
+	// The manager decides which script values are runnable; non-string values
+	// must not fail the CLI's manifest validation.
 	manifest := `{"scripts": {"typecheck": null, "test": "", "//": ["a comment"], "build": "echo build"}}`
 	testutil.WriteFile(t, filepath.Join(dir, "package.json"), manifest)
 	testutil.Touch(t, dir, "pnpm-lock.yaml")
@@ -219,7 +245,7 @@ func TestNodeJsValidateNonRunnableScripts(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, result.Success, "%+v", result.Details)
 	commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
-	assert.Equal(t, "pnpm install\npnpm run --if-present build\n", strings.ReplaceAll(commands, "\r\n", "\n"))
+	assert.Equal(t, strings.ReplaceAll(npmValidationCommands, "npm ", "pnpm "), strings.ReplaceAll(commands, "\r\n", "\n"))
 }
 
 func TestNodeJsValidateInvalidPackageJSON(t *testing.T) {
@@ -263,39 +289,49 @@ func TestNodeJsValidateUpdatedInvalidPackageJSON(t *testing.T) {
 }
 
 func TestNodeJsValidateManagerFromRelativePath(t *testing.T) {
-	dir := t.TempDir()
 	// Read the stub before chdir so the relative testdata path still resolves.
 	stub := testutil.ReadFile(t, "testdata/package-manager")
 	stubCmd := testutil.ReadFile(t, "testdata/package-manager.cmd")
-	// Install the manager under a relative PATH entry so LookPath returns ErrDot,
-	// as it does when pnpm is a devDependency resolved from node_modules/.bin.
-	relBin := filepath.Join("node_modules", ".bin")
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, relBin), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, relBin, "pnpm"), []byte(stub), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, relBin, "pnpm.cmd"), []byte(stubCmd), 0o755))
-	writeValidationProject(t, dir, []string{"build"})
-	testutil.Touch(t, dir, "pnpm-lock.yaml")
+	for _, workDir := range []string{".", "app"} {
+		t.Run(workDir, func(t *testing.T) {
+			isolateValidationShell(t)
+			dir := t.TempDir()
+			projectDir := filepath.Join(dir, workDir)
+			// The manager is only available relative to the project's directory.
+			relBin := filepath.Join("node_modules", ".bin")
+			require.NoError(t, os.MkdirAll(filepath.Join(projectDir, relBin), 0o755))
+			require.NoError(t, os.WriteFile(filepath.Join(projectDir, relBin, "pnpm"), []byte(stub), 0o755))
+			require.NoError(t, os.WriteFile(filepath.Join(projectDir, relBin, "pnpm.cmd"), []byte(stubCmd), 0o755))
+			writeValidationProject(t, projectDir, []string{"build"})
+			testutil.Touch(t, projectDir, "pnpm-lock.yaml")
 
-	t.Chdir(dir)
-	t.Setenv("PATH", relBin+string(os.PathListSeparator)+os.Getenv("PATH"))
-	t.Setenv("VALIDATION_TEST_FAIL", "")
+			t.Chdir(dir)
+			t.Setenv("PATH", relBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			t.Setenv("VALIDATION_TEST_FAIL", "")
 
-	validator := validation.ValidationNodeJs{}
-	result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
-	require.NoError(t, err)
-	require.True(t, result.Success, "%+v", result.Details)
-	commands := testutil.ReadFile(t, filepath.Join(dir, "commands.log"))
-	// node_modules exists, so install is skipped and build runs via the relative pnpm.
-	assert.Equal(t, "pnpm run --if-present build\n", strings.ReplaceAll(commands, "\r\n", "\n"))
+			validator := validation.ValidationNodeJs{}
+			result, err := validator.Validate(cmdio.MockDiscard(t.Context()), workDir, validation.ValidateOptions{})
+			require.NoError(t, err)
+			require.True(t, result.Success, "%+v", result.Details)
+			commands := testutil.ReadFile(t, filepath.Join(projectDir, "commands.log"))
+			// node_modules exists, so install is skipped and scripts run via the relative pnpm.
+			want := strings.ReplaceAll(strings.TrimPrefix(npmValidationCommands, "npm install\n"), "npm ", "pnpm ")
+			assert.Equal(t, want, strings.ReplaceAll(commands, "\r\n", "\n"))
+		})
+	}
 }
 
 func TestNodeJsValidateMissingPackageManager(t *testing.T) {
+	isolateValidationShell(t)
 	dir := t.TempDir()
 	writeValidationProject(t, dir, validationScripts)
 	testutil.Touch(t, dir, "pnpm-lock.yaml")
-	t.Setenv("PATH", t.TempDir())
 	validator := validation.ValidationNodeJs{}
-	_, err := validator.Validate(t.Context(), dir, validation.ValidateOptions{})
-	require.ErrorContains(t, err, "cannot run pnpm; install it and ensure it is on PATH")
+	result, err := validator.Validate(cmdio.MockDiscard(t.Context()), dir, validation.ValidateOptions{})
+	require.NoError(t, err)
+	require.False(t, result.Success)
+	require.NotNil(t, result.Details)
+	assert.NotZero(t, result.Details.ExitCode)
+	assert.Contains(t, result.Details.Stderr, "pnpm")
 	assert.NoFileExists(t, filepath.Join(dir, "commands.log"))
 }

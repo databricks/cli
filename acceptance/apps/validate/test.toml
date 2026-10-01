@@ -1,6 +1,6 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 Env.VALIDATION_TEST_FAIL = ""
-Ignore = ["commands.log"]
+Ignore = ["commands.log", "node_modules"]
 
 [[Repls]]
 Old = '\d+\.\d+s'

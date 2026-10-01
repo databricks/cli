@@ -24,9 +24,10 @@ The package manager is detected from lockfiles in the project directory:
 - package-lock.json or npm-shrinkwrap.json: npm
 - pnpm-lock.yaml: pnpm
 
-Only npm and pnpm are supported. Yarn and Bun lockfiles are rejected.
-Projects without a lockfile use npm. Lockfiles for both npm and pnpm
-must be resolved before validation. The selected package manager must be on PATH.
+Only npm and pnpm are supported. Yarn and Bun lockfiles produce a warning
+and are ignored. Projects without a supported lockfile use npm. If both npm
+and pnpm lockfiles exist, validation warns and uses npm.
+The selected package manager must be on PATH in the project directory.
 Dependencies are installed when node_modules is absent.
 
 Examples:
