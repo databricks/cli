@@ -12,8 +12,10 @@ sed "s/COMMIT_SHA/$(git rev-parse HEAD)/" run.yaml.tmpl > run.yaml
 title "submit with a git code_source"
 trace $CLI air run -f run.yaml
 
-title "the ai_runtime_task and additive job permission grants"
-# Include MLflow paths so an accidental experiment request appears in the golden output.
+title "the ai_runtime_task and additive job + experiment permission grants"
+# Job permissions are set remotely; the run's experiment id comes from
+# runs/get-output and gets the same grants client-side, with job levels mapped to
+# experiment levels.
 trace print_requests.py --get //api/2.2/jobs/runs/submit //api/2.2/jobs/runs/get //api/2.0/permissions //api/2.0/mlflow --sort --unique
 
 title "submit a B300 workload with AI Runtime 6"

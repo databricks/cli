@@ -1,0 +1,37 @@
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Deploy 1: create the cluster with gcp_attributes but no local_ssd_count\n"
+trace $CLI bundle deploy -qq
+title "gcp_attributes sent on create (local_ssd_count absent):\n"
+print_requests.py //clusters/create | jq '.body.gcp_attributes'
+
+title "Now the user adds an explicit local_ssd_count: 0 to the config\n"
+update_file.py databricks.yml "#local_ssd_count: 0" "local_ssd_count: 0"
+
+title "Deploy 2: bundle should detect and apply the local_ssd_count change\n"
+trace $CLI bundle plan
+title "local_ssd_count change in the plan:\n"
+$CLI bundle plan -o json | jq '.plan[].changes["gcp_attributes.local_ssd_count"]'
+trace $CLI bundle deploy -qq
+
+title "gcp_attributes sent on update (empty means the change was NOT applied):\n"
+print_requests.py //clusters/edit | jq '.body.gcp_attributes'
+
+title "Deploy 3: no config change, should converge to a no-op\n"
+trace $CLI bundle plan
+
+title "Now the user removes local_ssd_count again\n"
+update_file.py databricks.yml "local_ssd_count: 0" "#local_ssd_count: 0"
+
+title "Deploy 4: removing the explicit 0 is a change, symmetric with setting it\n"
+trace $CLI bundle plan
+title "local_ssd_count change in the plan:\n"
+$CLI bundle plan -o json | jq '.plan[].changes["gcp_attributes.local_ssd_count"]'
+trace $CLI bundle deploy -qq
+
+title "Deploy 5: no config change, should converge to a no-op\n"
+trace $CLI bundle plan

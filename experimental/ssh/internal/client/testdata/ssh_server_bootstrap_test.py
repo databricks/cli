@@ -33,13 +33,13 @@ class LingerTest(unittest.TestCase):
                 mock_os = SimpleNamespace(P_ALL=0, WEXITED=1, WNOHANG=2, WNOWAIT=4, waitid=Mock(side_effect=children))
                 mock_time = SimpleNamespace(monotonic=Mock(side_effect=timestamps), sleep=Mock())
                 mock_descendants = Mock(side_effect=survivors)
-                with (
-                    patch.object(bootstrap, "os", mock_os),
-                    patch.object(bootstrap, "time", mock_time),
-                    patch.object(bootstrap, "detached_descendants", mock_descendants),
-                    patch("builtins.print") as mock_print,
-                ):
-                    bootstrap.wait_for_detached_descendants(123)
+                # Nested with-statements rather than a parenthesized context
+                # manager so the test also parses on older interpreters.
+                with patch.object(bootstrap, "os", mock_os):
+                    with patch.object(bootstrap, "time", mock_time):
+                        with patch.object(bootstrap, "detached_descendants", mock_descendants):
+                            with patch("builtins.print") as mock_print:
+                                bootstrap.wait_for_detached_descendants(123)
 
                 self.assertEqual(mock_descendants.call_args_list, [call(123)] * len(survivors))
                 self.assertEqual(

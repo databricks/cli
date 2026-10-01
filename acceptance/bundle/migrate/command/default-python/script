@@ -2,7 +2,8 @@ export DATABRICKS_BUNDLE_ENGINE=
 trace $CLI bundle init default-python --config-file ./input.json
 cd my_default_python
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# Replay a prior terraform deployment (a job and a DLT pipeline)
+trace replay_tfstate.py ../terraform-requests.json ../terraform.tfstate -t dev
 trace print_state.py > ../out.state_original.json
 
 trace $CLI bundle deployment migrate

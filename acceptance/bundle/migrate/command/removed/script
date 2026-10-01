@@ -1,7 +1,7 @@
-export DATABRICKS_BUNDLE_ENGINE=terraform
+export DATABRICKS_BUNDLE_ENGINE=
 
-# Deploy with terraform (both job_a and job_b)
-trace $CLI bundle deploy
+# Replay a prior terraform deployment (both job_a and job_b)
+trace replay_tfstate.py terraform-requests.json terraform.tfstate
 
 # Remove job_b from config without deploying the deletion
 grep -v job_b databricks.yml > databricks_tmp.yml && mv databricks_tmp.yml databricks.yml

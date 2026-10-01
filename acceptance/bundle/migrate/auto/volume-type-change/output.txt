@@ -1,10 +1,6 @@
 
-=== Deploy on terraform with volume_type MANAGED
->>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Created volumes.my_volume
-Files: 1 uploaded, 0 deleted
-Resources: 1 created, 0 changed, 0 deleted, 0 unchanged
+=== Replay the prior terraform deployment (captured from a real terraform run)
+>>> replay_tfstate.py terraform-requests.json terraform.tfstate
 
 === Change volume_type (immutable); without --auto-approve the recreate is refused
 >>> DATABRICKS_BUNDLE_ENGINE=direct errcode [CLI] bundle deploy

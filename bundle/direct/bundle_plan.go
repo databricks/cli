@@ -484,7 +484,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		if structdiff.IsEqual(ch.Remote, ch.New) && !ignoreRemoteChanges(cfg, generatedCfg, path) && !isFieldMissingInRemote(adapter, path) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
+		} else if allEmptyChange(ch) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmpty
 		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
@@ -832,6 +832,49 @@ func allEmpty(values ...any) bool {
 	return true
 }
 
+// allEmptyChange reports whether a change is an empty no-op that should be skipped.
+// All of Old/New/Remote must be empty-ish under isEmpty (nil, a zero scalar, "", empty map).
+//
+// The one exception is a genuine local change involving an explicit zero scalar: a value
+// force-sent on either side of the diff that differs from the other side is a real change the
+// config makes, so it must be applied rather than dismissed as empty. This covers both setting
+// gcp_attributes.local_ssd_count: 0 on a cluster first deployed without the field (Old nil,
+// New 0) and removing it again (Old 0, New nil). A zero the backend merely echoes for a field
+// nobody set (Old and New empty) or a value the config did not actually change (Old == New,
+// e.g. an unchanged num_workers: 0) stays a no-op.
+//
+// The check reads only Old (saved state) and New (desired state); both are derived from config
+// (saveState persists newState, never the remote read), so a non-nil zero here always means the
+// value was explicitly configured. The backend-supplied Remote value is only consulted by the
+// allEmpty gate above, so backend normalization of a zero (e.g. "" <-> null) never triggers this.
+func allEmptyChange(ch *deployplan.ChangeDesc) bool {
+	if !allEmpty(ch.Old, ch.New, ch.Remote) {
+		return false
+	}
+	if (isZeroScalar(ch.Old) || isZeroScalar(ch.New)) && !structdiff.IsEqual(ch.Old, ch.New) {
+		return false
+	}
+	return true
+}
+
+// isZeroScalar reports whether v is a number or bool holding its zero value (0, 0.0, false).
+// Strings are left out to stay in line with the DropEmptyStrings mutator, which drops an
+// explicit "" before the plan runs.
+func isZeroScalar(v any) bool {
+	if v == nil {
+		return false
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64, reflect.Bool:
+		return rv.IsZero()
+	default:
+		return false
+	}
+}
+
 func isEmpty(rv reflect.Value) bool {
 	// certain fields can change between "" and null when processed by backend.
 	// in some cases, e.g. model_serving_endpoints.descriptions those fields are also marked as recreate, so we ignore such cases
@@ -990,7 +1033,14 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return value, nil
 	}
 
-	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.FieldTriggersRecreate(fieldPath))
+	// A field is safe to read from the remote cache when the target either has no
+	// changes (Skip) or keeps its ID and the field cannot have changed: an
+	// immutable field (FieldTriggersRecreate) or a backend-assigned stable output
+	// like an AIP name derived from the ID (FieldIsStableOutput). The latter lets
+	// ${resources.X.name} resolve during an in-place update instead of delaying,
+	// which would otherwise recreate dependents that reference it as their parent.
+	canReadRemoteCache := targetAction == deployplan.Skip ||
+		(targetAction.KeepsID() && (adapter.FieldTriggersRecreate(fieldPath) || adapter.FieldIsStableOutput(fieldPath)))
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.

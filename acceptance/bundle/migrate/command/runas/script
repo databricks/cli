@@ -3,7 +3,6 @@ if [ -z "${TEST_SP_APPLICATION_ID+x}" ]; then
 fi
 
 envsubst < databricks.yml.tmpl > databricks.yml
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 
 cleanup() {
     trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle destroy --auto-approve
@@ -12,14 +11,14 @@ cleanup() {
 
 trap cleanup EXIT
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+# Replay a prior terraform deployment (a pipeline deployed with run_as)
+trace replay_tfstate.py terraform-requests.json terraform.tfstate -t production
 trace print_requests.py //pipelines > out.create_requests.json
 trace print_state.py > out.old_state.json
 
 pipeline_id=$(DATABRICKS_BUNDLE_ENGINE= $CLI bundle summary --output json | jq -r '.resources.pipelines.foo.id')
 trace $CLI pipelines get $pipeline_id > out.pipelines_get.json
 
-trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deployment migrate
 trace print_state.py > out.new_state.json
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
