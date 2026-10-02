@@ -1,3 +1,2 @@
-script: line 187: DATABRICKS_BUNDLE_ENGINE: unbound variable
 
-Exit code: 1
+>>> [CLI] bundle validate -o json

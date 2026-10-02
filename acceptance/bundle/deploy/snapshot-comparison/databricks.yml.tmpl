@@ -1,0 +1,26 @@
+bundle:
+  name: ${BUNDLE_NAME}
+
+workspace:
+  host: ${DATABRICKS_HOST}
+
+resources:
+  pipelines:
+    test_pipeline:
+      name: "Snapshot Test Pipeline ${BUNDLE_NAME}"
+      libraries:
+        - notebook:
+            path: "./pipeline_notebook.py"
+      development: true
+
+  jobs:
+    test_job:
+      name: "Snapshot Test Job ${BUNDLE_NAME}"
+      tasks:
+        - task_key: "pipeline_task"
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.test_pipeline.id}
+
+targets:
+  default:
+    mode: development

@@ -8,4 +8,3 @@ Ignore = [
     "test-file-*.txt",
 ]
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

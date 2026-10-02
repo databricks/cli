@@ -1,0 +1,2 @@
+# Test that --plan with terraform engine produces an error
+Env.DATABRICKS_BUNDLE_ENGINE = "terraform"

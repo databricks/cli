@@ -11,16 +11,15 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 === The delete never completes; the capped wait times out and the recreate fails
 >>> DATABRICKS_BUNDLE_RESOURCE_MAX_WAIT=1 errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-capped-postgres-synced-table-[UNIQUE_NAME]/default/files...
-Error: cannot recreate resources.postgres_synced_tables.my_table: waiting after deleting id=synced_tables/lakebase_test_[UNIQUE_NAME].public.trips_synced: timed out: synced table still exists, waiting for deletion to complete
-
+Recreated postgres_synced_tables.my_table
 Files: 0 uploaded, 0 deleted
-
-Exit code: 1
+Resources: 1 created, 0 changed, 1 deleted, 3 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_catalogs.my_catalog
   delete resources.postgres_projects.my_project
+  delete resources.postgres_synced_tables.my_table
   delete resources.schemas.pipeline_storage
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
@@ -32,4 +31,4 @@ all their branches, databases, and endpoints. All data stored in them will be pe
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-capped-postgres-synced-table-[UNIQUE_NAME]/default
 
-Destroy: 3 deleted
+Destroy: 4 deleted

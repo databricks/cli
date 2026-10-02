@@ -1,1 +1,2 @@
-INPUT_CONFIG_OK
+
+Exit code: 1

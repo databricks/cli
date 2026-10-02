@@ -6,4 +6,3 @@ RecordRequests = true
 # local fake report the deployer as a service principal to match.
 IsServicePrincipal = true
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

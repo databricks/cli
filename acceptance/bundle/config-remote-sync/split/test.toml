@@ -6,4 +6,3 @@ Ignore = [".databricks", "databricks.yml", "databricks.yml.backup", "overrides/*
 
 Env.DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

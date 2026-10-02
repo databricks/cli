@@ -20,4 +20,3 @@ GOOS.linux = true
 GOOS.darwin = false
 GOOS.windows = false
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

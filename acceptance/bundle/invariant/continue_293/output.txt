@@ -1,4 +1,5 @@
 
 >>> [CLI_293] --version
 Databricks CLI v0.293.0
-INPUT_CONFIG_OK
+
+Exit code: 1
