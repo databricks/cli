@@ -2,7 +2,7 @@ title 'Terraform state present: the direct default migrates it to the direct eng
 # Keep the committed fixtures (and generated files) out of `bundle deploy`'s upload.
 printf '%s\n' '.gitignore' 'out.*' 'terraform*.tfstate' 'terraform*-requests.json' > .gitignore
 
-# The terraform engine was removed in v1.19.0, so replay a prior terraform deployment (captured once
+# The terraform engine was removed in v1.20.0, so replay a prior terraform deployment (captured once
 # from a real terraform run) to reconstruct the terraform-shaped state locally, standing in for a
 # `DATABRICKS_BUNDLE_ENGINE=terraform bundle deploy`.
 trace replay_tfstate.py terraform-requests.json terraform.tfstate

@@ -31,11 +31,11 @@ import (
 const warnPrefix = "migration to direct: "
 
 // migrationFailedHint is appended to the errors that abort an automatic terraform→direct
-// migration. The terraform engine was removed in v1.19.0, so there is no engine left to fall
+// migration. The terraform engine was removed in v1.20.0, so there is no engine left to fall
 // back to: the command cannot proceed until the state migrates or the user downgrades.
 const migrationFailedHint = `
 
-The Terraform deployment engine was removed in Databricks CLI v1.19.0, so this state cannot be deployed as-is. Install Databricks CLI v1.18.x to deploy on Terraform, or report this at dabs-feedback@databricks.com`
+The Terraform deployment engine was removed in Databricks CLI v1.20.0, so this state cannot be deployed as-is. Install Databricks CLI v1.19.x to deploy on Terraform, or report this at dabs-feedback@databricks.com`
 
 // Migrate converts the bundle's terraform state to a direct-engine state and opens
 // b.DeploymentBundle.StateDB with it in memory. Returns false when there is no terraform state
@@ -46,7 +46,7 @@ The Terraform deployment engine was removed in Databricks CLI v1.19.0, so this s
 // state. Callers that apply changes make the migration durable by calling CommitMigration once
 // the command is approved.
 //
-// The terraform engine was removed in v1.19.0, so any failure (parsing, conversion, the plan
+// The terraform engine was removed in v1.20.0, so any failure (parsing, conversion, the plan
 // check) is fatal: there is no engine to fall back to. An empty terraform state is not a failure -
 // the converter writes an empty base state file, so there is no special case here.
 func Migrate(ctx context.Context, b *bundle.Bundle) (bool, error) {
