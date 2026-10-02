@@ -8,6 +8,8 @@
     "build:server": "node --version",
     "build:client": "node --version",
     "optional": "npm run missing --if-present",
+    "required": "npm run missing --if-present false",
+    "quoted": "npm run build:server '\"--label\"'",
     "quiet": "npm run build:server --silent -- --silent",
     "env-build": "env NODE_ENV=production pnpm run build:server",
     "predev": "pnpm run sync && pnpm run typegen",

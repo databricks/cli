@@ -30,6 +30,8 @@ command:
   "optional": "pnpm run --if-present missing",
   "predev": "pnpm run sync && pnpm run typegen",
   "quiet": "pnpm run --silent build:server --silent",
+  "quoted": "pnpm run build:server '\"--label\"'",
+  "required": "pnpm run --if-present false missing",
   "sync": "node --version",
   "typegen": "node --version"
 }
@@ -69,6 +71,8 @@ command:
   "optional": "npm run missing --if-present",
   "predev": "npm run sync && npm run typegen",
   "quiet": "npm run build:server --silent -- --silent",
+  "quoted": "npm run build:server '\"--label\"'",
+  "required": "npm run missing --if-present false",
   "sync": "node --version",
   "typegen": "node --version"
 }
