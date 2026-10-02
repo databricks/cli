@@ -21,9 +21,14 @@ command:
   - "start"
 === test-app-pnpm/package.json ===
 {
-  "build": "pnpm run build",
+  "build": "pnpm run build:server && pnpm run build:client",
+  "build:client": "node --version",
+  "build:server": "node --version",
   "dev": "vite dev",
-  "lint": "eslint ."
+  "lint": "eslint .",
+  "predev": "pnpm run sync && pnpm run typegen",
+  "sync": "node --version",
+  "typegen": "node --version"
 }
 "pnpm@11.0.8"
 {
@@ -52,11 +57,156 @@ command:
   - "start"
 === test-app-npm/package.json ===
 {
-  "build": "npm run build",
+  "build": "npm run build:server && npm run build:client",
+  "build:client": "node --version",
+  "build:server": "node --version",
   "dev": "vite dev",
-  "lint": "eslint ."
+  "lint": "eslint .",
+  "predev": "npm run sync && npm run typegen",
+  "sync": "node --version",
+  "typegen": "node --version"
 }
 "npm@10.9.2"
 {
   "lodash": "4.17.21"
 }
+
+=== Standard template with pnpm
+>>> [CLI] apps init --name standard-app-pnpm --template standard-template --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/standard-app-pnpm
+  Files: 4
+
+  Next steps:
+
+    cd standard-app-pnpm
+    pnpm install --frozen-lockfile && pnpm run dev
+
+display_name: "standard-app-pnpm"
+description: "A Databricks App powered by AppKit"
+command:
+  - "pnpm"
+  - "run"
+  - "start"
+{
+  "build": "pnpm run build:server && pnpm run build:client",
+  "build:client": "node --version",
+  "build:server": "node --version",
+  "dev": "vite dev",
+  "lint": "eslint .",
+  "predev": "pnpm run sync && pnpm run typegen",
+  "sync": "node --version",
+  "typegen": "node --version"
+}
+"pnpm@11.0.8"
+{
+  "lodash": "4.17.21"
+}
+
+=== Standard template with npm
+>>> [CLI] apps init --name standard-app-npm --template standard-template --package-manager npm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/standard-app-npm
+  Files: 4
+
+  Next steps:
+
+    cd standard-app-npm
+    npm ci && npm run dev
+
+display_name: "standard-app-npm"
+description: "A Databricks App powered by AppKit"
+command:
+  - "npm"
+  - "run"
+  - "start"
+{
+  "build": "npm run build:server && npm run build:client",
+  "build:client": "node --version",
+  "build:server": "node --version",
+  "dev": "vite dev",
+  "lint": "eslint .",
+  "predev": "npm run sync && npm run typegen",
+  "sync": "node --version",
+  "typegen": "node --version"
+}
+"npm@10.9.2"
+{
+  "lodash": "4.17.21"
+}
+
+=== Npm-only custom template rejects pnpm before copying
+>>> [CLI] apps init --name incompatible-app --template npm-only-template --skip-install
+Error: template has package-lock.json but no pnpm-lock.yaml required by "pnpm install --frozen-lockfile"; use --package-manager npm or add pnpm-lock.yaml to the template
+
+=== Npm-only custom template accepts the suggested manager
+>>> [CLI] apps init --name compatible-app --template npm-only-template --package-manager npm --skip-install
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/compatible-app
+  Files: 2
+
+  Next steps:
+
+    cd compatible-app
+    npm ci && npm run dev
+
+
+=== Version downgrade uses npm throughout
+>>> [CLI] apps init --name older-app --version 0.81.0 --skip-install
+✔ Cloning template (version 0.81.0)
+Warn: Package manager "pnpm" is not supported for AppKit version version 0.81.0, using npm instead
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/older-app
+  Files: 4
+
+  Next steps:
+
+    cd older-app
+    npm ci && npm run dev
+
+display_name: "older-app"
+description: "A Databricks App powered by AppKit"
+command:
+  - "npm"
+  - "run"
+  - "start"
+"npm run build:server && npm run build:client"
+"npm@10.9.2"
+
+=== Missing version falls back to the embedded template and its package manager
+>>> DATABRICKS_CACHE_DIR=cache DATABRICKS_CACHE_ENABLED=true DATABRICKS_FORCE_EMBEDDED_COMPAT=false [CLI] apps init --name fallback-app --skip-install
+Warn: Template version not found, falling back to embedded version 0.57.0
+✔ Cloning template (version 0.57.0)
+Warn: Package manager "pnpm" is not supported for AppKit version version 0.57.0, using npm instead
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/fallback-app
+  Files: 4
+
+  Next steps:
+
+    cd fallback-app
+    npm ci && npm run dev
+
+display_name: "fallback-app"
+description: "A Databricks App powered by AppKit"
+command:
+  - "npm"
+  - "run"
+  - "start"
+"npm run build:server && npm run build:client"
+"npm@10.9.2"

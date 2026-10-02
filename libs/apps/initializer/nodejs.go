@@ -3,6 +3,7 @@ package initializer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -80,8 +81,7 @@ func (i *InitializerNodeJs) SupportsDevRemote() bool {
 func (i *InitializerNodeJs) runInstall(ctx context.Context, workDir string) error {
 	// Check if the package manager binary is available
 	if _, err := exec.LookPath(i.manager.Name); err != nil {
-		cmdio.LogString(ctx, "⚠ "+i.manager.Name+" not found. Please install Node.js and run '"+i.manager.InstallCommand+"' manually.")
-		return nil //nolint:nilerr // package manager not found is a non-critical warning
+		return fmt.Errorf("%s is unavailable; install it and retry, or use --skip-install to scaffold without running setup: %w", i.manager.Name, err)
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"unicode"
 
 	"golang.org/x/mod/semver"
 )
@@ -59,8 +58,12 @@ var managers = map[string]Manager{
 }
 
 // Resolve returns the Manager descriptor for the given package manager name.
+// An empty name selects the default manager (pnpm).
 // Returns an error if the name is unknown.
 func Resolve(name string) (Manager, error) {
+	if name == "" {
+		return Default(), nil
+	}
 	if m, ok := managers[name]; ok {
 		return m, nil
 	}
@@ -134,6 +137,27 @@ func isSemverVersion(version string) bool {
 	return false
 }
 
+// ValidateTemplate rejects templates with a lockfile only for another supported manager.
+// Templates without lockfiles can still be scaffolded with --skip-install.
+func (m Manager) ValidateTemplate(dir string) error {
+	if _, err := os.Stat(filepath.Join(dir, m.LockfileName)); err == nil {
+		return nil
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("check %s: %w", m.LockfileName, err)
+	}
+	for _, other := range managers {
+		if other.Name == m.Name {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(dir, other.LockfileName)); err == nil {
+			return fmt.Errorf("template has %s but no %s required by %q; use --package-manager %s or add %s to the template", other.LockfileName, m.LockfileName, m.InstallCommand, other.Name, m.LockfileName)
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("check %s: %w", other.LockfileName, err)
+		}
+	}
+	return nil
+}
+
 // Prune removes non-selected package manager artifacts from the given directory.
 // It builds the universe of all PM-specific artifacts from the capability map,
 // then removes all artifacts not belonging to the selected manager.
@@ -171,27 +195,18 @@ func (m Manager) Prune(dir string) error {
 
 // Rewrite mutates a decoded package.json (map[string]any) with package-manager-specific
 // transformations: sets "packageManager" to the pinned version and normalizes scripts.
-// Scripts whose leading token is a package manager name are rewritten to explicit
-// "run" form (e.g., "npm build" becomes "pnpm run build" if pnpm is selected).
-// Non-string script values and non-PM-leading scripts are left unchanged.
+// Script invocations, including those in command chains, use explicit "run" form.
+// Native package-manager operations and non-string script values are preserved.
 // Rewrite modifies the map in place and returns it for convenience.
 func Rewrite(pkg map[string]any, m Manager) map[string]any {
 	// Set packageManager to the pinned version from the capability map.
 	pkg["packageManager"] = m.Pin
 
-	// Normalize scripts: rewrite PM-leading commands to explicit "run" form.
+	// Normalize script invocations without changing native package-manager operations.
 	scripts, ok := pkg["scripts"].(map[string]any)
 	if !ok {
 		// No scripts or not a map — nothing to normalize.
 		return pkg
-	}
-
-	// Known package manager names that can appear as leading tokens in scripts.
-	pmNames := map[string]bool{
-		"npm":  true,
-		"pnpm": true,
-		"yarn": true,
-		"bun":  true,
 	}
 
 	for key, val := range scripts {
@@ -201,45 +216,8 @@ func Rewrite(pkg map[string]any, m Manager) map[string]any {
 			continue
 		}
 
-		// Extract the leading command token.
-		leadingToken := extractLeadingToken(scriptStr)
-		if leadingToken == "" || !pmNames[leadingToken] {
-			// Not a PM command — leave unchanged.
-			continue
-		}
-
-		// Rewrite: <pm> <subcommand> → <selected-pm> run <subcommand>
-		// Strip the PM token and any run keyword that follows.
-		rest := scriptStr[len(leadingToken):]
-		rest = strings.TrimSpace(rest)
-
-		// If rest already starts with "run ", remove it to avoid "run run".
-		if strings.HasPrefix(rest, "run ") {
-			rest = rest[4:]
-			rest = strings.TrimSpace(rest)
-		}
-
-		// Construct the new script: "<selected-pm> run <rest>"
-		newScript := m.Name + " run " + rest
-		scripts[key] = newScript
+		scripts[key] = rewriteScript(scriptStr, m, scripts)
 	}
 
 	return pkg
-}
-
-// extractLeadingToken extracts the first whitespace-delimited token from a string.
-// Returns empty string if the input is empty or only whitespace.
-func extractLeadingToken(s string) string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return ""
-	}
-	// Find the first whitespace character.
-	for i, r := range s {
-		if unicode.IsSpace(r) {
-			return s[:i]
-		}
-	}
-	// No whitespace found — the entire string is the token.
-	return s
 }

@@ -4,6 +4,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/pkgmanager"
@@ -41,6 +42,35 @@ func TestDefault(t *testing.T) {
 	m := pkgmanager.Default()
 	assert.Equal(t, "pnpm", m.Name)
 	assert.Equal(t, "pnpm install --frozen-lockfile", m.InstallCommand)
+	resolved, err := pkgmanager.Resolve("")
+	require.NoError(t, err)
+	assert.Equal(t, m, resolved)
+}
+
+func TestValidateTemplate(t *testing.T) {
+	for _, name := range []string{"npm", "pnpm"} {
+		m, err := pkgmanager.Resolve(name)
+		require.NoError(t, err)
+		for _, files := range [][]string{nil, {"package-lock.json"}, {"pnpm-lock.yaml"}, {"package-lock.json", "pnpm-lock.yaml"}} {
+			t.Run(name+"/"+strings.Join(files, "+"), func(t *testing.T) {
+				dir := t.TempDir()
+				for _, file := range files {
+					require.NoError(t, os.WriteFile(filepath.Join(dir, file), []byte("lockfile"), 0o644))
+				}
+				err := m.ValidateTemplate(dir)
+				if len(files) == 1 && files[0] != m.LockfileName {
+					other := "npm"
+					if name == "npm" {
+						other = "pnpm"
+					}
+					require.ErrorContains(t, err, "use --package-manager "+other)
+					assert.ErrorContains(t, err, m.LockfileName)
+				} else {
+					require.NoError(t, err)
+				}
+			})
+		}
+	}
 }
 
 func TestPrunePnpm(t *testing.T) {
@@ -251,6 +281,7 @@ func TestRewrite(t *testing.T) {
 				"scripts": map[string]any{
 					"yarn-build": "yarn run build",
 					"bun-dev":    "bun dev",
+					"dev":        "vite dev",
 				},
 			},
 			expectedPin: "pnpm@11.0.8",

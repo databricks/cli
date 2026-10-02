@@ -3,4 +3,12 @@ Env.DATABRICKS_APPKIT_TEMPLATE_PATH = "template"
 Ignore = [
     "test-app-pnpm",
     "test-app-npm",
+    "standard-app-pnpm",
+    "standard-app-npm",
+    "older-app",
+    "fallback-app",
+    "compatible-app",
+    ".git",
+    "databricks.yml",
+    "cache",
 ]
