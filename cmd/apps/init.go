@@ -686,11 +686,9 @@ func shouldSkipPluginSelection(ctx context.Context, templateDir string) bool {
 	return true
 }
 
-// replaceProjectName updates the project name in key files after copying a
-// pre-rendered template. It sets bundle.name and the first resources.apps.*.name
-// in databricks.yml, the name field in package.json, and applies package-manager-specific
-// transformations (packageManager field and script normalization).
-func replaceProjectName(destDir, newName string, selectedManager pkgmanager.Manager) error {
+// rewritePackageJSON applies project naming and package-manager selection to a
+// Node template, independently of its bundle configuration or plugin selection.
+func rewritePackageJSON(destDir, newName string, selectedManager pkgmanager.Manager) error {
 	// Update package.json via single JSON round-trip: set name, packageManager, and normalize scripts.
 	pkgPath := filepath.Join(destDir, "package.json")
 	data, err := os.ReadFile(pkgPath)
@@ -715,10 +713,21 @@ func replaceProjectName(destDir, newName string, selectedManager pkgmanager.Mana
 			return err
 		}
 	}
+	return nil
+}
+
+// replaceProjectName updates the project name in key files after copying a
+// pre-rendered template. It sets bundle.name and the first resources.apps.*.name
+// in databricks.yml, the name field in package.json, and applies package-manager-specific
+// transformations (packageManager field and script normalization).
+func replaceProjectName(destDir, newName string, selectedManager pkgmanager.Manager) error {
+	if err := rewritePackageJSON(destDir, newName, selectedManager); err != nil {
+		return err
+	}
 
 	// Update databricks.yml using yaml.Node to preserve comments and formatting.
 	ymlPath := filepath.Join(destDir, bundleConfigFile)
-	data, err = os.ReadFile(ymlPath)
+	data, err := os.ReadFile(ymlPath)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", bundleConfigFile, err)
 	}
@@ -874,6 +883,7 @@ func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, project
 		minVars := templateData(templateVars{
 			ProjectName:    projectName,
 			AppDescription: prompt.DefaultAppDescription,
+			PackageManager: m.Name,
 			Plugins:        make(map[string]*pluginVar),
 		})
 		tmpl, err := template.New(name).Option("missingkey=zero").Parse(string(content))
@@ -894,6 +904,10 @@ func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, project
 		log.Warnf(ctx, "Failed to write package.json to %s, skipping background npm install", destDir)
 		return nil
 	}
+	if err := rewritePackageJSON(destDir, projectName, m); err != nil {
+		log.Warnf(ctx, "Failed to prepare package.json: %v, skipping background install", err)
+		return nil
+	}
 
 	// Copy any file: protocol dependencies (e.g., local .tgz tarballs) so npm ci can resolve them.
 	pkgData, err := os.ReadFile(filepath.Join(destDir, "package.json"))
@@ -903,15 +917,27 @@ func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, project
 		copyFileDeps(ctx, pkgData, srcProjectDir, destDir)
 	}
 
-	// Copy lockfile raw (never has template vars).
-	lockData, err := os.ReadFile(lockFile)
-	if err != nil {
-		log.Warnf(ctx, "Failed to read %s: %v, skipping background install", m.LockfileName, err)
-		return nil
-	}
-	if err := os.WriteFile(filepath.Join(destDir, m.LockfileName), lockData, 0o644); err != nil {
-		log.Warnf(ctx, "Failed to write %s: %v, skipping background install", m.LockfileName, err)
-		return nil
+	// Frozen installs must see the same overrides and build permissions as the
+	// finished project. _npmrc follows the same rename/overwrite order as copyTemplate.
+	for _, name := range []string{m.LockfileName, m.WorkspaceConfigName, ".npmrc", "_npmrc"} {
+		if name == "" {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(srcProjectDir, name))
+		if errors.Is(err, fs.ErrNotExist) && name != m.LockfileName {
+			continue
+		}
+		if err != nil {
+			log.Warnf(ctx, "Failed to read %s: %v, skipping background install", name, err)
+			return nil
+		}
+		if renamed, ok := renameFiles[name]; ok {
+			name = renamed
+		}
+		if err := os.WriteFile(filepath.Join(destDir, name), data, 0o644); err != nil {
+			log.Warnf(ctx, "Failed to write %s: %v, skipping background install", name, err)
+			return nil
+		}
 	}
 
 	ch := make(chan error, 1)
@@ -1044,18 +1070,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		refLabel = "branch " + opts.branch
 	}
 
-	// Apply version-based package manager constraints: pnpm is only supported
-	// from a specific AppKit version onwards. If the resolved version is below the
-	// threshold, downgrade pnpm requests to npm (with a warning).
-	if usingDefaultTemplate {
-		effective, downgraded := pkgmanager.EffectiveManager(selectedManager, gitRef)
-		if downgraded {
-			log.Warnf(ctx, "Package manager %q is not supported for AppKit version %s, using npm instead",
-				selectedManager.Name, refLabel)
-		}
-		selectedManager = effective
-	}
-
 	// Start cloning in the background so it runs while the user types the name.
 	branchForClone := opts.branch
 	subdirForClone := ""
@@ -1168,6 +1182,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if fbErr == nil && fallbackVersion != "" && normalizeVersion(fallbackVersion) != branchForClone {
 			log.Warnf(ctx, "Template version not found, falling back to embedded version %s", fallbackVersion)
 			fallbackRef := normalizeVersion(fallbackVersion)
+			gitRef = fallbackRef
 			templateCh = resolveTemplateAsync(ctx, templateSrc, fallbackRef, appkitTemplateDir)
 			refLabel = "version " + fallbackVersion
 			resolvedPath, cleanup, err = awaitTemplate(ctx, templateCh, refLabel)
@@ -1180,6 +1195,18 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 	if cleanup != nil {
 		defer cleanup()
+	}
+
+	// Apply version-based package manager constraints: pnpm is only supported
+	// from a specific AppKit version onwards. If the resolved version is below the
+	// threshold, downgrade pnpm requests to npm (with a warning).
+	if usingDefaultTemplate {
+		effective, downgraded := pkgmanager.EffectiveManager(selectedManager, gitRef)
+		if downgraded {
+			log.Warnf(ctx, "Package manager %q is not supported for AppKit version %s, using npm instead",
+				selectedManager.Name, refLabel)
+		}
+		selectedManager = effective
 	}
 
 	// Check for generic subdirectory first (default for multi-template repos)
@@ -1210,6 +1237,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// This is a Node.js-only optimisation — non-Node templates skip this.
 	// Honour --skip-install by not kicking off the background install at all.
 	srcProjectDir := findProjectSrcDir(templateDir)
+	if err := selectedManager.ValidateTemplate(srcProjectDir); err != nil {
+		return err
+	}
 	var npmInstallCh <-chan error
 	if !opts.skipInstall {
 		npmInstallCh = startBackgroundInstall(ctx, srcProjectDir, destDir, opts.name, selectedManager)
@@ -1445,7 +1475,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			Example: generator.GenerateDotEnvExample(selectedPluginList),
 		},
 		AppEnv:         generator.GenerateAppEnv(selectedPluginList, genConfig),
-		PackageManager: opts.packageManager,
+		PackageManager: selectedManager.Name,
 		Plugins:        plugins,
 	}
 
@@ -1483,6 +1513,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if err := replaceProjectName(destDir, opts.name, selectedManager); err != nil {
 			return fmt.Errorf("update project name: %w", err)
 		}
+	} else if err := rewritePackageJSON(destDir, opts.name, selectedManager); err != nil {
+		return fmt.Errorf("update package.json: %w", err)
 	}
 
 	// Get absolute path

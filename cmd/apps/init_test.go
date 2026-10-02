@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"flag"
 	"io"
 	"io/fs"
 	"os"
@@ -1106,6 +1107,67 @@ func TestStartBackgroundInstall_TemplateSubstitution(t *testing.T) {
 	assert.NotContains(t, string(got), "{{.projectName}}")
 }
 
+const (
+	backgroundInstallHelperEnv = "CLI_TEST_BACKGROUND_INSTALL_MANAGER"
+	backgroundInstallNpmrc     = "enable-pre-post-scripts=true\n"
+	backgroundInstallWorkspace = "packages:\n  - '.'\noverrides:\n  lodash: 4.17.21\nallowBuilds:\n  esbuild: true\n"
+)
+
+func TestStartBackgroundInstall_PreparesSelectedManager(t *testing.T) {
+	for _, manager := range []string{"npm", "pnpm"} {
+		for _, configName := range []string{".npmrc", "_npmrc"} {
+			t.Run(manager+"/"+configName, func(t *testing.T) {
+				t.Setenv(backgroundInstallHelperEnv, manager)
+				srcDir, destDir := t.TempDir(), t.TempDir()
+				m, err := pkgmanager.Resolve(manager)
+				require.NoError(t, err)
+				require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"{{.projectName}}","packageManager":"yarn@1.22.22"}`), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(srcDir, m.LockfileName), []byte("lockfile"), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(srcDir, "pnpm-workspace.yaml"), []byte(backgroundInstallWorkspace), 0o644))
+				require.NoError(t, os.WriteFile(filepath.Join(srcDir, configName), []byte(backgroundInstallNpmrc), 0o644))
+				m.Name, err = os.Executable()
+				require.NoError(t, err)
+				m.InstallArgs = append([]string{"-test.run=^TestBackgroundInstallHelper$", "--"}, m.InstallArgs...)
+
+				ch := startBackgroundInstall(t.Context(), srcDir, destDir, "test-app", m)
+				require.NotNil(t, ch)
+				require.NoError(t, <-ch)
+			})
+		}
+	}
+}
+
+// TestBackgroundInstallHelper checks the files visible to the installer process,
+// so the test does not depend on a locally installed package manager or shell.
+func TestBackgroundInstallHelper(t *testing.T) {
+	manager := os.Getenv(backgroundInstallHelperEnv)
+	if manager == "" {
+		return
+	}
+	m, err := pkgmanager.Resolve(manager)
+	require.NoError(t, err)
+	assert.Equal(t, m.InstallArgs, flag.Args())
+	data, err := os.ReadFile("package.json")
+	require.NoError(t, err)
+	var pkg map[string]any
+	require.NoError(t, json.Unmarshal(data, &pkg))
+	assert.Equal(t, "test-app", pkg["name"])
+	assert.Equal(t, m.Pin, pkg["packageManager"])
+	data, err = os.ReadFile(m.LockfileName)
+	require.NoError(t, err)
+	assert.Equal(t, "lockfile", string(data))
+	data, err = os.ReadFile(".npmrc")
+	require.NoError(t, err)
+	assert.Equal(t, backgroundInstallNpmrc, string(data))
+	if m.WorkspaceConfigName != "" {
+		data, err = os.ReadFile(m.WorkspaceConfigName)
+		require.NoError(t, err)
+		assert.Equal(t, backgroundInstallWorkspace, string(data))
+	} else {
+		assert.NoFileExists(t, "pnpm-workspace.yaml")
+	}
+}
+
 // makeChildDir creates and returns an empty subdirectory of t.TempDir() with
 // the requested name. Used to control filepath.Base(cwd) for in-place tests.
 func makeChildDir(t *testing.T, name string) string {
@@ -1500,7 +1562,7 @@ func TestPackageManagerValidation(t *testing.T) {
 		{"pnpm valid", "pnpm", false, ""},
 		{"npm valid", "npm", false, ""},
 		{"unknown invalid", "unknown", true, "unknown package manager"},
-		{"empty invalid", "", true, "unknown package manager"},
+		{"empty defaults to pnpm", "", false, ""},
 	}
 
 	for _, tt := range tests {
