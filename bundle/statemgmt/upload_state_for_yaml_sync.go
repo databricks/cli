@@ -176,7 +176,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		return false, err
 	}
 
-	if _, err := stateDB.Finalize(ctx); err != nil {
+	if _, err := stateDB.FlushAndClose(ctx); err != nil {
 		return false, err
 	}
 

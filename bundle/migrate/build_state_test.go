@@ -53,7 +53,7 @@ func runBuildStateFromTF(
 	_, err = migrate.BuildStateFromTF(t.Context(), &root, adapters, &db, tfAttrs, tfIDs, "")
 	require.NoError(t, err)
 
-	_, err = db.Finalize(t.Context())
+	_, err = db.FlushAndClose(t.Context())
 	require.NoError(t, err)
 
 	raw, err := os.ReadFile(statePath)

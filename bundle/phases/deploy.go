@@ -79,7 +79,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, stateEngine engine.EngineType) {
 	// Apply resources and capture post-apply state.
-	// For direct: Finalize flushes the WAL to disk and returns the state;
+	// For direct: Flush flushes the WAL to disk and returns the state;
 	// called even if Apply failed so partial progress is saved.
 	// For terraform: ParseResourcesState reads the file written by terraform.Apply.
 	var (
@@ -88,9 +88,9 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, st
 	)
 	if stateEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(ctx), plan, reportPerResource(b))
-		state, err = b.DeploymentBundle.StateDB.Finalize(ctx)
-		// Capture the finalized state for deploy telemetry. It carries each
-		// resource's state-size in bytes (from the WAL replay Finalize just
+		state, err = b.DeploymentBundle.StateDB.Flush(ctx)
+		// Capture the flushed state for deploy telemetry. It carries each
+		// resource's state-size in bytes (from the WAL replay Flush just
 		// did), so telemetry needs no extra read or parse of the state file.
 		b.Metrics.ResourceState = state
 	} else {
@@ -207,6 +207,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 				logdiag.LogError(ctx, err)
 			}
 		}
+		b.DeploymentBundle.StateDB.Close()
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
@@ -288,7 +289,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	}
 
 	// Stop before opening the WAL for write if planning failed. UpgradeToWrite
-	// writes a WAL header that only deployCore's Finalize commits or discards;
+	// writes a WAL header that only deployCore's Flush commits or discards;
 	// returning past it without finalizing leaves a header-only WAL behind.
 	if logdiag.HasError(ctx) {
 		return

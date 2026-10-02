@@ -92,6 +92,10 @@ type Metrics struct {
 	// bytes so deploy telemetry can be derived without re-reading or re-parsing
 	// the state file. Nil for terraform deploys.
 	ResourceState resourcestate.ExportedResourcesMap
+
+	// DeploymentHistoryEnabled is copied from the resolved state's feature marker before the
+	// state is closed, so deploy telemetry does not depend on state lifecycle internals.
+	DeploymentHistoryEnabled bool
 }
 
 // SetBoolValue sets the value of a boolean metric.

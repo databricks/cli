@@ -154,7 +154,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, e
 	// Warn instead of hard-error: resources are already deleted, so proceed
 	// with file cleanup regardless of whether state flush succeeds.
 	if engine.IsDirect() {
-		if _, err := b.DeploymentBundle.StateDB.Finalize(ctx); err != nil {
+		if _, err := b.DeploymentBundle.StateDB.Flush(ctx); err != nil {
 			diags := diag.WarningFromErr(err)
 			if len(diags) > 0 {
 				logdiag.LogDiag(ctx, diags[0])
@@ -313,6 +313,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 				}
 			}
 		}
+		b.DeploymentBundle.StateDB.Close()
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
@@ -381,7 +382,7 @@ func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 			cmdio.LogString(ctx, fmt.Sprintf("Migrated %d resource%s to direct deployment engine.", count, suffix))
 
 			// Persist the migrated base before UpgradeToWrite opens the WAL, mirroring deploy's
-			// CommitMigration. Otherwise a destroy interrupted between UpgradeToWrite and Finalize
+			// CommitMigration. Otherwise a destroy interrupted between UpgradeToWrite and Flush
 			// leaves an orphan WAL with no state file: the next run re-migrates (in memory) and
 			// trips UpgradeToWrite's O_EXCL on that WAL. With the base on disk the next run instead
 			// resolves to this committed direct state and its file-backed Open recovers the WAL.
