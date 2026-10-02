@@ -71,16 +71,26 @@ func setForceSendFields(v reflect.Value) {
 		}
 	case reflect.Struct:
 		var names []string
+		fsfIndex := -1
 		for i := range v.NumField() {
 			sf := v.Type().Field(i)
-			if !sf.IsExported() || sf.Name == "ForceSendFields" {
+			if !sf.IsExported() {
+				continue
+			}
+			if sf.Name == "ForceSendFields" {
+				fsfIndex = i // this struct's own slice, not one promoted from an embed
 				continue
 			}
 			names = append(names, sf.Name)
 			setForceSendFields(v.Field(i))
 		}
-		if f := v.FieldByName("ForceSendFields"); f.IsValid() && f.Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.String {
-			f.Set(reflect.ValueOf(names))
+		// Set only the directly declared ForceSendFields. v.FieldByName would follow Go
+		// promotion and clobber an embedded SDK struct's own slice with the wrapper's field
+		// names, so a wrapper like AppRemote never genuinely exercises the embed's FSF path.
+		if fsfIndex >= 0 {
+			if f := v.Field(fsfIndex); f.Kind() == reflect.Slice && f.Type().Elem().Kind() == reflect.String {
+				f.Set(reflect.ValueOf(names))
+			}
 		}
 	default:
 		// scalars and other kinds have no nested ForceSendFields to set

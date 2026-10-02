@@ -97,13 +97,15 @@ var copiers = buildCopiers()
 func buildCopiers() map[reflect.Type]*structcopy.Copier {
 	iface := reflect.TypeFor[IResource]()
 	out := make(map[reflect.Type]*structcopy.Copier)
+	seen := make(map[reflect.Type]bool)
 	var errs []string
 
 	for resourceType, resource := range SupportedResources {
 		implType := reflect.TypeOf(resource)
-		if _, done := out[implType]; done {
+		if seen[implType] {
 			continue // same implementation registered under several keys (permissions, grants)
 		}
+		seen[implType] = true
 
 		remap, err := calladapt.PrepareCall(resource, iface, "RemapState")
 		if err != nil {
