@@ -7,14 +7,18 @@ Created postgres_projects.my_project
 Files: 0 uploaded, 0 deleted
 Resources: 2 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Bump pg_version: recreates the project; project_id (hence name) is unchanged
+=== Bump pg_version: recreates the project; project_id and name are unchanged
 >>> update_file.py databricks.yml pg_version: 16 pg_version: 17
 
+=== Plan
 >>> [CLI] bundle plan
 recreate postgres_catalogs.my_catalog
 recreate postgres_projects.my_project
 
 Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
+
+=== Deploy the recreate and record per-engine requests (see out.requests.*)
+>>> print_requests.py --sort //postgres
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -2,5 +2,5 @@
 # recreated reads as a phantom change). Not Cloud: terraform updating the role in place (vs
 # the backend delete+create) is a testserver behavior.
 Cloud = false
-RecordRequests = false
+RecordRequests = true
 EnvMatrix.DMS = []

@@ -1,0 +1,29 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/databases/my-db",
+  "q": {
+    "update_mask": "spec.role"
+  },
+  "body": {
+    "spec": {
+      "postgres_database": "mydb",
+      "role": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles/app-owner"
+    }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/roles",
+  "q": {
+    "role_id": "app-owner"
+  },
+  "body": {
+    "spec": {
+      "postgres_role": "new_role"
+    }
+  }
+}

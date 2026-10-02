@@ -16,6 +16,9 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
+=== Deploy and record per-engine requests (see out.plan.*, out.requests.*)
+>>> print_requests.py --sort //postgres
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.my_branch
