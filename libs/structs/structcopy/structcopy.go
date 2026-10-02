@@ -20,6 +20,13 @@ import (
 type Copier struct {
 	dstElem reflect.Type // struct type behind the destination pointer type
 	ops     []copyOp
+
+	// srcForceSendIndex is the FieldByIndex path to the source's single ForceSendFields
+	// slice, or nil if the source has none. Compile resolves it from flattenStruct (which
+	// Compile also uses to enforce the single-slice guard), so the read in Copy follows the
+	// exact same resolution — unlike FieldByName, which would also traverse a json-tagged
+	// anonymous embed that flattenStruct treats as a plain field.
+	srcForceSendIndex []int
 }
 
 type copyOp struct {
@@ -68,12 +75,16 @@ func Compile(srcType, dstType reflect.Type) (*Copier, error) {
 	if err != nil {
 		return nil, fmt.Errorf("source %s: %w", srcElem, err)
 	}
-	// Copy sources every destination ForceSendFields slice from a single root slice
-	// (rootForceSendFields, via FieldByName). That faithfully represents at most one source
-	// slice: with two or more, FieldByName surfaces only the shallowest and the rest would be
-	// silently dropped. Reject such a source up front rather than lose markers at copy time.
+	// Copy sources every destination ForceSendFields slice from one source slice. That
+	// faithfully represents at most one source slice: with two or more there is no single
+	// slice to read, and markers from all but one would be silently dropped. Reject such a
+	// source up front rather than lose markers at copy time.
 	if len(srcForceSend) > 1 {
 		return nil, fmt.Errorf("source %s has %d ForceSendFields slices; the copier can source destination ForceSendFields from only one (implement RemapState for this resource)", srcElem, len(srcForceSend))
+	}
+	var srcForceSendIndex []int
+	if len(srcForceSend) == 1 {
+		srcForceSendIndex = srcForceSend[0].index
 	}
 
 	var ops []copyOp
@@ -97,7 +108,7 @@ func Compile(srcType, dstType reflect.Type) (*Copier, error) {
 		ops = append(ops, copyOp{forceSendFields: true, dstIndex: target.index, ownerType: target.ownerType})
 	}
 
-	return &Copier{dstElem: dstElem, ops: ops}, nil
+	return &Copier{dstElem: dstElem, ops: ops, srcForceSendIndex: srcForceSendIndex}, nil
 }
 
 // Copy builds a fresh destination value (a pointer to the destination struct) populated
@@ -108,11 +119,11 @@ func (c *Copier) Copy(src any) any {
 	dstVal := dstPtr.Elem()
 
 	var srcForceSend []string
+	if c.srcForceSendIndex != nil {
+		srcForceSend, _ = srcVal.FieldByIndex(c.srcForceSendIndex).Interface().([]string)
+	}
 	for _, op := range c.ops {
 		if op.forceSendFields {
-			if srcForceSend == nil {
-				srcForceSend = rootForceSendFields(srcVal)
-			}
 			// Keep only names that are directly declared on this slice's owner. The source
 			// marker names are field names; a destination ForceSendFields slice may only list
 			// its own struct's fields. Filtering by directly-declared (not promoted) fields is
@@ -158,19 +169,12 @@ func isScalarKind(k reflect.Kind) bool {
 	}
 }
 
-// rootForceSendFields returns the ForceSendFields slice at the struct's root, or nil.
-func rootForceSendFields(v reflect.Value) []string {
-	f := v.FieldByName("ForceSendFields")
-	if !f.IsValid() || f.Kind() != reflect.Slice {
-		return nil
-	}
-	fields, _ := f.Interface().([]string)
-	return fields
-}
-
 // filterOwnFields returns the names that name a field directly declared on ownerType.
 // Unlike reflect.Type.FieldByName it does not follow promotion, so a promoted field of an
-// embedded struct is not treated as belonging to the outer struct.
+// embedded struct is not treated as belonging to the outer struct. Marker names are matched
+// by Go field name (the ForceSendFields convention), so a field the copier maps across a
+// differing Go name under the same JSON name is not force-sent on the destination — this
+// matches the SDK's own utils.FilterFields behavior that the hand-written copies used.
 func filterOwnFields(ownerType reflect.Type, names []string) []string {
 	own := make(map[string]bool, ownerType.NumField())
 	for i := range ownerType.NumField() {
