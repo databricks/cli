@@ -13,7 +13,6 @@ import (
 
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structtag"
-	"github.com/databricks/cli/libs/utils"
 )
 
 // Copier copies fields from a source struct into a fresh destination struct by matching
@@ -35,8 +34,7 @@ type copyOp struct {
 	dstType  reflect.Type // target type for Convert
 
 	// forceSendFields ops:
-	ownerType         reflect.Type // struct type owning the destination ForceSendFields slice, for validity filtering
-	srcForceSendIndex []int        // FieldByIndex path to the matching source ForceSendFields slice, nil if the source has none
+	ownerType reflect.Type // struct type owning the ForceSendFields slice, for validity filtering
 }
 
 // jsonFieldInfo locates a top-level JSON field within a struct, resolved through
@@ -66,7 +64,7 @@ func Compile(srcType, dstType reflect.Type) (*Copier, error) {
 	if err != nil {
 		return nil, fmt.Errorf("destination %s: %w", dstElem, err)
 	}
-	srcFields, srcForceSend, err := flattenStruct(srcElem, nil)
+	srcFields, _, err := flattenStruct(srcElem, nil)
 	if err != nil {
 		return nil, fmt.Errorf("source %s: %w", srcElem, err)
 	}
@@ -88,25 +86,8 @@ func Compile(srcType, dstType reflect.Type) (*Copier, error) {
 		}
 	}
 
-	// Match each destination ForceSendFields slice to the source slice that governs the same
-	// fields, so a slice is never populated from an unrelated struct's names. The top-level
-	// slice (index length 1) pairs with the source's top-level slice; a slice owned by an
-	// embedded struct pairs with the source slice owned by that same struct type. An
-	// unmatched destination slice is left empty.
-	var srcRootForceSend []int
-	srcForceSendByOwner := make(map[reflect.Type][]int, len(srcForceSend))
-	for _, s := range srcForceSend {
-		if len(s.index) == 1 {
-			srcRootForceSend = s.index
-		}
-		srcForceSendByOwner[s.ownerType] = s.index
-	}
 	for _, target := range dstForceSend {
-		srcIdx := srcForceSendByOwner[target.ownerType]
-		if len(target.index) == 1 {
-			srcIdx = srcRootForceSend
-		}
-		ops = append(ops, copyOp{forceSendFields: true, dstIndex: target.index, ownerType: target.ownerType, srcForceSendIndex: srcIdx})
+		ops = append(ops, copyOp{forceSendFields: true, dstIndex: target.index, ownerType: target.ownerType})
 	}
 
 	return &Copier{dstElem: dstElem, ops: ops}, nil
@@ -119,13 +100,18 @@ func (c *Copier) Copy(src any) any {
 	dstPtr := reflect.New(c.dstElem)
 	dstVal := dstPtr.Elem()
 
+	var srcForceSend []string
 	for _, op := range c.ops {
 		if op.forceSendFields {
-			var srcForceSend []string
-			if op.srcForceSendIndex != nil {
-				srcForceSend, _ = reflect.TypeAssert[[]string](srcVal.FieldByIndex(op.srcForceSendIndex))
+			if srcForceSend == nil {
+				srcForceSend = rootForceSendFields(srcVal)
 			}
-			filtered := utils.FilterFieldsType(op.ownerType, srcForceSend)
+			// Keep only names that are directly declared on this slice's owner. The source
+			// marker names are field names; a destination ForceSendFields slice may only list
+			// its own struct's fields. Filtering by directly-declared (not promoted) fields is
+			// what keeps a shadow slice — e.g. a wrapper that re-declares ForceSendFields above
+			// an embedded spec — from being populated with the embed's promoted field names.
+			filtered := filterOwnFields(op.ownerType, srcForceSend)
 			dstVal.FieldByIndex(op.dstIndex).Set(reflect.ValueOf(filtered))
 			continue
 		}
@@ -163,6 +149,33 @@ func isScalarKind(k reflect.Kind) bool {
 	default:
 		return false
 	}
+}
+
+// rootForceSendFields returns the ForceSendFields slice at the struct's root, or nil.
+func rootForceSendFields(v reflect.Value) []string {
+	f := v.FieldByName("ForceSendFields")
+	if !f.IsValid() || f.Kind() != reflect.Slice {
+		return nil
+	}
+	fields, _ := f.Interface().([]string)
+	return fields
+}
+
+// filterOwnFields returns the names that name a field directly declared on ownerType.
+// Unlike reflect.Type.FieldByName it does not follow promotion, so a promoted field of an
+// embedded struct is not treated as belonging to the outer struct.
+func filterOwnFields(ownerType reflect.Type, names []string) []string {
+	own := make(map[string]bool, ownerType.NumField())
+	for i := range ownerType.NumField() {
+		own[ownerType.Field(i).Name] = true
+	}
+	var result []string
+	for _, name := range names {
+		if own[name] {
+			result = append(result, name)
+		}
+	}
+	return result
 }
 
 // flattenStruct enumerates a struct's top-level JSON fields (descending through
