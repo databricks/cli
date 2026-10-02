@@ -1,0 +1,7 @@
+# Local-only demonstration of a plan-time reference-resolution limitation shared by both
+# engines. Not Cloud: terraform updating resources against the lenient testserver, and the
+# recorded request shapes, are testserver behaviors.
+Cloud = false
+RecordRequests = true
+EnvMatrix.DMS = []
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

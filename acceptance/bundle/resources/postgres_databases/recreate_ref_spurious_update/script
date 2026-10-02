@@ -1,0 +1,32 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"   # drop create requests; capture only the edit below
+
+# Changing postgres_role recreates the role in the direct engine (the backend rejects this
+# field in the PATCH update_mask, so it is delete + create -- see recreate-postgres-role).
+# role_id is unchanged, so my_role.name (projects/.../roles/app-owner) is stable.
+title "Recreate the role; my_database.role references the role's (unchanged) name"
+trace update_file.py databricks.yml "postgres_role: app_role" "postgres_role: new_role"
+
+# PLANNED: the direct engine recreates the role, so it cannot resolve ${my_role.name} (a
+# recreate does not preserve the id) and diffs the saved name against the literal "${...}"
+# placeholder -> spurious "update postgres_databases.my_database".
+title "Plan"
+trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+# Field-level proof: old is the real name, new is the still-unresolved reference.
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databases.my_database".changes.role' > out.database_role.$DATABRICKS_BUNDLE_ENGINE.json
+
+# WHAT ACTUALLY HAPPENED: deploy and record the requests (deploy stdout -> LOG.deploy; parallel
+# completion order is nondeterministic). out.requests.direct.txt shows the direct engine issues
+# a PATCH against my_database -- a spurious update writing back the unchanged role.
+title "Deploy and record the requests (see out.plan.direct.txt, out.requests.direct.txt)"
+$CLI bundle deploy --auto-approve &> LOG.deploy
+trace print_requests.py --sort '//postgres' > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt
