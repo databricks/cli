@@ -48,6 +48,122 @@ func touchEmptyFile(t *testing.T, path string) {
 	f.Close()
 }
 
+func TestTranslatePathsProjectEnvironment(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		path         string
+		localFile    string
+		want         string
+		wantErr      string
+		gitSource    bool
+		sourceLinked bool
+	}{
+		{
+			name: "YAML directory", path: "./pyproject.toml", localFile: "resources/pyproject.toml",
+			want: "/Workspace/bundle/files/resources/pyproject.toml",
+		},
+		{
+			name: "YAML parent", path: "../pyproject.toml", localFile: "pyproject.toml",
+			want: "/Workspace/bundle/files/pyproject.toml",
+		},
+		{
+			name: "bare filename", path: "pyproject.toml", localFile: "resources/pyproject.toml",
+			want: "/Workspace/bundle/files/resources/pyproject.toml",
+		},
+		{
+			name: "requirements file with spaces", path: "../env files/requirements.txt", localFile: "env files/requirements.txt",
+			want: "/Workspace/bundle/files/env files/requirements.txt",
+		},
+		{
+			name: "absolute workspace path", path: "/Workspace/shared/pyproject.toml",
+			want: "/Workspace/shared/pyproject.toml",
+		},
+		{
+			name: "source-linked deployment", path: "../pyproject.toml", localFile: "pyproject.toml",
+			want: "pyproject.toml", sourceLinked: true,
+		},
+		{
+			name: "git source", path: "../pyproject.toml",
+			want: "../pyproject.toml", gitSource: true,
+		},
+		{
+			name: "missing file", path: "../pyproject.toml",
+			wantErr: "file pyproject.toml not found",
+		},
+		{
+			name: "outside sync root", path: "../../pyproject.toml",
+			wantErr: "is not contained in sync root path",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tc.localFile != "" {
+				touchEmptyFile(t, filepath.Join(dir, tc.localFile))
+			}
+			notebookPath := filepath.Join(dir, "src", "notebooks", "notebook.py")
+			require.NoError(t, os.MkdirAll(filepath.Dir(notebookPath), 0o700))
+			touchNotebookFile(t, notebookPath)
+			job := &resources.Job{
+				JobSettings: jobs.JobSettings{
+					Tasks: []jobs.Task{{
+						TaskKey: "notebook",
+						NotebookTask: &jobs.NotebookTask{
+							NotebookPath: "../src/notebooks/notebook.py",
+						},
+						EnvironmentKey: "project",
+					}},
+					Environments: []jobs.JobEnvironment{{EnvironmentKey: "project", Spec: &compute.Environment{}}},
+				},
+			}
+			if tc.gitSource {
+				job.GitSource = &jobs.GitSource{GitUrl: "https://example.test/repo.git"}
+			}
+			b := &bundle.Bundle{
+				BundleRootPath: dir,
+				SyncRootPath:   dir,
+				SyncRoot:       vfs.MustNew(dir),
+				Config: config.Root{
+					Workspace: config.Workspace{FilePath: "/Workspace/bundle/files"},
+					Resources: config.Resources{Jobs: map[string]*resources.Job{"job": job}},
+					Presets:   config.Presets{SourceLinkedDeployment: &tc.sourceLinked},
+				},
+			}
+			locations := []dyn.Location{{File: filepath.Join(dir, "resources", "job.yml")}}
+			bundletest.SetLocation(b, ".", locations)
+			const field = "resources.jobs.job.environments[0].spec.project_environment"
+			// Until the SDK exposes this field, invoke the mutators directly so
+			// bundle.Apply does not discard it when converting from SDK types.
+			err := b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+				return dyn.Set(v, field, dyn.NewValue(tc.path, locations))
+			})
+			require.NoError(t, err)
+			require.NoError(t, mutator.NormalizePaths().Apply(t.Context(), b).Error())
+			err = mutator.TranslatePaths().Apply(t.Context(), b).Error()
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			actual, err := dyn.Get(b.Config.Value(), field)
+			require.NoError(t, err)
+			want := tc.want
+			if tc.sourceLinked {
+				want = filepath.ToSlash(filepath.Join(dir, want))
+			}
+			assert.Equal(t, want, actual.MustString())
+
+			wantNotebook := "/Workspace/bundle/files/src/notebooks/notebook"
+			switch {
+			case tc.gitSource:
+				wantNotebook = "../src/notebooks/notebook.py"
+			case tc.sourceLinked:
+				wantNotebook = filepath.ToSlash(filepath.Join(dir, "src", "notebooks", "notebook"))
+			}
+			assert.Equal(t, wantNotebook, b.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath)
+		})
+	}
+}
+
 func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{

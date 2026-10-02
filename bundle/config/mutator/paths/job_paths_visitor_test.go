@@ -1,14 +1,17 @@
 package paths
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestVisitJobPaths(t *testing.T) {
@@ -129,6 +132,58 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	var expected []dyn.Path
 
 	assert.ElementsMatch(t, expected, actual)
+}
+
+func TestVisitJobPaths_projectEnvironments(t *testing.T) {
+	value, err := yamlloader.LoadYAML("resources/jobs.yml", strings.NewReader(`
+resources:
+  jobs:
+    first:
+      tasks:
+        - task_key: notebook
+          notebook_task:
+            notebook_path: notebook.py
+      environments:
+        - environment_key: project
+          spec:
+            project_environment: ../pyproject.toml
+        - environment_key: standard
+          spec:
+            environment_version: "4"
+            dependencies: [requests]
+        - environment_key: requirements
+          spec:
+            project_environment: ../requirements.txt
+    second:
+      environments:
+        - environment_key: project
+          spec:
+            project_environment: /Workspace/shared/pyproject.toml
+`))
+	require.NoError(t, err)
+
+	visited := map[string]TranslateMode{}
+	updated, err := VisitJobPaths(value, func(p dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
+		visited[p.String()] = mode
+		return dyn.NewValue("rewritten:"+v.MustString(), v.Locations()), nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, map[string]TranslateMode{
+		"resources.jobs.first.tasks[0].notebook_task.notebook_path":      TranslateModeNotebook,
+		"resources.jobs.first.environments[0].spec.project_environment":  TranslateModeFile,
+		"resources.jobs.first.environments[2].spec.project_environment":  TranslateModeFile,
+		"resources.jobs.second.environments[0].spec.project_environment": TranslateModeFile,
+	}, visited)
+	for path, want := range map[string]string{
+		"resources.jobs.first.tasks[0].notebook_task.notebook_path":      "rewritten:notebook.py",
+		"resources.jobs.first.environments[0].spec.project_environment":  "rewritten:../pyproject.toml",
+		"resources.jobs.first.environments[2].spec.project_environment":  "rewritten:../requirements.txt",
+		"resources.jobs.second.environments[0].spec.project_environment": "rewritten:/Workspace/shared/pyproject.toml",
+	} {
+		actual, err := dyn.Get(updated, path)
+		require.NoError(t, err)
+		assert.Equal(t, want, actual.MustString(), path)
+	}
 }
 
 func TestVisitJobPaths_foreach(t *testing.T) {
