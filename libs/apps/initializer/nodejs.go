@@ -3,10 +3,12 @@ package initializer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/apps/pkgmanager"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -15,14 +17,15 @@ import (
 // InitializerNodeJs implements initialization for Node.js-based projects.
 type InitializerNodeJs struct {
 	workDir string
+	manager pkgmanager.Manager
 }
 
 func (i *InitializerNodeJs) Initialize(ctx context.Context, workDir string) *InitResult {
 	i.workDir = workDir
 
-	// Step 1: Run npm install (skip if node_modules already exists from a background install)
+	// Step 1: Run package manager install (skip if node_modules already exists from a background install)
 	if !fileExists(filepath.Join(workDir, "node_modules")) {
-		if err := i.runNpmInstall(ctx, workDir); err != nil {
+		if err := i.runInstall(ctx, workDir); err != nil {
 			return &InitResult{
 				Success: false,
 				Message: "Failed to install dependencies",
@@ -49,18 +52,17 @@ func (i *InitializerNodeJs) Initialize(ctx context.Context, workDir string) *Ini
 }
 
 func (i *InitializerNodeJs) NextSteps() string {
-	return "npm run dev"
+	return i.manager.Name + " run dev"
 }
 
 func (i *InitializerNodeJs) InstallCommand() string {
-	// Mirrors runNpmInstall — `npm ci` reproduces the lockfile and is what
-	// the background install in cmd/apps would have run.
-	return "npm ci"
+	// Mirrors runInstall — display the clean install command for the selected PM.
+	return i.manager.InstallCommand
 }
 
 func (i *InitializerNodeJs) RunDev(ctx context.Context, workDir string) error {
-	cmdio.LogString(ctx, "Starting development server (npm run dev)...")
-	cmd := exec.CommandContext(ctx, "npm", "run", "dev")
+	cmdio.LogString(ctx, "Starting development server ("+i.manager.Name+" run dev)...")
+	cmd := exec.CommandContext(ctx, i.manager.Name, "run", "dev")
 	cmd.Dir = workDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -75,17 +77,15 @@ func (i *InitializerNodeJs) SupportsDevRemote() bool {
 	return i.hasAppkit(i.workDir)
 }
 
-// runNpmInstall runs npm install in the project directory.
-func (i *InitializerNodeJs) runNpmInstall(ctx context.Context, workDir string) error {
-	// Check if npm is available
-	if _, err := exec.LookPath("npm"); err != nil {
-		cmdio.LogString(ctx, "⚠ npm not found. Please install Node.js and run 'npm install' manually.")
-		return nil //nolint:nilerr // npm not found is a non-critical warning
+// runInstall runs the package manager install in the project directory.
+func (i *InitializerNodeJs) runInstall(ctx context.Context, workDir string) error {
+	// Check if the package manager binary is available
+	if _, err := exec.LookPath(i.manager.Name); err != nil {
+		return fmt.Errorf("%s is unavailable; install it and retry, or use --skip-install to scaffold without running setup: %w", i.manager.Name, err)
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
-		// Faster npm install command.
-		cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
+		cmd := exec.CommandContext(ctx, i.manager.Name, i.manager.InstallArgs...)
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil

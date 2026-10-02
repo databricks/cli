@@ -1,0 +1,95 @@
+#!/bin/bash
+
+go build -o "fake-bin/npm$(go env GOEXE)" ./npm/main.go
+export PATH="$PWD/fake-bin:$PATH"
+export CLI_TEST_NPM_VERSION=unavailable
+
+# Test default package manager (pnpm)
+trace $CLI apps init --name test-app-pnpm --skip-install
+
+echo "=== test-app-pnpm/app.yaml ==="
+cat test-app-pnpm/app.yaml
+
+echo "=== test-app-pnpm/package.json ==="
+jq '.scripts, .packageManager, .overrides' test-app-pnpm/package.json
+
+# Test explicit npm package manager
+trace $CLI apps init --name test-app-npm --package-manager npm --skip-install
+
+echo "=== test-app-npm/app.yaml ==="
+cat test-app-npm/app.yaml
+
+echo "=== test-app-npm/package.json ==="
+jq '.scripts, .packageManager, .overrides' test-app-npm/package.json
+
+title "Standard template with pnpm"
+trace $CLI apps init --name standard-app-pnpm --template standard-template --skip-install
+cat standard-app-pnpm/app.yaml
+jq '.scripts, .packageManager, .overrides' standard-app-pnpm/package.json
+
+title "Standard template with npm"
+trace $CLI apps init --name standard-app-npm --template standard-template --package-manager npm --skip-install
+cat standard-app-npm/app.yaml
+jq '.scripts, .packageManager, .overrides' standard-app-npm/package.json
+
+title "Npm-only custom template rejects pnpm before copying"
+musterr trace $CLI apps init --name incompatible-app --template npm-only-template --skip-install
+test ! -e incompatible-app
+test -f npm-only-template/package-lock.json
+
+title "Npm-only custom template accepts the suggested manager"
+trace $CLI apps init --name compatible-app --template npm-only-template --package-manager npm --skip-install
+diff.py npm-only-template/package-lock.json compatible-app/package-lock.json
+jq '.packageManager' compatible-app/package.json
+
+title "Npm records the installed version in a plain template"
+trace CLI_TEST_NPM_VERSION=11.4.1 $CLI apps init --name installed-app --template npm-only-template --package-manager npm
+jq -r '.packageManager' installed-app/package.json > final-pin
+diff.py installed-app/node_modules/installed-pin final-pin
+cat final-pin
+
+title "Npm records the installed version in a Go template"
+trace CLI_TEST_NPM_VERSION=10.8.3 $CLI apps init --name rendered-app --template install-template --package-manager npm
+jq -r '.packageManager' rendered-app/package.json > final-pin
+diff.py rendered-app/node_modules/installed-pin final-pin
+cat final-pin
+
+title "Npm version detection failure stops before creating the project"
+musterr trace $CLI apps init --name failed-app --template npm-only-template --package-manager npm
+test ! -e failed-app
+
+title "Npm invalid version stops before creating the project"
+musterr trace CLI_TEST_NPM_VERSION=invalid $CLI apps init --name invalid-app --template npm-only-template --package-manager npm
+test ! -e invalid-app
+
+title "Npm empty version stops before creating the project"
+musterr trace CLI_TEST_NPM_VERSION= $CLI apps init --name empty-app --template npm-only-template --package-manager npm
+test ! -e empty-app
+
+# Use a local repository to exercise default-template version resolution without network access.
+cp template/databricks.yml databricks.yml
+git-repo-init
+git add template
+git commit -qm 'Add template'
+git tag template-v0.81.0
+git tag template-v0.57.0
+repo_url=$(python3 -c 'from pathlib import Path; print(Path.cwd().as_uri())')
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0="url.${repo_url}/.insteadOf"
+export GIT_CONFIG_VALUE_0="https://github.com/databricks/appkit"
+export DATABRICKS_APPKIT_TEMPLATE_PATH=""
+
+title "Version downgrade uses npm throughout"
+trace $CLI apps init --name older-app --version 0.81.0 --skip-install
+cat older-app/app.yaml
+jq '.scripts.build, .packageManager' older-app/package.json
+
+title "Missing version falls back to the embedded template and its package manager"
+trace DATABRICKS_CACHE_DIR=cache DATABRICKS_CACHE_ENABLED=true DATABRICKS_FORCE_EMBEDDED_COMPAT=false $CLI apps init --name fallback-app --skip-install
+cat fallback-app/app.yaml
+jq '.scripts.build, .packageManager' fallback-app/package.json
+
+title "Version downgrade resolves the installed npm pin"
+trace CLI_TEST_NPM_VERSION=11.4.1 $CLI apps init --name installed-older-app --version 0.81.0
+jq '.packageManager' installed-older-app/package.json
+cat installed-older-app/node_modules/installed-pin

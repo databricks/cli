@@ -1,0 +1,1 @@
+* Add `databricks apps init --package-manager <npm|pnpm>` flag to select the package manager for new AppKit projects. Defaults to pnpm for template versions that support it; pre-threshold versions automatically use npm with a warning. ([#6902](https://github.com/databricks/cli/pull/6902))
