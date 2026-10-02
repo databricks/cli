@@ -1,0 +1,9 @@
+{
+  "name": "validation-remove-build",
+  "version": "1.0.0",
+  "scripts": {
+    "install": "node ../update-manifest.cjs",
+    "typegen": "node ../update-manifest.cjs",
+    "build": "node -e \"process.exit(17)\""
+  }
+}

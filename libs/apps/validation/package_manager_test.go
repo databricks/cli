@@ -1,12 +1,15 @@
 package validation_test
 
 import (
+	"bytes"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/apps/validation"
+	"github.com/databricks/cli/libs/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -44,10 +47,34 @@ func TestDetectPackageManager(t *testing.T) {
 }
 
 func TestDetectPackageManagerInvalidLockfile(t *testing.T) {
-	dir := t.TempDir()
-	require.NoError(t, os.Mkdir(filepath.Join(dir, "pnpm-lock.yaml"), 0o755))
-	_, err := validation.DetectPackageManager(t.Context(), dir)
-	require.EqualError(t, err, "lockfile pnpm-lock.yaml must be a regular file")
+	for _, lockfile := range []string{"package-lock.json", "npm-shrinkwrap.json", "pnpm-lock.yaml"} {
+		t.Run(lockfile, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.Mkdir(filepath.Join(dir, lockfile), 0o755))
+			_, err := validation.DetectPackageManager(t.Context(), dir)
+			require.EqualError(t, err, "lockfile "+lockfile+" must be a regular file")
+		})
+	}
+}
+
+func TestDetectPackageManagerUnsupportedLockfileDirectory(t *testing.T) {
+	for _, lockfile := range []string{"yarn.lock", "bun.lock", "bun.lockb"} {
+		for _, manager := range []string{"npm", "pnpm"} {
+			t.Run(lockfile+"/"+manager, func(t *testing.T) {
+				dir := t.TempDir()
+				require.NoError(t, os.Mkdir(filepath.Join(dir, lockfile), 0o755))
+				if manager == "pnpm" {
+					testutil.Touch(t, dir, "pnpm-lock.yaml")
+				}
+				var warnings bytes.Buffer
+				ctx := log.NewContext(t.Context(), slog.New(slog.NewTextHandler(&warnings, nil)))
+				actual, err := validation.DetectPackageManager(ctx, dir)
+				require.NoError(t, err)
+				assert.Equal(t, manager, actual)
+				assert.Contains(t, warnings.String(), "ignoring unsupported lockfile "+lockfile)
+			})
+		}
+	}
 }
 
 func TestDetectPackageManagerProjectDirectory(t *testing.T) {
