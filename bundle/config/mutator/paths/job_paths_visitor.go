@@ -69,9 +69,15 @@ func jobRewritePatterns() []jobRewritePattern {
 
 	taskPatterns := jobTaskRewritePatterns(base)
 	forEachPatterns := jobTaskRewritePatterns(base.Append(dyn.Key("for_each_task"), dyn.Key("task")))
-	// project_environment is relative to the task's notebook, not the defining
-	// YAML file, so it must not participate in bundle path translation.
-	return append(taskPatterns, forEachPatterns...)
+	patterns := append(taskPatterns, forEachPatterns...)
+	return append(patterns, jobRewritePattern{
+		dyn.NewPattern(
+			dyn.Key("resources"), dyn.Key("jobs"), dyn.AnyKey(),
+			dyn.Key("environments"), dyn.AnyIndex(), dyn.Key("spec"), dyn.Key("project_environment"),
+		),
+		TranslateModeFile,
+		noSkipRewrite,
+	})
 }
 
 // VisitJobPaths visits all paths in job resources and applies a function to each path.

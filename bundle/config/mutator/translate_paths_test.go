@@ -48,23 +48,58 @@ func touchEmptyFile(t *testing.T, path string) {
 	f.Close()
 }
 
-func TestTranslatePathsPreservesNotebookRelativeProjectEnvironment(t *testing.T) {
+func TestTranslatePathsProjectEnvironment(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
 		path         string
+		localFile    string
+		want         string
+		wantErr      string
 		gitSource    bool
 		sourceLinked bool
 	}{
-		{name: "notebook directory", path: "./pyproject.toml"},
-		{name: "notebook parent", path: "../pyproject.toml"},
-		{name: "multiple notebook ancestors", path: "../../pyproject.toml"},
-		{name: "requirements file with spaces", path: "../env files/requirements.txt"},
-		{name: "absolute workspace path", path: "/Workspace/shared/pyproject.toml"},
-		{name: "source-linked deployment", path: "../pyproject.toml", sourceLinked: true},
-		{name: "git source", path: "../pyproject.toml", gitSource: true},
+		{
+			name: "YAML directory", path: "./pyproject.toml", localFile: "resources/pyproject.toml",
+			want: "/Workspace/bundle/files/resources/pyproject.toml",
+		},
+		{
+			name: "YAML parent", path: "../pyproject.toml", localFile: "pyproject.toml",
+			want: "/Workspace/bundle/files/pyproject.toml",
+		},
+		{
+			name: "bare filename", path: "pyproject.toml", localFile: "resources/pyproject.toml",
+			want: "/Workspace/bundle/files/resources/pyproject.toml",
+		},
+		{
+			name: "requirements file with spaces", path: "../env files/requirements.txt", localFile: "env files/requirements.txt",
+			want: "/Workspace/bundle/files/env files/requirements.txt",
+		},
+		{
+			name: "absolute workspace path", path: "/Workspace/shared/pyproject.toml",
+			want: "/Workspace/shared/pyproject.toml",
+		},
+		{
+			name: "source-linked deployment", path: "../pyproject.toml", localFile: "pyproject.toml",
+			want: "pyproject.toml", sourceLinked: true,
+		},
+		{
+			name: "git source", path: "../pyproject.toml",
+			want: "../pyproject.toml", gitSource: true,
+		},
+		{
+			name: "missing file", path: "../pyproject.toml",
+			wantErr: "file pyproject.toml not found",
+		},
+		{
+			name: "outside sync root", path: "../../pyproject.toml",
+			wantErr: "is not contained in sync root path",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
+			if tc.localFile != "" {
+				touchEmptyFile(t, filepath.Join(dir, tc.localFile))
+			}
 			notebookPath := filepath.Join(dir, "src", "notebooks", "notebook.py")
 			require.NoError(t, os.MkdirAll(filepath.Dir(notebookPath), 0o700))
 			touchNotebookFile(t, notebookPath)
@@ -103,10 +138,19 @@ func TestTranslatePathsPreservesNotebookRelativeProjectEnvironment(t *testing.T)
 			})
 			require.NoError(t, err)
 			require.NoError(t, mutator.NormalizePaths().Apply(t.Context(), b).Error())
-			require.NoError(t, mutator.TranslatePaths().Apply(t.Context(), b).Error())
+			err = mutator.TranslatePaths().Apply(t.Context(), b).Error()
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
 			actual, err := dyn.Get(b.Config.Value(), field)
 			require.NoError(t, err)
-			assert.Equal(t, tc.path, actual.MustString())
+			want := tc.want
+			if tc.sourceLinked {
+				want = filepath.ToSlash(filepath.Join(dir, want))
+			}
+			assert.Equal(t, want, actual.MustString())
 
 			wantNotebook := "/Workspace/bundle/files/src/notebooks/notebook"
 			switch {

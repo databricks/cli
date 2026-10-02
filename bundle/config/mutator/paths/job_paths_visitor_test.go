@@ -134,7 +134,7 @@ func TestVisitJobPaths_environments(t *testing.T) {
 	assert.ElementsMatch(t, expected, actual)
 }
 
-func TestVisitJobPaths_preservesProjectEnvironments(t *testing.T) {
+func TestVisitJobPaths_projectEnvironments(t *testing.T) {
 	value, err := yamlloader.LoadYAML("resources/jobs.yml", strings.NewReader(`
 resources:
   jobs:
@@ -162,16 +162,23 @@ resources:
 `))
 	require.NoError(t, err)
 
-	updated, err := VisitJobPaths(value, func(_ dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
-		assert.Equal(t, TranslateModeNotebook, mode)
-		return dyn.NewValue("/Workspace/bundle/files/"+v.MustString(), v.Locations()), nil
+	visited := map[string]TranslateMode{}
+	updated, err := VisitJobPaths(value, func(p dyn.Path, mode TranslateMode, v dyn.Value) (dyn.Value, error) {
+		visited[p.String()] = mode
+		return dyn.NewValue("rewritten:"+v.MustString(), v.Locations()), nil
 	})
 	require.NoError(t, err)
+	assert.Equal(t, map[string]TranslateMode{
+		"resources.jobs.first.tasks[0].notebook_task.notebook_path":      TranslateModeNotebook,
+		"resources.jobs.first.environments[0].spec.project_environment":  TranslateModeFile,
+		"resources.jobs.first.environments[2].spec.project_environment":  TranslateModeFile,
+		"resources.jobs.second.environments[0].spec.project_environment": TranslateModeFile,
+	}, visited)
 	for path, want := range map[string]string{
-		"resources.jobs.first.tasks[0].notebook_task.notebook_path":      "/Workspace/bundle/files/notebook.py",
-		"resources.jobs.first.environments[0].spec.project_environment":  "../pyproject.toml",
-		"resources.jobs.first.environments[2].spec.project_environment":  "../requirements.txt",
-		"resources.jobs.second.environments[0].spec.project_environment": "/Workspace/shared/pyproject.toml",
+		"resources.jobs.first.tasks[0].notebook_task.notebook_path":      "rewritten:notebook.py",
+		"resources.jobs.first.environments[0].spec.project_environment":  "rewritten:../pyproject.toml",
+		"resources.jobs.first.environments[2].spec.project_environment":  "rewritten:../requirements.txt",
+		"resources.jobs.second.environments[0].spec.project_environment": "rewritten:/Workspace/shared/pyproject.toml",
 	} {
 		actual, err := dyn.Get(updated, path)
 		require.NoError(t, err)
