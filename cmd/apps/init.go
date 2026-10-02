@@ -1242,6 +1242,10 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 	var npmInstallCh <-chan error
 	if !opts.skipInstall {
+		selectedManager, err = selectedManager.ResolvePin(ctx, srcProjectDir)
+		if err != nil {
+			return err
+		}
 		npmInstallCh = startBackgroundInstall(ctx, srcProjectDir, destDir, opts.name, selectedManager)
 	}
 

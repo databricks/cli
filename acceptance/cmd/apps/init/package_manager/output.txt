@@ -76,7 +76,7 @@ command:
   "sync": "node --version",
   "typegen": "node --version"
 }
-"npm@10.9.2"
+null
 {
   "lodash": "4.17.21"
 }
@@ -146,7 +146,7 @@ command:
   "sync": "node --version",
   "typegen": "node --version"
 }
-"npm@10.9.2"
+null
 {
   "lodash": "4.17.21"
 }
@@ -169,6 +169,53 @@ Error: template has package-lock.json but no pnpm-lock.yaml required by "pnpm in
     cd compatible-app
     npm ci && npm run dev
 
+"npm@9.9.4"
+
+=== Npm records the installed version in a plain template
+>>> CLI_TEST_NPM_VERSION=11.4.1 [CLI] apps init --name installed-app --template npm-only-template --package-manager npm
+✔ Installing dependencies
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/installed-app
+  Files: 2
+
+  Next steps:
+
+    cd installed-app
+    npm run dev
+
+npm@11.4.1
+
+=== Npm records the installed version in a Go template
+>>> CLI_TEST_NPM_VERSION=10.8.3 [CLI] apps init --name rendered-app --template install-template --package-manager npm
+✔ Installing dependencies
+✔ Creating project
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/rendered-app
+  Files: 2
+
+  Next steps:
+
+    cd rendered-app
+    npm run dev
+
+npm@10.8.3
+
+=== Npm version detection failure stops before creating the project
+>>> [CLI] apps init --name failed-app --template npm-only-template --package-manager npm
+Error: detect npm version; ensure npm is installed and working, or use --skip-install: exit status 1
+
+=== Npm invalid version stops before creating the project
+>>> CLI_TEST_NPM_VERSION=invalid [CLI] apps init --name invalid-app --template npm-only-template --package-manager npm
+Error: npm --version returned invalid version "invalid"; ensure npm is working, or use --skip-install
+
+=== Npm empty version stops before creating the project
+>>> CLI_TEST_NPM_VERSION= [CLI] apps init --name empty-app --template npm-only-template --package-manager npm
+Error: npm --version returned invalid version ""; ensure npm is working, or use --skip-install
 
 === Version downgrade uses npm throughout
 >>> [CLI] apps init --name older-app --version 0.81.0 --skip-install
@@ -193,7 +240,7 @@ command:
   - "run"
   - "start"
 "npm run build:server && npm run build:client"
-"npm@10.9.2"
+null
 
 === Missing version falls back to the embedded template and its package manager
 >>> DATABRICKS_CACHE_DIR=cache DATABRICKS_CACHE_ENABLED=true DATABRICKS_FORCE_EMBEDDED_COMPAT=false [CLI] apps init --name fallback-app --skip-install
@@ -219,4 +266,24 @@ command:
   - "run"
   - "start"
 "npm run build:server && npm run build:client"
-"npm@10.9.2"
+null
+
+=== Version downgrade resolves the installed npm pin
+>>> CLI_TEST_NPM_VERSION=11.4.1 [CLI] apps init --name installed-older-app --version 0.81.0
+✔ Cloning template (version 0.81.0)
+Warn: Package manager "pnpm" is not supported for AppKit version version 0.81.0, using npm instead
+✔ Creating project
+✔ Installing dependencies
+
+✔ Project created successfully!
+
+  Location: [TEST_TMP_DIR]/installed-older-app
+  Files: 4
+
+  Next steps:
+
+    cd installed-older-app
+    npm run dev
+
+"npm@11.4.1"
+npm@11.4.1

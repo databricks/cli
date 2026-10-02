@@ -3,6 +3,7 @@ package pkgmanager_test
 import (
 	"maps"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -30,7 +31,75 @@ func TestResolveNpm(t *testing.T) {
 	assert.Equal(t, "npm ci", m.InstallCommand)
 	assert.Equal(t, []string{"npm-shrinkwrap.json", "package-lock.json"}, m.LockfileNames)
 	assert.Empty(t, m.WorkspaceConfigName)
-	assert.Equal(t, "npm@10.9.2", m.Pin)
+	assert.Empty(t, m.Pin)
+}
+
+func TestResolvePinWithoutNpm(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	for _, tt := range []struct {
+		name    string
+		manager string
+		file    string
+		missing bool
+	}{
+		{"pnpm", "pnpm", "package.json", false},
+		{"non-Node template", "npm", "pyproject.toml", false},
+		{"npm unavailable", "npm", "package.json", true},
+		{"npm unavailable for Go template", "npm", "package.json.tmpl", true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.WriteFile(filepath.Join(dir, tt.file), []byte("{}"), 0o644))
+			m, err := pkgmanager.Resolve(tt.manager)
+			require.NoError(t, err)
+			resolved, err := m.ResolvePin(t.Context(), dir)
+			if tt.missing {
+				require.ErrorIs(t, err, exec.ErrNotFound)
+				assert.ErrorContains(t, err, "--skip-install")
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, m, resolved)
+		})
+	}
+}
+
+func TestRewritePin(t *testing.T) {
+	for _, tt := range []struct {
+		name     string
+		manager  string
+		resolved string
+		template any
+		want     any
+	}{
+		{"installed npm overrides pnpm", "npm", "npm@11.4.1", "pnpm@11.0.8", "npm@11.4.1"},
+		{"installed npm overrides old npm", "npm", "npm@11.4.1", "npm@9.9.4", "npm@11.4.1"},
+		{"installed npm adds pin", "npm", "npm@11.4.1", nil, "npm@11.4.1"},
+		{"skip preserves npm", "npm", "", "npm@9.9.4", "npm@9.9.4"},
+		{"skip preserves npm integrity", "npm", "", "npm@9.9.4+sha224.abc", "npm@9.9.4+sha224.abc"},
+		{"skip removes pnpm", "npm", "", "pnpm@11.0.8", nil},
+		{"skip removes yarn", "npm", "", "yarn@1.22.22", nil},
+		{"skip removes bun", "npm", "", "bun@1.2.0", nil},
+		{"skip leaves absent pin", "npm", "", nil, nil},
+		{"pnpm replaces npm", "pnpm", "", "npm@9.9.4", "pnpm@11.0.8"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := pkgmanager.Resolve(tt.manager)
+			require.NoError(t, err)
+			if tt.resolved != "" {
+				m.Pin = tt.resolved
+			}
+			pkg := make(map[string]any)
+			if tt.template != nil {
+				pkg["packageManager"] = tt.template
+			}
+			pkgmanager.Rewrite(pkg, m)
+			assert.Equal(t, tt.want, pkg["packageManager"])
+			if tt.want == nil {
+				assert.NotContains(t, pkg, "packageManager")
+			}
+		})
+	}
 }
 
 func TestResolveUnknown(t *testing.T) {
@@ -180,7 +249,7 @@ func TestRewrite(t *testing.T) {
 		name            string
 		selectedManager string
 		input           map[string]any
-		expectedPin     string
+		expectedPin     any
 		expectedScripts map[string]string
 	}{
 		{
@@ -212,7 +281,6 @@ func TestRewrite(t *testing.T) {
 					"dev":   "pnpm dev",
 				},
 			},
-			expectedPin: "npm@10.9.2",
 			expectedScripts: map[string]string{
 				"build": "npm run build",
 				"dev":   "npm run dev",

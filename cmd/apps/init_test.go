@@ -1109,6 +1109,7 @@ func TestStartBackgroundInstall_TemplateSubstitution(t *testing.T) {
 
 const (
 	backgroundInstallHelperEnv   = "CLI_TEST_BACKGROUND_INSTALL_MANAGER"
+	backgroundInstallPinEnv      = "CLI_TEST_BACKGROUND_INSTALL_PIN"
 	backgroundInstallLockfileEnv = "CLI_TEST_BACKGROUND_INSTALL_LOCKFILE"
 	backgroundInstallNpmrc       = "enable-pre-post-scripts=true\n"
 	backgroundInstallWorkspace   = "packages:\n  - '.'\noverrides:\n  lodash: 4.17.21\nallowBuilds:\n  esbuild: true\n"
@@ -1131,6 +1132,10 @@ func TestStartBackgroundInstall_PreparesSelectedManager(t *testing.T) {
 				srcDir, destDir := t.TempDir(), t.TempDir()
 				m, err := pkgmanager.Resolve(tt.manager)
 				require.NoError(t, err)
+				if tt.manager == "npm" {
+					m.Pin = "npm@11.4.1"
+				}
+				t.Setenv(backgroundInstallPinEnv, m.Pin)
 				require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"{{.projectName}}","packageManager":"yarn@1.22.22"}`), 0o644))
 				for _, name := range tt.lockfiles {
 					require.NoError(t, os.WriteFile(filepath.Join(srcDir, name), []byte("lockfile"), 0o644))
@@ -1164,7 +1169,7 @@ func TestBackgroundInstallHelper(t *testing.T) {
 	var pkg map[string]any
 	require.NoError(t, json.Unmarshal(data, &pkg))
 	assert.Equal(t, "test-app", pkg["name"])
-	assert.Equal(t, m.Pin, pkg["packageManager"])
+	assert.Equal(t, os.Getenv(backgroundInstallPinEnv), pkg["packageManager"])
 	lockfile, err := m.FindLockfile(".")
 	require.NoError(t, err)
 	assert.Equal(t, os.Getenv(backgroundInstallLockfileEnv), lockfile)

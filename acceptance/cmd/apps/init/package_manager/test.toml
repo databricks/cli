@@ -8,7 +8,17 @@ Ignore = [
     "older-app",
     "fallback-app",
     "compatible-app",
+    "installed-app",
+    "rendered-app",
+    "installed-older-app",
+    "fake-bin",
+    "final-pin",
     ".git",
     "databricks.yml",
     "cache",
 ]
+
+# Background completion can precede or follow the spinner starting.
+[[Repls]]
+Old = "✔ Dependencies installed"
+New = "✔ Installing dependencies"
