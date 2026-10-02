@@ -9,10 +9,10 @@ Workspace:
 Validation OK!
 
 >>> musterr [CLI] bundle validate -t terraform-target
-Error: the Terraform deployment engine has been removed in Databricks CLI v1.19.0
+Error: the Terraform deployment engine has been removed in Databricks CLI v1.20.0
   in databricks.yml:10:15
 
-Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.18.x. See https://docs.databricks.com/dev-tools/bundles/direct for details.
+Remove the "engine" setting (or set it to "direct") to deploy with the direct engine; existing Terraform state is migrated automatically. To keep using Terraform, install Databricks CLI v1.19.x. See https://docs.databricks.com/dev-tools/bundles/direct for details.
 
 Name: test-engine-config-valid
 Target: terraform-target
