@@ -406,6 +406,56 @@ func TestGetOps_empty(t *testing.T) {
 	assert.Equal(t, opts{enabled: false}, actual)
 }
 
+func TestGetOps_ApplyMutatorsWithoutMutators(t *testing.T) {
+	actual, err := getOpts(&bundle.Bundle{
+		Config: config.Root{
+			Python: config.Python{
+				VEnvPath: ".venv",
+				Resources: []string{
+					"resources:load_resources",
+				},
+			},
+		},
+	}, PythonMutatorPhaseApplyMutators)
+
+	assert.NoError(t, err)
+	assert.Equal(t, opts{enabled: false}, actual)
+}
+
+func TestGetOps_ApplyMutators(t *testing.T) {
+	actual, err := getOpts(&bundle.Bundle{
+		Config: config.Root{
+			Python: config.Python{
+				VEnvPath: ".venv",
+				Mutators: []string{
+					"mutators:add_email_notifications",
+				},
+			},
+		},
+	}, PythonMutatorPhaseApplyMutators)
+
+	assert.NoError(t, err)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
+}
+
+func TestGetOps_ApplyMutatorsExperimental(t *testing.T) {
+	actual, err := getOpts(&bundle.Bundle{
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				Python: config.Python{
+					VEnvPath: ".venv",
+					Mutators: []string{
+						"mutators:add_email_notifications",
+					},
+				},
+			},
+		},
+	}, PythonMutatorPhaseApplyMutators)
+
+	assert.NoError(t, err)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
+}
+
 func TestApplyBackwardCompatibilityFixes(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
