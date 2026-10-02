@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"runtime"
 	"strconv"
 	"strings"
@@ -43,8 +44,11 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 const (
 	minimalDbConnectVersion = "13.1"
 	defaultTimeout          = 1 * time.Hour
-	authTypeDatabricksCLI   = "databricks-cli"
-	discoveryFallbackTip    = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
+	// provisionedURLTimeout bounds the best-effort SPOG host lookup so a
+	// hung endpoint can't stall login for the full login timeout.
+	provisionedURLTimeout = 30 * time.Second
+	authTypeDatabricksCLI = "databricks-cli"
+	discoveryFallbackTip  = "\n\nTip: you can specify a workspace directly with: databricks auth login --host <url>"
 	// discoveryHostEnvVar overrides the default https://login.databricks.com
 	// host used by the discovery login flow. Intended for testing and
 	// development against non-production environments.
@@ -357,9 +361,22 @@ a new profile is created.
 
 		// At this point, an OAuth token has been successfully minted. The rest of
 		// the command focuses on:
-		// 1. Workspace selection for SPOG hosts (best-effort);
-		// 2. Configuring cluster and serverless;
-		// 3. Saving the profile.
+		// 1. Switching to the account's primary provisioned (SPOG) URL;
+		// 2. Workspace selection for SPOG hosts (best-effort);
+		// 3. Configuring cluster and serverless;
+		// 4. Saving the profile.
+
+		// Look up the account's primary provisioned URL (its SPOG host) by
+		// account ID and switch the profile to it, so the saved profile targets
+		// the unified host. Gated on a classic account host: an account_id can
+		// also be set on a concrete workspace host (via --account-id or ?a=), and
+		// rewriting that to the account SPOG host would discard the user's
+		// targeted workspace. The token cache key is the profile name (see
+		// authArguments.Profile above), so replacing the host here does not orphan
+		// the token stored below. Best-effort: failures never block login.
+		if shouldResolveProvisionedURL(authArguments.Host, authArguments.AccountID) {
+			authArguments.Host = resolvePrimaryProvisionedURL(ctx, authArguments.Host, authArguments.AccountID, token.AccessToken, nil)
+		}
 
 		if shouldPromptWorkspace(authArguments, existingProfile, skipWorkspace) {
 			wsID, wsErr := promptForWorkspaceSelection(ctx, authArguments, tokenSource)
@@ -676,6 +693,35 @@ func validateDiscoveryFlagCompatibility(cmd *cobra.Command) error {
 	return nil
 }
 
+// shouldResolveProvisionedURL reports whether to look up the account's primary
+// provisioned (SPOG) URL for the given host and account. It is true only for a
+// classic account host with an account ID: an account ID can also be present on
+// a concrete workspace host (via --account-id, ?a=, or token introspection),
+// and rewriting that host to the account SPOG URL would discard the user's
+// targeted workspace.
+func shouldResolveProvisionedURL(host, accountID string) bool {
+	return accountID != "" && auth.IsClassicAccountHost((&config.Config{Host: host}).CanonicalHostName())
+}
+
+// resolvePrimaryProvisionedURL returns the account's primary provisioned URL
+// (its SPOG host) for the given account, or host unchanged when the account has
+// no provisioned URL or the lookup fails. The lookup is bounded by
+// provisionedURLTimeout so a hung endpoint can't stall login, and is
+// best-effort: failures are logged and never block login.
+func resolvePrimaryProvisionedURL(ctx context.Context, host, accountID, accessToken string, httpClient *http.Client) string {
+	lookupCtx, cancel := context.WithTimeout(ctx, provisionedURLTimeout)
+	defer cancel()
+	spogURL, err := auth.LookupPrimaryProvisionedURL(lookupCtx, host, accountID, accessToken, httpClient)
+	if err != nil {
+		log.Warnf(ctx, "Primary provisioned URL lookup failed: %v", err)
+		return host
+	}
+	if spogURL == "" {
+		return host
+	}
+	return strings.TrimSuffix(spogURL, "/")
+}
+
 // discoveryLoginInputs groups the dependencies of discoveryLogin.
 // See https://google.github.io/styleguide/go/best-practices#option-structure.
 type discoveryLoginInputs struct {
@@ -688,11 +734,16 @@ type discoveryLoginInputs struct {
 	browserFunc     func(string) error
 	tokenStore      storage.Store
 	mode            storage.StorageMode
+	// httpClient overrides the client used for the primary provisioned URL
+	// lookup. Nil in production (uses http.DefaultClient); set in tests.
+	httpClient *http.Client
 }
 
 // discoveryLogin runs the login.databricks.com discovery flow. The user
-// authenticates in the browser, selects a workspace, and the CLI receives
-// the workspace host from the OAuth callback's iss parameter.
+// authenticates in the browser and selects a workspace or an account; the CLI
+// receives the resulting host from the OAuth callback's iss parameter. When an
+// account is selected (a classic account host), the profile is switched to the
+// account's primary provisioned (SPOG) URL, matching the --account-id path.
 func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 	arg, err := in.dc.NewOAuthArgument(in.profileName)
 	if err != nil {
@@ -774,13 +825,24 @@ func discoveryLogin(ctx context.Context, in discoveryLoginInputs) error {
 		}
 	}
 
+	// If the user selected an account (rather than a specific workspace), switch
+	// to the account's primary provisioned (SPOG) URL so the saved profile
+	// targets the unified host, matching the --account-id login path. A classic
+	// account host means an account was selected; a workspace selection yields a
+	// workspace host that introspection still backfills accountID for, so gate on
+	// the host type to avoid rewriting a concrete workspace host.
+	if shouldResolveProvisionedURL(discoveredHost, accountID) {
+		discoveredHost = resolvePrimaryProvisionedURL(ctx, discoveredHost, accountID, tok.AccessToken, in.httpClient)
+	}
+
 	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	clearKeys := oauthLoginClearKeys()
-	// Discovery login always produces a workspace-level profile pointing at the
-	// discovered host. Any previous routing metadata (is_unified_host,
-	// cluster_id, serverless_compute_id) from a prior login to a different host
-	// type must be cleared so they don't leak into the new profile. account_id
-	// and workspace_id are re-added from discovery/introspection results.
+	// Discovery login produces a profile pointing at the discovered host (or the
+	// account's primary provisioned URL when an account was selected). Any
+	// previous routing metadata (is_unified_host, cluster_id,
+	// serverless_compute_id) from a prior login to a different host type must be
+	// cleared so they don't leak into the new profile. account_id and
+	// workspace_id are re-added from discovery/introspection results.
 	clearKeys = append(
 		clearKeys,
 		"account_id",

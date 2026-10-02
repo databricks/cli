@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -1245,6 +1246,181 @@ func TestDiscoveryLogin_SPOGHostPopulatesAccountIDFromDiscovery(t *testing.T) {
 	assert.Equal(t, server.URL, savedProfile.Host)
 	assert.Equal(t, "discovered-account", savedProfile.AccountID, "account_id should come from host discovery")
 	assert.Equal(t, "discovered-ws", savedProfile.WorkspaceID, "workspace_id should come from host discovery")
+}
+
+func TestShouldResolveProvisionedURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		host     string
+		account  string
+		expected bool
+	}{
+		{"classic account host with account id", "https://accounts.cloud.databricks.com", "abc-123", true},
+		{"account host without scheme", "accounts.cloud.databricks.com", "abc-123", true},
+		{"classic account host without account id", "https://accounts.cloud.databricks.com", "", false},
+		{"workspace host with account id", "https://dbc-abc.cloud.databricks.com", "abc-123", false},
+		{"unified host with account id", "https://mycompany.databricks.com", "abc-123", false},
+		{"empty host with account id", "", "abc-123", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, shouldResolveProvisionedURL(tt.host, tt.account))
+		})
+	}
+}
+
+// rewriteHostTransport routes every request to target (a test server), keeping
+// the request's path and query, so a lookup addressed to a classic account host
+// can be served locally.
+type rewriteHostTransport struct {
+	target string
+}
+
+func (rt rewriteHostTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	u, err := url.Parse(rt.target)
+	if err != nil {
+		return nil, err
+	}
+	req.URL.Scheme = u.Scheme
+	req.URL.Host = u.Host
+	return http.DefaultTransport.RoundTrip(req)
+}
+
+// assertNoRequestTransport fails the test if any HTTP request is made through it.
+type assertNoRequestTransport struct {
+	t *testing.T
+}
+
+func (rt assertNoRequestTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	rt.t.Errorf("unexpected provisioned-URL lookup to %s", req.URL)
+	return nil, errors.New("unexpected request")
+}
+
+func TestDiscoveryLogin_AccountSelectionResolvesProvisionedURL(t *testing.T) {
+	// The provisioned-urls endpoint returns the account's primary SPOG host.
+	spogServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/2.0/accounts/introspection-account/provisioned-urls/primary", r.URL.Path)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"url": "https://dbc-spog.cloud.databricks.com"}`))
+	}))
+	defer spogServer.Close()
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	// A classic account host triggers the provisioned-URL lookup. The reserved
+	// .invalid TLD keeps host metadata discovery from making a real network call
+	// (it fast-fails, so account_id falls back to introspection).
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://accounts.invalid")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg:       oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "test-token"}},
+		introspection:  &auth.IntrospectionResult{AccountID: "introspection-account"},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     5 * time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  newTestStore(),
+		httpClient:  &http.Client{Transport: rewriteHostTransport{target: spogServer.URL}},
+	})
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://dbc-spog.cloud.databricks.com", savedProfile.Host, "host should be switched to the account's primary provisioned URL")
+	assert.Equal(t, "introspection-account", savedProfile.AccountID)
+}
+
+func TestDiscoveryLogin_WorkspaceSelectionKeepsDiscoveredHost(t *testing.T) {
+	// A workspace host is not a classic account host, so even though token
+	// introspection backfills an account_id, the provisioned-URL lookup must not
+	// run and the discovered workspace host must be preserved.
+	server := newDiscoveryServer(t, map[string]any{
+		"workspace_id": "discovered-ws",
+	})
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost(server.URL)
+
+	dc := &fakeDiscoveryClient{
+		oauthArg:       oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "test-token"}},
+		introspection:  &auth.IntrospectionResult{AccountID: "introspection-account"},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     5 * time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  newTestStore(),
+		// Any provisioned-URL lookup here would be a bug: fail the test if attempted.
+		httpClient: &http.Client{Transport: assertNoRequestTransport{t: t}},
+	})
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, server.URL, savedProfile.Host, "workspace host must be preserved, not rewritten to a provisioned URL")
+	assert.Equal(t, "introspection-account", savedProfile.AccountID)
+}
+
+func TestDiscoveryLogin_AccountSelectionLookupFailureKeepsHost(t *testing.T) {
+	// When the provisioned-URL lookup fails, login still succeeds and the profile
+	// keeps the discovered account host (best-effort enrichment).
+	failServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer failServer.Close()
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".databrickscfg")
+	require.NoError(t, os.WriteFile(configPath, []byte(""), 0o600))
+	t.Setenv("DATABRICKS_CONFIG_FILE", configPath)
+
+	oauthArg, err := u2m.NewBasicDiscoveryOAuthArgument("DISCOVERY")
+	require.NoError(t, err)
+	oauthArg.SetDiscoveredHost("https://accounts.invalid")
+
+	dc := &fakeDiscoveryClient{
+		oauthArg:       oauthArg,
+		persistentAuth: &fakeDiscoveryPersistentAuth{token: &oauth2.Token{AccessToken: "test-token"}},
+		introspection:  &auth.IntrospectionResult{AccountID: "introspection-account"},
+	}
+
+	ctx, _ := cmdio.NewTestContextWithStdout(t.Context())
+	err = discoveryLogin(ctx, discoveryLoginInputs{
+		dc:          dc,
+		profileName: "DISCOVERY",
+		timeout:     5 * time.Second,
+		browserFunc: func(string) error { return nil },
+		tokenStore:  newTestStore(),
+		httpClient:  &http.Client{Transport: rewriteHostTransport{target: failServer.URL}},
+	})
+	require.NoError(t, err)
+
+	savedProfile, err := loadProfileByName(ctx, "DISCOVERY", profile.DefaultProfiler)
+	require.NoError(t, err)
+	require.NotNil(t, savedProfile)
+	assert.Equal(t, "https://accounts.invalid", savedProfile.Host, "host stays the discovered account host when the lookup fails")
 }
 
 func TestDiscoveryLogin_IntrospectionFallsBackWhenDiscoveryFails(t *testing.T) {
