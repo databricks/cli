@@ -33,7 +33,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions, st
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
-	// The terraform engine was removed in v1.19.0. bind does not migrate on its own, so a
+	// The terraform engine was removed in v1.20.0. bind does not migrate on its own, so a
 	// terraform state means the user must migrate first (via "bundle deploy").
 	if !engine.IsDirect() {
 		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
@@ -128,7 +128,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, tfResourceType, resourceKey s
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
-	// The terraform engine was removed in v1.19.0. unbind does not migrate on its own, so a
+	// The terraform engine was removed in v1.20.0. unbind does not migrate on its own, so a
 	// terraform state means the user must migrate first (via "bundle deploy").
 	if !engine.IsDirect() {
 		logdiag.LogError(ctx, errors.New(TerraformStateRemovedMessage))
