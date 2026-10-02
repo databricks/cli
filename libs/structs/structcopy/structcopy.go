@@ -64,9 +64,16 @@ func Compile(srcType, dstType reflect.Type) (*Copier, error) {
 	if err != nil {
 		return nil, fmt.Errorf("destination %s: %w", dstElem, err)
 	}
-	srcFields, _, err := flattenStruct(srcElem, nil)
+	srcFields, srcForceSend, err := flattenStruct(srcElem, nil)
 	if err != nil {
 		return nil, fmt.Errorf("source %s: %w", srcElem, err)
+	}
+	// Copy sources every destination ForceSendFields slice from a single root slice
+	// (rootForceSendFields, via FieldByName). That faithfully represents at most one source
+	// slice: with two or more, FieldByName surfaces only the shallowest and the rest would be
+	// silently dropped. Reject such a source up front rather than lose markers at copy time.
+	if len(srcForceSend) > 1 {
+		return nil, fmt.Errorf("source %s has %d ForceSendFields slices; the copier can source destination ForceSendFields from only one (implement RemapState for this resource)", srcElem, len(srcForceSend))
 	}
 
 	var ops []copyOp
