@@ -1013,7 +1013,7 @@ func TestStartBackgroundInstall_NoLockFile(t *testing.T) {
 	// Only package.json, no lock file
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"test"}`), 0o644))
 
-	m := pkgmanager.Manager{Name: "npm", LockfileName: "package-lock.json"}
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
 	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "test-app", m)
 	assert.Nil(t, ch)
 }
@@ -1025,7 +1025,7 @@ func TestStartBackgroundInstall_NoPackageJSON(t *testing.T) {
 	// Only lock file, no package.json
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), []byte(`{}`), 0o644))
 
-	m := pkgmanager.Manager{Name: "npm", LockfileName: "package-lock.json"}
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
 	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "test-app", m)
 	assert.Nil(t, ch)
 }
@@ -1041,7 +1041,7 @@ func TestStartBackgroundInstall_CopiesFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
 
-	m := pkgmanager.Manager{Name: "npm", LockfileName: "package-lock.json"}
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
 	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "my-app", m)
 	require.NotNil(t, ch)
 
@@ -1074,7 +1074,7 @@ func TestStartBackgroundInstall_CopiesFileDeps(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
 
-	m := pkgmanager.Manager{Name: "npm", LockfileName: "package-lock.json"}
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
 	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "test-app", m)
 	require.NotNil(t, ch)
 	<-ch
@@ -1096,7 +1096,7 @@ func TestStartBackgroundInstall_TemplateSubstitution(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), pkgJSON, 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package-lock.json"), lockJSON, 0o644))
 
-	m := pkgmanager.Manager{Name: "npm", LockfileName: "package-lock.json"}
+	m := pkgmanager.Manager{Name: "npm", LockfileNames: []string{"package-lock.json"}}
 	ch := startBackgroundInstall(t.Context(), srcDir, destDir, "cool-project", m)
 	require.NotNil(t, ch)
 	<-ch
@@ -1108,21 +1108,33 @@ func TestStartBackgroundInstall_TemplateSubstitution(t *testing.T) {
 }
 
 const (
-	backgroundInstallHelperEnv = "CLI_TEST_BACKGROUND_INSTALL_MANAGER"
-	backgroundInstallNpmrc     = "enable-pre-post-scripts=true\n"
-	backgroundInstallWorkspace = "packages:\n  - '.'\noverrides:\n  lodash: 4.17.21\nallowBuilds:\n  esbuild: true\n"
+	backgroundInstallHelperEnv   = "CLI_TEST_BACKGROUND_INSTALL_MANAGER"
+	backgroundInstallLockfileEnv = "CLI_TEST_BACKGROUND_INSTALL_LOCKFILE"
+	backgroundInstallNpmrc       = "enable-pre-post-scripts=true\n"
+	backgroundInstallWorkspace   = "packages:\n  - '.'\noverrides:\n  lodash: 4.17.21\nallowBuilds:\n  esbuild: true\n"
 )
 
 func TestStartBackgroundInstall_PreparesSelectedManager(t *testing.T) {
-	for _, manager := range []string{"npm", "pnpm"} {
+	for _, tt := range []struct {
+		manager   string
+		lockfiles []string
+	}{
+		{"npm", []string{"package-lock.json"}},
+		{"npm", []string{"npm-shrinkwrap.json"}},
+		{"npm", []string{"npm-shrinkwrap.json", "package-lock.json"}},
+		{"pnpm", []string{"pnpm-lock.yaml"}},
+	} {
 		for _, configName := range []string{".npmrc", "_npmrc"} {
-			t.Run(manager+"/"+configName, func(t *testing.T) {
-				t.Setenv(backgroundInstallHelperEnv, manager)
+			t.Run(tt.manager+"/"+strings.Join(tt.lockfiles, "+")+"/"+configName, func(t *testing.T) {
+				t.Setenv(backgroundInstallHelperEnv, tt.manager)
+				t.Setenv(backgroundInstallLockfileEnv, tt.lockfiles[0])
 				srcDir, destDir := t.TempDir(), t.TempDir()
-				m, err := pkgmanager.Resolve(manager)
+				m, err := pkgmanager.Resolve(tt.manager)
 				require.NoError(t, err)
 				require.NoError(t, os.WriteFile(filepath.Join(srcDir, "package.json"), []byte(`{"name":"{{.projectName}}","packageManager":"yarn@1.22.22"}`), 0o644))
-				require.NoError(t, os.WriteFile(filepath.Join(srcDir, m.LockfileName), []byte("lockfile"), 0o644))
+				for _, name := range tt.lockfiles {
+					require.NoError(t, os.WriteFile(filepath.Join(srcDir, name), []byte("lockfile"), 0o644))
+				}
 				require.NoError(t, os.WriteFile(filepath.Join(srcDir, "pnpm-workspace.yaml"), []byte(backgroundInstallWorkspace), 0o644))
 				require.NoError(t, os.WriteFile(filepath.Join(srcDir, configName), []byte(backgroundInstallNpmrc), 0o644))
 				m.Name, err = os.Executable()
@@ -1153,7 +1165,10 @@ func TestBackgroundInstallHelper(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &pkg))
 	assert.Equal(t, "test-app", pkg["name"])
 	assert.Equal(t, m.Pin, pkg["packageManager"])
-	data, err = os.ReadFile(m.LockfileName)
+	lockfile, err := m.FindLockfile(".")
+	require.NoError(t, err)
+	assert.Equal(t, os.Getenv(backgroundInstallLockfileEnv), lockfile)
+	data, err = os.ReadFile(lockfile)
 	require.NoError(t, err)
 	assert.Equal(t, "lockfile", string(data))
 	data, err = os.ReadFile(".npmrc")

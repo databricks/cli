@@ -857,8 +857,8 @@ func findProjectSrcDir(templateDir string) string {
 // goroutine launches. The template directory may be cleaned up after this
 // function returns, so file reads must not be deferred to the goroutine.
 func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, projectName string, m pkgmanager.Manager) <-chan error {
-	lockFile := filepath.Join(srcProjectDir, m.LockfileName)
-	if _, err := os.Stat(lockFile); err != nil {
+	lockfileName, err := m.FindLockfile(srcProjectDir)
+	if err != nil || lockfileName == "" {
 		return nil
 	}
 
@@ -919,12 +919,12 @@ func startBackgroundInstall(ctx context.Context, srcProjectDir, destDir, project
 
 	// Frozen installs must see the same overrides and build permissions as the
 	// finished project. _npmrc follows the same rename/overwrite order as copyTemplate.
-	for _, name := range []string{m.LockfileName, m.WorkspaceConfigName, ".npmrc", "_npmrc"} {
+	for _, name := range []string{lockfileName, m.WorkspaceConfigName, ".npmrc", "_npmrc"} {
 		if name == "" {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(srcProjectDir, name))
-		if errors.Is(err, fs.ErrNotExist) && name != m.LockfileName {
+		if errors.Is(err, fs.ErrNotExist) && name != lockfileName {
 			continue
 		}
 		if err != nil {

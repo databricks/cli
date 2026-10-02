@@ -25,8 +25,11 @@ command:
   "build:client": "node --version",
   "build:server": "node --version",
   "dev": "vite dev",
+  "env-build": "env NODE_ENV=production pnpm run build:server",
   "lint": "eslint .",
+  "optional": "pnpm run --if-present missing",
   "predev": "pnpm run sync && pnpm run typegen",
+  "quiet": "pnpm run --silent build:server --silent",
   "sync": "node --version",
   "typegen": "node --version"
 }
@@ -61,8 +64,11 @@ command:
   "build:client": "node --version",
   "build:server": "node --version",
   "dev": "vite dev",
+  "env-build": "env NODE_ENV=production npm run build:server",
   "lint": "eslint .",
+  "optional": "npm run missing --if-present",
   "predev": "npm run sync && npm run typegen",
+  "quiet": "npm run build:server --silent -- --silent",
   "sync": "node --version",
   "typegen": "node --version"
 }
