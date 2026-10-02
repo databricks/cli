@@ -17,10 +17,11 @@ sync:
 #
 # referent recreates on storage_root (immutable, non-identity), so its full_name / .id
 # (main.referent) is unchanged. consumer references ${referent.id} in its mutable comment, so
-# BOTH engines PLAN a spurious update of consumer. They diverge at DEPLOY (see out.requests.*):
-# terraform re-plans consumer after referent is recreated, finds ${referent.id} resolved to the
-# unchanged value, and skips it (no request for consumer); the direct engine executes the planned
-# PATCH -- a spurious write. That apply-time downgrade is exactly what the direct engine lacks.
+# the direct engine plans a spurious update of consumer.
+#
+# This test runs the direct engine only. For context, the terraform engine (now being removed)
+# left consumer alone: it re-plans at apply, finds ${referent.id} resolved to the unchanged
+# value, and issues no request for consumer.
 resources:
   schemas:
     referent:

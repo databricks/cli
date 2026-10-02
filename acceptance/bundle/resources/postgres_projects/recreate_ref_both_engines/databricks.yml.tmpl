@@ -11,11 +11,14 @@ sync:
 # unchanged. The dependent's action depends on the field: an immutable/id field -> recreate, a
 # mutable field -> update. This test covers the immutable case (a spurious RECREATE).
 #
-# pg_version is spec:immutable, so BOTH engines recreate the project on a bump -- an
-# apples-to-apples recreate with no engine disagreement on the field. project_id is unchanged,
-# so the project name (projects/{project_id}) is stable, and my_catalog.branch -- built from
+# pg_version is spec:immutable, so a bump recreates the project. project_id is unchanged, so the
+# project name (projects/{project_id}) is stable, and my_catalog.branch -- built from
 # ${my_project.name} -- resolves to the same value: the catalog does not actually change, yet
-# both engines plan and execute its recreate.
+# the direct engine plans and executes its recreate.
+#
+# This test runs the direct engine only. For context, the terraform engine (now being removed)
+# behaved the same here -- it also recreated the catalog, because it cannot cancel a replace
+# once the plan commits it to separate destroy/create graph nodes.
 resources:
   postgres_projects:
     my_project:
