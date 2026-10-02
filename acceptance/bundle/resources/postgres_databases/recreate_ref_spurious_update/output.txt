@@ -12,11 +12,12 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 === Recreate the role; my_database.role references the role's (unchanged) name
 >>> update_file.py databricks.yml postgres_role: app_role postgres_role: new_role
 
+=== Plan
 >>> [CLI] bundle plan
 
 >>> [CLI] bundle plan -o json
 
-=== Deploy and record per-engine requests (see out.plan.*, out.requests.*)
+=== Deploy and record the requests (see out.plan.direct.txt, out.requests.direct.txt)
 >>> print_requests.py --sort //postgres
 
 >>> [CLI] bundle destroy --auto-approve

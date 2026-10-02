@@ -4,3 +4,4 @@
 Cloud = false
 RecordRequests = true
 EnvMatrix.DMS = []
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
