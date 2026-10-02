@@ -4,6 +4,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -17,7 +18,7 @@ func TestResolvePnpm(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "pnpm", m.Name)
 	assert.Equal(t, "pnpm install --frozen-lockfile", m.InstallCommand)
-	assert.Equal(t, "pnpm-lock.yaml", m.LockfileName)
+	assert.Equal(t, []string{"pnpm-lock.yaml"}, m.LockfileNames)
 	assert.Equal(t, "pnpm-workspace.yaml", m.WorkspaceConfigName)
 	assert.Equal(t, "pnpm@11.0.8", m.Pin)
 }
@@ -27,7 +28,7 @@ func TestResolveNpm(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "npm", m.Name)
 	assert.Equal(t, "npm ci", m.InstallCommand)
-	assert.Equal(t, "package-lock.json", m.LockfileName)
+	assert.Equal(t, []string{"npm-shrinkwrap.json", "package-lock.json"}, m.LockfileNames)
 	assert.Empty(t, m.WorkspaceConfigName)
 	assert.Equal(t, "npm@10.9.2", m.Pin)
 }
@@ -51,20 +52,33 @@ func TestValidateTemplate(t *testing.T) {
 	for _, name := range []string{"npm", "pnpm"} {
 		m, err := pkgmanager.Resolve(name)
 		require.NoError(t, err)
-		for _, files := range [][]string{nil, {"package-lock.json"}, {"pnpm-lock.yaml"}, {"package-lock.json", "pnpm-lock.yaml"}} {
+		for _, files := range [][]string{
+			nil,
+			{"package-lock.json"},
+			{"npm-shrinkwrap.json"},
+			{"pnpm-lock.yaml"},
+			{"package-lock.json", "pnpm-lock.yaml"},
+			{"npm-shrinkwrap.json", "pnpm-lock.yaml"},
+			{"npm-shrinkwrap.json", "package-lock.json"},
+			{"npm-shrinkwrap.json", "package-lock.json", "pnpm-lock.yaml"},
+		} {
 			t.Run(name+"/"+strings.Join(files, "+"), func(t *testing.T) {
 				dir := t.TempDir()
 				for _, file := range files {
 					require.NoError(t, os.WriteFile(filepath.Join(dir, file), []byte("lockfile"), 0o644))
 				}
 				err := m.ValidateTemplate(dir)
-				if len(files) == 1 && files[0] != m.LockfileName {
+				hasSelectedLockfile := slices.Contains(files, "pnpm-lock.yaml")
+				if name == "npm" {
+					hasSelectedLockfile = slices.Contains(files, "package-lock.json") || slices.Contains(files, "npm-shrinkwrap.json")
+				}
+				if len(files) > 0 && !hasSelectedLockfile {
 					other := "npm"
 					if name == "npm" {
 						other = "pnpm"
 					}
 					require.ErrorContains(t, err, "use --package-manager "+other)
-					assert.ErrorContains(t, err, m.LockfileName)
+					assert.ErrorContains(t, err, strings.Join(m.LockfileNames, " or "))
 				} else {
 					require.NoError(t, err)
 				}
@@ -73,11 +87,36 @@ func TestValidateTemplate(t *testing.T) {
 	}
 }
 
+func TestFindLockfile(t *testing.T) {
+	m, err := pkgmanager.Resolve("npm")
+	require.NoError(t, err)
+	for _, tt := range []struct {
+		files []string
+		want  string
+	}{
+		{nil, ""},
+		{[]string{"pnpm-lock.yaml"}, ""},
+		{[]string{"package-lock.json"}, "package-lock.json"},
+		{[]string{"npm-shrinkwrap.json"}, "npm-shrinkwrap.json"},
+		{[]string{"package-lock.json", "npm-shrinkwrap.json"}, "npm-shrinkwrap.json"},
+	} {
+		t.Run(strings.Join(tt.files, "+"), func(t *testing.T) {
+			dir := t.TempDir()
+			for _, file := range tt.files {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, file), []byte("lockfile"), 0o644))
+			}
+			name, err := m.FindLockfile(dir)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, name)
+		})
+	}
+}
+
 func TestPrunePnpm(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create all PM-specific artifacts
-	for _, file := range []string{"pnpm-lock.yaml", "package-lock.json", "pnpm-workspace.yaml", "package.json"} {
+	for _, file := range []string{"pnpm-lock.yaml", "package-lock.json", "npm-shrinkwrap.json", "pnpm-workspace.yaml", "package.json"} {
 		require.NoError(t, os.WriteFile(filepath.Join(dir, file), []byte("content"), 0o644))
 	}
 
@@ -92,13 +131,14 @@ func TestPrunePnpm(t *testing.T) {
 
 	// pnpm should remove npm lockfile
 	assert.NoFileExists(t, filepath.Join(dir, "package-lock.json"))
+	assert.NoFileExists(t, filepath.Join(dir, "npm-shrinkwrap.json"))
 }
 
 func TestPruneNpm(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create all PM-specific artifacts
-	for _, file := range []string{"pnpm-lock.yaml", "package-lock.json", "pnpm-workspace.yaml", "package.json"} {
+	for _, file := range []string{"pnpm-lock.yaml", "package-lock.json", "npm-shrinkwrap.json", "pnpm-workspace.yaml", "package.json"} {
 		require.NoError(t, os.WriteFile(filepath.Join(dir, file), []byte("content"), 0o644))
 	}
 
@@ -108,6 +148,7 @@ func TestPruneNpm(t *testing.T) {
 
 	// npm should keep its lockfile only
 	assert.FileExists(t, filepath.Join(dir, "package-lock.json"))
+	assert.FileExists(t, filepath.Join(dir, "npm-shrinkwrap.json"))
 	assert.FileExists(t, filepath.Join(dir, "package.json"))
 
 	// npm should remove pnpm lockfile and workspace config

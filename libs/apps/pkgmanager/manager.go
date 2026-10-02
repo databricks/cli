@@ -32,7 +32,7 @@ type Manager struct {
 	Name                string   // e.g., "npm", "pnpm"
 	InstallCommand      string   // e.g., "npm ci", "pnpm install --frozen-lockfile"
 	InstallArgs         []string // exec args after the binary name (e.g., ["ci", "--no-audit", ...])
-	LockfileName        string   // e.g., "package-lock.json", "pnpm-lock.yaml"
+	LockfileNames       []string // In precedence order; npm prefers npm-shrinkwrap.json over package-lock.json.
 	WorkspaceConfigName string   // pnpm-workspace.yaml for pnpm, unused for npm
 	Pin                 string   // pinned version written to package.json's "packageManager", format "name@version"
 }
@@ -43,7 +43,7 @@ var managers = map[string]Manager{
 		Name:                "pnpm",
 		InstallCommand:      "pnpm install --frozen-lockfile",
 		InstallArgs:         []string{"install", "--frozen-lockfile"},
-		LockfileName:        "pnpm-lock.yaml",
+		LockfileNames:       []string{"pnpm-lock.yaml"},
 		WorkspaceConfigName: "pnpm-workspace.yaml",
 		Pin:                 pnpmPin,
 	},
@@ -51,7 +51,7 @@ var managers = map[string]Manager{
 		Name:                "npm",
 		InstallCommand:      "npm ci",
 		InstallArgs:         []string{"ci", "--no-audit", "--no-fund", "--prefer-offline"},
-		LockfileName:        "package-lock.json",
+		LockfileNames:       []string{"npm-shrinkwrap.json", "package-lock.json"},
 		WorkspaceConfigName: "",
 		Pin:                 npmPin,
 	},
@@ -137,22 +137,37 @@ func isSemverVersion(version string) bool {
 	return false
 }
 
+// FindLockfile returns the lockfile used by the manager, or an empty name if none exists.
+// npm's precedence is documented at https://docs.npmjs.com/cli/configuring-npm/npm-shrinkwrap-json.
+func (m Manager) FindLockfile(dir string) (string, error) {
+	for _, name := range m.LockfileNames {
+		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
+			return name, nil
+		} else if !errors.Is(err, fs.ErrNotExist) {
+			return "", fmt.Errorf("check %s: %w", name, err)
+		}
+	}
+	return "", nil
+}
+
 // ValidateTemplate rejects templates with a lockfile only for another supported manager.
 // Templates without lockfiles can still be scaffolded with --skip-install.
 func (m Manager) ValidateTemplate(dir string) error {
-	if _, err := os.Stat(filepath.Join(dir, m.LockfileName)); err == nil {
-		return nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("check %s: %w", m.LockfileName, err)
+	name, err := m.FindLockfile(dir)
+	if err != nil || name != "" {
+		return err
 	}
 	for _, other := range managers {
 		if other.Name == m.Name {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(dir, other.LockfileName)); err == nil {
-			return fmt.Errorf("template has %s but no %s required by %q; use --package-manager %s or add %s to the template", other.LockfileName, m.LockfileName, m.InstallCommand, other.Name, m.LockfileName)
-		} else if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("check %s: %w", other.LockfileName, err)
+		name, err := other.FindLockfile(dir)
+		if err != nil {
+			return err
+		}
+		if name != "" {
+			lockfiles := strings.Join(m.LockfileNames, " or ")
+			return fmt.Errorf("template has %s but no %s required by %q; use --package-manager %s or add %s to the template", name, lockfiles, m.InstallCommand, other.Name, lockfiles)
 		}
 	}
 	return nil
@@ -166,7 +181,9 @@ func (m Manager) Prune(dir string) error {
 	// Build the universe: all PM-specific artifacts across all managers.
 	universe := make(map[string]bool)
 	for _, mgr := range managers {
-		universe[mgr.LockfileName] = true
+		for _, name := range mgr.LockfileNames {
+			universe[name] = true
+		}
 		if mgr.WorkspaceConfigName != "" {
 			universe[mgr.WorkspaceConfigName] = true
 		}
@@ -174,7 +191,9 @@ func (m Manager) Prune(dir string) error {
 
 	// For the selected manager, identify which files to keep.
 	keep := make(map[string]bool)
-	keep[m.LockfileName] = true
+	for _, name := range m.LockfileNames {
+		keep[name] = true
+	}
 	if m.WorkspaceConfigName != "" {
 		keep[m.WorkspaceConfigName] = true
 	}

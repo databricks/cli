@@ -25,6 +25,10 @@ func rewriteScript(script string, m Manager, scripts map[string]any) string {
 		if isScriptAssignment(word) {
 			continue
 		}
+		if word == "env" {
+			pos = envCommandStart(script, end)
+			continue
+		}
 		commandStart = false
 		switch word {
 		case "npm", "pnpm", "yarn", "bun":
@@ -32,59 +36,123 @@ func rewriteScript(script string, m Manager, scripts map[string]any) string {
 			continue
 		}
 
-		nextStart, nextEnd := scriptToken(script, end)
+		var options strings.Builder
+		beforeCommand := end
+		for optionEnd := scriptManagerOptionEnd(script, beforeCommand); optionEnd != beforeCommand; optionEnd = scriptManagerOptionEnd(script, beforeCommand) {
+			options.WriteString(script[beforeCommand:optionEnd])
+			beforeCommand = optionEnd
+		}
+		nextStart, nextEnd := scriptToken(script, beforeCommand)
 		command := script[nextStart:nextEnd]
-		replacement := m.Name
-		scriptNameEnd := nextEnd
-		if command == "run" {
-			argStart, argEnd := scriptToken(script, nextEnd)
+		run := " run"
+		beforeName, nameEnd := beforeCommand, nextEnd
+		if command == "run" || command == "run-script" {
+			run = script[beforeCommand:nextEnd]
+			beforeName = nextEnd
+			for optionEnd := scriptManagerOptionEnd(script, beforeName); optionEnd != beforeName; optionEnd = scriptManagerOptionEnd(script, beforeName) {
+				options.WriteString(script[beforeName:optionEnd])
+				beforeName = optionEnd
+			}
+			argStart, argEnd := scriptToken(script, beforeName)
 			if argStart == argEnd || isScriptSeparator(script[argStart]) || script[argStart] == '#' {
 				continue // A bare `run` lists scripts; it does not invoke one.
 			}
-			scriptNameEnd = argEnd
-		} else {
-			if _, ok := scripts[command].(string); !ok || isPackageManagerCommand(command) {
+			nameEnd = argEnd
+			if word == m.Name {
 				continue
 			}
-			replacement += " run"
+		} else if _, ok := scripts[command].(string); !ok || isPackageManagerCommand(command) {
+			continue
 		}
-		out.WriteString(script[last:start])
-		out.WriteString(replacement)
-		last = end
 
 		// npm consumes --; pnpm forwards every argument after the script name.
 		// https://docs.npmjs.com/cli/commands/npm-run-script and https://pnpm.io/cli/run
+		args := ""
+		pos = nameEnd
 		switch {
 		case word == "pnpm" && m.Name == "npm":
-			argStart, argEnd := scriptToken(script, scriptNameEnd)
+			argStart, argEnd := scriptToken(script, nameEnd)
 			if argStart != argEnd && !isScriptSeparator(script[argStart]) && script[argStart] != '#' {
-				out.WriteString(script[last:scriptNameEnd])
-				out.WriteString(" --")
-				last = scriptNameEnd
+				args = " --"
 			}
 		case word == "npm" && m.Name == "pnpm":
-			before, after := npmArgumentSeparator(script, scriptNameEnd)
-			if before != after {
-				out.WriteString(script[last:before])
-				last = after
-			}
+			var trailingOptions string
+			trailingOptions, args, pos = npmScriptArguments(script, nameEnd)
+			options.WriteString(trailingOptions)
 		}
+		out.WriteString(script[last:start])
+		out.WriteString(m.Name)
+		out.WriteString(run)
+		out.WriteString(options.String())
+		out.WriteString(script[beforeName:nameEnd])
+		out.WriteString(args)
+		last = pos
 	}
 	out.WriteString(script[last:])
 	return out.String()
 }
 
-// npmArgumentSeparator locates the first -- and its leading whitespace.
-func npmArgumentSeparator(script string, pos int) (before, after int) {
+// envCommandStart skips env options, leaving assignments for the command scanner.
+// https://pubs.opengroup.org/onlinepubs/9799919799/utilities/env.html
+func envCommandStart(script string, pos int) int {
+	for {
+		start, end := scriptToken(script, pos)
+		word := script[start:end]
+		switch {
+		case word == "--":
+			return end
+		case word == "-i" || word == "--ignore-environment" || strings.HasPrefix(word, "--unset="):
+			pos = end
+		case word == "-u" || word == "--unset":
+			_, pos = scriptToken(script, end)
+		default:
+			return pos
+		}
+	}
+}
+
+// scriptManagerOptionEnd includes a separate value for options that take one.
+// Boolean options must not consume positional script arguments.
+func scriptManagerOptionEnd(script string, pos int) int {
+	start, end := scriptToken(script, pos)
+	word := strings.Trim(script[start:end], "\"'")
+	if !strings.HasPrefix(word, "-") || word == "--" {
+		return pos
+	}
+	switch word {
+	case "--loglevel", "--script-shell", "--prefix", "--dir", "-C", "--workspace", "-w", "--filter", "-F":
+		valueStart, valueEnd := scriptToken(script, end)
+		if valueStart != valueEnd && !isScriptSeparator(script[valueStart]) && script[valueStart] != '#' {
+			return valueEnd
+		}
+	}
+	return end
+}
+
+// npmScriptArguments separates npm options from child arguments up to a command boundary.
+// Unlike pnpm, npm consumes manager options anywhere before --, even after the script name.
+func npmScriptArguments(script string, pos int) (options, args string, end int) {
+	var managerOptions, scriptArgs strings.Builder
+	argumentsOnly := false
 	for {
 		start, end := scriptToken(script, pos)
 		if start == end || isScriptSeparator(script[start]) || script[start] == '#' {
-			return pos, pos
+			return managerOptions.String(), scriptArgs.String(), pos
 		}
-		switch script[start:end] {
-		case "--", `'--'`, `"--"`:
-			return pos, end
+		if !argumentsOnly {
+			switch script[start:end] {
+			case "--", `'--'`, `"--"`:
+				argumentsOnly = true
+				pos = end
+				continue
+			}
+			if optionEnd := scriptManagerOptionEnd(script, pos); optionEnd != pos {
+				managerOptions.WriteString(script[pos:optionEnd])
+				pos = optionEnd
+				continue
+			}
 		}
+		scriptArgs.WriteString(script[pos:end])
 		pos = end
 	}
 }

@@ -3,4 +3,5 @@ Env.DATABRICKS_APPKIT_TEMPLATE_PATH = "template"
 Ignore = [
     "test-app-pnpm",
     "test-app-npm",
+    "shrinkwrap-app",
 ]
