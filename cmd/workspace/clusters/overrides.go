@@ -1,9 +1,13 @@
 package clusters
 
 import (
+	"errors"
+	"net/http"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -93,8 +97,43 @@ func sparkVersionsOverride(sparkVersionsCmd *cobra.Command) {
 	`)
 }
 
+func startOverride(startCmd *cobra.Command, startReq *compute.StartCluster) {
+	run := startCmd.RunE
+	startCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := run(cmd, args)
+		if err == nil || !isInvalidState(err) || startReq.ClusterId == "" {
+			return err
+		}
+
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+		cluster, getErr := w.Clusters.Get(ctx, compute.GetClusterRequest{
+			ClusterId: startReq.ClusterId,
+		})
+		if getErr != nil {
+			return err
+		}
+		isJobCluster := cluster.ClusterSource == compute.ClusterSourceJob
+		isNonTerminated := cluster.State != "" && cluster.State != compute.StateTerminated
+		// The Start API returns INVALID_STATE for already-running clusters,
+		// while the CLI help documents non-TERMINATED clusters as a no-op.
+		// The help separately documents that job clusters cannot be started.
+		if isNonTerminated && !isJobCluster {
+			return nil
+		}
+
+		return err
+	}
+}
+
+func isInvalidState(err error) bool {
+	apiErr, ok := errors.AsType[*apierr.APIError](err)
+	return ok && apiErr.StatusCode == http.StatusBadRequest && apiErr.ErrorCode == "INVALID_STATE"
+}
+
 func init() {
 	listOverrides = append(listOverrides, listOverride)
 	listNodeTypesOverrides = append(listNodeTypesOverrides, listNodeTypesOverride)
 	sparkVersionsOverrides = append(sparkVersionsOverrides, sparkVersionsOverride)
+	startOverrides = append(startOverrides, startOverride)
 }
