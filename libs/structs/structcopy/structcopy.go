@@ -120,7 +120,7 @@ func (c *Copier) Copy(src any) any {
 
 	var srcForceSend []string
 	if c.srcForceSendIndex != nil {
-		srcForceSend, _ = srcVal.FieldByIndex(c.srcForceSendIndex).Interface().([]string)
+		srcForceSend, _ = reflect.TypeAssert[[]string](srcVal.FieldByIndex(c.srcForceSendIndex))
 	}
 	for _, op := range c.ops {
 		if op.forceSendFields {
@@ -177,8 +177,8 @@ func isScalarKind(k reflect.Kind) bool {
 // matches the SDK's own utils.FilterFields behavior that the hand-written copies used.
 func filterOwnFields(ownerType reflect.Type, names []string) []string {
 	own := make(map[string]bool, ownerType.NumField())
-	for i := range ownerType.NumField() {
-		own[ownerType.Field(i).Name] = true
+	for field := range ownerType.Fields() {
+		own[field.Name] = true
 	}
 	var result []string
 	for _, name := range names {
