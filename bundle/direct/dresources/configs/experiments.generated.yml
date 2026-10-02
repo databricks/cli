@@ -1,9 +1,5 @@
 # Generated, do not edit.
 
-recreate_on_changes:
-  - field: trace_location
-    reason: spec:immutable
-
-ignore_remote_changes:
-  - field: trace_location.uc_trace_location.effective_table_prefix
-    reason: spec:output_only
+fields:
+  trace_location: [immutable]
+  trace_location.uc_trace_location.effective_table_prefix: [mutable_output]

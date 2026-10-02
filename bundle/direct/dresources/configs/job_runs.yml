@@ -1,42 +1,41 @@
-# Every jobs.RunNow field is listed, so nothing the request carries is drift.
-# TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
-# result_state is not in the list: comparing it against the remote is what
-# makes a run that has not succeeded visible to the plan.
-ignore_remote_changes:
-  - field: job_id
-    reason: immutable
-  # GetRun reports job_parameters resolved against the job's defaults, and
-  # nests the rest under overriding_parameters.
-  - field: dbt_commands
-    reason: effective_vs_requested
-  - field: jar_params
-    reason: effective_vs_requested
-  - field: job_parameters
-    reason: effective_vs_requested
-  - field: notebook_params
-    reason: effective_vs_requested
-  - field: pipeline_params
-    reason: effective_vs_requested
-  - field: python_named_params
-    reason: effective_vs_requested
-  - field: python_params
-    reason: effective_vs_requested
-  - field: spark_submit_params
-    reason: effective_vs_requested
-  - field: sql_params
-    reason: effective_vs_requested
-  # Fields the run-now request carries that GetRun never reports back.
-  - field: idempotency_token
-    reason: not_returned_by_api
-  - field: only
-    reason: not_returned_by_api
-  - field: performance_target
-    reason: not_returned_by_api
-  - field: queue
-    reason: not_returned_by_api
 # A run is immutable and fire-once, so any change recreates it. Omitting
 # `field` matches every field (root; see TestFieldRuleOmittedIsRoot).
 # `field: ""` would instead match nothing. The one exception is a run that is
 # still going, which ResourceJobRun.OverrideChangeDesc downgrades to skip.
-recreate_on_changes:
-  - reason: immutable
+# Every jobs.RunNow field is listed, so nothing the request carries is drift.
+# TestJobRunIgnoresEveryRequestField keeps the list in step with the SDK.
+# result_state is not in the list: comparing it against the remote is what
+# makes a run that has not succeeded visible to the plan.
+action: immutable
+fields:
+  job_id:
+    ignore_remote: immutable
+  # GetRun reports job_parameters resolved against the job's defaults, and
+  # nests the rest under overriding_parameters.
+  dbt_commands:
+    ignore_remote: effective_vs_requested
+  jar_params:
+    ignore_remote: effective_vs_requested
+  job_parameters:
+    ignore_remote: effective_vs_requested
+  notebook_params:
+    ignore_remote: effective_vs_requested
+  pipeline_params:
+    ignore_remote: effective_vs_requested
+  python_named_params:
+    ignore_remote: effective_vs_requested
+  python_params:
+    ignore_remote: effective_vs_requested
+  spark_submit_params:
+    ignore_remote: effective_vs_requested
+  sql_params:
+    ignore_remote: effective_vs_requested
+  # Fields the run-now request carries that GetRun never reports back.
+  idempotency_token:
+    ignore_remote: not_returned_by_api
+  only:
+    ignore_remote: not_returned_by_api
+  performance_target:
+    ignore_remote: not_returned_by_api
+  queue:
+    ignore_remote: not_returned_by_api

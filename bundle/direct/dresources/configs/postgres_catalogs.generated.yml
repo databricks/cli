@@ -1,13 +1,6 @@
 # Generated, do not edit.
 
-recreate_on_changes:
-  - field: postgres_database
-    reason: spec:immutable
-
-ignore_remote_changes:
-  - field: branch
-    reason: spec:input_only
-  - field: create_database_if_missing
-    reason: spec:input_only
-  - field: postgres_database
-    reason: spec:input_only
+fields:
+  branch: [input_only]
+  create_database_if_missing: [input_only]
+  postgres_database: [immutable, input_only]

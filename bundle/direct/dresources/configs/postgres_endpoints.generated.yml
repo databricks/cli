@@ -1,23 +1,11 @@
 # Generated, do not edit.
 
-recreate_on_changes:
-  - field: endpoint_type
-    reason: spec:immutable
-
-ignore_remote_changes:
-  - field: autoscaling_limit_max_cu
-    reason: spec:input_only
-  - field: autoscaling_limit_min_cu
-    reason: spec:input_only
-  - field: disabled
-    reason: spec:input_only
-  - field: endpoint_type
-    reason: spec:input_only
-  - field: group
-    reason: spec:input_only
-  - field: no_suspension
-    reason: spec:input_only
-  - field: settings
-    reason: spec:input_only
-  - field: suspend_timeout_duration
-    reason: spec:input_only
+fields:
+  autoscaling_limit_max_cu: [input_only]
+  autoscaling_limit_min_cu: [input_only]
+  disabled: [input_only]
+  endpoint_type: [immutable, input_only]
+  group: [input_only]
+  no_suspension: [input_only]
+  settings: [input_only]
+  suspend_timeout_duration: [input_only]

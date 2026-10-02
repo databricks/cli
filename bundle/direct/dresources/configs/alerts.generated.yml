@@ -1,19 +1,11 @@
 # Generated, do not edit.
 
-ignore_remote_changes:
-  - field: create_time
-    reason: spec:output_only
-  - field: effective_run_as
-    reason: spec:output_only
-  - field: evaluation.last_evaluated_at
-    reason: spec:output_only
-  - field: evaluation.state
-    reason: spec:output_only
-  - field: id
-    reason: spec:output_only
-  - field: lifecycle_state
-    reason: spec:output_only
-  - field: owner_user_name
-    reason: spec:output_only
-  - field: update_time
-    reason: spec:output_only
+fields:
+  create_time: [mutable_output]
+  effective_run_as: [mutable_output]
+  evaluation.last_evaluated_at: [mutable_output]
+  evaluation.state: [mutable_output]
+  id: [mutable_output]
+  lifecycle_state: [mutable_output]
+  owner_user_name: [mutable_output]
+  update_time: [mutable_output]

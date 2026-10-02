@@ -1,14 +1,10 @@
-provided_id_fields:
+fields:
   # parent and database_id are immutable (part of hierarchical name, not in API spec)
-  - field: parent
-    reason: id_field
-  - field: database_id
-    reason: id_field
-ignore_local_changes:
-  # replace_existing only takes effect on create; toggling it later is a no-op.
-  - field: replace_existing
-    reason: "input_only; cannot be updated after create"
-stable_output_fields:
+  parent: [id]
+  database_id: [id]
+  replace_existing:
+    action: ignore_local
+    reason: input_only
   # name ("projects/{p}/branches/{b}/databases/{database_id}") is backend-assigned
   # at creation and immutable; see the stable_output_fields doc in config.go and ES-2202624.
-  - field: name
+  name: [immutable_output]

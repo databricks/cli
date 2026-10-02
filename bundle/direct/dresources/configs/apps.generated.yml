@@ -1,54 +1,28 @@
 # Generated, do not edit.
 
-ignore_remote_changes:
-  - field: git_repository.caller_credential_id
-    reason: spec:input_only
-  - field: git_source
-    reason: spec:input_only
-  - field: source_code_path
-    reason: spec:input_only
-
-  - field: active_deployment
-    reason: spec:output_only
-  - field: app_status
-    reason: spec:output_only
-  - field: compute_status
-    reason: spec:output_only
-  - field: create_time
-    reason: spec:output_only
-  - field: creator
-    reason: spec:output_only
-  - field: default_git_source
-    reason: spec:output_only
-  - field: default_source_code_path
-    reason: spec:output_only
-  - field: effective_budget_policy_id
-    reason: spec:output_only
-  - field: effective_usage_policy_id
-    reason: spec:output_only
-  - field: effective_user_api_scopes
-    reason: spec:output_only
-  - field: id
-    reason: spec:output_only
-  - field: oauth2_app_client_id
-    reason: spec:output_only
-  - field: oauth2_app_integration_id
-    reason: spec:output_only
-  - field: pending_deployment
-    reason: spec:output_only
-  - field: resources[*].uc_securable.securable_kind
-    reason: spec:output_only
-  - field: service_principal_client_id
-    reason: spec:output_only
-  - field: service_principal_id
-    reason: spec:output_only
-  - field: service_principal_name
-    reason: spec:output_only
-  - field: thumbnail_url
-    reason: spec:output_only
-  - field: update_time
-    reason: spec:output_only
-  - field: updater
-    reason: spec:output_only
-  - field: url
-    reason: spec:output_only
+fields:
+  active_deployment: [mutable_output]
+  app_status: [mutable_output]
+  compute_status: [mutable_output]
+  create_time: [mutable_output]
+  creator: [mutable_output]
+  default_git_source: [mutable_output]
+  default_source_code_path: [mutable_output]
+  effective_budget_policy_id: [mutable_output]
+  effective_usage_policy_id: [mutable_output]
+  effective_user_api_scopes: [mutable_output]
+  git_repository.caller_credential_id: [input_only]
+  git_source: [input_only]
+  id: [mutable_output]
+  oauth2_app_client_id: [mutable_output]
+  oauth2_app_integration_id: [mutable_output]
+  pending_deployment: [mutable_output]
+  resources[*].uc_securable.securable_kind: [mutable_output]
+  service_principal_client_id: [mutable_output]
+  service_principal_id: [mutable_output]
+  service_principal_name: [mutable_output]
+  source_code_path: [input_only]
+  thumbnail_url: [mutable_output]
+  update_time: [mutable_output]
+  updater: [mutable_output]
+  url: [mutable_output]
