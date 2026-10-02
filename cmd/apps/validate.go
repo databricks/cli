@@ -19,6 +19,9 @@ func newValidateCmd() *cobra.Command {
 This command detects the project type and runs the appropriate validation:
 - Node.js projects (package.json): runs npm install, build, typecheck, lint, and tests
 
+For AppKit projects (appkit.plugins.json), it first checks that resources accessed on
+behalf of the user are not app-only and that their scopes are in user_api_scopes.
+
 Examples:
   # Validate the current directory
   databricks apps validate
@@ -56,6 +59,10 @@ func runValidate(cmd *cobra.Command) error {
 	skipTests, _ := cmd.Flags().GetBool("skip-tests")
 	opts := validation.ValidateOptions{
 		SkipTests: skipTests,
+	}
+
+	if err := validation.ValidateAuthModes(projectPath); err != nil {
+		return err
 	}
 
 	// Get validator for project type
