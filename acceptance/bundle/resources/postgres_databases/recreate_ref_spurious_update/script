@@ -9,12 +9,13 @@ trap cleanup EXIT
 title "Initial deployment"
 trace $CLI bundle deploy
 
-title "Recreate the role; d.role references the role's (unchanged) name"
+title "Recreate the role; my_database.role references the role's (unchanged) name"
 trace update_file.py databricks.yml "postgres_role: app_role" "postgres_role: new_role"
 
 # The plan diverges by engine, so capture it per engine. The direct engine recreates the
-# role and reports a spurious "update postgres_databases.d"; against the testserver
-# terraform updates the role in place, resolves the stable name, and leaves d unchanged.
+# role and reports a spurious "update postgres_databases.my_database"; against the
+# testserver terraform updates the role in place, resolves the stable name, and leaves the
+# database unchanged.
 trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 # Field-level proof: old is the real name, new is the still-unresolved reference.
-trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databases.d".changes.role' > out.d_role_change.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.postgres_databases.my_database".changes.role' > out.database_role.$DATABRICKS_BUNDLE_ENGINE.json

@@ -2,14 +2,14 @@
 === Initial deployment
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/recreate-ref-update-[UNIQUE_NAME]/default/files...
-Created postgres_branches.b
-Created postgres_databases.d
-Created postgres_projects.p
-Created postgres_roles.owner
+Created postgres_branches.my_branch
+Created postgres_databases.my_database
+Created postgres_projects.my_project
+Created postgres_roles.my_role
 Files: 0 uploaded, 0 deleted
 Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
-=== Recreate the role; d.role references the role's (unchanged) name
+=== Recreate the role; my_database.role references the role's (unchanged) name
 >>> update_file.py databricks.yml postgres_role: app_role postgres_role: new_role
 
 >>> [CLI] bundle plan
@@ -18,22 +18,22 @@ Resources: 4 created, 0 changed, 0 deleted, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete resources.postgres_branches.b
-  delete resources.postgres_databases.d
-  delete resources.postgres_projects.p
-  delete resources.postgres_roles.owner
+  delete resources.postgres_branches.my_branch
+  delete resources.postgres_databases.my_database
+  delete resources.postgres_projects.my_project
+  delete resources.postgres_roles.my_role
 
 This action will result in the deletion of the following Lakebase projects along with
 all their branches, databases, and endpoints. All data stored in them will be permanently lost:
-  delete resources.postgres_projects.p
+  delete resources.postgres_projects.my_project
 
 This action will result in the deletion of the following Lakebase branches.
 All data stored in them will be permanently lost:
-  delete resources.postgres_branches.b
+  delete resources.postgres_branches.my_branch
 
 This action will result in the deletion of the following Lakebase databases.
 All data stored in them will be permanently lost:
-  delete resources.postgres_databases.d
+  delete resources.postgres_databases.my_database
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/recreate-ref-update-[UNIQUE_NAME]/default
 

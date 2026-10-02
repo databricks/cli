@@ -11,14 +11,14 @@ sync:
 # config value does not actually change.
 resources:
   postgres_projects:
-    p:
+    my_project:
       project_id: test-pg-proj-$UNIQUE_NAME
-      display_name: P
+      display_name: My project
       pg_version: 16
 
   postgres_catalogs:
-    cat:
+    my_catalog:
       catalog_id: mycat
-      branch: ${resources.postgres_projects.p.name}/branches/production
+      branch: ${resources.postgres_projects.my_project.name}/branches/production
       postgres_database: appdb
       create_database_if_missing: true

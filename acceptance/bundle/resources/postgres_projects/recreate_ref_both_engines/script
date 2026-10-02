@@ -10,9 +10,9 @@ title "Initial deployment"
 trace $CLI bundle deploy
 
 # Both engines recreate the project (pg_version immutable). Neither can resolve
-# ${p.name} for a resource being recreated, so both plan a recreate of the catalog -
-# even though cat.branch resolves to the same value. The behavior is identical: this is
-# a shared plan-time limitation, not a direct-only bug.
+# ${my_project.name} for a resource being recreated, so both plan a recreate of the
+# catalog - even though my_catalog.branch resolves to the same value. The behavior is
+# identical: this is a shared plan-time limitation, not a direct-only bug.
 title "Bump pg_version: recreates the project; project_id (hence name) is unchanged"
 trace update_file.py databricks.yml "pg_version: 16" "pg_version: 17"
 trace $CLI bundle plan

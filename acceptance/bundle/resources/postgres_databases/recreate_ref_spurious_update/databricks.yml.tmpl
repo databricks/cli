@@ -10,31 +10,31 @@ sync:
 #
 # Changing postgres_role recreates the role (the backend rejects it in the PATCH
 # update_mask - see postgres_roles/recreate-postgres-role), but role_id is unchanged, so
-# owner.name (projects/.../roles/app-owner) is stable. The direct engine cannot resolve
-# ${owner.name} while owner is being recreated, so d.role diffs the saved name against
-# the literal "${...}" placeholder and plans an unnecessary update of the database.
+# my_role.name (projects/.../roles/app-owner) is stable. The direct engine cannot resolve
+# ${my_role.name} while the role is being recreated, so my_database.role diffs the saved
+# name against the literal "${...}" placeholder and plans an unnecessary update.
 resources:
   postgres_projects:
-    p:
+    my_project:
       project_id: test-pg-proj-$UNIQUE_NAME
-      display_name: P
+      display_name: My project
       pg_version: 16
 
   postgres_branches:
-    b:
-      parent: ${resources.postgres_projects.p.name}
+    my_branch:
+      parent: ${resources.postgres_projects.my_project.name}
       branch_id: main
       no_expiry: true
 
   postgres_roles:
-    owner:
-      parent: ${resources.postgres_branches.b.name}
+    my_role:
+      parent: ${resources.postgres_branches.my_branch.name}
       role_id: app-owner
       postgres_role: app_role
 
   postgres_databases:
-    d:
+    my_database:
       database_id: my-db
-      parent: ${resources.postgres_branches.b.name}
+      parent: ${resources.postgres_branches.my_branch.name}
       postgres_database: mydb
-      role: ${resources.postgres_roles.owner.name}
+      role: ${resources.postgres_roles.my_role.name}
