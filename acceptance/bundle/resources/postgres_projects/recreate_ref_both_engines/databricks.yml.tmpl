@@ -13,12 +13,15 @@ sync:
 #
 # pg_version is spec:immutable, so a bump recreates the project. project_id is unchanged, so the
 # project name (projects/{project_id}) is stable, and my_catalog.branch -- built from
-# ${my_project.name} -- resolves to the same value: the catalog does not actually change, yet
-# the direct engine plans and executes its recreate.
+# ${my_project.name} -- resolves to the same value: the catalog does not actually change. The
+# plan still shows its recreate (the reference cannot be resolved until the project is deployed),
+# but at deploy the direct engine downgrades it to a no-op -- see out.requests.direct.txt, which
+# has only the project's calls.
 #
 # This test runs the direct engine only. For context, the terraform engine (now being removed)
-# behaved the same here -- it also recreated the catalog, because it cannot cancel a replace
-# once the plan commits it to separate destroy/create graph nodes.
+# did NOT downgrade this -- it recreated the catalog, because it cannot cancel a replace once the
+# plan commits it to separate destroy/create graph nodes. The direct engine's apply-time
+# downgrade is strictly more capable here.
 resources:
   postgres_projects:
     my_project:

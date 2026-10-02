@@ -17,7 +17,7 @@ recreate postgres_projects.my_project
 
 Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
 
-=== Deploy the recreate and record the requests (see out.requests.direct.txt)
+=== Deploy and record the requests (see out.requests.direct.txt)
 >>> print_requests.py --sort //postgres
 
 >>> [CLI] bundle destroy --auto-approve
