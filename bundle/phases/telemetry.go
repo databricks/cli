@@ -3,6 +3,7 @@ package phases
 import (
 	"cmp"
 	"context"
+	"maps"
 	"math"
 	"reflect"
 	"slices"
@@ -195,6 +196,38 @@ func aiRuntimeTaskMetrics(jobs map[string]*resources.Job) (present, scheduled, m
 	return present, scheduled, multitask
 }
 
+// pydabsMetrics reports usage of Python support. Loaders and mutators are read from
+// 'experimental/python' only: the Python mutator copies 'python' there.
+func pydabsMetrics(b *bundle.Bundle) *protos.BundleDeployPydabs {
+	experimentalConfig := b.Config.Experimental
+	if experimentalConfig == nil {
+		experimentalConfig = &config.Experimental{}
+	}
+
+	added := b.Metrics.PythonAddedResources
+	updated := b.Metrics.PythonUpdatedResources
+
+	types := slices.Concat(slices.Collect(maps.Keys(added)), slices.Collect(maps.Keys(updated)))
+	slices.Sort(types)
+	types = slices.Compact(types)
+
+	out := &protos.BundleDeployPydabs{
+		ResourceLoadersCount:  int64(len(experimentalConfig.Python.Resources)),
+		ResourceMutatorsCount: int64(len(experimentalConfig.Python.Mutators)),
+		ConfigSection:         b.Metrics.PythonConfigSection,
+	}
+	for _, t := range types {
+		out.AddedResourcesCount += added[t]
+		out.UpdatedResourcesCount += updated[t]
+		out.Resources = append(out.Resources, protos.PydabsResourceTypeCount{
+			ResourceType: t,
+			AddedCount:   added[t],
+			UpdatedCount: updated[t],
+		})
+	}
+	return out
+}
+
 // LogDeployTelemetry logs a telemetry event for a bundle deploy command.
 func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 	errMsg = telemetry.ScrubErrorMessage(errMsg)
@@ -349,9 +382,12 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 		mode = protos.BundleModeProduction
 	}
 
-	experimentalConfig := b.Config.Experimental
-	if experimentalConfig == nil {
-		experimentalConfig = &config.Experimental{}
+	pydabs := pydabsMetrics(b)
+
+	// Omit the pydabs section for bundles that don't use Python support.
+	var pydabsSection *protos.BundleDeployPydabs
+	if pydabs.ResourceLoadersCount > 0 || pydabs.ResourceMutatorsCount > 0 {
+		pydabsSection = pydabs
 	}
 
 	uploadFileSizers := make([]sizer, len(b.Files))
@@ -386,6 +422,8 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 
 			ResourcesMetadata: collectResourcesMetadata(ctx, b),
 
+			Pydabs: pydabsSection,
+
 			Experimental: &protos.BundleDeployExperimental{
 				BundleMode:                   mode,
 				ConfigurationFileCount:       b.Metrics.ConfigurationFileCount,
@@ -395,10 +433,10 @@ func LogDeployTelemetry(ctx context.Context, b *bundle.Bundle, errMsg string) {
 				WorkspaceArtifactPathType:    artifactPathType,
 				BoolValues:                   b.Metrics.BoolValues,
 				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
-				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
-				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
-				PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),
-				PythonResourceMutatorsCount:  int64(len(experimentalConfig.Python.Mutators)),
+				PythonAddedResourcesCount:    pydabs.AddedResourcesCount,
+				PythonUpdatedResourcesCount:  pydabs.UpdatedResourcesCount,
+				PythonResourceLoadersCount:   pydabs.ResourceLoadersCount,
+				PythonResourceMutatorsCount:  pydabs.ResourceMutatorsCount,
 				VariableCount:                int64(variableCount),
 				ComplexVariableCount:         complexVariableCount,
 				LookupVariableCount:          lookupVariableCount,
