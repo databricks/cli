@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f "$OUT_REQUESTS"
+}
+trap cleanup EXIT
+
+title "Initial deployment"
+trace $CLI bundle deploy
+rm -f "$OUT_REQUESTS"   # drop create requests; capture only the edit below
+
+# storage_root is immutable, so changing it recreates the schema. name/catalog_name are
+# unchanged, so referent's full_name (main.referent) -- and thus ${referent.id} -- is stable.
+title "Recreate referent via storage_root (full_name/.id unchanged)"
+trace update_file.py databricks.yml "s3://my-bucket/v1" "s3://my-bucket/v2"
+
+# PLANNED (identical on both engines): referent recreates, so ${referent.id} cannot be
+# resolved (a recreate does not preserve the id) and consumer.comment diffs the saved value
+# against the literal "${...}" placeholder -> spurious update of consumer.
+title "Plan"
+trace $CLI bundle plan
+# Field-level proof: old is the resolved full_name, new is the still-unresolved reference.
+trace $CLI bundle plan -o json | nostamp | jq '.plan."resources.schemas.consumer".changes.comment' > out.consumer_comment.$DATABRICKS_BUNDLE_ENGINE.json
+
+# WHAT ACTUALLY HAPPENED (deploy stdout -> LOG.deploy; parallel completion order is
+# nondeterministic): the engines diverge, which the per-engine request logs capture. The direct
+# engine issues a PATCH against the consumer schema -- writing back its unchanged comment, a
+# spurious update. Terraform issues NO request for consumer: it downgraded the planned update to
+# a no-op once ${referent.id} resolved to the unchanged value. The direct engine's missing
+# apply-time downgrade is the bug.
+title "Deploy and record per-engine requests (see out.requests.*)"
+$CLI bundle deploy --auto-approve &> LOG.deploy
+trace print_requests.py --sort '//schemas' > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt

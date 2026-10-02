@@ -29,6 +29,12 @@ trace $CLI bundle plan
 # issued against the catalog with an identical, unchanged spec -- a destructive recreate of a
 # resource that did not change. The two engines send project_id/catalog_id differently (query
 # string vs body), which is why the request files differ.
+#
+# Neither engine downgrades this: both execute the planned recreate. Unlike a spurious UPDATE
+# (which terraform re-plans away at apply -- see schemas/recreate_id_ref_spurious_update),
+# terraform cannot cancel a replace because it is split into separate destroy/create graph
+# nodes. The direct engine's proposed apply-time downgrade would skip even this destructive
+# recreate, since it still holds the recreate as one cancelable unit before the delete.
 title "Deploy the recreate and record per-engine requests (see out.requests.*)"
 $CLI bundle deploy --auto-approve &> LOG.deploy
 trace print_requests.py --sort '//postgres' > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt

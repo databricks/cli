@@ -1,0 +1,31 @@
+bundle:
+  name: schema-id-ref-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+# Shows the same bug on a NON-postgres family (UC schemas), its boundary, and -- via the
+# recorded requests -- how terraform already avoids it at deploy while the direct engine does not.
+#
+# UC resources reference each other by NAME (catalog_name, schema_name) -- user-provided INPUT
+# fields the planner resolves from config even when the target is being recreated. So idiomatic
+# UC wiring never hits this bug. The exception is a reference to an OUTPUT-only field such as
+# .id (a schema's full_name "catalog.schema"): when the referent is recreated, .id cannot be
+# resolved at plan time and reads as a phantom change on the referrer.
+#
+# referent recreates on storage_root (immutable, non-identity), so its full_name / .id
+# (main.referent) is unchanged. consumer references ${referent.id} in its mutable comment, so
+# BOTH engines PLAN a spurious update of consumer. They diverge at DEPLOY (see out.requests.*):
+# terraform re-plans consumer after referent is recreated, finds ${referent.id} resolved to the
+# unchanged value, and skips it (no request for consumer); the direct engine executes the planned
+# PATCH -- a spurious write. That apply-time downgrade is exactly what the direct engine lacks.
+resources:
+  schemas:
+    referent:
+      catalog_name: main
+      name: referent
+      storage_root: s3://my-bucket/v1
+    consumer:
+      catalog_name: main
+      name: consumer
+      comment: refers to ${resources.schemas.referent.id}
