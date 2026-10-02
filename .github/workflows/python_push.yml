@@ -1,24 +1,56 @@
 name: python build
 
 on:
-  # Not restricted to python/**: these tests also cover contracts shared with the Go
-  # code, such as libs/dyn/dynvar/testdata/reference_vectors.json, so a change outside
-  # python/ can break them.
+  # Keep workflow triggers unrestricted so skipped jobs satisfy required checks.
+  # The change filter includes the shared fixture consumed by Python tests.
   pull_request:
     types: [opened, synchronize]
   merge_group:
     types: [checks_requested]
   push:
-    # Always run on push to main. The build cache can only be reused
-    # if it was saved by a run from the repository's default branch.
-    # The run result will be identical to that from the merge queue
-    # because the commit is identical, yet we need to perform it to
-    # seed the build cache.
+    # Run relevant Python jobs on main to seed build caches that can be reused
+    # by pull request and merge queue runs.
     branches:
       - main
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      python: ${{ steps.changes.outputs.python }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect Python changes
+        id: changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.after }}
+        run: |
+          changed_files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA" -- \
+            .github/workflows/python_push.yml \
+            Taskfile.yml \
+            go.mod \
+            go.sum \
+            libs/dyn/dynvar/testdata/reference_vectors.json \
+            python/ \
+            tools/task/ \
+          )
+          if [[ -n "$changed_files" ]]; then
+            echo "python=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "python=false" >> "$GITHUB_OUTPUT"
+          fi
+
   python_tests:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.python == 'true') }}
     name: tests
     runs-on: ubuntu-latest
 
@@ -28,6 +60,12 @@ jobs:
         pyVersion: ['3.10', '3.11', '3.12', '3.13']
 
     steps:
+      - name: Fail if change detection did not succeed
+        if: ${{ needs.changes.result != 'success' }}
+        run: |
+          echo "Python change detection did not succeed"
+          exit 1
+
       - name: Checkout repository and submodules
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -46,10 +84,18 @@ jobs:
         run: go tool -modfile=tools/task/go.mod task pydabs-test
 
   python_linters:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.python == 'true') }}
     name: lint
     runs-on: ubuntu-latest
 
     steps:
+      - name: Fail if change detection did not succeed
+        if: ${{ needs.changes.result != 'success' }}
+        run: |
+          echo "Python change detection did not succeed"
+          exit 1
+
       - name: Checkout repository and submodules
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -67,10 +113,18 @@ jobs:
         run: go tool -modfile=tools/task/go.mod task pydabs-lint
 
   python_docs:
+    needs: changes
+    if: ${{ always() && (needs.changes.result != 'success' || needs.changes.outputs.python == 'true') }}
     name: docs
     runs-on: ubuntu-latest
 
     steps:
+      - name: Fail if change detection did not succeed
+        if: ${{ needs.changes.result != 'success' }}
+        run: |
+          echo "Python change detection did not succeed"
+          exit 1
+
       - name: Checkout repository and submodules
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
