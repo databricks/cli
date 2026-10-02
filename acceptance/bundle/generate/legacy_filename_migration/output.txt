@@ -1,0 +1,28 @@
+
+=== job legacy filename
+>>> [CLI] bundle generate job --existing-job-id 1234 --key test_job --config-dir resources
+Job configuration successfully saved to resources/test_job.job.yml
+Warning: Generated configuration is not included in the bundle
+
+The file resources/test_job.job.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - resources/*.yml
+
+
+=== pipeline legacy filename
+>>> [CLI] bundle generate pipeline --existing-pipeline-id 1234 --key test_pipeline --config-dir resources
+Pipeline configuration successfully saved to resources/test_pipeline.pipeline.yml
+Warning: Generated configuration is not included in the bundle
+
+The file resources/test_pipeline.pipeline.yml is not matched by any pattern in the 'include' section of databricks.yml,
+so it will not be deployed. Add a matching entry to the 'include' section, for example:
+
+include:
+  - resources/*.yml
+
+
+=== existing typed filename preserves both files
+>>> musterr [CLI] bundle generate job --existing-job-id 1234 --key test_job --config-dir resources
+Error: resources/test_job.job.yml already exists. Use --force to overwrite
