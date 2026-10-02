@@ -1,3 +1,7 @@
 # Test: apps deploy without databricks.yml and no APP_NAME
 # Expected: Error about missing argument
 musterr $CLI apps deploy
+
+title "API deploy flags require APP_NAME outside a bundle too"
+MSYS_NO_PATHCONV=1 trace musterr $CLI apps deploy --source-code-path /Workspace/apps/test-app
+trace musterr $CLI apps deploy --no-wait

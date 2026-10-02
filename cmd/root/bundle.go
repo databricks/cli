@@ -20,6 +20,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// BundleFlagAnnotation identifies flags that configure bundle operations.
+const BundleFlagAnnotation = "bundle"
+
 // getTarget returns the name of the target to operate in.
 func getTarget(cmd *cobra.Command) (value string) {
 	target, isFlagSet := targetFlagValue(cmd)
@@ -258,6 +261,7 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 func initTargetFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "target" parameter.
 	cmd.PersistentFlags().StringP("target", "t", "", "bundle target to use (if applicable)")
+	cmd.PersistentFlags().Lookup("target").Annotations = map[string][]string{BundleFlagAnnotation: nil}
 	cmd.RegisterFlagCompletionFunc("target", targetCompletion)
 }
 
@@ -265,6 +269,7 @@ func initTargetFlag(cmd *cobra.Command) {
 func initEnvironmentFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "environment" parameter.
 	cmd.PersistentFlags().StringP("environment", "e", "", "bundle target to use (if applicable)")
+	cmd.PersistentFlags().Lookup("environment").Annotations = map[string][]string{BundleFlagAnnotation: nil}
 	cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead")
 	cmd.RegisterFlagCompletionFunc("environment", targetCompletion)
 }

@@ -5,3 +5,10 @@ Usage: databricks apps deploy APP_NAME
 APP_NAME is the name of the Databricks app to operate on.
 Alternatively, run this command from a project directory containing
 databricks.yml to auto-detect the app name.
+
+=== API deploy flags require APP_NAME outside a bundle too
+>>> musterr [CLI] apps deploy --source-code-path /Workspace/apps/test-app
+Error: API deploy flags --source-code-path require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
+
+>>> musterr [CLI] apps deploy --no-wait
+Error: API deploy flags --no-wait require APP_NAME; provide APP_NAME or omit these flags to use bundle deploy
