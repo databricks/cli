@@ -7,4 +7,3 @@ Cloud = true
 CloudSlow = true
 
 Ignore = [".databricks", "databricks.yml"]
-

@@ -12,7 +12,7 @@ Ignore = [
     "app",
 ]
 
-Env.DATABRICKS_BUNDLE_ENGINE = "terraform"
+Env.DATABRICKS_BUNDLE_ENGINE = "direct"
 
 EnvMatrix.INPUT_CONFIG = [
     "alert.yml.tmpl",

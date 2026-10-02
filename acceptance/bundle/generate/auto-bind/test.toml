@@ -12,3 +12,5 @@ Ignore = [
 # Setting this environment variable prevents that conversion on windows.
 Env.MSYS_NO_PATHCONV = "1"
 
+# bind is unsupported with deployment-history recording; pin DMS off so it runs on the plain cell.
+EnvMatrix.DMS = [""]

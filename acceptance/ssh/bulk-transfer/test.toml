@@ -14,4 +14,3 @@ Ignore = [
 GOOS.linux = true
 GOOS.darwin = false
 GOOS.windows = false
-

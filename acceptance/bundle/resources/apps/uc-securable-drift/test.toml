@@ -4,4 +4,3 @@
 RecordRequests = false
 
 Ignore = [".databricks", "databricks.yml"]
-
