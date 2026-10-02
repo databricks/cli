@@ -17,7 +17,21 @@ func newValidateCmd() *cobra.Command {
 		Long: `Validate a Databricks App project by running build, typecheck, and lint checks.
 
 This command detects the project type and runs the appropriate validation:
-- Node.js projects (package.json): runs npm install, build, typecheck, lint, and tests
+- Node.js projects (package.json): installs dependencies and runs typegen,
+  lint:ast-grep, typecheck, build, and test scripts when present
+
+The package manager is detected from lockfiles in the project directory:
+- package-lock.json or npm-shrinkwrap.json: npm
+- pnpm-lock.yaml: pnpm
+
+Only npm and pnpm are supported. Yarn and Bun lockfiles produce a warning
+and are ignored. Projects without a supported lockfile use npm. If both npm
+and pnpm lockfiles exist, validation warns and uses npm.
+The selected package manager must be on PATH in the project directory.
+Dependencies are installed when node_modules is absent.
+
+Scripts use the package manager's normal workspace behavior. For pnpm workspaces,
+define root scripts that run the checks for the packages you want to validate.
 
 Examples:
   # Validate the current directory

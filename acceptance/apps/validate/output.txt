@@ -1,0 +1,182 @@
+
+=== Validate the directory selected by --path
+>>> withdir app [CLI] apps validate --path ..
+Validating project using pnpm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+✅ Running tests ([DURATION])
+✅ All validation checks passed ([DURATION])
+
+=== Skip tests
+>>> [CLI] apps validate --skip-tests
+Validating project using pnpm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+⏭️  Skipped Running tests
+✅ All validation checks passed ([DURATION])
+
+=== Report a failed script
+>>> VALIDATION_TEST_FAIL=run --if-present test musterr [CLI] apps validate
+Validating project using pnpm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+Error: tests failed (duration: [DURATION])
+❌ Running tests failed ([DURATION])
+validation failed (exit code 17)
+Stdout:
+validation stdout
+
+Stderr:
+validation stderr
+
+Error: validation failed
+
+=== Deploy validates with the same package manager before uploading
+>>> VALIDATION_TEST_FAIL=run --if-present build musterr [CLI] apps deploy
+Validating project using pnpm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+Error: build failed (duration: [DURATION])
+❌ Building failed ([DURATION])
+validation failed (exit code 17)
+Stdout:
+validation stdout
+
+Stderr:
+validation stderr
+
+Error: validation failed - fix errors before deploying
+
+=== Commands executed in the project directory
+>>> cat commands.log
+pnpm install
+pnpm run --if-present typegen
+pnpm run --if-present lint:ast-grep
+pnpm run --if-present typecheck
+pnpm run --if-present build
+pnpm run --if-present test
+pnpm install
+pnpm run --if-present typegen
+pnpm run --if-present lint:ast-grep
+pnpm run --if-present typecheck
+pnpm run --if-present build
+pnpm install
+pnpm run --if-present typegen
+pnpm run --if-present lint:ast-grep
+pnpm run --if-present typecheck
+pnpm run --if-present build
+pnpm run --if-present test
+pnpm install
+pnpm run --if-present typegen
+pnpm run --if-present lint:ast-grep
+pnpm run --if-present typecheck
+pnpm run --if-present build
+
+=== Warn but continue on conflicting lockfiles
+>>> [CLI] apps validate --path conflicting
+Warn: found conflicting package manager lockfiles; using package-lock.json and ignoring pnpm-lock.yaml
+Validating project using npm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+✅ Running tests ([DURATION])
+✅ All validation checks passed ([DURATION])
+
+=== Warn but continue on unsupported lockfiles
+>>> [CLI] apps validate --path unsupported
+Warn: ignoring unsupported lockfile yarn.lock; apps validation uses npm or pnpm
+Validating project using npm...
+✅ Installing dependencies ([DURATION])
+✅ Generating types ([DURATION])
+✅ Running AST-grep lint ([DURATION])
+✅ Type checking ([DURATION])
+✅ Building ([DURATION])
+✅ Running tests ([DURATION])
+✅ All validation checks passed ([DURATION])
+
+=== Validate npm workspace scripts without root scripts
+>>> grep -x workspace build ran LOG.workspaces
+workspace build ran
+
+>>> grep -F validation failed (exit code 17) LOG.workspaces
+validation failed (exit code 17)
+
+=== Deploy rejects a failing npm workspace build
+>>> grep -x workspace build ran LOG.workspaces-deploy
+workspace build ran
+
+>>> grep -F validation failed - fix errors before deploying LOG.workspaces-deploy
+Error: validation failed - fix errors before deploying
+
+=== Reject a missing package.json
+>>> musterr [CLI] apps validate --path missing
+Error: no supported project type detected (looking for package.json)
+
+=== Report native manifest errors with dependencies absent
+>>> grep -x Error: validation failed LOG.invalid-absent
+Error: validation failed
+
+=== Report native manifest errors with dependencies present
+>>> grep -x Error: validation failed LOG.invalid-present
+Error: validation failed
+
+=== Reject a null manifest through the package manager
+>>> grep -x Error: validation failed LOG.null
+Error: validation failed
+
+=== Run scripts from a manifest with a UTF-8 BOM
+>>> grep -x BOM build ran LOG.bom
+BOM build ran
+
+>>> grep -F validation failed (exit code 17) LOG.bom
+validation failed (exit code 17)
+
+=== Let the package manager ignore non-runnable script entries
+>>> grep -x non-runnable entries ignored LOG.non-runnable
+non-runnable entries ignored
+
+>>> grep -F validation failed (exit code 17) LOG.non-runnable
+validation failed (exit code 17)
+
+=== Run a build added by install
+>>> grep -x added build ran LOG.add-build-install
+added build ran
+
+>>> grep -F validation failed (exit code 17) LOG.add-build-install
+validation failed (exit code 17)
+
+=== Skip a build removed by install
+>>> grep -F All validation checks passed LOG.remove-build-install
+✅ All validation checks passed ([DURATION])
+
+=== Report native errors after install invalidates the manifest
+>>> grep -x Error: validation failed LOG.invalidated-install
+Error: validation failed
+
+=== Run a build added by typegen
+>>> grep -x added build ran LOG.add-build-typegen
+added build ran
+
+>>> grep -F validation failed (exit code 17) LOG.add-build-typegen
+validation failed (exit code 17)
+
+=== Skip a build removed by typegen
+>>> grep -F All validation checks passed LOG.remove-build-typegen
+✅ All validation checks passed ([DURATION])
+
+=== Report native errors after typegen invalidates the manifest
+>>> grep -x Error: validation failed LOG.invalidated-typegen
+Error: validation failed

@@ -17,7 +17,7 @@ type ValidationNodeJs struct{}
 
 type validationStep struct {
 	name        string
-	command     string
+	script      string
 	errorPrefix string
 	displayName string
 	skipIf      func(workDir string, opts ValidateOptions) bool // Optional: skip step if this returns true
@@ -27,44 +27,48 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 	log.Infof(ctx, "Starting Node.js validation: build + typecheck")
 	startTime := time.Now()
 
-	cmdio.LogString(ctx, "Validating project...")
+	manager, err := DetectPackageManager(ctx, workDir)
+	if err != nil {
+		return nil, err
+	}
+
+	cmdio.LogString(ctx, "Validating project using "+manager+"...")
 
 	// TODO: these steps could be changed to npx appkit [command] instead if we can determine its an appkit project.
 	steps := []validationStep{
 		{
 			name:        "install",
-			command:     "npm install",
 			errorPrefix: "Failed to install dependencies",
 			displayName: "Installing dependencies",
 			skipIf:      func(workDir string, _ ValidateOptions) bool { return hasNodeModules(workDir) },
 		},
 		{
 			name:        "generate",
-			command:     "npm run typegen --if-present",
-			errorPrefix: "Failed to run npm typegen",
+			script:      "typegen",
+			errorPrefix: "Failed to generate types",
 			displayName: "Generating types",
 		},
 		{
 			name:        "ast-grep-lint",
-			command:     "npm run lint:ast-grep --if-present",
+			script:      "lint:ast-grep",
 			errorPrefix: "AST-grep lint found violations",
 			displayName: "Running AST-grep lint",
 		},
 		{
 			name:        "typecheck",
-			command:     "npm run typecheck --if-present",
+			script:      "typecheck",
 			errorPrefix: "Failed to run client typecheck",
 			displayName: "Type checking",
 		},
 		{
 			name:        "build",
-			command:     "npm run build --if-present",
-			errorPrefix: "Failed to run npm build",
+			script:      "build",
+			errorPrefix: "Failed to build",
 			displayName: "Building",
 		},
 		{
 			name:        "tests",
-			command:     "npm run test --if-present",
+			script:      "test",
 			errorPrefix: "Failed to run tests",
 			displayName: "Running tests",
 			skipIf:      func(_ string, opts ValidateOptions) bool { return opts.SkipTests },
@@ -78,6 +82,12 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 			cmdio.LogString(ctx, "⏭️  Skipped "+step.displayName)
 			continue
 		}
+		command := manager + " install"
+		if step.script != "" {
+			// Let the manager resolve scripts, including configured npm workspaces:
+			// https://docs.npmjs.com/cli/using-npm/workspaces#running-commands-in-the-context-of-workspaces
+			command = manager + " run --if-present " + step.script
+		}
 
 		log.Debugf(ctx, "running %s...", step.name)
 
@@ -88,7 +98,7 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 		spinner := cmdio.NewSpinner(ctx)
 		spinner.Update(step.displayName + "...")
 
-		stepErr = runValidationCommand(ctx, workDir, step.command)
+		stepErr = runValidationCommand(ctx, workDir, command)
 
 		spinner.Close()
 		stepDuration := time.Since(stepStart)
