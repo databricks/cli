@@ -1,9 +1,7 @@
 package validation
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,11 +26,6 @@ type validationStep struct {
 func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts ValidateOptions) (*ValidateResult, error) {
 	log.Infof(ctx, "Starting Node.js validation: build + typecheck")
 	startTime := time.Now()
-
-	// Reject an invalid manifest before running commands that may modify it.
-	if err := validatePackageJSON(workDir); err != nil {
-		return nil, err
-	}
 
 	manager, err := DetectPackageManager(ctx, workDir)
 	if err != nil {
@@ -89,12 +82,6 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 			cmdio.LogString(ctx, "⏭️  Skipped "+step.displayName)
 			continue
 		}
-		if step.script != "" {
-			if err := validatePackageJSON(workDir); err != nil {
-				return nil, err
-			}
-		}
-
 		command := manager + " install"
 		if step.script != "" {
 			// Let the manager resolve scripts, including configured npm workspaces:
@@ -137,21 +124,6 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 		Success: true,
 		Message: fmt.Sprintf("All validation checks passed (%.1fs)", totalDuration.Seconds()),
 	}, nil
-}
-
-// validatePackageJSON reloads the manifest because earlier validation steps can change it.
-func validatePackageJSON(workDir string) error {
-	packageJSON, err := os.ReadFile(filepath.Join(workDir, "package.json"))
-	if err != nil {
-		return fmt.Errorf("failed to read package.json: %w", err)
-	}
-	// npm strips a UTF-8 BOM before decoding: https://github.com/npm/json-parse-even-better-errors.
-	packageJSON = bytes.TrimPrefix(packageJSON, []byte("\xef\xbb\xbf"))
-	var project struct{}
-	if err := json.Unmarshal(packageJSON, &project); err != nil {
-		return fmt.Errorf("failed to parse package.json: %w", err)
-	}
-	return nil
 }
 
 // hasNodeModules returns true if node_modules directory exists in the workDir.

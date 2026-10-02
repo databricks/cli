@@ -30,6 +30,9 @@ and pnpm lockfiles exist, validation warns and uses npm.
 The selected package manager must be on PATH in the project directory.
 Dependencies are installed when node_modules is absent.
 
+Scripts use the package manager's normal workspace behavior. For pnpm workspaces,
+define root scripts that run the checks for the packages you want to validate.
+
 Examples:
   # Validate the current directory
   databricks apps validate

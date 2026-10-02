@@ -19,7 +19,7 @@ const (
 
 // DetectPackageManager selects a package manager from lockfiles in workDir. Unsupported
 // lockfiles (yarn, bun) and lockfiles for a second manager are logged and ignored rather
-// than failing validation, so a stray lockfile never blocks a deploy that works today.
+// than failing detection. The selected manager must be installed to run validation.
 // Projects without a supported lockfile use npm for compatibility with existing validation.
 func DetectPackageManager(ctx context.Context, workDir string) (string, error) {
 	lockfiles := []struct {
@@ -47,15 +47,15 @@ func DetectPackageManager(ctx context.Context, workDir string) (string, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
+		if lockfile.manager != packageManagerNpm && lockfile.manager != packageManagerPnpm {
+			log.Warnf(ctx, "ignoring unsupported lockfile %s; apps validation uses npm or pnpm", lockfile.name)
+			continue
+		}
 		if err != nil {
 			return "", fmt.Errorf("failed to inspect %s: %w", lockfile.name, err)
 		}
 		if !info.Mode().IsRegular() {
 			return "", fmt.Errorf("lockfile %s must be a regular file", lockfile.name)
-		}
-		if lockfile.manager != packageManagerNpm && lockfile.manager != packageManagerPnpm {
-			log.Warnf(ctx, "ignoring unsupported lockfile %s; apps validation uses npm or pnpm", lockfile.name)
-			continue
 		}
 		if manager == "" {
 			manager, chosen = lockfile.manager, lockfile.name

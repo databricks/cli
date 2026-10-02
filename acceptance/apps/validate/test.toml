@@ -1,6 +1,10 @@
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 Env.VALIDATION_TEST_FAIL = ""
-Ignore = ["commands.log", "node_modules"]
+Env.npm_config_audit = "false"
+Env.npm_config_fund = "false"
+Env.npm_config_offline = "true"
+Env.npm_config_update_notifier = "false"
+Ignore = ["commands.log", "node_modules", "missing", "lifecycle-install", "lifecycle-typegen"]
 
 [[Repls]]
 Old = '\d+\.\d+s'

@@ -22,9 +22,6 @@ trace $CLI apps validate --path conflicting
 title "Warn but continue on unsupported lockfiles"
 trace $CLI apps validate --path unsupported
 
-title "Reject malformed package.json"
-trace musterr $CLI apps validate --path invalid
-
 title "Validate npm workspace scripts without root scripts"
 export PATH="$validation_path"
 mkdir -p workspaces/node_modules
@@ -36,3 +33,53 @@ title "Deploy rejects a failing npm workspace build"
 trace withdir workspaces musterr $CLI apps deploy &> LOG.workspaces-deploy
 trace grep -x "workspace build ran" LOG.workspaces-deploy
 trace grep -F "validation failed - fix errors before deploying" LOG.workspaces-deploy
+
+title "Reject a missing package.json"
+mkdir missing
+trace musterr $CLI apps validate --path missing
+
+for dependencies in absent present; do
+    title "Report native manifest errors with dependencies $dependencies"
+    trace musterr $CLI apps validate --path invalid &> LOG.invalid-$dependencies
+    contains.py "EJSONPARSE" < LOG.invalid-$dependencies > LOG.check-invalid-$dependencies
+    trace grep -x "Error: validation failed" LOG.invalid-$dependencies
+    mkdir -p invalid/node_modules
+done
+
+title "Reject a null manifest through the package manager"
+mkdir -p null/node_modules
+trace musterr $CLI apps validate --path null &> LOG.null
+trace grep -x "Error: validation failed" LOG.null
+
+title "Run scripts from a manifest with a UTF-8 BOM"
+mkdir -p bom/node_modules
+trace musterr $CLI apps validate --path bom &> LOG.bom
+trace grep -x "BOM build ran" LOG.bom
+trace grep -F "validation failed (exit code 17)" LOG.bom
+
+title "Let the package manager ignore non-runnable script entries"
+mkdir -p non-runnable/node_modules
+trace musterr $CLI apps validate --path non-runnable &> LOG.non-runnable
+trace grep -x "non-runnable entries ignored" LOG.non-runnable
+trace grep -F "validation failed (exit code 17)" LOG.non-runnable
+
+for step in install typegen; do
+    cp -R lifecycle lifecycle-$step
+    if [ "$step" = typegen ]; then
+        mkdir -p lifecycle-$step/{add-build,remove-build,invalidated}/node_modules
+    fi
+
+    title "Run a build added by $step"
+    trace VALIDATION_UPDATE_STEP=$step VALIDATION_UPDATE_ACTION=add musterr $CLI apps validate --path lifecycle-$step/add-build &> LOG.add-build-$step
+    trace grep -x "added build ran" LOG.add-build-$step
+    trace grep -F "validation failed (exit code 17)" LOG.add-build-$step
+
+    title "Skip a build removed by $step"
+    trace VALIDATION_UPDATE_STEP=$step VALIDATION_UPDATE_ACTION=remove $CLI apps validate --path lifecycle-$step/remove-build &> LOG.remove-build-$step
+    trace grep -F "All validation checks passed" LOG.remove-build-$step
+
+    title "Report native errors after $step invalidates the manifest"
+    trace VALIDATION_UPDATE_STEP=$step VALIDATION_UPDATE_ACTION=invalidate musterr $CLI apps validate --path lifecycle-$step/invalidated &> LOG.invalidated-$step
+    contains.py "EJSONPARSE" < LOG.invalidated-$step > LOG.check-invalidated-$step
+    trace grep -x "Error: validation failed" LOG.invalidated-$step
+done
